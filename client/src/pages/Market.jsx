@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 
+function fmt(n) { return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+
 export default function Market() {
   const [coins, setCoins] = useState([])
   const [loading, setLoading] = useState(true)
@@ -15,51 +17,36 @@ export default function Market() {
     try {
       const data = await api.getMarketData()
       if (Array.isArray(data)) setCoins(data)
-    } catch (err) {
-      console.error(err)
-    }
+    } catch (err) { console.error(err) }
     setLoading(false)
   }
 
   return (
     <div className="page">
-      <h2>Market Overview</h2>
-      <p className="muted">Top 50 cryptocurrencies by market cap. Prices refresh every minute.</p>
+      <h2>Market</h2>
+      <p className="muted" style={{ marginBottom: '1rem' }}>Top 50 by market cap. Auto-refreshes every minute.</p>
 
-      <div className="card">
-        {loading ? <p className="muted">Loading market data...</p> : (
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Coin</th>
-                <th>Price</th>
-                <th>24h Change</th>
-                <th>Market Cap</th>
-                <th>Volume (24h)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coins.map((coin, i) => (
-                <tr key={coin.id}>
-                  <td>{i + 1}</td>
-                  <td className="coin-cell">
-                    <img src={coin.image} alt="" width={24} height={24} />
-                    <strong>{coin.name}</strong>
-                    <small className="muted">{coin.symbol.toUpperCase()}</small>
-                  </td>
-                  <td>${coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td className={coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}>
-                    {coin.price_change_percentage_24h?.toFixed(2)}%
-                  </td>
-                  <td>${(coin.market_cap / 1e9).toFixed(2)}B</td>
-                  <td>${(coin.total_volume / 1e9).toFixed(2)}B</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {loading ? <div className="card"><p className="muted">Loading...</p></div> : (
+        <div className="market-list">
+          {coins.map((coin, i) => (
+            <div key={coin.id} className="market-card">
+              <div className="market-rank">{i + 1}</div>
+              <img src={coin.image} alt="" width={32} height={32} className="market-img" />
+              <div className="market-info">
+                <strong>{coin.symbol.toUpperCase()}</strong>
+                <span className="muted market-name">{coin.name}</span>
+              </div>
+              <div className="market-price">
+                <strong>${fmt(coin.current_price)}</strong>
+                <span className={coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}>
+                  {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
+                </span>
+              </div>
+              <div className="market-cap muted">${(coin.market_cap / 1e9).toFixed(1)}B</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

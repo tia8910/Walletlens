@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { api } from '../api'
 
-export default function Transactions() {
+export default function Transactions({ showAdd, onCloseAdd }) {
+  const location = useLocation()
   const [transactions, setTransactions] = useState([])
   const [wallets, setWallets] = useState([])
   const [showForm, setShowForm] = useState(false)
@@ -13,9 +15,15 @@ export default function Transactions() {
   })
   const searchTimeout = useRef(null)
 
+  useEffect(() => { loadData() }, [filterWallet])
+
   useEffect(() => {
-    loadData()
-  }, [filterWallet])
+    if (location.state?.openAdd) {
+      setShowForm(true)
+      if (location.state?.type) setForm(f => ({ ...f, type: location.state.type }))
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   async function loadData() {
     const [t, w] = await Promise.all([
@@ -24,9 +32,7 @@ export default function Transactions() {
     ])
     setTransactions(t)
     setWallets(w)
-    if (w.length > 0 && !form.wallet_id) {
-      setForm(f => ({ ...f, wallet_id: w[0].id }))
-    }
+    if (w.length > 0 && !form.wallet_id) setForm(f => ({ ...f, wallet_id: w[0].id }))
   }
 
   function handleCoinSearch(value) {
@@ -47,6 +53,7 @@ export default function Transactions() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!form.coin_id || !form.amount || !form.price_per_unit) return
     await api.addTransaction({
       ...form,
       amount: parseFloat(form.amount),
@@ -63,117 +70,158 @@ export default function Transactions() {
     loadData()
   }
 
+  const totalCalc = form.amount && form.price_per_unit
+    ? (parseFloat(form.amount) * parseFloat(form.price_per_unit))
+    : 0
+
   return (
     <div className="page">
       <div className="page-header">
         <h2>Transactions</h2>
-        <button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : '+ Add Transaction'}
+        <button className="fab" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'X' : '+'}
         </button>
       </div>
 
+      {/* Add transaction modal/sheet */}
       {showForm && (
-        <div className="card">
-          <h3>New Transaction</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <div className="form-group">
-              <label>Wallet</label>
-              <select value={form.wallet_id} onChange={e => setForm(f => ({ ...f, wallet_id: e.target.value }))}>
-                {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <h3>Add Transaction</h3>
+
+            {/* Buy/Sell toggle */}
+            <div className="type-toggle">
+              <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => setForm(f => ({ ...f, type: 'buy' }))}>Buy</button>
+              <button className={`toggle-btn ${form.type === 'sell' ? 'active sell' : ''}`} onClick={() => setForm(f => ({ ...f, type: 'sell' }))}>Sell</button>
             </div>
-            <div className="form-group">
-              <label>Type</label>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-              </select>
-            </div>
-            <div className="form-group" style={{ position: 'relative' }}>
-              <label>Coin</label>
-              <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder="Search coin..." required />
-              {coinResults.length > 0 && (
-                <div className="dropdown">
-                  {coinResults.map(c => (
-                    <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                      {c.thumb && <img src={c.thumb} alt="" width={20} height={20} />}
-                      <span>{c.name}</span>
-                      <small>{c.symbol.toUpperCase()}</small>
-                    </div>
-                  ))}
+
+            <form onSubmit={handleSubmit}>
+              {wallets.length > 1 && (
+                <div className="form-field">
+                  <label>Wallet</label>
+                  <select value={form.wallet_id} onChange={e => setForm(f => ({ ...f, wallet_id: e.target.value }))}>
+                    {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
                 </div>
               )}
-            </div>
-            <div className="form-group">
-              <label>Amount</label>
-              <input type="number" step="any" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" required />
-            </div>
-            <div className="form-group">
-              <label>Price per unit (USD)</label>
-              <input type="number" step="any" value={form.price_per_unit} onChange={e => setForm(f => ({ ...f, price_per_unit: e.target.value }))} placeholder="0.00" required />
-            </div>
-            <div className="form-group">
-              <label>Total Cost</label>
-              <input type="text" value={form.amount && form.price_per_unit ? `$${(parseFloat(form.amount) * parseFloat(form.price_per_unit)).toFixed(2)}` : ''} readOnly className="readonly" />
-            </div>
-            <div className="form-group">
-              <label>Exchange</label>
-              <input type="text" value={form.exchange} onChange={e => setForm(f => ({ ...f, exchange: e.target.value }))} placeholder="e.g. Binance" />
-            </div>
-            <div className="form-group">
-              <label>Date</label>
-              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-            </div>
-            <div className="form-group full-width">
-              <label>Notes</label>
-              <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional notes..." />
-            </div>
-            <div className="form-group full-width">
-              <button type="submit">Add Transaction</button>
-            </div>
-          </form>
+
+              <div className="form-field" style={{ position: 'relative' }}>
+                <label>Coin</label>
+                <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder="Search Bitcoin, Ethereum..." autoFocus />
+                {coinResults.length > 0 && (
+                  <div className="dropdown">
+                    {coinResults.map(c => (
+                      <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
+                        {c.thumb && <img src={c.thumb} alt="" width={24} height={24} style={{ borderRadius: '50%' }} />}
+                        <span>{c.name}</span>
+                        <small>{c.symbol.toUpperCase()}</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-field">
+                  <label>Amount</label>
+                  <input type="number" step="any" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" required />
+                </div>
+                <div className="form-field">
+                  <label>Price per unit ($)</label>
+                  <input type="number" step="any" value={form.price_per_unit} onChange={e => setForm(f => ({ ...f, price_per_unit: e.target.value }))} placeholder="0.00" required />
+                </div>
+              </div>
+
+              {totalCalc > 0 && (
+                <div className="total-preview">
+                  <span>Total</span>
+                  <span className="total-amount">${totalCalc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              )}
+
+              <div className="form-row-2">
+                <div className="form-field">
+                  <label>Exchange</label>
+                  <select value={form.exchange} onChange={e => setForm(f => ({ ...f, exchange: e.target.value }))}>
+                    <option value="">Select...</option>
+                    <option value="Binance">Binance</option>
+                    <option value="Coinbase">Coinbase</option>
+                    <option value="Kraken">Kraken</option>
+                    <option value="KuCoin">KuCoin</option>
+                    <option value="Bybit">Bybit</option>
+                    <option value="OKX">OKX</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>Date</label>
+                  <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Notes (optional)</label>
+                <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="DCA, dip buy, etc." />
+              </div>
+
+              <button type="submit" className={`submit-btn ${form.type}`}>
+                {form.type === 'buy' ? 'Record Buy' : 'Record Sell'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
-      <div className="card">
-        <div className="filter-row">
-          <label>Filter by wallet:</label>
-          <select value={filterWallet} onChange={e => setFilterWallet(e.target.value)}>
-            <option value="">All wallets</option>
-            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
+      {/* Filter */}
+      {wallets.length > 1 && (
+        <div className="filter-pills">
+          <button className={`pill ${!filterWallet ? 'active' : ''}`} onClick={() => setFilterWallet('')}>All</button>
+          {wallets.map(w => (
+            <button key={w.id} className={`pill ${filterWallet === String(w.id) ? 'active' : ''}`} onClick={() => setFilterWallet(String(w.id))}>{w.name}</button>
+          ))}
         </div>
-        {transactions.length === 0 ? <p className="muted">No transactions recorded yet.</p> : (
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Coin</th>
-                <th>Amount</th>
-                <th>Price</th>
-                <th>Total</th>
-                <th>Exchange</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map(t => (
-                <tr key={t.id}>
-                  <td>{t.date}</td>
-                  <td><span className={`badge ${t.type}`}>{t.type.toUpperCase()}</span></td>
-                  <td><strong>{t.coin_symbol.toUpperCase()}</strong></td>
-                  <td>{t.amount}</td>
-                  <td>${parseFloat(t.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td>${parseFloat(t.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td>{t.exchange || '-'}</td>
-                  <td><button className="btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Delete</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      )}
+
+      {/* Transaction list */}
+      {transactions.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">&#9670;</div>
+          <p>No transactions yet</p>
+          <p className="muted">Tap + to add your first trade</p>
+        </div>
+      ) : (
+        <div className="tx-list">
+          {transactions.map(t => (
+            <div key={t.id} className="tx-card">
+              <div className="tx-left">
+                <div className={`tx-type-icon ${t.type}`}>
+                  {t.type === 'buy' ? '+' : '-'}
+                </div>
+                <div className="tx-info">
+                  <div className="tx-title">
+                    <strong>{t.coin_symbol.toUpperCase()}</strong>
+                    <span className={`tx-badge ${t.type}`}>{t.type.toUpperCase()}</span>
+                  </div>
+                  <div className="tx-meta">
+                    {t.date} {t.exchange && `\u00B7 ${t.exchange}`}
+                  </div>
+                </div>
+              </div>
+              <div className="tx-right">
+                <div className="tx-amount">{t.amount} {t.coin_symbol.toUpperCase()}</div>
+                <div className="tx-cost muted">
+                  ${parseFloat(t.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <span> @ ${parseFloat(t.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+              <button className="tx-delete" onClick={() => handleDelete(t.id)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
