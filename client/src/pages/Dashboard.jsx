@@ -14,11 +14,12 @@ export default function Dashboard() {
   const [wallets, setWallets] = useState([])
   const [portfolio, setPortfolio] = useState([])
   const [prices, setPrices] = useState({})
+  const [coinImages, setCoinImages] = useState({})
   const [newWallet, setNewWallet] = useState('')
   const [loading, setLoading] = useState(true)
   const [showWallets, setShowWallets] = useState(false)
-  const [target, setTarget] = useState(null)
-  const [showTargetForm, setShowTargetForm] = useState(false)
+  const [coinTargets, setCoinTargets] = useState({})
+  const [editingTarget, setEditingTarget] = useState(null)
   const [targetInput, setTargetInput] = useState('')
 
   useEffect(() => {
@@ -30,14 +31,15 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [w, p, t] = await Promise.all([api.getWallets(), api.getPortfolio(), api.getTarget()])
+      const [w, p, ct] = await Promise.all([api.getWallets(), api.getPortfolio(), api.getCoinTargets()])
       setWallets(w)
       setPortfolio(p)
-      setTarget(t)
+      setCoinTargets(ct)
       if (p.length > 0) {
         const ids = p.map(h => h.coin_id).join(',')
-        const pr = await api.getPrices(ids)
+        const [pr, imgs] = await Promise.all([api.getPrices(ids), api.getCoinImages(ids)])
         setPrices(pr)
+        setCoinImages(imgs)
       }
     } catch (err) { console.error(err) }
     setLoading(false)
@@ -63,25 +65,28 @@ export default function Dashboard() {
     loadData()
   }
 
-  async function handleSetTarget(e) {
-    e.preventDefault()
+  async function handleSetCoinTarget(coinId) {
     const val = parseFloat(targetInput)
     if (!val || val <= 0) return
-    await api.setTarget({ amount: val, created_at: new Date().toISOString() })
+    await api.setCoinTarget(coinId, val)
+    setEditingTarget(null)
     setTargetInput('')
-    setShowTargetForm(false)
     loadData()
   }
 
-  async function handleRemoveTarget() {
-    await api.removeTarget()
-    setTarget(null)
+  async function handleRemoveCoinTarget(coinId) {
+    await api.removeCoinTarget(coinId)
+    loadData()
   }
 
   const totalValue = portfolio.reduce((sum, h) => sum + h.amount * (prices[h.coin_id]?.usd || 0), 0)
   const totalInvested = portfolio.reduce((sum, h) => sum + h.total_invested, 0)
   const totalPnL = totalValue - totalInvested
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
+
+  // Calculate total target from all per-coin targets
+  const totalTarget = Object.entries(coinTargets).reduce((sum, [coinId, t]) => sum + (t.amount || 0), 0)
+  const totalTargetProgress = totalTarget > 0 ? Math.min((totalValue / totalTarget) * 100, 100) : 0
 
   const enriched = portfolio.map(h => {
     const price = prices[h.coin_id]?.usd || 0
@@ -91,12 +96,13 @@ export default function Dashboard() {
     const pnlPct = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
     const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0
     const avgBuy = h.amount > 0 ? h.total_invested / h.amount : 0
-    return { ...h, price, change24h, value, pnl, pnlPct, allocation, avgBuy }
+    const image = coinImages[h.coin_id] || h.coin_image || ''
+    const target = coinTargets[h.coin_id]
+    const targetPct = target ? Math.min((value / target.amount) * 100, 100) : null
+    return { ...h, price, change24h, value, pnl, pnlPct, allocation, avgBuy, image, target, targetPct }
   }).sort((a, b) => b.value - a.value)
 
   const chartData = enriched.filter(h => h.value > 0).map(h => ({ name: h.coin_symbol.toUpperCase(), value: h.value }))
-
-  const targetProgress = target ? Math.min((totalValue / target.amount) * 100, 100) : 0
 
   return (
     <div className="page">
@@ -111,34 +117,19 @@ export default function Dashboard() {
           <div className="hero-invested">Invested: ${fmt(totalInvested)}</div>
         </div>
 
-        {/* Investment Target */}
-        {target ? (
+        {/* Aggregate target from all coin targets */}
+        {totalTarget > 0 && (
           <div className="target-section">
             <div className="target-header">
-              <span className="target-label">Target: ${fmt(target.amount)}</span>
-              <span className="target-pct">{targetProgress.toFixed(1)}%</span>
+              <span className="target-label">Portfolio Target: ${fmt(totalTarget)}</span>
+              <span className="target-pct">{totalTargetProgress.toFixed(1)}%</span>
             </div>
             <div className="target-bar">
-              <div className="target-fill" style={{ width: `${targetProgress}%` }} />
+              <div className="target-fill" style={{ width: `${totalTargetProgress}%` }} />
             </div>
             <div className="target-footer">
-              <span className="muted">${fmt(Math.max(target.amount - totalValue, 0))} remaining</span>
-              <button className="btn-link" onClick={handleRemoveTarget}>Remove</button>
+              <span className="muted">${fmt(Math.max(totalTarget - totalValue, 0))} remaining</span>
             </div>
-          </div>
-        ) : (
-          <div className="target-section">
-            {showTargetForm ? (
-              <form onSubmit={handleSetTarget} className="target-form">
-                <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder="Enter target amount ($)" autoFocus />
-                <button type="submit">Set</button>
-                <button type="button" className="btn-ghost" onClick={() => setShowTargetForm(false)}>Cancel</button>
-              </form>
-            ) : (
-              <button className="btn-outline" onClick={() => setShowTargetForm(true)}>
-                Set Investment Target
-              </button>
-            )}
           </div>
         )}
 
@@ -221,8 +212,8 @@ export default function Dashboard() {
           {enriched.map((h, i) => (
             <div key={h.coin_id} className="coin-card">
               <div className="coin-header">
-                {h.coin_image ? (
-                  <img src={h.coin_image} alt="" width={40} height={40} className="coin-logo" />
+                {h.image ? (
+                  <img src={h.image} alt="" width={40} height={40} className="coin-logo" />
                 ) : (
                   <div className="coin-icon" style={{ background: COLORS[i % COLORS.length] + '22', color: COLORS[i % COLORS.length] }}>
                     {h.coin_symbol.substring(0, 2).toUpperCase()}
@@ -259,6 +250,42 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
+
+              {/* Per-coin target */}
+              {h.target ? (
+                <div className="coin-target">
+                  <div className="coin-target-header">
+                    <span className="detail-label">Target: ${fmt(h.target.amount)}</span>
+                    <span className={`coin-target-pct ${h.targetPct >= 100 ? 'positive' : ''}`}>{h.targetPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="coin-target-bar">
+                    <div className="coin-target-fill" style={{ width: `${h.targetPct}%`, background: h.targetPct >= 100 ? 'var(--green)' : COLORS[i % COLORS.length] }} />
+                  </div>
+                  <div className="coin-target-footer">
+                    {h.targetPct >= 100 ? (
+                      <span className="positive" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Target reached!</span>
+                    ) : (
+                      <span className="muted" style={{ fontSize: '0.75rem' }}>${fmt(h.target.amount - h.value)} to go</span>
+                    )}
+                    <button className="btn-link-dark" onClick={() => handleRemoveCoinTarget(h.coin_id)}>Remove</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="coin-target-actions">
+                  {editingTarget === h.coin_id ? (
+                    <form className="coin-target-form" onSubmit={e => { e.preventDefault(); handleSetCoinTarget(h.coin_id); }}>
+                      <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder="Target value ($)" autoFocus />
+                      <button type="submit" className="btn-sm">Set</button>
+                      <button type="button" className="btn-sm btn-ghost-dark" onClick={() => { setEditingTarget(null); setTargetInput(''); }}>X</button>
+                    </form>
+                  ) : (
+                    <button className="btn-set-target" onClick={() => { setEditingTarget(h.coin_id); setTargetInput(''); }}>
+                      Set target
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="alloc-bar">
                 <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: COLORS[i % COLORS.length] }} />
               </div>

@@ -46,7 +46,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }
 
   function selectCoin(coin) {
-    setForm(f => ({ ...f, coin_id: coin.id, coin_symbol: coin.symbol, coin_image: coin.thumb || '' }))
+    setForm(f => ({ ...f, coin_id: coin.id, coin_symbol: coin.symbol, coin_image: coin.large || coin.thumb || '' }))
     setCoinSearch(`${coin.name} (${coin.symbol.toUpperCase()})`)
     setCoinResults([])
   }

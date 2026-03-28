@@ -12,20 +12,17 @@ function saveData(key, data) {
   localStorage.setItem(`crypto_tracker_${key}`, JSON.stringify(data));
 }
 
-let nextWalletId = parseInt(localStorage.getItem('crypto_tracker_next_wallet_id') || '1');
-let nextTxId = parseInt(localStorage.getItem('crypto_tracker_next_tx_id') || '1');
-let nextExId = parseInt(localStorage.getItem('crypto_tracker_next_ex_id') || '1');
-
 function bumpId(key) {
   const current = parseInt(localStorage.getItem(key) || '1');
-  const next = current + 1;
-  localStorage.setItem(key, next.toString());
+  localStorage.setItem(key, (current + 1).toString());
   return current;
 }
 
-// Price cache
+// Price & image cache
 let priceCache = {};
 let lastPriceFetch = 0;
+let coinImageCache = {};
+let lastImageFetch = 0;
 const CACHE_DURATION = 60_000;
 
 export const api = {
@@ -48,7 +45,6 @@ export const api = {
   deleteWallet: async (id) => {
     const wallets = loadData('wallets').filter(w => w.id !== id);
     saveData('wallets', wallets);
-    // Also delete wallet's transactions
     const txs = loadData('transactions').filter(t => t.wallet_id !== id);
     saveData('transactions', txs);
     return null;
@@ -84,6 +80,7 @@ export const api = {
 
   addTransaction: async (data) => {
     const txs = loadData('transactions');
+    const totalCost = data.amount * data.price_per_unit;
     const tx = {
       id: bumpId('crypto_tracker_next_tx_id'),
       wallet_id: parseInt(data.wallet_id),
@@ -93,13 +90,34 @@ export const api = {
       coin_image: data.coin_image || '',
       amount: data.amount,
       price_per_unit: data.price_per_unit,
-      total_cost: data.amount * data.price_per_unit,
+      total_cost: totalCost,
       exchange: data.exchange || '',
       notes: data.notes || '',
       date: data.date || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString(),
     };
     txs.unshift(tx);
+
+    // When selling, auto-add USDT buy for the proceeds
+    if (data.type === 'sell') {
+      const usdtTx = {
+        id: bumpId('crypto_tracker_next_tx_id'),
+        wallet_id: parseInt(data.wallet_id),
+        type: 'buy',
+        coin_id: 'tether',
+        coin_symbol: 'usdt',
+        coin_image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png',
+        amount: totalCost,
+        price_per_unit: 1,
+        total_cost: totalCost,
+        exchange: data.exchange || '',
+        notes: `From selling ${data.amount} ${data.coin_symbol.toUpperCase()}`,
+        date: data.date || new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      };
+      txs.unshift(usdtTx);
+    }
+
     saveData('transactions', txs);
     return tx;
   },
@@ -110,7 +128,7 @@ export const api = {
     return null;
   },
 
-  // Prices - direct CoinGecko calls
+  // Prices
   getPrices: async (ids) => {
     if (!ids) return {};
     const now = Date.now();
@@ -137,6 +155,37 @@ export const api = {
     return result;
   },
 
+  // Fetch coin images from market data (more reliable than search thumb)
+  getCoinImages: async (ids) => {
+    if (!ids) return {};
+    const now = Date.now();
+    const coinIds = ids.split(',');
+    const allCached = coinIds.every(id => coinImageCache[id]);
+
+    if (!allCached || now - lastImageFetch > CACHE_DURATION * 5) {
+      try {
+        const res = await fetch(
+          `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${ids}&per_page=100&page=1`
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          for (const coin of data) {
+            coinImageCache[coin.id] = coin.image;
+          }
+          lastImageFetch = now;
+        }
+      } catch (err) {
+        console.error('Image fetch error:', err.message);
+      }
+    }
+
+    const result = {};
+    for (const id of coinIds) {
+      if (coinImageCache[id]) result[id] = coinImageCache[id];
+    }
+    return result;
+  },
+
   searchCoins: async (query) => {
     if (!query) return [];
     try {
@@ -147,6 +196,7 @@ export const api = {
         symbol: c.symbol,
         name: c.name,
         thumb: c.thumb,
+        large: c.large,
       }));
     } catch (err) {
       console.error('Search error:', err.message);
@@ -166,7 +216,7 @@ export const api = {
     }
   },
 
-  // Exchanges (stored locally)
+  // Exchanges
   getExchanges: async () => loadData('exchanges'),
 
   addExchange: async (data) => {
@@ -192,21 +242,25 @@ export const api = {
     return { error: 'Exchange sync requires the backend server. Run locally with: npm run dev' };
   },
 
-  // Investment Target
-  getTarget: async () => {
+  // Per-coin Investment Targets: { [coin_id]: { amount: number } }
+  getCoinTargets: async () => {
     try {
-      const data = localStorage.getItem('crypto_tracker_target');
-      return data ? JSON.parse(data) : null;
-    } catch { return null; }
+      const data = localStorage.getItem('crypto_tracker_coin_targets');
+      return data ? JSON.parse(data) : {};
+    } catch { return {}; }
   },
 
-  setTarget: async (target) => {
-    localStorage.setItem('crypto_tracker_target', JSON.stringify(target));
-    return target;
+  setCoinTarget: async (coinId, amount) => {
+    const targets = await api.getCoinTargets();
+    targets[coinId] = { amount };
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    return targets;
   },
 
-  removeTarget: async () => {
-    localStorage.removeItem('crypto_tracker_target');
-    return null;
+  removeCoinTarget: async (coinId) => {
+    const targets = await api.getCoinTargets();
+    delete targets[coinId];
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    return targets;
   },
 };
