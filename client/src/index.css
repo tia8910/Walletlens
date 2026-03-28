@@ -356,6 +356,104 @@ th, td { padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--borde
 th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); font-weight: 600; }
 tr:last-child td { border-bottom: none; }
 
+/* ─── Price Input with Live Button ─── */
+.price-input-wrap { position: relative; display: flex; align-items: center; }
+.price-input-wrap input { padding-right: 4.5rem; }
+.market-price-btn {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 0.25rem;
+  padding: 0.3rem 0.55rem; border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white; font-size: 0.7rem; font-weight: 700;
+  border: none; cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.25);
+}
+.market-price-btn:hover { background: linear-gradient(135deg, #4f46e5, #6366f1); transform: translateY(-50%) scale(1.05); }
+.market-price-btn:disabled { opacity: 0.6; cursor: wait; }
+.market-price-btn svg { flex-shrink: 0; }
+.price-spinner {
+  width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── AI Analysis Panel ─── */
+.ai-panel {
+  background: linear-gradient(145deg, #f8f7ff, #eef2ff);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 14px; padding: 0.85rem;
+  margin-bottom: 0.85rem; position: relative;
+  overflow: hidden;
+}
+.ai-panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #6366f1, #a78bfa, #22d3ee);
+}
+.ai-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-bottom: 0.65rem; flex-wrap: wrap;
+}
+.ai-badge {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white; font-size: 0.6rem; font-weight: 800;
+  padding: 0.15rem 0.45rem; border-radius: 5px;
+  letter-spacing: 0.06em;
+}
+.ai-title { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.ai-sentiment { margin-left: auto; font-size: 0.78rem; font-weight: 700; }
+
+/* Sentiment meter */
+.ai-meter { margin-bottom: 0.65rem; }
+.ai-meter-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text2); margin-bottom: 0.2rem; }
+.ai-meter-track { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.ai-meter-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+/* 24h range */
+.ai-range { margin-bottom: 0.65rem; }
+.ai-range-label { font-size: 0.68rem; color: var(--text2); font-weight: 600; display: block; margin-bottom: 0.2rem; }
+.ai-range-bar { height: 4px; background: linear-gradient(90deg, var(--red), var(--orange), var(--green)); border-radius: 2px; position: relative; }
+.ai-range-marker {
+  position: absolute; top: -4px; width: 12px; height: 12px;
+  background: var(--text); border: 2px solid white;
+  border-radius: 50%; transform: translateX(-50%);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.ai-range-values { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text2); margin-top: 0.15rem; }
+
+/* Stats row */
+.ai-stats { display: flex; gap: 0.4rem; margin-bottom: 0.65rem; }
+.ai-stat {
+  flex: 1; text-align: center; padding: 0.35rem;
+  background: rgba(255,255,255,0.7); border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.ai-stat-label { display: block; font-size: 0.6rem; color: var(--text2); font-weight: 600; text-transform: uppercase; }
+.ai-stat span:last-child { font-size: 0.78rem; font-weight: 700; }
+
+/* Insights */
+.ai-insights { display: flex; flex-direction: column; gap: 0.35rem; }
+.ai-insight {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+  font-size: 0.78rem; color: var(--text);
+  padding: 0.4rem 0.55rem; background: rgba(255,255,255,0.7);
+  border-radius: 8px; border: 1px solid rgba(0,0,0,0.04);
+  line-height: 1.35;
+}
+.ai-insight-icon { flex-shrink: 0; font-size: 0.85rem; }
+
+/* AI loading */
+.ai-loading { display: flex; justify-content: center; padding: 0.5rem 0; }
+.ai-pulse {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
 /* ─── Mobile ─── */
 @media (max-width: 768px) {
   .sidebar { display: none; }

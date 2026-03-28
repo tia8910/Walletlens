@@ -225,6 +225,20 @@ export const api = {
     }
   },
 
+  // Get detailed coin data for AI analysis
+  getCoinDetail: async (id) => {
+    if (!id) return null;
+    try {
+      const res = await fetch(
+        `${COINGECKO_BASE}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`
+      );
+      return await res.json();
+    } catch (err) {
+      console.error('Coin detail error:', err.message);
+      return null;
+    }
+  },
+
   getMarketData: async () => {
     try {
       const res = await fetch(
