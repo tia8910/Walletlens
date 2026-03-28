@@ -98,24 +98,45 @@ export const api = {
     };
     txs.unshift(tx);
 
+    const usdtImage = 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png';
+    const txDate = data.date || new Date().toISOString().split('T')[0];
+
     // When selling, auto-add USDT buy for the proceeds
     if (data.type === 'sell') {
-      const usdtTx = {
+      txs.unshift({
         id: bumpId('crypto_tracker_next_tx_id'),
         wallet_id: parseInt(data.wallet_id),
         type: 'buy',
         coin_id: 'tether',
         coin_symbol: 'usdt',
-        coin_image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png',
+        coin_image: usdtImage,
         amount: totalCost,
         price_per_unit: 1,
         total_cost: totalCost,
         exchange: data.exchange || '',
         notes: `From selling ${data.amount} ${data.coin_symbol.toUpperCase()}`,
-        date: data.date || new Date().toISOString().split('T')[0],
+        date: txDate,
         created_at: new Date().toISOString(),
-      };
-      txs.unshift(usdtTx);
+      });
+    }
+
+    // When buying, auto-add USDT sell (spending USDT to buy)
+    if (data.type === 'buy') {
+      txs.unshift({
+        id: bumpId('crypto_tracker_next_tx_id'),
+        wallet_id: parseInt(data.wallet_id),
+        type: 'sell',
+        coin_id: 'tether',
+        coin_symbol: 'usdt',
+        coin_image: usdtImage,
+        amount: totalCost,
+        price_per_unit: 1,
+        total_cost: totalCost,
+        exchange: data.exchange || '',
+        notes: `Spent on ${data.amount} ${data.coin_symbol.toUpperCase()}`,
+        date: txDate,
+        created_at: new Date().toISOString(),
+      });
     }
 
     saveData('transactions', txs);
