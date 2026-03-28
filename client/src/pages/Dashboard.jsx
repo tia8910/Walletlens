@@ -84,9 +84,13 @@ export default function Dashboard() {
   const totalPnL = totalValue - totalInvested
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
 
-  // Calculate total target from all per-coin targets
-  const totalTarget = Object.entries(coinTargets).reduce((sum, [coinId, t]) => sum + (t.amount || 0), 0)
-  const totalTargetProgress = totalTarget > 0 ? Math.min((totalValue / totalTarget) * 100, 100) : 0
+  // Calculate projected portfolio value if all price targets are hit
+  // For coins with targets: value = holdings * target_price
+  // For coins without targets: value = current value
+  const totalProjectedValue = enriched_raw => enriched_raw.reduce((sum, h) => {
+    const target = coinTargets[h.coin_id]
+    return sum + (target ? h.amount * target.amount : h.value)
+  }, 0)
 
   const enriched = portfolio.map(h => {
     const price = prices[h.coin_id]?.usd || 0
@@ -98,9 +102,15 @@ export default function Dashboard() {
     const avgBuy = h.amount > 0 ? h.total_invested / h.amount : 0
     const image = coinImages[h.coin_id] || h.coin_image || ''
     const target = coinTargets[h.coin_id]
-    const targetPct = target ? Math.min((value / target.amount) * 100, 100) : null
-    return { ...h, price, change24h, value, pnl, pnlPct, allocation, avgBuy, image, target, targetPct }
+    // target.amount is the target PRICE, not value
+    const targetPrice = target ? target.amount : null
+    const targetValue = target ? h.amount * target.amount : null
+    const targetPricePct = target && price > 0 ? Math.min((price / target.amount) * 100, 100) : null
+    return { ...h, price, change24h, value, pnl, pnlPct, allocation, avgBuy, image, targetPrice, targetValue, targetPricePct }
   }).sort((a, b) => b.value - a.value)
+
+  const projectedTotal = totalProjectedValue(enriched)
+  const hasAnyTarget = Object.keys(coinTargets).length > 0
 
   const chartData = enriched.filter(h => h.value > 0).map(h => ({ name: h.coin_symbol.toUpperCase(), value: h.value }))
 
@@ -117,18 +127,18 @@ export default function Dashboard() {
           <div className="hero-invested">Invested: ${fmt(totalInvested)}</div>
         </div>
 
-        {/* Aggregate target from all coin targets */}
-        {totalTarget > 0 && (
+        {/* Projected value if all price targets hit */}
+        {hasAnyTarget && (
           <div className="target-section">
             <div className="target-header">
-              <span className="target-label">Portfolio Target: ${fmt(totalTarget)}</span>
-              <span className="target-pct">{totalTargetProgress.toFixed(1)}%</span>
+              <span className="target-label">If targets hit</span>
+              <span className="target-pct">${fmt(projectedTotal)}</span>
             </div>
             <div className="target-bar">
-              <div className="target-fill" style={{ width: `${totalTargetProgress}%` }} />
+              <div className="target-fill" style={{ width: `${Math.min((totalValue / projectedTotal) * 100, 100)}%` }} />
             </div>
             <div className="target-footer">
-              <span className="muted">${fmt(Math.max(totalTarget - totalValue, 0))} remaining</span>
+              <span className="muted">Projected gain: +${fmt(projectedTotal - totalInvested)}</span>
             </div>
           </div>
         )}
@@ -251,21 +261,35 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Per-coin target */}
-              {h.target ? (
+              {/* Per-coin PRICE target */}
+              {h.targetPrice ? (
                 <div className="coin-target">
                   <div className="coin-target-header">
-                    <span className="detail-label">Target: ${fmt(h.target.amount)}</span>
-                    <span className={`coin-target-pct ${h.targetPct >= 100 ? 'positive' : ''}`}>{h.targetPct.toFixed(1)}%</span>
+                    <span className="detail-label">Target Price: ${fmt(h.targetPrice)}</span>
+                    <span className={`coin-target-pct ${h.targetPricePct >= 100 ? 'positive' : ''}`}>
+                      {h.targetPricePct.toFixed(1)}%
+                    </span>
                   </div>
                   <div className="coin-target-bar">
-                    <div className="coin-target-fill" style={{ width: `${h.targetPct}%`, background: h.targetPct >= 100 ? 'var(--green)' : COLORS[i % COLORS.length] }} />
+                    <div className="coin-target-fill" style={{ width: `${h.targetPricePct}%`, background: h.targetPricePct >= 100 ? 'var(--green)' : COLORS[i % COLORS.length] }} />
+                  </div>
+                  <div className="coin-target-info">
+                    <div className="target-detail">
+                      <span className="detail-label">Value at target</span>
+                      <strong>${fmt(h.targetValue)}</strong>
+                    </div>
+                    <div className="target-detail">
+                      <span className="detail-label">Projected P&L</span>
+                      <strong className="positive">+${fmt(h.targetValue - h.total_invested)} ({h.total_invested > 0 ? ((h.targetValue - h.total_invested) / h.total_invested * 100).toFixed(1) : 0}%)</strong>
+                    </div>
                   </div>
                   <div className="coin-target-footer">
-                    {h.targetPct >= 100 ? (
+                    {h.targetPricePct >= 100 ? (
                       <span className="positive" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Target reached!</span>
                     ) : (
-                      <span className="muted" style={{ fontSize: '0.75rem' }}>${fmt(h.target.amount - h.value)} to go</span>
+                      <span className="muted" style={{ fontSize: '0.75rem' }}>
+                        ${fmt(h.targetPrice - h.price)} per coin to go ({((h.targetPrice - h.price) / h.price * 100).toFixed(1)}%)
+                      </span>
                     )}
                     <button className="btn-link-dark" onClick={() => handleRemoveCoinTarget(h.coin_id)}>Remove</button>
                   </div>
@@ -274,13 +298,13 @@ export default function Dashboard() {
                 <div className="coin-target-actions">
                   {editingTarget === h.coin_id ? (
                     <form className="coin-target-form" onSubmit={e => { e.preventDefault(); handleSetCoinTarget(h.coin_id); }}>
-                      <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder="Target value ($)" autoFocus />
+                      <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder={`Target price ($) — now $${fmt(h.price)}`} autoFocus />
                       <button type="submit" className="btn-sm">Set</button>
                       <button type="button" className="btn-sm btn-ghost-dark" onClick={() => { setEditingTarget(null); setTargetInput(''); }}>X</button>
                     </form>
                   ) : (
                     <button className="btn-set-target" onClick={() => { setEditingTarget(h.coin_id); setTargetInput(''); }}>
-                      Set target
+                      Set price target
                     </button>
                   )}
                 </div>

@@ -104,7 +104,11 @@ body {
 .coin-target-pct { font-size: 0.8rem; font-weight: 700; color: var(--accent); }
 .coin-target-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .coin-target-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
-.coin-target-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem; }
+.coin-target-info { display: flex; gap: 1rem; margin-top: 0.5rem; }
+.target-detail { display: flex; flex-direction: column; flex: 1; }
+.target-detail .detail-label { font-size: 0.72rem; }
+.target-detail strong { font-size: 0.85rem; }
+.coin-target-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
 .btn-link-dark { background: none; border: none; color: var(--text2); font-size: 0.72rem; padding: 0; cursor: pointer; text-decoration: underline; }
 .btn-link-dark:hover { color: var(--red); background: none; }
 .coin-target-actions { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
