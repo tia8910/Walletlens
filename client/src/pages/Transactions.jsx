@@ -46,7 +46,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }
 
   function selectCoin(coin) {
-    setForm(f => ({ ...f, coin_id: coin.id, coin_symbol: coin.symbol }))
+    setForm(f => ({ ...f, coin_id: coin.id, coin_symbol: coin.symbol, coin_image: coin.thumb || '' }))
     setCoinSearch(`${coin.name} (${coin.symbol.toUpperCase()})`)
     setCoinResults([])
   }
@@ -59,7 +59,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       amount: parseFloat(form.amount),
       price_per_unit: parseFloat(form.price_per_unit),
     })
-    setForm({ wallet_id: form.wallet_id, type: 'buy', coin_id: '', coin_symbol: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0] })
+    setForm({ wallet_id: form.wallet_id, type: 'buy', coin_id: '', coin_symbol: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0] })
     setCoinSearch('')
     setShowForm(false)
     loadData()
@@ -195,9 +195,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           {transactions.map(t => (
             <div key={t.id} className="tx-card">
               <div className="tx-left">
-                <div className={`tx-type-icon ${t.type}`}>
-                  {t.type === 'buy' ? '+' : '-'}
-                </div>
+                {t.coin_image ? (
+                  <img src={t.coin_image} alt="" width={36} height={36} className="tx-coin-img" />
+                ) : (
+                  <div className={`tx-type-icon ${t.type}`}>
+                    {t.type === 'buy' ? '+' : '-'}
+                  </div>
+                )}
                 <div className="tx-info">
                   <div className="tx-title">
                     <strong>{t.coin_symbol.toUpperCase()}</strong>

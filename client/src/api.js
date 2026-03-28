@@ -68,7 +68,7 @@ export const api = {
     const holdings = {};
     for (const tx of txs) {
       if (!holdings[tx.coin_id]) {
-        holdings[tx.coin_id] = { coin_id: tx.coin_id, coin_symbol: tx.coin_symbol, amount: 0, total_invested: 0 };
+        holdings[tx.coin_id] = { coin_id: tx.coin_id, coin_symbol: tx.coin_symbol, coin_image: tx.coin_image || '', amount: 0, total_invested: 0 };
       }
       if (tx.type === 'buy') {
         holdings[tx.coin_id].amount += tx.amount;
@@ -90,6 +90,7 @@ export const api = {
       type: data.type,
       coin_id: data.coin_id,
       coin_symbol: data.coin_symbol,
+      coin_image: data.coin_image || '',
       amount: data.amount,
       price_per_unit: data.price_per_unit,
       total_cost: data.amount * data.price_per_unit,
@@ -189,5 +190,23 @@ export const api = {
 
   syncExchange: async () => {
     return { error: 'Exchange sync requires the backend server. Run locally with: npm run dev' };
+  },
+
+  // Investment Target
+  getTarget: async () => {
+    try {
+      const data = localStorage.getItem('crypto_tracker_target');
+      return data ? JSON.parse(data) : null;
+    } catch { return null; }
+  },
+
+  setTarget: async (target) => {
+    localStorage.setItem('crypto_tracker_target', JSON.stringify(target));
+    return target;
+  },
+
+  removeTarget: async () => {
+    localStorage.removeItem('crypto_tracker_target');
+    return null;
   },
 };

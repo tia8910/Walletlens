@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#34d399', '#fbbf24', '#f87171', '#fb923c', '#e879f9', '#a78bfa', '#c4b5fd']
+const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#fb923c', '#e879f9', '#a78bfa', '#06b6d4']
 
 function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -17,6 +17,9 @@ export default function Dashboard() {
   const [newWallet, setNewWallet] = useState('')
   const [loading, setLoading] = useState(true)
   const [showWallets, setShowWallets] = useState(false)
+  const [target, setTarget] = useState(null)
+  const [showTargetForm, setShowTargetForm] = useState(false)
+  const [targetInput, setTargetInput] = useState('')
 
   useEffect(() => {
     loadData()
@@ -27,9 +30,10 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [w, p] = await Promise.all([api.getWallets(), api.getPortfolio()])
+      const [w, p, t] = await Promise.all([api.getWallets(), api.getPortfolio(), api.getTarget()])
       setWallets(w)
       setPortfolio(p)
+      setTarget(t)
       if (p.length > 0) {
         const ids = p.map(h => h.coin_id).join(',')
         const pr = await api.getPrices(ids)
@@ -59,6 +63,21 @@ export default function Dashboard() {
     loadData()
   }
 
+  async function handleSetTarget(e) {
+    e.preventDefault()
+    const val = parseFloat(targetInput)
+    if (!val || val <= 0) return
+    await api.setTarget({ amount: val, created_at: new Date().toISOString() })
+    setTargetInput('')
+    setShowTargetForm(false)
+    loadData()
+  }
+
+  async function handleRemoveTarget() {
+    await api.removeTarget()
+    setTarget(null)
+  }
+
   const totalValue = portfolio.reduce((sum, h) => sum + h.amount * (prices[h.coin_id]?.usd || 0), 0)
   const totalInvested = portfolio.reduce((sum, h) => sum + h.total_invested, 0)
   const totalPnL = totalValue - totalInvested
@@ -77,6 +96,8 @@ export default function Dashboard() {
 
   const chartData = enriched.filter(h => h.value > 0).map(h => ({ name: h.coin_symbol.toUpperCase(), value: h.value }))
 
+  const targetProgress = target ? Math.min((totalValue / target.amount) * 100, 100) : 0
+
   return (
     <div className="page">
       {/* Hero card */}
@@ -89,11 +110,43 @@ export default function Dashboard() {
           </div>
           <div className="hero-invested">Invested: ${fmt(totalInvested)}</div>
         </div>
+
+        {/* Investment Target */}
+        {target ? (
+          <div className="target-section">
+            <div className="target-header">
+              <span className="target-label">Target: ${fmt(target.amount)}</span>
+              <span className="target-pct">{targetProgress.toFixed(1)}%</span>
+            </div>
+            <div className="target-bar">
+              <div className="target-fill" style={{ width: `${targetProgress}%` }} />
+            </div>
+            <div className="target-footer">
+              <span className="muted">${fmt(Math.max(target.amount - totalValue, 0))} remaining</span>
+              <button className="btn-link" onClick={handleRemoveTarget}>Remove</button>
+            </div>
+          </div>
+        ) : (
+          <div className="target-section">
+            {showTargetForm ? (
+              <form onSubmit={handleSetTarget} className="target-form">
+                <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder="Enter target amount ($)" autoFocus />
+                <button type="submit">Set</button>
+                <button type="button" className="btn-ghost" onClick={() => setShowTargetForm(false)}>Cancel</button>
+              </form>
+            ) : (
+              <button className="btn-outline" onClick={() => setShowTargetForm(true)}>
+                Set Investment Target
+              </button>
+            )}
+          </div>
+        )}
+
         {chartData.length > 0 && (
           <div className="hero-chart">
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={140}>
               <PieChart>
-                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} strokeWidth={0}>
+                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} strokeWidth={0}>
                   {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
               </PieChart>
@@ -114,15 +167,15 @@ export default function Dashboard() {
       {/* Quick actions */}
       <div className="quick-actions">
         <button className="action-btn buy-btn" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'buy' } })}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Buy
         </button>
         <button className="action-btn sell-btn" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'sell' } })}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Sell
         </button>
         <button className="action-btn wallet-btn" onClick={() => setShowWallets(!showWallets)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
           Wallets
         </button>
       </div>
@@ -168,16 +221,20 @@ export default function Dashboard() {
           {enriched.map((h, i) => (
             <div key={h.coin_id} className="coin-card">
               <div className="coin-header">
-                <div className="coin-icon" style={{ background: COLORS[i % COLORS.length] + '22', color: COLORS[i % COLORS.length] }}>
-                  {h.coin_symbol.substring(0, 2).toUpperCase()}
-                </div>
+                {h.coin_image ? (
+                  <img src={h.coin_image} alt="" width={40} height={40} className="coin-logo" />
+                ) : (
+                  <div className="coin-icon" style={{ background: COLORS[i % COLORS.length] + '22', color: COLORS[i % COLORS.length] }}>
+                    {h.coin_symbol.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div className="coin-name">
                   <strong>{h.coin_symbol.toUpperCase()}</strong>
                   <span className="muted">${fmt(h.price)}</span>
                 </div>
                 <div className="coin-value-col">
                   <strong>${fmt(h.value)}</strong>
-                  <span className="muted">{h.allocation.toFixed(1)}%</span>
+                  <span className="muted">{h.allocation.toFixed(1)}% of portfolio</span>
                 </div>
               </div>
               <div className="coin-details">
@@ -202,7 +259,6 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              {/* Mini progress bar for allocation */}
               <div className="alloc-bar">
                 <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: COLORS[i % COLORS.length] }} />
               </div>
