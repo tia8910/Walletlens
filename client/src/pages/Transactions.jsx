@@ -102,6 +102,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }, [location.state])
 
   async function loadData() {
+    // Ensure at least one wallet exists
+    await api.ensureWallet()
     const [t, w] = await Promise.all([
       api.getTransactions(filterWallet || undefined),
       api.getWallets(),
@@ -179,7 +181,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.coin_id || !form.amount || !form.price_per_unit) return
+    if (!form.coin_id || !form.amount || !form.price_per_unit || !form.wallet_id) return
     await api.addTransaction({
       ...form,
       amount: parseFloat(form.amount),

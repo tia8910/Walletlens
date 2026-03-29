@@ -298,4 +298,54 @@ export const api = {
     localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
     return targets;
   },
+
+  // Import / Export
+  exportData: () => {
+    const data = {
+      wallets: loadData('wallets'),
+      transactions: loadData('transactions'),
+      exchanges: loadData('exchanges'),
+      coin_targets: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
+      next_wallet_id: localStorage.getItem('crypto_tracker_next_wallet_id') || '1',
+      next_tx_id: localStorage.getItem('crypto_tracker_next_tx_id') || '1',
+      next_ex_id: localStorage.getItem('crypto_tracker_next_ex_id') || '1',
+      exported_at: new Date().toISOString(),
+      version: 1,
+    };
+    return JSON.stringify(data, null, 2);
+  },
+
+  importData: (jsonString) => {
+    try {
+      const data = JSON.parse(jsonString);
+      if (!data.version) throw new Error('Invalid backup file');
+      if (data.wallets) saveData('wallets', data.wallets);
+      if (data.transactions) saveData('transactions', data.transactions);
+      if (data.exchanges) saveData('exchanges', data.exchanges);
+      if (data.coin_targets) localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(data.coin_targets));
+      if (data.next_wallet_id) localStorage.setItem('crypto_tracker_next_wallet_id', data.next_wallet_id);
+      if (data.next_tx_id) localStorage.setItem('crypto_tracker_next_tx_id', data.next_tx_id);
+      if (data.next_ex_id) localStorage.setItem('crypto_tracker_next_ex_id', data.next_ex_id);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  // Ensure a default wallet exists
+  ensureWallet: async () => {
+    const wallets = loadData('wallets');
+    if (wallets.length === 0) {
+      const wallet = {
+        id: bumpId('crypto_tracker_next_wallet_id'),
+        name: 'My Wallet',
+        description: '',
+        created_at: new Date().toISOString(),
+      };
+      wallets.push(wallet);
+      saveData('wallets', wallets);
+      return wallet;
+    }
+    return wallets[0];
+  },
 };

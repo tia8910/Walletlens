@@ -132,6 +132,33 @@ body {
 .sell-btn:hover { background: #fde8e8; }
 .wallet-btn { background: var(--bg2); color: var(--text2); border: 1px solid var(--border); }
 .wallet-btn:hover { background: var(--bg3); color: var(--text); }
+.data-btn { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(99,102,241,0.15); }
+.data-btn:hover { background: #dde4ff; }
+
+/* ─── Data Import/Export ─── */
+.data-card p { line-height: 1.4; }
+.data-actions { display: flex; gap: 0.5rem; }
+.data-export-btn, .data-import-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.7rem; border-radius: 12px; font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; transition: all 0.15s; border: none;
+}
+.data-export-btn {
+  background: linear-gradient(135deg, #6366f1, #818cf8); color: white;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.25);
+}
+.data-export-btn:hover { background: linear-gradient(135deg, #4f46e5, #6366f1); }
+.data-import-btn {
+  background: var(--bg3); color: var(--text); border: 1px dashed var(--border);
+}
+.data-import-btn:hover { background: var(--bg4); }
+.import-status {
+  margin-top: 0.65rem; padding: 0.55rem 0.75rem; border-radius: 10px;
+  font-size: 0.8rem; font-weight: 600; text-align: center;
+  animation: alarmSlide 0.3s ease-out;
+}
+.import-status.success { background: var(--green-bg); color: var(--green); }
+.import-status.error { background: var(--red-bg); color: var(--red); }
 
 /* ─── Section Header ─── */
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
