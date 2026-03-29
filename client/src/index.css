@@ -246,6 +246,8 @@ body {
 }
 .toggle-btn.active.buy { background: var(--green-bg); color: var(--green); box-shadow: var(--shadow); }
 .toggle-btn.active.sell { background: var(--red-bg); color: var(--red); box-shadow: var(--shadow); }
+.toggle-btn.active.deposit { background: var(--accent-bg); color: var(--accent); box-shadow: var(--shadow); }
+.toggle-btn.active.withdraw { background: #fff7ed; color: var(--orange); box-shadow: var(--shadow); }
 
 /* ─── Form Fields ─── */
 .form-field { margin-bottom: 0.85rem; position: relative; }

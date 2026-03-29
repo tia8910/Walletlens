@@ -219,10 +219,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             <div className="sheet-handle" />
             <h3>Add Transaction</h3>
 
-            {/* Buy/Sell toggle */}
+            {/* Buy/Sell/Deposit/Withdraw toggle */}
             <div className="type-toggle">
               <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => handleTypeChange('buy')}>Buy</button>
               <button className={`toggle-btn ${form.type === 'sell' ? 'active sell' : ''}`} onClick={() => handleTypeChange('sell')}>Sell</button>
+              <button className={`toggle-btn ${form.type === 'deposit' ? 'active deposit' : ''}`} onClick={() => handleTypeChange('deposit')}>Deposit</button>
+              <button className={`toggle-btn ${form.type === 'withdraw' ? 'active withdraw' : ''}`} onClick={() => handleTypeChange('withdraw')}>Withdraw</button>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -403,8 +405,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="DCA, dip buy, etc." />
               </div>
 
-              <button type="submit" className={`submit-btn ${form.type}`}>
-                {form.type === 'buy' ? 'Record Buy' : 'Record Sell'}
+              <button type="submit" className={`submit-btn ${form.type === 'sell' || form.type === 'withdraw' ? 'sell' : 'buy'}`}>
+                {form.type === 'buy' ? 'Record Buy' : form.type === 'sell' ? 'Record Sell' : form.type === 'deposit' ? 'Record Deposit' : 'Record Withdraw'}
               </button>
             </form>
           </div>
@@ -433,20 +435,22 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           {transactions.map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
+            const isPositive = txType === 'buy' || txType === 'deposit'
+            const badgeClass = isPositive ? 'buy' : 'sell'
             return (
               <div key={t.id} className="tx-card">
                 <div className="tx-left">
                   {t.coin_image ? (
                     <img src={t.coin_image} alt="" width={36} height={36} className="tx-coin-img" />
                   ) : (
-                    <div className={`tx-type-icon ${txType}`}>
-                      {txType === 'buy' ? '+' : '-'}
+                    <div className={`tx-type-icon ${badgeClass}`}>
+                      {isPositive ? '+' : '-'}
                     </div>
                   )}
                   <div className="tx-info">
                     <div className="tx-title">
                       <strong>{sym}</strong>
-                      <span className={`tx-badge ${txType}`}>{txType.toUpperCase()}</span>
+                      <span className={`tx-badge ${badgeClass}`}>{txType.toUpperCase()}</span>
                     </div>
                     <div className="tx-meta">
                       {t.date || ''} {t.exchange && `\u00B7 ${t.exchange}`}
