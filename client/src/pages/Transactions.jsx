@@ -1,21 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { api, ASSET_CATEGORIES } from '../api'
+import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 
 const CATEGORY_ORDER = ['crypto', 'gold', 'silver', 'stock', 'bond', 'other']
 
-// Preset defaults for non-crypto categories — user can edit any field.
-const CATEGORY_PRESETS = {
-  gold:   { coin_id_prefix: 'gold:',   default_symbol: 'XAU', default_name: 'Gold (1 oz)',   unit_hint: 'oz' },
-  silver: { coin_id_prefix: 'silver:', default_symbol: 'XAG', default_name: 'Silver (1 oz)', unit_hint: 'oz' },
-  stock:  { coin_id_prefix: 'stock:',  default_symbol: '',    default_name: '',              unit_hint: 'shares' },
-  bond:   { coin_id_prefix: 'bond:',   default_symbol: '',    default_name: '',              unit_hint: 'units' },
-  other:  { coin_id_prefix: 'other:',  default_symbol: '',    default_name: '',              unit_hint: 'units' },
+const CATEGORY_UNITS = {
+  gold: 'oz', silver: 'oz', stock: 'shares', bond: 'units', other: 'units', crypto: '',
 }
 
 function slugifyAsset(category, symbol, name) {
   const base = (symbol || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  return `${CATEGORY_PRESETS[category]?.coin_id_prefix || 'asset:'}${base || Date.now()}`
+  const prefix = category === 'bond' ? 'bond:' : category === 'other' ? 'other:' : `${category}:`
+  return `${prefix}${base || Date.now()}`
 }
 
 function fmt(n) {
@@ -222,24 +218,44 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }
 
   function handleCategoryChange(category) {
-    const preset = CATEGORY_PRESETS[category]
-    // Reset coin selection when switching category
     setCoinSearch('')
     setCoinResults([])
     setCoinAnalysis(null)
     setSellHoldings(null)
-    setManualAsset({ symbol: preset?.default_symbol || '', name: preset?.default_name || '' })
+
+    // Gold / Silver — use global preset IDs and auto-fetch live spot price
+    if (category === 'gold' || category === 'silver') {
+      const preset = PRESET_ASSETS[category]
+      setManualAsset({ symbol: preset.symbol, name: preset.name })
+      setForm(f => ({
+        ...f,
+        category,
+        coin_id: preset.coin_id,
+        coin_symbol: preset.symbol,
+        coin_name: preset.name,
+        coin_image: '',
+      }))
+      setFetchingPrice(true)
+      api.getPrices(preset.coin_id).then(data => {
+        const p = data[preset.coin_id]?.usd
+        if (p) setForm(f => ({ ...f, price_per_unit: String(p.toFixed(2)) }))
+      }).finally(() => setFetchingPrice(false))
+      return
+    }
+
+    // Stocks / Bonds / Other — manual input (ticker + name)
+    setManualAsset({ symbol: '', name: '' })
     setForm(f => ({
       ...f,
       category,
-      coin_id: category === 'crypto' ? '' : (preset?.default_symbol ? slugifyAsset(category, preset.default_symbol, preset.default_name) : ''),
-      coin_symbol: preset?.default_symbol || '',
-      coin_name: preset?.default_name || '',
+      coin_id: '',
+      coin_symbol: '',
+      coin_name: '',
       coin_image: '',
     }))
   }
 
-  function handleManualAssetChange(field, value) {
+  async function handleManualAssetChange(field, value) {
     const next = { ...manualAsset, [field]: value }
     setManualAsset(next)
     setForm(f => ({
@@ -248,6 +264,42 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       coin_name: next.name,
       coin_id: slugifyAsset(f.category, next.symbol, next.name),
     }))
+  }
+
+  // Fetch live stock quote via Stooq for the current ticker
+  async function fetchStockLivePrice() {
+    if (form.category !== 'stock' || !manualAsset.symbol) return
+    const coinId = `${STOCK_PREFIX}${manualAsset.symbol.toLowerCase()}`
+    setFetchingPrice(true)
+    try {
+      const data = await api.getPrices(coinId)
+      const quote = data[coinId]
+      if (quote?.usd) {
+        setForm(f => ({
+          ...f,
+          coin_id: coinId,
+          price_per_unit: String(quote.usd.toFixed(2)),
+          coin_name: manualAsset.name || quote.name || manualAsset.symbol,
+        }))
+      }
+    } catch (err) { console.error(err) }
+    setFetchingPrice(false)
+  }
+
+  function selectPopularTicker(t) {
+    setManualAsset({ symbol: t.ticker, name: t.name })
+    const coinId = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
+    setForm(f => ({
+      ...f,
+      coin_id: coinId,
+      coin_symbol: t.ticker,
+      coin_name: t.name,
+    }))
+    setFetchingPrice(true)
+    api.getPrices(coinId).then(data => {
+      const p = data[coinId]?.usd
+      if (p) setForm(f => ({ ...f, price_per_unit: String(p.toFixed(2)) }))
+    }).finally(() => setFetchingPrice(false))
   }
 
   async function handleSubmit(e) {
@@ -348,31 +400,80 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   )}
                 </div>
               ) : (
-                <div className="form-row-2">
-                  <div className="form-field">
-                    <label>
-                      {form.category === 'stock' ? 'Ticker' : form.category === 'bond' ? 'Bond Code' : 'Symbol'}
-                    </label>
-                    <input
-                      type="text"
-                      value={manualAsset.symbol}
-                      onChange={e => handleManualAssetChange('symbol', e.target.value.toUpperCase())}
-                      placeholder={form.category === 'stock' ? 'AAPL' : form.category === 'gold' ? 'XAU' : form.category === 'silver' ? 'XAG' : 'SYMB'}
-                      autoFocus
-                    />
+                <>
+                  {form.category === 'stock' && (
+                    <div className="ticker-chips">
+                      <div className="ticker-chips-label">Popular</div>
+                      <div className="ticker-chips-row">
+                        {POPULAR_TICKERS.map(t => (
+                          <button
+                            key={t.ticker}
+                            type="button"
+                            className={`ticker-chip ${manualAsset.symbol === t.ticker ? 'active' : ''}`}
+                            onClick={() => selectPopularTicker(t)}
+                            title={t.name}
+                          >
+                            {t.ticker}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="form-row-2">
+                    <div className="form-field">
+                      <label>
+                        {form.category === 'stock' ? 'Ticker' : form.category === 'bond' ? 'Bond Code' : 'Symbol'}
+                      </label>
+                      <div className="price-input-wrap">
+                        <input
+                          type="text"
+                          value={manualAsset.symbol}
+                          onChange={e => handleManualAssetChange('symbol', e.target.value.toUpperCase())}
+                          placeholder={form.category === 'stock' ? 'AAPL' : form.category === 'gold' ? 'XAU' : form.category === 'silver' ? 'XAG' : 'SYMB'}
+                          autoFocus
+                        />
+                        {form.category === 'stock' && manualAsset.symbol && (
+                          <button
+                            type="button"
+                            className="market-price-btn"
+                            onClick={fetchStockLivePrice}
+                            disabled={fetchingPrice}
+                            title="Fetch live price from Stooq"
+                          >
+                            {fetchingPrice ? <span className="price-spinner" /> : <span>Live</span>}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="form-field">
+                      <label>
+                        {form.category === 'stock' ? 'Company Name' : form.category === 'bond' ? 'Bond Name' : 'Asset Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={manualAsset.name}
+                        onChange={e => handleManualAssetChange('name', e.target.value)}
+                        placeholder={form.category === 'stock' ? 'Apple Inc.' : form.category === 'bond' ? 'US 10Y Treasury' : form.category === 'gold' ? 'Gold (1 oz)' : 'Asset name'}
+                      />
+                    </div>
                   </div>
-                  <div className="form-field">
-                    <label>
-                      {form.category === 'stock' ? 'Company Name' : form.category === 'bond' ? 'Bond Name' : 'Asset Name'}
-                    </label>
-                    <input
-                      type="text"
-                      value={manualAsset.name}
-                      onChange={e => handleManualAssetChange('name', e.target.value)}
-                      placeholder={form.category === 'stock' ? 'Apple Inc.' : form.category === 'bond' ? 'US 10Y Treasury' : form.category === 'gold' ? 'Gold (1 oz)' : 'Asset name'}
-                    />
-                  </div>
-                </div>
+                  {(form.category === 'gold' || form.category === 'silver') && (
+                    <div className="live-price-badge">
+                      {fetchingPrice ? (
+                        <><span className="price-spinner" /> Fetching live spot price…</>
+                      ) : form.price_per_unit ? (
+                        <><span className="live-dot" /> Live spot price from gold-api.com — ${fmt(parseFloat(form.price_per_unit))} / oz</>
+                      ) : (
+                        <>Waiting for live price…</>
+                      )}
+                    </div>
+                  )}
+                  {form.category === 'stock' && form.price_per_unit && form.coin_id && (
+                    <div className="live-price-badge">
+                      <span className="live-dot" /> Live from Stooq — {manualAsset.symbol} @ ${fmt(parseFloat(form.price_per_unit))}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* AI Analysis Panel — crypto only */}
