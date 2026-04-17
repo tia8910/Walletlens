@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../api'
+import { api, ASSET_CATEGORIES } from '../api'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#fb923c', '#e879f9', '#a78bfa', '#06b6d4']
@@ -169,6 +169,11 @@ export default function Dashboard() {
   const [importStatus, setImportStatus] = useState(null)
   const [exportCode, setExportCode] = useState('')
   const [importCode, setImportCode] = useState('')
+  const [importPreview, setImportPreview] = useState(null)
+  const [copyStatus, setCopyStatus] = useState('')
+  const [editingPrice, setEditingPrice] = useState(null)
+  const [priceInput, setPriceInput] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   useEffect(() => {
     requestNotificationPermission()
@@ -243,19 +248,82 @@ export default function Dashboard() {
     if (code) {
       setExportCode(code)
       setImportCode('')
+      setImportPreview(null)
     }
   }
 
-  function handleImportCode() {
-    if (!importCode.trim()) return
-    const result = api.importCode(importCode.trim())
+  async function copyToClipboard(text) {
+    if (!text) return false
+    // Modern Clipboard API
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+    } catch (e) { /* fall through */ }
+    // Legacy fallback for older browsers / non-secure contexts
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      ta.setAttribute('readonly', '')
+      document.body.appendChild(ta)
+      ta.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      return ok
+    } catch (e) {
+      return false
+    }
+  }
+
+  async function handleCopyExport() {
+    const ok = await copyToClipboard(exportCode)
+    setCopyStatus(ok ? 'copied' : 'failed')
+    setTimeout(() => setCopyStatus(''), 2000)
+  }
+
+  function handlePreviewImport() {
+    if (!importCode.trim()) {
+      setImportStatus('error')
+      setTimeout(() => setImportStatus(null), 2500)
+      return
+    }
+    const result = api.previewImportCode(importCode.trim())
     if (result.success) {
-      setTimeout(() => window.location.reload(), 100)
+      setImportPreview(result.summary)
+      setImportStatus(null)
     } else {
-      alert('Import failed: ' + (result.error || 'Invalid code'))
+      setImportPreview(null)
       setImportStatus('error')
       setTimeout(() => setImportStatus(null), 3000)
     }
+  }
+
+  function handleConfirmImport() {
+    const result = api.importCode(importCode.trim())
+    if (result.success) {
+      setImportStatus('success')
+      setTimeout(() => window.location.reload(), 400)
+    } else {
+      setImportPreview(null)
+      setImportStatus('error')
+      setTimeout(() => setImportStatus(null), 3000)
+    }
+  }
+
+  function handleCancelImport() {
+    setImportPreview(null)
+  }
+
+  async function handleUpdateManualPrice(coinId) {
+    const val = parseFloat(priceInput)
+    if (!val || val <= 0) return
+    api.setManualPrice(coinId, val)
+    setEditingPrice(null)
+    setPriceInput('')
+    loadData()
   }
 
   async function loadData() {
@@ -601,7 +669,7 @@ export default function Dashboard() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Get Backup Code
             </button>
-            <button className="data-import-btn" onClick={handleImportCode}>
+            <button className="data-import-btn" onClick={handlePreviewImport}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Restore from Code
             </button>
@@ -609,16 +677,65 @@ export default function Dashboard() {
           {exportCode && (
             <div className="code-block">
               <label className="code-label">Your Backup Code</label>
-              <textarea className="code-textarea" readOnly value={exportCode} onClick={e => { e.target.select(); navigator.clipboard?.writeText(exportCode) }} />
-              <span className="code-hint">Tap to copy</span>
+              <textarea
+                className="code-textarea"
+                readOnly
+                value={exportCode}
+                onFocus={e => e.target.select()}
+              />
+              <div className="code-actions">
+                <button type="button" className="copy-btn" onClick={handleCopyExport}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'failed' ? 'Copy failed' : 'Copy Code'}
+                </button>
+                <button type="button" className="btn-ghost-dark" onClick={() => setExportCode('')}>Close</button>
+              </div>
             </div>
           )}
           <div className="code-block">
             <label className="code-label">Paste Code to Restore</label>
-            <textarea className="code-textarea" value={importCode} onChange={e => setImportCode(e.target.value)} placeholder="Paste your backup code here..." />
+            <textarea className="code-textarea" value={importCode} onChange={e => { setImportCode(e.target.value); setImportPreview(null); }} placeholder="Paste your backup code here..." />
+            {!importPreview && (
+              <button type="button" className="preview-btn" onClick={handlePreviewImport} disabled={!importCode.trim()}>
+                Preview Import
+              </button>
+            )}
           </div>
+          {importPreview && (
+            <div className="import-preview">
+              <div className="import-preview-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Restoring will replace your current data
+              </div>
+              <div className="import-preview-stats">
+                <div><strong>{importPreview.wallets}</strong><span>wallets</span></div>
+                <div><strong>{importPreview.transactions}</strong><span>transactions</span></div>
+                <div><strong>{importPreview.exchanges}</strong><span>exchanges</span></div>
+                <div><strong>{importPreview.targets}</strong><span>targets</span></div>
+                <div><strong>{importPreview.manualPrices}</strong><span>manual prices</span></div>
+              </div>
+              {Object.keys(importPreview.byCategory || {}).length > 0 && (
+                <div className="import-preview-cats">
+                  {Object.entries(importPreview.byCategory).map(([cat, count]) => (
+                    <span key={cat} className="import-preview-chip" style={{ background: `${ASSET_CATEGORIES[cat]?.color || '#6366f1'}22`, color: ASSET_CATEGORIES[cat]?.color || '#6366f1' }}>
+                      {ASSET_CATEGORIES[cat]?.icon} {ASSET_CATEGORIES[cat]?.label || cat}: {count}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="import-preview-actions">
+                <button type="button" className="confirm-btn" onClick={handleConfirmImport}>Confirm Import</button>
+                <button type="button" className="btn-ghost-dark" onClick={handleCancelImport}>Cancel</button>
+              </div>
+            </div>
+          )}
           {importStatus === 'error' && (
             <div className="import-status error">Invalid backup code. Please check and try again.</div>
+          )}
+          {importStatus === 'success' && (
+            <div className="import-status success">Import successful! Reloading...</div>
           )}
         </div>
       )}
@@ -641,7 +758,12 @@ export default function Dashboard() {
       ) : (
         <div className="coin-cards">
           {enriched.map((h, i) => (
-            <div key={h.coin_id} className="coin-card" onClick={() => navigate(`/asset/${h.coin_id}`)} style={{ cursor: 'pointer' }}>
+            <div
+              key={h.coin_id}
+              className="coin-card"
+              onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
+              style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
+            >
               <div className="coin-header">
                 {h.image ? (
                   <img src={h.image} alt="" width={40} height={40} className="coin-logo" />
@@ -651,7 +773,17 @@ export default function Dashboard() {
                   </div>
                 )}
                 <div className="coin-name">
-                  <strong>{h.coin_symbol.toUpperCase()}</strong>
+                  <div className="coin-name-row">
+                    <strong>{h.coin_symbol.toUpperCase()}</strong>
+                    {h.category && h.category !== 'crypto' && (
+                      <span
+                        className="category-badge"
+                        style={{ background: `${ASSET_CATEGORIES[h.category]?.color || '#6366f1'}22`, color: ASSET_CATEGORIES[h.category]?.color || '#6366f1' }}
+                      >
+                        {ASSET_CATEGORIES[h.category]?.icon} {ASSET_CATEGORIES[h.category]?.label}
+                      </span>
+                    )}
+                  </div>
                   <span className="muted">${fmt(h.price)}</span>
                 </div>
                 <div className="coin-value-col">
@@ -681,6 +813,38 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
+
+              {/* Manual price update for non-crypto assets */}
+              {h.category && h.category !== 'crypto' && (
+                <div className="manual-price-edit" onClick={e => e.stopPropagation()}>
+                  {editingPrice === h.coin_id ? (
+                    <form
+                      className="coin-target-form"
+                      onSubmit={e => { e.preventDefault(); handleUpdateManualPrice(h.coin_id); }}
+                    >
+                      <input
+                        type="number"
+                        step="any"
+                        value={priceInput}
+                        onChange={e => setPriceInput(e.target.value)}
+                        placeholder={`Current: $${fmt(h.price)}`}
+                        autoFocus
+                      />
+                      <button type="submit" className="btn-sm">Update</button>
+                      <button type="button" className="btn-sm btn-ghost-dark" onClick={() => { setEditingPrice(null); setPriceInput(''); }}>X</button>
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-update-price"
+                      onClick={() => { setEditingPrice(h.coin_id); setPriceInput(String(h.price || '')); }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                      Update current price
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Per-coin PRICE target */}
               {h.targetPrice ? (

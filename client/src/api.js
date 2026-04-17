@@ -1,5 +1,18 @@
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 
+// ─── Asset Categories ───
+// Non-crypto assets track manually-entered prices in localStorage under
+// `crypto_tracker_manual_prices` as { [coin_id]: { usd, usd_24h_change, updated_at } }.
+export const ASSET_CATEGORIES = {
+  crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
+  gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
+  silver: { key: 'silver', label: 'Silver', icon: '🥈', color: '#94a3b8' },
+  stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: '#10b981' },
+  bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0ea5e9' },
+  other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
+};
+export const NON_CRYPTO_CATEGORIES = ['gold', 'silver', 'stock', 'bond', 'other'];
+
 // LocalStorage helpers
 function loadData(key, fallback = []) {
   try {
@@ -64,8 +77,21 @@ export const api = {
     const holdings = {};
     for (const tx of txs) {
       if (!holdings[tx.coin_id]) {
-        holdings[tx.coin_id] = { coin_id: tx.coin_id, coin_symbol: tx.coin_symbol, coin_image: tx.coin_image || '', amount: 0, total_invested: 0 };
+        holdings[tx.coin_id] = {
+          coin_id: tx.coin_id,
+          coin_symbol: tx.coin_symbol,
+          coin_name: tx.coin_name || '',
+          coin_image: tx.coin_image || '',
+          category: tx.category || 'crypto',
+          amount: 0,
+          total_invested: 0,
+        };
       }
+      // Latest non-empty metadata wins
+      if (tx.coin_name) holdings[tx.coin_id].coin_name = tx.coin_name;
+      if (tx.coin_image) holdings[tx.coin_id].coin_image = tx.coin_image;
+      if (tx.category) holdings[tx.coin_id].category = tx.category;
+
       if (tx.type === 'buy' || tx.type === 'deposit') {
         holdings[tx.coin_id].amount += tx.amount;
         holdings[tx.coin_id].total_invested += tx.total_cost;
@@ -81,12 +107,15 @@ export const api = {
   addTransaction: async (data) => {
     const txs = loadData('transactions');
     const totalCost = data.amount * data.price_per_unit;
+    const category = data.category || 'crypto';
     const tx = {
       id: bumpId('crypto_tracker_next_tx_id'),
       wallet_id: parseInt(data.wallet_id),
       type: data.type,
+      category,
       coin_id: data.coin_id,
       coin_symbol: data.coin_symbol,
+      coin_name: data.coin_name || '',
       coin_image: data.coin_image || '',
       amount: data.amount,
       price_per_unit: data.price_per_unit,
@@ -98,11 +127,23 @@ export const api = {
     };
     txs.unshift(tx);
 
-    // Skip auto-USDT for stablecoins and deposit/withdraw types
+    // Update manual price for non-crypto assets so holdings show current value
+    if (category !== 'crypto') {
+      const manual = loadData('manual_prices', {});
+      manual[data.coin_id] = {
+        usd: data.price_per_unit,
+        usd_24h_change: manual[data.coin_id]?.usd_24h_change || 0,
+        updated_at: new Date().toISOString(),
+      };
+      saveData('manual_prices', manual);
+    }
+
+    // Auto-USDT pairing only applies to crypto buys/sells (not non-crypto or deposit/withdraw)
     const isStable = ['tether', 'usd-coin', 'dai', 'binance-usd', 'true-usd', 'first-digital-usd'].includes(data.coin_id);
     const isDepositOrWithdraw = data.type === 'deposit' || data.type === 'withdraw';
+    const isCrypto = category === 'crypto';
 
-    if (!isStable && !isDepositOrWithdraw) {
+    if (isCrypto && !isStable && !isDepositOrWithdraw) {
       const usdtImage = 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png';
       const txDate = data.date || new Date().toISOString().split('T')[0];
 
@@ -155,17 +196,38 @@ export const api = {
     return null;
   },
 
-  // Prices
+  // Manual (non-crypto) prices
+  getManualPrices: () => loadData('manual_prices', {}),
+  setManualPrice: (coinId, price) => {
+    const manual = loadData('manual_prices', {});
+    const prev = manual[coinId];
+    const prevPrice = prev?.usd || price;
+    const change = prevPrice > 0 ? ((price - prevPrice) / prevPrice) * 100 : 0;
+    manual[coinId] = { usd: price, usd_24h_change: change, updated_at: new Date().toISOString() };
+    saveData('manual_prices', manual);
+    return manual[coinId];
+  },
+
+  // Prices — merges CoinGecko crypto prices with manual prices for non-crypto assets
   getPrices: async (ids) => {
     if (!ids) return {};
-    const now = Date.now();
     const coinIds = ids.split(',');
-    const needsFresh = now - lastPriceFetch > CACHE_DURATION || coinIds.some(id => !priceCache[id]);
+    const manual = loadData('manual_prices', {});
+    // Split into crypto ids (fetch from CoinGecko) vs manual-priced ids
+    const manualIds = coinIds.filter(id => manual[id]);
+    const cryptoIds = coinIds.filter(id => !manual[id]);
 
+    const result = {};
+    for (const id of manualIds) result[id] = manual[id];
+
+    if (cryptoIds.length === 0) return result;
+
+    const now = Date.now();
+    const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
     if (needsFresh) {
       try {
         const res = await fetch(
-          `${COINGECKO_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+          `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
         );
         const data = await res.json();
         priceCache = { ...priceCache, ...data };
@@ -174,9 +236,7 @@ export const api = {
         console.error('Price fetch error:', err.message);
       }
     }
-
-    const result = {};
-    for (const id of coinIds) {
+    for (const id of cryptoIds) {
       if (priceCache[id]) result[id] = priceCache[id];
     }
     return result;
@@ -338,13 +398,14 @@ export const api = {
       w: loadData('wallets'),
       t: loadData('transactions'),
       e: loadData('exchanges'),
+      mp: loadData('manual_prices', {}),
       ct: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
       ids: {
         w: localStorage.getItem('crypto_tracker_next_wallet_id') || '1',
         t: localStorage.getItem('crypto_tracker_next_tx_id') || '1',
         e: localStorage.getItem('crypto_tracker_next_ex_id') || '1',
       },
-      v: 2,
+      v: 3,
     };
     try {
       return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -354,34 +415,59 @@ export const api = {
     }
   },
 
-  importCode: (code) => {
+  // Parse a code without committing anything. Returns a summary the UI can display for confirmation.
+  previewImportCode: (code) => {
     try {
-      const jsonString = decodeURIComponent(escape(atob(code.trim())));
+      const jsonString = decodeURIComponent(escape(atob((code || '').trim())));
       const data = JSON.parse(jsonString);
-      // Support both v1 (old JSON file) and v2 (code) formats
       const wallets = Array.isArray(data.w || data.wallets) ? (data.w || data.wallets) : [];
       const transactions = Array.isArray(data.t || data.transactions) ? (data.t || data.transactions) : [];
       const exchanges = Array.isArray(data.e || data.exchanges) ? (data.e || data.exchanges) : [];
       const targets = (data.ct || data.coin_targets || {});
-      saveData('wallets', wallets);
-      saveData('transactions', transactions);
-      saveData('exchanges', exchanges);
-      localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
-      const ids = data.ids || {};
-      const maxWId = Math.max(wallets.reduce((m, w) => Math.max(m, w.id || 0), 0) + 1, parseInt(ids.w || data.next_wallet_id) || 1);
-      const maxTId = Math.max(transactions.reduce((m, t) => Math.max(m, t.id || 0), 0) + 1, parseInt(ids.t || data.next_tx_id) || 1);
-      const maxEId = Math.max(exchanges.reduce((m, e) => Math.max(m, e.id || 0), 0) + 1, parseInt(ids.e || data.next_ex_id) || 1);
-      localStorage.setItem('crypto_tracker_next_wallet_id', String(maxWId));
-      localStorage.setItem('crypto_tracker_next_tx_id', String(maxTId));
-      localStorage.setItem('crypto_tracker_next_ex_id', String(maxEId));
-      priceCache = {};
-      lastPriceFetch = 0;
-      coinImageCache = {};
-      lastImageFetch = 0;
-      return { success: true, wallets: wallets.length, transactions: transactions.length };
+      const manualPrices = data.mp || {};
+      const byCategory = {};
+      for (const tx of transactions) {
+        const cat = tx.category || 'crypto';
+        byCategory[cat] = (byCategory[cat] || 0) + 1;
+      }
+      return {
+        success: true,
+        summary: {
+          wallets: wallets.length,
+          transactions: transactions.length,
+          exchanges: exchanges.length,
+          targets: Object.keys(targets).length,
+          manualPrices: Object.keys(manualPrices).length,
+          byCategory,
+          version: data.v || 1,
+        },
+        _raw: { wallets, transactions, exchanges, targets, manualPrices, ids: data.ids || {} },
+      };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: err.message || 'Invalid backup code' };
     }
+  },
+
+  importCode: (code) => {
+    const preview = api.previewImportCode(code);
+    if (!preview.success) return preview;
+    const { wallets, transactions, exchanges, targets, manualPrices, ids } = preview._raw;
+    saveData('wallets', wallets);
+    saveData('transactions', transactions);
+    saveData('exchanges', exchanges);
+    saveData('manual_prices', manualPrices);
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    const maxWId = Math.max(wallets.reduce((m, w) => Math.max(m, w.id || 0), 0) + 1, parseInt(ids.w) || 1);
+    const maxTId = Math.max(transactions.reduce((m, t) => Math.max(m, t.id || 0), 0) + 1, parseInt(ids.t) || 1);
+    const maxEId = Math.max(exchanges.reduce((m, e) => Math.max(m, e.id || 0), 0) + 1, parseInt(ids.e) || 1);
+    localStorage.setItem('crypto_tracker_next_wallet_id', String(maxWId));
+    localStorage.setItem('crypto_tracker_next_tx_id', String(maxTId));
+    localStorage.setItem('crypto_tracker_next_ex_id', String(maxEId));
+    priceCache = {};
+    lastPriceFetch = 0;
+    coinImageCache = {};
+    lastImageFetch = 0;
+    return { success: true, wallets: wallets.length, transactions: transactions.length };
   },
 
   // Ensure a default wallet exists
