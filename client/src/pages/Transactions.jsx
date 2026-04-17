@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { api } from '../api'
+import { api, ASSET_CATEGORIES } from '../api'
+
+const CATEGORY_ORDER = ['crypto', 'gold', 'silver', 'stock', 'bond', 'other']
+
+// Preset defaults for non-crypto categories — user can edit any field.
+const CATEGORY_PRESETS = {
+  gold:   { coin_id_prefix: 'gold:',   default_symbol: 'XAU', default_name: 'Gold (1 oz)',   unit_hint: 'oz' },
+  silver: { coin_id_prefix: 'silver:', default_symbol: 'XAG', default_name: 'Silver (1 oz)', unit_hint: 'oz' },
+  stock:  { coin_id_prefix: 'stock:',  default_symbol: '',    default_name: '',              unit_hint: 'shares' },
+  bond:   { coin_id_prefix: 'bond:',   default_symbol: '',    default_name: '',              unit_hint: 'units' },
+  other:  { coin_id_prefix: 'other:',  default_symbol: '',    default_name: '',              unit_hint: 'units' },
+}
+
+function slugifyAsset(category, symbol, name) {
+  const base = (symbol || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  return `${CATEGORY_PRESETS[category]?.coin_id_prefix || 'asset:'}${base || Date.now()}`
+}
 
 function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -88,8 +104,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [sellHoldings, setSellHoldings] = useState(null)
   const [form, setForm] = useState({
-    wallet_id: '', type: 'buy', coin_id: '', coin_symbol: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0],
+    wallet_id: '', type: 'buy', category: 'crypto',
+    coin_id: '', coin_symbol: '', coin_name: '', coin_image: '',
+    amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0],
   })
+  const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const searchTimeout = useRef(null)
 
   useEffect(() => { loadData() }, [filterWallet])
@@ -202,18 +221,49 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     }
   }
 
+  function handleCategoryChange(category) {
+    const preset = CATEGORY_PRESETS[category]
+    // Reset coin selection when switching category
+    setCoinSearch('')
+    setCoinResults([])
+    setCoinAnalysis(null)
+    setSellHoldings(null)
+    setManualAsset({ symbol: preset?.default_symbol || '', name: preset?.default_name || '' })
+    setForm(f => ({
+      ...f,
+      category,
+      coin_id: category === 'crypto' ? '' : (preset?.default_symbol ? slugifyAsset(category, preset.default_symbol, preset.default_name) : ''),
+      coin_symbol: preset?.default_symbol || '',
+      coin_name: preset?.default_name || '',
+      coin_image: '',
+    }))
+  }
+
+  function handleManualAssetChange(field, value) {
+    const next = { ...manualAsset, [field]: value }
+    setManualAsset(next)
+    setForm(f => ({
+      ...f,
+      coin_symbol: next.symbol,
+      coin_name: next.name,
+      coin_id: slugifyAsset(f.category, next.symbol, next.name),
+    }))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.coin_id || !form.amount || !form.price_per_unit || !form.wallet_id) return
+    if (form.category !== 'crypto' && !form.coin_symbol && !form.coin_name) return
     await api.addTransaction({
       ...form,
       amount: parseFloat(form.amount),
       price_per_unit: parseFloat(form.price_per_unit),
     })
-    setForm({ wallet_id: form.wallet_id, type: 'buy', coin_id: '', coin_symbol: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0] })
+    setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0] })
     setCoinSearch('')
     setCoinAnalysis(null)
     setSellHoldings(null)
+    setManualAsset({ symbol: '', name: '' })
     setShowForm(false)
     loadData()
   }
@@ -243,6 +293,26 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             <div className="sheet-handle" />
             <h3>Add Transaction</h3>
 
+            {/* Asset category selector */}
+            <div className="category-tabs">
+              {CATEGORY_ORDER.map(key => {
+                const c = ASSET_CATEGORIES[key]
+                const active = form.category === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`category-tab ${active ? 'active' : ''}`}
+                    style={active ? { borderColor: c.color, color: c.color, background: `${c.color}15` } : undefined}
+                    onClick={() => handleCategoryChange(key)}
+                  >
+                    <span className="category-tab-icon">{c.icon}</span>
+                    <span>{c.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
             {/* Buy/Sell/Deposit/Withdraw toggle */}
             <div className="type-toggle">
               <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => handleTypeChange('buy')}>Buy</button>
@@ -261,24 +331,52 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 </div>
               )}
 
-              <div className="form-field" style={{ position: 'relative' }}>
-                <label>Coin</label>
-                <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder="Search Bitcoin, Ethereum..." autoFocus />
-                {coinResults.length > 0 && (
-                  <div className="dropdown">
-                    {coinResults.map(c => (
-                      <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                        {c.thumb && <img src={c.thumb} alt="" width={24} height={24} style={{ borderRadius: '50%' }} />}
-                        <span>{c.name}</span>
-                        <small>{c.symbol.toUpperCase()}</small>
-                      </div>
-                    ))}
+              {form.category === 'crypto' ? (
+                <div className="form-field" style={{ position: 'relative' }}>
+                  <label>Coin</label>
+                  <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder="Search Bitcoin, Ethereum..." autoFocus />
+                  {coinResults.length > 0 && (
+                    <div className="dropdown">
+                      {coinResults.map(c => (
+                        <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
+                          {c.thumb && <img src={c.thumb} alt="" width={24} height={24} style={{ borderRadius: '50%' }} />}
+                          <span>{c.name}</span>
+                          <small>{c.symbol.toUpperCase()}</small>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="form-row-2">
+                  <div className="form-field">
+                    <label>
+                      {form.category === 'stock' ? 'Ticker' : form.category === 'bond' ? 'Bond Code' : 'Symbol'}
+                    </label>
+                    <input
+                      type="text"
+                      value={manualAsset.symbol}
+                      onChange={e => handleManualAssetChange('symbol', e.target.value.toUpperCase())}
+                      placeholder={form.category === 'stock' ? 'AAPL' : form.category === 'gold' ? 'XAU' : form.category === 'silver' ? 'XAG' : 'SYMB'}
+                      autoFocus
+                    />
                   </div>
-                )}
-              </div>
+                  <div className="form-field">
+                    <label>
+                      {form.category === 'stock' ? 'Company Name' : form.category === 'bond' ? 'Bond Name' : 'Asset Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={manualAsset.name}
+                      onChange={e => handleManualAssetChange('name', e.target.value)}
+                      placeholder={form.category === 'stock' ? 'Apple Inc.' : form.category === 'bond' ? 'US 10Y Treasury' : form.category === 'gold' ? 'Gold (1 oz)' : 'Asset name'}
+                    />
+                  </div>
+                </div>
+              )}
 
-              {/* AI Analysis Panel */}
-              {loadingAnalysis && form.coin_id && (
+              {/* AI Analysis Panel — crypto only */}
+              {form.category === 'crypto' && loadingAnalysis && form.coin_id && (
                 <div className="ai-panel">
                   <div className="ai-header">
                     <span className="ai-badge">AI</span>
@@ -289,7 +387,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   </div>
                 </div>
               )}
-              {coinAnalysis && !loadingAnalysis && (
+              {form.category === 'crypto' && coinAnalysis && !loadingAnalysis && (
                 <div className="ai-panel">
                   <div className="ai-header">
                     <span className="ai-badge">AI</span>
@@ -394,7 +492,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   <label>Price per unit ($)</label>
                   <div className="price-input-wrap">
                     <input type="number" step="any" value={form.price_per_unit} onChange={e => setForm(f => ({ ...f, price_per_unit: e.target.value }))} placeholder="0.00" required />
-                    {form.coin_id && (
+                    {form.coin_id && form.category === 'crypto' && (
                       <button
                         type="button"
                         className="market-price-btn"
