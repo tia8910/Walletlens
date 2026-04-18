@@ -777,8 +777,10 @@ export const api = {
     return targets;
   },
 
-  // Import / Export as shareable code
-  exportCode: () => {
+  // Import / Export as shareable code.
+  // New format: 'WLZ:' + base64(gzip(JSON)) — ~60-70% shorter than plain base64.
+  // Legacy format: plain base64(JSON) — still accepted on import.
+  exportCode: async () => {
     const data = {
       w: loadData('wallets'),
       t: loadData('transactions'),
@@ -792,8 +794,21 @@ export const api = {
       },
       v: 3,
     };
+    const json = JSON.stringify(data);
     try {
-      return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      if (typeof CompressionStream !== 'undefined') {
+        const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
+        const buf = await new Response(stream).arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return 'WLZ:' + btoa(bin);
+      }
+    } catch (err) {
+      console.error('Gzip export failed, falling back:', err);
+    }
+    try {
+      return btoa(unescape(encodeURIComponent(json)));
     } catch (err) {
       console.error('Export error:', err);
       return null;
@@ -801,9 +816,19 @@ export const api = {
   },
 
   // Parse a code without committing anything. Returns a summary the UI can display for confirmation.
-  previewImportCode: (code) => {
+  previewImportCode: async (code) => {
     try {
-      const jsonString = decodeURIComponent(escape(atob((code || '').trim())));
+      const trimmed = (code || '').trim();
+      let jsonString;
+      if (trimmed.startsWith('WLZ:')) {
+        const bin = atob(trimmed.slice(4));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        jsonString = await new Response(stream).text();
+      } else {
+        jsonString = decodeURIComponent(escape(atob(trimmed)));
+      }
       const data = JSON.parse(jsonString);
       const wallets = Array.isArray(data.w || data.wallets) ? (data.w || data.wallets) : [];
       const transactions = Array.isArray(data.t || data.transactions) ? (data.t || data.transactions) : [];
@@ -833,8 +858,8 @@ export const api = {
     }
   },
 
-  importCode: (code) => {
-    const preview = api.previewImportCode(code);
+  importCode: async (code) => {
+    const preview = await api.previewImportCode(code);
     if (!preview.success) return preview;
     const { wallets, transactions, exchanges, targets, manualPrices, ids } = preview._raw;
     saveData('wallets', wallets);

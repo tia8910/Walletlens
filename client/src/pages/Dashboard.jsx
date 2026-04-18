@@ -10,13 +10,15 @@ function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// Asset icon with graceful fallback: if the image URL is missing or fails to
-// load, render a letter badge using the category/gradient color.
+// Asset icon with graceful fallback: try the CoinGecko image, then a
+// symbol-based CoinCap icon, then a letter/category badge.
 function CoinIcon({ image, symbol, color, category }) {
-  const [broken, setBroken] = useState(false)
+  const [stage, setStage] = useState(0) // 0: primary, 1: coincap, 2: badge
+  const sym = (symbol || '').toLowerCase()
   const catIcon = ASSET_CATEGORIES[category]?.icon
-  const showImg = image && !broken
-  if (showImg) {
+  const isCrypto = !category || category === 'crypto'
+
+  if (stage === 0 && image) {
     return (
       <img
         src={image}
@@ -24,7 +26,20 @@ function CoinIcon({ image, symbol, color, category }) {
         width={40}
         height={40}
         className="coin-logo"
-        onError={() => setBroken(true)}
+        onError={() => setStage(isCrypto && sym ? 1 : 2)}
+        loading="lazy"
+      />
+    )
+  }
+  if (stage <= 1 && isCrypto && sym) {
+    return (
+      <img
+        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
+        alt=""
+        width={40}
+        height={40}
+        className="coin-logo"
+        onError={() => setStage(2)}
         loading="lazy"
       />
     )
@@ -35,7 +50,7 @@ function CoinIcon({ image, symbol, color, category }) {
       style={{ background: `${color}22`, color: color, borderColor: `${color}55` }}
       aria-hidden="true"
     >
-      {catIcon && category !== 'crypto' ? catIcon : (symbol || '?').substring(0, 2).toUpperCase()}
+      {catIcon && !isCrypto ? catIcon : (symbol || '?').substring(0, 2).toUpperCase()}
     </div>
   )
 }
@@ -266,8 +281,8 @@ export default function Dashboard() {
     setAlarms(newAlarms)
   }, [coinImages])
 
-  function handleExport() {
-    const code = api.exportCode()
+  async function handleExport() {
+    const code = await api.exportCode()
     if (code) {
       setExportCode(code)
       setImportCode('')
@@ -307,13 +322,13 @@ export default function Dashboard() {
     setTimeout(() => setCopyStatus(''), 2000)
   }
 
-  function handlePreviewImport() {
+  async function handlePreviewImport() {
     if (!importCode.trim()) {
       setImportStatus('error')
       setTimeout(() => setImportStatus(null), 2500)
       return
     }
-    const result = api.previewImportCode(importCode.trim())
+    const result = await api.previewImportCode(importCode.trim())
     if (result.success) {
       setImportPreview(result.summary)
       setImportStatus(null)
@@ -324,8 +339,8 @@ export default function Dashboard() {
     }
   }
 
-  function handleConfirmImport() {
-    const result = api.importCode(importCode.trim())
+  async function handleConfirmImport() {
+    const result = await api.importCode(importCode.trim())
     if (result.success) {
       setImportStatus('success')
       setTimeout(() => window.location.reload(), 400)
