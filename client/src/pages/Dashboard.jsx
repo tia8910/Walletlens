@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES } from '../api'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import PitchCard from '../components/PitchCard'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#fb923c', '#e879f9', '#a78bfa', '#06b6d4']
 
@@ -499,6 +500,9 @@ export default function Dashboard() {
 
   return (
     <div className="page">
+      {/* Mobile-only pitch card (sidebar is hidden on mobile) */}
+      <PitchCard className="sidebar-pitch-mobile" />
+
       {/* ─── Price Target Alarms ─── */}
       {alarms.length > 0 && (
         <div className="alarm-container">
