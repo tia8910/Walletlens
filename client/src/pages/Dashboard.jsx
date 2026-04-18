@@ -457,7 +457,36 @@ export default function Dashboard() {
   const projectedTotal = totalProjectedValue(enriched)
   const hasAnyTarget = Object.keys(coinTargets).length > 0
 
-  const chartData = enriched.filter(h => h.value > 0).map(h => ({ name: (h.coin_symbol || '??').toUpperCase(), value: h.value }))
+  // Group holdings by category for the dashboard split
+  const enrichedByCategory = {}
+  for (const h of enriched) {
+    const cat = h.category || 'crypto'
+    if (!enrichedByCategory[cat]) {
+      enrichedByCategory[cat] = { items: [], total: 0, invested: 0 }
+    }
+    enrichedByCategory[cat].items.push(h)
+    enrichedByCategory[cat].total += h.value
+    enrichedByCategory[cat].invested += h.total_invested
+  }
+  const categoryList = Object.entries(enrichedByCategory).map(([key, v]) => {
+    const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#a78bfa' }
+    return {
+      key, label: meta.label, icon: meta.icon, color: meta.color,
+      items: v.items, total: v.total, invested: v.invested,
+      pct: totalValue > 0 ? (v.total / totalValue) * 100 : 0,
+      pnl: v.total - v.invested,
+      pnlPct: v.invested > 0 ? ((v.total - v.invested) / v.invested) * 100 : 0,
+    }
+  }).sort((a, b) => b.total - a.total)
+
+  const filteredCategories = categoryFilter === 'all'
+    ? categoryList
+    : categoryList.filter(c => c.key === categoryFilter)
+
+  // Pie chart: category-level allocation
+  const chartData = categoryList.filter(c => c.total > 0).map(c => ({
+    name: c.label, value: c.total, color: c.color,
+  }))
 
   // Portfolio AI Analysis
   let analysis = null
@@ -536,14 +565,14 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} strokeWidth={0}>
-                  {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  {chartData.map((d, i) => <Cell key={i} fill={d.color || COLORS[i % COLORS.length]} />)}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="chart-legend">
               {chartData.map((d, i) => (
                 <div key={d.name} className="legend-item">
-                  <span className="legend-dot" style={{ background: COLORS[i % COLORS.length] }} />
+                  <span className="legend-dot" style={{ background: d.color || COLORS[i % COLORS.length] }} />
                   <span>{d.name}</span>
                   <span className="muted">{totalValue > 0 ? ((d.value / totalValue) * 100).toFixed(1) : 0}%</span>
                 </div>
@@ -778,11 +807,34 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Holdings */}
+      {/* Holdings — split by category */}
       <div className="section-header">
         <h3>Holdings</h3>
-        <span className="muted">{enriched.length} coin{enriched.length !== 1 ? 's' : ''}</span>
+        <span className="muted">{enriched.length} asset{enriched.length !== 1 ? 's' : ''} · {categoryList.length} categor{categoryList.length !== 1 ? 'ies' : 'y'}</span>
       </div>
+
+      {enriched.length > 0 && (
+        <div className="cat-filter">
+          <button
+            className={`cat-pill ${categoryFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setCategoryFilter('all')}
+          >
+            All · {enriched.length}
+          </button>
+          {categoryList.map(c => (
+            <button
+              key={c.key}
+              className={`cat-pill ${categoryFilter === c.key ? 'active' : ''}`}
+              style={categoryFilter === c.key
+                ? { background: c.color, color: '#fff', borderColor: c.color }
+                : { color: c.color, borderColor: `${c.color}55` }}
+              onClick={() => setCategoryFilter(c.key)}
+            >
+              <span>{c.icon}</span> {c.label} · {c.items.length}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? <div className="card"><p className="muted">Loading...</p></div> : enriched.length === 0 ? (
         <div className="empty-state">
@@ -794,14 +846,33 @@ export default function Dashboard() {
           </button>
         </div>
       ) : (
-        <div className="coin-cards">
-          {enriched.map((h, i) => (
-            <div
-              key={h.coin_id}
-              className="coin-card"
-              onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
-              style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
-            >
+        <div className="categories">
+          {filteredCategories.map(cat => (
+            <div key={cat.key} className="category-section" style={{ '--cat-color': cat.color }}>
+              <div className="category-section-header">
+                <div className="cat-title">
+                  <span className="cat-icon-lg">{cat.icon}</span>
+                  <div className="cat-title-text">
+                    <strong>{cat.label}</strong>
+                    <span className="muted">{cat.items.length} asset{cat.items.length !== 1 ? 's' : ''} · {cat.pct.toFixed(1)}% of portfolio</span>
+                  </div>
+                </div>
+                <div className="cat-total">
+                  <strong>${fmt(cat.total)}</strong>
+                  <span className={cat.pnl >= 0 ? 'positive' : 'negative'}>
+                    {cat.pnl >= 0 ? '+' : ''}${fmt(cat.pnl)} ({cat.pnlPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              <div className="cat-bar"><div className="cat-bar-fill" style={{ width: `${cat.pct}%`, background: cat.color }} /></div>
+              <div className="coin-cards">
+                {cat.items.map((h, i) => (
+                  <div
+                    key={h.coin_id}
+                    className="coin-card"
+                    onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
+                    style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
+                  >
               <div className="coin-header">
                 {h.image ? (
                   <img src={h.image} alt="" width={40} height={40} className="coin-logo" />
@@ -1055,7 +1126,10 @@ export default function Dashboard() {
               </div>
 
               <div className="alloc-bar">
-                <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: COLORS[i % COLORS.length] }} />
+                <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: cat.color }} />
+              </div>
+            </div>
+                ))}
               </div>
             </div>
           ))}
