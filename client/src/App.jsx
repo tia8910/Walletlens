@@ -30,9 +30,44 @@ function IconMarket() {
   )
 }
 
+function TrendBackground() {
+  const wave1 = "M0,200 C120,160 220,260 340,220 S540,130 680,180 S880,270 1020,210 S1260,120 1440,200";
+  const wave2 = "M1440,200 C1560,160 1660,260 1780,220 S1980,130 2120,180 S2320,270 2460,210 S2700,120 2880,200";
+  const filled1 = `${wave1} L1440,400 L0,400 Z`;
+  const filled2 = `${wave2} L2880,400 L1440,400 Z`;
+  return (
+    <div className="bg-trend" aria-hidden="true">
+      <svg viewBox="0 0 2880 400" preserveAspectRatio="none" className="bg-trend-svg">
+        <defs>
+          <linearGradient id="bg-trend-stroke" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#6366f1">
+              <animate attributeName="stop-color" values="#6366f1;#22d3ee;#ec4899;#6366f1" dur="9s" repeatCount="indefinite" />
+            </stop>
+            <stop offset="50%" stopColor="#22d3ee">
+              <animate attributeName="stop-color" values="#22d3ee;#ec4899;#a855f7;#22d3ee" dur="9s" repeatCount="indefinite" />
+            </stop>
+            <stop offset="100%" stopColor="#ec4899">
+              <animate attributeName="stop-color" values="#ec4899;#a855f7;#6366f1;#ec4899" dur="9s" repeatCount="indefinite" />
+            </stop>
+          </linearGradient>
+          <linearGradient id="bg-trend-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(99,102,241,0.18)" />
+            <stop offset="100%" stopColor="rgba(236,72,153,0)" />
+          </linearGradient>
+        </defs>
+        <path className="bg-trend-area" d={filled1} fill="url(#bg-trend-fill)" />
+        <path className="bg-trend-area" d={filled2} fill="url(#bg-trend-fill)" />
+        <path className="bg-trend-line" d={wave1} fill="none" stroke="url(#bg-trend-stroke)" strokeWidth="2.2" strokeLinecap="round" />
+        <path className="bg-trend-line" d={wave2} fill="none" stroke="url(#bg-trend-stroke)" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <div className="app">
+      <TrendBackground />
       <nav className="sidebar">
         <div className="logo">
           <div className="logo-mark">

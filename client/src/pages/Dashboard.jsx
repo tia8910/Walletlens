@@ -539,6 +539,8 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Hero + Portfolio Analysis row (AI pinned to left-side blank space on desktop) */}
+      <div className="dashboard-grid">
       {/* Hero card */}
       <div className="hero-card">
         <div className="hero-label">Total Portfolio Value</div>
@@ -682,6 +684,8 @@ export default function Dashboard() {
           )}
         </div>
       )}
+      </div>
+      {/* /dashboard-grid */}
 
       {/* Quick actions */}
       <div className="quick-actions">
