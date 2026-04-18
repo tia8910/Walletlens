@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { api } from '../api'
+import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+
+function isNonCryptoId(id) {
+  if (!id) return false
+  return id.startsWith(STOCK_PREFIX) || id === GOLD_ID || id === SILVER_ID || id.startsWith('bond:') || id.startsWith('other:')
+}
+
+function categoryFor(id) {
+  if (!id) return 'crypto'
+  if (id === GOLD_ID) return 'gold'
+  if (id === SILVER_ID) return 'silver'
+  if (id.startsWith(STOCK_PREFIX)) return 'stock'
+  if (id.startsWith('bond:')) return 'bond'
+  if (id.startsWith('other:')) return 'other'
+  return 'crypto'
+}
 
 function fmt(n) {
   return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -23,26 +38,35 @@ export default function AssetDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const [portfolio, prices, images, detail, targets] = await Promise.all([
+      const nonCrypto = isNonCryptoId(coinId)
+      const tasks = [
         api.getPortfolio(),
         api.getPrices(coinId),
-        api.getCoinImages(coinId),
-        api.getCoinDetail(coinId),
+        nonCrypto ? Promise.resolve({}) : api.getCoinImages(coinId),
+        nonCrypto ? Promise.resolve(null) : api.getCoinDetail(coinId),
         api.getCoinTargets(),
-      ])
+      ]
+      const [portfolio, prices, images, detail, targets] = await Promise.all(tasks)
       const h = portfolio.find(p => p.coin_id === coinId)
       setHoldings(h || null)
       setTarget(targets[coinId] || null)
 
       const price = prices[coinId]?.usd || 0
       const change24 = prices[coinId]?.usd_24h_change || 0
-      const image = images[coinId] || h?.coin_image || ''
+      const image = (!nonCrypto ? images[coinId] : null) || h?.coin_image || ''
       const md = detail?.market_data
+      const cat = categoryFor(coinId)
+      const catMeta = ASSET_CATEGORIES[cat]
+      const fallbackName = prices[coinId]?.name || h?.coin_name || (h?.coin_symbol || coinId).toUpperCase()
       setCoin({
         id: coinId,
-        name: detail?.name || (h?.coin_symbol || coinId).toUpperCase(),
-        symbol: (detail?.symbol || h?.coin_symbol || '').toUpperCase(),
+        name: detail?.name || fallbackName,
+        symbol: (detail?.symbol || h?.coin_symbol || coinId.replace(STOCK_PREFIX, '').replace('metal:', '')).toUpperCase(),
         price, change24, image,
+        category: cat,
+        categoryLabel: catMeta?.label,
+        categoryIcon: catMeta?.icon,
+        categoryColor: catMeta?.color,
         ath: md?.ath?.usd, atl: md?.atl?.usd,
         high24: md?.high_24h?.usd, low24: md?.low_24h?.usd,
         marketCap: md?.market_cap?.usd,
@@ -91,10 +115,23 @@ export default function AssetDetail() {
       {/* Asset header */}
       <div className="detail-hero">
         <div className="detail-hero-left">
-          {coin?.image && <img src={coin.image} alt="" width={48} height={48} className="coin-logo" />}
+          {coin?.image ? (
+            <img src={coin.image} alt="" width={48} height={48} className="coin-logo" />
+          ) : (
+            <div className="coin-icon" style={{ width: 48, height: 48, fontSize: '1.2rem', background: `${coin?.categoryColor || '#6366f1'}22`, color: coin?.categoryColor || '#6366f1' }}>
+              {coin?.categoryIcon || coin?.symbol?.substring(0, 2) || '◆'}
+            </div>
+          )}
           <div>
             <h2 className="detail-name">{coin?.name}</h2>
-            <span className="muted">{coin?.symbol}</span>
+            <div className="detail-sub">
+              <span className="muted">{coin?.symbol}</span>
+              {coin?.categoryLabel && coin.category !== 'crypto' && (
+                <span className="category-badge" style={{ background: `${coin.categoryColor}22`, color: coin.categoryColor }}>
+                  {coin.categoryIcon} {coin.categoryLabel}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="detail-hero-right">

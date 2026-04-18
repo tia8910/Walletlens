@@ -870,8 +870,9 @@ export default function Dashboard() {
                   <div
                     key={h.coin_id}
                     className="coin-card"
-                    onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
-                    style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
+                    onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
+                    title={`View ${h.coin_symbol.toUpperCase()} details`}
+                    style={{ cursor: 'pointer' }}
                   >
               <div className="coin-header">
                 {h.image ? (
@@ -898,6 +899,17 @@ export default function Dashboard() {
                 <div className="coin-value-col">
                   <strong>${fmt(h.value)}</strong>
                   <span className="muted">{h.allocation.toFixed(1)}% of portfolio</span>
+                </div>
+                <div className="contribution-donut" title={`Contribution: ${h.allocation.toFixed(1)}%`}>
+                  <svg viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="var(--bg4)" strokeWidth="3.2" />
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke={cat.color} strokeWidth="3.2"
+                      strokeDasharray={`${Math.min(h.allocation, 100)}, 100`}
+                      strokeLinecap="round" />
+                  </svg>
+                  <span className="contribution-donut-value">{h.allocation.toFixed(0)}%</span>
                 </div>
               </div>
               <div className="coin-details">

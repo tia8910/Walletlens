@@ -152,6 +152,42 @@ async function fetchStockLive(coinId) {
   }
 }
 
+// Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
+function stooqSymbolFor(id) {
+  if (id === GOLD_ID) return 'xauusd';
+  if (id === SILVER_ID) return 'xagusd';
+  if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
+  return null;
+}
+
+// Stooq daily CSV — returns [{ date, time, price }] for the most recent `days` rows.
+async function fetchStooqHistory(symbol, days = 30) {
+  try {
+    const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const text = await res.text();
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',');
+    const closeIdx = headers.indexOf('Close');
+    const dateIdx = headers.indexOf('Date');
+    if (closeIdx < 0 || dateIdx < 0) return [];
+    const rows = lines.slice(1)
+      .map(l => l.split(','))
+      .map(cols => ({ date: cols[dateIdx], close: parseFloat(cols[closeIdx]) }))
+      .filter(r => r.date && isFinite(r.close) && r.close > 0);
+    const tail = rows.slice(-Math.max(days, 7));
+    return tail.map(r => ({
+      date: r.date,
+      time: r.date,
+      price: r.close,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export const api = {
   // Wallets
   getWallets: async () => loadData('wallets'),
@@ -462,9 +498,30 @@ export const api = {
     }
   },
 
-  // Chart data for asset detail
+  // Chart data for asset detail — routes by id:
+  //   stock:XXX / metal:xau / metal:xag → Stooq daily CSV
+  //   bond:/other: → synthesize from user's own transaction history
+  //   crypto id   → CoinGecko market_chart
   getChartData: async (id, days = 7) => {
     if (!id) return [];
+    const stooqSym = stooqSymbolFor(id);
+    if (stooqSym) {
+      const hist = await fetchStooqHistory(stooqSym, days);
+      const step = Math.max(1, Math.floor(hist.length / 80));
+      return hist.filter((_, i) => i % step === 0);
+    }
+    if (id.startsWith('bond:') || id.startsWith('other:')) {
+      const txs = loadData('transactions').filter(t => t.coin_id === id);
+      const manual = loadData('manual_prices', {})[id];
+      const pts = txs
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(t => ({ date: t.date, time: t.date, price: t.price_per_unit }));
+      if (manual?.usd && (pts.length === 0 || pts[pts.length - 1].price !== manual.usd)) {
+        pts.push({ date: 'Now', time: 'Now', price: manual.usd });
+      }
+      return pts;
+    }
     try {
       const res = await fetch(
         `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
