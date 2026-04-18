@@ -7,23 +7,38 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // from Stooq's CORS-enabled CSV endpoint. Failures fall back to the manual cache.
 export const ASSET_CATEGORIES = {
   crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
+  fiat:   { key: 'fiat',   label: 'Fiat',   icon: '💵', color: '#0ea5e9' },
   gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
   silver: { key: 'silver', label: 'Silver', icon: '🥈', color: '#94a3b8' },
   stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: '#10b981' },
-  bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0ea5e9' },
+  bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0284c7' },
   other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
 };
-export const NON_CRYPTO_CATEGORIES = ['gold', 'silver', 'stock', 'bond', 'other'];
+export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other'];
 
 // Special coin IDs used for real-time external data sources
 export const GOLD_ID = 'metal:xau';        // 1 troy oz gold, USD
 export const SILVER_ID = 'metal:xag';      // 1 troy oz silver, USD
 export const STOCK_PREFIX = 'stock:';      // followed by lowercase ticker, e.g. stock:aapl
+export const FIAT_PREFIX = 'fiat:';        // followed by lowercase iso code, e.g. fiat:eur
 
 export const PRESET_ASSETS = {
   gold:   { coin_id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   unit: 'oz' },
   silver: { coin_id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', unit: 'oz' },
 };
+
+export const POPULAR_FIAT = [
+  { code: 'USD', name: 'US Dollar',        symbol: '$' },
+  { code: 'EUR', name: 'Euro',             symbol: '€' },
+  { code: 'GBP', name: 'British Pound',    symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen',     symbol: '¥' },
+  { code: 'CHF', name: 'Swiss Franc',      symbol: 'Fr' },
+  { code: 'CAD', name: 'Canadian Dollar',  symbol: 'C$' },
+  { code: 'AUD', name: 'Australian Dollar',symbol: 'A$' },
+  { code: 'CNY', name: 'Chinese Yuan',     symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee',     symbol: '₹' },
+  { code: 'AED', name: 'UAE Dirham',       symbol: 'د.إ' },
+];
 
 export const POPULAR_TICKERS = [
   { ticker: 'AAPL', name: 'Apple Inc.' },
@@ -65,9 +80,12 @@ let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
 let stockCacheTime = {};
+let fiatRatesCache = null;
+let fiatRatesCacheTime = 0;
 const CACHE_DURATION = 60_000;
 const METAL_CACHE_DURATION = 5 * 60_000;   // 5 min — metals update slowly
 const STOCK_CACHE_DURATION = 2 * 60_000;   // 2 min
+const FIAT_CACHE_DURATION = 15 * 60_000;   // 15 min — FX moves slowly
 
 // ─── Real-time metal prices (gold / silver) ───
 // Tries gold-api.com first (CORS-enabled, no key), falls back to CoinGecko's
@@ -137,19 +155,101 @@ async function fetchStockLive(coinId) {
   if (stockCache[coinId] && now - (stockCacheTime[coinId] || 0) < STOCK_CACHE_DURATION) {
     return stockCache[coinId];
   }
+
+  // Primary: Stooq (CORS-enabled CSV, no key). Works for most US tickers.
+  const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
   try {
-    const url = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const text = await res.text();
-    const parsed = parseStooqRow(text);
-    if (!parsed) return null;
-    stockCache[coinId] = parsed;
-    stockCacheTime[coinId] = now;
-    return parsed;
-  } catch {
-    return null;
-  }
+    const res = await fetch(stooqUrl);
+    if (res.ok) {
+      const text = await res.text();
+      const parsed = parseStooqRow(text);
+      if (parsed) {
+        stockCache[coinId] = parsed;
+        stockCacheTime[coinId] = now;
+        return parsed;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Fallback 1: Stooq through a public CORS proxy (some browsers/networks block Stooq directly).
+  try {
+    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(stooqUrl)}`);
+    if (res.ok) {
+      const text = await res.text();
+      const parsed = parseStooqRow(text);
+      if (parsed) {
+        stockCache[coinId] = parsed;
+        stockCacheTime[coinId] = now;
+        return parsed;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Fallback 2: Yahoo Finance quote JSON via CORS proxy.
+  try {
+    const yUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker.toUpperCase())}`;
+    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`);
+    if (res.ok) {
+      const data = await res.json();
+      const q = data?.quoteResponse?.result?.[0];
+      if (q && typeof q.regularMarketPrice === 'number') {
+        const parsed = {
+          usd: q.regularMarketPrice,
+          usd_24h_change: q.regularMarketChangePercent || 0,
+          name: q.longName || q.shortName || '',
+        };
+        stockCache[coinId] = parsed;
+        stockCacheTime[coinId] = now;
+        return parsed;
+      }
+    }
+  } catch { /* fall through */ }
+
+  return null;
+}
+
+// ─── Real-time fiat FX rates (all quoted in USD per 1 unit of currency) ───
+// Uses open.er-api.com (free, CORS-enabled, no key). Falls back to frankfurter.app.
+async function fetchFiatRates() {
+  const now = Date.now();
+  if (fiatRatesCache && now - fiatRatesCacheTime < FIAT_CACHE_DURATION) return fiatRatesCache;
+
+  // Primary: open.er-api.com — returns rates vs USD base
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.rates) {
+        // rates[X] = X per 1 USD. We want usd_per_unit = 1 / rates[X].
+        const out = { USD: 1 };
+        for (const [code, perUsd] of Object.entries(data.rates)) {
+          if (typeof perUsd === 'number' && perUsd > 0) out[code] = 1 / perUsd;
+        }
+        fiatRatesCache = out;
+        fiatRatesCacheTime = now;
+        return out;
+      }
+    }
+  } catch {}
+
+  // Fallback: frankfurter.app (European Central Bank reference rates)
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.rates) {
+        const out = { USD: 1 };
+        for (const [code, perUsd] of Object.entries(data.rates)) {
+          if (typeof perUsd === 'number' && perUsd > 0) out[code] = 1 / perUsd;
+        }
+        fiatRatesCache = out;
+        fiatRatesCacheTime = now;
+        return out;
+      }
+    }
+  } catch {}
+
+  return fiatRatesCache || { USD: 1 };
 }
 
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
@@ -160,32 +260,38 @@ function stooqSymbolFor(id) {
   return null;
 }
 
+function parseStooqCsv(text, days) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',');
+  const closeIdx = headers.indexOf('Close');
+  const dateIdx = headers.indexOf('Date');
+  if (closeIdx < 0 || dateIdx < 0) return [];
+  const rows = lines.slice(1)
+    .map(l => l.split(','))
+    .map(cols => ({ date: cols[dateIdx], close: parseFloat(cols[closeIdx]) }))
+    .filter(r => r.date && isFinite(r.close) && r.close > 0);
+  const tail = rows.slice(-Math.max(days, 7));
+  return tail.map(r => ({ date: r.date, time: r.date, price: r.close }));
+}
+
 // Stooq daily CSV — returns [{ date, time, price }] for the most recent `days` rows.
 async function fetchStooqHistory(symbol, days = 30) {
+  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
   try {
-    const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
     const res = await fetch(url);
-    if (!res.ok) return [];
-    const text = await res.text();
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    const headers = lines[0].split(',');
-    const closeIdx = headers.indexOf('Close');
-    const dateIdx = headers.indexOf('Date');
-    if (closeIdx < 0 || dateIdx < 0) return [];
-    const rows = lines.slice(1)
-      .map(l => l.split(','))
-      .map(cols => ({ date: cols[dateIdx], close: parseFloat(cols[closeIdx]) }))
-      .filter(r => r.date && isFinite(r.close) && r.close > 0);
-    const tail = rows.slice(-Math.max(days, 7));
-    return tail.map(r => ({
-      date: r.date,
-      time: r.date,
-      price: r.close,
-    }));
-  } catch {
-    return [];
-  }
+    if (res.ok) {
+      const out = parseStooqCsv(await res.text(), days);
+      if (out.length > 0) return out;
+    }
+  } catch {}
+  try {
+    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`);
+    if (res.ok) {
+      return parseStooqCsv(await res.text(), days);
+    }
+  } catch {}
+  return [];
 }
 
 export const api = {
@@ -291,7 +397,18 @@ export const api = {
     // Auto-USDT pairing only applies to crypto buys/sells (not non-crypto or deposit/withdraw)
     const isStable = ['tether', 'usd-coin', 'dai', 'binance-usd', 'true-usd', 'first-digital-usd'].includes(data.coin_id);
     const isDepositOrWithdraw = data.type === 'deposit' || data.type === 'withdraw';
-    const isCrypto = category === 'crypto';
+    // Defensive: a non-crypto coin_id prefix ALWAYS disqualifies USDT pairing,
+    // even if the category somehow wasn't explicitly set.
+    const nonCryptoPrefix = data.coin_id && (
+      data.coin_id.startsWith(STOCK_PREFIX) ||
+      data.coin_id.startsWith(FIAT_PREFIX) ||
+      data.coin_id === GOLD_ID ||
+      data.coin_id === SILVER_ID ||
+      data.coin_id.startsWith('bond:') ||
+      data.coin_id.startsWith('other:') ||
+      data.coin_id.startsWith('metal:')
+    );
+    const isCrypto = category === 'crypto' && !nonCryptoPrefix;
 
     if (isCrypto && !isStable && !isDepositOrWithdraw) {
       const usdtImage = 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png';
@@ -370,8 +487,10 @@ export const api = {
 
     const stockIds = coinIds.filter(id => id.startsWith(STOCK_PREFIX));
     const metalIds = coinIds.filter(id => id === GOLD_ID || id === SILVER_ID);
+    const fiatIds = coinIds.filter(id => id.startsWith(FIAT_PREFIX));
     const cryptoLikeIds = coinIds.filter(id =>
-      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID && !id.startsWith('bond:') && !id.startsWith('other:')
+      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID &&
+      !id.startsWith('bond:') && !id.startsWith('other:') && !id.startsWith(FIAT_PREFIX)
     );
     const manualFallbackIds = coinIds.filter(id => id.startsWith('bond:') || id.startsWith('other:'));
 
@@ -386,6 +505,21 @@ export const api = {
         for (const id of metalIds) {
           if (metals[id]) result[id] = metals[id];
           else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+        }
+      }));
+    }
+
+    // Fiat currencies — convert each ISO code to USD-per-unit via live FX
+    if (fiatIds.length > 0) {
+      tasks.push(fetchFiatRates().then(rates => {
+        for (const id of fiatIds) {
+          const code = id.slice(FIAT_PREFIX.length).toUpperCase();
+          const usd = rates[code];
+          if (typeof usd === 'number' && usd > 0) {
+            result[id] = { usd, usd_24h_change: 0, source: 'er-api', name: code };
+          } else if (manual[id]) {
+            result[id] = { ...manual[id], source: 'manual' };
+          }
         }
       }));
     }
