@@ -10,6 +10,36 @@ function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// Asset icon with graceful fallback: if the image URL is missing or fails to
+// load, render a letter badge using the category/gradient color.
+function CoinIcon({ image, symbol, color, category }) {
+  const [broken, setBroken] = useState(false)
+  const catIcon = ASSET_CATEGORIES[category]?.icon
+  const showImg = image && !broken
+  if (showImg) {
+    return (
+      <img
+        src={image}
+        alt=""
+        width={40}
+        height={40}
+        className="coin-logo"
+        onError={() => setBroken(true)}
+        loading="lazy"
+      />
+    )
+  }
+  return (
+    <div
+      className="coin-icon"
+      style={{ background: `${color}22`, color: color, borderColor: `${color}55` }}
+      aria-hidden="true"
+    >
+      {catIcon && category !== 'crypto' ? catIcon : (symbol || '?').substring(0, 2).toUpperCase()}
+    </div>
+  )
+}
+
 // ─── Portfolio AI Analysis Engine ───
 function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets) {
   if (enriched.length === 0) return null
@@ -888,13 +918,12 @@ export default function Dashboard() {
                     style={{ cursor: 'pointer' }}
                   >
               <div className="coin-header">
-                {h.image ? (
-                  <img src={h.image} alt="" width={40} height={40} className="coin-logo" />
-                ) : (
-                  <div className="coin-icon" style={{ background: COLORS[i % COLORS.length] + '22', color: COLORS[i % COLORS.length] }}>
-                    {h.coin_symbol.substring(0, 2).toUpperCase()}
-                  </div>
-                )}
+                <CoinIcon
+                  image={h.image}
+                  symbol={h.coin_symbol}
+                  color={COLORS[i % COLORS.length]}
+                  category={h.category}
+                />
                 <div className="coin-name">
                   <div className="coin-name-row">
                     <strong>{h.coin_symbol.toUpperCase()}</strong>

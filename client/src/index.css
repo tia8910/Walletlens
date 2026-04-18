@@ -77,10 +77,10 @@ body::after {
   position: fixed;
   left: 0; right: 0;
   bottom: 0;
-  height: 62vh;
+  height: 38vh;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.28;
   mix-blend-mode: multiply;
 }
 .bg-trend-svg {
@@ -360,16 +360,18 @@ body::after {
 /* ─── Hero Card ─── */
 .hero-card {
   position: relative; overflow: hidden;
-  background: var(--header-gradient);
+  background:
+    linear-gradient(135deg, #3730a3 0%, #6d28d9 45%, #be185d 100%);
   border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem;
   color: #fff;
-  box-shadow: 0 22px 48px rgba(168,85,247,0.32), 0 8px 20px rgba(236,72,153,0.22), inset 0 0 0 1px rgba(255,255,255,0.18);
+  box-shadow: 0 22px 48px rgba(76, 29, 149, 0.32), 0 8px 20px rgba(190, 24, 93, 0.22), inset 0 0 0 1px rgba(255,255,255,0.18);
   border: 1px solid rgba(255,255,255,0.22);
 }
 .hero-card::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.35), transparent 60%),
-              radial-gradient(80% 60% at 100% 100%, rgba(34,211,238,0.28), transparent 60%);
+  background: radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.18), transparent 60%),
+              radial-gradient(80% 60% at 100% 100%, rgba(34,211,238,0.20), transparent 60%),
+              linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.22) 100%);
   animation: hero-sheen 12s ease-in-out infinite alternate;
 }
 @keyframes hero-sheen {
@@ -379,10 +381,10 @@ body::after {
 .hero-card::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background:
-    repeating-linear-gradient(115deg, transparent 0 14px, rgba(255,255,255,0.06) 14px 15px);
+    repeating-linear-gradient(115deg, transparent 0 14px, rgba(255,255,255,0.05) 14px 15px);
 }
-.hero-label { font-size: 0.72rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.25rem; font-weight: 700; position: relative; z-index: 2; color: rgba(255,255,255,0.92); }
-.hero-value { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; position: relative; z-index: 2; color: #fff; text-shadow: 0 2px 16px rgba(0,0,0,0.2); }
+.hero-label { font-size: 0.75rem; opacity: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem; font-weight: 800; position: relative; z-index: 2; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+.hero-value { font-size: 2.35rem; font-weight: 900; letter-spacing: -0.02em; position: relative; z-index: 2; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.45); }
 .hero-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; position: relative; z-index: 2; }
 .hero-pnl { font-size: 0.95rem; font-weight: 800; padding: 0.22rem 0.6rem; border-radius: 999px; }
 .hero-pnl.positive { color: #064e3b; background: #a7f3d0; }
@@ -437,20 +439,25 @@ body::after {
 .btn-ghost-dark:hover { color: var(--red); background: none; }
 
 /* ─── Quick Actions ─── */
-.quick-actions { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.quick-actions { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
 .action-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
-  padding: 0.7rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem;
-  border: none; cursor: pointer; transition: all 0.15s; box-shadow: var(--shadow);
+  flex: 1; min-width: 120px;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.75rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+  border: 1px solid transparent; cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  box-shadow: 0 6px 16px -10px rgba(17, 24, 39, 0.25);
+  background: #ffffff;
 }
-.buy-btn { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
-.buy-btn:hover { background: rgba(16,185,129,0.30); }
-.sell-btn { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
-.sell-btn:hover { background: rgba(239,68,68,0.30); }
-.wallet-btn { background: var(--bg2); color: var(--text2); border: 1px solid var(--border); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
-.wallet-btn:hover { background: var(--bg3); color: var(--text); }
-.data-btn { background: var(--accent-bg); color: var(--text); border: 1px solid rgba(129,140,248,0.30); }
-.data-btn:hover { background: rgba(99,102,241,0.28); }
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -12px rgba(17, 24, 39, 0.32); }
+.buy-btn  { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.buy-btn:hover  { background: linear-gradient(135deg, #059669, #047857); }
+.sell-btn { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.sell-btn:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+.wallet-btn { background: #ffffff; color: var(--text); border-color: var(--border); }
+.wallet-btn:hover { background: #f8fafc; }
+.data-btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+.data-btn:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
 
 /* ─── Data Import/Export ─── */
 .data-card p { line-height: 1.4; }
@@ -478,8 +485,16 @@ body::after {
 .import-status.error { background: var(--red-bg); color: var(--red); }
 
 /* ─── Section Header ─── */
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.section-header h3 { font-size: 1.1rem; font-weight: 700; }
+.section-header {
+  display: flex; align-items: baseline; gap: 0.9rem; margin: 1.25rem 0 0.75rem;
+  padding: 0.4rem 0.75rem; border-radius: 10px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(99,102,241,0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.section-header h3 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+.section-header > .muted { font-size: 0.8rem; font-weight: 600; }
 
 /* ─── Coin Cards ─── */
 .coin-cards { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -493,11 +508,14 @@ body::after {
 }
 .coin-card:hover { border-color: rgba(129,140,248,0.55); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
 .coin-header { display: flex; align-items: center; gap: 0.75rem; }
-.coin-logo { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.coin-logo { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: #fff; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 2px 6px -3px rgba(15,23,42,0.18); }
 .coin-icon {
   width: 40px; height: 40px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
+  font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+  border: 1px solid rgba(99,102,241,0.25);
+  background: #ffffff;
+  box-shadow: 0 2px 6px -3px rgba(15,23,42,0.18);
 }
 .coin-name { flex: 1; display: flex; flex-direction: column; }
 .coin-name strong { font-size: 0.95rem; }

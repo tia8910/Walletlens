@@ -1,4 +1,20 @@
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
+// Fetch JSON from a URL, retrying through a CORS proxy if the direct
+// request fails (rate-limit, CORS block, or network error). Returns null
+// if both attempts fail.
+async function fetchJSON(url) {
+  try {
+    const res = await fetch(url);
+    if (res.ok) return await res.json();
+  } catch {}
+  try {
+    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
+}
 
 // ─── Asset Categories ───
 // Non-crypto assets track manually-entered prices in localStorage under
@@ -118,9 +134,8 @@ async function fetchMetalsLive() {
   // Fallback for gold: CoinGecko pax-gold (PAXG tracks 1 oz gold)
   if (!out[GOLD_ID]) {
     try {
-      const res = await fetch(`${COINGECKO_BASE}/simple/price?ids=pax-gold&vs_currencies=usd&include_24hr_change=true`);
-      const d = await res.json();
-      if (d['pax-gold']?.usd) {
+      const d = await fetchJSON(`${COINGECKO_BASE}/simple/price?ids=pax-gold&vs_currencies=usd&include_24hr_change=true`);
+      if (d && d['pax-gold']?.usd) {
         out[GOLD_ID] = { usd: d['pax-gold'].usd, usd_24h_change: d['pax-gold'].usd_24h_change || 0, name: 'Gold (1 oz)', symbol: 'XAU', source: 'coingecko-paxg' };
       }
     } catch {}
@@ -543,15 +558,12 @@ export const api = {
         const now = Date.now();
         const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
         if (needsFresh) {
-          try {
-            const res = await fetch(
-              `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
-            );
-            const data = await res.json();
+          const data = await fetchJSON(
+            `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+          );
+          if (data && typeof data === 'object') {
             priceCache = { ...priceCache, ...data };
             lastPriceFetch = now;
-          } catch (err) {
-            console.error('Price fetch error:', err.message);
           }
         }
         for (const id of cryptoIds) {
@@ -577,19 +589,14 @@ export const api = {
     const allCached = coinIds.every(id => coinImageCache[id]);
 
     if (!allCached || now - lastImageFetch > CACHE_DURATION * 5) {
-      try {
-        const res = await fetch(
-          `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${ids}&per_page=100&page=1`
-        );
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          for (const coin of data) {
-            coinImageCache[coin.id] = coin.image;
-          }
-          lastImageFetch = now;
+      const data = await fetchJSON(
+        `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${ids}&per_page=100&page=1`
+      );
+      if (Array.isArray(data)) {
+        for (const coin of data) {
+          coinImageCache[coin.id] = coin.image;
         }
-      } catch (err) {
-        console.error('Image fetch error:', err.message);
+        lastImageFetch = now;
       }
     }
 
@@ -602,34 +609,23 @@ export const api = {
 
   searchCoins: async (query) => {
     if (!query) return [];
-    try {
-      const res = await fetch(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      return (data.coins || []).slice(0, 20).map(c => ({
-        id: c.id,
-        symbol: c.symbol,
-        name: c.name,
-        thumb: c.thumb,
-        large: c.large,
-      }));
-    } catch (err) {
-      console.error('Search error:', err.message);
-      return [];
-    }
+    const data = await fetchJSON(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
+    if (!data) return [];
+    return (data.coins || []).slice(0, 20).map(c => ({
+      id: c.id,
+      symbol: c.symbol,
+      name: c.name,
+      thumb: c.thumb,
+      large: c.large,
+    }));
   },
 
   // Get detailed coin data for AI analysis
   getCoinDetail: async (id) => {
     if (!id) return null;
-    try {
-      const res = await fetch(
-        `${COINGECKO_BASE}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`
-      );
-      return await res.json();
-    } catch (err) {
-      console.error('Coin detail error:', err.message);
-      return null;
-    }
+    return await fetchJSON(
+      `${COINGECKO_BASE}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`
+    );
   },
 
   // Chart data for asset detail — routes by id:
@@ -656,22 +652,16 @@ export const api = {
       }
       return pts;
     }
-    try {
-      const res = await fetch(
-        `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
-      );
-      const data = await res.json();
-      if (!data.prices) return [];
-      const step = Math.max(1, Math.floor(data.prices.length / 80));
-      return data.prices.filter((_, i) => i % step === 0).map(([ts, price]) => ({
-        date: new Date(ts).toLocaleDateString(),
-        time: new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        price,
-      }));
-    } catch (err) {
-      console.error('Chart data error:', err.message);
-      return [];
-    }
+    const data = await fetchJSON(
+      `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
+    );
+    if (!data || !data.prices) return [];
+    const step = Math.max(1, Math.floor(data.prices.length / 80));
+    return data.prices.filter((_, i) => i % step === 0).map(([ts, price]) => ({
+      date: new Date(ts).toLocaleDateString(),
+      time: new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      price,
+    }));
   },
 
   // Holdings for a specific coin (for sell quantity picker)
@@ -681,15 +671,10 @@ export const api = {
   },
 
   getMarketData: async () => {
-    try {
-      const res = await fetch(
-        `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`
-      );
-      return await res.json();
-    } catch (err) {
-      console.error('Market data error:', err.message);
-      return [];
-    }
+    const data = await fetchJSON(
+      `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`
+    );
+    return Array.isArray(data) ? data : [];
   },
 
   // Exchanges
