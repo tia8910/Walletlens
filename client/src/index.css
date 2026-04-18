@@ -169,6 +169,104 @@ body::after {
   animation: wl-scan 2.8s ease-in-out infinite;
 }
 .sidebar ul { list-style: none; padding: 0 0.6rem; display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* ─── Sidebar pitch card (Why WalletLens) ─── */
+.sidebar-pitch {
+  position: relative;
+  margin: 0.25rem 0.9rem 1rem;
+  padding: 0.9rem 0.85rem 0.85rem;
+  border-radius: 16px;
+  background:
+    linear-gradient(155deg, rgba(99,102,241,0.10), rgba(168,85,247,0.08) 55%, rgba(236,72,153,0.10));
+  border: 1px solid rgba(99,102,241,0.18);
+  box-shadow: 0 10px 28px -18px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+.sidebar-pitch::before {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: 16px; pointer-events: none;
+  background:
+    conic-gradient(from 0deg, transparent 0 65%, rgba(99,102,241,0.35) 75%, rgba(34,211,238,0.35) 82%, rgba(236,72,153,0.35) 90%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding: 1px; opacity: 0.55;
+  animation: pitch-sweep 7s linear infinite;
+}
+@keyframes pitch-sweep {
+  to { transform: rotate(360deg); }
+}
+.pitch-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #065f46;
+  background: linear-gradient(90deg, rgba(16,185,129,0.18), rgba(34,211,238,0.18));
+  border: 1px solid rgba(16,185,129,0.35);
+  padding: 0.28rem 0.55rem; border-radius: 999px;
+  margin-bottom: 0.55rem;
+}
+.pitch-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+  animation: pitch-pulse 1.8s ease-out infinite;
+}
+@keyframes pitch-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+  70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.pitch-headline {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem; font-weight: 800; line-height: 1.25;
+  color: var(--text);
+}
+.pitch-em {
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  background-size: 200% 100%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; color: transparent;
+  animation: wl-shimmer 6s ease infinite;
+}
+.pitch-body {
+  margin: 0 0 0.7rem;
+  font-size: 0.75rem; line-height: 1.5; color: var(--text2);
+}
+.pitch-points {
+  list-style: none; padding: 0; margin: 0 0 0.6rem;
+  display: flex; flex-direction: column; gap: 0.38rem;
+}
+.pitch-points li {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  font-size: 0.72rem; line-height: 1.35; color: var(--text);
+}
+.pitch-points strong { color: var(--text); font-weight: 700; }
+.pitch-ico {
+  flex: none;
+  width: 18px; height: 18px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  color: #fff;
+  box-shadow: 0 4px 10px -4px rgba(99,102,241,0.55);
+}
+.pitch-meter {
+  display: flex; gap: 4px; padding-top: 0.4rem;
+  border-top: 1px dashed rgba(99,102,241,0.22);
+}
+.pitch-meter-dot {
+  flex: 1; height: 3px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  background-size: 200% 100%;
+  animation: wl-shimmer 2.4s ease-in-out infinite;
+}
+.pitch-meter-dot:nth-child(2) { animation-delay: 0.4s; }
+.pitch-meter-dot:nth-child(3) { animation-delay: 0.8s; }
+
+/* Hide pitch on narrow sidebar / mobile */
+@media (max-width: 960px) {
+  .sidebar-pitch { display: none; }
+}
 .sidebar li a {
   display: flex; align-items: center; gap: 0.7rem;
   padding: 0.7rem 0.85rem; color: var(--text2);
