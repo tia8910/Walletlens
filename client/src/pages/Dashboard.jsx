@@ -483,10 +483,15 @@ export default function Dashboard() {
     ? categoryList
     : categoryList.filter(c => c.key === categoryFilter)
 
-  // Pie chart: category-level allocation
-  const chartData = categoryList.filter(c => c.total > 0).map(c => ({
-    name: c.label, value: c.total, color: c.color,
-  }))
+  // Pie chart: per-asset contribution (one slice per holding)
+  const chartData = enriched
+    .filter(h => h.value > 0)
+    .map((h, i) => ({
+      name: h.coin_symbol.toUpperCase(),
+      value: h.value,
+      color: COLORS[i % COLORS.length],
+      category: h.category || 'crypto',
+    }))
 
   // Portfolio AI Analysis
   let analysis = null
@@ -900,17 +905,23 @@ export default function Dashboard() {
                   <strong>${fmt(h.value)}</strong>
                   <span className="muted">{h.allocation.toFixed(1)}% of portfolio</span>
                 </div>
-                <div className="contribution-donut" title={`Contribution: ${h.allocation.toFixed(1)}%`}>
-                  <svg viewBox="0 0 36 36">
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none" stroke="var(--bg4)" strokeWidth="3.2" />
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none" stroke={cat.color} strokeWidth="3.2"
-                      strokeDasharray={`${Math.min(h.allocation, 100)}, 100`}
-                      strokeLinecap="round" />
-                  </svg>
-                  <span className="contribution-donut-value">{h.allocation.toFixed(0)}%</span>
-                </div>
+                {(() => {
+                  const globalIdx = enriched.findIndex(x => x.coin_id === h.coin_id)
+                  const donutColor = COLORS[(globalIdx >= 0 ? globalIdx : i) % COLORS.length]
+                  return (
+                    <div className="contribution-donut" title={`Contribution: ${h.allocation.toFixed(1)}%`}>
+                      <svg viewBox="0 0 36 36">
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none" stroke="var(--bg4)" strokeWidth="3.2" />
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none" stroke={donutColor} strokeWidth="3.2"
+                          strokeDasharray={`${Math.min(h.allocation, 100)}, 100`}
+                          strokeLinecap="round" />
+                      </svg>
+                      <span className="contribution-donut-value">{h.allocation.toFixed(0)}%</span>
+                    </div>
+                  )
+                })()}
               </div>
               <div className="coin-details">
                 <div className="detail">

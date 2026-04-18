@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
+import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 
-const CATEGORY_ORDER = ['crypto', 'gold', 'silver', 'stock', 'bond', 'other']
+const CATEGORY_ORDER = ['crypto', 'fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
 const CATEGORY_UNITS = {
-  gold: 'oz', silver: 'oz', stock: 'shares', bond: 'units', other: 'units', crypto: '',
+  gold: 'oz', silver: 'oz', stock: 'shares', bond: 'units', fiat: 'units', other: 'units', crypto: '',
 }
 
 function slugifyAsset(category, symbol, name) {
   const base = (symbol || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  const prefix = category === 'bond' ? 'bond:' : category === 'other' ? 'other:' : `${category}:`
+  const prefix = category === 'bond' ? 'bond:' : category === 'other' ? 'other:' : category === 'fiat' ? 'fiat:' : `${category}:`
   return `${prefix}${base || Date.now()}`
 }
 
@@ -302,6 +302,22 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     }).finally(() => setFetchingPrice(false))
   }
 
+  function selectPopularFiat(f) {
+    setManualAsset({ symbol: f.code, name: f.name })
+    const coinId = `${FIAT_PREFIX}${f.code.toLowerCase()}`
+    setForm(prev => ({
+      ...prev,
+      coin_id: coinId,
+      coin_symbol: f.code,
+      coin_name: f.name,
+    }))
+    setFetchingPrice(true)
+    api.getPrices(coinId).then(data => {
+      const p = data[coinId]?.usd
+      if (p) setForm(prev => ({ ...prev, price_per_unit: String(p.toFixed(6)) }))
+    }).finally(() => setFetchingPrice(false))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.coin_id || !form.amount || !form.price_per_unit || !form.wallet_id) return
@@ -419,17 +435,35 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       </div>
                     </div>
                   )}
+                  {form.category === 'fiat' && (
+                    <div className="ticker-chips">
+                      <div className="ticker-chips-label">Currency</div>
+                      <div className="ticker-chips-row">
+                        {POPULAR_FIAT.map(f => (
+                          <button
+                            key={f.code}
+                            type="button"
+                            className={`ticker-chip ${manualAsset.symbol === f.code ? 'active' : ''}`}
+                            onClick={() => selectPopularFiat(f)}
+                            title={f.name}
+                          >
+                            {f.symbol} {f.code}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="form-row-2">
                     <div className="form-field">
                       <label>
-                        {form.category === 'stock' ? 'Ticker' : form.category === 'bond' ? 'Bond Code' : 'Symbol'}
+                        {form.category === 'stock' ? 'Ticker' : form.category === 'bond' ? 'Bond Code' : form.category === 'fiat' ? 'Currency' : 'Symbol'}
                       </label>
                       <div className="price-input-wrap">
                         <input
                           type="text"
                           value={manualAsset.symbol}
                           onChange={e => handleManualAssetChange('symbol', e.target.value.toUpperCase())}
-                          placeholder={form.category === 'stock' ? 'AAPL' : form.category === 'gold' ? 'XAU' : form.category === 'silver' ? 'XAG' : 'SYMB'}
+                          placeholder={form.category === 'stock' ? 'AAPL' : form.category === 'gold' ? 'XAU' : form.category === 'silver' ? 'XAG' : form.category === 'fiat' ? 'EUR' : 'SYMB'}
                           autoFocus
                         />
                         {form.category === 'stock' && manualAsset.symbol && (
@@ -447,13 +481,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     </div>
                     <div className="form-field">
                       <label>
-                        {form.category === 'stock' ? 'Company Name' : form.category === 'bond' ? 'Bond Name' : 'Asset Name'}
+                        {form.category === 'stock' ? 'Company Name' : form.category === 'bond' ? 'Bond Name' : form.category === 'fiat' ? 'Currency Name' : 'Asset Name'}
                       </label>
                       <input
                         type="text"
                         value={manualAsset.name}
                         onChange={e => handleManualAssetChange('name', e.target.value)}
-                        placeholder={form.category === 'stock' ? 'Apple Inc.' : form.category === 'bond' ? 'US 10Y Treasury' : form.category === 'gold' ? 'Gold (1 oz)' : 'Asset name'}
+                        placeholder={form.category === 'stock' ? 'Apple Inc.' : form.category === 'bond' ? 'US 10Y Treasury' : form.category === 'gold' ? 'Gold (1 oz)' : form.category === 'fiat' ? 'Euro' : 'Asset name'}
                       />
                     </div>
                   </div>
@@ -471,6 +505,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   {form.category === 'stock' && form.price_per_unit && form.coin_id && (
                     <div className="live-price-badge">
                       <span className="live-dot" /> Live from Stooq — {manualAsset.symbol} @ ${fmt(parseFloat(form.price_per_unit))}
+                    </div>
+                  )}
+                  {form.category === 'fiat' && form.price_per_unit && form.coin_id && (
+                    <div className="live-price-badge">
+                      <span className="live-dot" /> Live FX — 1 {manualAsset.symbol} ≈ ${parseFloat(form.price_per_unit).toFixed(4)}
                     </div>
                   )}
                 </>
