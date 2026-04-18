@@ -163,6 +163,8 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets] = useState({})
   const [editingTarget, setEditingTarget] = useState(null)
   const [targetInput, setTargetInput] = useState('')
+  const [targetQtyInput, setTargetQtyInput] = useState('')
+  const [expandedPlans, setExpandedPlans] = useState({})
   const [alarms, setAlarms] = useState([])
   const [showAnalysis, setShowAnalysis] = useState(true)
   const [showDataPanel, setShowDataPanel] = useState(false)
@@ -188,40 +190,30 @@ export default function Dashboard() {
     const newAlarms = []
 
     for (const h of portfolioData) {
-      const target = targets[h.coin_id]
+      const plan = targets[h.coin_id]
       const price = priceData[h.coin_id]?.usd
-      if (!target || !price) continue
+      if (!plan?.targets?.length || !price) continue
 
-      const targetPrice = target.amount
+      // Find the most relevant target: lowest-price unhit target, or highest-price hit target
+      const unhit = plan.targets.filter(t => price < t.price).sort((a, b) => a.price - b.price)
+      const hit = plan.targets.filter(t => price >= t.price).sort((a, b) => b.price - a.price)
+      const t = hit[0] || unhit[0]
+      if (!t) continue
+      const targetPrice = t.price
       const pct = (price / targetPrice) * 100
 
-      // Already dismissed and price hasn't dropped below 95% of target
       if (alarmState[h.coin_id]?.dismissed && pct >= 95) continue
-
-      // Clear dismissed if price dropped significantly below target
-      if (alarmState[h.coin_id]?.dismissed && pct < 95) {
-        clearAlarmDismissed(h.coin_id)
-      }
+      if (alarmState[h.coin_id]?.dismissed && pct < 95) clearAlarmDismissed(h.coin_id)
 
       if (pct >= 100) {
         newAlarms.push({
-          coinId: h.coin_id,
-          symbol: h.coin_symbol.toUpperCase(),
-          image: h.coin_image,
-          price,
-          targetPrice,
-          pct,
-          type: 'hit',
+          coinId: h.coin_id, symbol: h.coin_symbol.toUpperCase(), image: h.coin_image,
+          price, targetPrice, pct, type: 'hit',
         })
       } else if (pct >= 90) {
         newAlarms.push({
-          coinId: h.coin_id,
-          symbol: h.coin_symbol.toUpperCase(),
-          image: h.coin_image,
-          price,
-          targetPrice,
-          pct,
-          type: 'near',
+          coinId: h.coin_id, symbol: h.coin_symbol.toUpperCase(), image: h.coin_image,
+          price, targetPrice, pct, type: 'near',
         })
       }
     }
@@ -366,13 +358,27 @@ export default function Dashboard() {
     loadData()
   }
 
-  async function handleSetCoinTarget(coinId) {
-    const val = parseFloat(targetInput)
-    if (!val || val <= 0) return
-    await api.setCoinTarget(coinId, val)
+  async function handleAddCoinTarget(coinId, availableQty) {
+    const price = parseFloat(targetInput)
+    if (!price || price <= 0) return
+    let quantity = null
+    if (targetQtyInput && targetQtyInput.trim() !== '') {
+      const q = parseFloat(targetQtyInput)
+      if (!q || q <= 0) return
+      quantity = q
+    }
+    await api.addCoinTarget(coinId, { price, quantity })
     clearAlarmDismissed(coinId)
     setEditingTarget(null)
     setTargetInput('')
+    setTargetQtyInput('')
+    setExpandedPlans(prev => ({ ...prev, [coinId]: true }))
+    loadData()
+  }
+
+  async function handleRemoveTargetItem(coinId, targetId) {
+    await api.removeCoinTargetItem(coinId, targetId)
+    clearAlarmDismissed(coinId)
     loadData()
   }
 
@@ -392,11 +398,6 @@ export default function Dashboard() {
   const totalPnL = totalValue - totalInvested
   const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
 
-  const totalProjectedValue = enriched_raw => enriched_raw.reduce((sum, h) => {
-    const target = coinTargets[h.coin_id]
-    return sum + (target ? h.amount * target.amount : h.value)
-  }, 0)
-
   const enriched = portfolio.map(h => {
     const price = prices[h.coin_id]?.usd || 0
     const change24h = prices[h.coin_id]?.usd_24h_change || 0
@@ -409,17 +410,83 @@ export default function Dashboard() {
     const avgBuy = amount > 0 ? invested / amount : 0
     const image = coinImages[h.coin_id] || h.coin_image || ''
     const symbol = h.coin_symbol || h.coin_id || '??'
-    const target = coinTargets[h.coin_id]
-    const targetPrice = target ? target.amount : null
-    const targetValue = target ? amount * target.amount : null
-    const targetPricePct = target && price > 0 ? Math.min((price / target.amount) * 100, 100) : null
-    return { ...h, coin_symbol: symbol, amount, total_invested: invested, price, change24h, value, pnl, pnlPct, allocation, avgBuy, image, targetPrice, targetValue, targetPricePct }
+
+    // Multi-target sell plan
+    const plan = coinTargets[h.coin_id]
+    const rawTargets = plan?.targets || []
+    // Sort by price ascending, then enrich each target
+    const sortedTargets = [...rawTargets].sort((a, b) => a.price - b.price)
+    const totalAllocatedExplicit = sortedTargets.reduce((s, t) => s + (t.quantity ?? 0), 0)
+    const hasSellAllTarget = sortedTargets.some(t => t.quantity === null || t.quantity === undefined)
+    const remainingQty = hasSellAllTarget ? 0 : Math.max(0, amount - totalAllocatedExplicit)
+    const overAllocated = !hasSellAllTarget && totalAllocatedExplicit > amount
+
+    const enrichedTargets = sortedTargets.map(t => {
+      const qty = t.quantity ?? amount
+      const proceeds = qty * t.price
+      const progressPct = price > 0 ? Math.min((price / t.price) * 100, 100) : 0
+      const hit = price >= t.price
+      return { ...t, qty, proceeds, progressPct, hit, sellAll: t.quantity === null || t.quantity === undefined }
+    })
+
+    const planTotalProceeds = enrichedTargets.reduce((s, t) => s + t.proceeds, 0) + (remainingQty * price)
+    const planInvestedCovered = amount > 0 ? (invested * enrichedTargets.reduce((s, t) => s + t.qty, 0)) / amount : 0
+
+    // For analysis / alarms: use next unhit target (or highest hit)
+    const nextUnhit = enrichedTargets.find(t => !t.hit)
+    const lastHit = [...enrichedTargets].reverse().find(t => t.hit)
+    const primary = lastHit || nextUnhit || null
+    const targetPrice = primary ? primary.price : null
+    const targetValue = primary ? amount * primary.price : null
+    const targetPricePct = primary && price > 0 ? Math.min((price / primary.price) * 100, 100) : null
+
+    return {
+      ...h, coin_symbol: symbol, amount, total_invested: invested,
+      price, change24h, value, pnl, pnlPct, allocation, avgBuy, image,
+      plan: enrichedTargets, planRemainingQty: remainingQty, planOverAllocated: overAllocated,
+      planTotalProceeds, planInvestedCovered,
+      targetPrice, targetValue, targetPricePct,
+    }
   }).sort((a, b) => b.value - a.value)
+
+  const totalProjectedValue = enriched_raw => enriched_raw.reduce((sum, h) => {
+    if (h.plan && h.plan.length > 0) return sum + h.planTotalProceeds
+    return sum + h.value
+  }, 0)
 
   const projectedTotal = totalProjectedValue(enriched)
   const hasAnyTarget = Object.keys(coinTargets).length > 0
 
-  const chartData = enriched.filter(h => h.value > 0).map(h => ({ name: (h.coin_symbol || '??').toUpperCase(), value: h.value }))
+  // Group holdings by category for the dashboard split
+  const enrichedByCategory = {}
+  for (const h of enriched) {
+    const cat = h.category || 'crypto'
+    if (!enrichedByCategory[cat]) {
+      enrichedByCategory[cat] = { items: [], total: 0, invested: 0 }
+    }
+    enrichedByCategory[cat].items.push(h)
+    enrichedByCategory[cat].total += h.value
+    enrichedByCategory[cat].invested += h.total_invested
+  }
+  const categoryList = Object.entries(enrichedByCategory).map(([key, v]) => {
+    const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#a78bfa' }
+    return {
+      key, label: meta.label, icon: meta.icon, color: meta.color,
+      items: v.items, total: v.total, invested: v.invested,
+      pct: totalValue > 0 ? (v.total / totalValue) * 100 : 0,
+      pnl: v.total - v.invested,
+      pnlPct: v.invested > 0 ? ((v.total - v.invested) / v.invested) * 100 : 0,
+    }
+  }).sort((a, b) => b.total - a.total)
+
+  const filteredCategories = categoryFilter === 'all'
+    ? categoryList
+    : categoryList.filter(c => c.key === categoryFilter)
+
+  // Pie chart: category-level allocation
+  const chartData = categoryList.filter(c => c.total > 0).map(c => ({
+    name: c.label, value: c.total, color: c.color,
+  }))
 
   // Portfolio AI Analysis
   let analysis = null
@@ -498,14 +565,14 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} strokeWidth={0}>
-                  {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  {chartData.map((d, i) => <Cell key={i} fill={d.color || COLORS[i % COLORS.length]} />)}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="chart-legend">
               {chartData.map((d, i) => (
                 <div key={d.name} className="legend-item">
-                  <span className="legend-dot" style={{ background: COLORS[i % COLORS.length] }} />
+                  <span className="legend-dot" style={{ background: d.color || COLORS[i % COLORS.length] }} />
                   <span>{d.name}</span>
                   <span className="muted">{totalValue > 0 ? ((d.value / totalValue) * 100).toFixed(1) : 0}%</span>
                 </div>
@@ -740,11 +807,34 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Holdings */}
+      {/* Holdings — split by category */}
       <div className="section-header">
         <h3>Holdings</h3>
-        <span className="muted">{enriched.length} coin{enriched.length !== 1 ? 's' : ''}</span>
+        <span className="muted">{enriched.length} asset{enriched.length !== 1 ? 's' : ''} · {categoryList.length} categor{categoryList.length !== 1 ? 'ies' : 'y'}</span>
       </div>
+
+      {enriched.length > 0 && (
+        <div className="cat-filter">
+          <button
+            className={`cat-pill ${categoryFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setCategoryFilter('all')}
+          >
+            All · {enriched.length}
+          </button>
+          {categoryList.map(c => (
+            <button
+              key={c.key}
+              className={`cat-pill ${categoryFilter === c.key ? 'active' : ''}`}
+              style={categoryFilter === c.key
+                ? { background: c.color, color: '#fff', borderColor: c.color }
+                : { color: c.color, borderColor: `${c.color}55` }}
+              onClick={() => setCategoryFilter(c.key)}
+            >
+              <span>{c.icon}</span> {c.label} · {c.items.length}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? <div className="card"><p className="muted">Loading...</p></div> : enriched.length === 0 ? (
         <div className="empty-state">
@@ -756,14 +846,33 @@ export default function Dashboard() {
           </button>
         </div>
       ) : (
-        <div className="coin-cards">
-          {enriched.map((h, i) => (
-            <div
-              key={h.coin_id}
-              className="coin-card"
-              onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
-              style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
-            >
+        <div className="categories">
+          {filteredCategories.map(cat => (
+            <div key={cat.key} className="category-section" style={{ '--cat-color': cat.color }}>
+              <div className="category-section-header">
+                <div className="cat-title">
+                  <span className="cat-icon-lg">{cat.icon}</span>
+                  <div className="cat-title-text">
+                    <strong>{cat.label}</strong>
+                    <span className="muted">{cat.items.length} asset{cat.items.length !== 1 ? 's' : ''} · {cat.pct.toFixed(1)}% of portfolio</span>
+                  </div>
+                </div>
+                <div className="cat-total">
+                  <strong>${fmt(cat.total)}</strong>
+                  <span className={cat.pnl >= 0 ? 'positive' : 'negative'}>
+                    {cat.pnl >= 0 ? '+' : ''}${fmt(cat.pnl)} ({cat.pnlPct.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              <div className="cat-bar"><div className="cat-bar-fill" style={{ width: `${cat.pct}%`, background: cat.color }} /></div>
+              <div className="coin-cards">
+                {cat.items.map((h, i) => (
+                  <div
+                    key={h.coin_id}
+                    className="coin-card"
+                    onClick={() => { if (h.category === 'crypto' || !h.category) navigate(`/asset/${h.coin_id}`) }}
+                    style={{ cursor: (h.category === 'crypto' || !h.category) ? 'pointer' : 'default' }}
+                  >
               <div className="coin-header">
                 {h.image ? (
                   <img src={h.image} alt="" width={40} height={40} className="coin-logo" />
@@ -846,57 +955,181 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Per-coin PRICE target */}
-              {h.targetPrice ? (
-                <div className="coin-target">
-                  <div className="coin-target-header">
-                    <span className="detail-label">Target Price: ${fmt(h.targetPrice)}</span>
-                    <span className={`coin-target-pct ${h.targetPricePct >= 100 ? 'positive' : ''}`}>
-                      {h.targetPricePct.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="coin-target-bar">
-                    <div className="coin-target-fill" style={{ width: `${h.targetPricePct}%`, background: h.targetPricePct >= 100 ? 'var(--green)' : COLORS[i % COLORS.length] }} />
-                  </div>
-                  <div className="coin-target-info">
-                    <div className="target-detail">
-                      <span className="detail-label">Value at target</span>
-                      <strong>${fmt(h.targetValue)}</strong>
+              {/* Multi-target Sell Plan */}
+              <div className="sell-plan" onClick={e => e.stopPropagation()}>
+                {h.plan.length > 0 && (
+                  <>
+                    <div className="sell-plan-header">
+                      <div className="sell-plan-title">
+                        <span className="sell-plan-icon">🎯</span>
+                        <span>Sell Plan · {h.plan.length} target{h.plan.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <button
+                        className="btn-link-dark"
+                        onClick={() => setExpandedPlans(prev => ({ ...prev, [h.coin_id]: !prev[h.coin_id] }))}
+                      >
+                        {expandedPlans[h.coin_id] ? 'Hide' : 'Show'}
+                      </button>
                     </div>
-                    <div className="target-detail">
-                      <span className="detail-label">Projected P&L</span>
-                      <strong className="positive">+${fmt(h.targetValue - h.total_invested)} ({h.total_invested > 0 ? ((h.targetValue - h.total_invested) / h.total_invested * 100).toFixed(1) : 0}%)</strong>
-                    </div>
-                  </div>
-                  <div className="coin-target-footer">
-                    {h.targetPricePct >= 100 ? (
-                      <span className="positive" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Target reached!</span>
-                    ) : (
-                      <span className="muted" style={{ fontSize: '0.75rem' }}>
-                        ${fmt(h.targetPrice - h.price)} per coin to go ({((h.targetPrice - h.price) / h.price * 100).toFixed(1)}%)
-                      </span>
+
+                    {expandedPlans[h.coin_id] && (
+                      <div className="sell-plan-items">
+                        {h.plan.map((t, ti) => (
+                          <div key={t.id} className={`sell-plan-item ${t.hit ? 'hit' : ''}`}>
+                            <div className="sell-plan-item-top">
+                              <div className="sell-plan-item-desc">
+                                <span className="sell-plan-qty">
+                                  {t.sellAll ? `All ${h.amount.toFixed(6)}` : t.qty.toFixed(6)}
+                                </span>
+                                <span className="sell-plan-at">@</span>
+                                <strong>${fmt(t.price)}</strong>
+                              </div>
+                              <div className="sell-plan-item-right">
+                                <span className={`sell-plan-pct ${t.hit ? 'positive' : ''}`}>
+                                  {t.progressPct.toFixed(1)}%
+                                </span>
+                                <button
+                                  type="button"
+                                  className="btn-ghost-dark sell-plan-remove"
+                                  onClick={() => handleRemoveTargetItem(h.coin_id, t.id)}
+                                  title="Remove target"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                            <div className="sell-plan-bar">
+                              <div
+                                className="sell-plan-fill"
+                                style={{
+                                  width: `${t.progressPct}%`,
+                                  background: t.hit ? 'var(--green)' : COLORS[(i + ti) % COLORS.length],
+                                }}
+                              />
+                            </div>
+                            <div className="sell-plan-item-meta">
+                              <span className="muted">Proceeds: ${fmt(t.proceeds)}</span>
+                              {t.hit ? (
+                                <span className="positive">Hit!</span>
+                              ) : (
+                                <span className="muted">${fmt(t.price - h.price)} to go</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <div className="sell-plan-summary">
+                          <div className="sell-plan-summary-row">
+                            <span className="muted">Allocated</span>
+                            <span>
+                              {h.plan.some(t => t.sellAll)
+                                ? `All ${h.amount.toFixed(6)}`
+                                : `${h.plan.reduce((s, t) => s + t.qty, 0).toFixed(6)} / ${h.amount.toFixed(6)}`}
+                            </span>
+                          </div>
+                          {!h.plan.some(t => t.sellAll) && (
+                            <div className="sell-plan-summary-row">
+                              <span className="muted">Remaining</span>
+                              <span className={h.planOverAllocated ? 'negative' : ''}>
+                                {h.planOverAllocated
+                                  ? `Over-allocated by ${(h.plan.reduce((s, t) => s + t.qty, 0) - h.amount).toFixed(6)}`
+                                  : h.planRemainingQty.toFixed(6)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="sell-plan-summary-row total">
+                            <span>Total projected proceeds</span>
+                            <strong>${fmt(h.planTotalProceeds)}</strong>
+                          </div>
+                          <div className="sell-plan-summary-row">
+                            <span className="muted">vs. invested ${fmt(h.total_invested)}</span>
+                            <strong className={h.planTotalProceeds - h.total_invested >= 0 ? 'positive' : 'negative'}>
+                              {h.planTotalProceeds - h.total_invested >= 0 ? '+' : ''}${fmt(h.planTotalProceeds - h.total_invested)}
+                              {h.total_invested > 0 && (
+                                <> ({((h.planTotalProceeds - h.total_invested) / h.total_invested * 100).toFixed(1)}%)</>
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                    <button className="btn-link-dark" onClick={() => handleRemoveCoinTarget(h.coin_id)}>Remove</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="coin-target-actions">
-                  {editingTarget === h.coin_id ? (
-                    <form className="coin-target-form" onSubmit={e => { e.preventDefault(); handleSetCoinTarget(h.coin_id); }}>
-                      <input type="number" step="any" value={targetInput} onChange={e => setTargetInput(e.target.value)} placeholder={`Target price ($) — now $${fmt(h.price)}`} autoFocus />
-                      <button type="submit" className="btn-sm">Set</button>
-                      <button type="button" className="btn-sm btn-ghost-dark" onClick={() => { setEditingTarget(null); setTargetInput(''); }}>X</button>
-                    </form>
-                  ) : (
-                    <button className="btn-set-target" onClick={() => { setEditingTarget(h.coin_id); setTargetInput(''); }}>
-                      Set price target
-                    </button>
-                  )}
-                </div>
-              )}
+                  </>
+                )}
+
+                {editingTarget === h.coin_id ? (
+                  <form
+                    className="sell-plan-add"
+                    onSubmit={e => { e.preventDefault(); handleAddCoinTarget(h.coin_id, h.planRemainingQty); }}
+                  >
+                    <div className="sell-plan-add-inputs">
+                      <div className="sell-plan-field">
+                        <label>Target price ($)</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={targetInput}
+                          onChange={e => setTargetInput(e.target.value)}
+                          placeholder={`now $${fmt(h.price)}`}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="sell-plan-field">
+                        <label>
+                          Quantity to sell
+                          {h.plan.length > 0 && !h.plan.some(t => t.sellAll) && h.planRemainingQty > 0 && (
+                            <button
+                              type="button"
+                              className="btn-max"
+                              onClick={() => setTargetQtyInput(String(h.planRemainingQty))}
+                            >
+                              Max {h.planRemainingQty.toFixed(4)}
+                            </button>
+                          )}
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={targetQtyInput}
+                          onChange={e => setTargetQtyInput(e.target.value)}
+                          placeholder={h.plan.length === 0 ? `Leave blank for all ${h.amount.toFixed(4)}` : `up to ${h.planRemainingQty.toFixed(4)}`}
+                        />
+                      </div>
+                    </div>
+                    {targetInput && targetQtyInput && (
+                      <div className="sell-plan-preview">
+                        <span className="muted">Preview proceeds</span>
+                        <strong>${fmt(parseFloat(targetInput) * parseFloat(targetQtyInput))}</strong>
+                      </div>
+                    )}
+                    <div className="sell-plan-add-actions">
+                      <button type="submit" className="btn-add-target">Add target</button>
+                      <button
+                        type="button"
+                        className="btn-ghost-dark"
+                        onClick={() => { setEditingTarget(null); setTargetInput(''); setTargetQtyInput(''); }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    className="btn-set-target"
+                    onClick={() => {
+                      setEditingTarget(h.coin_id); setTargetInput(''); setTargetQtyInput('');
+                      setExpandedPlans(prev => ({ ...prev, [h.coin_id]: true }));
+                    }}
+                  >
+                    + {h.plan.length === 0 ? 'Set a sell target' : 'Add another target'}
+                  </button>
+                )}
+              </div>
 
               <div className="alloc-bar">
-                <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: COLORS[i % COLORS.length] }} />
+                <div className="alloc-fill" style={{ width: `${h.allocation}%`, background: cat.color }} />
+              </div>
+            </div>
+                ))}
               </div>
             </div>
           ))}

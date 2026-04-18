@@ -3,6 +3,8 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // ─── Asset Categories ───
 // Non-crypto assets track manually-entered prices in localStorage under
 // `crypto_tracker_manual_prices` as { [coin_id]: { usd, usd_24h_change, updated_at } }.
+// Real-time prices for gold/silver come from a free metals API and for US stocks
+// from Stooq's CORS-enabled CSV endpoint. Failures fall back to the manual cache.
 export const ASSET_CATEGORIES = {
   crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
   gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
@@ -12,6 +14,29 @@ export const ASSET_CATEGORIES = {
   other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
 };
 export const NON_CRYPTO_CATEGORIES = ['gold', 'silver', 'stock', 'bond', 'other'];
+
+// Special coin IDs used for real-time external data sources
+export const GOLD_ID = 'metal:xau';        // 1 troy oz gold, USD
+export const SILVER_ID = 'metal:xag';      // 1 troy oz silver, USD
+export const STOCK_PREFIX = 'stock:';      // followed by lowercase ticker, e.g. stock:aapl
+
+export const PRESET_ASSETS = {
+  gold:   { coin_id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   unit: 'oz' },
+  silver: { coin_id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', unit: 'oz' },
+};
+
+export const POPULAR_TICKERS = [
+  { ticker: 'AAPL', name: 'Apple Inc.' },
+  { ticker: 'MSFT', name: 'Microsoft' },
+  { ticker: 'GOOGL', name: 'Alphabet (Google)' },
+  { ticker: 'AMZN', name: 'Amazon' },
+  { ticker: 'NVDA', name: 'NVIDIA' },
+  { ticker: 'TSLA', name: 'Tesla' },
+  { ticker: 'META', name: 'Meta Platforms' },
+  { ticker: 'SPY',  name: 'S&P 500 ETF' },
+  { ticker: 'QQQ',  name: 'Nasdaq 100 ETF' },
+  { ticker: 'TLT',  name: '20+ Year Treasury Bond ETF' },
+];
 
 // LocalStorage helpers
 function loadData(key, fallback = []) {
@@ -36,7 +61,96 @@ let priceCache = {};
 let lastPriceFetch = 0;
 let coinImageCache = {};
 let lastImageFetch = 0;
+let metalCache = null;
+let metalCacheTime = 0;
+let stockCache = {};
+let stockCacheTime = {};
 const CACHE_DURATION = 60_000;
+const METAL_CACHE_DURATION = 5 * 60_000;   // 5 min — metals update slowly
+const STOCK_CACHE_DURATION = 2 * 60_000;   // 2 min
+
+// ─── Real-time metal prices (gold / silver) ───
+// Tries gold-api.com first (CORS-enabled, no key), falls back to CoinGecko's
+// pax-gold token for gold (tracks physical gold ~1:1).
+async function fetchMetalsLive() {
+  const now = Date.now();
+  if (metalCache && now - metalCacheTime < METAL_CACHE_DURATION) return metalCache;
+
+  const out = {};
+  // Primary: gold-api.com
+  try {
+    const [goldRes, silverRes] = await Promise.all([
+      fetch('https://api.gold-api.com/price/XAU'),
+      fetch('https://api.gold-api.com/price/XAG'),
+    ]);
+    if (goldRes.ok) {
+      const g = await goldRes.json();
+      if (g && typeof g.price === 'number') {
+        out[GOLD_ID] = { usd: g.price, usd_24h_change: 0, name: 'Gold (1 oz)', symbol: 'XAU', source: 'gold-api' };
+      }
+    }
+    if (silverRes.ok) {
+      const s = await silverRes.json();
+      if (s && typeof s.price === 'number') {
+        out[SILVER_ID] = { usd: s.price, usd_24h_change: 0, name: 'Silver (1 oz)', symbol: 'XAG', source: 'gold-api' };
+      }
+    }
+  } catch (err) { /* fall through */ }
+
+  // Fallback for gold: CoinGecko pax-gold (PAXG tracks 1 oz gold)
+  if (!out[GOLD_ID]) {
+    try {
+      const res = await fetch(`${COINGECKO_BASE}/simple/price?ids=pax-gold&vs_currencies=usd&include_24hr_change=true`);
+      const d = await res.json();
+      if (d['pax-gold']?.usd) {
+        out[GOLD_ID] = { usd: d['pax-gold'].usd, usd_24h_change: d['pax-gold'].usd_24h_change || 0, name: 'Gold (1 oz)', symbol: 'XAU', source: 'coingecko-paxg' };
+      }
+    } catch {}
+  }
+
+  if (Object.keys(out).length > 0) {
+    metalCache = { ...(metalCache || {}), ...out };
+    metalCacheTime = now;
+  }
+  return metalCache || {};
+}
+
+// ─── Real-time US stock prices via Stooq (CORS-enabled CSV) ───
+// Returns { [coin_id]: { usd, usd_24h_change, name } } for the requested IDs.
+function parseStooqRow(csv) {
+  const lines = csv.trim().split('\n');
+  if (lines.length < 2) return null;
+  const headers = lines[0].split(',');
+  const values = lines[1].split(',');
+  const row = {};
+  for (let i = 0; i < headers.length; i++) row[headers[i]] = values[i];
+  const close = parseFloat(row.Close);
+  const open = parseFloat(row.Open);
+  if (!isFinite(close) || close <= 0) return null;
+  const change = isFinite(open) && open > 0 ? ((close - open) / open) * 100 : 0;
+  return { usd: close, usd_24h_change: change, name: row.Name || '' };
+}
+
+async function fetchStockLive(coinId) {
+  const ticker = coinId.startsWith(STOCK_PREFIX) ? coinId.slice(STOCK_PREFIX.length) : coinId;
+  const now = Date.now();
+  if (stockCache[coinId] && now - (stockCacheTime[coinId] || 0) < STOCK_CACHE_DURATION) {
+    return stockCache[coinId];
+  }
+  try {
+    const url = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const parsed = parseStooqRow(text);
+    if (!parsed) return null;
+    stockCache[coinId] = parsed;
+    stockCacheTime[coinId] = now;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 export const api = {
   // Wallets
@@ -208,37 +322,80 @@ export const api = {
     return manual[coinId];
   },
 
-  // Prices — merges CoinGecko crypto prices with manual prices for non-crypto assets
+  // Prices — routes each id to the right source:
+  //   stock:XXX   → Stooq (real-time US stock close)
+  //   metal:xau/xag → gold-api.com (live spot metal price, with CoinGecko fallback)
+  //   <crypto id> → CoinGecko simple/price
+  //   everything else → manual price cache (localStorage)
   getPrices: async (ids) => {
     if (!ids) return {};
-    const coinIds = ids.split(',');
+    const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
-    // Split into crypto ids (fetch from CoinGecko) vs manual-priced ids
-    const manualIds = coinIds.filter(id => manual[id]);
-    const cryptoIds = coinIds.filter(id => !manual[id]);
+
+    const stockIds = coinIds.filter(id => id.startsWith(STOCK_PREFIX));
+    const metalIds = coinIds.filter(id => id === GOLD_ID || id === SILVER_ID);
+    const cryptoLikeIds = coinIds.filter(id =>
+      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID && !id.startsWith('bond:') && !id.startsWith('other:')
+    );
+    const manualFallbackIds = coinIds.filter(id => id.startsWith('bond:') || id.startsWith('other:'));
 
     const result = {};
-    for (const id of manualIds) result[id] = manual[id];
 
-    if (cryptoIds.length === 0) return result;
+    // Fire all three remote sources in parallel
+    const tasks = [];
 
-    const now = Date.now();
-    const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
-    if (needsFresh) {
-      try {
-        const res = await fetch(
-          `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
-        );
-        const data = await res.json();
-        priceCache = { ...priceCache, ...data };
-        lastPriceFetch = now;
-      } catch (err) {
-        console.error('Price fetch error:', err.message);
-      }
+    // Metals
+    if (metalIds.length > 0) {
+      tasks.push(fetchMetalsLive().then(metals => {
+        for (const id of metalIds) {
+          if (metals[id]) result[id] = metals[id];
+          else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+        }
+      }));
     }
-    for (const id of cryptoIds) {
-      if (priceCache[id]) result[id] = priceCache[id];
+
+    // Stocks
+    if (stockIds.length > 0) {
+      tasks.push(Promise.all(stockIds.map(async id => {
+        const live = await fetchStockLive(id);
+        if (live) result[id] = { ...live, source: 'stooq' };
+        else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+      })));
     }
+
+    // Crypto (CoinGecko) — only IDs that don't already have a manual override
+    const cryptoIds = cryptoLikeIds.filter(id => !manual[id]);
+    const manualCryptoLike = cryptoLikeIds.filter(id => manual[id]);
+    for (const id of manualCryptoLike) result[id] = { ...manual[id], source: 'manual' };
+
+    if (cryptoIds.length > 0) {
+      tasks.push((async () => {
+        const now = Date.now();
+        const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
+        if (needsFresh) {
+          try {
+            const res = await fetch(
+              `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+            );
+            const data = await res.json();
+            priceCache = { ...priceCache, ...data };
+            lastPriceFetch = now;
+          } catch (err) {
+            console.error('Price fetch error:', err.message);
+          }
+        }
+        for (const id of cryptoIds) {
+          if (priceCache[id]) result[id] = { ...priceCache[id], source: 'coingecko' };
+        }
+      })());
+    }
+
+    // Manual-only categories (bonds, other)
+    for (const id of manualFallbackIds) {
+      if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+    }
+
+    await Promise.all(tasks);
     return result;
   },
 
@@ -370,17 +527,69 @@ export const api = {
     return { error: 'Exchange sync requires the backend server. Run locally with: npm run dev' };
   },
 
-  // Per-coin Investment Targets: { [coin_id]: { amount: number } }
+  // Per-coin sell plan: multiple price targets, each with a quantity to sell at that price.
+  // Shape: { [coin_id]: { targets: [{ id, price, quantity }, ...] } }
+  // Legacy shape { amount } is migrated on read into a single-target plan with null quantity (sell all).
   getCoinTargets: async () => {
     try {
       const data = localStorage.getItem('crypto_tracker_coin_targets');
-      return data ? JSON.parse(data) : {};
+      const raw = data ? JSON.parse(data) : {};
+      const normalized = {};
+      for (const [coinId, v] of Object.entries(raw)) {
+        if (v && Array.isArray(v.targets)) {
+          normalized[coinId] = { targets: v.targets };
+        } else if (v && typeof v.amount === 'number') {
+          // Migrate legacy single-price target
+          normalized[coinId] = {
+            targets: [{ id: Date.now(), price: v.amount, quantity: null }],
+          };
+        }
+      }
+      return normalized;
     } catch { return {}; }
   },
 
+  // Legacy single-target setter (replaces any existing plan with one target that sells all holdings)
   setCoinTarget: async (coinId, amount) => {
     const targets = await api.getCoinTargets();
-    targets[coinId] = { amount };
+    targets[coinId] = { targets: [{ id: Date.now(), price: amount, quantity: null }] };
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    return targets;
+  },
+
+  addCoinTarget: async (coinId, { price, quantity }) => {
+    const targets = await api.getCoinTargets();
+    if (!targets[coinId]) targets[coinId] = { targets: [] };
+    const newTarget = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      price: parseFloat(price),
+      quantity: quantity === null || quantity === '' || quantity === undefined ? null : parseFloat(quantity),
+    };
+    targets[coinId].targets.push(newTarget);
+    targets[coinId].targets.sort((a, b) => a.price - b.price);
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    return targets;
+  },
+
+  updateCoinTargetItem: async (coinId, targetId, { price, quantity }) => {
+    const targets = await api.getCoinTargets();
+    const plan = targets[coinId];
+    if (!plan) return targets;
+    plan.targets = plan.targets.map(t =>
+      t.id === targetId
+        ? { ...t, price: parseFloat(price), quantity: quantity === null || quantity === '' || quantity === undefined ? null : parseFloat(quantity) }
+        : t
+    ).sort((a, b) => a.price - b.price);
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
+    return targets;
+  },
+
+  removeCoinTargetItem: async (coinId, targetId) => {
+    const targets = await api.getCoinTargets();
+    const plan = targets[coinId];
+    if (!plan) return targets;
+    plan.targets = plan.targets.filter(t => t.id !== targetId);
+    if (plan.targets.length === 0) delete targets[coinId];
     localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
     return targets;
   },
