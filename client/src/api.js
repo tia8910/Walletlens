@@ -567,12 +567,32 @@ export const api = {
         const now = Date.now();
         const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
         if (needsFresh) {
+          // Primary: CoinGecko
           const data = await fetchJSON(
             `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
           );
           if (data && typeof data === 'object') {
             priceCache = { ...priceCache, ...data };
             lastPriceFetch = now;
+          }
+          // Fallback: CoinCap for any IDs still missing (CORS-enabled, same ID scheme for most top coins)
+          const missing = cryptoIds.filter(id => !priceCache[id]);
+          if (missing.length > 0) {
+            const ccData = await fetchJSON(
+              `https://rest.coincap.io/v3/assets?ids=${missing.join(',')}&limit=${missing.length}`
+            );
+            const list = Array.isArray(ccData?.data) ? ccData.data : [];
+            for (const a of list) {
+              const usd = parseFloat(a.priceUsd);
+              if (isFinite(usd) && usd > 0) {
+                priceCache[a.id] = {
+                  usd,
+                  usd_24h_change: parseFloat(a.changePercent24Hr) || 0,
+                  usd_market_cap: parseFloat(a.marketCapUsd) || 0,
+                };
+              }
+            }
+            if (list.length > 0) lastPriceFetch = now;
           }
         }
         for (const id of cryptoIds) {

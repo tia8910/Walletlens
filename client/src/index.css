@@ -1065,6 +1065,79 @@ tr:last-child td { border-bottom: none; }
 .detail-actions { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 .detail-act { flex: 1; padding: 0.85rem; font-size: 0.95rem; border-radius: 14px; }
 
+/* ─── Sell Plan / Targets ─── */
+.sell-plan-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.sell-plan-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.85rem;
+}
+.sell-plan-head h3 { font-size: 1rem; font-weight: 700; }
+.sp-add-btn {
+  background: #6366f1; color: #fff; border: none;
+  padding: 0.5rem 0.85rem; border-radius: 10px; font-size: 0.82rem;
+  font-weight: 600; cursor: pointer;
+}
+.sp-add-btn:hover { background: #4f46e5; }
+.sp-form {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--bg3); border-radius: 12px; padding: 0.75rem;
+  margin-bottom: 0.85rem; border: 1px solid var(--border);
+}
+.sp-form input {
+  padding: 0.65rem 0.8rem; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--bg2); color: var(--text);
+  font-size: 0.88rem;
+}
+.sp-form input:focus { outline: none; border-color: #6366f1; }
+.sp-save-btn {
+  background: #10b981; color: #fff; border: none;
+  padding: 0.65rem; border-radius: 10px; font-weight: 600; cursor: pointer;
+  font-size: 0.88rem;
+}
+.sp-save-btn:hover { background: #059669; }
+.sp-empty { font-size: 0.85rem; margin: 0; padding: 0.5rem 0; }
+.sp-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.sp-row {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.85rem;
+}
+.sp-row.sp-reached { border-color: #10b981; background: #10b98110; }
+.sp-row-top {
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 0.6rem; align-items: center; margin-bottom: 0.6rem;
+}
+.sp-price, .sp-qty, .sp-proceeds { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.sp-label {
+  font-size: 0.68rem; color: var(--text2); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.sp-val {
+  font-size: 0.88rem; font-weight: 700; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sp-remove {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text2); width: 28px; height: 28px; border-radius: 8px;
+  font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0;
+}
+.sp-remove:hover { background: #ef444420; color: #ef4444; border-color: #ef4444; }
+.sp-progress { display: flex; align-items: center; gap: 0.6rem; }
+.sp-bar-bg {
+  flex: 1; height: 6px; background: var(--bg2);
+  border-radius: 3px; overflow: hidden;
+}
+.sp-bar-fill { height: 100%; transition: width 0.3s ease; }
+.sp-pct { font-size: 0.72rem; font-weight: 600; color: var(--text2); white-space: nowrap; }
+.sp-pct.positive { color: #10b981; }
+@media (max-width: 480px) {
+  .sp-row-top { grid-template-columns: 1fr 1fr auto; }
+  .sp-proceeds { grid-column: 1 / -1; }
+}
+
 /* ─── Sell Quantity Picker ─── */
 .sell-picker {
   background: var(--bg3); border-radius: 12px; padding: 0.75rem;
@@ -1499,7 +1572,7 @@ tr:last-child td { border-bottom: none; }
 .dropdown-item:hover { background: rgba(99,102,241,0.10); }
 .tx-card { background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
 .market-card { background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
-.detail-hero, .chart-card, .detail-holdings, .dstat {
+.detail-hero, .chart-card, .detail-holdings, .dstat, .sell-plan-card {
   background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
 }
 .empty-state { background: var(--bg2); border-color: var(--border); }
