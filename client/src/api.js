@@ -835,10 +835,11 @@ export const api = {
       const exchanges = Array.isArray(data.e || data.exchanges) ? (data.e || data.exchanges) : [];
       const targets = (data.ct || data.coin_targets || {});
       const manualPrices = data.mp || {};
-      // Count UNIQUE assets per category (not transaction count), so the
-      // preview reflects "what's in the wallet" rather than buy/sell history.
-      const seenByCategory = {};
-      for (const tx of transactions) {
+      // Count CURRENT holdings per category: compute net balance per coin_id
+      // (buys/deposits minus sells/withdraws) and only count coin_ids with
+      // non-zero balance, so fully-sold-out positions don't inflate the chips.
+      const balances = {};
+      const catFor = (tx) => {
         let cat = tx.category;
         const id = String(tx.coin_id || '');
         if (!cat) {
@@ -848,12 +849,19 @@ export const api = {
           else if (id.startsWith(FIAT_PREFIX)) cat = 'fiat';
           else cat = 'crypto';
         }
-        if (!seenByCategory[cat]) seenByCategory[cat] = new Set();
-        if (id) seenByCategory[cat].add(id);
+        return cat;
+      };
+      for (const tx of transactions) {
+        const id = String(tx.coin_id || '');
+        if (!id) continue;
+        const amt = Number(tx.amount) || 0;
+        if (!balances[id]) balances[id] = { amount: 0, category: catFor(tx) };
+        if (tx.type === 'buy' || tx.type === 'deposit') balances[id].amount += amt;
+        else if (tx.type === 'sell' || tx.type === 'withdraw') balances[id].amount -= amt;
       }
       const byCategory = {};
-      for (const [cat, set] of Object.entries(seenByCategory)) {
-        byCategory[cat] = set.size;
+      for (const { amount, category } of Object.values(balances)) {
+        if (amount > 1e-9) byCategory[category] = (byCategory[category] || 0) + 1;
       }
       return {
         success: true,
