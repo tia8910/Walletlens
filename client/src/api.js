@@ -1,18 +1,27 @@
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
-const CORS_PROXY = 'https://corsproxy.io/?url=';
+// Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
+// specific proxies, so we try several before giving up.
+const CORS_PROXIES = [
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u) => `https://cors.eu.org/${u}`,
+  (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
 
-// Fetch JSON from a URL, retrying through a CORS proxy if the direct
-// request fails (rate-limit, CORS block, or network error). Returns null
-// if both attempts fail.
+// Fetch JSON from a URL, retrying through multiple CORS proxies if the
+// direct request fails (rate-limit, CORS block, or network error). Returns
+// null only if every attempt fails.
 async function fetchJSON(url) {
   try {
     const res = await fetch(url);
     if (res.ok) return await res.json();
   } catch {}
-  try {
-    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
-    if (res.ok) return await res.json();
-  } catch {}
+  for (const wrap of CORS_PROXIES) {
+    try {
+      const res = await fetch(wrap(url));
+      if (res.ok) return await res.json();
+    } catch {}
+  }
   return null;
 }
 
