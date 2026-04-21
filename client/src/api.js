@@ -835,10 +835,25 @@ export const api = {
       const exchanges = Array.isArray(data.e || data.exchanges) ? (data.e || data.exchanges) : [];
       const targets = (data.ct || data.coin_targets || {});
       const manualPrices = data.mp || {};
-      const byCategory = {};
+      // Count UNIQUE assets per category (not transaction count), so the
+      // preview reflects "what's in the wallet" rather than buy/sell history.
+      const seenByCategory = {};
       for (const tx of transactions) {
-        const cat = tx.category || 'crypto';
-        byCategory[cat] = (byCategory[cat] || 0) + 1;
+        let cat = tx.category;
+        const id = String(tx.coin_id || '');
+        if (!cat) {
+          if (id === GOLD_ID) cat = 'gold';
+          else if (id === SILVER_ID) cat = 'silver';
+          else if (id.startsWith(STOCK_PREFIX)) cat = 'stock';
+          else if (id.startsWith(FIAT_PREFIX)) cat = 'fiat';
+          else cat = 'crypto';
+        }
+        if (!seenByCategory[cat]) seenByCategory[cat] = new Set();
+        if (id) seenByCategory[cat].add(id);
+      }
+      const byCategory = {};
+      for (const [cat, set] of Object.entries(seenByCategory)) {
+        byCategory[cat] = set.size;
       }
       return {
         success: true,
