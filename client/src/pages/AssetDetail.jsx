@@ -30,7 +30,10 @@ export default function AssetDetail() {
   const [coin, setCoin] = useState(null)
   const [holdings, setHoldings] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [target, setTarget] = useState(null)
+  const [targets, setTargets] = useState([])
+  const [showAddTarget, setShowAddTarget] = useState(false)
+  const [tInputPrice, setTInputPrice] = useState('')
+  const [tInputQty, setTInputQty] = useState('')
 
   useEffect(() => { loadData() }, [coinId])
   useEffect(() => { loadChart() }, [coinId, chartDays])
@@ -46,10 +49,10 @@ export default function AssetDetail() {
         nonCrypto ? Promise.resolve(null) : api.getCoinDetail(coinId),
         api.getCoinTargets(),
       ]
-      const [portfolio, prices, images, detail, targets] = await Promise.all(tasks)
+      const [portfolio, prices, images, detail, allTargets] = await Promise.all(tasks)
       const h = portfolio.find(p => p.coin_id === coinId)
       setHoldings(h || null)
-      setTarget(targets[coinId] || null)
+      setTargets(allTargets[coinId]?.targets || [])
 
       const price = prices[coinId]?.usd || 0
       const change24 = prices[coinId]?.usd_24h_change || 0
@@ -83,6 +86,21 @@ export default function AssetDetail() {
       const data = await api.getChartData(coinId, chartDays)
       setChartData(data)
     } catch (e) { console.error(e) }
+  }
+
+  async function handleAddTarget(e) {
+    e.preventDefault()
+    const price = parseFloat(tInputPrice)
+    if (!price || price <= 0) return
+    const qty = tInputQty === '' ? null : parseFloat(tInputQty)
+    await api.addCoinTarget(coinId, { price, quantity: qty })
+    setTInputPrice(''); setTInputQty(''); setShowAddTarget(false)
+    loadData()
+  }
+
+  async function handleRemoveTarget(targetId) {
+    await api.removeCoinTargetItem(coinId, targetId)
+    loadData()
   }
 
   const price = coin?.price || 0
@@ -208,14 +226,82 @@ export default function AssetDetail() {
               </span>
             </div>
           </div>
-          {target && (
-            <div className="dh-target">
-              <span className="dh-label">Target Price</span>
-              <span className="dh-value">${fmt(target.amount)} ({price > 0 ? ((price / target.amount) * 100).toFixed(1) : 0}%)</span>
-            </div>
-          )}
         </div>
       )}
+
+      {/* Sell plan / targets */}
+      <div className="sell-plan-card">
+        <div className="sell-plan-head">
+          <h3>Sell Plan</h3>
+          <button className="sp-add-btn" onClick={() => setShowAddTarget(s => !s)}>
+            {showAddTarget ? 'Cancel' : '+ Add Target'}
+          </button>
+        </div>
+        {showAddTarget && (
+          <form className="sp-form" onSubmit={handleAddTarget}>
+            <input
+              type="number"
+              step="any"
+              min="0"
+              placeholder="Target price ($)"
+              value={tInputPrice}
+              onChange={e => setTInputPrice(e.target.value)}
+              required
+            />
+            <input
+              type="number"
+              step="any"
+              min="0"
+              placeholder={`Qty to sell (${coin?.symbol || ''}) — blank = all`}
+              value={tInputQty}
+              onChange={e => setTInputQty(e.target.value)}
+            />
+            <button type="submit" className="sp-save-btn">Save</button>
+          </form>
+        )}
+        {targets.length === 0 && !showAddTarget && (
+          <p className="muted sp-empty">No targets set. Add price levels to plan your exits.</p>
+        )}
+        {targets.length > 0 && (
+          <div className="sp-list">
+            {targets.map(t => {
+              const pct = price > 0 && t.price > 0 ? (price / t.price) * 100 : 0
+              const reached = price >= t.price
+              const sellQty = t.quantity == null ? amount : Math.min(t.quantity, amount)
+              const proceeds = sellQty * t.price
+              return (
+                <div key={t.id} className={`sp-row ${reached ? 'sp-reached' : ''}`}>
+                  <div className="sp-row-top">
+                    <div className="sp-price">
+                      <span className="sp-label">Sell at</span>
+                      <span className="sp-val">${fmt(t.price)}</span>
+                    </div>
+                    <div className="sp-qty">
+                      <span className="sp-label">Quantity</span>
+                      <span className="sp-val">
+                        {t.quantity == null ? `All (${amount.toFixed(4)})` : `${t.quantity} ${coin?.symbol || ''}`}
+                      </span>
+                    </div>
+                    <div className="sp-proceeds">
+                      <span className="sp-label">Proceeds</span>
+                      <span className="sp-val">${fmt(proceeds)}</span>
+                    </div>
+                    <button className="sp-remove" onClick={() => handleRemoveTarget(t.id)} aria-label="Remove target">×</button>
+                  </div>
+                  <div className="sp-progress">
+                    <div className="sp-bar-bg">
+                      <div className="sp-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: reached ? '#10b981' : '#6366f1' }} />
+                    </div>
+                    <span className={`sp-pct ${reached ? 'positive' : ''}`}>
+                      {reached ? '✓ Reached' : `${pct.toFixed(1)}% of target`}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Buy/Sell actions */}
       <div className="detail-actions">
