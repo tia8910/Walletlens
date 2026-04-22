@@ -1138,6 +1138,157 @@ tr:last-child td { border-bottom: none; }
   .sp-proceeds { grid-column: 1 / -1; }
 }
 
+/* ─── Whale Tracker page ─── */
+.page-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
+.page-sub { color: var(--text2); font-size: 0.85rem; margin: 0.2rem 0 0 0; }
+.refresh-btn {
+  background: #6366f1; color: #fff; border: none;
+  padding: 0.55rem 1rem; border-radius: 10px; font-weight: 600;
+  cursor: pointer; font-size: 0.85rem;
+}
+.refresh-btn:hover { background: #4f46e5; }
+.refresh-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.whale-tabs {
+  display: flex; gap: 0.4rem; margin-bottom: 1rem;
+  overflow-x: auto; padding-bottom: 0.2rem;
+}
+.whale-tab {
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); padding: 0.55rem 0.95rem;
+  border-radius: 10px; font-weight: 600; font-size: 0.82rem;
+  cursor: pointer; white-space: nowrap;
+}
+.whale-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.whale-window-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.85rem; }
+
+.whale-split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+}
+@media (max-width: 768px) { .whale-split { grid-template-columns: 1fr; } }
+
+.whale-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.1rem;
+  box-shadow: var(--shadow); margin-bottom: 1rem;
+  backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
+}
+.whale-card-h { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.4rem 0; }
+.whale-card-h.positive { color: #10b981; }
+.whale-card-h.negative { color: #ef4444; }
+.whale-help { color: var(--text2); font-size: 0.78rem; margin: 0 0 0.85rem 0; }
+
+.whale-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.5rem;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.whale-row:hover { background: rgba(99,102,241,0.08); }
+.whale-coin {
+  display: flex; align-items: center; gap: 0.6rem;
+  text-decoration: none; color: var(--text); min-width: 0;
+}
+.whale-coin img { border-radius: 50%; flex-shrink: 0; }
+.whale-name { font-weight: 700; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whale-sym { font-size: 0.72rem; color: var(--text2); font-weight: 600; }
+.whale-stat { text-align: right; min-width: 0; }
+.whale-stat-val {
+  font-weight: 700; font-size: 0.85rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.whale-stat-lbl { font-size: 0.66rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.03em; }
+.whale-stat.positive .whale-stat-val { color: #10b981; }
+.whale-stat.negative .whale-stat-val { color: #ef4444; }
+
+.trending-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
+.trending-card {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.7rem; border-radius: 12px;
+  background: var(--bg3); border: 1px solid var(--border);
+  text-decoration: none; color: var(--text);
+  transition: all 0.15s;
+}
+.trending-card:hover { transform: translateY(-1px); border-color: #6366f1; box-shadow: 0 4px 12px rgba(99,102,241,0.15); }
+.trending-rank { font-size: 0.78rem; color: var(--text2); font-weight: 700; min-width: 22px; }
+.trending-card img { border-radius: 50%; }
+.trending-info { flex: 1; min-width: 0; }
+.trending-mcap { font-size: 0.68rem; color: var(--text2); }
+
+.btc-tx-row {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 0.7rem;
+  align-items: center; padding: 0.75rem;
+  border-radius: 10px; text-decoration: none; color: var(--text);
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.btc-tx-row:last-child { border-bottom: none; }
+.btc-tx-row:hover { background: rgba(99,102,241,0.08); }
+.btc-tx-icon { font-size: 1.5rem; }
+.btc-tx-amt { font-weight: 700; font-size: 0.95rem; }
+.btc-tx-hash { font-size: 0.72rem; color: var(--text2); font-family: monospace; }
+.btc-tx-side { text-align: right; }
+.btc-tx-usd { font-weight: 700; color: #10b981; }
+.btc-tx-time { font-size: 0.7rem; color: var(--text2); }
+
+/* ─── Whale Panel inside AssetDetail ─── */
+.whale-panel {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
+}
+.whale-panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.85rem;
+}
+.whale-panel-head h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.whale-panel-window { font-size: 0.72rem; color: var(--text2); font-weight: 600; }
+.whale-score-row {
+  display: flex; gap: 1rem; align-items: center;
+  margin-bottom: 1rem; padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.whale-score-circle {
+  flex-shrink: 0;
+  width: 90px; height: 90px;
+  border-radius: 50%; border: 4px solid;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+}
+.whale-score-num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.whale-score-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; margin-top: 2px; }
+.whale-score-info { flex: 1; min-width: 0; }
+.whale-score-tag {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.78rem; font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.whale-score-desc {
+  font-size: 0.78rem; color: var(--text2); margin: 0; line-height: 1.4;
+}
+.whale-indicators {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+}
+.wp-ind { cursor: help; }
+.wp-ind-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+.wp-ind-label { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+.wp-ind-value { font-size: 0.95rem; font-weight: 700; }
+.wp-ind-bar-bg {
+  height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden;
+}
+.wp-ind-bar-fill { height: 100%; transition: width 0.4s ease; }
+
 /* ─── Sell Quantity Picker ─── */
 .sell-picker {
   background: var(--bg3); border-radius: 12px; padding: 0.75rem;
@@ -1572,7 +1723,7 @@ tr:last-child td { border-bottom: none; }
 .dropdown-item:hover { background: rgba(99,102,241,0.10); }
 .tx-card { background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
 .market-card { background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
-.detail-hero, .chart-card, .detail-holdings, .dstat, .sell-plan-card {
+.detail-hero, .chart-card, .detail-holdings, .dstat, .sell-plan-card, .whale-panel, .whale-card {
   background: var(--bg2); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
 }
 .empty-state { background: var(--bg2); border-color: var(--border); }

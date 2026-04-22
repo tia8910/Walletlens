@@ -34,9 +34,15 @@ export default function AssetDetail() {
   const [showAddTarget, setShowAddTarget] = useState(false)
   const [tInputPrice, setTInputPrice] = useState('')
   const [tInputQty, setTInputQty] = useState('')
+  const [signals, setSignals] = useState(null)
 
   useEffect(() => { loadData() }, [coinId])
   useEffect(() => { loadChart() }, [coinId, chartDays])
+  useEffect(() => {
+    setSignals(null)
+    if (!coinId || isNonCryptoId(coinId)) return
+    api.getCoinSmartSignals(coinId, 30).then(setSignals).catch(() => {})
+  }, [coinId])
 
   async function loadData() {
     setLoading(true)
@@ -229,6 +235,9 @@ export default function AssetDetail() {
         </div>
       )}
 
+      {/* Whale activity / smart signals */}
+      {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
+
       {/* Sell plan / targets */}
       <div className="sell-plan-card">
         <div className="sell-plan-head">
@@ -315,6 +324,102 @@ export default function AssetDetail() {
             Sell {coin?.symbol}
           </button>
         )}
+      </div>
+    </div>
+  )
+}
+
+function WhalePanel({ s, symbol }) {
+  const score = s.whaleScore
+  const scoreLabel =
+    score >= 50 ? 'Strong Accumulation' :
+    score >= 20 ? 'Mild Accumulation' :
+    score >= -20 ? 'Neutral' :
+    score >= -50 ? 'Mild Distribution' :
+    'Strong Distribution'
+  const scoreColor =
+    score >= 50 ? '#10b981' :
+    score >= 20 ? '#22c55e' :
+    score >= -20 ? '#94a3b8' :
+    score >= -50 ? '#f59e0b' :
+    '#ef4444'
+
+  const pulsePct = Math.min(100, Math.round(s.volPulse * 50))
+  const pulseColor = s.volPulse > 1.5 ? '#ef4444' : s.volPulse > 1 ? '#f59e0b' : '#6366f1'
+
+  return (
+    <div className="whale-panel">
+      <div className="whale-panel-head">
+        <h3>🐋 Whale Activity & Smart Signals</h3>
+        <span className="whale-panel-window">Last {s.windowDays}d</span>
+      </div>
+
+      <div className="whale-score-row">
+        <div className="whale-score-circle" style={{ borderColor: scoreColor, color: scoreColor }}>
+          <div className="whale-score-num">{score > 0 ? '+' : ''}{score}</div>
+          <div className="whale-score-lbl">Whale Score</div>
+        </div>
+        <div className="whale-score-info">
+          <div className="whale-score-tag" style={{ background: scoreColor + '22', color: scoreColor }}>
+            {scoreLabel}
+          </div>
+          <p className="whale-score-desc">
+            Composite of accumulation/distribution flow, momentum, and volume pressure.
+            +100 = whales loading up, -100 = whales unloading.
+          </p>
+        </div>
+      </div>
+
+      <div className="whale-indicators">
+        <Indicator
+          label="Volume Pulse"
+          value={`${s.volPulse.toFixed(2)}×`}
+          help="Last-24h volume vs daily avg. >1.5× = unusual activity."
+          barPct={pulsePct}
+          color={pulseColor}
+        />
+        <Indicator
+          label="Accum/Dist"
+          value={(s.adNormalized * 100).toFixed(0) + '%'}
+          help="Volume-weighted price direction. Positive = buying pressure."
+          barPct={(s.adNormalized + 1) * 50}
+          color={s.adNormalized >= 0 ? '#10b981' : '#ef4444'}
+        />
+        <Indicator
+          label="Momentum"
+          value={(s.momentum * 100).toFixed(1) + '%'}
+          help="Fast vs slow MA. Positive = uptrend."
+          barPct={Math.max(0, Math.min(100, 50 + s.momentum * 200))}
+          color={s.momentum >= 0 ? '#10b981' : '#ef4444'}
+        />
+        <Indicator
+          label="Range Position"
+          value={(s.rangePos * 100).toFixed(0) + '%'}
+          help="Where price sits in recent high-low range. 100% = at the top."
+          barPct={s.rangePos * 100}
+          color="#6366f1"
+        />
+        <Indicator
+          label="Volatility"
+          value={(s.volatility * 100).toFixed(0) + '%'}
+          help="Annualised. <50% calm, >100% wild."
+          barPct={Math.min(100, s.volatility * 50)}
+          color="#a78bfa"
+        />
+      </div>
+    </div>
+  )
+}
+
+function Indicator({ label, value, help, barPct, color }) {
+  return (
+    <div className="wp-ind" title={help}>
+      <div className="wp-ind-row">
+        <span className="wp-ind-label">{label}</span>
+        <span className="wp-ind-value" style={{ color }}>{value}</span>
+      </div>
+      <div className="wp-ind-bar-bg">
+        <div className="wp-ind-bar-fill" style={{ width: `${barPct}%`, background: color }} />
       </div>
     </div>
   )

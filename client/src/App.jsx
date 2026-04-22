@@ -2,6 +2,7 @@ import { Routes, Route, NavLink } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Market from './pages/Market'
+import Whales from './pages/Whales'
 import AssetDetail from './pages/AssetDetail'
 import PitchCard from './components/PitchCard'
 
@@ -27,6 +28,14 @@ function IconMarket() {
       <rect x="3" y="13" width="4" height="8" rx="1"/>
       <rect x="10" y="8" width="4" height="13" rx="1"/>
       <rect x="17" y="4" width="4" height="17" rx="1"/>
+    </svg>
+  )
+}
+function IconWhale() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/>
+      <circle cx="7" cy="12" r="0.8" fill="currentColor"/>
     </svg>
   )
 }
@@ -127,6 +136,12 @@ export default function App() {
               <span>Market</span>
             </NavLink>
           </li>
+          <li>
+            <NavLink to="/whales">
+              <span className="nav-icon-wrap"><IconWhale /></span>
+              <span>Whales</span>
+            </NavLink>
+          </li>
         </ul>
       </nav>
 
@@ -164,6 +179,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/market" element={<Market />} />
+          <Route path="/whales" element={<Whales />} />
           <Route path="/asset/:coinId" element={<AssetDetail />} />
         </Routes>
       </main>
@@ -180,6 +196,10 @@ export default function App() {
         <NavLink to="/market" className="nav-item">
           <IconMarket />
           <span>Market</span>
+        </NavLink>
+        <NavLink to="/whales" className="nav-item">
+          <IconWhale />
+          <span>Whales</span>
         </NavLink>
       </nav>
     </div>
