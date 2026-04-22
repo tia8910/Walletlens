@@ -706,6 +706,143 @@ export const api = {
     return Array.isArray(data) ? data : [];
   },
 
+  // ─── Whale tracking & smart indicators ───
+  // Pulls a wide market slice once and slices it locally for movers / volume
+  // anomalies. Cached for 60s to stay under CoinGecko's free-tier limits.
+  getWhaleMarketSnapshot: async () => {
+    const cacheKey = '__wl_whale_snap';
+    const cached = (typeof window !== 'undefined' && window[cacheKey]) || null;
+    if (cached && Date.now() - cached.t < 60_000) return cached.v;
+    const data = await fetchJSON(
+      `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
+    );
+    const arr = Array.isArray(data) ? data : [];
+    if (typeof window !== 'undefined') window[cacheKey] = { t: Date.now(), v: arr };
+    return arr;
+  },
+
+  // CoinGecko trending — what people are searching most right now
+  getTrendingCoins: async () => {
+    const data = await fetchJSON(`${COINGECKO_BASE}/search/trending`);
+    const items = Array.isArray(data?.coins) ? data.coins : [];
+    return items.map(({ item }) => ({
+      id: item?.id,
+      name: item?.name,
+      symbol: item?.symbol,
+      thumb: item?.small || item?.thumb,
+      market_cap_rank: item?.market_cap_rank,
+      score: item?.score,
+      price_btc: item?.price_btc,
+    }));
+  },
+
+  // Recent large BTC transactions from blockchain.info's unconfirmed feed.
+  // CORS-enabled, no key required. Filter to txs > $minUsd.
+  getLargeBtcTransactions: async (minUsd = 1_000_000) => {
+    const [txData, priceData] = await Promise.all([
+      fetchJSON('https://blockchain.info/unconfirmed-transactions?format=json&cors=true'),
+      fetchJSON(`${COINGECKO_BASE}/simple/price?ids=bitcoin&vs_currencies=usd`),
+    ]);
+    const btcUsd = priceData?.bitcoin?.usd || 0;
+    const txs = Array.isArray(txData?.txs) ? txData.txs : [];
+    const SAT = 1e8;
+    const out = [];
+    for (const tx of txs) {
+      const totalSat = (tx.out || []).reduce((s, o) => s + (o.value || 0), 0);
+      const btc = totalSat / SAT;
+      const usd = btc * btcUsd;
+      if (usd >= minUsd) {
+        out.push({
+          hash: tx.hash,
+          time: tx.time ? new Date(tx.time * 1000) : new Date(),
+          btc,
+          usd,
+          inputs: (tx.inputs || []).length,
+          outputs: (tx.out || []).length,
+        });
+      }
+    }
+    return out.sort((a, b) => b.usd - a.usd).slice(0, 12);
+  },
+
+  // Compute "smart" indicators for a single coin from its OHLC-ish chart data.
+  // Returns volume pulse, accumulation/distribution score, momentum, volatility.
+  getCoinSmartSignals: async (coinId, days = 30) => {
+    const nonCrypto =
+      coinId === GOLD_ID ||
+      coinId === SILVER_ID ||
+      coinId.startsWith(STOCK_PREFIX) ||
+      coinId.startsWith(FIAT_PREFIX) ||
+      coinId.startsWith('bond:') ||
+      coinId.startsWith('other:');
+    if (!coinId || nonCrypto) return null;
+    const data = await fetchJSON(
+      `${COINGECKO_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`
+    );
+    const prices = Array.isArray(data?.prices) ? data.prices : [];
+    const volumes = Array.isArray(data?.total_volumes) ? data.total_volumes : [];
+    if (prices.length < 5 || volumes.length < 5) return null;
+
+    const recentN = Math.max(2, Math.floor(prices.length / days));
+    const last24Vol = volumes.slice(-recentN).reduce((s, v) => s + v[1], 0);
+    const avgDailyVol = volumes.reduce((s, v) => s + v[1], 0) / days;
+    const volPulse = avgDailyVol > 0 ? last24Vol / avgDailyVol : 0;
+
+    // Accumulation/Distribution: compare close-to-close direction vs volume.
+    let accumScore = 0;
+    let totalVol = 0;
+    const minLen = Math.min(prices.length, volumes.length);
+    for (let i = 1; i < minLen; i++) {
+      const dir = Math.sign(prices[i][1] - prices[i - 1][1]);
+      const v = volumes[i][1];
+      accumScore += dir * v;
+      totalVol += v;
+    }
+    const adNormalized = totalVol > 0 ? accumScore / totalVol : 0; // -1..1
+
+    // Momentum: short-vs-long EMA-ish ratio
+    const sma = (n) => {
+      const slice = prices.slice(-n);
+      return slice.reduce((s, p) => s + p[1], 0) / slice.length;
+    };
+    const fast = sma(Math.max(2, Math.floor(recentN * 3)));
+    const slow = sma(Math.max(4, Math.floor(prices.length / 2)));
+    const momentum = slow > 0 ? (fast - slow) / slow : 0;
+
+    // Volatility: stdev of log returns over the window
+    const returns = [];
+    for (let i = 1; i < prices.length; i++) {
+      const r = Math.log(prices[i][1] / prices[i - 1][1]);
+      if (isFinite(r)) returns.push(r);
+    }
+    const meanR = returns.reduce((s, r) => s + r, 0) / returns.length;
+    const variance = returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length;
+    const volatility = Math.sqrt(variance) * Math.sqrt(365); // annualised
+
+    // Recent high/low range position (0 = at low, 1 = at high)
+    const window = prices.slice(-Math.min(prices.length, recentN * 7));
+    const hi = Math.max(...window.map(p => p[1]));
+    const lo = Math.min(...window.map(p => p[1]));
+    const lastPrice = prices[prices.length - 1][1];
+    const rangePos = hi > lo ? (lastPrice - lo) / (hi - lo) : 0.5;
+
+    // Composite "Whale Score": -100 (heavy distribution) to +100 (heavy accumulation)
+    const whaleScore = Math.max(-100, Math.min(100, Math.round(
+      adNormalized * 60 + Math.tanh(momentum * 5) * 25 + (volPulse > 1 ? Math.min(15, (volPulse - 1) * 10) : 0)
+    )));
+
+    return {
+      volPulse,            // ratio of last-24h volume to daily average over window
+      adNormalized,        // -1..1 accumulation/distribution
+      momentum,            // -1..1 fast vs slow MA delta
+      volatility,          // annualised stdev of log returns
+      rangePos,            // 0..1 position in recent range
+      whaleScore,          // -100..100 composite
+      lastPrice,
+      windowDays: days,
+    };
+  },
+
   // Exchanges
   getExchanges: async () => loadData('exchanges'),
 
