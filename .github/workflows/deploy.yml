@@ -39,6 +39,7 @@ jobs:
           mkdir -p docs
           cp -r client/dist/. docs/
           touch docs/.nojekyll
+          echo "walletlens.cc" > docs/CNAME
 
       - name: Commit /docs to main
         run: |
