@@ -722,6 +722,21 @@ body::after {
 .form-field { margin-bottom: 0.85rem; position: relative; }
 .form-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
 .form-hint { font-size: 0.75rem; color: var(--text2); margin: 0.35rem 0 0 0; }
+
+/* Market-cap badges shown on each holding card */
+.cap-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  font-size: 0.7rem; font-weight: 800;
+  line-height: 1;
+  margin-left: 0.35rem;
+  cursor: help;
+  color: #fff;
+}
+.cap-badge.cap-large { background: #10b981; }
+.cap-badge.cap-mid   { background: #f59e0b; }
+.cap-badge.cap-small { background: #ef4444; }
 .sell-for-row {
   display: grid; grid-template-columns: minmax(120px, 1fr) 1fr; gap: 0.5rem;
 }
