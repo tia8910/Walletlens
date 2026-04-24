@@ -391,15 +391,18 @@ body::after {
 }
 .hero-label-row .hero-label { margin-bottom: 0; }
 .hero-eye {
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #fff;
-  width: 30px; height: 30px;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
+  color: #fff !important;
+  width: 34px; height: 34px;
+  padding: 0 !important;
+  border-radius: 8px !important;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; transition: all 0.15s;
+  font-size: 1rem !important;
+  line-height: 1;
 }
-.hero-eye:hover { background: rgba(255,255,255,0.28); transform: scale(1.05); }
+.hero-eye:hover { background: rgba(255,255,255,0.28) !important; transform: scale(1.05); }
 
 .portfolio-trend {
   margin-top: 1rem;
