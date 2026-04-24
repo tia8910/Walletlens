@@ -836,11 +836,52 @@ export const api = {
       adNormalized,        // -1..1 accumulation/distribution
       momentum,            // -1..1 fast vs slow MA delta
       volatility,          // annualised stdev of log returns
-      rangePos,            // 0..1 position in recent range
+      rangePos,             // 0..1 position in recent range
       whaleScore,          // -100..100 composite
       lastPrice,
       windowDays: days,
+      // Portfolio-level analytics helpers
+      maxDrawdown: (() => {
+        let peak = -Infinity, maxDD = 0;
+        for (const p of prices) {
+          if (p[1] > peak) peak = p[1];
+          const dd = peak > 0 ? (p[1] - peak) / peak : 0;
+          if (dd < maxDD) maxDD = dd;
+        }
+        return Math.abs(maxDD);
+      })(),
+      return30d: prices.length > 1 ? (prices[prices.length - 1][1] - prices[0][1]) / prices[0][1] : 0,
     };
+  },
+
+  // Bulk smart signals with 1h localStorage cache. Non-crypto IDs silently skipped.
+  getBulkSmartSignals: async (coinIds, days = 30) => {
+    const out = {};
+    if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
+    const CACHE_KEY = 'crypto_tracker_signals_cache_v1';
+    const TTL_MS = 60 * 60 * 1000;
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
+    const now = Date.now();
+    const toFetch = [];
+    for (const id of coinIds) {
+      const hit = cache[id];
+      if (hit && now - hit.t < TTL_MS && hit.v) {
+        out[id] = hit.v;
+      } else {
+        toFetch.push(id);
+      }
+    }
+    for (const id of toFetch) {
+      try {
+        const s = await api.getCoinSmartSignals(id, days);
+        out[id] = s;
+        cache[id] = { t: now, v: s };
+      } catch { out[id] = null; }
+      await new Promise(r => setTimeout(r, 120));
+    }
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return out;
   },
 
   // Exchanges
