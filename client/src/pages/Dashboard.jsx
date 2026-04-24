@@ -553,33 +553,11 @@ export default function Dashboard() {
     })
   }
 
-  // Regenerate the share image when the modal opens or when deps change
-  useEffect(() => {
-    if (!showShareModal) return
-    let cancelled = false
-    setShareStatus('')
-    setShareImageUrl(null)
-    const top = [...enriched]
-      .sort((a, b) => b.value - a.value)
-      .map(h => ({ symbol: h.coin_symbol, allocation: h.allocation }))
-    renderShareCardPng({
-      totalValue,
-      totalPnL,
-      pnlPercent,
-      topHoldings: top,
-      history: portfolioHistory,
-      hideValues,
-    }).then(blob => {
-      if (cancelled || !blob) return
-      const url = URL.createObjectURL(blob)
-      setShareImageUrl(url)
-    }).catch(err => {
-      console.error('share render', err)
-      if (!cancelled) setShareStatus('Could not generate card')
-    })
-    return () => { cancelled = true }
-  }, [showShareModal, totalValue, totalPnL, pnlPercent, hideValues, enriched.length, portfolioHistory.length])
-
+  // Regenerate the share image when the modal opens or when deps change.
+  // Note: placed near top but references `enriched` + `portfolioHistory`
+  // which are computed later; the actual work only happens when the modal
+  // is open, and the deps list only reads `.length` which is safe once
+  // the component has rendered once. Guarded in case those aren't ready.
   async function handleShare() {
     if (!shareImageUrl) return
     try {
@@ -963,6 +941,34 @@ export default function Dashboard() {
   // Portfolio AI Analysis
   let analysis = null
   try { analysis = generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals) } catch (e) { console.error('Analysis error:', e) }
+
+  // Regenerate the share image when the modal opens or key data changes.
+  // Placed here so enriched + portfolioHistory are in scope.
+  useEffect(() => {
+    if (!showShareModal) return
+    let cancelled = false
+    setShareStatus('')
+    setShareImageUrl(null)
+    const top = [...enriched]
+      .sort((a, b) => b.value - a.value)
+      .map(h => ({ symbol: h.coin_symbol, allocation: h.allocation }))
+    renderShareCardPng({
+      totalValue,
+      totalPnL,
+      pnlPercent,
+      topHoldings: top,
+      history: portfolioHistory,
+      hideValues,
+    }).then(blob => {
+      if (cancelled || !blob) return
+      const url = URL.createObjectURL(blob)
+      setShareImageUrl(url)
+    }).catch(err => {
+      console.error('share render', err)
+      if (!cancelled) setShareStatus('Could not generate card')
+    })
+    return () => { cancelled = true }
+  }, [showShareModal, totalValue, totalPnL, pnlPercent, hideValues, enriched.length, portfolioHistory.length])
 
   return (
     <div className="page">
