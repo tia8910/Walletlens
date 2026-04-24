@@ -831,6 +831,17 @@ export const api = {
       adNormalized * 60 + Math.tanh(momentum * 5) * 25 + (volPulse > 1 ? Math.min(15, (volPulse - 1) * 10) : 0)
     )));
 
+    // Daily-bucketed price series — one price per day (latest known) for
+    // portfolio value reconstruction on the Dashboard trend chart.
+    const daily = {};
+    for (const [ts, p] of prices) {
+      const dayKey = new Date(ts).toISOString().slice(0, 10);
+      daily[dayKey] = p;
+    }
+    const priceSeries = Object.entries(daily)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, price]) => ({ date, price }));
+
     return {
       volPulse,            // ratio of last-24h volume to daily average over window
       adNormalized,        // -1..1 accumulation/distribution
@@ -840,6 +851,7 @@ export const api = {
       whaleScore,          // -100..100 composite
       lastPrice,
       windowDays: days,
+      priceSeries,         // [{ date: 'YYYY-MM-DD', price }]
       // Portfolio-level analytics helpers
       maxDrawdown: (() => {
         let peak = -Infinity, maxDD = 0;

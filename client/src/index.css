@@ -385,6 +385,53 @@ body::after {
 }
 .hero-label { font-size: 0.75rem; opacity: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem; font-weight: 800; position: relative; z-index: 2; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 .hero-value { font-size: 2.35rem; font-weight: 900; letter-spacing: -0.02em; position: relative; z-index: 2; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.45); }
+.hero-label-row {
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 2;
+}
+.hero-label-row .hero-label { margin-bottom: 0; }
+.hero-eye {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.hero-eye:hover { background: rgba(255,255,255,0.28); transform: scale(1.05); }
+
+.portfolio-trend {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 12px;
+  position: relative; z-index: 2;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.portfolio-trend-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.4rem;
+}
+.portfolio-trend-label {
+  font-size: 0.7rem; color: rgba(255,255,255,0.85); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.portfolio-trend-tabs { display: flex; gap: 0.25rem; }
+.portfolio-trend-tab {
+  background: rgba(255,255,255,0.14); color: #fff;
+  border: 1px solid rgba(255,255,255,0.22);
+  padding: 0.22rem 0.55rem; font-size: 0.7rem; font-weight: 700;
+  border-radius: 7px; cursor: pointer;
+}
+.portfolio-trend-tab.active { background: #fff; color: #4f46e5; border-color: #fff; }
+.portfolio-trend-foot {
+  margin-top: 0.3rem; font-size: 0.78rem; font-weight: 700;
+}
+.portfolio-trend-foot .positive { color: #a7f3d0; }
+.portfolio-trend-foot .negative { color: #fecaca; }
 .hero-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; position: relative; z-index: 2; }
 .hero-pnl { font-size: 0.95rem; font-weight: 800; padding: 0.22rem 0.6rem; border-radius: 999px; }
 .hero-pnl.positive { color: #064e3b; background: #a7f3d0; }
