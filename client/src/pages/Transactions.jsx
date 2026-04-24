@@ -2,6 +2,57 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 
+// ─── Receive-leg resolver for sell proceeds ───
+// Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
+// returns a leg payload {coin_id, symbol, name, category, amount, pricePerUnit}
+// that can be recorded as an automatic buy so balances stay consistent.
+async function buildReceiveLeg(target, proceedsUsd) {
+  const T = (target || '').toUpperCase()
+  if (!T) return null
+  // Stablecoins & USD → 1:1 with USD
+  if (T === 'USD') {
+    return { coin_id: `${FIAT_PREFIX}usd`, symbol: 'USD', name: 'US Dollar', category: 'fiat', amount: proceedsUsd, pricePerUnit: 1 }
+  }
+  if (T === 'USDT') {
+    return { coin_id: 'tether', symbol: 'USDT', name: 'Tether', category: 'crypto', amount: proceedsUsd, pricePerUnit: 1 }
+  }
+  if (T === 'USDC') {
+    return { coin_id: 'usd-coin', symbol: 'USDC', name: 'USD Coin', category: 'crypto', amount: proceedsUsd, pricePerUnit: 1 }
+  }
+  if (T === 'BTC') {
+    const prices = await api.getPrices('bitcoin')
+    const btcUsd = prices?.bitcoin?.usd || 0
+    if (!btcUsd) return null
+    return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: proceedsUsd / btcUsd, pricePerUnit: btcUsd }
+  }
+  if (T === 'EUR') {
+    // EUR is a fiat — price_per_unit is USD per 1 EUR
+    // Use a generic FX lookup via EUR/USD pair (api.getPrices handles fiat prefix)
+    let eurUsd = null
+    try {
+      const r = await api.getPrices(`${FIAT_PREFIX}eur`)
+      eurUsd = r?.[`${FIAT_PREFIX}eur`]?.usd || null
+    } catch {}
+    if (!eurUsd) eurUsd = 1.08 // sensible fallback
+    return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: proceedsUsd / eurUsd, pricePerUnit: eurUsd }
+  }
+  // Custom ticker — best-effort crypto lookup, else record as "other"
+  const lower = T.toLowerCase()
+  try {
+    const search = await api.searchCoins?.(lower)
+    const hit = Array.isArray(search) ? search.find(c => (c.symbol || '').toLowerCase() === lower) : null
+    if (hit) {
+      const prices = await api.getPrices(hit.id)
+      const usd = prices?.[hit.id]?.usd || 0
+      if (usd > 0) {
+        return { coin_id: hit.id, symbol: T, name: hit.name || T, category: 'crypto', amount: proceedsUsd / usd, pricePerUnit: usd }
+      }
+    }
+  } catch {}
+  // Fallback: record as generic asset at $1 with the user's symbol
+  return { coin_id: `other:${lower}`, symbol: T, name: T, category: 'other', amount: proceedsUsd, pricePerUnit: 1 }
+}
+
 const CATEGORY_ORDER = ['crypto', 'fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
 const CATEGORY_UNITS = {
@@ -103,6 +154,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     wallet_id: '', type: 'buy', category: 'crypto',
     coin_id: '', coin_symbol: '', coin_name: '', coin_image: '',
     amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0],
+    // Sell-for receive leg: which asset the proceeds are credited in
+    sell_for: 'USD',       // BTC | USDT | USDC | USD | EUR | CUSTOM
+    sell_for_custom: '',   // ticker when sell_for === 'CUSTOM'
   })
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const searchTimeout = useRef(null)
@@ -322,12 +376,46 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     e.preventDefault()
     if (!form.coin_id || !form.amount || !form.price_per_unit || !form.wallet_id) return
     if (form.category !== 'crypto' && !form.coin_symbol && !form.coin_name) return
+
+    const amount = parseFloat(form.amount)
+    const pricePerUnit = parseFloat(form.price_per_unit)
+
+    // Record the primary transaction (sell/buy)
     await api.addTransaction({
       ...form,
-      amount: parseFloat(form.amount),
-      price_per_unit: parseFloat(form.price_per_unit),
+      amount,
+      price_per_unit: pricePerUnit,
     })
-    setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0] })
+
+    // Sell leg: if user chose a target asset (BTC/USDT/USDC/USD/EUR/custom),
+    // auto-credit their holdings with the proceeds converted into that asset.
+    if (form.type === 'sell') {
+      const proceedsUsd = amount * pricePerUnit
+      const target = form.sell_for === 'CUSTOM'
+        ? form.sell_for_custom.trim().toUpperCase()
+        : form.sell_for
+      if (target && proceedsUsd > 0) {
+        const legBase = buildReceiveLeg(target, proceedsUsd)
+        if (legBase) {
+          await api.addTransaction({
+            wallet_id: form.wallet_id,
+            type: 'buy',
+            category: legBase.category,
+            coin_id: legBase.coin_id,
+            coin_symbol: legBase.symbol,
+            coin_name: legBase.name,
+            coin_image: '',
+            amount: legBase.amount,
+            price_per_unit: legBase.pricePerUnit,
+            exchange: form.exchange,
+            notes: `Proceeds from selling ${form.coin_symbol?.toUpperCase?.() || form.coin_id}`,
+            date: form.date,
+          })
+        }
+      }
+    }
+
+    setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '' })
     setCoinSearch('')
     setCoinAnalysis(null)
     setSellHoldings(null)
@@ -381,12 +469,10 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               })}
             </div>
 
-            {/* Buy/Sell/Deposit/Withdraw toggle */}
+            {/* Buy/Sell toggle */}
             <div className="type-toggle">
               <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => handleTypeChange('buy')}>Buy</button>
               <button className={`toggle-btn ${form.type === 'sell' ? 'active sell' : ''}`} onClick={() => handleTypeChange('sell')}>Sell</button>
-              <button className={`toggle-btn ${form.type === 'deposit' ? 'active deposit' : ''}`} onClick={() => handleTypeChange('deposit')}>Deposit</button>
-              <button className={`toggle-btn ${form.type === 'withdraw' ? 'active withdraw' : ''}`} onClick={() => handleTypeChange('withdraw')}>Withdraw</button>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -604,7 +690,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 </div>
               )}
 
-              {(form.type === 'sell' || form.type === 'withdraw') && form.coin_id && sellHoldings && (
+              {form.type === 'sell' && form.coin_id && sellHoldings && (
                 <div className="sell-picker">
                   <div className="sell-balance-row">
                     <span className="sell-balance-label">Available Balance</span>
@@ -686,8 +772,39 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="DCA, dip buy, etc." />
               </div>
 
-              <button type="submit" className={`submit-btn ${form.type === 'sell' || form.type === 'withdraw' ? 'sell' : 'buy'}`}>
-                {form.type === 'buy' ? 'Record Buy' : form.type === 'sell' ? 'Record Sell' : form.type === 'deposit' ? 'Record Deposit' : 'Record Withdraw'}
+              {form.type === 'sell' && (
+                <div className="form-field">
+                  <label>Sell for (proceeds credited to this asset)</label>
+                  <div className="sell-for-row">
+                    <select
+                      value={form.sell_for}
+                      onChange={e => setForm(f => ({ ...f, sell_for: e.target.value }))}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="USDT">USDT</option>
+                      <option value="USDC">USDC</option>
+                      <option value="BTC">BTC</option>
+                      <option value="EUR">EUR</option>
+                      <option value="CUSTOM">Other…</option>
+                    </select>
+                    {form.sell_for === 'CUSTOM' && (
+                      <input
+                        type="text"
+                        value={form.sell_for_custom}
+                        onChange={e => setForm(f => ({ ...f, sell_for_custom: e.target.value }))}
+                        placeholder="Ticker (e.g. SOL, DAI)"
+                      />
+                    )}
+                  </div>
+                  <p className="form-hint">
+                    Total proceeds${totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be credited to your{' '}
+                    <strong>{form.sell_for === 'CUSTOM' ? (form.sell_for_custom.trim().toUpperCase() || '…') : form.sell_for}</strong> balance automatically.
+                  </p>
+                </div>
+              )}
+
+              <button type="submit" className={`submit-btn ${form.type === 'sell' ? 'sell' : 'buy'}`}>
+                {form.type === 'buy' ? 'Record Buy' : 'Record Sell'}
               </button>
             </form>
           </div>
@@ -716,7 +833,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           {transactions.map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
-            const isPositive = txType === 'buy' || txType === 'deposit'
+            const isPositive = txType === 'buy'
             const badgeClass = isPositive ? 'buy' : 'sell'
             return (
               <div key={t.id} className="tx-card">
