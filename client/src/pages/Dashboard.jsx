@@ -324,6 +324,33 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
     ? 'Multi-asset exposure'
     : categoryBreakdown.length === 2 ? 'Two-class exposure' : 'Single-class exposure'
 
+  // Market-cap size breakdown (crypto holdings only)
+  const CAP_META = {
+    large:   { label: 'Large Cap',   short: 'L',  color: '#10b981', desc: '≥ $10B' },
+    mid:     { label: 'Mid Cap',     short: 'M',  color: '#f59e0b', desc: '$1B – $10B' },
+    small:   { label: 'Small Cap',   short: 'S',  color: '#ef4444', desc: '< $1B' },
+    unknown: { label: 'Unknown Cap', short: '?',  color: '#94a3b8', desc: 'no data' },
+    'n/a':   { label: 'Other',       short: '·',  color: '#a78bfa', desc: 'non-crypto' },
+  }
+  const capAlloc = {}
+  for (const h of enriched) {
+    const k = h.capSize || 'n/a'
+    capAlloc[k] = (capAlloc[k] || 0) + h.value
+  }
+  const capBreakdown = Object.entries(capAlloc)
+    .map(([key, value]) => ({
+      key,
+      label: CAP_META[key]?.label || key,
+      color: CAP_META[key]?.color || '#94a3b8',
+      desc: CAP_META[key]?.desc || '',
+      value,
+      pct: (value / (totalValue || 1)) * 100,
+    }))
+    .sort((a, b) => {
+      const order = { large: 0, mid: 1, small: 2, unknown: 3, 'n/a': 4 }
+      return (order[a.key] ?? 9) - (order[b.key] ?? 9)
+    })
+
   // Stress-test — simple beta-based model
   const scenarios = [-20, -10, 10, 20].map(btcDeltaPct => {
     let delta = 0
@@ -471,6 +498,7 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
     annualisedVol, portfolioMaxDD, portfolio30dReturn, portfolioSharpe,
     highVolExposurePct,
     categoryBreakdown, crossAssetDiversity,
+    capBreakdown,
     scenarios,
     topWinners, topLosers,
     signalsReady,
@@ -877,12 +905,26 @@ export default function Dashboard() {
     const targetValue = primary ? amount * primary.price : null
     const targetPricePct = primary && price > 0 ? Math.min((price / primary.price) * 100, 100) : null
 
+    // Market cap classification (crypto only; non-crypto = 'n/a')
+    const rawCat = h.category || 'crypto'
+    const isCrypto = rawCat === 'crypto'
+    const mcUsd = isCrypto ? (prices[h.coin_id]?.usd_market_cap || 0) : 0
+    let capSize = 'n/a'
+    if (isCrypto) {
+      if (mcUsd >= 10_000_000_000) capSize = 'large'
+      else if (mcUsd >= 1_000_000_000) capSize = 'mid'
+      else if (mcUsd > 0) capSize = 'small'
+      else capSize = 'unknown'
+    }
+
     return {
       ...h, coin_symbol: symbol, amount, total_invested: invested,
       price, change24h, value, pnl, pnlPct, allocation, avgBuy, image,
       plan: enrichedTargets, planRemainingQty: remainingQty, planOverAllocated: overAllocated,
       planTotalProceeds, planInvestedCovered,
       targetPrice, targetValue, targetPricePct,
+      marketCap: mcUsd,
+      capSize,
     }
   }).sort((a, b) => b.value - a.value)
 
@@ -1273,6 +1315,35 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Market cap split (crypto holdings) */}
+              {analysis.capBreakdown && analysis.capBreakdown.some(c => ['large','mid','small','unknown'].includes(c.key)) && (
+                <div className="ai-section">
+                  <div className="ai-section-head">
+                    <span>Market Cap Split</span>
+                    <span className="ai-section-badge-muted">Large ≥$10B · Mid $1B–10B · Small &lt;$1B</span>
+                  </div>
+                  <div className="ai-class-bar">
+                    {analysis.capBreakdown.map(c => (
+                      <div
+                        key={c.key}
+                        className="ai-class-seg"
+                        style={{ width: `${c.pct}%`, background: c.color }}
+                        title={`${c.label}: ${c.pct.toFixed(1)}% (${c.desc})`}
+                      />
+                    ))}
+                  </div>
+                  <div className="ai-class-legend">
+                    {analysis.capBreakdown.map(c => (
+                      <div key={c.key} className="ai-class-item">
+                        <span className="ai-class-dot" style={{ background: c.color }} />
+                        <span className="ai-class-label">{c.label}</span>
+                        <span className="ai-class-pct">{c.pct.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* P&L attribution */}
               {(analysis.topWinners.filter(h => h.pnl > 0).length > 0 || analysis.topLosers.length > 0) && (
                 <div className="ai-section">
@@ -1607,6 +1678,14 @@ export default function Dashboard() {
                         style={{ background: `${ASSET_CATEGORIES[h.category]?.color || '#6366f1'}22`, color: ASSET_CATEGORIES[h.category]?.color || '#6366f1' }}
                       >
                         {ASSET_CATEGORIES[h.category]?.icon} {ASSET_CATEGORIES[h.category]?.label}
+                      </span>
+                    )}
+                    {h.capSize && ['large','mid','small'].includes(h.capSize) && (
+                      <span
+                        className={`cap-badge cap-${h.capSize}`}
+                        title={`${h.capSize === 'large' ? 'Large cap (≥$10B)' : h.capSize === 'mid' ? 'Mid cap ($1B–$10B)' : 'Small cap (<$1B)'} — MCap $${(h.marketCap / 1e9).toFixed(2)}B`}
+                      >
+                        {h.capSize === 'large' ? 'L' : h.capSize === 'mid' ? 'M' : 'S'}
                       </span>
                     )}
                   </div>
