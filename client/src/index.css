@@ -390,6 +390,10 @@ body::after {
   position: relative; z-index: 2;
 }
 .hero-label-row .hero-label { margin-bottom: 0; }
+.hero-actions {
+  display: flex; gap: 0.4rem;
+  position: relative; z-index: 2;
+}
 .hero-eye {
   background: rgba(255,255,255,0.18) !important;
   border: 1px solid rgba(255,255,255,0.3) !important;
@@ -435,6 +439,66 @@ body::after {
 }
 .portfolio-trend-foot .positive { color: #a7f3d0; }
 .portfolio-trend-foot .negative { color: #fecaca; }
+
+/* ─── Share wallet card modal ─── */
+.share-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15,15,35,0.72);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.share-modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  max-width: 520px; width: 100%;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
+.share-modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem;
+}
+.share-modal-head h3 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+.share-close {
+  background: transparent !important;
+  color: var(--text2) !important;
+  border: 1px solid var(--border) !important;
+  width: 32px; height: 32px;
+  border-radius: 8px !important;
+  font-size: 1.25rem !important; line-height: 1;
+  padding: 0 !important; cursor: pointer;
+}
+.share-close:hover { background: var(--bg3) !important; color: var(--text) !important; }
+.share-modal-body {
+  background: var(--bg3);
+  border-radius: 12px; padding: 0.75rem;
+  margin-bottom: 1rem;
+  min-height: 260px;
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+}
+.share-preview {
+  max-width: 100%; max-height: 400px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+}
+.share-loading {
+  color: var(--text2); font-size: 0.9rem;
+  padding: 4rem 1rem;
+}
+.share-status {
+  font-size: 0.82rem; font-weight: 600;
+  color: #10b981; padding: 0.35rem 0.7rem;
+  background: rgba(16,185,129,0.12); border-radius: 8px;
+}
+.share-modal-actions {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem; margin-bottom: 0.75rem;
+}
+.share-modal-actions .action-btn { padding: 0.7rem 0.6rem; font-size: 0.88rem; }
+.share-note { font-size: 0.75rem; text-align: center; margin: 0; }
 .hero-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; position: relative; z-index: 2; }
 .hero-pnl { font-size: 0.95rem; font-weight: 800; padding: 0.22rem 0.6rem; border-radius: 999px; }
 .hero-pnl.positive { color: #064e3b; background: #a7f3d0; }
@@ -657,6 +721,11 @@ body::after {
 /* ─── Form Fields ─── */
 .form-field { margin-bottom: 0.85rem; position: relative; }
 .form-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+.form-hint { font-size: 0.75rem; color: var(--text2); margin: 0.35rem 0 0 0; }
+.sell-for-row {
+  display: grid; grid-template-columns: minmax(120px, 1fr) 1fr; gap: 0.5rem;
+}
+.sell-for-row > select { width: 100%; }
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
 input, select, textarea {

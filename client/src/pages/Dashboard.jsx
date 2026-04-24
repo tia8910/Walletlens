@@ -4,6 +4,133 @@ import { api, ASSET_CATEGORIES } from '../api'
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import PitchCard from '../components/PitchCard'
 
+// ─── Share card renderer ───
+// Draws a 1080×1080 PNG of the user's portfolio card on an off-screen canvas.
+// Respects `mask` so a hidden-values share shows "••••" instead of real $.
+async function renderShareCardPng({ totalValue, totalPnL, pnlPercent, topHoldings, history, hideValues, size = 1080 }) {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+
+  // Background gradient
+  const g = ctx.createLinearGradient(0, 0, size, size)
+  g.addColorStop(0, '#6366f1')
+  g.addColorStop(0.55, '#8b5cf6')
+  g.addColorStop(1, '#22d3ee')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, size, size)
+
+  // Decorative glow
+  const glow = ctx.createRadialGradient(size * 0.8, size * 0.2, 50, size * 0.8, size * 0.2, size * 0.6)
+  glow.addColorStop(0, 'rgba(255,255,255,0.22)')
+  glow.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, size, size)
+
+  // Brand
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '700 42px system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+  ctx.fillText('WalletLens', 80, 110)
+  ctx.font = '400 24px system-ui, sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.78)'
+  ctx.fillText('zoom in your wealth', 80, 148)
+
+  // Label
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.font = '700 28px system-ui, sans-serif'
+  ctx.fillText('TOTAL PORTFOLIO VALUE', 80, 290)
+
+  // Big number
+  const fmtUsd = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const bigValue = hideValues ? '$••••••' : `$${fmtUsd(totalValue)}`
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '900 128px system-ui, sans-serif'
+  ctx.fillText(bigValue, 80, 410)
+
+  // P&L
+  const pnlColor = totalPnL >= 0 ? '#a7f3d0' : '#fecaca'
+  ctx.fillStyle = pnlColor
+  ctx.font = '700 42px system-ui, sans-serif'
+  const pnlText = hideValues
+    ? '•••• (••%)'
+    : `${totalPnL >= 0 ? '+' : ''}$${fmtUsd(totalPnL)} (${pnlPercent.toFixed(2)}%)`
+  ctx.fillText(pnlText, 80, 475)
+
+  // Trend line mini-chart
+  if (Array.isArray(history) && history.length > 1) {
+    const chartX = 80, chartY = 540, chartW = size - 160, chartH = 180
+    const values = history.map(h => h.value)
+    const min = Math.min(...values), max = Math.max(...values)
+    const rng = max - min || 1
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)'
+    ctx.lineWidth = 1
+    ctx.strokeRect(chartX, chartY, chartW, chartH)
+    // Area fill
+    ctx.beginPath()
+    ctx.moveTo(chartX, chartY + chartH)
+    history.forEach((pt, i) => {
+      const x = chartX + (i / (history.length - 1)) * chartW
+      const y = chartY + chartH - ((pt.value - min) / rng) * chartH
+      if (i === 0) ctx.lineTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    ctx.lineTo(chartX + chartW, chartY + chartH)
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    ctx.fill()
+    // Line
+    ctx.beginPath()
+    history.forEach((pt, i) => {
+      const x = chartX + (i / (history.length - 1)) * chartW
+      const y = chartY + chartH - ((pt.value - min) / rng) * chartH
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 4
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+
+    ctx.font = '600 20px system-ui, sans-serif'
+    ctx.fillStyle = 'rgba(255,255,255,0.72)'
+    ctx.fillText(`${history.length}-day trend`, chartX, chartY - 12)
+  }
+
+  // Top holdings
+  const holdY = 780
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.font = '700 26px system-ui, sans-serif'
+  ctx.fillText('TOP HOLDINGS', 80, holdY)
+
+  ctx.font = '600 28px system-ui, sans-serif'
+  topHoldings.slice(0, 4).forEach((h, i) => {
+    const y = holdY + 52 + i * 44
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(`${i + 1}. ${(h.symbol || '').toUpperCase()}`, 80, y)
+    ctx.textAlign = 'right'
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'
+    ctx.fillText(
+      hideValues ? '••••' : `${h.allocation.toFixed(1)}%`,
+      size - 80, y
+    )
+    ctx.textAlign = 'left'
+  })
+
+  // Footer
+  ctx.fillStyle = 'rgba(255,255,255,0.68)'
+  ctx.font = '500 22px system-ui, sans-serif'
+  ctx.fillText('walletlens.cc', 80, size - 50)
+  ctx.textAlign = 'right'
+  const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  ctx.fillText(today, size - 80, size - 50)
+  ctx.textAlign = 'left'
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/png')
+  })
+}
+
 // ─── Privacy helpers ───
 const HIDE_KEY = 'crypto_tracker_hide_values'
 function loadHideValues() {
@@ -411,6 +538,9 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [trendDays, setTrendDays] = useState(30)
   const [hideValues, setHideValues] = useState(loadHideValues())
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareImageUrl, setShareImageUrl] = useState(null)
+  const [shareStatus, setShareStatus] = useState('')
 
   // Privacy mask — hide USD values with dots when toggled
   const mask = '••••'
@@ -421,6 +551,81 @@ export default function Dashboard() {
       saveHideValues(!v)
       return !v
     })
+  }
+
+  // Regenerate the share image when the modal opens or when deps change
+  useEffect(() => {
+    if (!showShareModal) return
+    let cancelled = false
+    setShareStatus('')
+    setShareImageUrl(null)
+    const top = [...enriched]
+      .sort((a, b) => b.value - a.value)
+      .map(h => ({ symbol: h.coin_symbol, allocation: h.allocation }))
+    renderShareCardPng({
+      totalValue,
+      totalPnL,
+      pnlPercent,
+      topHoldings: top,
+      history: portfolioHistory,
+      hideValues,
+    }).then(blob => {
+      if (cancelled || !blob) return
+      const url = URL.createObjectURL(blob)
+      setShareImageUrl(url)
+    }).catch(err => {
+      console.error('share render', err)
+      if (!cancelled) setShareStatus('Could not generate card')
+    })
+    return () => { cancelled = true }
+  }, [showShareModal, totalValue, totalPnL, pnlPercent, hideValues, enriched.length, portfolioHistory.length])
+
+  async function handleShare() {
+    if (!shareImageUrl) return
+    try {
+      const res = await fetch(shareImageUrl)
+      const blob = await res.blob()
+      const file = new File([blob], 'walletlens-portfolio.png', { type: 'image/png' })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My WalletLens portfolio',
+          text: 'Track your whole net worth in one place.',
+        })
+        setShareStatus('Shared!')
+      } else {
+        // Fallback: copy image to clipboard if supported
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          setShareStatus('Image copied to clipboard')
+        } else {
+          setShareStatus('Sharing not supported — use Download')
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      setShareStatus('Share cancelled')
+    }
+  }
+
+  function handleDownload() {
+    if (!shareImageUrl) return
+    const a = document.createElement('a')
+    a.href = shareImageUrl
+    a.download = 'walletlens-portfolio.png'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setShareStatus('Downloaded')
+  }
+
+  function closeShareModal() {
+    setShowShareModal(false)
+    if (shareImageUrl) {
+      URL.revokeObjectURL(shareImageUrl)
+      setShareImageUrl(null)
+    }
+    setShareStatus('')
   }
 
   useEffect(() => {
@@ -810,14 +1015,24 @@ export default function Dashboard() {
       <div className="hero-card">
         <div className="hero-label-row">
           <div className="hero-label">Total Portfolio Value</div>
-          <button
-            className="hero-eye"
-            onClick={toggleHideValues}
-            title={hideValues ? 'Show values' : 'Hide values'}
-            aria-label={hideValues ? 'Show values' : 'Hide values'}
-          >
-            {hideValues ? '🙈' : '👁️'}
-          </button>
+          <div className="hero-actions">
+            <button
+              className="hero-eye"
+              onClick={toggleHideValues}
+              title={hideValues ? 'Show values' : 'Hide values'}
+              aria-label={hideValues ? 'Show values' : 'Hide values'}
+            >
+              {hideValues ? '🙈' : '👁️'}
+            </button>
+            <button
+              className="hero-eye"
+              onClick={() => setShowShareModal(true)}
+              title="Share wallet card"
+              aria-label="Share wallet card"
+            >
+              📤
+            </button>
+          </div>
         </div>
         <div className="hero-value">{hideValues ? '$••••••' : `$${fmt(totalValue)}`}</div>
         <div className="hero-row">
@@ -1157,6 +1372,42 @@ export default function Dashboard() {
           Data
         </button>
       </div>
+
+      {/* Share wallet card modal */}
+      {showShareModal && (
+        <div className="share-modal-overlay" onClick={closeShareModal}>
+          <div className="share-modal" onClick={e => e.stopPropagation()}>
+            <div className="share-modal-head">
+              <h3>Share your wallet card</h3>
+              <button className="share-close" onClick={closeShareModal} aria-label="Close">×</button>
+            </div>
+            <div className="share-modal-body">
+              {shareImageUrl ? (
+                <img src={shareImageUrl} alt="Wallet share card" className="share-preview" />
+              ) : (
+                <div className="share-loading">Generating card…</div>
+              )}
+              {shareStatus && <div className="share-status">{shareStatus}</div>}
+            </div>
+            <div className="share-modal-actions">
+              <button className="action-btn buy-btn" onClick={handleShare} disabled={!shareImageUrl}>
+                📤 Share
+              </button>
+              <button className="action-btn data-btn" onClick={handleDownload} disabled={!shareImageUrl}>
+                ⬇️ Download
+              </button>
+              <button className="action-btn" onClick={closeShareModal}>
+                Close
+              </button>
+            </div>
+            <p className="share-note muted">
+              {hideValues
+                ? 'Privacy mode is on — dollar amounts are hidden in the card.'
+                : 'Tip: turn on the 👁️ toggle before sharing to hide dollar amounts.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Wallet manager */}
       {showWallets && (
