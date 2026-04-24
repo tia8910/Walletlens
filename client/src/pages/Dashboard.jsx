@@ -1,8 +1,66 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES } from '../api'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import PitchCard from '../components/PitchCard'
+
+// ─── Privacy helpers ───
+const HIDE_KEY = 'crypto_tracker_hide_values'
+function loadHideValues() {
+  try { return localStorage.getItem(HIDE_KEY) === '1' } catch { return false }
+}
+function saveHideValues(v) {
+  try { localStorage.setItem(HIDE_KEY, v ? '1' : '0') } catch {}
+}
+
+// ─── Portfolio value trend from transactions + historical prices ───
+// For each day in the last `days`, reconstructs net holdings at end-of-day
+// and values them using the historical close from signals.priceSeries
+// (falls back to current price for non-crypto assets).
+function computePortfolioHistory(transactions, prices, signals, days = 30) {
+  if (!Array.isArray(transactions) || transactions.length === 0) return []
+  const sortedTxs = [...transactions].sort((a, b) => a.date.localeCompare(b.date))
+  const firstMs = new Date(sortedTxs[0].date).getTime()
+
+  const endDate = new Date()
+  const startDate = new Date(endDate.getTime() - (days - 1) * 86400000)
+
+  const out = []
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate.getTime() + i * 86400000)
+    const dayKey = d.toISOString().slice(0, 10)
+    if (d.getTime() + 86400000 < firstMs) continue
+
+    const bal = {}
+    for (const tx of sortedTxs) {
+      if (tx.date > dayKey) break
+      const id = tx.coin_id
+      if (!bal[id]) bal[id] = 0
+      const amt = Number(tx.amount) || 0
+      if (tx.type === 'buy' || tx.type === 'deposit') bal[id] += amt
+      else if (tx.type === 'sell' || tx.type === 'withdraw') bal[id] -= amt
+    }
+
+    let value = 0
+    for (const [id, amount] of Object.entries(bal)) {
+      if (amount <= 1e-9) continue
+      const sig = signals && signals[id]
+      let price = null
+      if (sig && Array.isArray(sig.priceSeries) && sig.priceSeries.length > 0) {
+        let candidate = sig.priceSeries[0].price
+        for (const p of sig.priceSeries) {
+          if (p.date <= dayKey) candidate = p.price
+          else break
+        }
+        price = candidate
+      }
+      if (price == null) price = prices?.[id]?.usd ?? 0
+      value += amount * price
+    }
+    out.push({ date: dayKey, value, label: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) })
+  }
+  return out
+}
 
 const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#fb923c', '#e879f9', '#a78bfa', '#06b6d4']
 
@@ -350,6 +408,20 @@ export default function Dashboard() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [signals, setSignals] = useState({})
   const [showStressTest, setShowStressTest] = useState(false)
+  const [transactions, setTransactions] = useState([])
+  const [trendDays, setTrendDays] = useState(30)
+  const [hideValues, setHideValues] = useState(loadHideValues())
+
+  // Privacy mask — hide USD values with dots when toggled
+  const mask = '••••'
+  const priv = (formatted) => hideValues ? mask : formatted
+
+  function toggleHideValues() {
+    setHideValues(v => {
+      saveHideValues(!v)
+      return !v
+    })
+  }
 
   useEffect(() => {
     requestNotificationPermission()
@@ -496,10 +568,11 @@ export default function Dashboard() {
     setLoading(true)
     try {
       await api.ensureWallet()
-      const [w, p, ct] = await Promise.all([api.getWallets(), api.getPortfolio(), api.getCoinTargets()])
+      const [w, p, ct, txs] = await Promise.all([api.getWallets(), api.getPortfolio(), api.getCoinTargets(), api.getTransactions()])
       setWallets(w)
       setPortfolio(p)
       setCoinTargets(ct)
+      setTransactions(txs)
       if (p.length > 0) {
         const ids = p.map(h => h.coin_id).join(',')
         const [pr, imgs] = await Promise.all([api.getPrices(ids), api.getCoinImages(ids)])
@@ -674,6 +747,14 @@ export default function Dashboard() {
       category: h.category || 'crypto',
     }))
 
+  // Portfolio value trend (transactions × historical prices from signals)
+  const portfolioHistory = computePortfolioHistory(transactions, prices, signals, trendDays)
+  const trendStart = portfolioHistory.length > 0 ? portfolioHistory[0].value : 0
+  const trendEnd = portfolioHistory.length > 0 ? portfolioHistory[portfolioHistory.length - 1].value : 0
+  const trendChange = trendEnd - trendStart
+  const trendChangePct = trendStart > 0 ? (trendChange / trendStart) * 100 : 0
+  const trendColor = trendChange >= 0 ? '#10b981' : '#ef4444'
+
   // Portfolio AI Analysis
   let analysis = null
   try { analysis = generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals) } catch (e) { console.error('Analysis error:', e) }
@@ -727,26 +808,92 @@ export default function Dashboard() {
       <div className="dashboard-grid">
       {/* Hero card */}
       <div className="hero-card">
-        <div className="hero-label">Total Portfolio Value</div>
-        <div className="hero-value">${fmt(totalValue)}</div>
+        <div className="hero-label-row">
+          <div className="hero-label">Total Portfolio Value</div>
+          <button
+            className="hero-eye"
+            onClick={toggleHideValues}
+            title={hideValues ? 'Show values' : 'Hide values'}
+            aria-label={hideValues ? 'Show values' : 'Hide values'}
+          >
+            {hideValues ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
+          </button>
+        </div>
+        <div className="hero-value">{hideValues ? '$••••••' : `$${fmt(totalValue)}`}</div>
         <div className="hero-row">
           <div className={`hero-pnl ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
-            {totalPnL >= 0 ? '+' : ''}{fmt(totalPnL)} ({pnlPercent.toFixed(2)}%)
+            {hideValues ? mask : `${totalPnL >= 0 ? '+' : ''}${fmt(totalPnL)} (${pnlPercent.toFixed(2)}%)`}
           </div>
-          <div className="hero-invested">Invested: ${fmt(totalInvested)}</div>
+          <div className="hero-invested">Invested: {priv(`$${fmt(totalInvested)}`)}</div>
         </div>
+
+        {/* Portfolio value trend */}
+        {portfolioHistory.length > 1 && (
+          <div className="portfolio-trend">
+            <div className="portfolio-trend-head">
+              <span className="portfolio-trend-label">{trendDays}-day trend</span>
+              <div className="portfolio-trend-tabs">
+                {[7, 30, 90].map(d => (
+                  <button
+                    key={d}
+                    className={`portfolio-trend-tab ${trendDays === d ? 'active' : ''}`}
+                    onClick={() => setTrendDays(d)}
+                  >
+                    {d}D
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={80}>
+              <AreaChart data={portfolioHistory} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+                <defs>
+                  <linearGradient id="ptGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={trendColor} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={trendColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" hide />
+                <YAxis domain={['auto', 'auto']} hide />
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid #e0e0ea', borderRadius: 10, fontSize: '0.78rem' }}
+                  formatter={(val) => [hideValues ? mask : '$' + fmt(val), 'Value']}
+                  labelFormatter={(l) => l}
+                />
+                <Area type="monotone" dataKey="value" stroke={trendColor} strokeWidth={2} fill="url(#ptGrad)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="portfolio-trend-foot">
+              <span className={trendChange >= 0 ? 'positive' : 'negative'}>
+                {trendChange >= 0 ? '▲' : '▼'} {hideValues ? mask : `$${fmt(Math.abs(trendChange))}`}
+                {' '}({trendChangePct >= 0 ? '+' : ''}{trendChangePct.toFixed(2)}%) over {trendDays}d
+              </span>
+            </div>
+          </div>
+        )}
 
         {hasAnyTarget && (
           <div className="target-section">
             <div className="target-header">
               <span className="target-label">If targets hit</span>
-              <span className="target-pct">${fmt(projectedTotal)}</span>
+              <span className="target-pct">{priv(`$${fmt(projectedTotal)}`)}</span>
             </div>
             <div className="target-bar">
               <div className="target-fill" style={{ width: `${Math.min((totalValue / projectedTotal) * 100, 100)}%` }} />
             </div>
             <div className="target-footer">
-              <span className="muted">Projected gain: +${fmt(projectedTotal - totalInvested)}</span>
+              <span className="muted">Projected gain: {priv(`+$${fmt(projectedTotal - totalInvested)}`)}</span>
             </div>
           </div>
         )}
@@ -1183,9 +1330,9 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="cat-total">
-                  <strong>${fmt(cat.total)}</strong>
+                  <strong>{priv(`$${fmt(cat.total)}`)}</strong>
                   <span className={cat.pnl >= 0 ? 'positive' : 'negative'}>
-                    {cat.pnl >= 0 ? '+' : ''}${fmt(cat.pnl)} ({cat.pnlPct.toFixed(1)}%)
+                    {hideValues ? mask : `${cat.pnl >= 0 ? '+' : ''}$${fmt(cat.pnl)} (${cat.pnlPct.toFixed(1)}%)`}
                   </span>
                 </div>
               </div>
@@ -1221,7 +1368,7 @@ export default function Dashboard() {
                   <span className="muted">${fmt(h.price)}</span>
                 </div>
                 <div className="coin-value-col">
-                  <strong>${fmt(h.value)}</strong>
+                  <strong>{priv(`$${fmt(h.value)}`)}</strong>
                   <span className="muted">{h.allocation.toFixed(1)}% of portfolio</span>
                 </div>
                 {(() => {
@@ -1249,12 +1396,12 @@ export default function Dashboard() {
                 </div>
                 <div className="detail">
                   <span className="detail-label">Avg Buy</span>
-                  <span>${fmt(h.avgBuy)}</span>
+                  <span>{priv(`$${fmt(h.avgBuy)}`)}</span>
                 </div>
                 <div className="detail">
                   <span className="detail-label">P&L</span>
                   <span className={h.pnl >= 0 ? 'positive' : 'negative'}>
-                    {h.pnl >= 0 ? '+' : ''}{fmt(h.pnl)} ({h.pnlPct.toFixed(1)}%)
+                    {hideValues ? mask : `${h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} (${h.pnlPct.toFixed(1)}%)`}
                   </span>
                 </div>
                 <div className="detail">
