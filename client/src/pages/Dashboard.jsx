@@ -56,35 +56,62 @@ function CoinIcon({ image, symbol, color, category }) {
 }
 
 // ─── Portfolio AI Analysis Engine ───
-function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets) {
+// `signals` is an optional map of coin_id -> smart-signal payload from
+// api.getBulkSmartSignals. When present, switches from "shallow" (24h-only)
+// mode to "deep" mode with 30d volatility, drawdown, Sharpe, stress-test,
+// attribution, and smarter insights.
+function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals = null) {
   if (enriched.length === 0) return null
 
   const totalPnL = totalValue - totalInvested
   const pnlPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
 
-  // Diversification score (Herfindahl-Hirschman Index based)
   const allocations = enriched.map(h => h.allocation / 100)
   const hhi = allocations.reduce((sum, a) => sum + a * a, 0)
-  const maxHhi = 1 // all in one coin
-  const minHhi = 1 / enriched.length // perfectly equal
+  const maxHhi = 1
+  const minHhi = 1 / enriched.length
   const diversificationScore = enriched.length === 1 ? 10 :
     Math.round(((maxHhi - hhi) / (maxHhi - minHhi)) * 100)
 
-  // Risk assessment
   const avgVolatility = enriched.reduce((sum, h) => sum + Math.abs(h.change24h), 0) / enriched.length
-  const maxDrop = Math.min(...enriched.map(h => h.change24h))
   const topHeavy = enriched[0]?.allocation > 60
 
-  let riskLevel, riskColor, riskIcon
-  if (avgVolatility > 8 || topHeavy) {
-    riskLevel = 'High Risk'; riskColor = '#ef4444'; riskIcon = '🔴'
-  } else if (avgVolatility > 4 || diversificationScore < 40) {
-    riskLevel = 'Medium Risk'; riskColor = '#f59e0b'; riskIcon = '🟡'
-  } else {
-    riskLevel = 'Low Risk'; riskColor = '#10b981'; riskIcon = '🟢'
+  // ── Deep metrics ──
+  const signalsReady = signals && Object.keys(signals).length > 0
+  let annualisedVol = null, portfolioMaxDD = null, portfolio30dReturn = null, portfolioSharpe = null
+  if (signalsReady) {
+    let tw = 0, wVol = 0, wDD = 0, wRet = 0
+    for (const h of enriched) {
+      const s = signals[h.coin_id]
+      if (!s) continue
+      const w = h.value / (totalValue || 1)
+      tw += w
+      wVol += w * s.volatility
+      wDD += w * s.maxDrawdown
+      wRet += w * s.return30d
+    }
+    if (tw > 0) {
+      annualisedVol = wVol / tw
+      portfolioMaxDD = wDD / tw
+      portfolio30dReturn = wRet / tw
+      const annualisedRet = (1 + portfolio30dReturn) ** (365 / 30) - 1
+      portfolioSharpe = annualisedVol > 0 ? annualisedRet / annualisedVol : 0
+    }
   }
 
-  // Market momentum (weighted by allocation)
+  let riskLevel, riskColor, riskIcon, riskDetail
+  if (annualisedVol != null) {
+    if (annualisedVol > 1.2 || topHeavy) { riskLevel = 'High Risk'; riskColor = '#ef4444'; riskIcon = '🔴' }
+    else if (annualisedVol > 0.7 || diversificationScore < 40) { riskLevel = 'Medium Risk'; riskColor = '#f59e0b'; riskIcon = '🟡' }
+    else { riskLevel = 'Low Risk'; riskColor = '#10b981'; riskIcon = '🟢' }
+    riskDetail = `${(annualisedVol * 100).toFixed(0)}% ann. vol`
+  } else {
+    if (avgVolatility > 8 || topHeavy) { riskLevel = 'High Risk'; riskColor = '#ef4444'; riskIcon = '🔴' }
+    else if (avgVolatility > 4 || diversificationScore < 40) { riskLevel = 'Medium Risk'; riskColor = '#f59e0b'; riskIcon = '🟡' }
+    else { riskLevel = 'Low Risk'; riskColor = '#10b981'; riskIcon = '🟢' }
+    riskDetail = `${avgVolatility.toFixed(1)}% 24h vol`
+  }
+
   const weightedChange24h = enriched.reduce((sum, h) => sum + (h.change24h * h.allocation / 100), 0)
   let momentumLabel, momentumColor
   if (weightedChange24h > 3) { momentumLabel = 'Strong Up'; momentumColor = '#10b981' }
@@ -93,13 +120,73 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
   else if (weightedChange24h > -3) { momentumLabel = 'Downtrend'; momentumColor = '#f97316' }
   else { momentumLabel = 'Strong Down'; momentumColor = '#ef4444' }
 
-  // Portfolio health score
+  // Category allocation
+  const categoryAlloc = {}
+  for (const h of enriched) {
+    const cat = h.category || 'crypto'
+    categoryAlloc[cat] = (categoryAlloc[cat] || 0) + h.value
+  }
+  const categoryBreakdown = Object.entries(categoryAlloc)
+    .map(([key, value]) => ({
+      key,
+      label: ASSET_CATEGORIES[key]?.label || key,
+      color: ASSET_CATEGORIES[key]?.color || '#6366f1',
+      value,
+      pct: (value / (totalValue || 1)) * 100,
+    }))
+    .sort((a, b) => b.value - a.value)
+  const crossAssetDiversity = categoryBreakdown.length >= 3
+    ? 'Multi-asset exposure'
+    : categoryBreakdown.length === 2 ? 'Two-class exposure' : 'Single-class exposure'
+
+  // Stress-test — simple beta-based model
+  const scenarios = [-20, -10, 10, 20].map(btcDeltaPct => {
+    let delta = 0
+    for (const h of enriched) {
+      let beta = 1.0
+      const sym = (h.coin_symbol || '').toUpperCase()
+      const cat = h.category || 'crypto'
+      if (sym === 'BTC' || sym === 'WBTC') beta = 1.0
+      else if (cat === 'crypto') beta = sym === 'ETH' ? 1.15 : 1.3
+      else if (cat === 'fiat' || ['USDT','USDC','DAI','BUSD'].includes(sym)) beta = 0
+      else if (cat === 'gold' || cat === 'silver') beta = -0.1
+      else if (cat === 'stock') beta = 0.4
+      else if (cat === 'bond') beta = -0.05
+      delta += h.value * beta * (btcDeltaPct / 100)
+    }
+    return { btcDelta: btcDeltaPct, portfolioDelta: delta, newValue: totalValue + delta }
+  })
+
+  // P&L attribution
+  const attribution = [...enriched]
+    .filter(h => Math.abs(h.pnl) > 0.01)
+    .sort((a, b) => b.pnl - a.pnl)
+  const topWinners = attribution.slice(0, 3)
+  const topLosers = attribution.slice(-3).reverse().filter(h => h.pnl < 0)
+
+  let highVolExposurePct = 0
+  if (signalsReady) {
+    for (const h of enriched) {
+      const s = signals[h.coin_id]
+      if (s && s.volatility > 1.0) highVolExposurePct += h.allocation
+    }
+  }
+
+  // Health score
   let healthScore = 50
   if (pnlPct > 20) healthScore += 15; else if (pnlPct > 5) healthScore += 8; else if (pnlPct < -20) healthScore -= 15; else if (pnlPct < -5) healthScore -= 8
   healthScore += Math.round(diversificationScore * 0.2)
   if (weightedChange24h > 2) healthScore += 8; else if (weightedChange24h < -2) healthScore -= 8
   const profitableCoins = enriched.filter(h => h.pnl > 0).length
   healthScore += Math.round((profitableCoins / enriched.length) * 15)
+  if (portfolioSharpe != null) {
+    if (portfolioSharpe > 1.5) healthScore += 8
+    else if (portfolioSharpe > 0.5) healthScore += 4
+    else if (portfolioSharpe < -0.5) healthScore -= 6
+  }
+  if (portfolioMaxDD != null && portfolioMaxDD > 0.35) healthScore -= 6
+  if (highVolExposurePct > 60) healthScore -= 5
+  if (categoryBreakdown.length >= 3) healthScore += 4
   healthScore = Math.max(0, Math.min(100, healthScore))
 
   let healthLabel, healthColor
@@ -108,61 +195,100 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
   else if (healthScore >= 40) { healthLabel = 'Fair'; healthColor = '#f59e0b' }
   else { healthLabel = 'Needs Attention'; healthColor = '#ef4444' }
 
-  // Generate insights
+  // Smart insights (priority ranked)
   const insights = []
-
-  // Diversification insights
   if (enriched.length === 1) {
-    insights.push({ icon: '⚠️', text: 'Single asset portfolio — consider diversifying to reduce risk', type: 'warning' })
+    insights.push({ icon: '⚠️', text: 'Single-asset portfolio — a 30% drawdown in one coin wipes 30% of your net worth. Add at least 2 uncorrelated assets.', type: 'warning', priority: 10 })
   } else if (topHeavy) {
-    insights.push({ icon: '📊', text: `${enriched[0].coin_symbol.toUpperCase()} is ${enriched[0].allocation.toFixed(0)}% of portfolio — heavy concentration`, type: 'warning' })
-  } else if (diversificationScore > 70) {
-    insights.push({ icon: '✅', text: 'Well diversified portfolio across multiple assets', type: 'positive' })
+    insights.push({ icon: '📊', text: `${enriched[0].coin_symbol.toUpperCase()} is ${enriched[0].allocation.toFixed(0)}% of your portfolio. Trimming to <40% would materially lower your max-drawdown risk.`, type: 'warning', priority: 9 })
+  } else if (diversificationScore > 70 && categoryBreakdown.length >= 2) {
+    insights.push({ icon: '✅', text: `Well diversified (${crossAssetDiversity.toLowerCase()}, HHI-based score ${diversificationScore}/100).`, type: 'positive', priority: 2 })
   }
 
-  // P&L insights
+  const heftyLosses = enriched.filter(h => h.pnl < -100 && h.pnlPct < -15)
+  if (heftyLosses.length > 0 && topWinners.filter(w => w.pnl > 100).length > 0) {
+    const names = heftyLosses.map(h => h.coin_symbol.toUpperCase()).join(', ')
+    insights.push({ icon: '🧾', text: `Tax-loss harvesting candidate: ${names} sitting at a loss. Realising could offset gains elsewhere.`, type: 'info', priority: 6 })
+  }
+
+  if (highVolExposurePct > 50) {
+    insights.push({ icon: '🎢', text: `${highVolExposurePct.toFixed(0)}% of your portfolio is in assets with >100% annualised volatility. Rotate some into lower-vol coins or stables to dampen swings.`, type: 'warning', priority: 8 })
+  }
+
+  if (portfolioSharpe != null) {
+    if (portfolioSharpe > 1.5) {
+      insights.push({ icon: '📐', text: `Risk-adjusted returns are excellent (Sharpe ${portfolioSharpe.toFixed(2)}). You're being paid well for the risk you're taking.`, type: 'positive', priority: 5 })
+    } else if (portfolioSharpe < 0 && portfolio30dReturn < -0.05) {
+      insights.push({ icon: '⚠️', text: `Negative risk-adjusted return (Sharpe ${portfolioSharpe.toFixed(2)}). Large drawdowns without the upside — review position sizing.`, type: 'warning', priority: 7 })
+    }
+  }
+
+  if (portfolioMaxDD != null && portfolioMaxDD > 0.30) {
+    insights.push({ icon: '📉', text: `Recent max drawdown ${(portfolioMaxDD * 100).toFixed(0)}% — stress-test your conviction at these levels before adding.`, type: 'warning', priority: 7 })
+  }
+
+  if (signalsReady) {
+    for (const h of enriched) {
+      const s = signals[h.coin_id]
+      if (!s) continue
+      if (s.whaleScore >= 50 && h.pnlPct > 20) {
+        insights.push({ icon: '🐋', text: `${h.coin_symbol.toUpperCase()}: whale-score +${s.whaleScore} AND up ${h.pnlPct.toFixed(0)}% — consider scaling out partial profits while flow is still positive.`, type: 'positive', priority: 6 })
+        break
+      }
+      if (s.whaleScore <= -50) {
+        insights.push({ icon: '🚨', text: `${h.coin_symbol.toUpperCase()}: whale-score ${s.whaleScore} signals heavy distribution. If stop-losses aren't set, consider them.`, type: 'warning', priority: 8 })
+        break
+      }
+    }
+  }
+
   if (pnlPct > 30) {
-    insights.push({ icon: '🎉', text: `Portfolio up ${pnlPct.toFixed(1)}% — consider taking partial profits`, type: 'positive' })
+    insights.push({ icon: '🎉', text: `Portfolio up ${pnlPct.toFixed(1)}%. A partial-profit ladder protects gains without exiting entirely.`, type: 'positive', priority: 4 })
   } else if (pnlPct < -20) {
-    insights.push({ icon: '💡', text: `Portfolio down ${Math.abs(pnlPct).toFixed(1)}% — could be a DCA opportunity`, type: 'info' })
+    insights.push({ icon: '💡', text: `Portfolio down ${Math.abs(pnlPct).toFixed(1)}%. Dollar-cost averaging into conviction picks works better than rescue-doubling on losers.`, type: 'info', priority: 4 })
   }
 
-  // Momentum insights
   const bigWinners = enriched.filter(h => h.change24h > 5)
   const bigLosers = enriched.filter(h => h.change24h < -5)
   if (bigWinners.length > 0) {
     const names = bigWinners.map(h => h.coin_symbol.toUpperCase()).join(', ')
-    insights.push({ icon: '🚀', text: `${names} surging today — strong momentum`, type: 'positive' })
+    insights.push({ icon: '🚀', text: `${names} surging today.`, type: 'positive', priority: 3 })
   }
   if (bigLosers.length > 0) {
     const names = bigLosers.map(h => h.coin_symbol.toUpperCase()).join(', ')
-    insights.push({ icon: '📉', text: `${names} dropping today — watch for support levels`, type: 'warning' })
+    insights.push({ icon: '📉', text: `${names} dropping today — watch support.`, type: 'warning', priority: 5 })
   }
 
-  // Target insights
   const targetsSet = enriched.filter(h => h.targetPrice)
   const nearTarget = targetsSet.filter(h => h.targetPricePct >= 80 && h.targetPricePct < 100)
   const hitTarget = targetsSet.filter(h => h.targetPricePct >= 100)
   if (hitTarget.length > 0) {
-    insights.push({ icon: '🎯', text: `${hitTarget.map(h => h.coin_symbol.toUpperCase()).join(', ')} hit price target! Consider exit strategy`, type: 'positive' })
+    insights.push({ icon: '🎯', text: `${hitTarget.map(h => h.coin_symbol.toUpperCase()).join(', ')} hit price target — execute the plan.`, type: 'positive', priority: 9 })
   } else if (nearTarget.length > 0) {
-    insights.push({ icon: '🔔', text: `${nearTarget.map(h => h.coin_symbol.toUpperCase()).join(', ')} approaching price target (80%+)`, type: 'info' })
+    insights.push({ icon: '🔔', text: `${nearTarget.map(h => h.coin_symbol.toUpperCase()).join(', ')} within 80%+ of target — pre-stage the sell order.`, type: 'info', priority: 6 })
   }
 
-  // Unrealized gains insight
-  const unrealizedGains = enriched.filter(h => h.pnlPct > 50)
-  if (unrealizedGains.length > 0) {
-    const names = unrealizedGains.map(h => `${h.coin_symbol.toUpperCase()} (+${h.pnlPct.toFixed(0)}%)`).join(', ')
-    insights.push({ icon: '💰', text: `Strong unrealized gains: ${names}`, type: 'positive' })
+  const hasCrypto = categoryBreakdown.some(c => c.key === 'crypto')
+  const hasHedge = categoryBreakdown.some(c => ['gold', 'silver', 'fiat', 'bond'].includes(c.key))
+  if (hasCrypto && !hasHedge && totalValue > 1000) {
+    insights.push({ icon: '🛡️', text: 'No hedge assets detected. A 5-10% allocation to gold, stables, or bonds materially reduces portfolio vol during crypto drawdowns.', type: 'info', priority: 5 })
   }
+
+  const rankedInsights = insights.sort((a, b) => b.priority - a.priority).slice(0, 6)
 
   return {
-    diversificationScore, riskLevel, riskColor, riskIcon,
+    diversificationScore, riskLevel, riskColor, riskIcon, riskDetail,
     momentumLabel, momentumColor, weightedChange24h,
     healthScore, healthLabel, healthColor,
-    insights: insights.slice(0, 4),
+    insights: rankedInsights,
     profitableCoins, totalCoins: enriched.length,
     avgVolatility,
+    annualisedVol, portfolioMaxDD, portfolio30dReturn, portfolioSharpe,
+    highVolExposurePct,
+    categoryBreakdown, crossAssetDiversity,
+    scenarios,
+    topWinners, topLosers,
+    signalsReady,
   }
 }
 
@@ -222,6 +348,8 @@ export default function Dashboard() {
   const [editingPrice, setEditingPrice] = useState(null)
   const [priceInput, setPriceInput] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [signals, setSignals] = useState({})
+  const [showStressTest, setShowStressTest] = useState(false)
 
   useEffect(() => {
     requestNotificationPermission()
@@ -378,6 +506,13 @@ export default function Dashboard() {
         setPrices(pr)
         setCoinImages(imgs)
         checkAlarms(p, pr, ct)
+        // Kick off deep 30d signal fetch in background (1h localStorage cache)
+        const cryptoIds = p
+          .map(h => h.coin_id)
+          .filter(id => id && !id.startsWith('stock:') && !id.startsWith('fiat:') && !id.startsWith('bond:') && !id.startsWith('other:') && id !== 'metal:xau' && id !== 'metal:xag')
+        if (cryptoIds.length > 0) {
+          api.getBulkSmartSignals(cryptoIds, 30).then(setSignals).catch(err => console.warn('signals', err))
+        }
       }
     } catch (err) { console.error(err) }
     setLoading(false)
@@ -541,7 +676,7 @@ export default function Dashboard() {
 
   // Portfolio AI Analysis
   let analysis = null
-  try { analysis = generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets) } catch (e) { console.error('Analysis error:', e) }
+  try { analysis = generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals) } catch (e) { console.error('Analysis error:', e) }
 
   return (
     <div className="page">
@@ -693,7 +828,7 @@ export default function Dashboard() {
                     <span className="ai-info-value" style={{ color: analysis.riskColor }}>{analysis.riskLevel}</span>
                   </div>
                   <span className="ai-score-label">Risk</span>
-                  <span className="ai-score-desc muted">{analysis.avgVolatility.toFixed(1)}% avg vol</span>
+                  <span className="ai-score-desc muted">{analysis.riskDetail || `${analysis.avgVolatility.toFixed(1)}% 24h vol`}</span>
                 </div>
 
                 <div className="ai-score-card">
@@ -705,6 +840,138 @@ export default function Dashboard() {
                   <span className="ai-score-label">Momentum</span>
                   <span className="ai-score-desc" style={{ color: analysis.momentumColor }}>{analysis.momentumLabel}</span>
                 </div>
+              </div>
+
+              {/* Advanced Metrics strip */}
+              {analysis.signalsReady && analysis.annualisedVol != null && (
+                <div className="deep-metrics">
+                  <DeepMetric
+                    label="Sharpe-like"
+                    value={analysis.portfolioSharpe == null ? '–' : analysis.portfolioSharpe.toFixed(2)}
+                    hint="Risk-adjusted return (annualised return ÷ volatility). >1 = good."
+                    color={
+                      analysis.portfolioSharpe == null ? '#94a3b8' :
+                      analysis.portfolioSharpe > 1 ? '#10b981' :
+                      analysis.portfolioSharpe > 0 ? '#f59e0b' : '#ef4444'
+                    }
+                  />
+                  <DeepMetric
+                    label="30d Return"
+                    value={`${(analysis.portfolio30dReturn * 100).toFixed(1)}%`}
+                    hint="Weighted average of each asset's 30-day return."
+                    color={analysis.portfolio30dReturn >= 0 ? '#10b981' : '#ef4444'}
+                  />
+                  <DeepMetric
+                    label="Max Drawdown"
+                    value={`${(analysis.portfolioMaxDD * 100).toFixed(0)}%`}
+                    hint="Worst peak-to-trough drop over last 30 days (weighted)."
+                    color={analysis.portfolioMaxDD > 0.3 ? '#ef4444' : analysis.portfolioMaxDD > 0.15 ? '#f59e0b' : '#10b981'}
+                  />
+                  <DeepMetric
+                    label="Ann. Volatility"
+                    value={`${(analysis.annualisedVol * 100).toFixed(0)}%`}
+                    hint="Annualised stdev of daily log returns (weighted)."
+                    color={analysis.annualisedVol > 1 ? '#ef4444' : analysis.annualisedVol > 0.6 ? '#f59e0b' : '#10b981'}
+                  />
+                  <DeepMetric
+                    label="High-Vol Exp."
+                    value={`${analysis.highVolExposurePct.toFixed(0)}%`}
+                    hint="% of portfolio in assets with >100% annualised volatility."
+                    color={analysis.highVolExposurePct > 50 ? '#ef4444' : analysis.highVolExposurePct > 25 ? '#f59e0b' : '#10b981'}
+                  />
+                </div>
+              )}
+
+              {!analysis.signalsReady && (
+                <div className="deep-metrics-loading">
+                  <span className="tiny-spinner" /> Loading 30-day signals for deep metrics…
+                </div>
+              )}
+
+              {/* Asset-class allocation */}
+              {analysis.categoryBreakdown.length > 1 && (
+                <div className="ai-section">
+                  <div className="ai-section-head">
+                    <span>Asset-Class Allocation</span>
+                    <span className="ai-section-badge">{analysis.crossAssetDiversity}</span>
+                  </div>
+                  <div className="ai-class-bar">
+                    {analysis.categoryBreakdown.map(c => (
+                      <div
+                        key={c.key}
+                        className="ai-class-seg"
+                        style={{ width: `${c.pct}%`, background: c.color }}
+                        title={`${c.label}: ${c.pct.toFixed(1)}%`}
+                      />
+                    ))}
+                  </div>
+                  <div className="ai-class-legend">
+                    {analysis.categoryBreakdown.map(c => (
+                      <div key={c.key} className="ai-class-item">
+                        <span className="ai-class-dot" style={{ background: c.color }} />
+                        <span className="ai-class-label">{c.label}</span>
+                        <span className="ai-class-pct">{c.pct.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* P&L attribution */}
+              {(analysis.topWinners.filter(h => h.pnl > 0).length > 0 || analysis.topLosers.length > 0) && (
+                <div className="ai-section">
+                  <div className="ai-section-head"><span>P&L Attribution</span></div>
+                  <div className="ai-attribution">
+                    {analysis.topWinners.filter(h => h.pnl > 0).length > 0 && (
+                      <div className="ai-attr-col">
+                        <div className="ai-attr-title positive">Top Contributors</div>
+                        {analysis.topWinners.filter(h => h.pnl > 0).map(h => (
+                          <div key={h.coin_id} className="ai-attr-row">
+                            <span className="ai-attr-sym">{h.coin_symbol.toUpperCase()}</span>
+                            <span className="positive">+${h.pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {analysis.topLosers.length > 0 && (
+                      <div className="ai-attr-col">
+                        <div className="ai-attr-title negative">Biggest Drags</div>
+                        {analysis.topLosers.map(h => (
+                          <div key={h.coin_id} className="ai-attr-row">
+                            <span className="ai-attr-sym">{h.coin_symbol.toUpperCase()}</span>
+                            <span className="negative">${h.pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Stress test */}
+              <div className="ai-section">
+                <div className="ai-section-head">
+                  <span>Stress Test <span className="ai-section-badge-muted">if BTC moves</span></span>
+                  <button className="link-btn" onClick={() => setShowStressTest(s => !s)}>
+                    {showStressTest ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                {showStressTest && (
+                  <div className="ai-stress-grid">
+                    {analysis.scenarios.map(sc => (
+                      <div key={sc.btcDelta} className={`ai-stress-card ${sc.portfolioDelta >= 0 ? 'positive' : 'negative'}`}>
+                        <div className="ai-stress-btc">BTC {sc.btcDelta > 0 ? '+' : ''}{sc.btcDelta}%</div>
+                        <div className="ai-stress-delta">
+                          {sc.portfolioDelta >= 0 ? '+' : ''}
+                          ${sc.portfolioDelta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
+                        <div className="ai-stress-nv">
+                          → ${sc.newValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Win/loss ratio */}
@@ -1210,6 +1477,15 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function DeepMetric({ label, value, hint, color }) {
+  return (
+    <div className="deep-metric" title={hint}>
+      <div className="deep-metric-label">{label}</div>
+      <div className="deep-metric-value" style={{ color }}>{value}</div>
     </div>
   )
 }
