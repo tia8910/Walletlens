@@ -96,10 +96,20 @@ function bumpId(key) {
   return current;
 }
 
-// Price & image cache
-let priceCache = {};
+// Price & image cache — hydrated from localStorage on boot so the dashboard
+// can render instantly on subsequent loads while a fresh fetch runs in
+// the background.
+const PRICE_CACHE_KEY = 'crypto_tracker_price_cache_v1';
+const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v1';
+function _loadCache(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
+}
+function _saveCache(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
-let coinImageCache = {};
+let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
 let metalCache = null;
 let metalCacheTime = 0;
@@ -508,15 +518,30 @@ export const api = {
         const now = Date.now();
         const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
         if (needsFresh) {
-          // Primary: CoinGecko
+          // Primary: CoinGecko /coins/markets — returns price, 24h change,
+          // market cap AND image in one shot, so the separate getCoinImages
+          // call gets a free piggyback fill.
           const data = await fetchJSON(
-            `${COINGECKO_BASE}/simple/price?ids=${cryptoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+            `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${cryptoIds.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
           );
-          if (data && typeof data === 'object') {
-            priceCache = { ...priceCache, ...data };
+          if (Array.isArray(data) && data.length > 0) {
+            for (const c of data) {
+              if (!c?.id) continue;
+              priceCache[c.id] = {
+                usd: c.current_price,
+                usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                usd_market_cap: c.market_cap || 0,
+                name: c.name,
+                symbol: c.symbol,
+              };
+              if (c.image) coinImageCache[c.id] = c.image;
+            }
             lastPriceFetch = now;
+            lastImageFetch = now;
+            _saveCache(PRICE_CACHE_KEY, priceCache);
+            _saveCache(IMAGE_CACHE_KEY, coinImageCache);
           }
-          // Fallback: CoinCap for any IDs still missing (CORS-enabled, same ID scheme for most top coins)
+          // Fallback: CoinCap for any IDs still missing
           const missing = cryptoIds.filter(id => !priceCache[id]);
           if (missing.length > 0) {
             const ccData = await fetchJSON(
@@ -533,7 +558,10 @@ export const api = {
                 };
               }
             }
-            if (list.length > 0) lastPriceFetch = now;
+            if (list.length > 0) {
+              lastPriceFetch = now;
+              _saveCache(PRICE_CACHE_KEY, priceCache);
+            }
           }
         }
         for (const id of cryptoIds) {
@@ -567,6 +595,7 @@ export const api = {
           coinImageCache[coin.id] = coin.image;
         }
         lastImageFetch = now;
+        _saveCache(IMAGE_CACHE_KEY, coinImageCache);
       }
     }
 

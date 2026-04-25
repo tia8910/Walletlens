@@ -220,8 +220,8 @@ body::after {
   0%,100% { filter: brightness(1); }
   50% { filter: brightness(1.4); }
 }
-.logo { display: flex; align-items: center; gap: 0.6rem; padding: 0 1.1rem; margin-bottom: 1.5rem; }
-.logo-text { display: flex; flex-direction: column; gap: 0.1rem; }
+.logo { display: flex; align-items: center; gap: 0.55rem; padding: 0 0.9rem; margin-bottom: 1.5rem; min-width: 0; }
+.logo-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; overflow: hidden; }
 .logo-tagline {
   font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--g);
@@ -239,7 +239,12 @@ body::after {
   font-weight: 700;
 }
 .logo-w2::after { display: none; }
-.logo-wordmark { font-family: var(--display); color: #fff; font-weight: 700; letter-spacing: -0.01em; }
+.logo-wordmark {
+  font-family: var(--display); color: #fff; font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 1.15rem; line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .sidebar ul { list-style: none; padding: 0 0.6rem; display: flex; flex-direction: column; gap: 0.25rem; }
 
 /* ─── Sidebar pitch card (Why WalletLens) ─── */
@@ -248,24 +253,12 @@ body::after {
   margin: 0.25rem 0.9rem 1rem;
   padding: 0.9rem 0.85rem 0.85rem;
   border-radius: 16px;
-  background:
-    linear-gradient(155deg, rgba(99,102,241,0.10), rgba(168,85,247,0.08) 55%, rgba(236,72,153,0.10));
-  border: 1px solid rgba(99,102,241,0.18);
-  box-shadow: 0 10px 28px -18px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 200, 83, 0.08);
+  border: 1px solid rgba(0, 200, 83, 0.22);
+  box-shadow: 0 6px 22px -16px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
-.sidebar-pitch::before {
-  content: '';
-  position: absolute; inset: -1px;
-  border-radius: 16px; pointer-events: none;
-  background:
-    conic-gradient(from 0deg, transparent 0 65%, rgba(99,102,241,0.35) 75%, rgba(34,211,238,0.35) 82%, rgba(236,72,153,0.35) 90%, transparent 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  padding: 1px; opacity: 0.55;
-  animation: pitch-sweep 7s linear infinite;
-}
+.sidebar-pitch::before { display: none; }
 @keyframes pitch-sweep {
   to { transform: rotate(360deg); }
 }
@@ -273,9 +266,9 @@ body::after {
   display: inline-flex; align-items: center; gap: 0.4rem;
   font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #065f46;
-  background: linear-gradient(90deg, rgba(16,185,129,0.18), rgba(34,211,238,0.18));
-  border: 1px solid rgba(16,185,129,0.35);
+  color: var(--g);
+  background: rgba(0, 200, 83, 0.14);
+  border: 1px solid rgba(0, 200, 83, 0.32);
   padding: 0.28rem 0.55rem; border-radius: 999px;
   margin-bottom: 0.55rem;
 }
@@ -292,18 +285,13 @@ body::after {
 .pitch-headline {
   margin: 0 0 0.4rem;
   font-size: 0.95rem; font-weight: 800; line-height: 1.25;
-  color: var(--text);
+  color: #fff;
 }
-.pitch-em {
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-  background-size: 200% 100%;
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; color: transparent;
-  animation: wl-shimmer 6s ease infinite;
-}
+.pitch-em { color: var(--g); }
 .pitch-body {
   margin: 0 0 0.7rem;
-  font-size: 0.75rem; line-height: 1.5; color: var(--text2);
+  font-size: 0.75rem; line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
 }
 .pitch-points {
   list-style: none; padding: 0; margin: 0 0 0.6rem;
@@ -311,9 +299,10 @@ body::after {
 }
 .pitch-points li {
   display: flex; align-items: flex-start; gap: 0.5rem;
-  font-size: 0.72rem; line-height: 1.35; color: var(--text);
+  font-size: 0.72rem; line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
 }
-.pitch-points strong { color: var(--text); font-weight: 700; }
+.pitch-points strong { color: #fff; font-weight: 700; }
 .pitch-ico {
   flex: none;
   width: 18px; height: 18px; border-radius: 6px;
