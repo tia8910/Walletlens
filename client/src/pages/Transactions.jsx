@@ -389,7 +389,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
     // Sell leg: if user chose a target asset (BTC/USDT/USDC/USD/EUR/custom),
     // auto-credit their holdings with the proceeds converted into that asset.
-    if (form.type === 'sell') {
+    // "REMOVE" means don't credit anything — purely deduct from holdings
+    // (covers transfers out, gifts, burns, untracked spends, etc.).
+    if (form.type === 'sell' && form.sell_for !== 'REMOVE') {
       const proceedsUsd = amount * pricePerUnit
       const target = form.sell_for === 'CUSTOM'
         ? form.sell_for_custom.trim().toUpperCase()
@@ -786,6 +788,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       <option value="BTC">BTC</option>
                       <option value="EUR">EUR</option>
                       <option value="CUSTOM">Other…</option>
+                      <option value="REMOVE">Remove (don't credit anywhere)</option>
                     </select>
                     {form.sell_for === 'CUSTOM' && (
                       <input
@@ -797,8 +800,10 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     )}
                   </div>
                   <p className="form-hint">
-                    Total proceeds${totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be credited to your{' '}
-                    <strong>{form.sell_for === 'CUSTOM' ? (form.sell_for_custom.trim().toUpperCase() || '…') : form.sell_for}</strong> balance automatically.
+                    {form.sell_for === 'REMOVE'
+                      ? <>The amount will be deducted from your <strong>{form.coin_symbol?.toUpperCase?.() || 'asset'}</strong> holdings only — no other balance is credited.</>
+                      : <>Total proceeds{totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be credited to your{' '}
+                        <strong>{form.sell_for === 'CUSTOM' ? (form.sell_for_custom.trim().toUpperCase() || '…') : form.sell_for}</strong> balance automatically.</>}
                   </p>
                 </div>
               )}
