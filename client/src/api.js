@@ -111,6 +111,29 @@ let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
+
+// CoinGecko id → Binance ticker mapping for the highest-volume coins
+// where the slug doesn't match the exchange ticker. Anything not listed
+// falls back to deriving the ticker from the recorded coin_symbol on
+// the user's holdings/transactions.
+const BINANCE_ID_OVERRIDES = {
+  'bitcoin': 'BTC', 'ethereum': 'ETH', 'tether': 'USDT', 'binancecoin': 'BNB',
+  'ripple': 'XRP', 'cardano': 'ADA', 'solana': 'SOL', 'dogecoin': 'DOGE',
+  'tron': 'TRX', 'avalanche-2': 'AVAX', 'shiba-inu': 'SHIB', 'polkadot': 'DOT',
+  'chainlink': 'LINK', 'matic-network': 'MATIC', 'polygon-ecosystem-token': 'POL',
+  'litecoin': 'LTC', 'bitcoin-cash': 'BCH', 'wrapped-bitcoin': 'WBTC',
+  'usd-coin': 'USDC', 'dai': 'DAI', 'uniswap': 'UNI', 'cosmos': 'ATOM',
+  'aptos': 'APT', 'arbitrum': 'ARB', 'near': 'NEAR', 'optimism': 'OP',
+  'fetch-ai': 'FET', 'arweave': 'AR', 'render-token': 'RENDER', 'sui': 'SUI',
+  'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
+};
+function _symbolForId(id, holdings) {
+  if (BINANCE_ID_OVERRIDES[id]) return BINANCE_ID_OVERRIDES[id];
+  if (priceCache[id]?.symbol) return String(priceCache[id].symbol).toUpperCase();
+  const h = holdings?.find?.(x => x?.coin_id === id);
+  if (h?.coin_symbol) return String(h.coin_symbol).toUpperCase();
+  return null;
+}
 let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
@@ -518,6 +541,63 @@ export const api = {
         const now = Date.now();
         const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
         if (needsFresh) {
+          // ── Primary fast path: Binance public /api/v3/ticker/24hr ──
+          // CORS-enabled, no key, very fast. We map each CoinGecko id to its
+          // exchange ticker (built-in overrides + user's recorded coin_symbol)
+          // and ask for all USDT pairs in one batch. Stables resolve to ~$1.
+          try {
+            const txs = loadData('transactions');
+            const knownSymbols = {}; // id -> ticker (sym)
+            const symToId = {};      // ticker -> id (reverse lookup)
+            for (const id of cryptoIds) {
+              const sym = _symbolForId(id, txs);
+              if (sym) { knownSymbols[id] = sym; symToId[sym] = id; }
+            }
+            const stables = new Set(['USDT','USDC','DAI','FDUSD','TUSD','BUSD']);
+            const stableIds = Object.entries(knownSymbols).filter(([,s]) => stables.has(s)).map(([id]) => id);
+            const tradeable = Object.entries(knownSymbols).filter(([,s]) => !stables.has(s));
+            const symbolsParam = tradeable.map(([,s]) => `"${s}USDT"`).join(',');
+            if (symbolsParam) {
+              const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`;
+              try {
+                const res = await fetch(url);
+                if (res.ok) {
+                  const list = await res.json();
+                  if (Array.isArray(list)) {
+                    for (const row of list) {
+                      const tkr = String(row.symbol || '').replace(/USDT$/, '');
+                      const id = symToId[tkr];
+                      if (!id) continue;
+                      const usd = parseFloat(row.lastPrice);
+                      if (!isFinite(usd) || usd <= 0) continue;
+                      priceCache[id] = {
+                        ...(priceCache[id] || {}),
+                        usd,
+                        usd_24h_change: parseFloat(row.priceChangePercent) || 0,
+                        symbol: tkr,
+                        source: 'binance',
+                      };
+                    }
+                    lastPriceFetch = now;
+                    _saveCache(PRICE_CACHE_KEY, priceCache);
+                  }
+                }
+              } catch {}
+            }
+            // Stables → assume $1
+            for (const id of stableIds) {
+              priceCache[id] = {
+                ...(priceCache[id] || {}),
+                usd: 1,
+                usd_24h_change: 0,
+                symbol: knownSymbols[id],
+                source: 'stable',
+              };
+            }
+            if (stableIds.length > 0) _saveCache(PRICE_CACHE_KEY, priceCache);
+          } catch {}
+
+          // Anything Binance couldn't resolve falls through to CoinGecko/CoinCap below.
           // Primary: CoinGecko /coins/markets — returns price, 24h change,
           // market cap AND image in one shot, so the separate getCoinImages
           // call gets a free piggyback fill.
