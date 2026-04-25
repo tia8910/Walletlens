@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WalletLens — All-Asset Portfolio Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@600;700&family=Cabinet+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --g:#00c853;--gd:#009c3e;--gl:#edfbf3;
+  --ink:#071a0c;--ink2:#1e3d26;--ink3:#4d7a59;
+  --mono:'JetBrains Mono',monospace;
+}
+body{background:#fff;font-family:'Cabinet Grotesk',sans-serif;color:var(--ink);overflow-x:hidden;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── NAV ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--ink);position:sticky;top:0;z-index:100}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+
+/* Zooming lens */
+.lens-ring{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--g);display:flex;align-items:center;justify-content:center;position:relative;animation:zoom-ring 2s ease-in-out infinite}
+@keyframes zoom-ring{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.lens-mid{position:absolute;width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,200,83,.4);animation:zoom-mid 2s ease-in-out infinite}
+@keyframes zoom-mid{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(.65);opacity:.9}}
+.lens-core{width:9px;height:9px;border-radius:50%;background:var(--g);animation:zoom-core 2s ease-in-out infinite;z-index:1}
+@keyframes zoom-core{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+.lens-shine{position:absolute;top:5px;left:7px;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);animation:zoom-ring 2s ease-in-out infinite}
+
+.logo-name{font-family:'Clash Display',sans-serif;font-size:1.05rem;color:#fff;letter-spacing:-.01em}
+.logo-tag{font-size:.52rem;font-weight:700;letter-spacing:.18em;color:var(--g);text-transform:uppercase;display:block}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.25);border-radius:100px;padding:5px 12px;font-size:.62rem;font-weight:700;color:var(--g);letter-spacing:.1em}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+
+/* ── HERO ── */
+.hero{padding:26px 20px 20px;background:#fff}
+.free-tag{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:var(--g);border-radius:6px;padding:5px 12px;font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+.free-tag-dot{width:5px;height:5px;border-radius:50%;background:var(--g);animation:blink 1.2s infinite}
+h1{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;line-height:1.1;letter-spacing:-.04em;color:var(--ink);margin-bottom:14px}
+.word-cycle{display:inline-block;color:var(--g);min-width:160px;border-bottom:3px solid var(--g);padding-bottom:2px;transition:opacity .25s}
+.word-fade{opacity:0}
+
+/* ── TICKER ── */
+.ticker-strip{background:var(--ink);padding:9px 0;overflow:hidden}
+.ticker-inner{display:flex;gap:28px;animation:scroll 18s linear infinite;white-space:nowrap;width:max-content}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tick{display:flex;align-items:center;gap:8px;font-size:.68rem;font-family:var(--mono)}
+.tick-name{color:#fff;font-weight:500}
+.tick-val{color:rgba(255,255,255,.5)}
+.tick-up{color:var(--g)}
+.tick-dn{color:#ff6b6b}
+
+/* ── PORTFOLIO CARD ── */
+.port-card{background:var(--ink);border-radius:24px;margin:20px 20px 20px;padding:20px;position:relative;overflow:hidden}
+.port-card::after{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(0,200,83,.12),transparent 70%);pointer-events:none}
+.port-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.port-lbl{font-size:.55rem;font-weight:700;letter-spacing:.2em;color:rgba(255,255,255,.3);text-transform:uppercase}
+.port-btns{display:flex;gap:7px}
+.pb{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pb svg{width:13px;height:13px;stroke:rgba(255,255,255,.45);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.port-val{font-family:var(--mono);font-size:2.4rem;font-weight:500;color:#fff;letter-spacing:-.03em;margin-bottom:8px;line-height:1}
+.port-val span.sym{font-size:1rem;opacity:.4;margin-right:2px}
+.port-row{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.loss-chip{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.2);color:#ff8080;border-radius:7px;padding:4px 9px;font-family:var(--mono);font-size:.7rem}
+.inv{font-size:.74rem;color:rgba(255,255,255,.35)}
+.inv span{color:rgba(255,255,255,.7);font-family:var(--mono)}
+
+/* ── TREND ── */
+.trend-inner{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px}
+.trend-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.trend-lbl{font-size:.55rem;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.25);text-transform:uppercase}
+.t-tabs{display:flex;gap:4px}
+.ttb{padding:4px 9px;border-radius:6px;font-size:.63rem;font-weight:700;color:rgba(255,255,255,.3);cursor:pointer;letter-spacing:.04em;transition:.15s}
+.ttb.on{background:var(--g);color:var(--ink)}
+.chart-box{height:80px;margin-bottom:8px}
+svg.tc{width:100%;height:100%}
+.trend-foot{font-size:.7rem;color:var(--g);font-weight:700;font-family:var(--mono);display:flex;align-items:center;gap:6px}
+.arr{width:16px;height:16px;background:rgba(0,200,83,.15);border-radius:5px;display:flex;align-items:center;justify-content:center}
+.arr svg{width:8px;height:8px;stroke:var(--g);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── ASSETS ── */
+.assets{padding:0 20px 12px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.section-title{font-size:.72rem;font-weight:800;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase}
+.section-more{font-size:.65rem;color:var(--g);font-weight:700;cursor:pointer}
+.asset-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1.5px solid #eef8f2;border-radius:14px;margin-bottom:7px;transition:.2s;cursor:pointer}
+.asset-row:hover{border-color:var(--g);background:var(--gl)}
+.asset-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;flex-shrink:0;font-family:var(--mono)}
+.asset-info{flex:1;min-width:0}
+.asset-name{font-size:.8rem;font-weight:700;color:var(--ink)}
+.asset-sub{font-size:.62rem;color:var(--ink3);margin-top:1px}
+.asset-right{text-align:right}
+.asset-val{font-size:.82rem;font-weight:700;color:var(--ink);font-family:var(--mono)}
+.asset-chg{font-size:.62rem;margin-top:1px;font-family:var(--mono)}
+.up{color:var(--g)}
+.dn{color:#e03131}
+.mini-bar{width:50px;height:24px;flex-shrink:0}
+svg.mb{width:100%;height:100%}
+
+/* ── BOTTOM NAV ── */
+.bnav{display:flex;justify-content:space-around;align-items:center;padding:10px 0 6px;background:var(--ink);border-top:1px solid rgba(255,255,255,.06);position:sticky;bottom:0;margin-top:auto}
+.bn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px}
+.bn svg{width:19px;height:19px;stroke:rgba(255,255,255,.25);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bn.on svg{stroke:var(--g)}
+.bn-lbl{font-size:.58rem;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.04em}
+.bn.on .bn-lbl{color:var(--g)}
+.bn-dot{width:4px;height:4px;border-radius:50%;background:var(--g)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo-wrap">
+    <div class="lens-ring">
+      <div class="lens-mid"></div>
+      <div class="lens-shine"></div>
+      <div class="lens-core"></div>
+    </div>
+    <div>
+      <span class="logo-name">WalletLens</span>
+      <span class="logo-tag">Zoom in your wealth</span>
+    </div>
+  </div>
+  <div class="live-pill"><span class="ldot"></span>LIVE</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="free-tag"><span class="free-tag-dot"></span>100% Free · No Account</div>
+  <h1>See <span class="word-cycle" id="cycler">every asset</span><br>in one lens.</h1>
+</div>
+
+<!-- TICKER -->
+<div class="ticker-strip">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- PORTFOLIO CARD -->
+<div class="port-card">
+  <div class="port-top">
+    <div class="port-lbl">Total Portfolio Value</div>
+    <div class="port-btns">
+      <div class="pb"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div class="pb"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+    </div>
+  </div>
+  <div class="port-val"><span class="sym">$</span><span id="portval">7,760.39</span></div>
+  <div class="port-row">
+    <div class="loss-chip">−1,338.95 (−14.71%)</div>
+    <div class="inv">Invested: <span>$9,099.34</span></div>
+  </div>
+  <div class="trend-inner">
+    <div class="trend-head">
+      <span class="trend-lbl">7-Day Trend</span>
+      <div class="t-tabs">
+        <div class="ttb on" data-p="7d">7D</div>
+        <div class="ttb" data-p="30d">30D</div>
+        <div class="ttb" data-p="90d">90D</div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <svg class="tc" id="trendsvg" viewBox="0 0 340 80" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="trend-foot">
+      <div class="arr"><svg viewBox="0 0 8 8"><polyline points="1,6 4,2 7,6"/></svg></div>
+      <span id="trendfootval">$248.88 (+3.32%) over 7d</span>
+    </div>
+  </div>
+</div>
+
+<!-- ASSETS -->
+<div class="assets">
+  <div class="section-head">
+    <span class="section-title">Your Assets</span>
+    <span class="section-more">View all →</span>
+  </div>
+  <div id="asset-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="bn on" data-tab="Home">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="bn-lbl">Home</span>
+    <div class="bn-dot"></div>
+  </div>
+  <div class="bn" data-tab="Trades">
+    <svg viewBox="0 0 24 24"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+    <span class="bn-lbl">Trades</span>
+  </div>
+  <div class="bn" data-tab="Market">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="bn-lbl">Market</span>
+  </div>
+  <div class="bn" data-tab="Whales">
+    <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    <span class="bn-lbl">Whales</span>
+  </div>
+</div>
+
+<script>
+/* ── WORD CYCLER ── */
+const words = ['every asset','crypto & stocks','gold & silver','your wealth','fiat & FX'];
+let wi = 0;
+const cyc = document.getElementById('cycler');
+setInterval(() => {
+  cyc.classList.add('word-fade');
+  setTimeout(() => {
+    wi = (wi + 1) % words.length;
+    cyc.textContent = words[wi];
+    cyc.classList.remove('word-fade');
+  }, 260);
+}, 2200);
+
+/* ── TICKER ── */
+const tickerData = [
+  {n:'BTC', v:67284,  c:2.34,  up:true},
+  {n:'ETH', v:3541,   c:1.87,  up:true},
+  {n:'SOL', v:182.44, c:-0.92, up:false},
+  {n:'AAPL',v:213.50, c:0.65,  up:true},
+  {n:'NVDA',v:891.22, c:3.11,  up:true},
+  {n:'XRP', v:0.614,  c:-1.44, up:false},
+  {n:'GOLD',v:2334,   c:0.41,  up:true},
+  {n:'SILVER',v:29.8, c:-0.20, up:false},
+];
+const doubled = [...tickerData, ...tickerData];
+const ti = document.getElementById('ticker');
+doubled.forEach(t => {
+  ti.innerHTML += `<div class="tick">
+    <span class="tick-name">${t.n}</span>
+    <span class="tick-val">$${t.v.toLocaleString()}</span>
+    <span class="${t.up ? 'tick-up' : 'tick-dn'}">${t.up ? '▲' : '▼'} ${Math.abs(t.c)}%</span>
+  </div>`;
+});
+
+/* ── CHART ── */
+const chartData = {
+  '7d':  [62,58,65,72,68,78,80,76,82],
+  '30d': [50,55,48,60,58,65,70,62,75,80,72,85],
+  '90d': [40,45,38,50,55,48,60,58,65,72,68,78,80,76,82,88,84,92]
+};
+const chartFoot = {
+  '7d':  '$248.88 (+3.32%) over 7d',
+  '30d': '$892.14 (+12.98%) over 30d',
+  '90d': '$1,661.05 (+27.2%) over 90d'
+};
+
+function makePath(pts, W=340, H=80) {
+  const xs = pts.map((_,i) => i * (W / (pts.length - 1)));
+  const mn = Math.min(...pts), mx = Math.max(...pts);
+  const ys = pts.map(v => H - 8 - ((v - mn) / (mx - mn + 0.001)) * (H - 20));
+  let d = `M${xs[0]},${ys[0]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cx = (xs[i] + xs[i-1]) / 2;
+    d += ` C${cx},${ys[i-1]} ${cx},${ys[i]} ${xs[i]},${ys[i]}`;
+  }
+  return { d, ys, xs };
+}
+
+function renderChart(period) {
+  const pts = chartData[period];
+  const { d, ys, xs } = makePath(pts);
+  const last = pts.length - 1;
+  document.getElementById('trendsvg').innerHTML = `
+    <defs>
+      <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#00c853" stop-opacity=".2"/>
+        <stop offset="100%" stop-color="#00c853" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${d}" fill="none" stroke="#00c853" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="${d} L${xs[last]},80 L0,80Z" fill="url(#cg)"/>
+    <line x1="${xs[last]}" y1="0" x2="${xs[last]}" y2="80"
+      stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3,3"/>
+    <circle cx="${xs[last]}" cy="${ys[last]}" r="4" fill="#00c853"/>
+    <circle cx="${xs[last]}" cy="${ys[last]}" r="8" fill="none"
+      stroke="rgba(0,200,83,.3)" stroke-width="1.5"/>`;
+  document.getElementById('trendfootval').textContent = chartFoot[period];
+}
+renderChart('7d');
+
+document.querySelectorAll('.ttb').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.ttb').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    renderChart(t.dataset.p);
+  };
+});
+
+/* ── ASSETS ── */
+const assets = [
+  {name:'Bitcoin',   sym:'BTC',  color:'#f7931a', bg:'#fff8ee', val:4210.20, chg:2.34,  up:true,  spark:[60,58,64,70,67,75,80]},
+  {name:'Ethereum',  sym:'ETH',  color:'#627eea', bg:'#f0f2ff', val:1880.44, chg:1.87,  up:true,  spark:[55,60,58,65,70,68,74]},
+  {name:'Gold',      sym:'XAU',  color:'#d4a017', bg:'#fffbee', val:1200.10, chg:0.41,  up:true,  spark:[58,60,62,60,64,63,66]},
+  {name:'Apple Inc.',sym:'AAPL', color:'#555555', bg:'#f5f5f5', val:469.65,  chg:-0.32, up:false, spark:[70,68,66,67,64,65,63]},
+];
+
+function sparkSVG(pts, up) {
+  const { d } = makePath(pts, 50, 24);
+  return `<svg class="mb" viewBox="0 0 50 24" preserveAspectRatio="none">
+    <path d="${d}" fill="none" stroke="${up ? '#00c853' : '#e03131'}"
+      stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function renderAssets() {
+  const al = document.getElementById('asset-list');
+  al.innerHTML = '';
+  assets.forEach(a => {
+    al.innerHTML += `<div class="asset-row">
+      <div class="asset-icon" style="background:${a.bg};color:${a.color}">${a.sym}</div>
+      <div class="asset-info">
+        <div class="asset-name">${a.name}</div>
+        <div class="asset-sub">${a.sym} · ${a.up ? '▲' : '▼'} ${Math.abs(a.chg).toFixed(2)}%</div>
+      </div>
+      <div class="mini-bar">${sparkSVG(a.spark, a.up)}</div>
+      <div class="asset-right">
+        <div class="asset-val">$${a.val.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div class="asset-chg ${a.up ? 'up' : 'dn'}">${a.up ? '+' : ''}${a.chg.toFixed(2)}%</div>
+      </div>
+    </div>`;
+  });
+}
+renderAssets();
+
+/* ── LIVE PRICE UPDATES ── */
+function randFlux(v, pct=0.003) { return v * (1 + (Math.random() - 0.5) * pct * 2); }
+
+setInterval(() => {
+  assets.forEach(a => {
+    const old = a.val;
+    a.val  = parseFloat(randFlux(a.val).toFixed(2));
+    a.chg  = parseFloat((a.chg + (Math.random() - 0.5) * 0.05).toFixed(2));
+    a.up   = a.val >= old;
+    a.spark.push(a.spark[a.spark.length - 1] + (Math.random() - 0.47) * 3);
+    if (a.spark.length > 9) a.spark.shift();
+  });
+  renderAssets();
+
+  const pv = parseFloat(document.getElementById('portval').textContent.replace(/,/g,''));
+  document.getElementById('portval').textContent =
+    randFlux(pv, 0.001).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+}, 1800);
+
+/* ── BOTTOM NAV ── */
+document.querySelectorAll('.bn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.bn').forEach(x => {
+      x.classList.remove('on');
+      const d = x.querySelector('.bn-dot');
+      if (d) d.remove();
+    });
+    b.classList.add('on');
+    if (!b.querySelector('.bn-dot')) {
+      const d = document.createElement('div');
+      d.className = 'bn-dot';
+      b.appendChild(d);
+    }
+  };
+});
+</script>
+</body>
+</html>
