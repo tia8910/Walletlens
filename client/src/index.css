@@ -101,6 +101,48 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 @keyframes ll-zoom-ring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 @keyframes ll-zoom-mid  { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(0.65); opacity: 0.9; } }
 @keyframes ll-zoom-core { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+
+/* ── Live price ticker ── */
+.ticker-strip {
+  background: var(--ink);
+  padding: 9px 0;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+}
+.ticker-strip::before,
+.ticker-strip::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 32px;
+  z-index: 2; pointer-events: none;
+}
+.ticker-strip::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--ink), transparent);
+}
+.ticker-strip::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--ink), transparent);
+}
+.ticker-inner {
+  display: flex; gap: 28px;
+  animation: tk-scroll 30s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+@keyframes tk-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.tick {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.72rem; font-family: var(--mono);
+}
+.tick-name { color: #fff; font-weight: 500; }
+.tick-val  { color: rgba(255, 255, 255, 0.5); }
+.tick-up   { color: var(--g); }
+.tick-dn   { color: #ff6b6b; }
 /* Subtle radial wash — far calmer than the old multi-colour mesh */
 body::before {
   content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
