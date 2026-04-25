@@ -5,6 +5,7 @@ import Market from './pages/Market'
 import Whales from './pages/Whales'
 import AssetDetail from './pages/AssetDetail'
 import PitchCard from './components/PitchCard'
+import PriceTicker from './components/PriceTicker'
 
 function IconHome() {
   return (
@@ -148,6 +149,7 @@ export default function App() {
       </header>
 
       <main className="content">
+        <PriceTicker />
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
