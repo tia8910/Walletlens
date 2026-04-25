@@ -139,13 +139,7 @@ export default function AssetDetail() {
       {/* Asset header */}
       <div className="detail-hero">
         <div className="detail-hero-left">
-          {coin?.image ? (
-            <img src={coin.image} alt="" width={48} height={48} className="coin-logo" />
-          ) : (
-            <div className="coin-icon" style={{ width: 48, height: 48, fontSize: '1.2rem', background: `${coin?.categoryColor || '#6366f1'}22`, color: coin?.categoryColor || '#6366f1' }}>
-              {coin?.categoryIcon || coin?.symbol?.substring(0, 2) || '◆'}
-            </div>
-          )}
+          <DetailLogo coin={coin} />
           <div>
             <h2 className="detail-name">{coin?.name}</h2>
             <div className="detail-sub">
@@ -421,6 +415,42 @@ function Indicator({ label, value, help, barPct, color }) {
       <div className="wp-ind-bar-bg">
         <div className="wp-ind-bar-fill" style={{ width: `${barPct}%`, background: color }} />
       </div>
+    </div>
+  )
+}
+
+function DetailLogo({ coin }) {
+  const [stage, setStage] = useState(0) // 0:gecko 1:coincap 2:badge
+  const sym = (coin?.symbol || "").toLowerCase()
+  const isCrypto = !coin?.category || coin.category === "crypto"
+
+  if (stage === 0 && coin?.image) {
+    return (
+      <img
+        src={coin.image}
+        alt=""
+        width={48}
+        height={48}
+        className="coin-logo"
+        onError={() => setStage(isCrypto && sym ? 1 : 2)}
+      />
+    )
+  }
+  if (stage <= 1 && isCrypto && sym) {
+    return (
+      <img
+        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
+        alt=""
+        width={48}
+        height={48}
+        className="coin-logo"
+        onError={() => setStage(2)}
+      />
+    )
+  }
+  return (
+    <div className="coin-icon" style={{ width: 48, height: 48, fontSize: "1.2rem", background: `${coin?.categoryColor || "#6366f1"}22`, color: coin?.categoryColor || "#6366f1" }}>
+      {coin?.categoryIcon || coin?.symbol?.substring(0, 2) || "\u25C6"}
     </div>
   )
 }
