@@ -651,16 +651,72 @@ export const api = {
       }
       return pts;
     }
+
+    // Localstorage cache: 5 min TTL per (id, days). Returns cached series
+    // immediately if fresh, otherwise tries CoinGecko, then CoinCap, then
+    // falls back to whatever we have in 30d signals cache.
+    const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
+    const CHART_TTL = 5 * 60 * 1000;
+    let chartCache = {};
+    try { chartCache = JSON.parse(localStorage.getItem(CHART_CACHE_KEY) || '{}'); } catch {}
+    const cacheKey = `${id}::${days}`;
+    const hit = chartCache[cacheKey];
+    if (hit && Date.now() - hit.t < CHART_TTL && Array.isArray(hit.v) && hit.v.length > 0) {
+      return hit.v;
+    }
+
+    const finalize = (rawPrices) => {
+      const step = Math.max(1, Math.floor(rawPrices.length / 80));
+      const series = rawPrices.filter((_, i) => i % step === 0).map(([ts, price]) => ({
+        date: new Date(ts).toLocaleDateString(),
+        time: new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        price,
+      }));
+      try {
+        chartCache[cacheKey] = { t: Date.now(), v: series };
+        localStorage.setItem(CHART_CACHE_KEY, JSON.stringify(chartCache));
+      } catch {}
+      return series;
+    };
+
+    // Primary: CoinGecko
     const data = await fetchJSON(
       `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
     );
-    if (!data || !data.prices) return [];
-    const step = Math.max(1, Math.floor(data.prices.length / 80));
-    return data.prices.filter((_, i) => i % step === 0).map(([ts, price]) => ({
-      date: new Date(ts).toLocaleDateString(),
-      time: new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      price,
-    }));
+    if (data && Array.isArray(data.prices) && data.prices.length > 0) {
+      return finalize(data.prices);
+    }
+
+    // Fallback: CoinCap history (CORS-enabled, no key)
+    try {
+      const interval = days <= 1 ? 'm15' : days <= 7 ? 'h1' : days <= 30 ? 'h6' : 'd1';
+      const end = Date.now();
+      const start = end - days * 24 * 60 * 60 * 1000;
+      const ccData = await fetchJSON(
+        `https://rest.coincap.io/v3/assets/${id}/history?interval=${interval}&start=${start}&end=${end}`
+      );
+      const list = Array.isArray(ccData?.data) ? ccData.data : [];
+      if (list.length > 0) {
+        const rawPrices = list
+          .map(p => [Number(p.time), parseFloat(p.priceUsd)])
+          .filter(([, v]) => isFinite(v) && v > 0);
+        if (rawPrices.length > 0) return finalize(rawPrices);
+      }
+    } catch {}
+
+    // Last resort: reuse cached signals priceSeries (1h cached) — coarse
+    // but better than empty.
+    try {
+      const sig = JSON.parse(localStorage.getItem('crypto_tracker_signals_cache_v1') || '{}');
+      const series = sig?.[id]?.v?.priceSeries;
+      if (Array.isArray(series) && series.length > 0) {
+        return series.map(p => ({ date: p.date, time: '', price: p.price }));
+      }
+    } catch {}
+
+    // Stale cache as final fallback (better something than nothing)
+    if (hit && Array.isArray(hit.v) && hit.v.length > 0) return hit.v;
+    return [];
   },
 
   // Holdings for a specific coin (for sell quantity picker)
