@@ -81,29 +81,11 @@ export default function App() {
       <nav className="sidebar">
         <div className="logo">
           <div className="logo-mark">
-            <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
-              <defs>
-                <linearGradient id="wl-ring" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#6366f1">
-                    <animate attributeName="stop-color" values="#6366f1;#22d3ee;#a855f7;#6366f1" dur="6s" repeatCount="indefinite" />
-                  </stop>
-                  <stop offset="100%" stopColor="#22d3ee">
-                    <animate attributeName="stop-color" values="#22d3ee;#a855f7;#6366f1;#22d3ee" dur="6s" repeatCount="indefinite" />
-                  </stop>
-                </linearGradient>
-                <radialGradient id="wl-glass" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.65)" />
-                  <stop offset="60%" stopColor="rgba(99,102,241,0.14)" />
-                  <stop offset="100%" stopColor="rgba(34,211,238,0.20)" />
-                </radialGradient>
-              </defs>
-              <circle cx="26" cy="26" r="18" fill="url(#wl-glass)" stroke="url(#wl-ring)" strokeWidth="4" />
-              <polyline points="15,32 21,26 26,30 31,22 37,24" fill="none" stroke="#fbbf24" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
-              <circle cx="31" cy="22" r="1.9" fill="#fbbf24">
-                <animate attributeName="r" values="1.5;2.6;1.5" dur="1.8s" repeatCount="indefinite" />
-              </circle>
-              <rect x="40" y="40" width="5" height="18" rx="2.5" fill="url(#wl-ring)" transform="rotate(-45 42.5 49)" />
-            </svg>
+            <div className="lens-ring">
+              <div className="lens-mid" />
+              <div className="lens-shine" />
+              <div className="lens-core" />
+            </div>
             <span className="logo-pulse" />
           </div>
           <div className="logo-text">
@@ -149,20 +131,11 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="topbar-brand">
-            <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
-              <defs>
-                <linearGradient id="wl-topbar-ring" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#6366f1">
-                    <animate attributeName="stop-color" values="#6366f1;#22d3ee;#a855f7;#6366f1" dur="6s" repeatCount="indefinite" />
-                  </stop>
-                  <stop offset="100%" stopColor="#22d3ee">
-                    <animate attributeName="stop-color" values="#22d3ee;#a855f7;#6366f1;#22d3ee" dur="6s" repeatCount="indefinite" />
-                  </stop>
-                </linearGradient>
-              </defs>
-              <circle cx="32" cy="32" r="20" fill="rgba(99,102,241,0.14)" stroke="url(#wl-topbar-ring)" strokeWidth="3.5" />
-              <polyline points="19,38 27,30 33,34 40,24 47,28" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-            </svg>
+            <div className="lens-ring lens-ring-sm">
+              <div className="lens-mid" />
+              <div className="lens-shine" />
+              <div className="lens-core" />
+            </div>
             <div className="topbar-brand-text">
               <strong>WalletLens</strong>
               <span className="topbar-tagline">zoom in your wealth</span>
