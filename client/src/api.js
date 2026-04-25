@@ -418,65 +418,6 @@ export const api = {
       saveData('manual_prices', manual);
     }
 
-    // Auto-USDT pairing only applies to crypto buys/sells (not non-crypto or deposit/withdraw)
-    const isStable = ['tether', 'usd-coin', 'dai', 'binance-usd', 'true-usd', 'first-digital-usd'].includes(data.coin_id);
-    const isDepositOrWithdraw = data.type === 'deposit' || data.type === 'withdraw';
-    // Defensive: a non-crypto coin_id prefix ALWAYS disqualifies USDT pairing,
-    // even if the category somehow wasn't explicitly set.
-    const nonCryptoPrefix = data.coin_id && (
-      data.coin_id.startsWith(STOCK_PREFIX) ||
-      data.coin_id.startsWith(FIAT_PREFIX) ||
-      data.coin_id === GOLD_ID ||
-      data.coin_id === SILVER_ID ||
-      data.coin_id.startsWith('bond:') ||
-      data.coin_id.startsWith('other:') ||
-      data.coin_id.startsWith('metal:')
-    );
-    const isCrypto = category === 'crypto' && !nonCryptoPrefix;
-
-    if (isCrypto && !isStable && !isDepositOrWithdraw) {
-      const usdtImage = 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png';
-      const txDate = data.date || new Date().toISOString().split('T')[0];
-
-      // When selling, auto-add USDT buy for the proceeds
-      if (data.type === 'sell') {
-        txs.unshift({
-          id: bumpId('crypto_tracker_next_tx_id'),
-          wallet_id: parseInt(data.wallet_id),
-          type: 'buy',
-          coin_id: 'tether',
-          coin_symbol: 'usdt',
-          coin_image: usdtImage,
-          amount: totalCost,
-          price_per_unit: 1,
-          total_cost: totalCost,
-          exchange: data.exchange || '',
-          notes: `From selling ${data.amount} ${(data.coin_symbol || '').toUpperCase()}`,
-          date: txDate,
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      // When buying, auto-add USDT sell (spending USDT to buy)
-      if (data.type === 'buy') {
-        txs.unshift({
-          id: bumpId('crypto_tracker_next_tx_id'),
-          wallet_id: parseInt(data.wallet_id),
-          type: 'sell',
-          coin_id: 'tether',
-          coin_symbol: 'usdt',
-          coin_image: usdtImage,
-          amount: totalCost,
-          price_per_unit: 1,
-          total_cost: totalCost,
-          exchange: data.exchange || '',
-          notes: `Spent on ${data.amount} ${(data.coin_symbol || '').toUpperCase()}`,
-          date: txDate,
-          created_at: new Date().toISOString(),
-        });
-      }
-    }
-
     saveData('transactions', txs);
     return tx;
   },
