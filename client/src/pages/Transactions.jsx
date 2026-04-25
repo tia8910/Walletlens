@@ -395,7 +395,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         ? form.sell_for_custom.trim().toUpperCase()
         : form.sell_for
       if (target && proceedsUsd > 0) {
-        const legBase = buildReceiveLeg(target, proceedsUsd)
+        const legBase = await buildReceiveLeg(target, proceedsUsd)
         if (legBase) {
           await api.addTransaction({
             wallet_id: form.wallet_id,
