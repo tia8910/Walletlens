@@ -140,6 +140,66 @@ const BINANCE_ID_OVERRIDES = {
   'fetch-ai': 'FET', 'arweave': 'AR', 'render-token': 'RENDER', 'sui': 'SUI',
   'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
 };
+// ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
+// Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
+// first (returns instantly), then CoinGecko, then CoinCap as a fallback.
+// Persists to localStorage on success so subsequent loads are instant.
+const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
+const MARKET_TTL = 60_000;
+async function _loadMarketSnapshot(perPage = 250) {
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
+  const now = Date.now();
+  // Reuse the larger snapshot for both 50 and 250 calls
+  const fresh = cache[250] && (now - cache[250].t < MARKET_TTL) ? cache[250]
+              : cache[50]  && (now - cache[50].t  < MARKET_TTL) ? cache[50]
+              : null;
+  if (fresh && Array.isArray(fresh.v) && fresh.v.length > 0) {
+    return fresh.v.slice(0, perPage);
+  }
+
+  // Primary: CoinGecko
+  const data = await fetchJSON(
+    `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
+  );
+  if (Array.isArray(data) && data.length > 0) {
+    cache[perPage] = { t: now, v: data };
+    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return data;
+  }
+
+  // Fallback: CoinCap
+  try {
+    const ccData = await fetchJSON(`https://rest.coincap.io/v3/assets?limit=${perPage}`);
+    const list = Array.isArray(ccData?.data) ? ccData.data : [];
+    if (list.length > 0) {
+      const mapped = list.map((a, i) => ({
+        id: a.id,
+        symbol: (a.symbol || '').toLowerCase(),
+        name: a.name,
+        image: `https://assets.coincap.io/assets/icons/${(a.symbol || '').toLowerCase()}@2x.png`,
+        current_price: parseFloat(a.priceUsd) || 0,
+        market_cap: parseFloat(a.marketCapUsd) || 0,
+        market_cap_rank: i + 1,
+        total_volume: parseFloat(a.volumeUsd24Hr) || 0,
+        price_change_percentage_24h: parseFloat(a.changePercent24Hr) || 0,
+        price_change_percentage_24h_in_currency: parseFloat(a.changePercent24Hr) || 0,
+        price_change_percentage_1h_in_currency: 0,
+        price_change_percentage_7d_in_currency: 0,
+      }));
+      cache[perPage] = { t: now, v: mapped };
+      try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+      return mapped;
+    }
+  } catch {}
+
+  // Last resort: stale cache > nothing
+  if (fresh && Array.isArray(fresh.v)) return fresh.v.slice(0, perPage);
+  if (cache[250]?.v) return cache[250].v.slice(0, perPage);
+  if (cache[50]?.v)  return cache[50].v.slice(0, perPage);
+  return [];
+}
+
 function _symbolForId(id, holdings) {
   if (BINANCE_ID_OVERRIDES[id]) return BINANCE_ID_OVERRIDES[id];
   if (priceCache[id]?.symbol) return String(priceCache[id].symbol).toUpperCase();
@@ -818,26 +878,18 @@ export const api = {
     return portfolio.find(h => h.coin_id === coinId) || null;
   },
 
+  // Resilient market snapshot. Returns the same shape as CoinGecko's
+  // /coins/markets (id, symbol, name, current_price, image,
+  // market_cap, price_change_percentage_24h, total_volume, ...).
+  // Order: localStorage cache (instant) → CoinGecko → CoinCap → empty.
+  // Persisted to localStorage so the page never paints blank.
   getMarketData: async () => {
-    const data = await fetchJSON(
-      `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`
-    );
-    return Array.isArray(data) ? data : [];
+    const data = await _loadMarketSnapshot(50);
+    return data;
   },
 
-  // ─── Whale tracking & smart indicators ───
-  // Pulls a wide market slice once and slices it locally for movers / volume
-  // anomalies. Cached for 60s to stay under CoinGecko's free-tier limits.
   getWhaleMarketSnapshot: async () => {
-    const cacheKey = '__wl_whale_snap';
-    const cached = (typeof window !== 'undefined' && window[cacheKey]) || null;
-    if (cached && Date.now() - cached.t < 60_000) return cached.v;
-    const data = await fetchJSON(
-      `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
-    );
-    const arr = Array.isArray(data) ? data : [];
-    if (typeof window !== 'undefined') window[cacheKey] = { t: Date.now(), v: arr };
-    return arr;
+    return await _loadMarketSnapshot(250);
   },
 
   // CoinGecko trending — what people are searching most right now
