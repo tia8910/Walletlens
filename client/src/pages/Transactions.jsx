@@ -843,13 +843,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             return (
               <div key={t.id} className="tx-card">
                 <div className="tx-left">
-                  {t.coin_image ? (
-                    <img src={t.coin_image} alt="" width={36} height={36} className="tx-coin-img" />
-                  ) : (
-                    <div className={`tx-type-icon ${badgeClass}`}>
-                      {isPositive ? '+' : '-'}
-                    </div>
-                  )}
+                  <TxLogo image={t.coin_image} symbol={sym} type={txType} isPositive={isPositive} badgeClass={badgeClass} />
                   <div className="tx-info">
                     <div className="tx-title">
                       <strong>{sym}</strong>
@@ -875,6 +869,44 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+// Transaction-row logo with onError-driven fallback chain:
+// 1) stored coin_image  →  2) CoinCap symbol icon  →  3) +/- type badge.
+// Fixes the broken-image placeholders on rows whose coin_image is missing
+// (e.g. auto-created Sell-For receive legs).
+function TxLogo({ image, symbol, type, isPositive, badgeClass }) {
+  const [stage, setStage] = useState(image ? 0 : 1)
+  const sym = (symbol || '').toLowerCase()
+  if (stage === 0 && image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        width={36}
+        height={36}
+        className="tx-coin-img"
+        onError={() => setStage(sym ? 1 : 2)}
+      />
+    )
+  }
+  if (stage === 1 && sym) {
+    return (
+      <img
+        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
+        alt=""
+        width={36}
+        height={36}
+        className="tx-coin-img"
+        onError={() => setStage(2)}
+      />
+    )
+  }
+  return (
+    <div className={`tx-type-icon ${badgeClass}`}>
+      {isPositive ? '+' : '-'}
     </div>
   )
 }
