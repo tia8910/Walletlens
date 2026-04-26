@@ -8,17 +8,30 @@ const CORS_PROXIES = [
   (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
+// Per-attempt timeout for any single fetch — without this, a slow proxy
+// can stall the whole pipeline for 30s+ before failing over.
+const FETCH_TIMEOUT_MS = 4500;
+async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 // Fetch JSON from a URL, retrying through multiple CORS proxies if the
-// direct request fails (rate-limit, CORS block, or network error). Returns
-// null only if every attempt fails.
+// direct request fails (rate-limit, CORS block, network error, or
+// timeout). Returns null only if every attempt fails.
 async function fetchJSON(url) {
   try {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (res.ok) return await res.json();
   } catch {}
   for (const wrap of CORS_PROXIES) {
     try {
-      const res = await fetch(wrap(url));
+      const res = await fetchWithTimeout(wrap(url));
       if (res.ok) return await res.json();
     } catch {}
   }
