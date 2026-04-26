@@ -259,6 +259,47 @@ body::after {
   overflow: hidden;
 }
 .sidebar-pitch::before { display: none; }
+
+/* ── Tagline hero (cycling word headline) ── */
+.tagline-hero {
+  margin: 0.25rem 0.9rem 1rem;
+  padding: 1rem 0.9rem 1.05rem;
+}
+.tagline-tag {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  background: var(--ink);
+  color: var(--g);
+  border: 1px solid rgba(0, 200, 83, 0.35);
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.6rem; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+.tagline-tag-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--g);
+  animation: tagline-blink 1.2s infinite;
+}
+@keyframes tagline-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.18; } }
+.tagline-headline {
+  font-family: var(--display);
+  font-size: 1.4rem; font-weight: 700;
+  line-height: 1.12; letter-spacing: -0.03em;
+  color: var(--text); /* dark by default — overridden inside the dark sidebar */
+  margin: 0;
+}
+.sidebar-pitch-desktop .tagline-headline { color: #fff; }
+.sidebar-pitch-mobile .tagline-tag { background: var(--ink); color: var(--g); }
+.tagline-cycle {
+  display: inline-block;
+  color: var(--g);
+  border-bottom: 3px solid var(--g);
+  padding-bottom: 1px;
+  min-width: 8.5em;
+  transition: opacity 0.25s;
+}
+.tagline-fade { opacity: 0; }
 @keyframes pitch-sweep {
   to { transform: rotate(360deg); }
 }
