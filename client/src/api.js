@@ -629,16 +629,21 @@ export const api = {
             const stables = new Set(['USDT','USDC','DAI','FDUSD','TUSD','BUSD']);
             const stableIds = Object.entries(knownSymbols).filter(([,s]) => stables.has(s)).map(([id]) => id);
             const tradeable = Object.entries(knownSymbols).filter(([,s]) => !stables.has(s));
-            const symbolsParam = tradeable.map(([,s]) => `"${s}USDT"`).join(',');
-            if (symbolsParam) {
-              const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`;
+            // Binance's batch /ticker/24hr returns 400 if ANY symbol in the list
+            // is invalid, killing the whole call. Fetch every USDT pair in one
+            // unfiltered request (~3000 rows, gzipped ~150KB) and look up our
+            // tickers locally so unknown symbols can never poison the batch.
+            if (tradeable.length > 0) {
               try {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', 7000);
                 if (res.ok) {
                   const list = await res.json();
                   if (Array.isArray(list)) {
+                    const wanted = new Set(tradeable.map(([,s]) => `${s}USDT`));
                     for (const row of list) {
-                      const tkr = String(row.symbol || '').replace(/USDT$/, '');
+                      const sym = String(row.symbol || '');
+                      if (!wanted.has(sym)) continue;
+                      const tkr = sym.replace(/USDT$/, '');
                       const id = symToId[tkr];
                       if (!id) continue;
                       const usd = parseFloat(row.lastPrice);
