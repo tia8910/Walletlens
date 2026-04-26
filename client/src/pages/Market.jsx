@@ -76,6 +76,9 @@ export default function Market() {
 
       {loading ? <div className="card"><p className="muted">Loading...</p></div> : (
         <>
+          {tab === 'crypto' && coins.length === 0 && (
+            <div className="card"><p className="muted">Couldn't reach the market data source. The cached values will show on the next refresh — try again in a moment.</p></div>
+          )}
           {tab === 'crypto' && (
             <div className="market-list">
               {coins.map((coin, i) => (
