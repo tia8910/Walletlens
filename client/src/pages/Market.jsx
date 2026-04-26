@@ -26,7 +26,13 @@ export default function Market() {
   }, [tab])
 
   async function load() {
-    setLoading(true)
+    // Don't block the UI on a fresh fetch — the helpers paint from
+    // localStorage cache instantly and only spin when nothing exists yet.
+    const haveCache =
+      (tab === 'crypto' && coins.length > 0) ||
+      (tab === 'metals' && Object.keys(metals).length > 0) ||
+      (tab === 'stocks' && Object.keys(stocks).length > 0)
+    if (!haveCache) setLoading(true)
     try {
       if (tab === 'crypto') {
         const data = await api.getMarketData()
@@ -84,7 +90,7 @@ export default function Market() {
               {coins.map((coin, i) => (
                 <div key={coin.id} className="market-card" onClick={() => openAsset(coin.id)}>
                   <div className="market-rank">{i + 1}</div>
-                  <img src={coin.image} alt="" width={32} height={32} className="market-img" />
+                  <MarketLogo image={coin.image} symbol={coin.symbol} />
                   <div className="market-info">
                     <strong>{coin.symbol.toUpperCase()}</strong>
                     <span className="muted market-name">{coin.name}</span>
@@ -164,6 +170,44 @@ export default function Market() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// Market-row logo with fallback chain: stored URL → CoinCap symbol icon
+// → letter badge. Same pattern as Dashboard.CoinIcon / AssetDetail.DetailLogo.
+function MarketLogo({ image, symbol }) {
+  const [stage, setStage] = useState(image ? 0 : 1)
+  const sym = (symbol || '').toLowerCase()
+  if (stage === 0 && image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        width={32}
+        height={32}
+        className="market-img"
+        onError={() => setStage(sym ? 1 : 2)}
+        loading="lazy"
+      />
+    )
+  }
+  if (stage === 1 && sym) {
+    return (
+      <img
+        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
+        alt=""
+        width={32}
+        height={32}
+        className="market-img"
+        onError={() => setStage(2)}
+        loading="lazy"
+      />
+    )
+  }
+  return (
+    <div className="market-img" style={{ background: 'rgba(0,200,83,0.12)', color: '#00c853', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', borderRadius: '50%' }}>
+      {(symbol || '?').toString().substring(0, 2).toUpperCase()}
     </div>
   )
 }
