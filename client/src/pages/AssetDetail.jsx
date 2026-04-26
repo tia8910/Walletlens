@@ -48,43 +48,62 @@ export default function AssetDetail() {
     setLoading(true)
     try {
       const nonCrypto = isNonCryptoId(coinId)
-      const tasks = [
+      const cat = categoryFor(coinId)
+      const catMeta = ASSET_CATEGORIES[cat]
+
+      // Phase 1 — fast path. Only blocks on data we need to render the page
+      // shell: portfolio (for holdings), prices (for the headline number)
+      // and target plan. Detail + image fill in async.
+      const [portfolio, prices, allTargets] = await Promise.all([
         api.getPortfolio(),
         api.getPrices(coinId),
-        nonCrypto ? Promise.resolve({}) : api.getCoinImages(coinId),
-        nonCrypto ? Promise.resolve(null) : api.getCoinDetail(coinId),
         api.getCoinTargets(),
-      ]
-      const [portfolio, prices, images, detail, allTargets] = await Promise.all(tasks)
+      ])
       const h = portfolio.find(p => p.coin_id === coinId)
       setHoldings(h || null)
       setTargets(allTargets[coinId]?.targets || [])
 
       const price = prices[coinId]?.usd || 0
       const change24 = prices[coinId]?.usd_24h_change || 0
-      const image = (!nonCrypto ? images[coinId] : null) || h?.coin_image || ''
-      const md = detail?.market_data
-      const cat = categoryFor(coinId)
-      const catMeta = ASSET_CATEGORIES[cat]
       const fallbackName = prices[coinId]?.name || h?.coin_name || (h?.coin_symbol || coinId).toUpperCase()
       setCoin({
         id: coinId,
-        name: detail?.name || fallbackName,
-        symbol: (detail?.symbol || h?.coin_symbol || coinId.replace(STOCK_PREFIX, '').replace('metal:', '')).toUpperCase(),
-        price, change24, image,
+        name: fallbackName,
+        symbol: (h?.coin_symbol || coinId.replace(STOCK_PREFIX, '').replace('metal:', '')).toUpperCase(),
+        price, change24,
+        image: h?.coin_image || '',
         category: cat,
         categoryLabel: catMeta?.label,
         categoryIcon: catMeta?.icon,
         categoryColor: catMeta?.color,
-        ath: md?.ath?.usd, atl: md?.atl?.usd,
-        high24: md?.high_24h?.usd, low24: md?.low_24h?.usd,
-        marketCap: md?.market_cap?.usd,
-        volume: md?.total_volume?.usd,
-        change7d: md?.price_change_percentage_7d,
-        change30d: md?.price_change_percentage_30d,
       })
-    } catch (e) { console.error(e) }
-    setLoading(false)
+      setLoading(false)
+
+      // Phase 2 — slow path. Detail + image enrich the card once they arrive.
+      if (!nonCrypto) {
+        Promise.all([api.getCoinImages(coinId), api.getCoinDetail(coinId)])
+          .then(([images, detail]) => {
+            const image = images?.[coinId] || h?.coin_image || ''
+            const md = detail?.market_data
+            setCoin(prev => ({
+              ...(prev || {}),
+              name: detail?.name || prev?.name || fallbackName,
+              symbol: (detail?.symbol || prev?.symbol || coinId).toUpperCase(),
+              image: image || prev?.image,
+              ath: md?.ath?.usd, atl: md?.atl?.usd,
+              high24: md?.high_24h?.usd, low24: md?.low_24h?.usd,
+              marketCap: md?.market_cap?.usd,
+              volume: md?.total_volume?.usd,
+              change7d: md?.price_change_percentage_7d,
+              change30d: md?.price_change_percentage_30d,
+            }))
+          })
+          .catch(() => {})
+      }
+    } catch (e) {
+      console.error(e)
+      setLoading(false)
+    }
   }
 
   async function loadChart() {
