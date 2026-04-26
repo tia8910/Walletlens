@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
+import CoinLogo from '../components/CoinLogo'
 
 // ─── Receive-leg resolver for sell proceeds ───
 // Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
@@ -843,7 +844,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             return (
               <div key={t.id} className="tx-card">
                 <div className="tx-left">
-                  <TxLogo image={t.coin_image} symbol={sym} type={txType} isPositive={isPositive} badgeClass={badgeClass} />
+                  <CoinLogo image={t.coin_image} symbol={sym} size={36} className="tx-coin-img" />
                   <div className="tx-info">
                     <div className="tx-title">
                       <strong>{sym}</strong>

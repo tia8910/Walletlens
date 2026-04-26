@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
+import CoinLogo from '../components/CoinLogo'
 
 function fmt(n) { return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
@@ -90,7 +91,7 @@ export default function Market() {
               {coins.map((coin, i) => (
                 <div key={coin.id} className="market-card" onClick={() => openAsset(coin.id)}>
                   <div className="market-rank">{i + 1}</div>
-                  <MarketLogo image={coin.image} symbol={coin.symbol} />
+                  <CoinLogo image={coin.image} symbol={coin.symbol} size={32} className="market-img" />
                   <div className="market-info">
                     <strong>{coin.symbol.toUpperCase()}</strong>
                     <span className="muted market-name">{coin.name}</span>
@@ -174,40 +175,3 @@ export default function Market() {
   )
 }
 
-// Market-row logo with fallback chain: stored URL → CoinCap symbol icon
-// → letter badge. Same pattern as Dashboard.CoinIcon / AssetDetail.DetailLogo.
-function MarketLogo({ image, symbol }) {
-  const [stage, setStage] = useState(image ? 0 : 1)
-  const sym = (symbol || '').toLowerCase()
-  if (stage === 0 && image) {
-    return (
-      <img
-        src={image}
-        alt=""
-        width={32}
-        height={32}
-        className="market-img"
-        onError={() => setStage(sym ? 1 : 2)}
-        loading="lazy"
-      />
-    )
-  }
-  if (stage === 1 && sym) {
-    return (
-      <img
-        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
-        alt=""
-        width={32}
-        height={32}
-        className="market-img"
-        onError={() => setStage(2)}
-        loading="lazy"
-      />
-    )
-  }
-  return (
-    <div className="market-img" style={{ background: 'rgba(0,200,83,0.12)', color: '#00c853', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', borderRadius: '50%' }}>
-      {(symbol || '?').toString().substring(0, 2).toUpperCase()}
-    </div>
-  )
-}

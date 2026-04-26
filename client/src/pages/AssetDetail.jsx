@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import CoinLogo from '../components/CoinLogo'
 
 function isNonCryptoId(id) {
   if (!id) return false
@@ -29,7 +30,7 @@ export default function AssetDetail() {
   const [chartDays, setChartDays] = useState(7)
   const [coin, setCoin] = useState(null)
   const [holdings, setHoldings] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [targets, setTargets] = useState([])
   const [showAddTarget, setShowAddTarget] = useState(false)
   const [tInputPrice, setTInputPrice] = useState('')
@@ -45,64 +46,71 @@ export default function AssetDetail() {
   }, [coinId])
 
   async function loadData() {
-    setLoading(true)
+    // Render the shell immediately from sync localStorage data — never
+    // block the page on a network call. Network results then fill in.
+    const nonCrypto = isNonCryptoId(coinId)
+    const cat = categoryFor(coinId)
+    const catMeta = ASSET_CATEGORIES[cat]
+
+    // Local-only sync data — instant
+    let portfolio = []
+    try { portfolio = (await api.getPortfolio()) || [] } catch {}
+    const h = portfolio.find(p => p.coin_id === coinId)
+    setHoldings(h || null)
     try {
-      const nonCrypto = isNonCryptoId(coinId)
-      const cat = categoryFor(coinId)
-      const catMeta = ASSET_CATEGORIES[cat]
-
-      // Phase 1 — fast path. Only blocks on data we need to render the page
-      // shell: portfolio (for holdings), prices (for the headline number)
-      // and target plan. Detail + image fill in async.
-      const [portfolio, prices, allTargets] = await Promise.all([
-        api.getPortfolio(),
-        api.getPrices(coinId),
-        api.getCoinTargets(),
-      ])
-      const h = portfolio.find(p => p.coin_id === coinId)
-      setHoldings(h || null)
+      const allTargets = await api.getCoinTargets()
       setTargets(allTargets[coinId]?.targets || [])
+    } catch {}
 
-      const price = prices[coinId]?.usd || 0
-      const change24 = prices[coinId]?.usd_24h_change || 0
-      const fallbackName = prices[coinId]?.name || h?.coin_name || (h?.coin_symbol || coinId).toUpperCase()
-      setCoin({
-        id: coinId,
-        name: fallbackName,
-        symbol: (h?.coin_symbol || coinId.replace(STOCK_PREFIX, '').replace('metal:', '')).toUpperCase(),
-        price, change24,
-        image: h?.coin_image || '',
-        category: cat,
-        categoryLabel: catMeta?.label,
-        categoryIcon: catMeta?.icon,
-        categoryColor: catMeta?.color,
-      })
-      setLoading(false)
+    // Initial coin shell from local + already-cached prices (priceCache
+    // is hydrated synchronously from localStorage at module load)
+    setCoin(prev => prev || {
+      id: coinId,
+      name: h?.coin_name || (h?.coin_symbol || coinId).toUpperCase(),
+      symbol: (h?.coin_symbol || coinId.replace(STOCK_PREFIX, '').replace('metal:', '')).toUpperCase(),
+      price: 0, change24: 0,
+      image: h?.coin_image || '',
+      category: cat,
+      categoryLabel: catMeta?.label,
+      categoryIcon: catMeta?.icon,
+      categoryColor: catMeta?.color,
+    })
 
-      // Phase 2 — slow path. Detail + image enrich the card once they arrive.
-      if (!nonCrypto) {
-        Promise.all([api.getCoinImages(coinId), api.getCoinDetail(coinId)])
-          .then(([images, detail]) => {
-            const image = images?.[coinId] || h?.coin_image || ''
-            const md = detail?.market_data
-            setCoin(prev => ({
-              ...(prev || {}),
-              name: detail?.name || prev?.name || fallbackName,
-              symbol: (detail?.symbol || prev?.symbol || coinId).toUpperCase(),
-              image: image || prev?.image,
-              ath: md?.ath?.usd, atl: md?.atl?.usd,
-              high24: md?.high_24h?.usd, low24: md?.low_24h?.usd,
-              marketCap: md?.market_cap?.usd,
-              volume: md?.total_volume?.usd,
-              change7d: md?.price_change_percentage_7d,
-              change30d: md?.price_change_percentage_30d,
-            }))
-          })
-          .catch(() => {})
-      }
-    } catch (e) {
-      console.error(e)
-      setLoading(false)
+    // Background — fetch prices + image + detail in parallel, fill in
+    // as each resolves. Never throws to the caller; never blocks the UI.
+    api.getPrices(coinId).then(prices => {
+      const p = prices?.[coinId]
+      if (!p) return
+      setCoin(prev => ({
+        ...(prev || {}),
+        price: p.usd || prev?.price || 0,
+        change24: p.usd_24h_change ?? prev?.change24 ?? 0,
+        name: p.name || prev?.name,
+        symbol: (p.symbol || prev?.symbol || '').toUpperCase(),
+      }))
+    }).catch(() => {})
+
+    if (!nonCrypto) {
+      Promise.all([api.getCoinImages(coinId), api.getCoinDetail(coinId)])
+        .then(([images, detail]) => {
+          const image = images?.[coinId] || h?.coin_image || ''
+          const md = detail?.market_data
+          setCoin(prev => ({
+            ...(prev || {}),
+            name: detail?.name || prev?.name,
+            symbol: (detail?.symbol || prev?.symbol || coinId).toUpperCase(),
+            image: image || prev?.image,
+            ath: md?.ath?.usd ?? prev?.ath,
+            atl: md?.atl?.usd ?? prev?.atl,
+            high24: md?.high_24h?.usd ?? prev?.high24,
+            low24: md?.low_24h?.usd ?? prev?.low24,
+            marketCap: md?.market_cap?.usd ?? prev?.marketCap,
+            volume: md?.total_volume?.usd ?? prev?.volume,
+            change7d: md?.price_change_percentage_7d ?? prev?.change7d,
+            change30d: md?.price_change_percentage_30d ?? prev?.change30d,
+          }))
+        })
+        .catch(() => {})
     }
   }
 
@@ -138,15 +146,6 @@ export default function AssetDetail() {
   const isUp = chartData.length > 1 && chartData[chartData.length - 1]?.price >= chartData[0]?.price
   const chartColor = isUp ? '#10b981' : '#ef4444'
 
-  if (loading) return (
-    <div className="page">
-      <button className="back-btn" onClick={() => navigate('/')}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-        Back
-      </button>
-      <div className="card"><p className="muted">Loading...</p></div>
-    </div>
-  )
 
   return (
     <div className="page">
@@ -158,7 +157,7 @@ export default function AssetDetail() {
       {/* Asset header */}
       <div className="detail-hero">
         <div className="detail-hero-left">
-          <DetailLogo coin={coin} />
+          <CoinLogo image={coin?.image} symbol={coin?.symbol} size={48} className="coin-logo" fallbackChar={coin?.categoryIcon} badgeStyle={coin?.categoryColor ? { background: `${coin.categoryColor}22`, color: coin.categoryColor } : undefined} />
           <div>
             <h2 className="detail-name">{coin?.name}</h2>
             <div className="detail-sub">
@@ -436,40 +435,5 @@ function Indicator({ label, value, help, barPct, color }) {
       </div>
     </div>
   )
-}
 
-function DetailLogo({ coin }) {
-  const [stage, setStage] = useState(0) // 0:gecko 1:coincap 2:badge
-  const sym = (coin?.symbol || "").toLowerCase()
-  const isCrypto = !coin?.category || coin.category === "crypto"
-
-  if (stage === 0 && coin?.image) {
-    return (
-      <img
-        src={coin.image}
-        alt=""
-        width={48}
-        height={48}
-        className="coin-logo"
-        onError={() => setStage(isCrypto && sym ? 1 : 2)}
-      />
-    )
-  }
-  if (stage <= 1 && isCrypto && sym) {
-    return (
-      <img
-        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
-        alt=""
-        width={48}
-        height={48}
-        className="coin-logo"
-        onError={() => setStage(2)}
-      />
-    )
-  }
-  return (
-    <div className="coin-icon" style={{ width: 48, height: 48, fontSize: "1.2rem", background: `${coin?.categoryColor || "#6366f1"}22`, color: coin?.categoryColor || "#6366f1" }}>
-      {coin?.categoryIcon || coin?.symbol?.substring(0, 2) || "\u25C6"}
-    </div>
-  )
 }
