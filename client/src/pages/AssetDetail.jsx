@@ -1,22 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
+import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } from '../api'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
 
+// assetClass() is the shared id-prefix classifier (api.js); these wrap it
+// for the page's two flavours of "is it crypto" / "what category".
 function isNonCryptoId(id) {
   if (!id) return false
-  return id.startsWith(STOCK_PREFIX) || id === GOLD_ID || id === SILVER_ID || id.startsWith('bond:') || id.startsWith('other:')
+  const k = assetClass(id)
+  return k !== 'crypto'
 }
-
 function categoryFor(id) {
-  if (!id) return 'crypto'
-  if (id === GOLD_ID) return 'gold'
-  if (id === SILVER_ID) return 'silver'
-  if (id.startsWith(STOCK_PREFIX)) return 'stock'
-  if (id.startsWith('bond:')) return 'bond'
-  if (id.startsWith('other:')) return 'other'
-  return 'crypto'
+  return assetClass(id)
 }
 
 function fmt(n) {
