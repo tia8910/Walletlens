@@ -557,6 +557,7 @@ export default function Dashboard() {
   const [exportCode, setExportCode] = useState('')
   const [importCode, setImportCode] = useState('')
   const [importPreview, setImportPreview] = useState(null)
+  const [hasImportSnapshot, setHasImportSnapshotState] = useState(() => api.hasImportSnapshot?.() || false)
   const [copyStatus, setCopyStatus] = useState('')
   const [editingPrice, setEditingPrice] = useState(null)
   const [priceInput, setPriceInput] = useState('')
@@ -741,7 +742,8 @@ export default function Dashboard() {
     }
     const result = await api.previewImportCode(importCode.trim())
     if (result.success) {
-      setImportPreview(result.summary)
+      // Stash the diff alongside the summary so the preview UI can render it
+      setImportPreview({ ...result.summary, diff: result.diff })
       setImportStatus(null)
     } else {
       setImportPreview(null)
@@ -1557,6 +1559,21 @@ export default function Dashboard() {
                 Preview Import
               </button>
             )}
+            {hasImportSnapshot && (
+              <button
+                type="button"
+                className="btn-ghost-dark"
+                style={{ marginTop: '0.5rem' }}
+                onClick={async () => {
+                  if (!confirm('Restore the state from before your last import? This replaces your current data.')) return
+                  const r = await api.restoreLastImport()
+                  if (r.success) { window.location.reload() }
+                  else { alert(r.error || 'Could not restore') }
+                }}
+              >
+                ↶ Undo last import
+              </button>
+            )}
           </div>
           {importPreview && (
             <div className="import-preview">
@@ -1578,6 +1595,51 @@ export default function Dashboard() {
                       {ASSET_CATEGORIES[cat]?.icon} {ASSET_CATEGORIES[cat]?.label || cat}: {count}
                     </span>
                   ))}
+                </div>
+              )}
+              {importPreview.diff && (
+                <div className="import-diff">
+                  <div className="import-diff-head">
+                    <strong>Compared to your current portfolio</strong>
+                    <span className="muted">
+                      {importPreview.diff.txDelta >= 0 ? '+' : ''}{importPreview.diff.txDelta} transactions
+                    </span>
+                  </div>
+                  {!importPreview.diff.hasChanges ? (
+                    <p className="muted" style={{ fontSize: '0.8rem' }}>No holdings would change.</p>
+                  ) : (
+                    <div className="import-diff-grid">
+                      {importPreview.diff.added.length > 0 && (
+                        <div>
+                          <div className="positive" style={{ fontSize: '0.78rem', fontWeight: 700 }}>+ {importPreview.diff.added.length} added</div>
+                          {importPreview.diff.added.slice(0, 5).map(x => (
+                            <div key={x.coin_id} className="import-diff-row positive">{(x.symbol || x.coin_id).toUpperCase()} +{x.amount.toFixed(4)}</div>
+                          ))}
+                          {importPreview.diff.added.length > 5 && <div className="muted" style={{ fontSize: '0.7rem' }}>… and {importPreview.diff.added.length - 5} more</div>}
+                        </div>
+                      )}
+                      {importPreview.diff.removed.length > 0 && (
+                        <div>
+                          <div className="negative" style={{ fontSize: '0.78rem', fontWeight: 700 }}>− {importPreview.diff.removed.length} removed</div>
+                          {importPreview.diff.removed.slice(0, 5).map(x => (
+                            <div key={x.coin_id} className="import-diff-row negative">{(x.symbol || x.coin_id).toUpperCase()} −{x.amount.toFixed(4)}</div>
+                          ))}
+                          {importPreview.diff.removed.length > 5 && <div className="muted" style={{ fontSize: '0.7rem' }}>… and {importPreview.diff.removed.length - 5} more</div>}
+                        </div>
+                      )}
+                      {importPreview.diff.changed.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--orange)' }}>~ {importPreview.diff.changed.length} changed</div>
+                          {importPreview.diff.changed.slice(0, 5).map(x => (
+                            <div key={x.coin_id} className="import-diff-row" style={{ color: 'var(--orange)' }}>
+                              {(x.symbol || x.coin_id).toUpperCase()} {x.from.toFixed(4)} → {x.to.toFixed(4)}
+                            </div>
+                          ))}
+                          {importPreview.diff.changed.length > 5 && <div className="muted" style={{ fontSize: '0.7rem' }}>… and {importPreview.diff.changed.length - 5} more</div>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="import-preview-actions">
