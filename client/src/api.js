@@ -233,6 +233,18 @@ async function _loadMarketSnapshot(perPage = 250) {
 
 // Net-balance fold over a transactions array. Used by previewImportCode
 // for the diff view and by the import preview chips.
+export function foldBalances(transactions) { return _foldBalances(transactions); }
+export function assetClass(id) {
+  if (!id) return 'crypto';
+  if (id === GOLD_ID) return 'gold';
+  if (id === SILVER_ID) return 'silver';
+  if (id.startsWith(STOCK_PREFIX)) return 'stock';
+  if (id.startsWith(FIAT_PREFIX)) return 'fiat';
+  if (id.startsWith('bond:')) return 'bond';
+  if (id.startsWith('other:')) return 'other';
+  return 'crypto';
+}
+
 function _foldBalances(transactions) {
   const out = {};
   for (const tx of (transactions || [])) {
