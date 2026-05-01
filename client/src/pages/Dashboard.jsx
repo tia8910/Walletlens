@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, ASSET_CATEGORIES } from '../api'
+import { api, ASSET_CATEGORIES, assetClass } from '../api'
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import PitchCard from '../components/PitchCard'
+import usePrivateFmt from '../hooks/usePrivateFmt'
 
 // ─── Share card renderer ───
 // Draws a 1080×1080 PNG of the user's portfolio card on an off-screen canvas.
@@ -131,14 +132,7 @@ async function renderShareCardPng({ totalValue, totalPnL, pnlPercent, topHolding
   })
 }
 
-// ─── Privacy helpers ───
-const HIDE_KEY = 'crypto_tracker_hide_values'
-function loadHideValues() {
-  try { return localStorage.getItem(HIDE_KEY) === '1' } catch { return false }
-}
-function saveHideValues(v) {
-  try { localStorage.setItem(HIDE_KEY, v ? '1' : '0') } catch {}
-}
+// Privacy helpers moved to ../hooks/usePrivateFmt
 
 // ─── Portfolio value trend from transactions + historical prices ───
 // For each day in the last `days`, reconstructs net holdings at end-of-day
@@ -566,21 +560,10 @@ export default function Dashboard() {
   const [showStressTest, setShowStressTest] = useState(false)
   const [transactions, setTransactions] = useState([])
   const [trendDays, setTrendDays] = useState(30)
-  const [hideValues, setHideValues] = useState(loadHideValues())
+  const { hideValues, toggle: toggleHideValues, priv, mask } = usePrivateFmt()
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareImageUrl, setShareImageUrl] = useState(null)
   const [shareStatus, setShareStatus] = useState('')
-
-  // Privacy mask — hide USD values with dots when toggled
-  const mask = '••••'
-  const priv = (formatted) => hideValues ? mask : formatted
-
-  function toggleHideValues() {
-    setHideValues(v => {
-      saveHideValues(!v)
-      return !v
-    })
-  }
 
   // Regenerate the share image when the modal opens or when deps change.
   // Note: placed near top but references `enriched` + `portfolioHistory`
@@ -795,7 +778,7 @@ export default function Dashboard() {
         // Kick off deep 30d signal fetch in background (1h localStorage cache)
         const cryptoIds = p
           .map(h => h.coin_id)
-          .filter(id => id && !id.startsWith('stock:') && !id.startsWith('fiat:') && !id.startsWith('bond:') && !id.startsWith('other:') && id !== 'metal:xau' && id !== 'metal:xag')
+          .filter(id => id && assetClass(id) === 'crypto')
         if (cryptoIds.length > 0) {
           api.getBulkSmartSignals(cryptoIds, 30).then(setSignals).catch(err => console.warn('signals', err))
         }
