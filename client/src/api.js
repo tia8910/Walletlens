@@ -1,3 +1,28 @@
+// ── Domain modules ──
+// Constants, classifiers, and pure helpers live in src/data/* and are
+// re-exported here so existing imports from '../api' keep working
+// unchanged. New code should prefer importing directly from data/*.
+import {
+  ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
+  GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
+  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
+  assetClass, isCrypto,
+} from './data/assets';
+import {
+  loadData as _loadData, saveData as _saveData, bumpId as _bumpId,
+  runSchemaMigrations,
+} from './data/storage';
+import { foldBalances as _foldBalancesPure, diffHoldings, aggregatePortfolio } from './data/portfolio';
+
+export {
+  ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
+  GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
+  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
+  assetClass, isCrypto,
+};
+// Re-export the pure helper that was already named-exported here
+export const foldBalances = _foldBalancesPure;
+
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
@@ -43,102 +68,14 @@ async function fetchJSON(url) {
 // `crypto_tracker_manual_prices` as { [coin_id]: { usd, usd_24h_change, updated_at } }.
 // Real-time prices for gold/silver come from a free metals API and for US stocks
 // from Stooq's CORS-enabled CSV endpoint. Failures fall back to the manual cache.
-export const ASSET_CATEGORIES = {
-  crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
-  fiat:   { key: 'fiat',   label: 'Fiat',   icon: '💵', color: '#0ea5e9' },
-  gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
-  silver: { key: 'silver', label: 'Silver', icon: '🥈', color: '#94a3b8' },
-  stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: '#10b981' },
-  bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0284c7' },
-  other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
-};
-export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other'];
 
-// Special coin IDs used for real-time external data sources
-export const GOLD_ID = 'metal:xau';        // 1 troy oz gold, USD
-export const SILVER_ID = 'metal:xag';      // 1 troy oz silver, USD
-export const STOCK_PREFIX = 'stock:';      // followed by lowercase ticker, e.g. stock:aapl
-export const FIAT_PREFIX = 'fiat:';        // followed by lowercase iso code, e.g. fiat:eur
-
-export const PRESET_ASSETS = {
-  gold:   { coin_id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   unit: 'oz' },
-  silver: { coin_id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', unit: 'oz' },
-};
-
-export const POPULAR_FIAT = [
-  { code: 'USD', name: 'US Dollar',        symbol: '$' },
-  { code: 'EUR', name: 'Euro',             symbol: '€' },
-  { code: 'GBP', name: 'British Pound',    symbol: '£' },
-  { code: 'JPY', name: 'Japanese Yen',     symbol: '¥' },
-  { code: 'CHF', name: 'Swiss Franc',      symbol: 'Fr' },
-  { code: 'CAD', name: 'Canadian Dollar',  symbol: 'C$' },
-  { code: 'AUD', name: 'Australian Dollar',symbol: 'A$' },
-  { code: 'CNY', name: 'Chinese Yuan',     symbol: '¥' },
-  { code: 'INR', name: 'Indian Rupee',     symbol: '₹' },
-  { code: 'AED', name: 'UAE Dirham',       symbol: 'د.إ' },
-];
-
-export const POPULAR_TICKERS = [
-  { ticker: 'AAPL', name: 'Apple Inc.' },
-  { ticker: 'MSFT', name: 'Microsoft' },
-  { ticker: 'GOOGL', name: 'Alphabet (Google)' },
-  { ticker: 'AMZN', name: 'Amazon' },
-  { ticker: 'NVDA', name: 'NVIDIA' },
-  { ticker: 'TSLA', name: 'Tesla' },
-  { ticker: 'META', name: 'Meta Platforms' },
-  { ticker: 'SPY',  name: 'S&P 500 ETF' },
-  { ticker: 'QQQ',  name: 'Nasdaq 100 ETF' },
-  { ticker: 'TLT',  name: '20+ Year Treasury Bond ETF' },
-];
-
-// LocalStorage helpers
-function loadData(key, fallback = []) {
-  try {
-    const data = localStorage.getItem(`crypto_tracker_${key}`);
-    return data ? JSON.parse(data) : fallback;
-  } catch { return fallback; }
-}
-
-function saveData(key, data) {
-  localStorage.setItem(`crypto_tracker_${key}`, JSON.stringify(data));
-}
-
-// ── Schema versioning ──
-// Bump SCHEMA_VERSION whenever the persisted shape of any tracked
-// localStorage key changes. Migrations run once on app boot in order.
-const SCHEMA_VERSION = 4;
-const SCHEMA_KEY = 'crypto_tracker_schema_version';
-function _runSchemaMigrations() {
-  let current = 0;
-  try { current = parseInt(localStorage.getItem(SCHEMA_KEY) || '0', 10) || 0; } catch {}
-  if (current === SCHEMA_VERSION) return;
-
-  // v0 → v1: nothing to do (legacy app, treat as already-current)
-  // v1/2/3 → v4: clean stale Sell-For receive legs that recorded amount=0
-  // (caused by a missing await in buildReceiveLeg before #25)
-  if (current < 4) {
-    try {
-      const txs = loadData('transactions');
-      const cleaned = txs.filter(t => {
-        const amt = Number(t.amount) || 0;
-        return amt > 0;
-      });
-      if (cleaned.length !== txs.length) saveData('transactions', cleaned);
-    } catch {}
-  }
-
-  try { localStorage.setItem(SCHEMA_KEY, String(SCHEMA_VERSION)); } catch {}
-}
-// Run once on module load
-try { _runSchemaMigrations(); } catch (err) {
-  console.warn('Schema migration failed:', err);
-}
-
-function bumpId(key) {
-  const current = parseInt(localStorage.getItem(key) || '1');
-  localStorage.setItem(key, (current + 1).toString());
-  return current;
-}
+// LocalStorage helpers re-aliased to the data/storage module so api.js
+// keeps using its old names without a sweep across this file.
+const loadData = _loadData;
+const saveData = _saveData;
+const bumpId = _bumpId;
+// Run schema migrations once on module load.
+try { runSchemaMigrations(); } catch (err) { console.warn('Schema migration failed:', err); }
 
 // Price & image cache — hydrated from localStorage on boot so the dashboard
 // can render instantly on subsequent loads while a fresh fetch runs in
@@ -231,33 +168,9 @@ async function _loadMarketSnapshot(perPage = 250) {
   return [];
 }
 
-// Net-balance fold over a transactions array. Used by previewImportCode
-// for the diff view and by the import preview chips.
-export function foldBalances(transactions) { return _foldBalances(transactions); }
-export function assetClass(id) {
-  if (!id) return 'crypto';
-  if (id === GOLD_ID) return 'gold';
-  if (id === SILVER_ID) return 'silver';
-  if (id.startsWith(STOCK_PREFIX)) return 'stock';
-  if (id.startsWith(FIAT_PREFIX)) return 'fiat';
-  if (id.startsWith('bond:')) return 'bond';
-  if (id.startsWith('other:')) return 'other';
-  return 'crypto';
-}
-
-function _foldBalances(transactions) {
-  const out = {};
-  for (const tx of (transactions || [])) {
-    const id = String(tx.coin_id || '');
-    if (!id) continue;
-    const amt = Number(tx.amount) || 0;
-    if (!out[id]) out[id] = { amount: 0, symbol: tx.coin_symbol, category: tx.category };
-    if (tx.type === 'buy' || tx.type === 'deposit') out[id].amount += amt;
-    else if (tx.type === 'sell' || tx.type === 'withdraw') out[id].amount -= amt;
-    if (tx.coin_symbol) out[id].symbol = tx.coin_symbol;
-  }
-  return out;
-}
+// Net-balance fold over a transactions array — pure helper now in
+// ./data/portfolio. Aliased here so existing callers keep their name.
+const _foldBalances = _foldBalancesPure;
 
 function _symbolForId(id, holdings) {
   if (BINANCE_ID_OVERRIDES[id]) return BINANCE_ID_OVERRIDES[id];
