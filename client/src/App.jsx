@@ -54,7 +54,7 @@ function IconWhale() {
 export default function App() {
   return (
     <div className="app">
-      <nav className="sidebar">
+      <nav className="sidebar" aria-label="Primary">
         <div className="logo">
           <div className="logo-mark">
             <div className="lens-ring">
@@ -78,25 +78,25 @@ export default function App() {
         <ul>
           <li>
             <NavLink to="/" end>
-              <span className="nav-icon-wrap"><IconHome /></span>
+              <span className="nav-icon-wrap" aria-hidden="true"><IconHome /></span>
               <span>Dashboard</span>
             </NavLink>
           </li>
           <li>
             <NavLink to="/transactions">
-              <span className="nav-icon-wrap"><IconTrades /></span>
+              <span className="nav-icon-wrap" aria-hidden="true"><IconTrades /></span>
               <span>Transactions</span>
             </NavLink>
           </li>
           <li>
             <NavLink to="/market">
-              <span className="nav-icon-wrap"><IconMarket /></span>
+              <span className="nav-icon-wrap" aria-hidden="true"><IconMarket /></span>
               <span>Market</span>
             </NavLink>
           </li>
           <li>
             <NavLink to="/whales">
-              <span className="nav-icon-wrap"><IconWhale /></span>
+              <span className="nav-icon-wrap" aria-hidden="true"><IconWhale /></span>
               <span>Whales</span>
             </NavLink>
           </li>
@@ -138,7 +138,7 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" aria-label="Bottom navigation">
         <NavLink to="/" end className="nav-item">
           <IconHome />
           <span>Home</span>

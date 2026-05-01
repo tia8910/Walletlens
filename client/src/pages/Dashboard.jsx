@@ -1053,9 +1053,10 @@ export default function Dashboard() {
               className="hero-eye"
               onClick={toggleHideValues}
               title={hideValues ? 'Show values' : 'Hide values'}
-              aria-label={hideValues ? 'Show values' : 'Hide values'}
+              aria-label={hideValues ? 'Show portfolio values' : 'Hide portfolio values'}
+              aria-pressed={hideValues}
             >
-              {hideValues ? '🙈' : '👁️'}
+              <span aria-hidden="true">{hideValues ? '🙈' : '👁️'}</span>
             </button>
             <button
               className="hero-eye"
