@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
+import EmptyState from '../components/EmptyState'
 
 function fmt(n) { return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
@@ -84,7 +85,12 @@ export default function Market() {
       {loading ? <div className="card"><p className="muted">Loading...</p></div> : (
         <>
           {tab === 'crypto' && coins.length === 0 && (
-            <div className="card"><p className="muted">Couldn't reach the market data source. The cached values will show on the next refresh — try again in a moment.</p></div>
+            <EmptyState
+              icon="📡"
+              title="Market data unavailable"
+              message="Couldn't reach CoinGecko or CoinCap. Cached values will appear on the next refresh — try again in a moment."
+              variant="warn"
+            />
           )}
           {tab === 'crypto' && (
             <div className="market-list">
