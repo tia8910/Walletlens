@@ -702,6 +702,26 @@ body::after {
   animation: alarmSlide 0.3s ease-out;
 }
 .import-status.success { background: var(--green-bg); color: var(--green); }
+.import-diff {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.import-diff-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.5rem; font-size: 0.85rem;
+}
+.import-diff-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.6rem;
+}
+.import-diff-row {
+  font-size: 0.78rem; font-family: var(--mono);
+  padding: 0.18rem 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .import-status.error { background: var(--red-bg); color: var(--red); }
 
 /* ─── Section Header ─── */

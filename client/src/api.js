@@ -103,6 +103,37 @@ function saveData(key, data) {
   localStorage.setItem(`crypto_tracker_${key}`, JSON.stringify(data));
 }
 
+// ── Schema versioning ──
+// Bump SCHEMA_VERSION whenever the persisted shape of any tracked
+// localStorage key changes. Migrations run once on app boot in order.
+const SCHEMA_VERSION = 4;
+const SCHEMA_KEY = 'crypto_tracker_schema_version';
+function _runSchemaMigrations() {
+  let current = 0;
+  try { current = parseInt(localStorage.getItem(SCHEMA_KEY) || '0', 10) || 0; } catch {}
+  if (current === SCHEMA_VERSION) return;
+
+  // v0 → v1: nothing to do (legacy app, treat as already-current)
+  // v1/2/3 → v4: clean stale Sell-For receive legs that recorded amount=0
+  // (caused by a missing await in buildReceiveLeg before #25)
+  if (current < 4) {
+    try {
+      const txs = loadData('transactions');
+      const cleaned = txs.filter(t => {
+        const amt = Number(t.amount) || 0;
+        return amt > 0;
+      });
+      if (cleaned.length !== txs.length) saveData('transactions', cleaned);
+    } catch {}
+  }
+
+  try { localStorage.setItem(SCHEMA_KEY, String(SCHEMA_VERSION)); } catch {}
+}
+// Run once on module load
+try { _runSchemaMigrations(); } catch (err) {
+  console.warn('Schema migration failed:', err);
+}
+
 function bumpId(key) {
   const current = parseInt(localStorage.getItem(key) || '1');
   localStorage.setItem(key, (current + 1).toString());
@@ -198,6 +229,22 @@ async function _loadMarketSnapshot(perPage = 250) {
   if (cache[250]?.v) return cache[250].v.slice(0, perPage);
   if (cache[50]?.v)  return cache[50].v.slice(0, perPage);
   return [];
+}
+
+// Net-balance fold over a transactions array. Used by previewImportCode
+// for the diff view and by the import preview chips.
+function _foldBalances(transactions) {
+  const out = {};
+  for (const tx of (transactions || [])) {
+    const id = String(tx.coin_id || '');
+    if (!id) continue;
+    const amt = Number(tx.amount) || 0;
+    if (!out[id]) out[id] = { amount: 0, symbol: tx.coin_symbol, category: tx.category };
+    if (tx.type === 'buy' || tx.type === 'deposit') out[id].amount += amt;
+    else if (tx.type === 'sell' || tx.type === 'withdraw') out[id].amount -= amt;
+    if (tx.coin_symbol) out[id].symbol = tx.coin_symbol;
+  }
+  return out;
 }
 
 function _symbolForId(id, holdings) {
@@ -1258,6 +1305,22 @@ export const api = {
       for (const { amount, category } of Object.values(balances)) {
         if (amount > 1e-9) byCategory[category] = (byCategory[category] || 0) + 1;
       }
+      // Diff against current state: which holdings are added / removed /
+      // changed, plus tx-count delta, so the user can review before
+      // committing rather than blindly overwriting.
+      const currentTxs = loadData('transactions');
+      const incomingHoldings = _foldBalances(transactions);
+      const currentHoldings = _foldBalances(currentTxs);
+      const allIds = new Set([...Object.keys(incomingHoldings), ...Object.keys(currentHoldings)]);
+      const added = [], removed = [], changed = [];
+      for (const id of allIds) {
+        const a = currentHoldings[id]?.amount || 0;
+        const b = incomingHoldings[id]?.amount || 0;
+        if (a < 1e-9 && b > 1e-9) added.push({ coin_id: id, symbol: incomingHoldings[id].symbol, amount: b });
+        else if (a > 1e-9 && b < 1e-9) removed.push({ coin_id: id, symbol: currentHoldings[id].symbol, amount: a });
+        else if (Math.abs(a - b) > 1e-9) changed.push({ coin_id: id, symbol: incomingHoldings[id]?.symbol || currentHoldings[id]?.symbol, from: a, to: b });
+      }
+
       return {
         success: true,
         summary: {
@@ -1269,6 +1332,13 @@ export const api = {
           byCategory,
           version: data.v || 1,
         },
+        diff: {
+          txDelta: transactions.length - currentTxs.length,
+          added,
+          removed,
+          changed,
+          hasChanges: added.length + removed.length + changed.length > 0,
+        },
         _raw: { wallets, transactions, exchanges, targets, manualPrices, ids: data.ids || {} },
       };
     } catch (err) {
@@ -1279,6 +1349,24 @@ export const api = {
   importCode: async (code) => {
     const preview = await api.previewImportCode(code);
     if (!preview.success) return preview;
+    // Snapshot current state before overwriting, so the user has a one-tap undo.
+    try {
+      const snapshot = {
+        t: Date.now(),
+        wallets: loadData('wallets'),
+        transactions: loadData('transactions'),
+        exchanges: loadData('exchanges'),
+        manual_prices: loadData('manual_prices', {}),
+        coin_targets: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
+        ids: {
+          w: localStorage.getItem('crypto_tracker_next_wallet_id') || '1',
+          t: localStorage.getItem('crypto_tracker_next_tx_id') || '1',
+          e: localStorage.getItem('crypto_tracker_next_ex_id') || '1',
+        },
+      };
+      localStorage.setItem('crypto_tracker_pre_import_snapshot', JSON.stringify(snapshot));
+    } catch {}
+
     const { wallets, transactions, exchanges, targets, manualPrices, ids } = preview._raw;
     saveData('wallets', wallets);
     saveData('transactions', transactions);
@@ -1296,6 +1384,34 @@ export const api = {
     coinImageCache = {};
     lastImageFetch = 0;
     return { success: true, wallets: wallets.length, transactions: transactions.length };
+  },
+
+  hasImportSnapshot: () => {
+    try { return !!localStorage.getItem('crypto_tracker_pre_import_snapshot'); }
+    catch { return false; }
+  },
+
+  // Roll back the last import. Returns { success, when } or { success: false }.
+  restoreLastImport: async () => {
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem('crypto_tracker_pre_import_snapshot') || 'null'); } catch {}
+    if (!snap) return { success: false, error: 'No snapshot to restore' };
+    saveData('wallets', snap.wallets || []);
+    saveData('transactions', snap.transactions || []);
+    saveData('exchanges', snap.exchanges || []);
+    saveData('manual_prices', snap.manual_prices || {});
+    localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(snap.coin_targets || {}));
+    if (snap.ids) {
+      localStorage.setItem('crypto_tracker_next_wallet_id', String(snap.ids.w || 1));
+      localStorage.setItem('crypto_tracker_next_tx_id', String(snap.ids.t || 1));
+      localStorage.setItem('crypto_tracker_next_ex_id', String(snap.ids.e || 1));
+    }
+    localStorage.removeItem('crypto_tracker_pre_import_snapshot');
+    priceCache = {};
+    lastPriceFetch = 0;
+    coinImageCache = {};
+    lastImageFetch = 0;
+    return { success: true, when: snap.t };
   },
 
   // Ensure a default wallet exists
