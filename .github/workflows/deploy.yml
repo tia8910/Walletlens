@@ -1,4 +1,4 @@
-name: Build and commit /docs to main
+name: Deploy to gh-pages
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pages-docs
+  group: gh-pages-deploy
   cancel-in-progress: true
 
 jobs:
@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -33,22 +31,18 @@ jobs:
         working-directory: ./client
         run: npm run build
 
-      - name: Sync dist to /docs
+      - name: Prepare publish dir (root layout)
         run: |
-          rm -rf docs
-          mkdir -p docs
-          cp -r client/dist/. docs/
-          touch docs/.nojekyll
-          echo "walletlens.cc" > docs/CNAME
+          touch client/dist/.nojekyll
+          echo "walletlens.cc" > client/dist/CNAME
 
-      - name: Commit /docs to main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs
-          if git diff --cached --quiet; then
-            echo "No docs changes to commit."
-          else
-            git commit -m "Deploy: update /docs [skip ci]"
-            git push origin main
-          fi
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./client/dist
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "Deploy: ${{ github.event.head_commit.message }}"
+          user_name: 'github-actions[bot]'
+          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
