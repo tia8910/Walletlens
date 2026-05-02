@@ -540,62 +540,99 @@ body::after {
 /* ─── Share wallet card modal ─── */
 .share-modal-overlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(15,15,35,0.72);
+  background: rgba(7, 26, 12, 0.78);
   backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
 }
 .share-modal {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 1.25rem;
   max-width: 520px; width: 100%;
   max-height: 92vh; overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  box-shadow: 0 22px 48px rgba(7, 26, 12, 0.5), 0 0 0 1px rgba(0, 200, 83, 0.08);
+  color: #fff;
+  position: relative;
+}
+.share-modal::after {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 220px; height: 220px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(0, 200, 83, 0.14), transparent 70%);
 }
 .share-modal-head {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1rem; position: relative; z-index: 2;
 }
-.share-modal-head h3 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+.share-modal-head h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1rem; font-weight: 700;
+  color: #fff; letter-spacing: -0.01em;
+}
 .share-close {
-  background: transparent !important;
-  color: var(--text2) !important;
-  border: 1px solid var(--border) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   width: 32px; height: 32px;
   border-radius: 8px !important;
   font-size: 1.25rem !important; line-height: 1;
   padding: 0 !important; cursor: pointer;
 }
-.share-close:hover { background: var(--bg3) !important; color: var(--text) !important; }
+.share-close:hover { background: rgba(255, 255, 255, 0.12) !important; color: #fff !important; }
 .share-modal-body {
-  background: var(--bg3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px; padding: 0.75rem;
   margin-bottom: 1rem;
   min-height: 260px;
   display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  position: relative; z-index: 2;
 }
 .share-preview {
   max-width: 100%; max-height: 400px;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 .share-loading {
-  color: var(--text2); font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.55); font-size: 0.9rem;
   padding: 4rem 1rem;
 }
 .share-status {
   font-size: 0.82rem; font-weight: 600;
-  color: #10b981; padding: 0.35rem 0.7rem;
-  background: rgba(16,185,129,0.12); border-radius: 8px;
+  color: var(--g); padding: 0.35rem 0.7rem;
+  background: rgba(0, 200, 83, 0.14); border-radius: 8px;
+  border: 1px solid rgba(0, 200, 83, 0.28);
 }
 .share-modal-actions {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem; margin-bottom: 0.75rem;
+  position: relative; z-index: 2;
 }
 .share-modal-actions .action-btn { padding: 0.7rem 0.6rem; font-size: 0.88rem; }
-.share-note { font-size: 0.75rem; text-align: center; margin: 0; }
+.share-modal-actions .buy-btn  { background: var(--g) !important; color: var(--ink) !important; border: none !important; }
+.share-modal-actions .buy-btn:hover  { background: var(--gd) !important; }
+.share-modal-actions .data-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+.share-modal-actions .data-btn:hover { background: rgba(255, 255, 255, 0.14) !important; }
+.share-modal-actions .action-btn:not(.buy-btn):not(.data-btn) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+.share-modal-actions .action-btn:not(.buy-btn):not(.data-btn):hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #fff !important;
+}
+.share-note {
+  font-size: 0.75rem; text-align: center; margin: 0;
+  color: rgba(255, 255, 255, 0.55) !important;
+  position: relative; z-index: 2;
+}
 .hero-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; position: relative; z-index: 2; }
 .hero-pnl {
   font-family: var(--mono);
