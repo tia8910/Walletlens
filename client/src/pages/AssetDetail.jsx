@@ -307,7 +307,7 @@ export default function AssetDetail() {
                   </div>
                   <div className="sp-progress">
                     <div className="sp-bar-bg">
-                      <div className="sp-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: reached ? '#10b981' : '#6366f1' }} />
+                      <div className="sp-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: reached ? '#10b981' : '#00c853' }} />
                     </div>
                     <span className={`sp-pct ${reached ? 'positive' : ''}`}>
                       {reached ? '✓ Reached' : `${pct.toFixed(1)}% of target`}
@@ -353,7 +353,7 @@ function WhalePanel({ s, symbol }) {
     '#ef4444'
 
   const pulsePct = Math.min(100, Math.round(s.volPulse * 50))
-  const pulseColor = s.volPulse > 1.5 ? '#ef4444' : s.volPulse > 1 ? '#f59e0b' : '#6366f1'
+  const pulseColor = s.volPulse > 1.5 ? '#ef4444' : s.volPulse > 1 ? '#f59e0b' : '#00c853'
 
   return (
     <div className="whale-panel">
@@ -405,14 +405,14 @@ function WhalePanel({ s, symbol }) {
           value={(s.rangePos * 100).toFixed(0) + '%'}
           help="Where price sits in recent high-low range. 100% = at the top."
           barPct={s.rangePos * 100}
-          color="#6366f1"
+          color="#00c853"
         />
         <Indicator
           label="Volatility"
           value={(s.volatility * 100).toFixed(0) + '%'}
           help="Annualised. <50% calm, >100% wild."
           barPct={Math.min(100, s.volatility * 50)}
-          color="#a78bfa"
+          color="#4d7a59"
         />
       </div>
     </div>

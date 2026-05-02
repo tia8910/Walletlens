@@ -17,8 +17,8 @@ async function renderShareCardPng({ totalValue, totalPnL, pnlPercent, topHolding
 
   // Background gradient
   const g = ctx.createLinearGradient(0, 0, size, size)
-  g.addColorStop(0, '#6366f1')
-  g.addColorStop(0.55, '#8b5cf6')
+  g.addColorStop(0, '#00c853')
+  g.addColorStop(0.55, '#1e3d26')
   g.addColorStop(1, '#22d3ee')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, size, size)
@@ -184,7 +184,10 @@ function computePortfolioHistory(transactions, prices, signals, days = 30) {
   return out
 }
 
-const COLORS = ['#6366f1', '#8b5cf6', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#fb923c', '#e879f9', '#a78bfa', '#06b6d4']
+// Brand-aligned palette for the donut + holding rows. Keeps green as the
+// primary, with cool secondary tones; no more purples / pinks that
+// clashed with the ink+green theme.
+const COLORS = ['#00c853', '#1e3d26', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#22c55e', '#0284c7', '#94a3b8', '#06b6d4']
 
 function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -310,7 +313,7 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
     .map(([key, value]) => ({
       key,
       label: ASSET_CATEGORIES[key]?.label || key,
-      color: ASSET_CATEGORIES[key]?.color || '#6366f1',
+      color: ASSET_CATEGORIES[key]?.color || '#00c853',
       value,
       pct: (value / (totalValue || 1)) * 100,
     }))
@@ -325,7 +328,7 @@ function generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTarg
     mid:     { label: 'Mid Cap',     short: 'M',  color: '#f59e0b', desc: '$1B – $10B' },
     small:   { label: 'Small Cap',   short: 'S',  color: '#ef4444', desc: '< $1B' },
     unknown: { label: 'Unknown Cap', short: '?',  color: '#94a3b8', desc: 'no data' },
-    'n/a':   { label: 'Other',       short: '·',  color: '#a78bfa', desc: 'non-crypto' },
+    'n/a':   { label: 'Other',       short: '·',  color: '#4d7a59', desc: 'non-crypto' },
   }
   const capAlloc = {}
   for (const h of enriched) {
@@ -932,7 +935,7 @@ export default function Dashboard() {
     enrichedByCategory[cat].invested += h.total_invested
   }
   const categoryList = Object.entries(enrichedByCategory).map(([key, v]) => {
-    const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#a78bfa' }
+    const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#4d7a59' }
     return {
       key, label: meta.label, icon: meta.icon, color: meta.color,
       items: v.items, total: v.total, invested: v.invested,
@@ -1320,7 +1323,7 @@ export default function Dashboard() {
               {Object.keys(importPreview.byCategory || {}).length > 0 && (
                 <div className="import-preview-cats">
                   {Object.entries(importPreview.byCategory).map(([cat, count]) => (
-                    <span key={cat} className="import-preview-chip" style={{ background: `${ASSET_CATEGORIES[cat]?.color || '#6366f1'}22`, color: ASSET_CATEGORIES[cat]?.color || '#6366f1' }}>
+                    <span key={cat} className="import-preview-chip" style={{ background: `${ASSET_CATEGORIES[cat]?.color || '#00c853'}22`, color: ASSET_CATEGORIES[cat]?.color || '#00c853' }}>
                       {ASSET_CATEGORIES[cat]?.icon} {ASSET_CATEGORIES[cat]?.label || cat}: {count}
                     </span>
                   ))}
@@ -1466,7 +1469,7 @@ export default function Dashboard() {
                     {h.category && h.category !== 'crypto' && (
                       <span
                         className="category-badge"
-                        style={{ background: `${ASSET_CATEGORIES[h.category]?.color || '#6366f1'}22`, color: ASSET_CATEGORIES[h.category]?.color || '#6366f1' }}
+                        style={{ background: `${ASSET_CATEGORIES[h.category]?.color || '#00c853'}22`, color: ASSET_CATEGORIES[h.category]?.color || '#00c853' }}
                       >
                         {ASSET_CATEGORIES[h.category]?.icon} {ASSET_CATEGORIES[h.category]?.label}
                       </span>
