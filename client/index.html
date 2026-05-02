@@ -200,44 +200,34 @@
   </head>
   <body>
     <div id="root">
-      <!-- Crawler-visible content. React replaces this on hydration so
-           real users never see it, but Google + AI answer engines that
-           don't fully execute JS still get rich, citable content. -->
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
       <noscript>
-        <h1>WalletLens — All-Asset Portfolio Tracker</h1>
-        <p>JavaScript is required to use WalletLens. Enable JavaScript and reload.</p>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <h1>WalletLens — Free All-Asset Portfolio Tracker</h1>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
       </noscript>
-      <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif;color:#071a0c">
-        <h1 style="font-size:2.2rem;margin:0 0 1rem">WalletLens — Free All-Asset Portfolio Tracker</h1>
-        <p style="font-size:1.05rem;line-height:1.6;color:#1e3d26">
-          See <strong>every asset</strong> in one lens — crypto, US stocks, gold,
-          silver, fiat &amp; FX. 100% free. No account. No data collection.
-          Your portfolio is stored only in your browser.
-        </p>
-        <h2>Features</h2>
-        <ul>
-          <li>Live prices for crypto, stocks, gold, silver, fiat — all in one dashboard</li>
-          <li>AI portfolio analysis: health score, Sharpe ratio, max drawdown, P&amp;L attribution</li>
-          <li>Stress-test scenarios for BTC ±10% / ±20%</li>
-          <li>Multi-target sell plans with live progress bars</li>
-          <li>Live whale tracker and market-cap movers</li>
-          <li>Hide-values privacy mode and shareable wallet card</li>
-          <li>Backup as a single gzip-compressed code — no cloud needed</li>
-          <li>Installable Progressive Web App, works offline-first</li>
-        </ul>
-        <h2>Frequently asked questions</h2>
-        <h3>Is WalletLens free?</h3>
-        <p>Yes — 100% free, no account, no paid tiers, no ads in the portfolio view.</p>
-        <h3>Does WalletLens track stocks and gold?</h3>
-        <p>Yes. Crypto (CoinGecko / Binance / CoinCap), US stocks (Stooq), gold and silver (Gold-API), fiat via live FX rates, plus user-defined bonds and other assets.</p>
-        <h3>Where is my data stored?</h3>
-        <p>Only in your browser's localStorage. No server, no account, nothing leaves your device. You can export a single backup code to move between devices.</p>
-        <h3>Can I install WalletLens as an app?</h3>
-        <p>Yes — it's a PWA. Install it on iOS, Android, or desktop and it opens offline-first after the first visit.</p>
-        <p style="margin-top:2rem;font-size:0.9rem;color:#4d7a59">
-          Loading the dashboard…
-        </p>
-      </main>
+      <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#071a0c;color:#fff;font-family:'Cabinet Grotesk',system-ui,sans-serif;z-index:0">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1rem">
+          <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
+            <circle cx="32" cy="32" r="24" fill="none" stroke="#00c853" stroke-width="3.5">
+              <animate attributeName="r" values="22;26;22" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="32" cy="32" r="14" fill="none" stroke="rgba(0,200,83,.45)" stroke-width="2.5">
+              <animate attributeName="r" values="14;9;14" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="32" cy="32" r="7" fill="#00c853">
+              <animate attributeName="r" values="7;10;7" dur="2s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.18em;color:#00c853;text-transform:uppercase">WalletLens</div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
