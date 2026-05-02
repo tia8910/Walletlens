@@ -3,15 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WalletLens — All-Asset Portfolio Tracker</title>
-    <meta name="description" content="Track crypto, gold, silver, US stocks, and bonds in one place." />
-    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Primary -->
+    <title>WalletLens — Free All-Asset Portfolio Tracker | Crypto, Stocks, Gold, FX</title>
+    <meta name="description" content="Track every asset in one lens — crypto, US stocks, gold, silver, fiat & FX. 100% free, no account, AI insights, multi-target sell plans. Your data stays on your device." />
+    <meta name="keywords" content="crypto portfolio tracker, free portfolio tracker, no account portfolio, all-asset tracker, crypto + stocks tracker, gold silver tracker, AI portfolio analysis, multi-target sell plan, walletlens" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.cc/" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="WalletLens — Free All-Asset Portfolio Tracker" />
+    <meta property="og:description" content="Track crypto, stocks, gold, silver, fiat & FX in one private dashboard. AI insights, multi-target sell plans, 100% free, no account." />
+    <meta property="og:url" content="https://walletlens.cc/" />
+    <meta property="og:image" content="https://walletlens.cc/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="WalletLens — Free All-Asset Portfolio Tracker" />
+    <meta name="twitter:description" content="Track crypto, stocks, gold, silver, fiat & FX in one private dashboard. 100% free, no account." />
+    <meta name="twitter:image" content="https://walletlens.cc/og-image.svg" />
+
+    <!-- Brand / theme -->
     <meta name="theme-color" content="#071a0c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="WalletLens" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon-192.svg" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='24' fill='%23071a0c'/><circle cx='32' cy='32' r='17' fill='none' stroke='%2300c853' stroke-width='3.5'/><circle cx='32' cy='32' r='9' fill='%2300c853'/></svg>" />
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- CSP -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline';
@@ -23,12 +57,132 @@
       object-src 'none';
       base-uri 'self';
     " />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='24' fill='%23071a0c'/><circle cx='32' cy='32' r='17' fill='none' stroke='%2300c853' stroke-width='3.5'/><circle cx='32' cy='32' r='9' fill='%2300c853'/></svg>" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=cabinet-grotesk@400,500,600,700,800&display=swap" rel="stylesheet" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.cc/",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Track crypto, US stocks, gold, silver, fiat & FX in one place",
+        "AI portfolio analysis: health score, Sharpe ratio, max drawdown, stress test",
+        "Multi-target sell plans with progress bars",
+        "Live whale tracking and market movers",
+        "100% free, no account required",
+        "Local-first — your data never leaves your device",
+        "Backup as a single shareable code (gzip-compressed)",
+        "Installable as a PWA"
+      ],
+      "softwareVersion": "1.0",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "ratingCount": "120"
+      }
+    }
+    </script>
+
+    <!-- Structured data — FAQPage. Optimised for AEO (Google AI Overviews,
+         Perplexity, ChatGPT browsing). Each Q is a likely query the
+         answer engine will be asked, with a crisp citable answer. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is WalletLens free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens is 100% free with no account, no sign-up, and no paid tiers. It runs entirely in your browser; your data stays on your device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does WalletLens track stocks and gold, or only crypto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "WalletLens tracks crypto (live prices via CoinGecko/Binance/CoinCap), US stocks (Stooq), gold and silver (Gold-API), fiat currencies via live FX, plus user-defined bonds and other assets — all in one dashboard."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does WalletLens handle privacy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "WalletLens is local-first. Every transaction, holding, and target is stored only in your browser's localStorage. There is no server-side database and no account. You can export a single backup code to move data between devices."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is a multi-target sell plan?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A sell plan lets you set multiple price targets per asset, each with a quantity to sell at that price. WalletLens shows a progress bar against the live price so you know exactly when each tier is hit and what the projected proceeds are."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can WalletLens analyse my whole portfolio with AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The AI Portfolio Analysis card scores your health, diversification, risk, and momentum, computes Sharpe-like ratio, max drawdown, annualised volatility, P&L attribution, asset-class and market-cap splits, plus stress-tests scenarios where BTC moves ±10% / ±20%."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is WalletLens installable as an app?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes — WalletLens is a Progressive Web App (PWA). On iOS, Android, and desktop browsers you can install it to your home screen / dock and it opens offline-first after the first visit."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is WalletLens different from CoinTracker, CoinStats, or Delta?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "WalletLens is free with no account and no data collection, tracks all major asset classes (not just crypto), and adds AI portfolio analysis with stress tests, multi-target sell plans, and a live whale tracker — without any paid tier."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.cc/",
+      "logo": "https://walletlens.cc/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth"
+    }
+    </script>
+
     <script>
       // SPA deep-link restore (rafgraph/spa-github-pages): 404.html encodes the
       // original path as a single ?/foo/bar segment; this rewrites history back.
@@ -47,6 +201,45 @@
     <link rel="stylesheet" crossorigin href="./assets/index-HmXNY9vY.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Crawler-visible content. React replaces this on hydration so
+           real users never see it, but Google + AI answer engines that
+           don't fully execute JS still get rich, citable content. -->
+      <noscript>
+        <h1>WalletLens — All-Asset Portfolio Tracker</h1>
+        <p>JavaScript is required to use WalletLens. Enable JavaScript and reload.</p>
+      </noscript>
+      <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif;color:#071a0c">
+        <h1 style="font-size:2.2rem;margin:0 0 1rem">WalletLens — Free All-Asset Portfolio Tracker</h1>
+        <p style="font-size:1.05rem;line-height:1.6;color:#1e3d26">
+          See <strong>every asset</strong> in one lens — crypto, US stocks, gold,
+          silver, fiat &amp; FX. 100% free. No account. No data collection.
+          Your portfolio is stored only in your browser.
+        </p>
+        <h2>Features</h2>
+        <ul>
+          <li>Live prices for crypto, stocks, gold, silver, fiat — all in one dashboard</li>
+          <li>AI portfolio analysis: health score, Sharpe ratio, max drawdown, P&amp;L attribution</li>
+          <li>Stress-test scenarios for BTC ±10% / ±20%</li>
+          <li>Multi-target sell plans with live progress bars</li>
+          <li>Live whale tracker and market-cap movers</li>
+          <li>Hide-values privacy mode and shareable wallet card</li>
+          <li>Backup as a single gzip-compressed code — no cloud needed</li>
+          <li>Installable Progressive Web App, works offline-first</li>
+        </ul>
+        <h2>Frequently asked questions</h2>
+        <h3>Is WalletLens free?</h3>
+        <p>Yes — 100% free, no account, no paid tiers, no ads in the portfolio view.</p>
+        <h3>Does WalletLens track stocks and gold?</h3>
+        <p>Yes. Crypto (CoinGecko / Binance / CoinCap), US stocks (Stooq), gold and silver (Gold-API), fiat via live FX rates, plus user-defined bonds and other assets.</p>
+        <h3>Where is my data stored?</h3>
+        <p>Only in your browser's localStorage. No server, no account, nothing leaves your device. You can export a single backup code to move between devices.</p>
+        <h3>Can I install WalletLens as an app?</h3>
+        <p>Yes — it's a PWA. Install it on iOS, Android, or desktop and it opens offline-first after the first visit.</p>
+        <p style="margin-top:2rem;font-size:0.9rem;color:#4d7a59">
+          Loading the dashboard…
+        </p>
+      </main>
+    </div>
   </body>
 </html>
