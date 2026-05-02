@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071a0c"/>
+      <stop offset="100%" stop-color="#0d2614"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="78%" cy="22%" r="40%">
+      <stop offset="0%" stop-color="rgba(0,200,83,0.22)"/>
+      <stop offset="100%" stop-color="rgba(0,200,83,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- lens mark -->
+  <g transform="translate(86,86)">
+    <circle cx="60" cy="60" r="58" fill="none" stroke="#00c853" stroke-width="6"/>
+    <circle cx="60" cy="60" r="36" fill="none" stroke="#00c853" stroke-width="4" opacity="0.55"/>
+    <circle cx="60" cy="60" r="20" fill="#00c853"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="240" y="160" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="68" fill="#ffffff" letter-spacing="-2">WalletLens</text>
+  <text x="240" y="200" font-family="system-ui,sans-serif" font-weight="700" font-size="22" fill="#00c853" letter-spacing="6">ZOOM IN YOUR WEALTH</text>
+
+  <!-- Tagline -->
+  <text x="86" y="330" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="84" fill="#ffffff" letter-spacing="-3">See every asset</text>
+  <text x="86" y="430" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="84" fill="#ffffff" letter-spacing="-3">in <tspan fill="#00c853">one lens</tspan>.</text>
+
+  <!-- Pills -->
+  <g font-family="system-ui,sans-serif" font-weight="700" font-size="22">
+    <rect x="86" y="490" width="200" height="46" rx="23" fill="#071a0c" stroke="rgba(0,200,83,0.45)" stroke-width="1.5"/>
+    <text x="186" y="520" text-anchor="middle" fill="#00c853">100% FREE</text>
+
+    <rect x="306" y="490" width="200" height="46" rx="23" fill="#071a0c" stroke="rgba(0,200,83,0.45)" stroke-width="1.5"/>
+    <text x="406" y="520" text-anchor="middle" fill="#00c853">NO ACCOUNT</text>
+
+    <rect x="526" y="490" width="200" height="46" rx="23" fill="#071a0c" stroke="rgba(0,200,83,0.45)" stroke-width="1.5"/>
+    <text x="626" y="520" text-anchor="middle" fill="#00c853">LOCAL-FIRST</text>
+
+    <rect x="746" y="490" width="240" height="46" rx="23" fill="#071a0c" stroke="rgba(0,200,83,0.45)" stroke-width="1.5"/>
+    <text x="866" y="520" text-anchor="middle" fill="#00c853">AI INSIGHTS</text>
+  </g>
+
+  <!-- URL -->
+  <text x="86" y="595" font-family="ui-monospace,Menlo,monospace" font-weight="500" font-size="24" fill="rgba(255,255,255,0.6)">walletlens.cc</text>
+</svg>
