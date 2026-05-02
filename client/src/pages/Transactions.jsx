@@ -54,6 +54,55 @@ async function buildReceiveLeg(target, proceedsUsd) {
   return { coin_id: `other:${lower}`, symbol: T, name: T, category: 'other', amount: proceedsUsd, pricePerUnit: 1 }
 }
 
+// ─── Spend-leg resolver for buy cost ───
+// Symmetric to buildReceiveLeg: given the USD cost of a buy and the
+// asset the user is spending FROM (USDT / USDC / BTC / EUR / USD /
+// custom ticker), returns a leg payload {coin_id, symbol, name,
+// category, amount, pricePerUnit} that gets recorded as an automatic
+// SELL of the source asset so the user's balance of it goes down.
+async function buildSpendLeg(source, costUsd) {
+  const T = (source || '').toUpperCase()
+  if (!T || T === 'NONE') return null
+  if (T === 'USD') {
+    return { coin_id: `${FIAT_PREFIX}usd`, symbol: 'USD', name: 'US Dollar', category: 'fiat', amount: costUsd, pricePerUnit: 1 }
+  }
+  if (T === 'USDT') {
+    return { coin_id: 'tether', symbol: 'USDT', name: 'Tether', category: 'crypto', amount: costUsd, pricePerUnit: 1 }
+  }
+  if (T === 'USDC') {
+    return { coin_id: 'usd-coin', symbol: 'USDC', name: 'USD Coin', category: 'crypto', amount: costUsd, pricePerUnit: 1 }
+  }
+  if (T === 'BTC') {
+    const prices = await api.getPrices('bitcoin')
+    const btcUsd = prices?.bitcoin?.usd || 0
+    if (!btcUsd) return null
+    return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: costUsd / btcUsd, pricePerUnit: btcUsd }
+  }
+  if (T === 'EUR') {
+    let eurUsd = null
+    try {
+      const r = await api.getPrices(`${FIAT_PREFIX}eur`)
+      eurUsd = r?.[`${FIAT_PREFIX}eur`]?.usd || null
+    } catch {}
+    if (!eurUsd) eurUsd = 1.08
+    return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: costUsd / eurUsd, pricePerUnit: eurUsd }
+  }
+  // Custom ticker
+  const lower = T.toLowerCase()
+  try {
+    const search = await api.searchCoins?.(lower)
+    const hit = Array.isArray(search) ? search.find(c => (c.symbol || '').toLowerCase() === lower) : null
+    if (hit) {
+      const prices = await api.getPrices(hit.id)
+      const usd = prices?.[hit.id]?.usd || 0
+      if (usd > 0) {
+        return { coin_id: hit.id, symbol: T, name: hit.name || T, category: 'crypto', amount: costUsd / usd, pricePerUnit: usd }
+      }
+    }
+  } catch {}
+  return { coin_id: `other:${lower}`, symbol: T, name: T, category: 'other', amount: costUsd, pricePerUnit: 1 }
+}
+
 const CATEGORY_ORDER = ['crypto', 'fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
 const CATEGORY_UNITS = {
@@ -158,6 +207,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     // Sell-for receive leg: which asset the proceeds are credited in
     sell_for: 'USD',       // BTC | USDT | USDC | USD | EUR | CUSTOM
     sell_for_custom: '',   // ticker when sell_for === 'CUSTOM'
+    // Buy-with spend leg: which asset funded the buy (deducted from holdings)
+    buy_with: 'NONE',      // NONE | USDT | USDC | BTC | USD | EUR | CUSTOM
+    buy_with_custom: '',   // ticker when buy_with === 'CUSTOM'
   })
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const searchTimeout = useRef(null)
@@ -388,6 +440,36 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       price_per_unit: pricePerUnit,
     })
 
+    // Spend leg: if a buy was funded by another asset (USDT / USDC / BTC /
+    // EUR / USD / custom), auto-record a SELL of the source asset so the
+    // user's balance of it goes down. "NONE" means no spend leg — the buy
+    // just adds to holdings without deducting anything (legacy behaviour).
+    if (form.type === 'buy' && form.buy_with !== 'NONE') {
+      const costUsd = amount * pricePerUnit
+      const source = form.buy_with === 'CUSTOM'
+        ? form.buy_with_custom.trim().toUpperCase()
+        : form.buy_with
+      if (source && costUsd > 0) {
+        const legBase = await buildSpendLeg(source, costUsd)
+        if (legBase) {
+          await api.addTransaction({
+            wallet_id: form.wallet_id,
+            type: 'sell',
+            category: legBase.category,
+            coin_id: legBase.coin_id,
+            coin_symbol: legBase.symbol,
+            coin_name: legBase.name,
+            coin_image: '',
+            amount: legBase.amount,
+            price_per_unit: legBase.pricePerUnit,
+            exchange: form.exchange,
+            notes: `Spent on buying ${form.coin_symbol?.toUpperCase?.() || form.coin_id}`,
+            date: form.date,
+          })
+        }
+      }
+    }
+
     // Sell leg: if user chose a target asset (BTC/USDT/USDC/USD/EUR/custom),
     // auto-credit their holdings with the proceeds converted into that asset.
     // "REMOVE" means don't credit anything — purely deduct from holdings
@@ -418,7 +500,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       }
     }
 
-    setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '' })
+    setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '', buy_with: 'NONE', buy_with_custom: '' })
     setCoinSearch('')
     setCoinAnalysis(null)
     setSellHoldings(null)
@@ -774,6 +856,40 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <label>Notes (optional)</label>
                 <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="DCA, dip buy, etc." />
               </div>
+
+              {form.type === 'buy' && (
+                <div className="form-field">
+                  <label>Buy with (cost deducted from this asset)</label>
+                  <div className="sell-for-row">
+                    <select
+                      value={form.buy_with}
+                      onChange={e => setForm(f => ({ ...f, buy_with: e.target.value }))}
+                    >
+                      <option value="NONE">None (don't deduct)</option>
+                      <option value="USDT">USDT</option>
+                      <option value="USDC">USDC</option>
+                      <option value="BTC">BTC</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="CUSTOM">Other…</option>
+                    </select>
+                    {form.buy_with === 'CUSTOM' && (
+                      <input
+                        type="text"
+                        value={form.buy_with_custom}
+                        onChange={e => setForm(f => ({ ...f, buy_with_custom: e.target.value }))}
+                        placeholder="Ticker (e.g. SOL, DAI)"
+                      />
+                    )}
+                  </div>
+                  <p className="form-hint">
+                    {form.buy_with === 'NONE'
+                      ? <>The buy will only add to your holdings — no other balance is reduced.</>
+                      : <>Total cost{totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be deducted from your{' '}
+                        <strong>{form.buy_with === 'CUSTOM' ? (form.buy_with_custom.trim().toUpperCase() || '…') : form.buy_with}</strong> balance automatically.</>}
+                  </p>
+                </div>
+              )}
 
               {form.type === 'sell' && (
                 <div className="form-field">
