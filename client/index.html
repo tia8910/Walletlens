@@ -42,17 +42,26 @@
     <link rel="apple-touch-icon" href="/icon-192.svg" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='24' fill='%23071a0c'/><circle cx='32' cy='32' r='17' fill='none' stroke='%2300c853' stroke-width='3.5'/><circle cx='32' cy='32' r='9' fill='%2300c853'/></svg>" />
 
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB');
+    </script>
+
     <!-- AdSense -->
     <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
 
     <!-- CSP -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com https://cdn.fontshare.com;
       font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com;
+      connect-src 'self' https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com;
       frame-src 'none';
       object-src 'none';
       base-uri 'self';
