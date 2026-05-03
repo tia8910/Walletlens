@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import PitchCard from './components/PitchCard'
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
+import TradeTips from './components/TradeTips'
 
 // Route-level code splitting: only Dashboard ships in the initial bundle;
 // the rest are fetched on first navigation. Cuts the initial JS payload
@@ -125,6 +126,7 @@ export default function App() {
 
       <main className="content">
         <PriceTicker />
+        <TradeTips />
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
