@@ -109,20 +109,31 @@ const BINANCE_ID_OVERRIDES = {
   'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
 };
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
-// Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
-// first (returns instantly), then CoinGecko, then CoinCap as a fallback.
+// Returns CoinGecko /coins/markets-shaped rows. Tries in-memory cache first
+// (avoids redundant localStorage reads/JSON.parse when called multiple times
+// per session), then localStorage, then CoinGecko, then CoinCap as a fallback.
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
+let _memMarketCache = null; // { t, v, size }
 async function _loadMarketSnapshot(perPage = 250) {
+  const now = Date.now();
+
+  // In-memory fast path: skip localStorage entirely if we have a fresh snapshot
+  // that's large enough to satisfy this request.
+  if (_memMarketCache && (now - _memMarketCache.t < MARKET_TTL) &&
+      Array.isArray(_memMarketCache.v) && _memMarketCache.v.length >= Math.min(perPage, 50)) {
+    return _memMarketCache.v.slice(0, perPage);
+  }
+
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
-  const now = Date.now();
   // Reuse the larger snapshot for both 50 and 250 calls
   const fresh = cache[250] && (now - cache[250].t < MARKET_TTL) ? cache[250]
               : cache[50]  && (now - cache[50].t  < MARKET_TTL) ? cache[50]
               : null;
   if (fresh && Array.isArray(fresh.v) && fresh.v.length > 0) {
+    _memMarketCache = { t: fresh.t, v: fresh.v };
     return fresh.v.slice(0, perPage);
   }
 
@@ -132,6 +143,7 @@ async function _loadMarketSnapshot(perPage = 250) {
   );
   if (Array.isArray(data) && data.length > 0) {
     cache[perPage] = { t: now, v: data };
+    _memMarketCache = { t: now, v: data };
     try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
     return data;
   }
@@ -156,6 +168,7 @@ async function _loadMarketSnapshot(perPage = 250) {
         price_change_percentage_7d_in_currency: 0,
       }));
       cache[perPage] = { t: now, v: mapped };
+      _memMarketCache = { t: now, v: mapped };
       try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
       return mapped;
     }
@@ -1032,13 +1045,20 @@ export const api = {
         toFetch.push(id);
       }
     }
-    for (const id of toFetch) {
-      try {
-        const s = await api.getCoinSmartSignals(id, days);
-        out[id] = s;
-        cache[id] = { t: now, v: s };
-      } catch { out[id] = null; }
-      await new Promise(r => setTimeout(r, 120));
+    // Fetch in parallel batches of 3 to stay inside CoinGecko's rate limit
+    // while being ~3× faster than the old sequential approach.
+    const BATCH = 3;
+    for (let i = 0; i < toFetch.length; i += BATCH) {
+      const chunk = toFetch.slice(i, i + BATCH);
+      await Promise.allSettled(chunk.map(async (id) => {
+        try {
+          const s = await api.getCoinSmartSignals(id, days);
+          out[id] = s;
+          cache[id] = { t: now, v: s };
+        } catch { out[id] = null; }
+      }));
+      // Brief pause between batches to avoid rate-limit spikes
+      if (i + BATCH < toFetch.length) await new Promise(r => setTimeout(r, 200));
     }
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
     return out;
