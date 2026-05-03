@@ -29,7 +29,7 @@ const TIPS = [
   { id: 20, cat: 'HODL', type: 'do',   emoji: '🎯', title: 'Set price targets in advance', body: "Decide your exit price when you're calm and greedy — not when you're scared and losing." },
 ]
 
-function buildShareImage(tip) {
+function buildShareCanvas(tip) {
   const size = 1080
   const canvas = document.createElement('canvas')
   canvas.width = size
@@ -104,7 +104,11 @@ function buildShareImage(tip) {
   ctx.font = '400 26px system-ui, sans-serif'
   ctx.fillText('walletlens.cc  ·  zoom in your wealth', 80, size - 28)
 
-  return canvas.toDataURL('image/png')
+  return canvas
+}
+
+function canvasToBlob(canvas) {
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
 }
 
 export default function TradeTips() {
@@ -164,16 +168,18 @@ export default function TradeTips() {
   }
 
   const handleShare = async () => {
-    const dataUrl = buildShareImage(tip)
-    const blob = await (await fetch(dataUrl)).blob()
+    const canvas = buildShareCanvas(tip)
+    const blob = await canvasToBlob(canvas)
     const file = new File([blob], 'walletlens-tip.png', { type: 'image/png' })
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title: tip.title, text: `${tip.type === 'do' ? '✅ DO:' : '❌ AVOID:'} ${tip.title} — ${tip.body} | WalletLens` })
     } else {
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = dataUrl
+      a.href = url
       a.download = 'walletlens-tip.png'
       a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
     }
     setShareState('done')
     setTimeout(() => setShareState('idle'), 2000)
