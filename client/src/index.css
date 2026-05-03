@@ -102,6 +102,147 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 @keyframes ll-zoom-mid  { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(0.65); opacity: 0.9; } }
 @keyframes ll-zoom-core { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 
+/* ── Trade Tips Banner ── */
+.trade-tips-banner {
+  position: relative;
+  border-radius: 16px;
+  padding: 1rem 1.1rem 0.85rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(0,200,83,0.18);
+  background: var(--ink);
+  transition: border-color 0.3s;
+}
+.trade-tips-banner.tips-do   { border-color: rgba(0,200,83,0.28); }
+.trade-tips-banner.tips-dont { border-color: rgba(255,77,79,0.28); }
+.trade-tips-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  transition: background 0.4s;
+}
+.tips-do::before   { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(0,200,83,0.10) 0%, transparent 70%); }
+.tips-dont::before { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(255,77,79,0.10) 0%, transparent 70%); }
+
+.tips-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.tips-label-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+
+.tips-badge {
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; border-radius: 6px;
+  padding: 0.25rem 0.6rem; line-height: 1;
+}
+.tips-badge-do   { background: rgba(0,200,83,0.18); color: var(--g); border: 1px solid rgba(0,200,83,0.35); }
+.tips-badge-dont { background: rgba(255,77,79,0.15); color: #ff6b6b;  border: 1px solid rgba(255,77,79,0.30); }
+
+.tips-cat-pill {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink3);
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px; padding: 0.2rem 0.5rem;
+}
+.tips-counter {
+  font-size: 0.6rem; font-family: var(--mono); color: rgba(255,255,255,0.3);
+}
+
+.tips-dismiss {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.25); font-size: 0.75rem; line-height: 1;
+  padding: 0.2rem 0.3rem; border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.tips-dismiss:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.06); }
+
+/* Category tabs */
+.tips-cats {
+  display: flex; gap: 0.3rem; flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+.tips-cat-btn {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.45); border-radius: 7px;
+  padding: 0.28rem 0.7rem; cursor: pointer;
+  transition: all 0.18s;
+}
+.tips-cat-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.tips-cat-active {
+  background: var(--g) !important; color: var(--ink) !important;
+  border-color: var(--g) !important; font-weight: 800;
+}
+
+/* Tip card */
+.tips-card {
+  display: flex; align-items: flex-start; gap: 0.85rem;
+  min-height: 72px;
+  padding: 0.7rem 0.75rem;
+  background: rgba(255,255,255,0.04); border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 0.75rem;
+}
+.tips-emoji { font-size: 2rem; line-height: 1; flex-shrink: 0; margin-top: 0.05rem; }
+.tips-text  { display: flex; flex-direction: column; gap: 0.25rem; }
+.tips-title { font-size: 0.95rem; font-weight: 800; color: #fff; line-height: 1.25; font-family: var(--display); }
+.tips-body  { font-size: 0.78rem; color: rgba(255,255,255,0.58); line-height: 1.55; }
+
+/* Slide animations */
+@keyframes tips-slide-in-next  { from { opacity:0; transform: translateX(28px);  } to { opacity:1; transform: translateX(0); } }
+@keyframes tips-slide-in-prev  { from { opacity:0; transform: translateX(-28px); } to { opacity:1; transform: translateX(0); } }
+@keyframes tips-slide-out-next { from { opacity:1; transform: translateX(0); } to { opacity:0; transform: translateX(-28px); } }
+@keyframes tips-slide-out-prev { from { opacity:1; transform: translateX(0); } to { opacity:0; transform: translateX(28px);  } }
+.tips-anim-in-next  { animation: tips-slide-in-next  0.22s ease both; }
+.tips-anim-in-prev  { animation: tips-slide-in-prev  0.22s ease both; }
+.tips-anim-out-next { animation: tips-slide-out-next 0.22s ease both; }
+.tips-anim-out-prev { animation: tips-slide-out-prev 0.22s ease both; }
+.tips-anim-in       { animation: tips-slide-in-next  0.22s ease both; }
+
+/* Controls */
+.tips-controls {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.tips-nav-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6); font-size: 1.1rem; line-height: 1;
+  width: 28px; height: 28px; border-radius: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s; flex-shrink: 0;
+}
+.tips-nav-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.tips-dots {
+  display: flex; align-items: center; gap: 5px; flex: 1; flex-wrap: wrap;
+  padding: 0 0.25rem;
+}
+.tips-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.18); cursor: pointer;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.tips-dot-active { background: var(--g); transform: scale(1.35); }
+.tips-dot:hover:not(.tips-dot-active) { background: rgba(255,255,255,0.4); }
+
+.tips-share-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(0,200,83,0.14); border: 1px solid rgba(0,200,83,0.3);
+  color: var(--g); font-size: 0.72rem; font-weight: 700;
+  border-radius: 8px; padding: 0.35rem 0.8rem; cursor: pointer;
+  transition: all 0.18s; white-space: nowrap; flex-shrink: 0;
+}
+.tips-share-btn:hover { background: rgba(0,200,83,0.24); border-color: var(--g); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tips-card { animation: none !important; }
+}
+@media (max-width: 480px) {
+  .tips-body { font-size: 0.74rem; }
+  .tips-title { font-size: 0.88rem; }
+  .tips-emoji { font-size: 1.6rem; }
+}
+
 /* ── Live price ticker ── */
 .ticker-strip {
   background: var(--ink);
