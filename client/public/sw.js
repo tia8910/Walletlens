@@ -1,7 +1,7 @@
 // Minimal stale-while-revalidate service worker. Caches the app shell
 // so subsequent loads work offline / instantly. Bump SW_VERSION to
 // invalidate the cache on each deploy.
-const SW_VERSION = 'v1'
+const SW_VERSION = 'v3'
 const SHELL = `walletlens-shell-${SW_VERSION}`
 const SHELL_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg']
 

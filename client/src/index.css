@@ -3272,3 +3272,59 @@ tr:last-child td { border-bottom: none; }
   align-items: center;
   gap: 0.4rem;
 }
+
+/* ── Dashboard extra classes ── */
+.dvx-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+@media (max-width: 600px) { .dvx-stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+.dvx-stat-card {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  padding: 0.9rem 1rem !important;
+  border-radius: 16px !important;
+}
+.dvx-stat-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4); text-transform: uppercase;
+}
+.dvx-stat-value {
+  font-size: 1.15rem; font-weight: 800; color: #fff;
+  font-family: var(--mono);
+}
+.dvx-stat-sub { font-size: 0.7rem; color: rgba(255,255,255,0.45); }
+
+/* Badge variants */
+.dvx-badge-demo {
+  background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.3);
+  color: #34d399; border-radius: 6px; padding: 0.15rem 0.5rem;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em;
+}
+.dvx-badge-warn {
+  background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.35);
+  color: #fbbf24; border-radius: 6px; padding: 0.15rem 0.5rem;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em;
+}
+.dvx-badge-info {
+  background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.4);
+  color: #34d399; border-radius: 6px; padding: 0.15rem 0.5rem;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em;
+  animation: wl-shimmer 1.8s ease-in-out infinite;
+}
+
+/* Show more button */
+.dvx-show-more {
+  width: 100%; margin-top: 0.65rem; padding: 0.6rem;
+  background: none; border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 10px; color: rgba(255,255,255,0.45);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: all 0.18s;
+}
+.dvx-show-more:hover { color: #34d399; border-color: rgba(52,211,153,0.45); }
+
+/* Horizontal padding for the dvx container */
+.dvx { padding-left: 1rem; padding-right: 1rem; }
+@media (min-width: 640px) { .dvx { padding-left: 1.25rem; padding-right: 1.25rem; } }
+@media (min-width: 1024px) { .dvx { padding-left: 1.5rem; padding-right: 1.5rem; } }
