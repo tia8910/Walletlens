@@ -96,24 +96,27 @@ export default function Dashboard() {
     return () => { cancelled = true; clearInterval(t) }
   }, [])
 
-  // Enriched holdings + totals (fall back to demo when user has no data)
-  const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo } = useMemo(() => {
+  // Enriched holdings + totals
+  const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
     const raw = portfolio.map(h => {
       const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
       const value = h.amount * price
       return { ...h, price, value }
     }).sort((a, b) => b.value - a.value)
 
-    const hasRealData = raw.length > 0 && raw.some(h => h.value > 0)
-    if (!hasRealData && loaded) {
-      const tv = DEMO.totalValue
+    const hasPortfolio = raw.length > 0
+    const hasPrices = raw.some(h => h.value > 0)
+
+    // No portfolio at all → show demo
+    if (!hasPortfolio && loaded) {
       return {
         enriched: DEMO.holdings,
-        totalValue: tv,
+        totalValue: DEMO.totalValue,
         totalInvested: DEMO.totalInvested,
         totalPnL: DEMO.totalPnL,
         totalPnLPct: DEMO.totalPnLPct,
         isDemo: true,
+        pricesFailed: false,
       }
     }
 
@@ -121,7 +124,15 @@ export default function Dashboard() {
     const totalInvested = raw.reduce((s, h) => s + h.total_invested, 0)
     const totalPnL = totalValue - totalInvested
     const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
-    return { enriched: raw, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo: false }
+    return {
+      enriched: raw,
+      totalValue: hasPrices ? totalValue : totalInvested, // show invested when prices unavailable
+      totalInvested,
+      totalPnL: hasPrices ? totalPnL : 0,
+      totalPnLPct: hasPrices ? totalPnLPct : 0,
+      isDemo: false,
+      pricesFailed: hasPortfolio && !hasPrices && loaded,
+    }
   }, [portfolio, prices, loaded])
 
   // Animated counter on initial load (counts up to totalValue)
@@ -179,13 +190,16 @@ export default function Dashboard() {
       {/* ── Total Value hero ── */}
       <div className="dash-v2-hero glass-card lens-pulse">
         <p className="dash-v2-hero-label">
-          TOTAL PORTFOLIO VALUE
+          {pricesFailed ? 'INVESTED VALUE' : 'TOTAL PORTFOLIO VALUE'}
           {isDemo && <span className="dash-v2-demo-badge">DEMO</span>}
+          {pricesFailed && <span className="dash-v2-demo-badge" style={{color:'#fbbf24',borderColor:'rgba(251,191,36,0.4)',background:'rgba(251,191,36,0.1)'}}>PRICES OFFLINE</span>}
         </p>
         <h2 className="dash-v2-hero-value">${fmt(loaded ? tickerValue : 0)}</h2>
-        <p className={`dash-v2-hero-change ${totalPnL >= 0 ? 'up' : 'down'}`}>
-          {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)})
-        </p>
+        {!pricesFailed && totalPnL !== 0 && (
+          <p className={`dash-v2-hero-change ${totalPnL >= 0 ? 'up' : 'down'}`}>
+            {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)})
+          </p>
+        )}
         {!loaded && <p className="dash-v2-hero-change muted">Loading…</p>}
         {isDemo && (
           <button className="dash-v2-cta" onClick={() => navigate('/transactions', { state: { openAdd: true } })}>
