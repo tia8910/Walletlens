@@ -537,34 +537,34 @@ body::after {
 .sidebar li a:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
 .sidebar li a:hover .nav-icon-wrap { background: rgba(0, 200, 83, 0.15); color: var(--g); }
 .sidebar li a.active {
-  color: var(--ink);
-  background: var(--g);
-  border-color: var(--g);
-  box-shadow: 0 8px 22px rgba(0, 200, 83, 0.28);
+  color: #000;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  border-color: rgba(52, 211, 153, 0.6);
+  box-shadow: 0 8px 28px rgba(52, 211, 153, 0.35), 0 0 0 1px rgba(52, 211, 153, 0.4) inset;
 }
 .sidebar li a.active .nav-icon-wrap {
   background: rgba(7, 26, 12, 0.18); color: var(--ink);
 }
 
 /* ─── Content ─── */
-.content { flex: 1; margin-left: 220px; padding: 1.5rem; max-width: 1320px; }
-.page h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--text); }
+.content { flex: 1; margin-left: 230px; padding: 2.5rem 2rem; max-width: 1480px; }
+.page h2 { font-size: 1.75rem; font-weight: 800; margin-bottom: 1.25rem; color: var(--text); letter-spacing: -0.02em; }
 
-/* ─── Dashboard 2-column row (AI left, Hero right) ─── */
+/* ─── Dashboard layout — hero full-width + AI panel below ─── */
 .dashboard-grid {
-  display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;
+  display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 1.25rem;
 }
 .dashboard-grid > .hero-card { order: 1; margin: 0; }
 .dashboard-grid > .portfolio-ai { order: 2; margin: 0; }
-@media (min-width: 1100px) {
+@media (min-width: 1200px) {
   .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(320px, 420px) 1fr;
-    align-items: start;
-    gap: 1.25rem;
+    grid-template-columns: 1.6fr 1fr;
+    align-items: stretch;
+    gap: 1.5rem;
   }
-  .dashboard-grid > .portfolio-ai { order: 0; grid-column: 1; grid-row: 1; position: sticky; top: 1rem; }
-  .dashboard-grid > .hero-card { order: 0; grid-column: 2; grid-row: 1; }
+  .dashboard-grid > .hero-card     { order: 0; grid-column: 1; grid-row: 1; }
+  .dashboard-grid > .portfolio-ai  { order: 0; grid-column: 2; grid-row: 1; }
 }
 
 /* ─── Bottom Nav (mobile) ─── */
@@ -603,29 +603,40 @@ body::after {
   100% { box-shadow: 0 0 0 0 rgba(0,200,83,0); }
 }
 
-/* ─── Hero Card ─── */
+/* ─── Hero Card — premium glass with lens glow ─── */
 .hero-card {
   position: relative; overflow: hidden;
-  background: var(--ink);
-  border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem;
+  background: rgba(15, 23, 20, 0.78);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-radius: 28px; padding: 2.5rem 2rem; margin-bottom: 1rem;
   color: #fff;
-  box-shadow: 0 22px 48px rgba(7, 26, 12, 0.22), 0 8px 20px rgba(7, 26, 12, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  min-height: 240px;
 }
 .hero-card::after {
-  content: ''; position: absolute; top: -60px; right: -60px;
-  width: 220px; height: 220px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(0, 200, 83, 0.12), transparent 70%);
+  content: ''; position: absolute; top: -120px; right: -120px;
+  width: 380px; height: 380px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.25), transparent 65%);
+  filter: blur(20px);
+}
+.hero-card::before {
+  content: ''; position: absolute; bottom: -100px; left: -80px;
+  width: 280px; height: 280px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18), transparent 65%);
+  filter: blur(30px);
 }
 .hero-label {
-  font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.18em;
-  margin-bottom: 0.4rem; font-weight: 700; position: relative; z-index: 2;
-  color: rgba(255, 255, 255, 0.32);
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.22em;
+  margin-bottom: 0.6rem; font-weight: 800; position: relative; z-index: 2;
+  color: var(--g);
 }
 .hero-value {
-  font-family: var(--mono);
-  font-size: 2.5rem; font-weight: 500; letter-spacing: -0.03em;
+  font-family: var(--display), 'Inter', system-ui, sans-serif;
+  font-size: clamp(2.8rem, 6.5vw, 5rem);
+  font-weight: 700; letter-spacing: -0.04em;
   position: relative; z-index: 2; color: #fff; line-height: 1;
+  text-shadow: 0 0 40px rgba(52, 211, 153, 0.25);
 }
 .hero-label-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -1194,13 +1205,19 @@ select option { background: var(--bg3); color: var(--text); }
 
 /* ─── Cards & Utils ─── */
 .card {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;
-  box-shadow: var(--shadow);
-  backdrop-filter: var(--glass);
-  -webkit-backdrop-filter: var(--glass);
+  background: rgba(15, 23, 20, 0.82);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 22px; padding: 1.5rem; margin-bottom: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-.card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+.card:hover { border-color: rgba(52, 211, 153, 0.4); }
+.card h3 {
+  font-size: 1.05rem; font-weight: 700; margin-bottom: 0.85rem;
+  letter-spacing: -0.01em; color: #fff;
+}
 .positive { color: var(--green); }
 .negative { color: var(--red); }
 .muted { color: var(--text2); }
@@ -2291,7 +2308,98 @@ tr:last-child td { border-bottom: none; }
 
 .sell-plan-item { background: rgba(245,242,255,0.85); }
 .sell-plan-item.hit { background: var(--green-bg); border-color: rgba(16,185,129,0.30); }
-.sell-plan-summary { background: linear-gradient(145deg, rgba(0,200,83,0.12), rgba(0,200,83,0.08)); border-color: rgba(0,200,83,0.20); }
+.sell-plan-summary { background: linear-gradient(145deg, rgba(52,211,153,0.14), rgba(52,211,153,0.08)); border-color: rgba(52,211,153,0.24); }
+
+/* ═══ Dynamic Background (particles + connecting lines) ═══ */
+.dynamic-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -3;
+  pointer-events: none;
+  display: block;
+}
+
+/* ═══ Lens glow — sharper, more dramatic premium pulse ═══ */
+@keyframes lens-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(52,211,153,0.35),
+      0 0 30px rgba(52,211,153,0.35),
+      0 0 70px rgba(52,211,153,0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(52,211,153,0.6),
+      0 0 60px rgba(52,211,153,0.6),
+      0 0 140px rgba(52,211,153,0.3);
+  }
+}
+.lens-glow { animation: lens-glow 2.4s ease-in-out infinite; }
+
+/* ═══ Premium glass card ═══ */
+.glass-premium {
+  background: rgba(15, 23, 20, 0.82);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  border-radius: 22px;
+}
+
+/* ═══ Holographic card hover (tilt + lift) ═══ */
+.holo-card {
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+              border-color 0.4s ease;
+  will-change: transform;
+}
+.holo-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg,
+    rgba(52,211,153,0.0) 0%,
+    rgba(52,211,153,0.08) 50%,
+    rgba(52,211,153,0.0) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.holo-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  border-color: rgba(52,211,153,0.55);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 50px rgba(52,211,153,0.25);
+}
+.holo-card:hover::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-glow { animation: none; }
+  .holo-card { transition: none; }
+  .holo-card:hover { transform: none; }
+}
+
+/* ═══ Floating Lens Orb (decorative hero accent) ═══ */
+.lens-orb {
+  position: absolute;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #6ee7b7 0%, #34d399 45%, #065f46 100%);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; cursor: pointer;
+  border: none; padding: 0;
+  animation: lens-glow 2.4s ease-in-out infinite;
+  transition: transform 0.18s ease;
+}
+.lens-orb:hover { transform: scale(1.12); }
+.lens-orb:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .lens-orb { animation: none; }
+}
 .sell-plan-add { background: rgba(245,242,255,0.80); }
 .sell-plan-field input { background: rgba(255,255,255,0.92); color: var(--text); }
 .sell-plan-preview { background: rgba(255,255,255,0.85); }
