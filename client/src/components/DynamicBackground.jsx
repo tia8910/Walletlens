@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 
 export default function DynamicBackground({
-  particleCount = 90,
-  linkDistance = 140,
+  particleCount = 220,
+  linkDistance = 150,
   color = '#34d399',
 }) {
   const canvasRef = useRef(null)
@@ -34,16 +34,17 @@ export default function DynamicBackground({
       for (const p of particles) {
         p.x = Math.random() * w
         p.y = Math.random() * h
-        p.vx = (Math.random() - 0.5) * 0.45
-        p.vy = (Math.random() - 0.5) * 0.45
-        p.size = Math.random() * 1.6 + 0.6
+        p.vx = (Math.random() - 0.5) * 1.4
+        p.vy = (Math.random() - 0.5) * 1.4
+        p.size = Math.random() * 2.6 + 1.0
       }
     }
 
     function step() {
       ctx.clearRect(0, 0, w, h)
 
-      // Lines between near particles (neural/circuit feel)
+      // Sharp connecting lines
+      ctx.lineWidth = 0.9
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
         for (let j = i + 1; j < particles.length; j++) {
@@ -52,8 +53,7 @@ export default function DynamicBackground({
           const d2 = dx * dx + dy * dy
           if (d2 < linkDistance * linkDistance) {
             const alpha = 1 - Math.sqrt(d2) / linkDistance
-            ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.18})`
-            ctx.lineWidth = 0.6
+            ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.22})`
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)
             ctx.lineTo(b.x, b.y)
@@ -62,9 +62,9 @@ export default function DynamicBackground({
         }
       }
 
-      // Particles
+      // Sharp rectangular particles with glow
       ctx.fillStyle = color
-      ctx.shadowBlur = 12
+      ctx.shadowBlur = 18
       ctx.shadowColor = color
       for (const p of particles) {
         p.x += p.vx
@@ -73,9 +73,7 @@ export default function DynamicBackground({
         if (p.x > w + 10) p.x = -10
         if (p.y < -10) p.y = h + 10
         if (p.y > h + 10) p.y = -10
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fill()
+        ctx.fillRect(p.x, p.y, p.size, p.size)
       }
       ctx.shadowBlur = 0
 
