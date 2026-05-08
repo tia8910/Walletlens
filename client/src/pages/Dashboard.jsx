@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
@@ -21,6 +21,216 @@ const Ico = {
   copy:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
   check:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
   target:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  close:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  search:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+}
+
+// ── Bottom Sheet Trade Form ───────────────────────────────────────────────
+function TradeSheet({ open, type, onClose, wallets, onDone, holdings }) {
+  const [coinSearch, setCoinSearch]     = useState('')
+  const [coinResults, setCoinResults]   = useState([])
+  const [selectedCoin, setSelectedCoin] = useState(null)
+  const [walletId, setWalletId]         = useState('')
+  const [amount, setAmount]             = useState('')
+  const [price, setPrice]               = useState('')
+  const [date, setDate]                 = useState(new Date().toISOString().split('T')[0])
+  const [busy, setBusy]                 = useState(false)
+  const [msg, setMsg]                   = useState('')
+  const [success, setSuccess]           = useState(false)
+  const searchTimer                     = useRef(null)
+  const dragStartY                      = useRef(null)
+
+  const isBuy  = type === 'buy'
+  const accent = isBuy ? '#34d399' : '#f87171'
+
+  useEffect(() => {
+    if (open) {
+      setCoinSearch(''); setCoinResults([]); setSelectedCoin(null)
+      setAmount(''); setPrice(''); setMsg(''); setSuccess(false)
+      setDate(new Date().toISOString().split('T')[0])
+      if (wallets.length) setWalletId(String(wallets[0].id))
+    }
+  }, [open, wallets])
+
+  useEffect(() => {
+    if (!selectedCoin) return
+    api.getPrices(selectedCoin.id).then(px => {
+      const p = px?.[selectedCoin.id]?.usd ?? px?.[selectedCoin.id]?.price
+      if (p) setPrice(String(p))
+    }).catch(() => {})
+  }, [selectedCoin])
+
+  useEffect(() => {
+    clearTimeout(searchTimer.current)
+    if (!coinSearch || selectedCoin) return
+    searchTimer.current = setTimeout(async () => {
+      const res = await api.searchCoins(coinSearch).catch(() => [])
+      setCoinResults(res.slice(0, 8))
+    }, 350)
+    return () => clearTimeout(searchTimer.current)
+  }, [coinSearch, selectedCoin])
+
+  const holdingForCoin = holdings?.find(h => h.coin_id === selectedCoin?.id)
+
+  function onTouchStart(e) { dragStartY.current = e.touches[0].clientY }
+  function onTouchEnd(e) {
+    if (dragStartY.current !== null) {
+      const delta = e.changedTouches[0].clientY - dragStartY.current
+      if (delta > 80) onClose()
+      dragStartY.current = null
+    }
+  }
+
+  async function submit() {
+    if (!selectedCoin || !amount || !price) { setMsg('Fill all fields.'); return }
+    setBusy(true); setMsg('')
+    try {
+      await api.addTransaction({
+        wallet_id: walletId || (wallets[0]?.id ?? '1'),
+        type,
+        coin_id: selectedCoin.id,
+        coin_symbol: selectedCoin.symbol?.toUpperCase(),
+        coin_name: selectedCoin.name,
+        amount: parseFloat(amount),
+        price_per_unit: parseFloat(price),
+        date, category: 'crypto',
+      })
+      setSuccess(true)
+      setTimeout(() => { onClose(); onDone() }, 1200)
+    } catch { setMsg('Failed. Try again.') }
+    finally { setBusy(false) }
+  }
+
+  const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
+
+  return (
+    <>
+      <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} onClick={onClose} />
+      <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className="bs-handle" />
+
+        <div className="bs-header">
+          <div className="bs-header-left">
+            <div className="bs-type-dot" style={{ background: accent }} />
+            <h3 className="bs-title" style={{ color: accent }}>{isBuy ? 'Buy Asset' : 'Sell Asset'}</h3>
+          </div>
+          <button className="bs-close" onClick={onClose}>{Ico.close}</button>
+        </div>
+
+        {success ? (
+          <div className="bs-success">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 17 9"/>
+            </svg>
+            <p style={{ color:'#fff', fontWeight:700, fontSize:'1.05rem', margin:0 }}>Trade Recorded!</p>
+            <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0' }}>
+              {isBuy ? 'Bought' : 'Sold'} {amount} {selectedCoin?.symbol?.toUpperCase()}
+            </p>
+          </div>
+        ) : (
+          <div className="bs-body">
+            <div className="bs-type-row">
+              <div className="bs-type-pill" style={{ background: isBuy ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)', color: accent, borderColor: accent + '55' }}>
+                {isBuy ? 'Buy Order' : 'Sell Order'}
+              </div>
+            </div>
+
+            <div className="bs-field">
+              <label className="bs-label">Asset</label>
+              {selectedCoin ? (
+                <div className="bs-coin-selected">
+                  {selectedCoin.thumb && <img src={selectedCoin.thumb} alt="" className="bs-coin-thumb" />}
+                  <div className="bs-coin-info">
+                    <strong>{selectedCoin.name}</strong>
+                    <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
+                  </div>
+                  <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setPrice('') }}>
+                    {Ico.close}
+                  </button>
+                </div>
+              ) : (
+                <div className="bs-search-wrap">
+                  <span className="bs-search-icon">{Ico.search}</span>
+                  <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
+                    value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
+                  {coinResults.length > 0 && (
+                    <div className="bs-dropdown">
+                      {coinResults.map(c => (
+                        <button key={c.id} className="bs-dropdown-item"
+                          onClick={() => { setSelectedCoin(c); setCoinSearch(c.name); setCoinResults([]) }}>
+                          {c.thumb && <img src={c.thumb} alt="" width={22} height={22} style={{ borderRadius:'50%' }} />}
+                          <span>{c.name}</span>
+                          <span className="muted bs-sym">{c.symbol?.toUpperCase()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {!isBuy && holdingForCoin && (
+              <div className="bs-balance-row">
+                <span className="muted">Available</span>
+                <button className="bs-balance-max" onClick={() => setAmount(String(holdingForCoin.amount))}>
+                  {holdingForCoin.amount} {holdingForCoin.coin_symbol?.toUpperCase()}
+                  <span className="bs-max-tag">MAX</span>
+                </button>
+              </div>
+            )}
+
+            <div className="bs-row-2">
+              <div className="bs-field">
+                <label className="bs-label">Amount</label>
+                <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                  value={amount} onChange={e => setAmount(e.target.value)} />
+              </div>
+              <div className="bs-field">
+                <label className="bs-label">Price ($)</label>
+                <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                  value={price} onChange={e => setPrice(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="bs-row-2">
+              <div className="bs-field">
+                <label className="bs-label">Date</label>
+                <input className="bs-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+              </div>
+              {wallets.length > 1 && (
+                <div className="bs-field">
+                  <label className="bs-label">Wallet</label>
+                  <select className="bs-input" value={walletId} onChange={e => setWalletId(e.target.value)}>
+                    {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {total > 0 && (
+              <div className="bs-total">
+                <span className="muted">Total</span>
+                <strong style={{ color: accent, fontSize:'1.2rem' }}>
+                  ${total.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}
+                </strong>
+              </div>
+            )}
+
+            {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0.25rem 0' }}>{msg}</p>}
+
+            <button className="bs-submit" style={{
+                background: isBuy ? 'linear-gradient(135deg,#34d399,#10b981)' : 'linear-gradient(135deg,#f87171,#ef4444)',
+                color: isBuy ? '#000' : '#fff',
+              }}
+              onClick={submit}
+              disabled={busy || !selectedCoin || !amount || !price}>
+              {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  )
 }
 
 const DEMO = {
@@ -281,6 +491,9 @@ export default function Dashboard() {
   const [pricesLoading, setPricesLoading] = useState(false)
   const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
+  const [sheetOpen, setSheetOpen]         = useState(false)
+  const [sheetType, setSheetType]         = useState('buy')
+  const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true) }, [])
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
 
@@ -410,8 +623,8 @@ export default function Dashboard() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Ico.overview },
-    { id: 'buy',      label: 'Buy',      icon: Ico.buy,    nav: '/transactions', navState: { openAdd: true, type: 'buy' } },
-    { id: 'sell',     label: 'Sell',     icon: Ico.sell,   nav: '/transactions', navState: { openAdd: true, type: 'sell' } },
+    { id: 'buy',      label: 'Buy',      icon: Ico.buy,    sheet: 'buy' },
+    { id: 'sell',     label: 'Sell',     icon: Ico.sell,   sheet: 'sell' },
     { id: 'targets',  label: 'Targets',  icon: Ico.target },
     { id: 'wallets',  label: 'Wallets',  icon: Ico.wallet },
     { id: 'data',     label: 'Backup',   icon: Ico.data },
@@ -428,7 +641,7 @@ export default function Dashboard() {
       <div className="dvx-tabs">
         {tabs.map(t => (
           <button key={t.id} className={`dvx-tab ${activeTab === t.id ? 'dvx-tab-active' : ''}`}
-            onClick={() => t.nav ? navigate(t.nav, { state: t.navState }) : setActiveTab(t.id)}>
+            onClick={() => t.sheet ? openSheet(t.sheet) : setActiveTab(t.id)}>
             <span className="dvx-tab-icon">{t.icon}</span>
             <span>{t.label}</span>
           </button>
@@ -455,7 +668,7 @@ export default function Dashboard() {
             {isDemo && (
               <div className="dvx-hero-actions">
                 <button className="dvx-hero-cta" onClick={() => setActiveTab('wallets')}>Create Wallet</button>
-                <button className="dvx-hero-cta dvx-hero-cta-buy" onClick={() => setActiveTab('buy')}>Add Trade</button>
+                <button className="dvx-hero-cta dvx-hero-cta-buy" onClick={() => openSheet('buy')}>Add Trade</button>
               </div>
             )}
           </div>
@@ -474,12 +687,12 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <div className="dvx-quick-grid">
-            <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'buy' } })}>
+            <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => openSheet('buy')}>
               <span className="dvx-quick-icon">{Ico.buy}</span>
               <strong>Buy</strong>
               <span>Record a purchase</span>
             </button>
-            <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'sell' } })}>
+            <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => openSheet('sell')}>
               <span className="dvx-quick-icon">{Ico.sell}</span>
               <strong>Sell</strong>
               <span>Record a sale</span>
@@ -812,6 +1025,16 @@ export default function Dashboard() {
           <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
         </div>
       )}
+
+      {/* ══ TRADE BOTTOM SHEET ══ */}
+      <TradeSheet
+        open={sheetOpen}
+        type={sheetType}
+        onClose={() => setSheetOpen(false)}
+        wallets={wallets}
+        onDone={loadAll}
+        holdings={enriched}
+      />
     </div>
   )
 }

@@ -3460,3 +3460,171 @@ tr:last-child td { border-bottom: none; }
 }
 .dvx-target-mini-sym { font-size: 0.78rem; font-weight: 800; color: #fff; min-width: 2.5rem; }
 .dvx-target-mini-price { font-size: 0.78rem; color: rgba(255,255,255,0.55); min-width: 4rem; font-family: var(--mono); }
+
+/* ── Bottom Sheet Trade Form (bs-*) ─────────────────────────────────────── */
+.bs-backdrop {
+  position: fixed; inset: 0; z-index: 299;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.bs-backdrop-open { opacity: 1; pointer-events: all; }
+
+.bs-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  background: rgba(6,14,10,0.97);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  backdrop-filter: blur(40px);
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.23,1,0.32,1);
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+.bs-sheet-open { transform: translateY(0); }
+
+.bs-handle {
+  width: 40px; height: 4px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 99px;
+  margin: 12px auto 0;
+}
+
+.bs-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+}
+.bs-header-left { display: flex; align-items: center; gap: 0.6rem; }
+.bs-type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.bs-title { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: 0.02em; }
+.bs-close {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.6); cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.bs-close:hover { background: rgba(255,255,255,0.12); }
+
+.bs-body { padding: 0.5rem 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.bs-type-row { display: flex; }
+.bs-type-pill {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 0.25rem 0.75rem; border-radius: 99px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+}
+
+.bs-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.bs-label { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.45); letter-spacing: 0.06em; text-transform: uppercase; }
+
+.bs-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+.bs-input:focus { outline: none; border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.04); }
+.bs-input::placeholder { color: rgba(255,255,255,0.25); }
+.bs-input[type="date"] { color-scheme: dark; }
+select.bs-input option { background: #0a1a12; }
+
+.bs-search-wrap { position: relative; }
+.bs-search-icon {
+  position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
+  color: rgba(255,255,255,0.35); pointer-events: none;
+  display: flex; align-items: center;
+}
+.bs-search-input { padding-left: 2.2rem; }
+
+.bs-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10;
+  background: rgba(6,14,10,0.98);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  max-height: 240px; overflow-y: auto;
+}
+.bs-dropdown-item {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.6rem 0.85rem;
+  background: none; border: none; color: #fff;
+  font-size: 0.85rem; cursor: pointer; width: 100%; text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.1s;
+}
+.bs-dropdown-item:last-child { border-bottom: none; }
+.bs-dropdown-item:hover { background: rgba(52,211,153,0.08); }
+.bs-sym { margin-left: auto; font-size: 0.72rem; font-family: var(--mono); }
+
+.bs-coin-selected {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+}
+.bs-coin-thumb { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; }
+.bs-coin-info { display: flex; flex-direction: column; flex: 1; }
+.bs-coin-info strong { font-size: 0.88rem; }
+.bs-coin-info span { font-size: 0.72rem; }
+.bs-coin-clear {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.5); cursor: pointer;
+}
+
+.bs-balance-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.15);
+  border-radius: 10px; padding: 0.5rem 0.85rem;
+  font-size: 0.82rem;
+}
+.bs-balance-max {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: none; border: none; color: #f87171; font-weight: 700;
+  cursor: pointer; font-size: 0.82rem; font-family: inherit;
+}
+.bs-max-tag {
+  background: rgba(248,113,113,0.2); color: #f87171;
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.06em;
+  padding: 1px 5px; border-radius: 4px;
+}
+
+.bs-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+.bs-total {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.15);
+  border-radius: 10px; padding: 0.65rem 0.85rem;
+}
+
+.bs-submit {
+  width: 100%; padding: 0.9rem;
+  border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: 800; letter-spacing: 0.03em;
+  cursor: pointer; margin-top: 0.25rem;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.bs-submit:active { transform: scale(0.98); }
+.bs-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.bs-success {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.6rem; padding: 2.5rem 1.25rem;
+  text-align: center;
+}
