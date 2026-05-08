@@ -58,8 +58,8 @@ function Drawer({ open, onClose }) {
 
         <div className="wl-drawer-section">
           <div className="wl-drawer-label">Quick Actions</div>
-          <button className="wl-drawer-item wl-drawer-buy" onClick={() => go('/dashboard', { tab: 'buy' })}><IconBuy /><span>Buy</span></button>
-          <button className="wl-drawer-item wl-drawer-sell" onClick={() => go('/dashboard', { tab: 'sell' })}><IconSell /><span>Sell</span></button>
+          <button className="wl-drawer-item wl-drawer-buy" onClick={() => go('/transactions', { openAdd: true, type: 'buy' })}><IconBuy /><span>Buy</span></button>
+          <button className="wl-drawer-item wl-drawer-sell" onClick={() => go('/transactions', { openAdd: true, type: 'sell' })}><IconSell /><span>Sell</span></button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'wallets' })}><IconWallet /><span>Wallets</span></button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'data' })}><IconData /><span>Import / Export</span></button>
         </div>
