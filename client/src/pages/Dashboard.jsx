@@ -8,6 +8,28 @@ import {
 } from 'recharts'
 import { api } from '../api'
 
+// ── Demo data shown when user has no real holdings ──────────────────────
+const DEMO = {
+  totalValue: 248750.42,
+  totalInvested: 236300,
+  totalPnL: 12450.42,
+  totalPnLPct: 5.27,
+  holdings: [
+    { coin_id: 'bitcoin',  coin_symbol: 'BTC', price: 67200,  value: 142800, total_invested: 135000 },
+    { coin_id: 'ethereum', coin_symbol: 'ETH', price: 3410,   value: 68450,  total_invested: 65000 },
+    { coin_id: 'solana',   coin_symbol: 'SOL', price: 188.5,  value: 28300,  total_invested: 27000 },
+    { coin_id: 'xrp',      coin_symbol: 'XRP', price: 1.39,   value: 5700,   total_invested: 5400 },
+    { coin_id: 'others',   coin_symbol: 'Others', price: 0,   value: 3500,   total_invested: 3900 },
+  ],
+  transactions: [
+    { id: 1, type: 'buy',  coin_symbol: 'BTC', amount: 0.08,  price_per_unit: 67200 },
+    { id: 2, type: 'buy',  coin_symbol: 'ETH', amount: 1.2,   price_per_unit: 3410 },
+    { id: 3, type: 'sell', coin_symbol: 'SOL', amount: 12,    price_per_unit: 188.5 },
+    { id: 4, type: 'buy',  coin_symbol: 'XRP', amount: 1200,  price_per_unit: 1.39 },
+    { id: 5, type: 'buy',  coin_symbol: 'BTC', amount: 0.04,  price_per_unit: 66800 },
+  ],
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────
 const fmt = n => n.toLocaleString(undefined, {
   minimumFractionDigits: 2, maximumFractionDigits: 2,
@@ -74,20 +96,33 @@ export default function Dashboard() {
     return () => { cancelled = true; clearInterval(t) }
   }, [])
 
-  // Enriched holdings + totals
-  const { enriched, totalValue, totalInvested } = useMemo(() => {
-    const enriched = portfolio.map(h => {
+  // Enriched holdings + totals (fall back to demo when user has no data)
+  const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo } = useMemo(() => {
+    const raw = portfolio.map(h => {
       const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
       const value = h.amount * price
       return { ...h, price, value }
     }).sort((a, b) => b.value - a.value)
-    const totalValue = enriched.reduce((s, h) => s + h.value, 0)
-    const totalInvested = enriched.reduce((s, h) => s + h.total_invested, 0)
-    return { enriched, totalValue, totalInvested }
-  }, [portfolio, prices])
 
-  const totalPnL = totalValue - totalInvested
-  const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
+    const hasRealData = raw.length > 0 && raw.some(h => h.value > 0)
+    if (!hasRealData && loaded) {
+      const tv = DEMO.totalValue
+      return {
+        enriched: DEMO.holdings,
+        totalValue: tv,
+        totalInvested: DEMO.totalInvested,
+        totalPnL: DEMO.totalPnL,
+        totalPnLPct: DEMO.totalPnLPct,
+        isDemo: true,
+      }
+    }
+
+    const totalValue = raw.reduce((s, h) => s + h.value, 0)
+    const totalInvested = raw.reduce((s, h) => s + h.total_invested, 0)
+    const totalPnL = totalValue - totalInvested
+    const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
+    return { enriched: raw, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo: false }
+  }, [portfolio, prices, loaded])
 
   // Animated counter on initial load (counts up to totalValue)
   useEffect(() => {
@@ -124,8 +159,11 @@ export default function Dashboard() {
     return top
   }, [enriched])
 
-  // Recent transactions feed (last 8)
-  const recentTxs = useMemo(() => transactions.slice(0, 8), [transactions])
+  // Recent transactions feed (last 8, fall back to demo)
+  const recentTxs = useMemo(() => {
+    const src = (loaded && transactions.length === 0) ? DEMO.transactions : transactions
+    return src.slice(0, 8)
+  }, [transactions, loaded])
 
   return (
     <div className="dash-v2">
@@ -140,15 +178,16 @@ export default function Dashboard() {
 
       {/* ── Total Value hero ── */}
       <div className="dash-v2-hero glass-card lens-pulse">
-        <p className="dash-v2-hero-label">TOTAL PORTFOLIO VALUE</p>
+        <p className="dash-v2-hero-label">
+          TOTAL PORTFOLIO VALUE
+          {isDemo && <span className="dash-v2-demo-badge">DEMO</span>}
+        </p>
         <h2 className="dash-v2-hero-value">${fmt(loaded ? tickerValue : 0)}</h2>
-        {totalInvested > 0 && (
-          <p className={`dash-v2-hero-change ${totalPnL >= 0 ? 'up' : 'down'}`}>
-            {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)})
-          </p>
-        )}
+        <p className={`dash-v2-hero-change ${totalPnL >= 0 ? 'up' : 'down'}`}>
+          {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)})
+        </p>
         {!loaded && <p className="dash-v2-hero-change muted">Loading…</p>}
-        {loaded && totalInvested === 0 && (
+        {isDemo && (
           <button className="dash-v2-cta" onClick={() => navigate('/transactions', { state: { openAdd: true } })}>
             Add your first trade →
           </button>
