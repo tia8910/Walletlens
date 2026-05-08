@@ -5,6 +5,7 @@ import PitchCard from './components/PitchCard'
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import TradeTips from './components/TradeTips'
+import DynamicBackground from './components/DynamicBackground'
 
 // Route-level code splitting: only Dashboard ships in the initial bundle;
 // the rest are fetched on first navigation. Cuts the initial JS payload
@@ -55,6 +56,7 @@ function IconWhale() {
 export default function App() {
   return (
     <div className="app">
+      <DynamicBackground />
       <nav className="sidebar" aria-label="Primary">
         <div className="logo">
           <div className="logo-mark">

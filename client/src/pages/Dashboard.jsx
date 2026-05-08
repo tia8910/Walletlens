@@ -1047,7 +1047,7 @@ export default function Dashboard() {
       {/* Hero + Portfolio Analysis row (AI pinned to left-side blank space on desktop) */}
       <div className="dashboard-grid">
       {/* Hero card */}
-      <div className="hero-card">
+      <div className="hero-card lens-glow">
         <div className="hero-label-row">
           <div className="hero-label">Total Portfolio Value</div>
           <div className="hero-actions">
@@ -1451,7 +1451,7 @@ export default function Dashboard() {
                 {cat.items.map((h, i) => (
                   <div
                     key={h.coin_id}
-                    className="coin-card"
+                    className="coin-card holo-card"
                     onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
                     title={`View ${h.coin_symbol.toUpperCase()} details`}
                     style={{ cursor: 'pointer' }}
