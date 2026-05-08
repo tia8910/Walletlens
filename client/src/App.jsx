@@ -173,11 +173,11 @@ function Sidebar() {
 export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1280)
   const isLanding = location.pathname === '/'
 
   useEffect(() => {
-    const update = () => setIsMobile(window.innerWidth <= 1024)
+    const update = () => setIsMobile(window.innerWidth <= 1280)
     window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
   }, [])
