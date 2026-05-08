@@ -3328,3 +3328,81 @@ tr:last-child td { border-bottom: none; }
 .dvx { padding-left: 1rem; padding-right: 1rem; }
 @media (min-width: 640px) { .dvx { padding-left: 1.25rem; padding-right: 1.25rem; } }
 @media (min-width: 1024px) { .dvx { padding-left: 1.5rem; padding-right: 1.5rem; } }
+
+/* ── Data panel & code display ── */
+.dvx-data-hint {
+  font-size: 0.78rem; color: rgba(255,255,255,0.45); line-height: 1.55;
+  margin: 0 0 0.75rem;
+}
+.dvx-code-box {
+  background: rgba(6,14,10,0.95);
+  border: 1px solid rgba(52,211,153,0.35);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.dvx-code-text {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #34d399;
+  word-break: break-all;
+  line-height: 1.5;
+  max-height: 6rem;
+  overflow-y: auto;
+}
+.dvx-code-copy {
+  align-self: flex-end;
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: 8px;
+  color: #34d399; font-size: 0.78rem; font-weight: 700;
+  padding: 0.35rem 0.75rem; cursor: pointer;
+  transition: all 0.18s;
+}
+.dvx-code-copy:hover { background: rgba(52,211,153,0.2); }
+.dvx-divider {
+  text-align: center;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.3);
+  padding: 0.5rem 0;
+  position: relative;
+}
+.dvx-divider::before, .dvx-divider::after {
+  content: ''; position: absolute; top: 50%;
+  width: calc(50% - 60px); height: 1px;
+  background: rgba(52,211,153,0.15);
+}
+.dvx-divider::before { left: 0; }
+.dvx-divider::after  { right: 0; }
+.dvx-preview-box {
+  background: rgba(52,211,153,0.06);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.dvx-preview-title {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em;
+  color: #34d399; text-transform: uppercase; margin-bottom: 0.15rem;
+}
+.dvx-preview-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.8rem; color: rgba(255,255,255,0.65);
+}
+.dvx-preview-row strong { color: #fff; }
+
+/* Tab icon alignment */
+.dvx-tab { display: flex; align-items: center; gap: 0.35rem; justify-content: center; }
+.dvx-tab-icon { display: flex; align-items: center; flex-shrink: 0; }
+
+/* Quick action icon size override */
+.dvx-quick-icon { display: flex; align-items: center; justify-content: center;
+  width: 2.2rem; height: 2.2rem;
+  background: rgba(52,211,153,0.1); border-radius: 10px; color: #34d399; }
+.dvx-quick-sell .dvx-quick-icon { background: rgba(248,113,113,0.1); color: #f87171; }
+
+/* Transaction icon size */
+.dvx-tx-icon { display: flex; align-items: center; flex-shrink: 0; }
