@@ -20,7 +20,7 @@ const Ico = {
   import:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
   copy:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
   check:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
-  trend:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  target:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
 }
 
 const DEMO = {
@@ -276,6 +276,7 @@ export default function Dashboard() {
   const [prices, setPrices]               = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
+  const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
   const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
@@ -288,10 +289,10 @@ export default function Dashboard() {
   }, [location.state?.tab])
 
   async function loadAll() {
-    const [p, txs, ws] = await Promise.all([
-      api.getPortfolio(), api.getTransactions(), api.getWallets(),
+    const [p, txs, ws, ct] = await Promise.all([
+      api.getPortfolio(), api.getTransactions(), api.getWallets(), api.getCoinTargets(),
     ])
-    setPortfolio(p); setTransactions(txs); setWallets(ws)
+    setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
     if (p.length) {
       setPricesLoading(true)
       try {
@@ -373,10 +374,45 @@ export default function Dashboard() {
   const recentTxs       = useMemo(() => (transactions.length ? transactions : DEMO.transactions).slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
+  // ── Sell-targets analysis ────────────────────────────────────────────────
+  const targetsAnalysis = useMemo(() => {
+    const rows = []
+    let totalPotentialProceeds = 0
+    let totalReached = 0
+
+    for (const h of enriched) {
+      const plan = coinTargets[h.coin_id]?.targets || []
+      if (!plan.length) continue
+      const currentPrice = h.price
+      const holdingRows = plan.map(t => {
+        const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
+        const proceeds   = sellQty * t.price
+        const progress   = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
+        const reached    = currentPrice >= t.price && currentPrice > 0
+        const gainVsNow  = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
+        totalPotentialProceeds += proceeds
+        if (reached) totalReached++
+        return { ...t, sellQty, proceeds, progress, reached, gainVsNow, coinSymbol: h.coin_symbol, coinId: h.coin_id }
+      }).sort((a, b) => a.price - b.price)
+      rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice, amount: h.amount, targets: holdingRows })
+    }
+
+    const chartData = rows.flatMap(r =>
+      r.targets.map(t => ({
+        name: `${r.coinSymbol} $${t.price >= 1000 ? (t.price/1000).toFixed(0)+'k' : t.price.toFixed(0)}`,
+        proceeds: parseFloat(t.proceeds.toFixed(2)),
+        reached: t.reached,
+      }))
+    ).slice(0, 10)
+
+    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0) }
+  }, [enriched, coinTargets])
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Ico.overview },
     { id: 'buy',      label: 'Buy',      icon: Ico.buy,    nav: '/transactions', navState: { openAdd: true, type: 'buy' } },
     { id: 'sell',     label: 'Sell',     icon: Ico.sell,   nav: '/transactions', navState: { openAdd: true, type: 'sell' } },
+    { id: 'targets',  label: 'Targets',  icon: Ico.target },
     { id: 'wallets',  label: 'Wallets',  icon: Ico.wallet },
     { id: 'data',     label: 'Backup',   icon: Ico.data },
   ]
@@ -506,6 +542,33 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Targets near strike — compact overview widget */}
+              {targetsAnalysis.rows.length > 0 && (
+                <div className="glass-card">
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
+                    <h3 style={{ margin:0 }}>Sell Targets</h3>
+                    <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
+                      onClick={() => setActiveTab('targets')}>
+                      View all →
+                    </button>
+                  </div>
+                  <div className="dvx-targets-mini">
+                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(t => (
+                      <div key={t.id} className={`dvx-target-mini-row ${t.reached ? 'dvx-target-reached' : ''}`}>
+                        <span className="dvx-target-mini-sym">{t.coinSymbol?.toUpperCase()}</span>
+                        <span className="dvx-target-mini-price">${fmt(t.price)}</span>
+                        <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
+                          <div className="dvx-target-bar-fill" style={{ width:`${t.progress}%`, background: t.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                        </div>
+                        <span style={{ fontSize:'0.7rem', color: t.reached ? '#34d399' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
+                          {t.reached ? '✓' : `${t.progress.toFixed(0)}%`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Recent transactions */}
               <div className="glass-card">
                 <h3>Recent Transactions</h3>
@@ -613,6 +676,120 @@ export default function Dashboard() {
         </>
       )}
 
+
+      {/* ══ SELL TARGETS ══ */}
+      {activeTab === 'targets' && (
+        <div className="dvx-targets-page">
+          {/* Summary cards */}
+          <div className="dvx-stats-row">
+            <StatCard label="Total Targets"    value={targetsAnalysis.totalTargets} />
+            <StatCard label="Targets Reached"  value={targetsAnalysis.totalReached}
+              color={targetsAnalysis.totalReached > 0 ? '#34d399' : undefined} />
+            <StatCard label="Potential Proceeds"
+              value={`$${targetsAnalysis.totalPotentialProceeds >= 1000
+                ? (targetsAnalysis.totalPotentialProceeds/1000).toFixed(1)+'k'
+                : fmt(targetsAnalysis.totalPotentialProceeds)}`}
+              color="#34d399" />
+            <StatCard label="Assets Planned"   value={targetsAnalysis.rows.length} />
+          </div>
+
+          {/* Proceeds bar chart */}
+          {targetsAnalysis.chartData.length > 0 && (
+            <div className="glass-card">
+              <h3 style={{ margin:'0 0 0.75rem' }}>Projected Proceeds by Target</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={targetsAnalysis.chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
+                  <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
+                  <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }}
+                    axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
+                  <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
+                    tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
+                  <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
+                  <Bar dataKey="proceeds" radius={[6,6,0,0]}>
+                    {targetsAnalysis.chartData.map((d, i) => (
+                      <Cell key={i} fill={d.reached ? '#34d399' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem' }}>
+                <span><span style={{ color:'#34d399' }}>■</span> Reached</span>
+                <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
+              </div>
+            </div>
+          )}
+
+          {/* Per-asset target rows */}
+          {targetsAnalysis.rows.length === 0 ? (
+            <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
+              <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
+              <p style={{ color:'rgba(255,255,255,0.5)', marginBottom:'1rem' }}>
+                No sell targets set yet. Add price targets on any asset to plan your exits.
+              </p>
+              <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/market')}>
+                Browse Assets
+              </button>
+            </div>
+          ) : (
+            targetsAnalysis.rows.map(r => (
+              <div key={r.coinId} className="glass-card dvx-target-card">
+                <div className="dvx-target-header">
+                  <div className="dvx-target-coin">
+                    <div className="dvx-holding-icon" style={{ background:'rgba(52,211,153,0.12)', color:'#34d399', width:36, height:36, fontSize:'0.7rem' }}>
+                      {r.coinSymbol?.slice(0, 3).toUpperCase()}
+                    </div>
+                    <div>
+                      <strong style={{ color:'#fff' }}>{r.coinSymbol?.toUpperCase()}</strong>
+                      <div className="muted" style={{ fontSize:'0.72rem' }}>
+                        Current: {r.currentPrice > 0 ? `$${fmt(r.currentPrice)}` : '—'} · Holding: {Number(r.amount).toLocaleString(undefined, { maximumFractionDigits:6 })}
+                      </div>
+                    </div>
+                  </div>
+                  <button className="dvx-btn dvx-btn-primary"
+                    style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
+                    onClick={() => navigate(`/asset/${encodeURIComponent(r.coinId)}`)}>
+                    Manage
+                  </button>
+                </div>
+
+                {r.targets.map((t, ti) => (
+                  <div key={t.id} className={`dvx-target-row ${t.reached ? 'dvx-target-reached' : ''}`}>
+                    <div className="dvx-target-row-top">
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Target Price</span>
+                        <span className="dvx-target-val">${fmt(t.price)}</span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Qty to Sell</span>
+                        <span className="dvx-target-val">
+                          {t.quantity == null ? `All (${r.amount.toFixed(4)})` : t.sellQty.toFixed(4)}
+                        </span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Proceeds</span>
+                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(t.proceeds)}</span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Distance</span>
+                        <span className="dvx-target-val" style={{ color: t.reached ? '#34d399' : t.gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                          {t.reached ? '✓ Reached' : `${t.gainVsNow >= 0 ? '+' : ''}${t.gainVsNow.toFixed(1)}%`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="dvx-target-bar-wrap">
+                      <div className="dvx-target-bar-bg">
+                        <div className="dvx-target-bar-fill"
+                          style={{ width:`${t.progress}%`, background: t.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                      </div>
+                      <span className="dvx-target-bar-pct">{t.progress.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* ══ WALLETS ══ */}
       {activeTab === 'wallets' && (

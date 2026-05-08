@@ -3406,3 +3406,57 @@ tr:last-child td { border-bottom: none; }
 
 /* Transaction icon size */
 .dvx-tx-icon { display: flex; align-items: center; flex-shrink: 0; }
+
+/* ── Sell Targets Tab ── */
+.dvx-targets-page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.dvx-target-card { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.dvx-target-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(52,211,153,0.12);
+}
+.dvx-target-coin { display: flex; align-items: center; gap: 0.65rem; }
+
+.dvx-target-row {
+  background: rgba(15,23,20,0.6);
+  border: 1px solid rgba(52,211,153,0.15);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
+  transition: border-color 0.2s;
+}
+.dvx-target-row:hover { border-color: rgba(52,211,153,0.35); }
+.dvx-target-reached { border-color: rgba(52,211,153,0.45) !important; background: rgba(52,211,153,0.06) !important; }
+
+.dvx-target-row-top {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+@media (max-width: 500px) { .dvx-target-row-top { grid-template-columns: 1fr 1fr; } }
+
+.dvx-target-cell { display: flex; flex-direction: column; gap: 0.12rem; }
+.dvx-target-lbl { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); text-transform: uppercase; }
+.dvx-target-val { font-size: 0.88rem; font-weight: 700; color: #fff; }
+
+.dvx-target-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.dvx-target-bar-bg {
+  flex: 1; height: 6px; background: rgba(255,255,255,0.08);
+  border-radius: 99px; overflow: hidden;
+}
+.dvx-target-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.23,1,0.32,1);
+}
+.dvx-target-bar-pct { font-size: 0.68rem; color: rgba(255,255,255,0.4); min-width: 2.5rem; text-align: right; }
+
+/* Mini targets widget in overview */
+.dvx-targets-mini { display: flex; flex-direction: column; gap: 0.55rem; }
+.dvx-target-mini-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0;
+}
+.dvx-target-mini-sym { font-size: 0.78rem; font-weight: 800; color: #fff; min-width: 2.5rem; }
+.dvx-target-mini-price { font-size: 0.78rem; color: rgba(255,255,255,0.55); min-width: 4rem; font-family: var(--mono); }
