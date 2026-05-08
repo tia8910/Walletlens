@@ -1106,7 +1106,7 @@ export default function Dashboard() {
                 <XAxis dataKey="label" hide />
                 <YAxis domain={['auto', 'auto']} hide />
                 <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #e0e0ea', borderRadius: 10, fontSize: '0.78rem' }}
+                  contentStyle={{ background: 'rgba(15,23,20,0.95)', border: '1px solid rgba(52,211,153,0.38)', borderRadius: 10, fontSize: '0.78rem' }}
                   formatter={(val) => [hideValues ? mask : '$' + fmt(val), 'Value']}
                   labelFormatter={(l) => l}
                 />

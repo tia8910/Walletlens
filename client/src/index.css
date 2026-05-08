@@ -1,59 +1,59 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* Brand palette — green money on ink */
-  --g: #00c853;
-  --gd: #009c3e;
-  --gl: #edfbf3;
-  --ink: #071a0c;
-  --ink2: #1e3d26;
-  --ink3: #4d7a59;
+  /* Brand palette — emerald on black */
+  --g: #34d399;
+  --gd: #10b981;
+  --gl: rgba(52, 211, 153, 0.12);
+  --ink: #050f08;
+  --ink2: #0f2318;
+  --ink3: rgba(52, 211, 153, 0.55);
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --display: 'Clash Display', 'Cabinet Grotesk', system-ui, sans-serif;
+  --display: 'Inter', 'Cabinet Grotesk', system-ui, sans-serif;
 
-  /* Surface */
-  --bg: #ffffff;
-  --bg2: rgba(255, 255, 255, 0.92);
-  --bg3: #f6faf7;
-  --bg4: #eef8f2;
-  --border: rgba(7, 26, 12, 0.08);
+  /* Surface — dark glass */
+  --bg: #000000;
+  --bg2: rgba(15, 23, 20, 0.92);
+  --bg3: #0a180e;
+  --bg4: #0d1f12;
+  --border: rgba(52, 211, 153, 0.38);
 
   /* Text */
-  --text: #071a0c;
-  --text2: #4d7a59;
+  --text: #ffffff;
+  --text2: rgba(52, 211, 153, 0.75);
 
-  /* Accents — alias old purple tokens to the new green */
-  --accent: #00c853;
-  --accent2: #009c3e;
-  --accent3: #00c853;
-  --accent-bg: rgba(0, 200, 83, 0.10);
-  --accent2-bg: rgba(0, 156, 62, 0.10);
-  --accent3-bg: rgba(0, 200, 83, 0.10);
+  /* Accents */
+  --accent: #34d399;
+  --accent2: #10b981;
+  --accent3: #34d399;
+  --accent-bg: rgba(52, 211, 153, 0.12);
+  --accent2-bg: rgba(16, 185, 129, 0.12);
+  --accent3-bg: rgba(52, 211, 153, 0.12);
 
-  --green: #00c853;
-  --green-bg: rgba(0, 200, 83, 0.12);
-  --red: #ff4d4f;
-  --red-bg: rgba(255, 77, 79, 0.10);
-  --orange: #f59e0b;
+  --green: #34d399;
+  --green-bg: rgba(52, 211, 153, 0.14);
+  --red: #f87171;
+  --red-bg: rgba(248, 113, 113, 0.12);
+  --orange: #fbbf24;
 
-  --header-gradient: linear-gradient(135deg, #071a0c 0%, #1e3d26 50%, #00c853 110%);
-  --header-gradient-alt: linear-gradient(135deg, #00c853 0%, #009c3e 100%);
+  --header-gradient: linear-gradient(135deg, #000000 0%, #0f2318 50%, #34d399 110%);
+  --header-gradient-alt: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 
-  /* Floating mesh — subtle, mostly off */
-  --mesh-1: #d1f5dd;
-  --mesh-2: #e7f7ec;
-  --mesh-3: #cdeed5;
-  --mesh-4: #f2fbf6;
+  /* Floating mesh — dark emerald tones */
+  --mesh-1: rgba(52, 211, 153, 0.06);
+  --mesh-2: rgba(16, 185, 129, 0.04);
+  --mesh-3: rgba(52, 211, 153, 0.05);
+  --mesh-4: rgba(0, 0, 0, 0.8);
 
   --radius: 22px;
-  --shadow: 0 4px 14px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 20px 48px rgba(7, 26, 12, 0.12), 0 8px 20px rgba(0, 0, 0, 0.06);
-  --shadow-glow: 0 0 0 3px rgba(0, 200, 83, 0.08), 0 10px 30px rgba(0, 200, 83, 0.12);
-  --glass: blur(22px) saturate(180%);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 0 1px rgba(52, 211, 153, 0.25), 0 0 40px rgba(52, 211, 153, 0.15);
+  --glass: blur(32px) saturate(180%);
 }
 
 body {
-  font-family: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -98,7 +98,10 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   background: rgba(255, 255, 255, 0.35);
   animation: ll-zoom-ring 2s ease-in-out infinite;
 }
-@keyframes ll-zoom-ring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@keyframes ll-zoom-ring {
+  0%,100% { transform: scale(1); box-shadow: 0 0 18px rgba(52,211,153,0.5); }
+  50% { transform: scale(1.18); box-shadow: 0 0 48px rgba(52,211,153,0.9); }
+}
 @keyframes ll-zoom-mid  { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(0.65); opacity: 0.9; } }
 @keyframes ll-zoom-core { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 
@@ -284,21 +287,20 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 .tick-val  { color: rgba(255, 255, 255, 0.5); }
 .tick-up   { color: var(--g); }
 .tick-dn   { color: #ff6b6b; }
-/* Subtle radial wash — far calmer than the old multi-colour mesh */
+/* Dark emerald radial wash */
 body::before {
   content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(50% 40% at 20% 10%, var(--mesh-2) 0%, transparent 70%),
-    radial-gradient(40% 35% at 80% 90%, var(--mesh-1) 0%, transparent 70%);
-  filter: blur(40px);
-  opacity: 0.45;
+    radial-gradient(50% 40% at 20% 10%, rgba(52,211,153,0.08) 0%, transparent 70%),
+    radial-gradient(40% 35% at 80% 90%, rgba(16,185,129,0.06) 0%, transparent 70%);
+  filter: blur(60px);
+  opacity: 1;
 }
-/* Noise + grain for depth */
+/* Subtle top glow on black */
 body::after {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(1200px 800px at 50% -10%, rgba(255,255,255,0.4), transparent 70%),
-    linear-gradient(180deg, rgba(251,248,255,0.30), rgba(251,248,255,0.0) 40%);
+    radial-gradient(900px 400px at 50% -5%, rgba(52,211,153,0.07), transparent 70%);
 }
 @keyframes mesh-float {
   0%   { transform: translate(0,0) rotate(0deg) scale(1); }
@@ -347,11 +349,13 @@ body::after {
 /* ─── Sidebar (desktop) ─── */
 .sidebar {
   width: 230px;
-  background: var(--ink);
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(5, 15, 8, 0.92);
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
+  border-right: 1px solid var(--border);
   padding: 1.5rem 0; position: fixed; top: 0; left: 0; bottom: 0;
   display: flex; flex-direction: column; z-index: 50;
-  box-shadow: 4px 0 24px rgba(7, 26, 12, 0.10);
+  box-shadow: 4px 0 40px rgba(52, 211, 153, 0.06);
 }
 .sidebar::before {
   content: ''; position: absolute; inset: 0 auto 0 0; width: 3px;
@@ -845,17 +849,17 @@ body::after {
   border: 1px solid transparent; cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
   box-shadow: 0 6px 16px -10px rgba(17, 24, 39, 0.25);
-  background: #ffffff;
+  background: var(--bg2);
 }
-.action-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -12px rgba(17, 24, 39, 0.32); }
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.5); }
 .buy-btn  { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
 .buy-btn:hover  { background: linear-gradient(135deg, #059669, #047857); }
 .sell-btn { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
 .sell-btn:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
-.wallet-btn { background: #ffffff; color: var(--text); border-color: var(--border); }
-.wallet-btn:hover { background: #f8fafc; }
-.data-btn { background: linear-gradient(135deg, #00c853, #1e3d26); color: #fff; }
-.data-btn:hover { background: linear-gradient(135deg, #009c3e, #0d2614); }
+.wallet-btn { background: var(--bg3); color: var(--text); border-color: var(--border); }
+.wallet-btn:hover { background: var(--bg4); }
+.data-btn { background: linear-gradient(135deg, #34d399, #0f2318); color: #000; }
+.data-btn:hover { background: linear-gradient(135deg, #10b981, #0d1f12); }
 
 /* ─── Data Import/Export ─── */
 .data-card p { line-height: 1.4; }
@@ -926,14 +930,14 @@ body::after {
 }
 .coin-card:hover { border-color: rgba(129,140,248,0.55); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
 .coin-header { display: flex; align-items: center; gap: 0.75rem; }
-.coin-logo { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: #fff; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 2px 6px -3px rgba(15,23,42,0.18); }
+.coin-logo { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border); box-shadow: 0 2px 6px -3px rgba(0,0,0,0.4); }
 .coin-icon {
   width: 40px; height: 40px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
-  border: 1px solid rgba(0,200,83,0.25);
-  background: #ffffff;
-  box-shadow: 0 2px 6px -3px rgba(15,23,42,0.18);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  box-shadow: 0 2px 6px -3px rgba(0,0,0,0.4);
 }
 .coin-name { flex: 1; display: flex; flex-direction: column; }
 .coin-name strong { font-size: 0.95rem; }
@@ -1030,7 +1034,7 @@ body::after {
 .toggle-btn.active.buy { background: var(--green-bg); color: var(--green); box-shadow: var(--shadow); }
 .toggle-btn.active.sell { background: var(--red-bg); color: var(--red); box-shadow: var(--shadow); }
 .toggle-btn.active.deposit { background: var(--accent-bg); color: var(--accent); box-shadow: var(--shadow); }
-.toggle-btn.active.withdraw { background: #fff7ed; color: var(--orange); box-shadow: var(--shadow); }
+.toggle-btn.active.withdraw { background: rgba(251,191,36,0.12); color: var(--orange); box-shadow: var(--shadow); }
 
 /* ─── Form Fields ─── */
 .form-field { margin-bottom: 0.85rem; position: relative; }
@@ -1065,7 +1069,7 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: rgba(107,107,143,0.55); }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,200,83,0.15); }
-select option { background: #fff; color: var(--text); }
+select option { background: var(--bg3); color: var(--text); }
 
 .total-preview {
   display: flex; justify-content: space-between; align-items: center;
@@ -1209,7 +1213,7 @@ select option { background: #fff; color: var(--text); }
 button { padding: 0.55rem 1.1rem; border-radius: 10px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; background: var(--accent); color: white; transition: all 0.15s; }
 button:hover { background: var(--accent2); }
 .btn-danger { background: var(--red-bg); color: var(--red); }
-.btn-danger:hover { background: #fde8e8; }
+.btn-danger:hover { background: rgba(248, 113, 113, 0.2); }
 .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
 
 /* ─── Dropdown ─── */
