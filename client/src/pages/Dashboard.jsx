@@ -374,11 +374,11 @@ export default function Dashboard() {
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
   const tabs = [
-    { id: 'overview', label: 'Overview',     icon: Ico.overview },
-    { id: 'buy',      label: 'Buy',          icon: Ico.buy },
-    { id: 'sell',     label: 'Sell',         icon: Ico.sell },
-    { id: 'wallets',  label: 'Wallets',      icon: Ico.wallet },
-    { id: 'data',     label: 'Backup',       icon: Ico.data },
+    { id: 'overview', label: 'Overview', icon: Ico.overview },
+    { id: 'buy',      label: 'Buy',      icon: Ico.buy,    nav: '/transactions', navState: { openAdd: true, type: 'buy' } },
+    { id: 'sell',     label: 'Sell',     icon: Ico.sell,   nav: '/transactions', navState: { openAdd: true, type: 'sell' } },
+    { id: 'wallets',  label: 'Wallets',  icon: Ico.wallet },
+    { id: 'data',     label: 'Backup',   icon: Ico.data },
   ]
 
   const tooltipStyle = {
@@ -392,7 +392,7 @@ export default function Dashboard() {
       <div className="dvx-tabs">
         {tabs.map(t => (
           <button key={t.id} className={`dvx-tab ${activeTab === t.id ? 'dvx-tab-active' : ''}`}
-            onClick={() => setActiveTab(t.id)}>
+            onClick={() => t.nav ? navigate(t.nav, { state: t.navState }) : setActiveTab(t.id)}>
             <span className="dvx-tab-icon">{t.icon}</span>
             <span>{t.label}</span>
           </button>
@@ -438,12 +438,12 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <div className="dvx-quick-grid">
-            <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => setActiveTab('buy')}>
+            <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'buy' } })}>
               <span className="dvx-quick-icon">{Ico.buy}</span>
               <strong>Buy</strong>
               <span>Record a purchase</span>
             </button>
-            <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => setActiveTab('sell')}>
+            <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'sell' } })}>
               <span className="dvx-quick-icon">{Ico.sell}</span>
               <strong>Sell</strong>
               <span>Record a sale</span>
@@ -613,16 +613,6 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* ══ BUY / SELL ══ */}
-      {(activeTab === 'buy' || activeTab === 'sell') && (
-        <div className="dvx-form-page">
-          <div className="glass-card dvx-form-card">
-            <h3>{activeTab === 'buy' ? 'Record a Buy' : 'Record a Sell'}</h3>
-            <TradePanel wallets={wallets} onRefresh={loadAll} defaultType={activeTab} />
-          </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
-        </div>
-      )}
 
       {/* ══ WALLETS ══ */}
       {activeTab === 'wallets' && (
