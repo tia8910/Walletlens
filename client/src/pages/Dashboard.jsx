@@ -6,6 +6,23 @@ import {
 } from 'recharts'
 import { api } from '../api'
 
+// ── SVG icon set ─────────────────────────────────────────────────────────
+const Ico = {
+  overview: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>,
+  buy:      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>,
+  sell:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>,
+  wallet:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>,
+  data:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>,
+  history:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5l9-7 9 7V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>,
+  plus:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>,
+  trash:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>,
+  export:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  import:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  copy:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+  check:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  trend:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+}
+
 const DEMO = {
   totalValue: 248750.42, totalInvested: 236300,
   totalPnL: 12450.42, totalPnLPct: 5.27,
@@ -14,7 +31,7 @@ const DEMO = {
     { coin_id: 'ethereum', coin_symbol: 'ETH', price: 3410,  value: 68450,  total_invested: 65000,  amount: 20.07 },
     { coin_id: 'solana',   coin_symbol: 'SOL', price: 188.5, value: 28300,  total_invested: 27000,  amount: 150.2 },
     { coin_id: 'xrp',      coin_symbol: 'XRP', price: 1.39,  value: 5700,   total_invested: 5400,   amount: 4100 },
-    { coin_id: 'others',   coin_symbol: 'Other', price: 0,   value: 3500,   total_invested: 3900,   amount: 0 },
+    { coin_id: 'others',   coin_symbol: 'OTHER', price: 0,   value: 3500,   total_invested: 3900,   amount: 0 },
   ],
   transactions: [
     { id: 1, type: 'buy',  coin_symbol: 'BTC', amount: 0.08,  price_per_unit: 67200 },
@@ -26,7 +43,7 @@ const DEMO = {
 }
 
 const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtN  = n => n >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(0)}`
+const fmtN  = n => Math.abs(n) >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(0)}`
 const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['#34d399','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','#10b981','#a78bfa']
 
@@ -65,18 +82,18 @@ function WalletPanel({ wallets, onRefresh }) {
           value={name} onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && add()} />
         <button className="dvx-btn dvx-btn-primary" onClick={add} disabled={busy || !name.trim()}>
-          + Add
+          {Ico.plus} Add
         </button>
       </div>
       <ul className="dvx-wallet-list">
         {wallets.map(w => (
           <li key={w.id} className="dvx-wallet-item">
-            <span className="dvx-wallet-icon">👛</span>
+            <span className="dvx-wallet-icon">{Ico.wallet}</span>
             <span className="dvx-wallet-name">{w.name}</span>
-            <button className="dvx-btn-ghost dvx-btn-danger" onClick={() => del(w.id)}>Delete</button>
+            <button className="dvx-btn-ghost dvx-btn-danger" onClick={() => del(w.id)}>{Ico.trash}</button>
           </li>
         ))}
-        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0' }}>No wallets yet.</li>}
+        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0', listStyle:'none' }}>No wallets yet. Add one above.</li>}
       </ul>
     </div>
   )
@@ -107,7 +124,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
         amount: parseFloat(amount), price_per_unit: parseFloat(price),
         date, category: 'crypto',
       })
-      setMsg('✓ Trade added!'); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
+      setMsg('Trade added!'); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
     } finally { setBusy(false) }
   }
@@ -132,50 +149,110 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
       {msg && <p className="dvx-msg">{msg}</p>}
       <button className={`dvx-btn dvx-btn-full ${type === 'buy' ? 'dvx-btn-primary' : 'dvx-btn-sell'}`}
         onClick={submit} disabled={busy}>
-        {busy ? 'Adding…' : type === 'buy' ? '🟢 Confirm Buy' : '🔴 Confirm Sell'}
+        {busy ? 'Adding…' : type === 'buy' ? 'Confirm Buy' : 'Confirm Sell'}
       </button>
     </div>
   )
 }
 
-// ── Data panel ───────────────────────────────────────────────────────────
+// ── Data panel — short WLZ backup code ───────────────────────────────────
 function DataPanel({ onRefresh }) {
-  const [code, setCode] = useState('')
-  const [msg, setMsg]   = useState('')
+  const [code, setCode]     = useState('')
+  const [copied, setCopied] = useState(false)
+  const [msg, setMsg]       = useState('')
+  const [preview, setPreview] = useState(null)
+  const [busy, setBusy]     = useState(false)
 
-  function doExport() {
+  async function doExport() {
+    setBusy(true)
     try {
-      const wallets = JSON.parse(localStorage.getItem('crypto_tracker_wallets') || '[]')
-      const txs     = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
-      const blob = new Blob([JSON.stringify({ wallets, transactions: txs }, null, 2)], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = 'walletlens-export.json'
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
-      setMsg('✓ Exported!')
-    } catch { setMsg('Export failed.') }
-    setTimeout(() => setMsg(''), 2500)
+      const result = await api.exportCode()
+      if (result) { setCode(result); setMsg('') }
+      else setMsg('Export failed.')
+    } finally { setBusy(false) }
   }
 
-  function doImport() {
+  async function copyCode() {
     try {
-      const parsed = JSON.parse(code)
-      if (parsed.wallets)       localStorage.setItem('crypto_tracker_wallets', JSON.stringify(parsed.wallets))
-      if (parsed.transactions)  localStorage.setItem('crypto_tracker_transactions', JSON.stringify(parsed.transactions))
-      setMsg('✓ Imported! Refreshing…'); setCode('')
-      onRefresh(); setTimeout(() => setMsg(''), 2500)
-    } catch { setMsg('Invalid JSON — paste the exported data.') }
+      await navigator.clipboard.writeText(code)
+      setCopied(true); setTimeout(() => setCopied(false), 2000)
+    } catch { setMsg('Copy failed — select and copy manually.') }
+  }
+
+  async function loadPreview() {
+    if (!code.trim()) return
+    setBusy(true)
+    const result = await api.previewImportCode(code.trim())
+    setBusy(false)
+    if (!result.success) { setMsg('Invalid code: ' + result.error); setPreview(null); return }
+    setPreview(result); setMsg('')
+  }
+
+  async function doImport() {
+    if (!preview) return
+    setBusy(true)
+    const result = await api.importCode(code.trim())
+    setBusy(false)
+    if (result?.success === false) { setMsg('Import failed: ' + (result.error || 'unknown error')); return }
+    setMsg('Imported! Refreshing…'); setCode(''); setPreview(null)
+    onRefresh(); setTimeout(() => setMsg(''), 2500)
   }
 
   return (
     <div className="dvx-panel">
-      <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport}>⬇ Export Data (JSON)</button>
-      <div style={{ marginTop: '0.75rem' }}>
-        <textarea className="dvx-input dvx-textarea" placeholder="Paste exported JSON here to import…"
-          value={code} onChange={e => setCode(e.target.value)} rows={5} />
-        <button className="dvx-btn dvx-btn-full" style={{ marginTop: '0.5rem' }}
-          onClick={doImport} disabled={!code.trim()}>⬆ Import Data</button>
-      </div>
+      <p className="dvx-data-hint">
+        Your data is stored as a short backup code (WLZ format). Export it to save or transfer to another device. Paste a code to restore.
+      </p>
+
+      <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
+        {Ico.export} Generate Backup Code
+      </button>
+
+      {code && (
+        <div className="dvx-code-box">
+          <div className="dvx-code-text">{code}</div>
+          <button className="dvx-code-copy" onClick={copyCode}>
+            {copied ? <>{Ico.check} Copied!</> : <>{Ico.copy} Copy</>}
+          </button>
+        </div>
+      )}
+
+      <div className="dvx-divider">or restore from code</div>
+
+      <textarea className="dvx-input dvx-textarea"
+        placeholder="Paste your WLZ backup code here…"
+        value={code} onChange={e => { setCode(e.target.value); setPreview(null); setMsg('') }}
+        rows={4} />
+
+      {preview && (
+        <div className="dvx-preview-box">
+          <div className="dvx-preview-title">Preview</div>
+          <div className="dvx-preview-row">
+            <span>Wallets</span><strong>{preview.summary.wallets}</strong>
+          </div>
+          <div className="dvx-preview-row">
+            <span>Transactions</span><strong>{preview.summary.transactions}</strong>
+          </div>
+          {Object.entries(preview.summary.byCategory || {}).map(([cat, n]) => (
+            <div key={cat} className="dvx-preview-row">
+              <span>{cat.charAt(0).toUpperCase() + cat.slice(1)}</span><strong>{n} assets</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
       {msg && <p className="dvx-msg">{msg}</p>}
+
+      <div className="dvx-panel-row" style={{ marginTop: '0.25rem' }}>
+        <button className="dvx-btn dvx-btn-full" onClick={loadPreview} disabled={busy || !code.trim()}>
+          {Ico.import} Preview Import
+        </button>
+        {preview && (
+          <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doImport} disabled={busy}>
+            {Ico.check} Confirm Import
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -195,16 +272,16 @@ function StatCard({ label, value, sub, color }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [portfolio, setPortfolio]       = useState([])
-  const [prices, setPrices]             = useState({})
-  const [transactions, setTransactions] = useState([])
-  const [wallets, setWallets]           = useState([])
-  const [loaded, setLoaded]             = useState(false)
+  const [portfolio, setPortfolio]         = useState([])
+  const [prices, setPrices]               = useState({})
+  const [transactions, setTransactions]   = useState([])
+  const [wallets, setWallets]             = useState([])
+  const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]       = useState(location.state?.tab || 'overview')
+  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const tickerStart = useRef(null)
-  const [tickerValue, setTickerValue]   = useState(0)
+  const [tickerValue, setTickerValue] = useState(0)
 
   useEffect(() => {
     if (location.state?.tab) setActiveTab(location.state.tab)
@@ -230,10 +307,10 @@ export default function Dashboard() {
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
     const raw = portfolio.map(h => {
-      const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
-      const value = h.amount * price
-      const pnl   = value - h.total_invested
-      const pnlPct = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
+      const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
+      const value   = h.amount * price
+      const pnl     = value - h.total_invested
+      const pnlPct  = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
       return { ...h, price, value, pnl, pnlPct }
     }).sort((a, b) => (b.value || b.total_invested) - (a.value || a.total_invested))
 
@@ -271,24 +348,20 @@ export default function Dashboard() {
       setTickerValue(from + (to - from) * ease)
       if (ease < 1) raf = requestAnimationFrame(step)
     }
-    raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
+    raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
   }, [loaded, totalValue])
 
   const perfSeries = useMemo(() => buildPerfSeries(totalValue), [totalValue])
 
-  // Allocation chart: use value when prices available, else total_invested
   const allocData = useMemo(() => {
     if (!enriched.length) return []
-    const items = enriched.map(h => ({
-      name: h.coin_symbol?.toUpperCase(),
-      value: h.value > 0 ? h.value : h.total_invested,
-    })).filter(d => d.value > 0)
+    const items = enriched
+      .map(h => ({ name: h.coin_symbol?.toUpperCase(), value: h.value > 0 ? h.value : h.total_invested }))
+      .filter(d => d.value > 0)
     const total = items.reduce((s, d) => s + d.value, 0)
     return items.map(d => ({ ...d, pct: total > 0 ? (d.value / total) * 100 : 0 }))
   }, [enriched])
 
-  // P&L bar chart data
   const pnlData = useMemo(() => {
     if (pricesFailed || !enriched.some(h => h.pnl !== 0)) return []
     return enriched.slice(0, 8).map(h => ({
@@ -297,15 +370,15 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const recentTxs  = useMemo(() => (transactions.length ? transactions : DEMO.transactions).slice(0, 8), [transactions])
+  const recentTxs       = useMemo(() => (transactions.length ? transactions : DEMO.transactions).slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
   const tabs = [
-    { id: 'overview', label: '📊 Overview' },
-    { id: 'buy',      label: '🟢 Buy' },
-    { id: 'sell',     label: '🔴 Sell' },
-    { id: 'wallets',  label: '👛 Wallets' },
-    { id: 'data',     label: '💾 Data' },
+    { id: 'overview', label: 'Overview',     icon: Ico.overview },
+    { id: 'buy',      label: 'Buy',          icon: Ico.buy },
+    { id: 'sell',     label: 'Sell',         icon: Ico.sell },
+    { id: 'wallets',  label: 'Wallets',      icon: Ico.wallet },
+    { id: 'data',     label: 'Backup',       icon: Ico.data },
   ]
 
   const tooltipStyle = {
@@ -320,7 +393,8 @@ export default function Dashboard() {
         {tabs.map(t => (
           <button key={t.id} className={`dvx-tab ${activeTab === t.id ? 'dvx-tab-active' : ''}`}
             onClick={() => setActiveTab(t.id)}>
-            {t.label}
+            <span className="dvx-tab-icon">{t.icon}</span>
+            <span>{t.label}</span>
           </button>
         ))}
       </div>
@@ -328,7 +402,7 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
-          {/* Hero value */}
+          {/* Hero */}
           <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
               {pricesFailed ? 'INVESTED VALUE' : pricesLoading ? 'LOADING PRICES…' : 'TOTAL PORTFOLIO VALUE'}
@@ -350,37 +424,37 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Summary stats row */}
+          {/* Stats row */}
           {!isDemo && (
             <div className="dvx-stats-row">
-              <StatCard label="Invested" value={`$${fmt(totalInvested)}`} />
-              <StatCard label="P&L" value={`${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
+              <StatCard label="Invested"  value={`$${fmt(totalInvested)}`} />
+              <StatCard label="P&L"       value={`${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
                 color={totalPnL >= 0 ? '#34d399' : '#f87171'}
                 sub={totalPnLPct !== 0 ? pct(totalPnLPct) : undefined} />
-              <StatCard label="Assets" value={enriched.length} />
-              <StatCard label="Trades" value={transactions.length} />
+              <StatCard label="Assets"    value={enriched.length} />
+              <StatCard label="Trades"    value={transactions.length} />
             </div>
           )}
 
-          {/* Quick-action cards */}
+          {/* Quick actions */}
           <div className="dvx-quick-grid">
             <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => setActiveTab('buy')}>
-              <span className="dvx-quick-icon">🟢</span>
+              <span className="dvx-quick-icon">{Ico.buy}</span>
               <strong>Buy</strong>
               <span>Record a purchase</span>
             </button>
             <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => setActiveTab('sell')}>
-              <span className="dvx-quick-icon">🔴</span>
+              <span className="dvx-quick-icon">{Ico.sell}</span>
               <strong>Sell</strong>
               <span>Record a sale</span>
             </button>
             <button className="dvx-quick-card holo-card-v2" onClick={() => setActiveTab('wallets')}>
-              <span className="dvx-quick-icon">👛</span>
+              <span className="dvx-quick-icon">{Ico.wallet}</span>
               <strong>Wallets</strong>
               <span>{wallets.length} wallet{wallets.length !== 1 ? 's' : ''}</span>
             </button>
             <button className="dvx-quick-card holo-card-v2" onClick={() => navigate('/transactions')}>
-              <span className="dvx-quick-icon">📋</span>
+              <span className="dvx-quick-icon">{Ico.history}</span>
               <strong>History</strong>
               <span>{transactions.length} trades</span>
             </button>
@@ -390,10 +464,9 @@ export default function Dashboard() {
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
-
               {/* Performance chart */}
               <div className="glass-card">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'0.75rem' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
                   <h3 style={{ margin:0 }}>30-Day Performance</h3>
                   <span className="muted" style={{ fontSize:'0.72rem' }}>simulated trend</span>
                 </div>
@@ -401,26 +474,27 @@ export default function Dashboard() {
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:4, bottom:0 }}>
                     <defs>
                       <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#34d399" stopOpacity={0.5}/>
+                        <stop offset="0%" stopColor="#34d399" stopOpacity={0.45}/>
                         <stop offset="100%" stopColor="#34d399" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, '']}
-                      labelFormatter={() => ''} cursor={{ stroke:'rgba(52,211,153,0.3)' }}/>
+                    <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'Value']}
+                      labelFormatter={() => ''} cursor={{ stroke:'rgba(52,211,153,0.25)' }}/>
                     <Area type="monotone" dataKey="v" stroke="#34d399" strokeWidth={2.5} fill="url(#pg)" dot={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* P&L per asset bar chart (only when prices available) */}
+              {/* P&L bar chart */}
               {pnlData.length > 0 && (
                 <div className="glass-card">
-                  <h3 style={{ margin:'0 0 0.75rem' }}>P&L by Asset</h3>
+                  <h3 style={{ margin:'0 0 0.75rem' }}>Profit / Loss by Asset</h3>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
-                      <CartesianGrid stroke="rgba(52,211,153,0.08)" vertical={false}/>
-                      <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.5)', fontSize:11 }} axisLine={false} tickLine={false}/>
-                      <YAxis tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v => fmtN(v)} width={48}/>
+                      <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
+                      <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.45)', fontSize:11 }} axisLine={false} tickLine={false}/>
+                      <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false} tickLine={false}
+                        tickFormatter={v => fmtN(v)} width={50}/>
                       <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
@@ -442,7 +516,9 @@ export default function Dashboard() {
                       const isBuy = t.type === 'buy' || t.type === 'deposit'
                       return (
                         <li key={t.id} className="dvx-tx-item holo-card-v2">
-                          <span className="dvx-tx-icon">{isBuy ? '🟢' : '🔴'}</span>
+                          <span className="dvx-tx-icon" style={{ color: isBuy ? '#34d399' : '#f87171' }}>
+                            {isBuy ? Ico.buy : Ico.sell}
+                          </span>
                           <div className="dvx-tx-meta">
                             <strong>{isBuy ? 'Bought' : 'Sold'} {t.coin_symbol?.toUpperCase()}</strong>
                             <span className="muted">{t.amount} @ ${fmt(t.price_per_unit || 0)}</span>
@@ -458,10 +534,9 @@ export default function Dashboard() {
 
             {/* Right column */}
             <div className="dvx-col-side">
-
               {/* Allocation donut */}
               <div className="glass-card">
-                <h3>{pricesFailed ? 'Allocation (by invested)' : 'Allocation'}</h3>
+                <h3>{pricesFailed ? 'Allocation (invested)' : 'Allocation'}</h3>
                 {allocData.length === 0
                   ? <p className="muted">No holdings.</p>
                   : <>
@@ -471,8 +546,7 @@ export default function Dashboard() {
                           innerRadius="60%" outerRadius="88%" stroke="none" paddingAngle={2}>
                           {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle}
-                          formatter={(v, n) => [`$${fmt(v)}`, n]}/>
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="dvx-legend">
@@ -488,11 +562,11 @@ export default function Dashboard() {
                 }
               </div>
 
-              {/* ALL Holdings */}
+              {/* All holdings */}
               <div className="glass-card">
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
-                  {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.62rem' }}>BY INVESTED</span>}
+                  {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
                 </div>
                 {enriched.length === 0
                   ? <p className="muted">Nothing yet.</p>
@@ -511,13 +585,13 @@ export default function Dashboard() {
                               <strong>{h.coin_symbol?.toUpperCase()}</strong>
                               <span className="muted">
                                 {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
-                                {' · '}{h.amount?.toLocaleString(undefined, { maximumFractionDigits: 6 })} units
+                                {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
                               </span>
                             </div>
-                            <div style={{ textAlign:'right' }}>
+                            <div style={{ textAlign:'right', flexShrink:0 }}>
                               <div className="dvx-holding-val">${fmt(displayValue)}</div>
                               {hasPnl && (
-                                <div style={{ fontSize:'0.7rem', color: h.pnl >= 0 ? '#34d399' : '#f87171' }}>
+                                <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
                                   {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
                                 </div>
                               )}
@@ -543,10 +617,10 @@ export default function Dashboard() {
       {(activeTab === 'buy' || activeTab === 'sell') && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
-            <h3>{activeTab === 'buy' ? '🟢 Record a Buy' : '🔴 Record a Sell'}</h3>
+            <h3>{activeTab === 'buy' ? 'Record a Buy' : 'Record a Sell'}</h3>
             <TradePanel wallets={wallets} onRefresh={loadAll} defaultType={activeTab} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back to Overview</button>
+          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
         </div>
       )}
 
@@ -554,21 +628,21 @@ export default function Dashboard() {
       {activeTab === 'wallets' && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
-            <h3>👛 Wallets ({wallets.length})</h3>
+            <h3>Wallets ({wallets.length})</h3>
             <WalletPanel wallets={wallets} onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back to Overview</button>
+          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
         </div>
       )}
 
-      {/* ══ DATA ══ */}
+      {/* ══ DATA / BACKUP ══ */}
       {activeTab === 'data' && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
-            <h3>💾 Import / Export Data</h3>
+            <h3>Backup & Restore</h3>
             <DataPanel onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back to Overview</button>
+          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
         </div>
       )}
     </div>
