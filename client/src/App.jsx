@@ -164,6 +164,18 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
+      <button
+        type="button"
+        className="floating-lens"
+        onClick={(e) => {
+          e.currentTarget.classList.add('burst')
+          setTimeout(() => e.currentTarget.classList.remove('burst'), 220)
+        }}
+        aria-label="Pulse lens"
+      >
+        🔎
+      </button>
+
       <nav className="bottom-nav" aria-label="Bottom navigation">
         <NavLink to="/dashboard" className="nav-item">
           <IconHome />
