@@ -2774,3 +2774,120 @@ tr:last-child td { border-bottom: none; }
 .sell-plan-field input { background: rgba(255,255,255,0.92); color: var(--text); }
 .sell-plan-preview { background: rgba(255,255,255,0.85); }
 .market-rank, .market-name, .tx-meta, .tx-cost { color: var(--text2); }
+
+/* ═══ Mobile content override ═══ */
+.content-mobile {
+  margin-left: 0 !important;
+  padding: 0 0.9rem 5.5rem !important;
+  max-width: 100% !important;
+}
+
+/* ═══ Topbar hamburger ═══ */
+.topbar-hamburger {
+  background: none; border: none; cursor: pointer;
+  color: #fff; padding: 0.35rem; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.topbar-hamburger:hover { background: rgba(52,211,153,0.12); }
+
+/* ═══ Slide-out Drawer ═══ */
+.drawer-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.drawer {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: 300px; max-width: 88vw;
+  z-index: 210;
+  background: rgba(5, 12, 8, 0.98);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border-right: 1px solid rgba(52,211,153,0.35);
+  display: flex; flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.23,1,0.32,1);
+  overflow-y: auto;
+}
+.drawer-open { transform: translateX(0); }
+
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid rgba(52,211,153,0.18);
+}
+.drawer-brand { display: flex; align-items: center; gap: 0.6rem; }
+.drawer-brand-name { font-weight: 800; color: #fff; font-size: 1rem; letter-spacing: -0.01em; }
+.drawer-brand-tag { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--g); }
+.drawer-close {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7); border-radius: 10px;
+  padding: 0.35rem; cursor: pointer; display: flex; align-items: center;
+  transition: all 0.15s;
+}
+.drawer-close:hover { background: rgba(52,211,153,0.12); color: var(--g); }
+
+.drawer-section { padding: 0.75rem 0.75rem 0.25rem; }
+.drawer-section-label {
+  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35);
+  padding: 0 0.5rem; margin-bottom: 0.4rem;
+}
+.drawer-item {
+  display: flex; align-items: center; gap: 0.8rem;
+  width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.65); font-weight: 600; font-size: 0.95rem;
+  padding: 0.8rem 0.85rem; border-radius: 12px;
+  transition: all 0.18s; margin-bottom: 0.15rem;
+}
+.drawer-item:hover { background: rgba(52,211,153,0.08); color: #fff; }
+.drawer-item-active { background: rgba(52,211,153,0.12) !important; color: var(--g) !important; }
+.drawer-icon { display: flex; align-items: center; opacity: 0.8; }
+
+.drawer-item-buy {
+  background: rgba(52,211,153,0.1);
+  color: var(--g);
+  border: 1px solid rgba(52,211,153,0.25);
+}
+.drawer-item-buy:hover { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.5); }
+.drawer-item-sell {
+  background: rgba(248,113,113,0.08);
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.2);
+}
+.drawer-item-sell:hover { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); }
+
+.drawer-footer {
+  margin-top: auto; padding: 1rem 1.2rem;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+  border-top: 1px solid rgba(52,211,153,0.1);
+  display: flex; align-items: center;
+}
+
+/* ═══ Desktop sidebar quick actions ═══ */
+.sidebar-actions {
+  padding: 0.75rem 0.6rem; margin-top: auto;
+  border-top: 1px solid rgba(52,211,153,0.15);
+}
+.sidebar-actions-label {
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+  padding: 0 0.3rem; margin-bottom: 0.5rem;
+}
+.sidebar-action-btn {
+  display: flex; align-items: center; gap: 0.55rem;
+  width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.55); font-size: 0.82rem; font-weight: 600;
+  padding: 0.6rem 0.75rem; border-radius: 10px;
+  transition: all 0.18s; margin-bottom: 0.2rem;
+}
+.sidebar-action-btn:hover { background: rgba(52,211,153,0.08); color: #fff; }
+.buy-action { color: var(--g); }
+.buy-action:hover { background: rgba(52,211,153,0.12) !important; }
+.sell-action { color: #f87171; }
+.sell-action:hover { background: rgba(248,113,113,0.1) !important; }
