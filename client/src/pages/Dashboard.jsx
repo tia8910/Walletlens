@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, assetClass } from '../api'
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -845,12 +845,15 @@ export default function Dashboard() {
     setAlarms(prev => prev.filter(a => a.coinId !== coinId))
   }
 
-  const totalValue = portfolio.reduce((sum, h) => sum + h.amount * (prices[h.coin_id]?.usd || 0), 0)
-  const totalInvested = portfolio.reduce((sum, h) => sum + h.total_invested, 0)
-  const totalPnL = totalValue - totalInvested
-  const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
+  const { totalValue, totalInvested, totalPnL, pnlPercent } = useMemo(() => {
+    const totalValue = portfolio.reduce((sum, h) => sum + h.amount * (prices[h.coin_id]?.usd || 0), 0)
+    const totalInvested = portfolio.reduce((sum, h) => sum + h.total_invested, 0)
+    const totalPnL = totalValue - totalInvested
+    const pnlPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0
+    return { totalValue, totalInvested, totalPnL, pnlPercent }
+  }, [portfolio, prices])
 
-  const enriched = portfolio.map(h => {
+  const enriched = useMemo(() => portfolio.map(h => {
     const price = prices[h.coin_id]?.usd || 0
     const change24h = prices[h.coin_id]?.usd_24h_change || 0
     const amount = h.amount || 0
@@ -913,7 +916,7 @@ export default function Dashboard() {
       marketCap: mcUsd,
       capSize,
     }
-  }).sort((a, b) => b.value - a.value)
+  }).sort((a, b) => b.value - a.value), [portfolio, prices, coinImages, coinTargets, totalValue])
 
   const totalProjectedValue = enriched_raw => enriched_raw.reduce((sum, h) => {
     if (h.plan && h.plan.length > 0) return sum + h.planTotalProceeds
@@ -924,30 +927,33 @@ export default function Dashboard() {
   const hasAnyTarget = Object.keys(coinTargets).length > 0
 
   // Group holdings by category for the dashboard split
-  const enrichedByCategory = {}
-  for (const h of enriched) {
-    const cat = h.category || 'crypto'
-    if (!enrichedByCategory[cat]) {
-      enrichedByCategory[cat] = { items: [], total: 0, invested: 0 }
+  const categoryList = useMemo(() => {
+    const enrichedByCategory = {}
+    for (const h of enriched) {
+      const cat = h.category || 'crypto'
+      if (!enrichedByCategory[cat]) {
+        enrichedByCategory[cat] = { items: [], total: 0, invested: 0 }
+      }
+      enrichedByCategory[cat].items.push(h)
+      enrichedByCategory[cat].total += h.value
+      enrichedByCategory[cat].invested += h.total_invested
     }
-    enrichedByCategory[cat].items.push(h)
-    enrichedByCategory[cat].total += h.value
-    enrichedByCategory[cat].invested += h.total_invested
-  }
-  const categoryList = Object.entries(enrichedByCategory).map(([key, v]) => {
-    const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#4d7a59' }
-    return {
-      key, label: meta.label, icon: meta.icon, color: meta.color,
-      items: v.items, total: v.total, invested: v.invested,
-      pct: totalValue > 0 ? (v.total / totalValue) * 100 : 0,
-      pnl: v.total - v.invested,
-      pnlPct: v.invested > 0 ? ((v.total - v.invested) / v.invested) * 100 : 0,
-    }
-  }).sort((a, b) => b.total - a.total)
+    return Object.entries(enrichedByCategory).map(([key, v]) => {
+      const meta = ASSET_CATEGORIES[key] || { key, label: key, icon: '◈', color: '#4d7a59' }
+      return {
+        key, label: meta.label, icon: meta.icon, color: meta.color,
+        items: v.items, total: v.total, invested: v.invested,
+        pct: totalValue > 0 ? (v.total / totalValue) * 100 : 0,
+        pnl: v.total - v.invested,
+        pnlPct: v.invested > 0 ? ((v.total - v.invested) / v.invested) * 100 : 0,
+      }
+    }).sort((a, b) => b.total - a.total)
+  }, [enriched, totalValue])
 
-  const filteredCategories = categoryFilter === 'all'
-    ? categoryList
-    : categoryList.filter(c => c.key === categoryFilter)
+  const filteredCategories = useMemo(
+    () => categoryFilter === 'all' ? categoryList : categoryList.filter(c => c.key === categoryFilter),
+    [categoryList, categoryFilter]
+  )
 
   // Pie chart: per-asset contribution (one slice per holding)
   const chartData = enriched
@@ -960,16 +966,22 @@ export default function Dashboard() {
     }))
 
   // Portfolio value trend (transactions × historical prices from signals)
-  const portfolioHistory = computePortfolioHistory(transactions, prices, signals, trendDays)
+  const portfolioHistory = useMemo(
+    () => computePortfolioHistory(transactions, prices, signals, trendDays),
+    [transactions, prices, signals, trendDays]
+  )
   const trendStart = portfolioHistory.length > 0 ? portfolioHistory[0].value : 0
   const trendEnd = portfolioHistory.length > 0 ? portfolioHistory[portfolioHistory.length - 1].value : 0
   const trendChange = trendEnd - trendStart
   const trendChangePct = trendStart > 0 ? (trendChange / trendStart) * 100 : 0
   const trendColor = trendChange >= 0 ? '#10b981' : '#ef4444'
 
-  // Portfolio AI Analysis
-  let analysis = null
-  try { analysis = generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals) } catch (e) { console.error('Analysis error:', e) }
+  // Portfolio AI Analysis — memoised so the heavy computation only reruns
+  // when portfolio data or signals actually change.
+  const analysis = useMemo(() => {
+    try { return generatePortfolioAnalysis(enriched, totalValue, totalInvested, coinTargets, signals) }
+    catch { return null }
+  }, [enriched, totalValue, totalInvested, coinTargets, signals])
 
   // Regenerate the share image when the modal opens or key data changes.
   // Placed here so enriched + portfolioHistory are in scope.

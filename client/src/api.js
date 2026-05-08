@@ -49,18 +49,24 @@ async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
 // Fetch JSON from a URL, retrying through multiple CORS proxies if the
 // direct request fails (rate-limit, CORS block, network error, or
 // timeout). Returns null only if every attempt fails.
+// Proxies are raced in parallel so the fastest responding one wins
+// instead of waiting up to 4×4.5 s sequentially.
 async function fetchJSON(url) {
   try {
     const res = await fetchWithTimeout(url);
     if (res.ok) return await res.json();
   } catch {}
-  for (const wrap of CORS_PROXIES) {
-    try {
-      const res = await fetchWithTimeout(wrap(url));
-      if (res.ok) return await res.json();
-    } catch {}
+  try {
+    return await Promise.any(
+      CORS_PROXIES.map(async (wrap) => {
+        const res = await fetchWithTimeout(wrap(url));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+    );
+  } catch {
+    return null;
   }
-  return null;
 }
 
 // ─── Asset Categories ───

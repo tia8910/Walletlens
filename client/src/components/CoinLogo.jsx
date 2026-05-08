@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 
 // Robust coin-logo fallback chain. Each <img> uses onError to bump to
 // the next stage; an additional 2.5s timer forces an advance if the
@@ -12,7 +12,7 @@ import { useState, useEffect, useRef } from 'react'
 //   4. coloured letter / category badge
 const STAGE_TIMEOUT_MS = 2500
 
-export default function CoinLogo({
+function CoinLogo({
   image,
   symbol,
   size = 32,
@@ -39,7 +39,7 @@ export default function CoinLogo({
     return () => clearTimeout(t)
   }, [stage])
 
-  const common = { alt: '', width: size, height: size, className, loading: 'eager', referrerPolicy: 'no-referrer' }
+  const common = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer' }
 
   if (stage === 0 && image) {
     return <img {...common} src={image} onError={() => setStage(1)} />
@@ -88,3 +88,5 @@ export default function CoinLogo({
     </div>
   )
 }
+
+export default memo(CoinLogo)
