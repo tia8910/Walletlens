@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area,
   PieChart, Pie, Cell, Tooltip,
@@ -186,12 +186,17 @@ function DataPanel({ onRefresh }) {
 // ── Main Dashboard ───────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [portfolio, setPortfolio]   = useState([])
   const [prices, setPrices]         = useState({})
   const [transactions, setTransactions] = useState([])
   const [wallets, setWallets]       = useState([])
   const [loaded, setLoaded]         = useState(false)
-  const [activeTab, setActiveTab]   = useState('overview') // overview | buy | sell | wallets | data
+  const [activeTab, setActiveTab]   = useState(location.state?.tab || 'overview')
+
+  useEffect(() => {
+    if (location.state?.tab) setActiveTab(location.state.tab)
+  }, [location.state?.tab])
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
 
