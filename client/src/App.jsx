@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, NavLink } from 'react-router-dom'
+import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
+import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import PitchCard from './components/PitchCard'
 import PriceTicker from './components/PriceTicker'
@@ -54,6 +55,26 @@ function IconWhale() {
 }
 
 export default function App() {
+  const location = useLocation()
+  const isLanding = location.pathname === '/'
+
+  if (isLanding) {
+    return (
+      <div className="app app-landing">
+        <DynamicBackground particleCount={120} linkDistance={160} />
+        <main className="content content-landing">
+          <ErrorBoundary>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <DynamicBackground />
@@ -80,7 +101,7 @@ export default function App() {
 
         <ul>
           <li>
-            <NavLink to="/" end>
+            <NavLink to="/dashboard">
               <span className="nav-icon-wrap" aria-hidden="true"><IconHome /></span>
               <span>Dashboard</span>
             </NavLink>
@@ -132,7 +153,8 @@ export default function App() {
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/market" element={<Market />} />
               <Route path="/whales" element={<Whales />} />
@@ -143,7 +165,7 @@ export default function App() {
       </main>
 
       <nav className="bottom-nav" aria-label="Bottom navigation">
-        <NavLink to="/" end className="nav-item">
+        <NavLink to="/dashboard" className="nav-item">
           <IconHome />
           <span>Home</span>
         </NavLink>

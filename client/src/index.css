@@ -2383,9 +2383,9 @@ tr:last-child td { border-bottom: none; }
   .holo-card:hover { transform: none; }
 }
 
-/* ═══ Floating Lens Orb (decorative hero accent) ═══ */
+/* ═══ Floating Lens Orb ═══ */
 .lens-orb {
-  position: absolute;
+  position: relative;
   width: 56px; height: 56px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #6ee7b7 0%, #34d399 45%, #065f46 100%);
@@ -2397,8 +2397,141 @@ tr:last-child td { border-bottom: none; }
 }
 .lens-orb:hover { transform: scale(1.12); }
 .lens-orb:active { transform: scale(0.96); }
+.lens-orb-burst::after {
+  content: ''; position: absolute; inset: -8px;
+  border-radius: 50%; border: 2px solid rgba(52,211,153,0.7);
+  animation: lens-burst 0.7s ease-out forwards;
+}
+@keyframes lens-burst {
+  0%   { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .lens-orb { animation: none; }
+  .lens-orb-burst::after { animation: none; }
+}
+
+/* ═══ Landing page ═══ */
+.app-landing { display: block; min-height: 100vh; }
+.content-landing {
+  margin-left: 0 !important;
+  max-width: 1200px !important;
+  padding: 1rem !important;
+  margin-right: auto;
+}
+.landing {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  gap: 4rem;
+  padding: 2rem 1.25rem 4rem;
+}
+.landing-hero {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 1.25rem;
+  padding: 3rem 0.5rem 2rem;
+}
+.landing-tag {
+  display: inline-flex; align-items: center;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.18em;
+  padding: 0.4rem 0.9rem; border-radius: 999px;
+  background: rgba(52,211,153,0.1);
+  color: var(--g);
+  border: 1px solid rgba(52,211,153,0.32);
+  text-transform: uppercase;
+}
+.landing-orb {
+  width: 96px; height: 96px;
+  font-size: 2.6rem;
+  margin: 0.5rem 0 1rem;
+}
+.landing-title {
+  font-family: var(--display), 'Inter', sans-serif;
+  font-size: clamp(3.2rem, 12vw, 6.5rem);
+  font-weight: 800; letter-spacing: -0.045em; line-height: 0.95;
+  color: #fff; margin: 0;
+  text-shadow: 0 0 60px rgba(52,211,153,0.15);
+}
+.landing-title-accent {
+  background: linear-gradient(135deg, #34d399 0%, #6ee7b7 50%, #10b981 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 0 30px rgba(52,211,153,0.4));
+}
+.landing-subtitle {
+  font-size: clamp(1rem, 2.4vw, 1.3rem);
+  color: rgba(255,255,255,0.72);
+  max-width: 38ch; margin: 0;
+  line-height: 1.55;
+}
+.landing-cta-row {
+  display: flex; gap: 0.85rem; flex-wrap: wrap; justify-content: center;
+  margin-top: 0.5rem;
+}
+.landing-cta {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #000; font-weight: 800; font-size: 1.05rem;
+  padding: 1rem 1.8rem; border-radius: 16px; border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 40px rgba(52,211,153,0.35), 0 0 0 1px rgba(52,211,153,0.5);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  letter-spacing: -0.01em;
+}
+.landing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 50px rgba(52,211,153,0.45), 0 0 0 1px rgba(52,211,153,0.7);
+}
+.landing-cta-ghost {
+  background: transparent; color: #fff;
+  font-weight: 700; font-size: 1.05rem;
+  padding: 1rem 1.6rem; border-radius: 16px;
+  border: 1px solid rgba(52,211,153,0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.landing-cta-ghost:hover {
+  background: rgba(52,211,153,0.08);
+  border-color: rgba(52,211,153,0.7);
+}
+.landing-stats {
+  display: flex; gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.landing-stat {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.15rem;
+}
+.landing-stat strong {
+  font-family: var(--display), 'Inter', sans-serif;
+  font-size: 1.8rem; font-weight: 800; color: var(--g);
+  letter-spacing: -0.02em;
+}
+.landing-stat span {
+  font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.16em; color: rgba(255,255,255,0.55);
+  font-weight: 700;
+}
+.landing-features {
+  display: grid; gap: 1rem;
+  grid-template-columns: 1fr;
+  max-width: 1100px; width: 100%; margin: 0 auto;
+}
+@media (min-width: 760px) {
+  .landing-features { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+}
+.landing-feature {
+  padding: 1.6rem 1.4rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+.landing-feature-icon {
+  font-size: 2rem; line-height: 1;
+}
+.landing-feature h3 {
+  font-size: 1.15rem; font-weight: 800; color: #fff;
+  letter-spacing: -0.01em; margin: 0;
+}
+.landing-feature p {
+  color: rgba(255,255,255,0.6); font-size: 0.92rem; margin: 0;
+  line-height: 1.55;
 }
 .sell-plan-add { background: rgba(245,242,255,0.80); }
 .sell-plan-field input { background: rgba(255,255,255,0.92); color: var(--text); }
