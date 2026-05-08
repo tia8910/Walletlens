@@ -206,7 +206,7 @@ export default function Dashboard() {
     ])
     setPortfolio(p); setTransactions(txs); setWallets(ws)
     if (p.length) {
-      try { const px = await api.getPrices(p.map(h => h.coin_id)); setPrices(px || {}) }
+      try { const px = await api.getPrices(p.map(h => h.coin_id).join(',')); setPrices(px || {}) }
       catch {}
     }
     setLoaded(true)
