@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
+import LandingBackground from '../components/LandingBackground'
 
 // ── Animated counter ──────────────────────────────────────────────────────
 function Counter({ to, prefix = '', suffix = '', duration = 1800 }) {
@@ -121,16 +122,21 @@ export default function Landing() {
 
   return (
     <div className="lp">
+      <LandingBackground />
 
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
       <section className="lp-hero" ref={heroRef}>
-        <div className="lp-hero-glow lp-glow-1" />
-        <div className="lp-hero-glow lp-glow-2" />
-
         <div className="lp-hero-inner">
-          {/* Logo lockup */}
-          <button className={`lp-logo-btn ${logoAnim ? 'lp-logo-pop' : ''}`} onClick={handleLogoPulse} aria-label="WalletLens">
-            <Logo size={88} animated />
+          {/* Pulsing logo orb */}
+          <button
+            className={`lp-logo-orb ${logoAnim ? 'lp-logo-pop' : ''}`}
+            onClick={handleLogoPulse}
+            aria-label="WalletLens"
+          >
+            <span className="lp-logo-ring lp-logo-ring-1" />
+            <span className="lp-logo-ring lp-logo-ring-2" />
+            <span className="lp-logo-ring lp-logo-ring-3" />
+            <Logo size={88} />
           </button>
 
           <div className="lp-brand-name">WalletLens</div>
