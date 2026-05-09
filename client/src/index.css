@@ -4008,3 +4008,60 @@ select.bs-input option { background: #0a1a12; }
   font-size: 0.75rem;
   color: rgba(255,255,255,0.3);
 }
+
+/* ── Pulsing logo orb (landing hero) ──────────────────────────────────── */
+.lp-logo-orb {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; padding: 28px;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+}
+.lp-logo-orb:hover .wl-logo { filter: drop-shadow(0 0 24px rgba(52,211,153,0.9)); }
+
+/* concentric pulse rings */
+.lp-logo-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(52,211,153,0.45);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  animation: lp-ring-pulse 3s ease-out infinite;
+  pointer-events: none;
+}
+.lp-logo-ring-1 { width: 110px; height: 110px; animation-delay: 0s;    animation-duration: 2.8s; }
+.lp-logo-ring-2 { width: 148px; height: 148px; animation-delay: 0.7s;  animation-duration: 2.8s; }
+.lp-logo-ring-3 { width: 186px; height: 186px; animation-delay: 1.4s;  animation-duration: 2.8s; }
+
+@keyframes lp-ring-pulse {
+  0%   { transform: translate(-50%,-50%) scale(0.85); opacity: 0.8; }
+  60%  { opacity: 0.3; }
+  100% { transform: translate(-50%,-50%) scale(1.4);  opacity: 0; }
+}
+
+/* inner logo breathe — in & out */
+.lp-logo-orb .wl-logo {
+  animation: lp-logo-breathe 2.6s ease-in-out infinite;
+  position: relative; z-index: 1;
+  filter: drop-shadow(0 0 10px rgba(52,211,153,0.55));
+}
+@keyframes lp-logo-breathe {
+  0%,100% { transform: scale(1);    filter: drop-shadow(0 0 8px  rgba(52,211,153,0.5)); }
+  50%      { transform: scale(1.12); filter: drop-shadow(0 0 28px rgba(52,211,153,1.0)); }
+}
+
+/* click pop */
+.lp-logo-pop .wl-logo { animation: lp-logo-pop-anim 0.55s cubic-bezier(0.34,1.56,0.64,1) !important; }
+@keyframes lp-logo-pop-anim {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.4); filter: drop-shadow(0 0 40px rgba(52,211,153,1)); }
+  100% { transform: scale(1); }
+}
+
+/* make sure lp hero has z-index so it sits above the fixed canvas */
+.lp > section, .lp > footer {
+  position: relative;
+  z-index: 1;
+}
+/* remove old static glow divs if any remain */
+.lp-hero-glow { display: none; }
