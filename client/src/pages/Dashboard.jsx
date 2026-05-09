@@ -138,12 +138,66 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const sentiment = tradeRatio > 0.65 ? 'Accumulating' : tradeRatio < 0.35 ? 'Distributing' : 'Balanced'
   const sentimentColor = tradeRatio > 0.65 ? '#34d399' : tradeRatio < 0.35 ? '#f87171' : '#f59e0b'
 
+  // ── Fear / Greed score (0=extreme fear, 100=extreme greed) ───────────────
+  // Signals: momentum, pnl bias, trade sentiment, diversification
+  const fgRaw =
+    (momentum > 0 ? Math.min(momentum * 6, 30) : Math.max(momentum * 6, -30)) +
+    (inProfit.length / Math.max(n, 1)) * 30 +
+    (tradeRatio - 0.5) * 40 +
+    (concentrationScore > 70 ? 5 : concentrationScore < 40 ? -5 : 0)
+  const fearGreed = Math.round(Math.min(100, Math.max(0, 50 + fgRaw)))
+  const fgLabel =
+    fearGreed >= 80 ? 'Extreme Greed' :
+    fearGreed >= 60 ? 'Greed' :
+    fearGreed >= 45 ? 'Neutral' :
+    fearGreed >= 25 ? 'Fear' : 'Extreme Fear'
+  const fgColor =
+    fearGreed >= 80 ? '#f87171' :
+    fearGreed >= 60 ? '#f59e0b' :
+    fearGreed >= 45 ? '#34d399' :
+    fearGreed >= 25 ? '#3b82f6' : '#8b5cf6'
+
+  // ── Stress test scenarios ─────────────────────────────────────────────────
+  const stressScenarios = [
+    { label: 'Mild Dip',   pct: -10, color: '#f59e0b', icon: '📉' },
+    { label: 'Correction', pct: -30, color: '#f87171', icon: '🩸' },
+    { label: 'Bear Market',pct: -60, color: '#8b5cf6', icon: '🐻' },
+    { label: 'Bull +50%',  pct: +50, color: '#34d399', icon: '🚀' },
+    { label: 'Moon +200%', pct: +200,color: '#ffd700', icon: '🌕' },
+  ]
+
+  // ── Entry quality per asset ────────────────────────────────────────────────
+  const entryQuality = enriched.map(h => {
+    const avgBuy = h.total_invested > 0 && h.amount > 0 ? h.total_invested / h.amount : 0
+    const priceDiff = avgBuy > 0 ? ((h.price - avgBuy) / avgBuy) * 100 : 0
+    const score = Math.min(100, Math.max(0, 50 + priceDiff * 2))
+    return { ...h, avgBuy, priceDiff, entryScore: Math.round(score) }
+  })
+
+  // ── Rebalance planner (equal-weight target) ────────────────────────────────
+  const targetWeight = 1 / n
+  const rebalance = enriched.map((h, i) => {
+    const currentW = weights[i]
+    const diff     = (targetWeight - currentW) * 100
+    const diffVal  = (targetWeight - currentW) * totalValue
+    return { ...h, currentW: currentW * 100, targetW: targetWeight * 100, diff, diffVal }
+  })
+
+  // ── Today P&L (24h) ───────────────────────────────────────────────────────
+  const todayPnL = enriched.reduce((s, h) => {
+    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+    return s + h.value * (chg / 100)
+  }, 0)
+
   return {
     health, grade, gradeColor,
     concentrationScore, assetScore, momentumScore: Math.round(momentumScore), pnlHealth: Math.round(pnlHealth), tierScore,
     hhi, momentum, riskLevel, riskColor,
     mcBreakdown, insights,
     sentiment, sentimentColor, buyCount, sellCount,
+    fearGreed, fgLabel, fgColor,
+    stressScenarios, entryQuality, rebalance, todayPnL,
+    weights, targetWeight,
   }
 }
 
@@ -280,7 +334,181 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
           'Asset Count':ai.assetScore,
         }} />
       </div>
+
+      {/* ── Fear & Greed Meter ── */}
+      <div className="glass-card ai-fg-card">
+        <h4 className="ai-section-title">Portfolio Fear &amp; Greed</h4>
+        <FearGreedGauge value={ai.fearGreed} label={ai.fgLabel} color={ai.fgColor} />
+        <p className="ai-fg-desc">
+          Derived from momentum, P&amp;L bias, trade sentiment &amp; concentration — specific to <em>your</em> portfolio.
+        </p>
+      </div>
+
+      {/* ── Today's P&L ── */}
+      <div className="glass-card ai-today-card">
+        <h4 className="ai-section-title">Today's Performance (24h)</h4>
+        <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? '#34d399' : '#f87171' }}>
+          {ai.todayPnL >= 0 ? '+' : ''}${Math.abs(ai.todayPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div className="ai-today-assets">
+          {enriched.map(h => {
+            const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+            const dayPnL = h.value * (chg / 100)
+            return (
+              <div key={h.coin_id} className="ai-today-row">
+                <span className="ai-today-sym">{(h.coin_symbol || '').toUpperCase()}</span>
+                <div className="ai-today-bar-wrap">
+                  <div className="ai-today-bar" style={{
+                    width: `${Math.min(Math.abs(chg) * 5, 100)}%`,
+                    background: chg >= 0 ? '#34d399' : '#f87171',
+                    marginLeft: chg < 0 ? 'auto' : undefined,
+                  }} />
+                </div>
+                <span className="ai-today-chg" style={{ color: chg >= 0 ? '#34d399' : '#f87171' }}>
+                  {chg >= 0 ? '+' : ''}{chg.toFixed(2)}%
+                </span>
+                <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? '#34d399' : '#f87171' }}>
+                  {dayPnL >= 0 ? '+' : ''}${Math.abs(dayPnL).toFixed(0)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Stress Test ── */}
+      <div className="glass-card ai-stress-card">
+        <h4 className="ai-section-title">Stress Test Scenarios</h4>
+        <div className="ai-stress-grid">
+          {ai.stressScenarios.map(s => {
+            const newVal = totalValue * (1 + s.pct / 100)
+            const diff   = newVal - totalValue
+            return (
+              <div key={s.label} className="ai-stress-item" style={{ borderColor: s.color + '33' }}>
+                <div className="ai-stress-icon">{s.icon}</div>
+                <div className="ai-stress-label">{s.label}</div>
+                <div className="ai-stress-pct" style={{ color: s.color }}>
+                  {s.pct > 0 ? '+' : ''}{s.pct}%
+                </div>
+                <div className="ai-stress-val">${newVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                <div className="ai-stress-diff" style={{ color: s.color }}>
+                  {diff > 0 ? '+' : ''}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Entry Quality ── */}
+      <div className="glass-card ai-entry-card">
+        <h4 className="ai-section-title">Entry Quality Analysis</h4>
+        <p className="ai-entry-sub muted">Avg buy price vs current price per asset</p>
+        <div className="ai-entry-list">
+          {ai.entryQuality.map(h => (
+            <div key={h.coin_id} className="ai-entry-row">
+              <div className="ai-entry-left">
+                <span className="ai-entry-sym">{(h.coin_symbol || '').toUpperCase()}</span>
+                <div className="ai-entry-prices">
+                  <span className="muted" style={{fontSize:'0.7rem'}}>Avg buy ${h.avgBuy > 0 ? h.avgBuy.toLocaleString(undefined,{maximumFractionDigits:4}) : '—'}</span>
+                  <span style={{fontSize:'0.7rem',color:'#fff'}}> · Now ${h.price.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                </div>
+              </div>
+              <div className="ai-entry-bar-wrap">
+                <div className="ai-entry-bar-bg">
+                  <div className="ai-entry-bar-fill" style={{
+                    width: `${h.entryScore}%`,
+                    background: h.priceDiff >= 0 ? '#34d399' : '#f87171',
+                  }} />
+                </div>
+              </div>
+              <span className="ai-entry-score" style={{ color: h.priceDiff >= 0 ? '#34d399' : '#f87171' }}>
+                {h.priceDiff >= 0 ? '+' : ''}{h.priceDiff.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Rebalance Planner ── */}
+      <div className="glass-card ai-rebal-card">
+        <h4 className="ai-section-title">Rebalance Planner</h4>
+        <p className="ai-entry-sub muted">Equal-weight target vs current allocation</p>
+        <div className="ai-rebal-list">
+          {ai.rebalance.map(h => (
+            <div key={h.coin_id} className="ai-rebal-row">
+              <span className="ai-rebal-sym">{(h.coin_symbol || '').toUpperCase()}</span>
+              <div className="ai-rebal-bars">
+                <div className="ai-rebal-bar-row">
+                  <span className="ai-rebal-bar-lbl">Now</span>
+                  <div className="ai-rebal-bar-track">
+                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.currentW, 100)}%`, background: '#3b82f6' }} />
+                  </div>
+                  <span className="ai-rebal-bar-val">{h.currentW.toFixed(1)}%</span>
+                </div>
+                <div className="ai-rebal-bar-row">
+                  <span className="ai-rebal-bar-lbl">Target</span>
+                  <div className="ai-rebal-bar-track">
+                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.targetW, 100)}%`, background: '#34d399' }} />
+                  </div>
+                  <span className="ai-rebal-bar-val">{h.targetW.toFixed(1)}%</span>
+                </div>
+              </div>
+              <div className={`ai-rebal-action ${h.diff > 0 ? 'buy' : 'sell'}`}>
+                {h.diff > 0 ? '↑ Buy' : '↓ Sell'}
+                <span>${Math.abs(h.diffVal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+
+// ── Fear & Greed arc gauge ────────────────────────────────────────────────
+function FearGreedGauge({ value, label, color }) {
+  const R = 70, cx = 100, cy = 90
+  const startAngle = Math.PI        // 180°
+  const endAngle   = 2 * Math.PI   // 360°
+  const angle      = startAngle + (value / 100) * Math.PI
+  const arc = (a) => [cx + R * Math.cos(a), cy + R * Math.sin(a)]
+  const [sx, sy] = arc(startAngle)
+  const [ex, ey] = arc(endAngle)
+  const [nx, ny] = arc(angle)
+  const zones = [
+    { label: 'Extreme Fear', color: '#8b5cf6', from: 0,  to: 20 },
+    { label: 'Fear',         color: '#3b82f6', from: 20, to: 40 },
+    { label: 'Neutral',      color: '#34d399', from: 40, to: 60 },
+    { label: 'Greed',        color: '#f59e0b', from: 60, to: 80 },
+    { label: 'Extreme Greed',color: '#f87171', from: 80, to: 100 },
+  ]
+  function zoneArc(from, to) {
+    const a1 = startAngle + (from / 100) * Math.PI
+    const a2 = startAngle + (to   / 100) * Math.PI
+    const [x1, y1] = arc(a1); const [x2, y2] = arc(a2)
+    return `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`
+  }
+  return (
+    <svg viewBox="0 0 200 110" className="ai-fg-svg">
+      {/* Background arc */}
+      <path d={`M ${sx} ${sy} A ${R} ${R} 0 0 1 ${ex} ${ey}`}
+        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="12" strokeLinecap="round" />
+      {/* Zone arcs */}
+      {zones.map(z => (
+        <path key={z.label} d={zoneArc(z.from, z.to)}
+          fill="none" stroke={z.color} strokeWidth="12" strokeLinecap="butt" opacity="0.7" />
+      ))}
+      {/* Needle */}
+      <line x1={cx} y1={cy} x2={nx} y2={ny}
+        stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r="5" fill={color} />
+      {/* Value */}
+      <text x={cx} y={cy - 18} textAnchor="middle" fontSize="22" fontWeight="900"
+        fill={color} fontFamily="Inter,sans-serif">{value}</text>
+      <text x={cx} y={cy - 5} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.5)"
+        fontFamily="Inter,sans-serif">{label}</text>
+    </svg>
   )
 }
 
