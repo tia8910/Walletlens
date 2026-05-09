@@ -219,6 +219,79 @@ export default function Landing() {
           <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>} title="Multiple Wallets" desc="Organise trades by wallet or exchange. Keep your Ledger, Binance, and self-custody bags separate." />
           <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>} title="Backup Codes" desc="Export your entire portfolio as a short WLZ code. Import it on any device in seconds — no cloud required." />
           <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} title="Local-First Privacy" desc="All data stays on your device. No servers, no accounts, no analytics — your wealth is nobody else's business." />
+          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a5 5 0 0 1 5 5c0 3.5-5 9-5 9S7 10.5 7 7a5 5 0 0 1 5-5z"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><path d="M5 20h14"/></svg>} title="AI Portfolio Analysis" desc="On-device intelligence scores your wallet health, flags risk, and surfaces rebalance opportunities — no data leaves your device." />
+        </div>
+      </section>
+
+      {/* ══ AI SHOWCASE ═════════════════════════════════════════════════ */}
+      <section className="lp-section lp-ai-showcase">
+        <div className="lp-section-label">AI INTELLIGENCE</div>
+        <h2 className="lp-section-h2">Your portfolio, x-rayed by AI</h2>
+        <p className="lp-section-sub">Seven analytical engines run entirely on your device — no API keys, no cloud, no fees. Just maths on your data.</p>
+        <div className="lp-ai-grid">
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(0,230,118,0.12)',color:'#00e676'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Wallet Health Score</div>
+              <div className="lp-ai-feat-desc">A 0–100 composite score measuring diversification, concentration risk, and unrealised gain/loss balance — your portfolio's vital sign at a glance.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(255,215,0,0.12)',color:'#ffd700'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Fear & Greed Gauge</div>
+              <div className="lp-ai-feat-desc">Composite market sentiment derived from price momentum, P&L ratio, trade frequency, and portfolio concentration — presented as a live arc gauge from Extreme Fear to Extreme Greed.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(59,130,246,0.12)',color:'#60a5fa'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Market Cap Breakdown</div>
+              <div className="lp-ai-feat-desc">Classifies every holding into Mega, Large, Mid, Small, or Micro cap tiers. A radar chart shows your risk exposure profile so you can see instantly if you are over-weighted in speculative assets.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(239,68,68,0.12)',color:'#f87171'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Stress Test</div>
+              <div className="lp-ai-feat-desc">Simulates your portfolio value under five market scenarios: -10% correction, -30% bear, -60% crash, +50% bull, and +200% supercycle. Know your worst case before the market does.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(168,85,247,0.12)',color:'#c084fc'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Entry Quality Score</div>
+              <div className="lp-ai-feat-desc">Compares your average buy price against the current market price for every holding. Green means you're in profit; red means you're underwater — with exact percentage shown per asset.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(20,184,166,0.12)',color:'#2dd4bf'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Rebalance Planner</div>
+              <div className="lp-ai-feat-desc">Calculates the exact dollar amount to buy or sell per asset to reach equal-weight allocation. Shows current vs target weight bars and a clear buy/sell action for each position.</div>
+            </div>
+          </div>
+          <div className="lp-ai-feat">
+            <div className="lp-ai-feat-icon" style={{background:'rgba(251,146,60,0.12)',color:'#fb923c'}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div className="lp-ai-feat-title">Today's Performance</div>
+              <div className="lp-ai-feat-desc">Shows the 24-hour dollar P&L per asset as a colour-coded bar row. Green bars for gainers, red bars for losers — instantly see which positions are driving today's move.</div>
+            </div>
+          </div>
         </div>
       </section>
 
