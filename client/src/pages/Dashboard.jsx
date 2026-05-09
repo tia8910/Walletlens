@@ -24,6 +24,320 @@ const Ico = {
   target:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
   close:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   search:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  ai:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2M3 17h2M19 17h2"/></svg>,
+}
+
+// ── Market-cap tier classifier ────────────────────────────────────────────
+const MC_TIERS = [
+  { id: 'mega',  label: 'Mega Cap',  min: 100e9,  color: '#34d399', emoji: '🐋' },
+  { id: 'large', label: 'Large Cap', min: 10e9,   color: '#3b82f6', emoji: '🔵' },
+  { id: 'mid',   label: 'Mid Cap',   min: 1e9,    color: '#f59e0b', emoji: '🟡' },
+  { id: 'small', label: 'Small Cap', min: 100e6,  color: '#f87171', emoji: '🔴' },
+  { id: 'micro', label: 'Micro Cap', min: 0,      color: '#8b5cf6', emoji: '💜' },
+]
+
+// Known mega/large-cap IDs to classify without needing live market cap data
+const KNOWN_MEGA = new Set(['bitcoin','ethereum'])
+const KNOWN_LARGE = new Set(['solana','binancecoin','xrp','cardano','dogecoin','avalanche-2','polkadot','chainlink','polygon','litecoin','tron','shiba-inu'])
+
+function classifyMcTier(coinId, marketCap) {
+  if (marketCap > 0) {
+    return MC_TIERS.find(t => marketCap >= t.min) || MC_TIERS[MC_TIERS.length - 1]
+  }
+  if (KNOWN_MEGA.has(coinId))  return MC_TIERS[0]
+  if (KNOWN_LARGE.has(coinId)) return MC_TIERS[1]
+  return MC_TIERS[3]
+}
+
+// ── AI analysis engine ────────────────────────────────────────────────────
+function computeAI(enriched, prices, transactions, totalValue) {
+  if (!enriched.length || totalValue === 0) return null
+
+  // Weights (0-1 each)
+  const weights = enriched.map(h => h.value / totalValue)
+  const n = enriched.length
+
+  // 1. Concentration (Herfindahl-Hirschman Index, 0=perfect, 1=single asset)
+  const hhi = weights.reduce((s, w) => s + w * w, 0)
+  const hhiNorm = (hhi - 1/n) / (1 - 1/n + 1e-9)   // 0=diverse, 1=concentrated
+  const concentrationScore = Math.round((1 - hhiNorm) * 100)
+
+  // 2. Diversification (unique assets, ideal 5-12)
+  const assetScore = n >= 12 ? 85 : n >= 7 ? 100 : n >= 4 ? 85 : n >= 2 ? 65 : 30
+
+  // 3. Momentum — weighted 24h change
+  const momentum = enriched.reduce((s, h, i) => {
+    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+    return s + chg * weights[i]
+  }, 0)
+  const momentumScore = Math.min(100, Math.max(0, 50 + momentum * 3))
+
+  // 4. P&L health
+  const pnlScore = enriched.reduce((s, h, i) => s + (h.pnl >= 0 ? 20 : -10) * weights[i], 0)
+  const pnlHealth = Math.min(100, Math.max(0, 50 + pnlScore))
+
+  // 5. Market cap tier diversity (reward spreading across tiers)
+  const tierSet = new Set(enriched.map(h => classifyMcTier(h.coin_id, h.market_cap || 0).id))
+  const tierScore = Math.min(100, tierSet.size * 28)
+
+  // Overall health score (weighted average)
+  const health = Math.round(
+    concentrationScore * 0.30 +
+    assetScore         * 0.20 +
+    momentumScore      * 0.15 +
+    pnlHealth          * 0.20 +
+    tierScore          * 0.15
+  )
+
+  // Grade
+  const grade = health >= 88 ? 'A+' : health >= 80 ? 'A' : health >= 72 ? 'B+' :
+                health >= 64 ? 'B'  : health >= 55 ? 'C+': health >= 45 ? 'C'  : 'D'
+
+  const gradeColor = health >= 72 ? '#34d399' : health >= 55 ? '#f59e0b' : '#f87171'
+
+  // Market cap breakdown
+  const mcBreakdown = MC_TIERS.map(tier => {
+    const assets = enriched.filter(h => classifyMcTier(h.coin_id, h.market_cap || 0).id === tier.id)
+    const value  = assets.reduce((s, h) => s + h.value, 0)
+    return { ...tier, assets, value, pct: totalValue > 0 ? (value / totalValue) * 100 : 0 }
+  }).filter(t => t.assets.length > 0)
+
+  // Smart AI insights
+  const insights = []
+  const topAsset = enriched[0]
+  const topWeight = weights[0] * 100
+
+  if (topWeight > 60) insights.push({ type: 'warn', text: `${topAsset.coin_symbol.toUpperCase()} dominates ${topWeight.toFixed(0)}% of your portfolio — high concentration risk.` })
+  else if (topWeight > 40) insights.push({ type: 'info', text: `${topAsset.coin_symbol.toUpperCase()} is your largest position at ${topWeight.toFixed(0)}%.` })
+
+  if (n < 3) insights.push({ type: 'warn', text: `Only ${n} asset${n > 1 ? 's' : ''} detected — consider spreading into more positions to reduce risk.` })
+  else if (n >= 8) insights.push({ type: 'good', text: `${n} assets tracked — solid diversification across your portfolio.` })
+
+  const inProfit = enriched.filter(h => h.pnl > 0)
+  const inLoss   = enriched.filter(h => h.pnl < 0)
+  if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: `All ${inProfit.length} positions are in profit 🚀` })
+  else if (inProfit.length > 0) insights.push({ type: 'info', text: `${inProfit.length} of ${n} positions in profit, ${inLoss.length} in loss.` })
+
+  if (momentum > 3) insights.push({ type: 'good', text: `Strong bullish momentum: weighted 24h gain of +${momentum.toFixed(2)}% across holdings.` })
+  else if (momentum < -3) insights.push({ type: 'warn', text: `Bearish pressure: weighted 24h loss of ${momentum.toFixed(2)}% across holdings.` })
+
+  const hasMetals = enriched.some(h => h.coin_id === 'metal:xau' || h.coin_id === 'metal:xag')
+  const hasStocks = enriched.some(h => (h.coin_id || '').startsWith('stock:'))
+  if (!hasMetals && !hasStocks) insights.push({ type: 'info', text: 'Portfolio is 100% crypto — adding gold/silver or stocks could hedge volatility.' })
+
+  if (tierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${tierSet.size} market-cap tiers — balanced risk profile.` })
+  else if (!tierSet.has('mid') && !tierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap assets — mid/small-cap exposure could boost upside.' })
+
+  // Indicators
+  const riskLevel = hhiNorm > 0.6 ? 'High' : hhiNorm > 0.3 ? 'Medium' : 'Low'
+  const riskColor = hhiNorm > 0.6 ? '#f87171' : hhiNorm > 0.3 ? '#f59e0b' : '#34d399'
+
+  const buyCount = transactions.filter(t => t.type === 'buy').length
+  const sellCount = transactions.filter(t => t.type === 'sell').length
+  const tradeRatio = buyCount + sellCount > 0 ? buyCount / (buyCount + sellCount) : 0.5
+  const sentiment = tradeRatio > 0.65 ? 'Accumulating' : tradeRatio < 0.35 ? 'Distributing' : 'Balanced'
+  const sentimentColor = tradeRatio > 0.65 ? '#34d399' : tradeRatio < 0.35 ? '#f87171' : '#f59e0b'
+
+  return {
+    health, grade, gradeColor,
+    concentrationScore, assetScore, momentumScore: Math.round(momentumScore), pnlHealth: Math.round(pnlHealth), tierScore,
+    hhi, momentum, riskLevel, riskColor,
+    mcBreakdown, insights,
+    sentiment, sentimentColor, buyCount, sellCount,
+  }
+}
+
+// ── AI Analysis panel ─────────────────────────────────────────────────────
+function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
+  const ai = useMemo(
+    () => computeAI(enriched, prices, transactions, totalValue),
+    [enriched, prices, transactions, totalValue]
+  )
+
+  if (!ai) return (
+    <div className="ai-empty glass-card">
+      <div className="ai-empty-icon">🤖</div>
+      <p>Add holdings to unlock AI portfolio analysis.</p>
+    </div>
+  )
+
+  return (
+    <div className="ai-wrap">
+      {isDemo && <div className="dvx-badge-demo" style={{marginBottom:'0.75rem',display:'inline-block'}}>DEMO DATA</div>}
+
+      {/* Health score orb */}
+      <div className="ai-health-card glass-card">
+        <div className="ai-health-left">
+          <div className="ai-orb" style={{ '--health': ai.health, '--grade-color': ai.gradeColor }}>
+            <svg className="ai-orb-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke={ai.gradeColor} strokeWidth="10"
+                strokeDasharray={`${2 * Math.PI * 52}`}
+                strokeDashoffset={`${2 * Math.PI * 52 * (1 - ai.health / 100)}`}
+                strokeLinecap="round" transform="rotate(-90 60 60)" />
+            </svg>
+            <div className="ai-orb-inner">
+              <div className="ai-orb-score" style={{color: ai.gradeColor}}>{ai.health}</div>
+              <div className="ai-orb-label">/ 100</div>
+            </div>
+          </div>
+          <div>
+            <div className="ai-grade" style={{color: ai.gradeColor}}>{ai.grade}</div>
+            <div className="ai-grade-label">Portfolio Grade</div>
+          </div>
+        </div>
+        <div className="ai-health-bars">
+          {[
+            { label: 'Diversification', val: ai.concentrationScore, color: '#34d399' },
+            { label: 'Momentum',        val: ai.momentumScore,      color: '#3b82f6' },
+            { label: 'P&L Health',      val: ai.pnlHealth,          color: '#f59e0b' },
+            { label: 'Cap Spread',      val: ai.tierScore,          color: '#8b5cf6' },
+          ].map(b => (
+            <div key={b.label} className="ai-bar-row">
+              <div className="ai-bar-label">{b.label}</div>
+              <div className="ai-bar-track">
+                <div className="ai-bar-fill" style={{ width: `${b.val}%`, background: b.color }} />
+              </div>
+              <div className="ai-bar-val" style={{color: b.color}}>{b.val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Key indicators row */}
+      <div className="ai-indicators">
+        <div className="ai-ind-card glass-card">
+          <div className="ai-ind-label">Risk Level</div>
+          <div className="ai-ind-val" style={{color: ai.riskColor}}>{ai.riskLevel}</div>
+          <div className="ai-ind-sub">HHI {ai.hhi.toFixed(2)}</div>
+        </div>
+        <div className="ai-ind-card glass-card">
+          <div className="ai-ind-label">24h Momentum</div>
+          <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? '#34d399' : '#f87171'}}>
+            {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
+          </div>
+          <div className="ai-ind-sub">weighted avg</div>
+        </div>
+        <div className="ai-ind-card glass-card">
+          <div className="ai-ind-label">Sentiment</div>
+          <div className="ai-ind-val" style={{color: ai.sentimentColor}}>{ai.sentiment}</div>
+          <div className="ai-ind-sub">{ai.buyCount}B · {ai.sellCount}S</div>
+        </div>
+        <div className="ai-ind-card glass-card">
+          <div className="ai-ind-label">Assets</div>
+          <div className="ai-ind-val" style={{color:'#fff'}}>{enriched.length}</div>
+          <div className="ai-ind-sub">{ai.mcBreakdown.length} cap tier{ai.mcBreakdown.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      {/* Market cap breakdown */}
+      <div className="glass-card ai-mc-card">
+        <h4 className="ai-section-title">Market Cap Distribution</h4>
+        <div className="ai-mc-bar-track">
+          {ai.mcBreakdown.map(t => (
+            <div key={t.id} className="ai-mc-seg" style={{ width: `${t.pct}%`, background: t.color }}
+              title={`${t.label}: ${t.pct.toFixed(1)}%`} />
+          ))}
+        </div>
+        <div className="ai-mc-legend">
+          {ai.mcBreakdown.map(t => (
+            <div key={t.id} className="ai-mc-item">
+              <span className="ai-mc-dot" style={{background: t.color}} />
+              <div className="ai-mc-info">
+                <span className="ai-mc-name">{t.emoji} {t.label}</span>
+                <span className="ai-mc-assets">{t.assets.map(a => a.coin_symbol?.toUpperCase()).join(', ')}</span>
+              </div>
+              <span className="ai-mc-pct" style={{color: t.color}}>{t.pct.toFixed(1)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Insights */}
+      <div className="glass-card ai-insights-card">
+        <h4 className="ai-section-title">🤖 AI Insights</h4>
+        <div className="ai-insights-list">
+          {ai.insights.map((ins, i) => (
+            <div key={i} className={`ai-insight ai-insight-${ins.type}`}>
+              <span className="ai-insight-dot" />
+              <span>{ins.text}</span>
+            </div>
+          ))}
+          {ai.insights.length === 0 && (
+            <p className="muted" style={{fontSize:'0.83rem'}}>Looking good — no critical signals detected.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Radar-style indicator ring (SVG) */}
+      <div className="glass-card ai-radar-card">
+        <h4 className="ai-section-title">Portfolio Radar</h4>
+        <AIRadar scores={{
+          Diversity:    ai.concentrationScore,
+          Momentum:     ai.momentumScore,
+          'P&L':        ai.pnlHealth,
+          'Cap Spread': ai.tierScore,
+          'Asset Count':ai.assetScore,
+        }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Radar chart (pure SVG, no library needed) ─────────────────────────────
+function AIRadar({ scores }) {
+  const labels = Object.keys(scores)
+  const vals   = Object.values(scores)
+  const n = labels.length
+  const cx = 130, cy = 130, r = 95
+
+  function point(i, val) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2
+    const dist  = (val / 100) * r
+    return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)]
+  }
+  function labelPoint(i) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2
+    const dist  = r + 22
+    return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)]
+  }
+
+  const polygon = vals.map((v, i) => point(i, v).join(',')).join(' ')
+  const rings   = [25, 50, 75, 100]
+
+  return (
+    <svg viewBox="0 0 260 260" className="ai-radar-svg">
+      {/* Grid rings */}
+      {rings.map(pct => (
+        <polygon key={pct} points={labels.map((_, i) => {
+          const [x, y] = point(i, pct); return `${x},${y}`
+        }).join(' ')}
+          fill="none" stroke="rgba(52,211,153,0.1)" strokeWidth="1" />
+      ))}
+      {/* Axis lines */}
+      {labels.map((_, i) => {
+        const [x, y] = point(i, 100)
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(52,211,153,0.12)" strokeWidth="1" />
+      })}
+      {/* Data polygon */}
+      <polygon points={polygon} fill="rgba(52,211,153,0.15)" stroke="#34d399" strokeWidth="2" />
+      {/* Data points */}
+      {vals.map((v, i) => {
+        const [x, y] = point(i, v)
+        return <circle key={i} cx={x} cy={y} r="4" fill="#34d399" />
+      })}
+      {/* Labels */}
+      {labels.map((lbl, i) => {
+        const [x, y] = labelPoint(i)
+        return (
+          <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
+            fontSize="9" fill="rgba(255,255,255,0.55)" fontFamily="Inter,sans-serif">
+            {lbl}
+          </text>
+        )
+      })}
+    </svg>
+  )
 }
 
 
@@ -417,6 +731,7 @@ export default function Dashboard() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Ico.overview },
+    { id: 'ai',       label: 'AI',       icon: Ico.ai },
     { id: 'buy',      label: 'Buy',      icon: Ico.buy,    sheet: 'buy' },
     { id: 'sell',     label: 'Sell',     icon: Ico.sell,   sheet: 'sell' },
     { id: 'targets',  label: 'Targets',  icon: Ico.target },
@@ -796,6 +1111,17 @@ export default function Dashboard() {
             ))
           )}
         </div>
+      )}
+
+      {/* ══ AI ANALYSIS ══ */}
+      {activeTab === 'ai' && (
+        <AIPanel
+          enriched={enriched}
+          prices={prices}
+          transactions={transactions}
+          totalValue={totalValue}
+          isDemo={isDemo}
+        />
       )}
 
       {/* ══ WALLETS ══ */}
