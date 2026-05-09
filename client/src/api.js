@@ -82,6 +82,8 @@ try { runSchemaMigrations(); } catch (err) { console.warn('Schema migration fail
 // the background.
 const PRICE_CACHE_KEY = 'crypto_tracker_price_cache_v1';
 const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v1';
+const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
+const CHART_TTL = 5 * 60 * 1000;
 function _loadCache(key) {
   try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
@@ -92,6 +94,9 @@ let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
+// Chart cache lives at module level so repeated getChartData calls don't
+// re-parse localStorage on every invocation.
+let chartCache = _loadCache(CHART_CACHE_KEY);
 
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
 // where the slug doesn't match the exchange ticker. Anything not listed
@@ -782,13 +787,7 @@ export const api = {
       return pts;
     }
 
-    // Localstorage cache: 5 min TTL per (id, days). Returns cached series
-    // immediately if fresh, otherwise tries CoinGecko, then CoinCap, then
-    // falls back to whatever we have in 30d signals cache.
-    const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
-    const CHART_TTL = 5 * 60 * 1000;
-    let chartCache = {};
-    try { chartCache = JSON.parse(localStorage.getItem(CHART_CACHE_KEY) || '{}'); } catch {}
+    // Module-level chartCache (hydrated once at boot). TTL: 5 min per (id, days).
     const cacheKey = `${id}::${days}`;
     const hit = chartCache[cacheKey];
     if (hit && Date.now() - hit.t < CHART_TTL && Array.isArray(hit.v) && hit.v.length > 0) {

@@ -39,7 +39,7 @@ export default function CoinLogo({
     return () => clearTimeout(t)
   }, [stage])
 
-  const common = { alt: '', width: size, height: size, className, loading: 'eager', referrerPolicy: 'no-referrer' }
+  const common = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer' }
 
   if (stage === 0 && image) {
     return <img {...common} src={image} onError={() => setStage(1)} />
