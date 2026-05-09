@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } from '../api'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
+import TradeSheet from '../components/TradeSheet'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -32,8 +33,12 @@ export default function AssetDetail() {
   const [tInputPrice, setTInputPrice] = useState('')
   const [tInputQty, setTInputQty] = useState('')
   const [signals, setSignals] = useState(null)
+  const [wallets, setWallets] = useState([])
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [sheetType, setSheetType] = useState('buy')
 
   useEffect(() => { loadData() }, [coinId])
+  useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
   useEffect(() => { loadChart() }, [coinId, chartDays])
   useEffect(() => {
     setSignals(null)
@@ -322,17 +327,27 @@ export default function AssetDetail() {
 
       {/* Buy/Sell actions */}
       <div className="detail-actions">
-        <button className="action-btn buy-btn detail-act" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'buy', prefillCoin: coinId, prefillSymbol: coin?.symbol, prefillName: coin?.name, prefillImage: coin?.image } })}>
+        <button className="action-btn buy-btn detail-act" onClick={() => { setSheetType('buy'); setSheetOpen(true) }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Buy {coin?.symbol}
         </button>
         {holdings && (
-          <button className="action-btn sell-btn detail-act" onClick={() => navigate('/transactions', { state: { openAdd: true, type: 'sell', prefillCoin: coinId, prefillSymbol: coin?.symbol, prefillName: coin?.name, prefillImage: coin?.image, holdings: amount } })}>
+          <button className="action-btn sell-btn detail-act" onClick={() => { setSheetType('sell'); setSheetOpen(true) }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Sell {coin?.symbol}
           </button>
         )}
       </div>
+
+      <TradeSheet
+        open={sheetOpen}
+        type={sheetType}
+        onClose={() => setSheetOpen(false)}
+        wallets={wallets}
+        onDone={loadData}
+        holdings={holdings ? [{ ...holdings, coin_id: coinId, coin_symbol: coin?.symbol, amount }] : []}
+        prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
+      />
     </div>
   )
 }

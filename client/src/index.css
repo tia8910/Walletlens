@@ -3628,3 +3628,10 @@ select.bs-input option { background: #0a1a12; }
   gap: 0.6rem; padding: 2.5rem 1.25rem;
   text-align: center;
 }
+
+/* bs-* additions for buy-with / sell-for legs */
+.bs-leg-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+.bs-leg-row .bs-input { flex: 1; }
+.bs-leg-custom { max-width: 120px; flex: 0 0 auto !important; text-transform: uppercase; }
+.bs-hint { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin: 0.25rem 0 0; line-height: 1.4; }
+.bs-hint strong { color: rgba(255,255,255,0.7); }
