@@ -1067,18 +1067,18 @@ body::after {
 .cap-badge.cap-mid   { background: #f59e0b; }
 .cap-badge.cap-small { background: #ef4444; }
 .sell-for-row {
-  display: grid; grid-template-columns: minmax(120px, 1fr) 1fr; gap: 0.5rem;
+  display: flex; gap: 0.5rem; align-items: flex-start;
 }
-.sell-for-row > select { width: 100%; }
+.sell-for-row > select { flex: 1; width: auto; }
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
 input, select, textarea {
   width: 100%; padding: 0.7rem 0.85rem; border-radius: 10px;
-  border: 1px solid var(--border); background: rgba(255,255,255,0.85);
+  border: 1px solid var(--border); background: rgba(255,255,255,0.06);
   color: var(--text); font-size: 0.95rem; outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-input::placeholder, textarea::placeholder { color: rgba(107,107,143,0.55); }
+input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,200,83,0.15); }
 select option { background: var(--bg3); color: var(--text); }
 
@@ -4065,3 +4065,16 @@ select.bs-input option { background: #0a1a12; }
 }
 /* remove old static glow divs if any remain */
 .lp-hero-glow { display: none; }
+
+/* ── Bug fixes ─────────────────────────────────────────────────────────── */
+/* Transaction notes inline */
+.tx-notes { color: rgba(255,255,255,0.4); font-size: 0.78rem; font-style: italic; }
+
+/* Dark background for native select dropdowns */
+select option { background: #0a180e !important; color: #fff; }
+
+/* date color-scheme for date inputs */
+input[type="date"] { color-scheme: dark; }
+
+/* sell-for-row custom input flex */
+.sell-for-row > input { flex: 1; }

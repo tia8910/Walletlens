@@ -510,6 +510,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }
 
   async function handleDelete(id) {
+    if (!window.confirm('Delete this transaction? This cannot be undone.')) return
     await api.deleteTransaction(id)
     loadData()
   }
@@ -522,8 +523,10 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     <div className="page">
       <div className="page-header">
         <h2>Transactions</h2>
-        <button className="fab" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'X' : '+'}
+        <button className="fab" onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'}>
+          {showForm
+            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
         </button>
       </div>
 
@@ -967,7 +970,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       <span className={`tx-badge ${badgeClass}`}>{txType.toUpperCase()}</span>
                     </div>
                     <div className="tx-meta">
-                      {t.date || ''} {t.exchange && `\u00B7 ${t.exchange}`}
+                      {t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }) : '\u2014'}
+                      {t.exchange && ` \u00B7 ${t.exchange}`}
+                      {t.notes && <span className="tx-notes"> \u00B7 {t.notes}</span>}
                     </div>
                   </div>
                 </div>
