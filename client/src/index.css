@@ -4235,3 +4235,45 @@ input[type="date"] { color-scheme: dark; }
 .ai-rebal-action.buy  { color: #34d399; }
 .ai-rebal-action.sell { color: #f87171; }
 .ai-rebal-action span { font-size: 0.65rem; font-family: var(--mono,monospace); font-weight: 700; }
+
+/* ── AI Showcase (Landing) ─────────────────────────────────────────────── */
+.lp-ai-showcase { background: transparent; }
+.lp-section-sub { color: var(--muted); font-size: .97rem; margin: -.5rem 0 2rem; max-width: 600px; }
+.lp-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+.lp-ai-feat {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 1.2rem 1.25rem;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.lp-ai-feat:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(0,230,118,0.2);
+  transform: translateY(-2px);
+}
+.lp-ai-feat-icon {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lp-ai-feat-title {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--text);
+  margin-bottom: .3rem;
+}
+.lp-ai-feat-desc {
+  font-size: .84rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
