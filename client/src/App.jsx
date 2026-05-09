@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
+import Logo from './components/Logo'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -39,7 +40,7 @@ function Drawer({ open, onClose }) {
       <aside className={`wl-drawer ${open ? 'wl-drawer-open' : ''}`}>
         <div className="wl-drawer-head">
           <div className="wl-drawer-brand">
-            <div className="lens-ring lens-ring-sm"><div className="lens-mid"/><div className="lens-shine"/><div className="lens-core"/></div>
+            <Logo size={30} />
             <div>
               <div className="wl-drawer-name">WalletLens</div>
               <div className="wl-drawer-tag">zoom in your wealth</div>
@@ -101,7 +102,7 @@ export default function App() {
             <IconMenu />
           </button>
           <div className="wl-topbar-brand">
-            <div className="lens-ring lens-ring-sm"><div className="lens-mid"/><div className="lens-shine"/><div className="lens-core"/></div>
+            <Logo size={28} />
             <strong>WalletLens</strong>
           </div>
           <div className="wl-topbar-right">
@@ -131,7 +132,7 @@ export default function App() {
       </main>
 
       {/* Floating lens orb */}
-      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220) }} aria-label="Pulse">🔎</button>
+      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220) }} aria-label="WalletLens"><Logo size={30} /></button>
 
       {/* Bottom nav */}
       <nav className="wl-bottom-nav">
