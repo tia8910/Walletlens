@@ -86,7 +86,10 @@ export default function Whales() {
           <p className="page-sub">Live large-money flows, market anomalies, and smart-money signals.</p>
         </div>
         <button className="refresh-btn" onClick={load} disabled={loading}>
-          {loading ? '…' : 'Refresh'}
+          {loading
+            ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{animation:'spin 0.8s linear infinite'}}><path d="M21 12a9 9 0 1 1-4.219-7.617"/></svg>
+            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.86"/></svg>}
+          {loading ? 'Loading…' : 'Refresh'}
         </button>
       </div>
 

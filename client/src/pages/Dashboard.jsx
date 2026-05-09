@@ -47,7 +47,7 @@ const DEMO = {
 }
 
 const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtN  = n => Math.abs(n) >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${n.toFixed(0)}`
+const fmtN  = n => { const s = Math.abs(n) >= 1000 ? `$${(Math.abs(n)/1000).toFixed(1)}k` : `$${Math.abs(n).toFixed(0)}`; return n < 0 ? `-${s}` : s }
 const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['#34d399','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','#10b981','#a78bfa']
 
@@ -434,7 +434,7 @@ export default function Dashboard() {
       {/* Tab nav */}
       <div className="dvx-tabs">
         {tabs.map(t => (
-          <button key={t.id} className={`dvx-tab ${activeTab === t.id ? 'dvx-tab-active' : ''}`}
+          <button key={t.id} className={`dvx-tab ${!t.sheet && activeTab === t.id ? 'dvx-tab-active' : ''}`}
             onClick={() => t.sheet ? openSheet(t.sheet) : setActiveTab(t.id)}>
             <span className="dvx-tab-icon">{t.icon}</span>
             <span>{t.label}</span>
