@@ -4163,3 +4163,75 @@ input[type="date"] { color-scheme: dark; }
 /* ── Radar ── */
 .ai-radar-card { padding: 1.1rem; display: flex; flex-direction: column; align-items: center; }
 .ai-radar-svg { width: 100%; max-width: 280px; }
+
+/* ── Fear & Greed ── */
+.ai-fg-card { padding: 1.1rem; text-align: center; }
+.ai-fg-svg  { width: 100%; max-width: 220px; margin: 0 auto; display: block; }
+.ai-fg-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin: 0.5rem 0 0; line-height: 1.5; }
+
+/* ── Today's P&L ── */
+.ai-today-card { padding: 1.1rem; }
+.ai-today-main {
+  font-size: 2rem; font-weight: 900; text-align: center;
+  margin: 0.25rem 0 1rem; font-family: var(--mono, monospace);
+}
+.ai-today-assets { display: flex; flex-direction: column; gap: 0.5rem; }
+.ai-today-row { display: grid; grid-template-columns: 3rem 1fr 3.5rem 4rem; align-items: center; gap: 0.5rem; }
+.ai-today-sym  { font-size: 0.75rem; font-weight: 800; color: #fff; }
+.ai-today-bar-wrap { height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; display: flex; }
+.ai-today-bar  { height: 100%; border-radius: 99px; min-width: 2px; transition: width 0.6s ease; }
+.ai-today-chg  { font-size: 0.72rem; font-weight: 700; text-align: right; font-family: var(--mono,monospace); }
+.ai-today-pnl  { font-size: 0.72rem; font-weight: 700; text-align: right; font-family: var(--mono,monospace); }
+
+/* ── Stress Test ── */
+.ai-stress-card { padding: 1.1rem; }
+.ai-stress-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; margin-top: 0.5rem;
+}
+@media (min-width: 500px) { .ai-stress-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 700px) { .ai-stress-grid { grid-template-columns: repeat(5, 1fr); } }
+.ai-stress-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid transparent;
+  border-radius: 12px; padding: 0.85rem 0.65rem;
+  text-align: center; display: flex; flex-direction: column; gap: 0.2rem;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.ai-stress-item:hover { transform: translateY(-2px); }
+.ai-stress-icon  { font-size: 1.4rem; }
+.ai-stress-label { font-size: 0.68rem; color: rgba(255,255,255,0.5); font-weight: 700; }
+.ai-stress-pct   { font-size: 1rem; font-weight: 900; }
+.ai-stress-val   { font-size: 0.75rem; color: rgba(255,255,255,0.7); font-family: var(--mono,monospace); }
+.ai-stress-diff  { font-size: 0.72rem; font-weight: 700; font-family: var(--mono,monospace); }
+
+/* ── Entry Quality ── */
+.ai-entry-card  { padding: 1.1rem; }
+.ai-entry-sub   { font-size: 0.75rem; margin: -0.4rem 0 0.75rem; }
+.ai-entry-list  { display: flex; flex-direction: column; gap: 0.65rem; }
+.ai-entry-row   { display: flex; align-items: center; gap: 0.65rem; }
+.ai-entry-left  { display: flex; flex-direction: column; min-width: 80px; }
+.ai-entry-sym   { font-size: 0.78rem; font-weight: 800; color: #fff; }
+.ai-entry-prices { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+.ai-entry-bar-wrap { flex: 1; }
+.ai-entry-bar-bg   { height: 7px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.ai-entry-bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+.ai-entry-score { font-size: 0.8rem; font-weight: 800; min-width: 52px; text-align: right; font-family: var(--mono,monospace); }
+
+/* ── Rebalance Planner ── */
+.ai-rebal-card { padding: 1.1rem; }
+.ai-rebal-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 0.5rem; }
+.ai-rebal-row  { display: flex; align-items: center; gap: 0.65rem; }
+.ai-rebal-sym  { font-size: 0.78rem; font-weight: 800; color: #fff; min-width: 3rem; }
+.ai-rebal-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ai-rebal-bar-row { display: flex; align-items: center; gap: 0.4rem; }
+.ai-rebal-bar-lbl { font-size: 0.62rem; color: rgba(255,255,255,0.35); min-width: 2.5rem; }
+.ai-rebal-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.ai-rebal-bar-fill  { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+.ai-rebal-bar-val   { font-size: 0.62rem; color: rgba(255,255,255,0.4); min-width: 2.5rem; text-align: right; }
+.ai-rebal-action {
+  font-size: 0.7rem; font-weight: 800; min-width: 72px; text-align: right;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+}
+.ai-rebal-action.buy  { color: #34d399; }
+.ai-rebal-action.sell { color: #f87171; }
+.ai-rebal-action span { font-size: 0.65rem; font-family: var(--mono,monospace); font-weight: 700; }
