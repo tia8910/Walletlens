@@ -170,10 +170,10 @@ export default function Landing() {
           </button>
 
           <div className="lp-badges">
-            <span className="lp-badge">✦ 100% Free</span>
-            <span className="lp-badge">✦ No Account</span>
-            <span className="lp-badge">✦ Privacy First</span>
-            <span className="lp-badge">✦ Open Source</span>
+            <span className="lp-badge">{t('badge1')}</span>
+            <span className="lp-badge">{t('badge2')}</span>
+            <span className="lp-badge">{t('badge3')}</span>
+            <span className="lp-badge">{t('badge4')}</span>
           </div>
         </div>
 
@@ -193,22 +193,22 @@ export default function Landing() {
       <section className="lp-stats">
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={10000} suffix="+" /></div>
-          <div className="lp-stat-lbl">Assets tracked</div>
+          <div className="lp-stat-lbl">{t('statAssetsLbl')}</div>
         </div>
         <div className="lp-stat-sep" />
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={0} prefix="" suffix="%" /></div>
-          <div className="lp-stat-lbl">Fees forever</div>
+          <div className="lp-stat-lbl">{t('statFeesLbl')}</div>
         </div>
         <div className="lp-stat-sep" />
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={60} suffix="s" /></div>
-          <div className="lp-stat-lbl">Price refresh</div>
+          <div className="lp-stat-lbl">{t('statRefreshLbl')}</div>
         </div>
         <div className="lp-stat-sep" />
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={4} /></div>
-          <div className="lp-stat-lbl">Asset classes</div>
+          <div className="lp-stat-lbl">{t('statClassesLbl')}</div>
         </div>
       </section>
 
@@ -307,11 +307,11 @@ export default function Landing() {
         <div className="lp-section-label">{t('howLabel')}</div>
         <h2 className="lp-section-h2">{t('howTitle')}</h2>
         <div className="lp-steps">
-          <StepCard n="01" delay={0}   title="Open the app" desc="No sign-up. No download. Just open walletlens.cc in your browser and you're in." />
-          <StepCard n="02" delay={100} title="Create a wallet" desc="Add a wallet name (e.g. 'Ledger', 'Binance') to group your trades." />
-          <StepCard n="03" delay={200} title="Record trades" desc="Tap Buy or Sell. Search the asset, enter amount and price. Balances update instantly." />
-          <StepCard n="04" delay={300} title="Set sell targets" desc="Add price targets per coin. WalletLens shows progress and projected proceeds automatically." />
-          <StepCard n="05" delay={400} title="Watch it grow" desc="Live portfolio value, P&amp;L charts, whale signals and market data — all in one dashboard." />
+          <StepCard n="01" delay={0}   title={t('step1Title')} desc={t('step1Desc')} />
+          <StepCard n="02" delay={100} title={t('step2Title')} desc={t('step2Desc')} />
+          <StepCard n="03" delay={200} title={t('step3Title')} desc={t('step3Desc')} />
+          <StepCard n="04" delay={300} title={t('step4Title')} desc={t('step4Desc')} />
+          <StepCard n="05" delay={400} title={t('step5Title')} desc={t('step5Desc')} />
         </div>
       </section>
 
