@@ -1948,7 +1948,6 @@ tr:last-child td { border-bottom: none; }
     background: var(--g); box-shadow: 0 0 6px var(--g);
   }
 
-  .trade-tips-banner { display: none; }
   .ticker-strip { border-radius: 0; margin: 0 -0.9rem 0.75rem; }
 
   /* Dashboard V2 mobile */
