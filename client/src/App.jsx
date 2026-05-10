@@ -6,6 +6,7 @@ import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
+import { useLanguage } from './LanguageContext'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -30,10 +31,24 @@ function IconData()   { return <svg width="20" height="20" viewBox="0 0 24 24" f
 function IconMenu()   { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> }
 function IconClose()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> }
 
+function LangToggle() {
+  const { lang, setLang } = useLanguage()
+  return (
+    <button
+      className="wl-lang-btn"
+      onClick={() => setLang(l => l === 'en' ? 'ar' : 'en')}
+      title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+    >
+      {lang === 'en' ? 'ع' : 'EN'}
+    </button>
+  )
+}
+
 // ── Slide-out drawer ──────────────────────────────────────────────────
 function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useLanguage()
   const go = (path, state) => { navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
@@ -46,7 +61,7 @@ function Drawer({ open, onClose }) {
             <Logo size={30} />
             <div>
               <div className="wl-drawer-name">WalletLens</div>
-              <div className="wl-drawer-tag">zoom in your wealth</div>
+              <div className="wl-drawer-tag">{t('footerTagline')}</div>
             </div>
           </div>
           <button className="wl-drawer-close" onClick={onClose}><IconClose /></button>
@@ -54,35 +69,35 @@ function Drawer({ open, onClose }) {
 
         <div className="wl-drawer-section">
           <div className="wl-drawer-label">Pages</div>
-          <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>Dashboard</span></button>
-          <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>Market</span></button>
-          <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>All Transactions</span></button>
-          <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>Whale Tracker</span></button>
+          <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
+          <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>{t('market')}</span></button>
+          <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('transactions')}</span></button>
+          <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
         </div>
 
         <div className="wl-drawer-section">
-          <div className="wl-drawer-label">Quick Actions</div>
-          <button className="wl-drawer-item wl-drawer-buy" onClick={() => go('/transactions', { openAdd: true, type: 'buy' })}><IconBuy /><span>Buy</span></button>
-          <button className="wl-drawer-item wl-drawer-sell" onClick={() => go('/transactions', { openAdd: true, type: 'sell' })}><IconSell /><span>Sell</span></button>
-          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'wallets' })}><IconWallet /><span>Wallets</span></button>
-          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'data' })}><IconData /><span>Import / Export</span></button>
+          <div className="wl-drawer-label">{t('quickActions')}</div>
+          <button className="wl-drawer-item wl-drawer-buy" onClick={() => go('/transactions', { openAdd: true, type: 'buy' })}><IconBuy /><span>{t('buy')}</span></button>
+          <button className="wl-drawer-item wl-drawer-sell" onClick={() => go('/transactions', { openAdd: true, type: 'sell' })}><IconSell /><span>{t('sell')}</span></button>
+          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'wallets' })}><IconWallet /><span>{t('wallets')}</span></button>
+          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'data' })}><IconData /><span>{t('importExport')}</span></button>
         </div>
 
         <div className="wl-drawer-footer">
-          <span className="wl-live-dot" /> LIVE · walletlens.cc
+          <span className="wl-live-dot" /> {t('live')} · walletlens.cc
         </div>
       </aside>
     </>
   )
 }
 
-// ── App shell (no sidebar — always hamburger) ─────────────────────────
+// ── App shell ─────────────────────────────────────────────────────────
 export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { t } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
 
-  // Close drawer on route change
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
   if (isLanding) {
@@ -104,10 +119,9 @@ export default function App() {
     <div className="wl-app">
       <DynamicBackground />
 
-      {/* Top bar — always visible */}
       <header className="wl-topbar">
         <div className="wl-topbar-inner">
-          <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label="Menu">
+          <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
           </button>
           <div className="wl-topbar-brand">
@@ -115,16 +129,15 @@ export default function App() {
             <strong>WalletLens</strong>
           </div>
           <div className="wl-topbar-right">
-            <div className="wl-live-badge"><span className="wl-live-dot"/>LIVE</div>
+            <LangToggle />
+            <div className="wl-live-badge"><span className="wl-live-dot"/>{t('live')}</div>
           </div>
         </div>
         <PriceTicker />
       </header>
 
-      {/* Slide-out drawer */}
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      {/* Full-width content */}
       <main className="wl-content">
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
@@ -144,15 +157,13 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      {/* Floating lens orb */}
       <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220) }} aria-label="WalletLens"><Logo size={30} /></button>
 
-      {/* Bottom nav */}
       <nav className="wl-bottom-nav">
-        <NavLink to="/dashboard" className="wl-nav-item"><IconHome /><span>Home</span></NavLink>
-        <NavLink to="/transactions" className="wl-nav-item"><IconTrades /><span>Trades</span></NavLink>
-        <NavLink to="/market" className="wl-nav-item"><IconMarket /><span>Market</span></NavLink>
-        <NavLink to="/whales" className="wl-nav-item"><IconWhale /><span>Whales</span></NavLink>
+        <NavLink to="/dashboard" className="wl-nav-item"><IconHome /><span>{t('home')}</span></NavLink>
+        <NavLink to="/transactions" className="wl-nav-item"><IconTrades /><span>{t('trades')}</span></NavLink>
+        <NavLink to="/market" className="wl-nav-item"><IconMarket /><span>{t('market')}</span></NavLink>
+        <NavLink to="/whales" className="wl-nav-item"><IconWhale /><span>{t('whales')}</span></NavLink>
       </nav>
     </div>
   )

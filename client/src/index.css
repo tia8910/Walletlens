@@ -4440,3 +4440,73 @@ input[type="date"] { color-scheme: dark; }
 .lp-footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
 .lp-footer-links a { color: var(--muted); text-decoration: none; font-size: .85rem; transition: color .15s; }
 .lp-footer-links a:hover { color: #00e676; }
+
+/* ── RTL / Arabic support ──────────────────────────────────────────────── */
+[dir="rtl"] .wl-drawer { left: auto; right: 0; transform: translateX(100%); }
+[dir="rtl"] .wl-drawer-open { transform: translateX(0); }
+[dir="rtl"] .wl-topbar-inner { flex-direction: row-reverse; }
+[dir="rtl"] .wl-topbar-brand { flex-direction: row-reverse; }
+[dir="rtl"] .wl-topbar-right { flex-direction: row-reverse; }
+[dir="rtl"] .wl-bottom-nav { direction: rtl; }
+[dir="rtl"] .page-header { flex-direction: row-reverse; }
+[dir="rtl"] .dvx-hero { text-align: right; }
+[dir="rtl"] .dvx-hero-label { text-align: right; }
+[dir="rtl"] .dvx-hero-value { text-align: right; }
+[dir="rtl"] .dvx-hero-change { text-align: right; }
+[dir="rtl"] .dvx-tabs { direction: rtl; }
+[dir="rtl"] .dvx-stats-row { direction: rtl; }
+[dir="rtl"] .lp-hero-inner { text-align: right; }
+[dir="rtl"] .lp-cta-row { flex-direction: row-reverse; justify-content: flex-end; }
+[dir="rtl"] .lp-badges { justify-content: flex-end; }
+[dir="rtl"] .lp-section { direction: rtl; }
+[dir="rtl"] .lp-feat-card { text-align: right; }
+[dir="rtl"] .lp-feat-grid { direction: rtl; }
+[dir="rtl"] .lp-ai-feat { flex-direction: row-reverse; text-align: right; }
+[dir="rtl"] .lp-footer { direction: rtl; }
+[dir="rtl"] .doc-article { direction: rtl; text-align: right; }
+[dir="rtl"] .doc-article ul, [dir="rtl"] .doc-article ol { padding-right: 1.4rem; padding-left: 0; }
+[dir="rtl"] .blog-card { text-align: right; direction: rtl; }
+[dir="rtl"] .whale-row, [dir="rtl"] .btc-tx-row { direction: rtl; }
+[dir="rtl"] .wl-drawer-section, [dir="rtl"] .wl-drawer-item { direction: rtl; text-align: right; }
+[dir="rtl"] .wl-drawer-item svg { order: 1; margin-left: .6rem; margin-right: 0; }
+[dir="rtl"] .wl-drawer-item span { order: 0; }
+[dir="rtl"] .bs-sheet { direction: rtl; }
+[dir="rtl"] .bs-label { text-align: right; }
+
+/* Arabic font stack — Cairo is excellent for Arabic UI */
+[dir="rtl"] body,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] select {
+  font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Language toggle button */
+.wl-lang-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text);
+  border-radius: 8px;
+  padding: .25rem .6rem;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+  min-width: 34px;
+}
+.wl-lang-btn:hover { background: rgba(0,200,83,0.15); border-color: rgba(0,200,83,0.3); color: #00e676; }
+
+.lp-lang-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: .75rem;
+  padding: .4rem .9rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.7);
+  font-size: .85rem; font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.lp-lang-toggle:hover { background: rgba(0,200,83,0.1); border-color: rgba(0,200,83,0.3); color: #00e676; }
+.lp-lang-toggle-sm { margin-top: 0; padding: .25rem .6rem; font-size: .82rem; }

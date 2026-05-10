@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
+import { useLanguage } from '../LanguageContext'
 
 // ── Animated counter ──────────────────────────────────────────────────────
 function Counter({ to, prefix = '', suffix = '', duration = 1800 }) {
@@ -114,6 +115,7 @@ export default function Landing() {
   const navigate = useNavigate()
   const [logoAnim, setLogoAnim] = useState(false)
   const heroRef = useRef(null)
+  const { t, lang, setLang } = useLanguage()
 
   function handleLogoPulse() {
     setLogoAnim(true)
@@ -140,27 +142,32 @@ export default function Landing() {
           </button>
 
           <div className="lp-brand-name">WalletLens</div>
-          <div className="lp-brand-tag">ZOOM IN YOUR WEALTH</div>
+          <div className="lp-brand-tag">{t('heroTagline').toUpperCase()}</div>
 
           <h1 className="lp-hero-h1">
-            Your Portfolio.<br />
-            <span className="lp-h1-accent">Crystal Clear.</span>
+            {t('heroTitle').split('\n').map((line, i) => (
+              <span key={i}>{i === 1 ? <span className="lp-h1-accent">{line}</span> : line}{i === 0 && <br />}</span>
+            ))}
           </h1>
 
-          <p className="lp-hero-sub">
-            Track crypto, gold, silver &amp; stocks in one place.
-            Live prices. Smart analytics. Zero account needed.
-          </p>
+          <p className="lp-hero-sub">{t('heroSub')}</p>
 
           <div className="lp-cta-row">
             <button className="lp-cta-primary" onClick={() => navigate('/dashboard')}>
-              Open Dashboard
+              {t('ctaLaunch')}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
             <button className="lp-cta-ghost" onClick={() => navigate('/market')}>
-              Explore Market
+              {t('ctaMarket')}
             </button>
           </div>
+
+          <button
+            className="lp-lang-toggle"
+            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+          >
+            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
+          </button>
 
           <div className="lp-badges">
             <span className="lp-badge">✦ 100% Free</span>
@@ -207,8 +214,8 @@ export default function Landing() {
 
       {/* ══ FEATURES ═══════════════════════════════════════════════════ */}
       <section className="lp-section">
-        <div className="lp-section-label">WHAT YOU GET</div>
-        <h2 className="lp-section-h2">Everything a serious investor needs</h2>
+        <div className="lp-section-label">{t('featuresLabel')}</div>
+        <h2 className="lp-section-h2">{t('featuresTitle')}</h2>
         <div className="lp-feat-grid">
           <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>} title="Live Prices" desc="Prices update every 60 seconds via CoinGecko. Never make a decision on stale data again." />
           <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>} title="Portfolio Dashboard" desc="Full P&amp;L breakdown, allocation pie, performance chart, and holdings list — all on one screen." />
@@ -225,9 +232,9 @@ export default function Landing() {
 
       {/* ══ AI SHOWCASE ═════════════════════════════════════════════════ */}
       <section className="lp-section lp-ai-showcase">
-        <div className="lp-section-label">AI INTELLIGENCE</div>
-        <h2 className="lp-section-h2">Your portfolio, x-rayed by AI</h2>
-        <p className="lp-section-sub">Seven analytical engines run entirely on your device — no API keys, no cloud, no fees. Just maths on your data.</p>
+        <div className="lp-section-label">{t('aiLabel')}</div>
+        <h2 className="lp-section-h2">{t('aiTitle')}</h2>
+        <p className="lp-section-sub">{t('aiSub')}</p>
         <div className="lp-ai-grid">
           <div className="lp-ai-feat">
             <div className="lp-ai-feat-icon" style={{background:'rgba(0,230,118,0.12)',color:'#00e676'}}>
@@ -297,8 +304,8 @@ export default function Landing() {
 
       {/* ══ HOW IT WORKS ════════════════════════════════════════════════ */}
       <section className="lp-section lp-section-alt">
-        <div className="lp-section-label">HOW IT WORKS</div>
-        <h2 className="lp-section-h2">From zero to full picture in minutes</h2>
+        <div className="lp-section-label">{t('howLabel')}</div>
+        <h2 className="lp-section-h2">{t('howTitle')}</h2>
         <div className="lp-steps">
           <StepCard n="01" delay={0}   title="Open the app" desc="No sign-up. No download. Just open walletlens.cc in your browser and you're in." />
           <StepCard n="02" delay={100} title="Create a wallet" desc="Add a wallet name (e.g. 'Ledger', 'Binance') to group your trades." />
@@ -310,8 +317,8 @@ export default function Landing() {
 
       {/* ══ ASSET CLASSES ═══════════════════════════════════════════════ */}
       <section className="lp-section">
-        <div className="lp-section-label">ASSET CLASSES</div>
-        <h2 className="lp-section-h2">One lens, every market</h2>
+        <div className="lp-section-label">{t('assetLabel')}</div>
+        <h2 className="lp-section-h2">{t('assetTitle')}</h2>
         <div className="lp-asset-grid">
           <div className="lp-asset-card">
             <div className="lp-asset-icon" style={{ background: 'rgba(247,147,26,0.12)', color: '#f7931a' }}>₿</div>
@@ -340,10 +347,10 @@ export default function Landing() {
       <section className="lp-final">
         <div className="lp-final-glow" />
         <Logo size={64} animated />
-        <h2 className="lp-final-h2">Ready to see clearly?</h2>
-        <p className="lp-final-sub">Free forever. No account. No tracking. Just your portfolio, sharp.</p>
+        <h2 className="lp-final-h2">{t('ctaFinalTitle')}</h2>
+        <p className="lp-final-sub">{t('ctaFinalSub')}</p>
         <button className="lp-cta-primary lp-final-btn" onClick={() => navigate('/dashboard')}>
-          Launch WalletLens
+          {t('ctaFinalBtn')}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
         <div className="lp-final-links">
@@ -361,10 +368,13 @@ export default function Landing() {
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
         <nav className="lp-footer-links">
-          <Link to="/about">About</Link>
-          <Link to="/blog">Blog</Link>
-          <Link to="/privacy">Privacy Policy</Link>
-          <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub</a>
+          <Link to="/about">{t('about')}</Link>
+          <Link to="/blog">{t('blog')}</Link>
+          <Link to="/privacy">{t('privacy')}</Link>
+          <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">{t('github')}</a>
+          <button className="lp-lang-toggle lp-lang-toggle-sm" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
+            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
+          </button>
         </nav>
       </footer>
     </div>
