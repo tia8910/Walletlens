@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 
+const FRAME_INTERVAL = 1000 / 30 // cap at 30 fps
+
 export default function DynamicBackground({
-  particleCount = 220,
+  particleCount = 150,
   linkDistance = 150,
   color = '#34d399',
 }) {
@@ -15,8 +17,10 @@ export default function DynamicBackground({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     let raf = 0
+    let lastTime = 0
     let w = 0, h = 0
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const linkDistSq = linkDistance * linkDistance
 
     function resize() {
       w = canvas.clientWidth
@@ -40,10 +44,14 @@ export default function DynamicBackground({
       }
     }
 
-    function step() {
+    function step(timestamp) {
+      raf = requestAnimationFrame(step)
+      if (timestamp - lastTime < FRAME_INTERVAL) return
+      lastTime = timestamp
+
       ctx.clearRect(0, 0, w, h)
 
-      // Sharp connecting lines
+      // Connecting lines — squared-distance check avoids sqrt in hot path
       ctx.lineWidth = 0.9
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
@@ -51,7 +59,7 @@ export default function DynamicBackground({
           const b = particles[j]
           const dx = a.x - b.x, dy = a.y - b.y
           const d2 = dx * dx + dy * dy
-          if (d2 < linkDistance * linkDistance) {
+          if (d2 < linkDistSq) {
             const alpha = 1 - Math.sqrt(d2) / linkDistance
             ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.22})`
             ctx.beginPath()
@@ -62,9 +70,9 @@ export default function DynamicBackground({
         }
       }
 
-      // Sharp rectangular particles with glow
+      // Particles — set shadow once outside loop; reset after
       ctx.fillStyle = color
-      ctx.shadowBlur = 18
+      ctx.shadowBlur = 12
       ctx.shadowColor = color
       for (const p of particles) {
         p.x += p.vx
@@ -76,13 +84,11 @@ export default function DynamicBackground({
         ctx.fillRect(p.x, p.y, p.size, p.size)
       }
       ctx.shadowBlur = 0
-
-      raf = requestAnimationFrame(step)
     }
 
     resize()
     seed()
-    step()
+    raf = requestAnimationFrame(step)
 
     const ro = new ResizeObserver(() => { resize(); seed() })
     ro.observe(canvas)

@@ -18,36 +18,28 @@ router.get('/', (req, res) => {
 
 router.get('/portfolio', (req, res) => {
   const { wallet_id } = req.query;
-  let rows;
-  if (wallet_id) {
-    rows = db.prepare(`
-      SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost
-      FROM transactions WHERE wallet_id = ?
-      GROUP BY coin_id, type
-    `).all(wallet_id);
-  } else {
-    rows = db.prepare(`
-      SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost
-      FROM transactions
-      GROUP BY coin_id, type
-    `).all();
-  }
-
-  const holdings = {};
-  for (const row of rows) {
-    if (!holdings[row.coin_id]) {
-      holdings[row.coin_id] = { coin_id: row.coin_id, coin_symbol: row.coin_symbol, amount: 0, total_invested: 0 };
-    }
-    if (row.type === 'buy') {
-      holdings[row.coin_id].amount += row.total_amount;
-      holdings[row.coin_id].total_invested += row.total_cost;
-    } else {
-      holdings[row.coin_id].amount -= row.total_amount;
-      holdings[row.coin_id].total_invested -= row.total_cost;
-    }
-  }
-
-  const portfolio = Object.values(holdings).filter(h => h.amount > 0.00000001);
+  const portfolio = wallet_id
+    ? db.prepare(`
+        SELECT
+          coin_id,
+          coin_symbol,
+          SUM(CASE WHEN type = 'buy' THEN  amount     ELSE -amount     END) AS amount,
+          SUM(CASE WHEN type = 'buy' THEN  total_cost ELSE -total_cost END) AS total_invested
+        FROM transactions
+        WHERE wallet_id = ?
+        GROUP BY coin_id, coin_symbol
+        HAVING amount > 0.00000001
+      `).all(wallet_id)
+    : db.prepare(`
+        SELECT
+          coin_id,
+          coin_symbol,
+          SUM(CASE WHEN type = 'buy' THEN  amount     ELSE -amount     END) AS amount,
+          SUM(CASE WHEN type = 'buy' THEN  total_cost ELSE -total_cost END) AS total_invested
+        FROM transactions
+        GROUP BY coin_id, coin_symbol
+        HAVING amount > 0.00000001
+      `).all();
   res.json(portfolio);
 });
 

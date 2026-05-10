@@ -1,9 +1,8 @@
 // Service worker — network-first for HTML, cache-first for assets.
 // Never cache index.html so users always get the latest app shell.
-const SW_VERSION = 'v4'
+const SW_VERSION = 'v5'
 const STATIC = `walletlens-static-${SW_VERSION}`
 
-// Only cache immutable hashed assets (JS/CSS bundles), not HTML.
 self.addEventListener('install', (e) => {
   self.skipWaiting()
 })
@@ -25,7 +24,10 @@ self.addEventListener('fetch', (e) => {
   // Always fetch HTML fresh — never serve from cache
   if (req.headers.get('accept')?.includes('text/html') || url.pathname === '/' || url.pathname.endsWith('.html')) {
     e.respondWith(
-      fetch(req).catch(() => caches.match('/') || new Response('Offline', { status: 503 }))
+      fetch(req).catch(async () => {
+        const cached = await caches.match('/')
+        return cached ?? new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } })
+      })
     )
     return
   }
@@ -49,6 +51,9 @@ self.addEventListener('fetch', (e) => {
     fetch(req).then(res => {
       if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone()))
       return res
-    }).catch(() => caches.match(req))
+    }).catch(async () => {
+      const cached = await caches.match(req)
+      return cached ?? new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } })
+    })
   )
 })

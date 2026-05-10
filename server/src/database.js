@@ -7,6 +7,8 @@ const db = new Database(join(__dirname, '..', 'crypto_tracker.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+db.pragma('wal_autocheckpoint = 1000');
+db.pragma('synchronous = NORMAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS wallets (
@@ -40,6 +42,11 @@ db.exec(`
     is_connected INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_tx_wallet_id ON transactions(wallet_id);
+  CREATE INDEX IF NOT EXISTS idx_tx_coin_id   ON transactions(coin_id);
+  CREATE INDEX IF NOT EXISTS idx_tx_date      ON transactions(date DESC);
+  CREATE INDEX IF NOT EXISTS idx_tx_wallet_coin ON transactions(wallet_id, coin_id);
 `);
 
 export default db;

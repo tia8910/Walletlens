@@ -12,29 +12,46 @@ function fmtPrice(n) {
   return n.toLocaleString('en', { maximumFractionDigits: 4 })
 }
 
+const SKIP = new Set(['tether', 'usd-coin', 'dai', 'first-digital-usd', 'true-usd', 'binance-usd'])
+
+function mapItems(data) {
+  return data
+    .filter(c => !SKIP.has(c.id))
+    .slice(0, 12)
+    .map(c => ({
+      name: (c.symbol || c.id || '').toUpperCase(),
+      price: c.current_price,
+      change: c.price_change_percentage_24h,
+    }))
+}
+
 export default function PriceTicker() {
   const [items, setItems] = useState([])
 
   useEffect(() => {
     let cancelled = false
+    let id = null
+
     async function load() {
+      if (document.hidden || cancelled) return
       const data = await api.getMarketData()
       if (cancelled || !Array.isArray(data) || data.length === 0) return
-      // Pick top 12 by market cap, skip obvious stables for visual variety
-      const skip = new Set(['tether', 'usd-coin', 'dai', 'first-digital-usd', 'true-usd', 'binance-usd'])
-      const picks = data
-        .filter(c => !skip.has(c.id))
-        .slice(0, 12)
-        .map(c => ({
-          name: (c.symbol || c.id || '').toUpperCase(),
-          price: c.current_price,
-          change: c.price_change_percentage_24h,
-        }))
-      setItems(picks)
+      setItems(mapItems(data))
     }
+
+    function onVisibilityChange() {
+      if (!document.hidden && !cancelled) load()
+    }
+
     load()
-    const id = setInterval(load, TICKER_REFRESH_MS)
-    return () => { cancelled = true; clearInterval(id) }
+    id = setInterval(load, TICKER_REFRESH_MS)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      cancelled = true
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [])
 
   if (items.length === 0) return null

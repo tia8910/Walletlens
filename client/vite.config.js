@@ -6,6 +6,15 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-charts': ['recharts'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
