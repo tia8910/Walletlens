@@ -356,8 +356,16 @@ export default function Landing() {
       </section>
 
       <footer className="lp-footer">
-        <Logo size={24} />
-        <span>WalletLens © {new Date().getFullYear()} · zoom in your wealth</span>
+        <div className="lp-footer-brand">
+          <Logo size={24} />
+          <span>WalletLens © {new Date().getFullYear()}</span>
+        </div>
+        <nav className="lp-footer-links">
+          <Link to="/about">About</Link>
+          <Link to="/blog">Blog</Link>
+          <Link to="/privacy">Privacy Policy</Link>
+          <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
       </footer>
     </div>
   )
