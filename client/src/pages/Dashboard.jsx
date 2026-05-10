@@ -7,6 +7,7 @@ import {
 import { api } from '../api'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
+import TradeTips from '../components/TradeTips'
 import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -348,7 +349,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* ── Today's P&L ── */}
       <div className="glass-card ai-today-card">
-        <h4 className="ai-section-title">Today's Performance (24h)</h4>
+        <h4 className="ai-section-title">{t('todayPerformance')}</h4>
         <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? '#34d399' : '#f87171' }}>
           {ai.todayPnL >= 0 ? '+' : ''}${Math.abs(ai.todayPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
@@ -993,6 +994,9 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
+          {/* Tips & quotes banner */}
+          <TradeTips />
+
           {/* Hero */}
           <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
@@ -1045,23 +1049,23 @@ export default function Dashboard() {
           <div className="dvx-quick-grid">
             <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => openSheet('buy')}>
               <span className="dvx-quick-icon">{Ico.buy}</span>
-              <strong>Buy</strong>
-              <span>Record a purchase</span>
+              <strong>{t('buy')}</strong>
+              <span>{t('recordPurchase')}</span>
             </button>
             <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => openSheet('sell')}>
               <span className="dvx-quick-icon">{Ico.sell}</span>
-              <strong>Sell</strong>
-              <span>Record a sale</span>
+              <strong>{t('sell')}</strong>
+              <span>{t('recordSale')}</span>
             </button>
             <button className="dvx-quick-card holo-card-v2" onClick={() => setActiveTab('wallets')}>
               <span className="dvx-quick-icon">{Ico.wallet}</span>
-              <strong>Wallets</strong>
-              <span>{wallets.length} wallet{wallets.length !== 1 ? 's' : ''}</span>
+              <strong>{t('wallets')}</strong>
+              <span>{t('walletCount')(wallets.length)}</span>
             </button>
             <button className="dvx-quick-card holo-card-v2" onClick={() => navigate('/transactions')}>
               <span className="dvx-quick-icon">{Ico.history}</span>
-              <strong>History</strong>
-              <span>{transactions.length} trades</span>
+              <strong>{t('history')}</strong>
+              <span>{t('tradesLabel')(transactions.length)}</span>
             </button>
           </div>
 
@@ -1072,8 +1076,8 @@ export default function Dashboard() {
               {/* Performance chart */}
               <div className="glass-card">
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
-                  <h3 style={{ margin:0 }}>30-Day Performance</h3>
-                  <span className="muted" style={{ fontSize:'0.72rem' }}>simulated trend</span>
+                  <h3 style={{ margin:0 }}>{t('dayPerformance')}</h3>
+                  <span className="muted" style={{ fontSize:'0.72rem' }}>{t('simulatedTrend')}</span>
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:4, bottom:0 }}>

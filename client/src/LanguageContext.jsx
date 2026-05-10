@@ -12,7 +12,10 @@ export function LanguageProvider({ children }) {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
   }, [lang])
 
-  const t = (key) => translations[lang]?.[key] ?? translations.en[key] ?? key
+  const t = (key) => {
+    const val = translations[lang]?.[key] ?? translations.en[key] ?? key
+    return val
+  }
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, isRtl: lang === 'ar' }}>

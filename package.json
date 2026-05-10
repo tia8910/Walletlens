@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Crypto wallet tracking app with real-time prices and exchange integration",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
@@ -12,5 +13,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1"
   }
 }

@@ -1,6 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useLanguage } from '../LanguageContext'
 
-const CATEGORIES = ['All', 'Risk', 'Psychology', 'Strategy', 'HODL']
+const CATEGORIES = [
+  { id: 'All',        tKey: 'tipsCatAll' },
+  { id: 'Risk',       tKey: 'tipsCatRisk' },
+  { id: 'Psychology', tKey: 'tipsCatPsych' },
+  { id: 'Strategy',   tKey: 'tipsCatStrategy' },
+  { id: 'HODL',       tKey: 'tipsCatHodl' },
+  { id: 'Quotes',     tKey: 'tipsCatQuotes' },
+]
+
+const QUOTES = [
+  { id: 'q1',  cat: 'Quotes', type: 'quote', emoji: '💡', author: 'Warren Buffett',     title: 'Be fearful when others are greedy, and greedy when others are fearful.' },
+  { id: 'q2',  cat: 'Quotes', type: 'quote', emoji: '📈', author: 'Peter Lynch',        title: 'The person that turns over the most rocks wins the game.' },
+  { id: 'q3',  cat: 'Quotes', type: 'quote', emoji: '🧠', author: 'Charlie Munger',     title: 'Invert, always invert. Many hard problems are best solved when they are addressed backwards.' },
+  { id: 'q4',  cat: 'Quotes', type: 'quote', emoji: '⏳', author: 'Warren Buffett',     title: 'The stock market is a device for transferring money from the impatient to the patient.' },
+  { id: 'q5',  cat: 'Quotes', type: 'quote', emoji: '🌊', author: 'Jesse Livermore',    title: 'Markets are never wrong — opinions often are.' },
+  { id: 'q6',  cat: 'Quotes', type: 'quote', emoji: '🔭', author: 'Peter Lynch',        title: 'Know what you own, and know why you own it.' },
+  { id: 'q7',  cat: 'Quotes', type: 'quote', emoji: '🛡️', author: 'Benjamin Graham',    title: 'The intelligent investor is a realist who sells to optimists and buys from pessimists.' },
+  { id: 'q8',  cat: 'Quotes', type: 'quote', emoji: '💎', author: 'Philip Fisher',      title: 'The stock market is filled with individuals who know the price of everything, but the value of nothing.' },
+  { id: 'q9',  cat: 'Quotes', type: 'quote', emoji: '🎯', author: 'Paul Tudor Jones',   title: 'The secret to being successful from a trading perspective is to have an indefatigable and an undying and unquenchable thirst for information and knowledge.' },
+  { id: 'q10', cat: 'Quotes', type: 'quote', emoji: '🧘', author: 'George Soros',       title: 'It\'s not whether you\'re right or wrong that\'s important, but how much money you make when you\'re right and how much you lose when you\'re wrong.' },
+  { id: 'q11', cat: 'Quotes', type: 'quote', emoji: '🌱', author: 'John Templeton',     title: 'The four most dangerous words in investing are: "This time it\'s different."' },
+  { id: 'q12', cat: 'Quotes', type: 'quote', emoji: '🔑', author: 'Ray Dalio',          title: 'The biggest mistake investors make is to believe that what happened in the recent past is likely to persist.' },
+  { id: 'q13', cat: 'Quotes', type: 'quote', emoji: '🚀', author: 'Cathie Wood',        title: 'Innovation solves problems. Invest in the future, not the past.' },
+  { id: 'q14', cat: 'Quotes', type: 'quote', emoji: '🌍', author: 'Mark Cuban',         title: 'It doesn\'t matter how many times you fail. It matters how many times you get up.' },
+  { id: 'q15', cat: 'Quotes', type: 'quote', emoji: '⚡', author: 'Naval Ravikant',     title: 'Play long-term games with long-term people. All returns in life — wealth, relationships, knowledge — come from compound interest.' },
+  { id: 'q16', cat: 'Quotes', type: 'quote', emoji: '🔄', author: 'Howard Marks',       title: 'You can\'t predict. You can prepare.' },
+  { id: 'q17', cat: 'Quotes', type: 'quote', emoji: '🏆', author: 'Michael Saylor',     title: 'Bitcoin is a swarm of cyber hornets serving the goddess of wisdom, feeding on the fire of truth.' },
+  { id: 'q18', cat: 'Quotes', type: 'quote', emoji: '💰', author: 'Satoshi Nakamoto',   title: 'If you don\'t believe it or don\'t get it, I don\'t have time to try to convince you, sorry.' },
+  { id: 'q19', cat: 'Quotes', type: 'quote', emoji: '📚', author: 'Benjamin Graham',    title: 'In the short run, the market is a voting machine. In the long run, it is a weighing machine.' },
+  { id: 'q20', cat: 'Quotes', type: 'quote', emoji: '✨', author: 'Warren Buffett',     title: 'Someone\'s sitting in the shade today because someone planted a tree a long time ago.' },
+]
 
 const TIPS = [
   // Risk
@@ -29,6 +60,19 @@ const TIPS = [
   { id: 20, cat: 'HODL', type: 'do',   emoji: '🎯', title: 'Set price targets in advance', body: "Decide your exit price when you're calm and greedy — not when you're scared and losing." },
 ]
 
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ')
+  let line = ''
+  for (const w of words) {
+    const test = line + w + ' '
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line.trim(), x, y); y += lineH; line = w + ' '
+    } else { line = test }
+  }
+  ctx.fillText(line.trim(), x, y)
+  return y + lineH
+}
+
 function buildShareCanvas(tip) {
   const size = 1080
   const canvas = document.createElement('canvas')
@@ -36,68 +80,72 @@ function buildShareCanvas(tip) {
   canvas.height = size
   const ctx = canvas.getContext('2d')
 
+  const isQuote = tip.type === 'quote'
+
   // Background
   const bg = ctx.createLinearGradient(0, 0, size, size)
-  bg.addColorStop(0, '#071a0c')
-  bg.addColorStop(0.6, '#1e3d26')
-  bg.addColorStop(1, '#0d2614')
+  if (isQuote) {
+    bg.addColorStop(0, '#0d1b2a'); bg.addColorStop(0.6, '#1a3050'); bg.addColorStop(1, '#0a1525')
+  } else {
+    bg.addColorStop(0, '#071a0c'); bg.addColorStop(0.6, '#1e3d26'); bg.addColorStop(1, '#0d2614')
+  }
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, size, size)
 
   // Glow orb
+  const glowColor = isQuote ? 'rgba(99,179,255,0.22)' : tip.type === 'do' ? 'rgba(0,200,83,0.28)' : 'rgba(255,77,79,0.24)'
   const glow = ctx.createRadialGradient(size * 0.85, size * 0.15, 20, size * 0.85, size * 0.15, size * 0.55)
-  glow.addColorStop(0, tip.type === 'do' ? 'rgba(0,200,83,0.28)' : 'rgba(255,77,79,0.24)')
-  glow.addColorStop(1, 'transparent')
+  glow.addColorStop(0, glowColor); glow.addColorStop(1, 'transparent')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, size, size)
 
-  // Type badge background
-  const isdo = tip.type === 'do'
-  const badgeColor = isdo ? '#00c853' : '#ff4d4f'
-  ctx.fillStyle = badgeColor
-  ctx.beginPath()
-  ctx.roundRect(80, 80, 220, 72, 14)
-  ctx.fill()
+  if (isQuote) {
+    // Opening quote mark
+    ctx.fillStyle = 'rgba(99,179,255,0.18)'
+    ctx.font = '900 420px Georgia, serif'
+    ctx.fillText('“', 50, 460)
 
-  // Type badge text
-  ctx.fillStyle = '#fff'
-  ctx.font = '800 36px system-ui, sans-serif'
-  ctx.fillText(isdo ? '✅  DO THIS' : '❌  AVOID THIS', 110, 127)
+    // Quote text
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'italic 700 58px Georgia, serif'
+    const qy = wrapText(ctx, tip.title, 80, 220, size - 160, 78)
 
-  // Emoji
-  ctx.font = '120px serif'
-  ctx.fillText(tip.emoji, 80, 310)
+    // Author
+    ctx.fillStyle = '#63b3ff'
+    ctx.font = '600 40px system-ui, sans-serif'
+    ctx.fillText('— ' + tip.author, 80, Math.max(qy + 30, 700))
+  } else {
+    const isdo = tip.type === 'do'
+    const badgeColor = isdo ? '#00c853' : '#ff4d4f'
 
-  // Title
-  ctx.fillStyle = '#ffffff'
-  ctx.font = '800 72px system-ui, sans-serif'
-  const words = tip.title.split(' ')
-  let line = ''; let y = 440
-  for (const w of words) {
-    const test = line + w + ' '
-    if (ctx.measureText(test).width > size - 160 && line) {
-      ctx.fillText(line.trim(), 80, y); y += 84; line = w + ' '
-    } else { line = test }
+    // Type badge
+    ctx.fillStyle = badgeColor
+    ctx.beginPath()
+    ctx.roundRect(80, 80, 240, 72, 14)
+    ctx.fill()
+    ctx.fillStyle = '#fff'
+    ctx.font = '800 36px system-ui, sans-serif'
+    ctx.fillText(isdo ? '✅  DO THIS' : '❌  AVOID THIS', 108, 127)
+
+    // Emoji
+    ctx.font = '120px serif'
+    ctx.fillText(tip.emoji, 80, 310)
+
+    // Title
+    ctx.fillStyle = '#ffffff'
+    ctx.font = '800 72px system-ui, sans-serif'
+    const titleEndY = wrapText(ctx, tip.title, 80, 440, size - 160, 84)
+
+    // Body
+    ctx.fillStyle = 'rgba(255,255,255,0.72)'
+    ctx.font = '400 38px system-ui, sans-serif'
+    wrapText(ctx, tip.body, 80, titleEndY + 10, size - 160, 52)
   }
-  ctx.fillText(line.trim(), 80, y); y += 60
-
-  // Body
-  ctx.fillStyle = 'rgba(255,255,255,0.72)'
-  ctx.font = '400 38px system-ui, sans-serif'
-  const bwords = tip.body.split(' ')
-  let bl = ''; let by = y + 30
-  for (const w of bwords) {
-    const test = bl + w + ' '
-    if (ctx.measureText(test).width > size - 160 && bl) {
-      ctx.fillText(bl.trim(), 80, by); by += 52; bl = w + ' '
-    } else { bl = test }
-  }
-  ctx.fillText(bl.trim(), 80, by)
 
   // Bottom brand bar
-  ctx.fillStyle = 'rgba(0,200,83,0.12)'
+  ctx.fillStyle = isQuote ? 'rgba(99,179,255,0.10)' : 'rgba(0,200,83,0.12)'
   ctx.fillRect(0, size - 130, size, 130)
-  ctx.fillStyle = '#00c853'
+  ctx.fillStyle = isQuote ? '#63b3ff' : '#00c853'
   ctx.font = '700 38px system-ui, sans-serif'
   ctx.fillText('WalletLens', 80, size - 68)
   ctx.fillStyle = 'rgba(255,255,255,0.45)'
@@ -111,7 +159,10 @@ function canvasToBlob(canvas) {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
 }
 
+const ALL_ITEMS = [...TIPS, ...QUOTES]
+
 export default function TradeTips() {
+  const { t } = useLanguage()
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('tips-dismissed') === '1')
   const [cat, setCat] = useState('All')
   const [idx, setIdx] = useState(0)
@@ -119,7 +170,9 @@ export default function TradeTips() {
   const [shareState, setShareState] = useState('idle') // 'idle' | 'done'
   const timerRef = useRef(null)
 
-  const filtered = cat === 'All' ? TIPS : TIPS.filter(t => t.cat === cat)
+  const filtered = cat === 'All' ? ALL_ITEMS
+    : cat === 'Quotes' ? QUOTES
+    : TIPS.filter(item => item.cat === cat)
   const tip = filtered[idx % filtered.length]
 
   const goTo = useCallback((nextIdx, dir = 'next') => {
@@ -148,8 +201,8 @@ export default function TradeTips() {
     return () => clearInterval(timerRef.current)
   }, [dismissed, startTimer])
 
-  const handleCat = (c) => {
-    setCat(c)
+  const handleCat = (id) => {
+    setCat(id)
     setIdx(0)
     setAnim('in-next')
     startTimer()
@@ -171,8 +224,11 @@ export default function TradeTips() {
     const canvas = buildShareCanvas(tip)
     const blob = await canvasToBlob(canvas)
     const file = new File([blob], 'walletlens-tip.png', { type: 'image/png' })
+    const shareText = tip.type === 'quote'
+      ? `"${tip.title}" — ${tip.author} | WalletLens`
+      : `${tip.type === 'do' ? '✅ DO:' : '❌ AVOID:'} ${tip.title} — ${tip.body} | WalletLens`
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: tip.title, text: `${tip.type === 'do' ? '✅ DO:' : '❌ AVOID:'} ${tip.title} — ${tip.body} | WalletLens` })
+      await navigator.share({ files: [file], title: tip.title, text: shareText })
     } else {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -192,43 +248,56 @@ export default function TradeTips() {
 
   if (dismissed) return null
 
+  const isQuote = tip.type === 'quote'
   const isdo = tip.type === 'do'
+  const bannerClass = isQuote ? 'tips-quote' : isdo ? 'tips-do' : 'tips-dont'
 
   return (
-    <div className={`trade-tips-banner ${isdo ? 'tips-do' : 'tips-dont'}`} role="region" aria-label="Trader tip">
+    <div className={`trade-tips-banner ${bannerClass}`} role="region" aria-label={isQuote ? 'Investor quote' : 'Trader tip'}>
       {/* Header row */}
       <div className="tips-header">
         <div className="tips-label-row">
-          <span className={`tips-badge ${isdo ? 'tips-badge-do' : 'tips-badge-dont'}`}>
-            {isdo ? '✅ DO' : '❌ AVOID'}
-          </span>
+          {isQuote
+            ? <span className="tips-badge tips-badge-quote">💬 QUOTE</span>
+            : <span className={`tips-badge ${isdo ? 'tips-badge-do' : 'tips-badge-dont'}`}>{isdo ? '✅ DO' : '❌ AVOID'}</span>
+          }
           <span className="tips-cat-pill">{tip.cat}</span>
           <span className="tips-counter">{(idx % filtered.length) + 1} / {filtered.length}</span>
         </div>
-        <button className="tips-dismiss" onClick={handleDismiss} aria-label="Dismiss tips banner" title="Dismiss">✕</button>
+        <button className="tips-dismiss" onClick={handleDismiss} aria-label="Dismiss" title="Dismiss">✕</button>
       </div>
 
       {/* Category tabs */}
       <div className="tips-cats" role="tablist">
         {CATEGORIES.map(c => (
           <button
-            key={c}
+            key={c.id}
             role="tab"
-            aria-selected={cat === c}
-            className={`tips-cat-btn ${cat === c ? 'tips-cat-active' : ''}`}
-            onClick={() => handleCat(c)}
-          >{c}</button>
+            aria-selected={cat === c.id}
+            className={`tips-cat-btn ${cat === c.id ? 'tips-cat-active' : ''}`}
+            onClick={() => handleCat(c.id)}
+          >{t(c.tKey)}</button>
         ))}
       </div>
 
-      {/* Tip card */}
-      <div className={`tips-card tips-anim-${anim}`}>
-        <span className="tips-emoji" aria-hidden="true">{tip.emoji}</span>
-        <div className="tips-text">
-          <strong className="tips-title">{tip.title}</strong>
-          <p className="tips-body">{tip.body}</p>
+      {/* Card */}
+      {isQuote ? (
+        <div className={`tips-card tips-card-quote tips-anim-${anim}`}>
+          <span className="tips-quote-mark" aria-hidden="true">"</span>
+          <div className="tips-text">
+            <p className="tips-quote-text">{tip.title}</p>
+            <span className="tips-quote-author">— {tip.author}</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className={`tips-card tips-anim-${anim}`}>
+          <span className="tips-emoji" aria-hidden="true">{tip.emoji}</span>
+          <div className="tips-text">
+            <strong className="tips-title">{tip.title}</strong>
+            <p className="tips-body">{tip.body}</p>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="tips-controls">
