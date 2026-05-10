@@ -4339,3 +4339,18 @@ input[type="date"] { color-scheme: dark; }
 .share-btn-copy  { background: rgba(0,200,83,0.15); color: #00e676; border: 1px solid rgba(0,200,83,0.3); }
 .share-btn-tweet { background: #000; color: #fff; }
 .share-hint { font-size: .8rem; color: var(--muted); text-align: center; margin: 0; }
+
+/* ── Eye toggle / hidden values ────────────────────────────────────────── */
+.dvx-eye-btn {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  padding: 0 0 0 6px; vertical-align: middle;
+  opacity: .6; transition: opacity .15s;
+  line-height: 1;
+}
+.dvx-eye-btn:hover { opacity: 1; }
+.dvx-hidden-val {
+  filter: blur(8px);
+  user-select: none;
+  transition: filter .2s;
+}

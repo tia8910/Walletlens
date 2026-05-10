@@ -832,6 +832,7 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true) }, [])
   const [shareOpen, setShareOpen]         = useState(false)
+  const [hidden, setHidden]               = useState(false)
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
 
@@ -997,11 +998,19 @@ export default function Dashboard() {
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
+              <button className="dvx-eye-btn" onClick={() => setHidden(h => !h)} title={hidden ? 'Show values' : 'Hide values'}>
+                {hidden
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
             </p>
-            <h2 className="dvx-hero-value">${fmt(loaded ? tickerValue : 0)}</h2>
+            <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
+              {hidden ? '••••••' : `$${fmt(loaded ? tickerValue : 0)}`}
+            </h2>
             {!pricesFailed && totalPnL !== 0 && (
-              <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'}`}>
-                {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)}) all time
+              <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'} ${hidden ? 'dvx-hidden-val' : ''}`}>
+                {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) all time`}
               </p>
             )}
             {!isDemo && totalValue > 0 && (
@@ -1021,10 +1030,10 @@ export default function Dashboard() {
           {/* Stats row */}
           {!isDemo && (
             <div className="dvx-stats-row">
-              <StatCard label="Invested"  value={`$${fmt(totalInvested)}`} />
-              <StatCard label="P&L"       value={`${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
+              <StatCard label="Invested"  value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
+              <StatCard label="P&L"       value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
                 color={totalPnL >= 0 ? '#34d399' : '#f87171'}
-                sub={totalPnLPct !== 0 ? pct(totalPnLPct) : undefined} />
+                sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
               <StatCard label="Assets"    value={enriched.length} />
               <StatCard label="Trades"    value={transactions.length} />
             </div>
