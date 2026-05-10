@@ -6,6 +6,7 @@ import {
 } from 'recharts'
 import { api } from '../api'
 import TradeSheet from '../components/TradeSheet'
+import ShareCard from '../components/ShareCard'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
 const Ico = {
@@ -830,6 +831,7 @@ export default function Dashboard() {
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true) }, [])
+  const [shareOpen, setShareOpen]         = useState(false)
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
 
@@ -1001,6 +1003,12 @@ export default function Dashboard() {
               <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'}`}>
                 {totalPnL >= 0 ? '↑' : '↓'} ${fmt(Math.abs(totalPnL))} ({pct(totalPnLPct)}) all time
               </p>
+            )}
+            {!isDemo && totalValue > 0 && (
+              <button className="dvx-share-btn" onClick={() => setShareOpen(true)}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Share Gains
+              </button>
             )}
             {isDemo && (
               <div className="dvx-hero-actions">
@@ -1383,6 +1391,16 @@ export default function Dashboard() {
         onDone={loadAll}
         holdings={enriched}
       />
+      {shareOpen && (
+        <ShareCard
+          totalValue={totalValue}
+          totalPnL={totalPnL}
+          totalPnLPct={totalPnLPct}
+          topHoldings={enriched.slice(0, 4)}
+          todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   )
 }
