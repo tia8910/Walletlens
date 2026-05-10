@@ -4354,3 +4354,89 @@ input[type="date"] { color-scheme: dark; }
   user-select: none;
   transition: filter .2s;
 }
+
+/* ── Doc pages (About, Privacy, Blog) ─────────────────────────────────── */
+.doc-page {
+  min-height: 100vh;
+  background: #071a0c;
+  color: var(--text);
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  display: flex; flex-direction: column;
+}
+.doc-header {
+  display: flex; align-items: center;
+  padding: 1.1rem 2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(7,26,12,0.95);
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.doc-brand {
+  display: flex; align-items: center; gap: .6rem;
+  font-weight: 700; font-size: 1rem;
+  color: var(--text); text-decoration: none;
+}
+.doc-article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+  flex: 1;
+  line-height: 1.75;
+}
+.doc-article h1 {
+  font-size: 2rem; font-weight: 800;
+  margin: 0 0 .4rem;
+  color: var(--text);
+}
+.doc-article h2 {
+  font-size: 1.2rem; font-weight: 700;
+  margin: 2.2rem 0 .6rem;
+  color: #00e676;
+}
+.doc-article p { margin: 0 0 1rem; color: rgba(255,255,255,0.82); }
+.doc-article ul, .doc-article ol { padding-left: 1.4rem; margin: 0 0 1rem; color: rgba(255,255,255,0.82); }
+.doc-article li { margin-bottom: .4rem; }
+.doc-article a { color: #00e676; }
+.doc-article code { background: rgba(0,200,83,0.1); padding: .1em .4em; border-radius: 4px; font-size: .88em; }
+.doc-meta { color: var(--muted); font-size: .88rem; margin: 0 0 1.5rem; }
+.doc-footer {
+  display: flex; gap: 1.5rem; flex-wrap: wrap;
+  padding: 1.2rem 2rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  font-size: .875rem;
+}
+.doc-footer a { color: var(--muted); text-decoration: none; }
+.doc-footer a:hover { color: #00e676; }
+
+/* Blog list */
+.blog-grid { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 2rem; }
+.blog-card {
+  display: block; text-decoration: none;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  transition: border-color .2s, background .2s, transform .15s;
+}
+.blog-card:hover { border-color: rgba(0,230,118,0.25); background: rgba(0,200,83,0.05); transform: translateY(-2px); }
+.blog-card-meta { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
+.blog-card-title { font-size: 1.15rem; font-weight: 700; color: var(--text); margin: 0 0 .5rem; }
+.blog-card-summary { font-size: .9rem; color: rgba(255,255,255,0.6); margin: 0 0 .75rem; line-height: 1.55; }
+.blog-card-cta { font-size: .85rem; font-weight: 600; color: #00e676; }
+.blog-back { display: inline-block; color: var(--muted); font-size: .88rem; text-decoration: none; margin-bottom: 1rem; }
+.blog-back:hover { color: #00e676; }
+.blog-summary { font-size: 1rem; color: var(--muted); font-style: italic; border-left: 3px solid #00e676; padding-left: .9rem; margin: 1rem 0 1.5rem; }
+.blog-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 2rem 0; }
+.blog-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .9rem; }
+.blog-table th, .blog-table td { padding: .5rem .75rem; border: 1px solid rgba(255,255,255,0.1); text-align: left; }
+.blog-table th { background: rgba(0,200,83,0.08); color: #00e676; }
+.blog-cta-box { background: rgba(0,200,83,0.07); border: 1px solid rgba(0,200,83,0.2); border-radius: 12px; padding: 1.5rem; margin-top: 2rem; }
+.blog-cta-box p { margin: .4rem 0 1rem; color: var(--muted); }
+.blog-cta-btn { display: inline-block; padding: .55rem 1.25rem; background: #00c853; color: #000; font-weight: 700; border-radius: 8px; text-decoration: none; font-size: .9rem; }
+
+/* Landing footer update */
+.lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+.lp-footer-brand { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; }
+.lp-footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+.lp-footer-links a { color: var(--muted); text-decoration: none; font-size: .85rem; transition: color .15s; }
+.lp-footer-links a:hover { color: #00e676; }

@@ -11,6 +11,9 @@ const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
 const Whales       = lazy(() => import('./pages/Whales'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
+const Blog         = lazy(() => import('./pages/Blog'))
+const About        = lazy(() => import('./pages/About'))
+const Privacy      = lazy(() => import('./pages/Privacy'))
 
 function PageFallback() {
   return <div className="wl-page-fallback"><p>Loading…</p></div>
@@ -77,7 +80,7 @@ function Drawer({ open, onClose }) {
 export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const isLanding = location.pathname === '/'
+  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
 
   // Close drawer on route change
   useEffect(() => setDrawerOpen(false), [location.pathname])
@@ -86,7 +89,13 @@ export default function App() {
     return (
       <div className="wl-app wl-app-landing">
         <DynamicBackground particleCount={120} linkDistance={160} />
-        <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes><Route path="/" element={<Landing />} /></Routes></Suspense></ErrorBoundary>
+        <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<Blog />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+        </Routes></Suspense></ErrorBoundary>
       </div>
     )
   }
@@ -126,6 +135,10 @@ export default function App() {
               <Route path="/market" element={<Market />} />
               <Route path="/whales" element={<Whales />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<Blog />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
