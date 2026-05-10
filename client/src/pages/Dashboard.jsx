@@ -7,6 +7,7 @@ import {
 import { api } from '../api'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
+import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
 const Ico = {
@@ -819,6 +820,7 @@ function StatCard({ label, value, sub, color }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useLanguage()
   const [portfolio, setPortfolio]         = useState([])
   const [prices, setPrices]               = useState({})
   const [transactions, setTransactions]   = useState([])
@@ -961,13 +963,13 @@ export default function Dashboard() {
   }, [enriched, coinTargets])
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Ico.overview },
-    { id: 'ai',       label: 'AI',       icon: Ico.ai },
-    { id: 'buy',      label: 'Buy',      icon: Ico.buy,    sheet: 'buy' },
-    { id: 'sell',     label: 'Sell',     icon: Ico.sell,   sheet: 'sell' },
-    { id: 'targets',  label: 'Targets',  icon: Ico.target },
-    { id: 'wallets',  label: 'Wallets',  icon: Ico.wallet },
-    { id: 'data',     label: 'Backup',   icon: Ico.data },
+    { id: 'overview', label: t('overview'),  icon: Ico.overview },
+    { id: 'ai',       label: t('ai'),       icon: Ico.ai },
+    { id: 'buy',      label: t('buy'),      icon: Ico.buy,    sheet: 'buy' },
+    { id: 'sell',     label: t('sell'),     icon: Ico.sell,   sheet: 'sell' },
+    { id: 'targets',  label: t('targets'),  icon: Ico.target },
+    { id: 'wallets',  label: t('wallets'),  icon: Ico.wallet },
+    { id: 'data',     label: t('backup'),   icon: Ico.data },
   ]
 
   const tooltipStyle = {
@@ -994,7 +996,7 @@ export default function Dashboard() {
           {/* Hero */}
           <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
-              {pricesFailed ? 'INVESTED VALUE' : pricesLoading ? 'LOADING PRICES…' : 'TOTAL PORTFOLIO VALUE'}
+              {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
@@ -1010,19 +1012,19 @@ export default function Dashboard() {
             </h2>
             {!pricesFailed && totalPnL !== 0 && (
               <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'} ${hidden ? 'dvx-hidden-val' : ''}`}>
-                {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) all time`}
+                {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) ${t('allTime')}`}
               </p>
             )}
             {!isDemo && totalValue > 0 && (
               <button className="dvx-share-btn" onClick={() => setShareOpen(true)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                Share Gains
+                {t('shareGains')}
               </button>
             )}
             {isDemo && (
               <div className="dvx-hero-actions">
-                <button className="dvx-hero-cta" onClick={() => setActiveTab('wallets')}>Create Wallet</button>
-                <button className="dvx-hero-cta dvx-hero-cta-buy" onClick={() => openSheet('buy')}>Add Trade</button>
+                <button className="dvx-hero-cta" onClick={() => setActiveTab('wallets')}>{t('createWallet')}</button>
+                <button className="dvx-hero-cta dvx-hero-cta-buy" onClick={() => openSheet('buy')}>{t('addTrade')}</button>
               </div>
             )}
           </div>
@@ -1030,12 +1032,12 @@ export default function Dashboard() {
           {/* Stats row */}
           {!isDemo && (
             <div className="dvx-stats-row">
-              <StatCard label="Invested"  value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
-              <StatCard label="P&L"       value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
+              <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
+              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
                 color={totalPnL >= 0 ? '#34d399' : '#f87171'}
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
-              <StatCard label="Assets"    value={enriched.length} />
-              <StatCard label="Trades"    value={transactions.length} />
+              <StatCard label={t('assets')}      value={enriched.length} />
+              <StatCard label={t('tradesCount')} value={transactions.length} />
             </div>
           )}
 
@@ -1249,15 +1251,15 @@ export default function Dashboard() {
         <div className="dvx-targets-page">
           {/* Summary cards */}
           <div className="dvx-stats-row">
-            <StatCard label="Total Targets"    value={targetsAnalysis.totalTargets} />
-            <StatCard label="Targets Reached"  value={targetsAnalysis.totalReached}
+            <StatCard label={t('totalTargets')}    value={targetsAnalysis.totalTargets} />
+            <StatCard label={t('targetsReached')}  value={targetsAnalysis.totalReached}
               color={targetsAnalysis.totalReached > 0 ? '#34d399' : undefined} />
-            <StatCard label="Potential Proceeds"
+            <StatCard label={t('potentialProceeds')}
               value={`$${targetsAnalysis.totalPotentialProceeds >= 1000
                 ? (targetsAnalysis.totalPotentialProceeds/1000).toFixed(1)+'k'
                 : fmt(targetsAnalysis.totalPotentialProceeds)}`}
               color="#34d399" />
-            <StatCard label="Assets Planned"   value={targetsAnalysis.rows.length} />
+            <StatCard label={t('assetsPlanned')} value={targetsAnalysis.rows.length} />
           </div>
 
           {/* Proceeds bar chart */}
