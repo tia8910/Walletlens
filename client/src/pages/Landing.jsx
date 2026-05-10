@@ -217,16 +217,16 @@ export default function Landing() {
         <div className="lp-section-label">{t('featuresLabel')}</div>
         <h2 className="lp-section-h2">{t('featuresTitle')}</h2>
         <div className="lp-feat-grid">
-          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>} title="Live Prices" desc="Prices update every 60 seconds via CoinGecko. Never make a decision on stale data again." />
-          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>} title="Portfolio Dashboard" desc="Full P&amp;L breakdown, allocation pie, performance chart, and holdings list — all on one screen." />
-          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>} title="Multi-Asset" desc="Crypto, gold, silver, stocks and bonds — tracked side by side under one unified lens." />
-          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>} title="Smart Trade Entry" desc="Buy/sell bottom sheet with coin search, auto price-fill, 'Buy With' and 'Sell For' counter-legs — balances stay consistent." />
-          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>} title="Sell Targets" desc="Set price targets per asset. Track progress, projected proceeds, and know exactly when to pull the trigger." />
-          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/></svg>} title="Whale Tracker" desc="Monitor large on-chain movements. Volume pulse, accumulation/distribution score, and smart momentum signals." />
-          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>} title="Multiple Wallets" desc="Organise trades by wallet or exchange. Keep your Ledger, Binance, and self-custody bags separate." />
-          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>} title="Backup Codes" desc="Export your entire portfolio as a short WLZ code. Import it on any device in seconds — no cloud required." />
-          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} title="Local-First Privacy" desc="All data stays on your device. No servers, no accounts, no analytics — your wealth is nobody else's business." />
-          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a5 5 0 0 1 5 5c0 3.5-5 9-5 9S7 10.5 7 7a5 5 0 0 1 5-5z"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><path d="M5 20h14"/></svg>} title="AI Portfolio Analysis" desc="On-device intelligence scores your wallet health, flags risk, and surfaces rebalance opportunities — no data leaves your device." />
+          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>} title={t('feat1Title')} desc={t('feat1Desc')} />
+          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>} title={t('feat2Title')} desc={t('feat2Desc')} />
+          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>} title={t('feat3Title')} desc={t('feat3Desc')} />
+          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>} title={t('feat4Title')} desc={t('feat4Desc')} />
+          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>} title={t('feat5Title')} desc={t('feat5Desc')} />
+          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/></svg>} title={t('feat6Title')} desc={t('feat6Desc')} />
+          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg>} title={t('feat7Title')} desc={t('feat7Desc')} />
+          <FeatureCard delay={80}  icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>} title={t('feat8Title')} desc={t('feat8Desc')} />
+          <FeatureCard delay={160} icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} title={t('feat9Title')} desc={t('feat9Desc')} />
+          <FeatureCard delay={0}   icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a5 5 0 0 1 5 5c0 3.5-5 9-5 9S7 10.5 7 7a5 5 0 0 1 5-5z"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><path d="M5 20h14"/></svg>} title={t('feat10Title')} desc={t('feat10Desc')} />
         </div>
       </section>
 
@@ -241,8 +241,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Wallet Health Score</div>
-              <div className="lp-ai-feat-desc">A 0–100 composite score measuring diversification, concentration risk, and unrealised gain/loss balance — your portfolio's vital sign at a glance.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat1Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat1Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -250,8 +250,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Fear & Greed Gauge</div>
-              <div className="lp-ai-feat-desc">Composite market sentiment derived from price momentum, P&L ratio, trade frequency, and portfolio concentration — presented as a live arc gauge from Extreme Fear to Extreme Greed.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat2Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat2Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -259,8 +259,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Market Cap Breakdown</div>
-              <div className="lp-ai-feat-desc">Classifies every holding into Mega, Large, Mid, Small, or Micro cap tiers. A radar chart shows your risk exposure profile so you can see instantly if you are over-weighted in speculative assets.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat3Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat3Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -268,8 +268,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Stress Test</div>
-              <div className="lp-ai-feat-desc">Simulates your portfolio value under five market scenarios: -10% correction, -30% bear, -60% crash, +50% bull, and +200% supercycle. Know your worst case before the market does.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat4Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat4Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -277,8 +277,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Entry Quality Score</div>
-              <div className="lp-ai-feat-desc">Compares your average buy price against the current market price for every holding. Green means you're in profit; red means you're underwater — with exact percentage shown per asset.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat5Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat5Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -286,8 +286,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Rebalance Planner</div>
-              <div className="lp-ai-feat-desc">Calculates the exact dollar amount to buy or sell per asset to reach equal-weight allocation. Shows current vs target weight bars and a clear buy/sell action for each position.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat6Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat6Desc')}</div>
             </div>
           </div>
           <div className="lp-ai-feat">
@@ -295,8 +295,8 @@ export default function Landing() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div>
-              <div className="lp-ai-feat-title">Today's Performance</div>
-              <div className="lp-ai-feat-desc">Shows the 24-hour dollar P&L per asset as a colour-coded bar row. Green bars for gainers, red bars for losers — instantly see which positions are driving today's move.</div>
+              <div className="lp-ai-feat-title">{t('aiFeat7Title')}</div>
+              <div className="lp-ai-feat-desc">{t('aiFeat7Desc')}</div>
             </div>
           </div>
         </div>
@@ -322,23 +322,23 @@ export default function Landing() {
         <div className="lp-asset-grid">
           <div className="lp-asset-card">
             <div className="lp-asset-icon" style={{ background: 'rgba(247,147,26,0.12)', color: '#f7931a' }}>₿</div>
-            <div className="lp-asset-name">Crypto</div>
-            <div className="lp-asset-desc">10,000+ coins via CoinGecko</div>
+            <div className="lp-asset-name">{t('assetCrypto')}</div>
+            <div className="lp-asset-desc">{t('assetCryptoDesc')}</div>
           </div>
           <div className="lp-asset-card">
             <div className="lp-asset-icon" style={{ background: 'rgba(255,215,0,0.12)', color: '#ffd700' }}>Au</div>
-            <div className="lp-asset-name">Gold</div>
-            <div className="lp-asset-desc">Live XAU/USD spot price</div>
+            <div className="lp-asset-name">{t('assetGold')}</div>
+            <div className="lp-asset-desc">{t('assetGoldDesc')}</div>
           </div>
           <div className="lp-asset-card">
             <div className="lp-asset-icon" style={{ background: 'rgba(192,192,192,0.12)', color: '#c0c0c0' }}>Ag</div>
-            <div className="lp-asset-name">Silver</div>
-            <div className="lp-asset-desc">Live XAG/USD spot price</div>
+            <div className="lp-asset-name">{t('assetSilver')}</div>
+            <div className="lp-asset-desc">{t('assetSilverDesc')}</div>
           </div>
           <div className="lp-asset-card">
             <div className="lp-asset-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>$</div>
-            <div className="lp-asset-name">Stocks</div>
-            <div className="lp-asset-desc">US & global equities</div>
+            <div className="lp-asset-name">{t('assetStocks')}</div>
+            <div className="lp-asset-desc">{t('assetStocksDesc')}</div>
           </div>
         </div>
       </section>
@@ -354,11 +354,11 @@ export default function Landing() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
         <div className="lp-final-links">
-          <button className="lp-link" onClick={() => navigate('/market')}>Market</button>
+          <button className="lp-link" onClick={() => navigate('/market')}>{t('navMarket')}</button>
           <span>·</span>
-          <button className="lp-link" onClick={() => navigate('/whales')}>Whale Tracker</button>
+          <button className="lp-link" onClick={() => navigate('/whales')}>{t('whaleTracker')}</button>
           <span>·</span>
-          <button className="lp-link" onClick={() => navigate('/transactions')}>Transactions</button>
+          <button className="lp-link" onClick={() => navigate('/transactions')}>{t('navTransactions')}</button>
         </div>
       </section>
 
