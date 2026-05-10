@@ -4,7 +4,12 @@ import { translations } from './i18n'
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('wl_lang') || 'en')
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem('wl_lang')
+    if (saved) return saved
+    const browser = (navigator.language || navigator.userLanguage || '').toLowerCase()
+    return browser.startsWith('ar') ? 'ar' : 'en'
+  })
 
   useEffect(() => {
     localStorage.setItem('wl_lang', lang)
