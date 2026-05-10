@@ -7,6 +7,7 @@ import {
 import { api } from '../api'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
+import TradeTips from '../components/TradeTips'
 import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -993,6 +994,9 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
+          {/* Tips & quotes banner */}
+          <TradeTips />
+
           {/* Hero */}
           <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">

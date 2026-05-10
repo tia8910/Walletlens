@@ -116,8 +116,9 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   background: var(--ink);
   transition: border-color 0.3s;
 }
-.trade-tips-banner.tips-do   { border-color: rgba(0,200,83,0.28); }
-.trade-tips-banner.tips-dont { border-color: rgba(255,77,79,0.28); }
+.trade-tips-banner.tips-do    { border-color: rgba(0,200,83,0.28); }
+.trade-tips-banner.tips-dont  { border-color: rgba(255,77,79,0.28); }
+.trade-tips-banner.tips-quote { border-color: rgba(99,179,255,0.32); }
 .trade-tips-banner::before {
   content: '';
   position: absolute; inset: 0;
@@ -125,8 +126,9 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   border-radius: inherit;
   transition: background 0.4s;
 }
-.tips-do::before   { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(0,200,83,0.10) 0%, transparent 70%); }
-.tips-dont::before { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(255,77,79,0.10) 0%, transparent 70%); }
+.tips-do::before    { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(0,200,83,0.10) 0%, transparent 70%); }
+.tips-dont::before  { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(255,77,79,0.10) 0%, transparent 70%); }
+.tips-quote::before { background: radial-gradient(ellipse 80% 60% at 90% 10%, rgba(99,179,255,0.10) 0%, transparent 70%); }
 
 .tips-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -139,8 +141,9 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   text-transform: uppercase; border-radius: 6px;
   padding: 0.25rem 0.6rem; line-height: 1;
 }
-.tips-badge-do   { background: rgba(0,200,83,0.18); color: var(--g); border: 1px solid rgba(0,200,83,0.35); }
-.tips-badge-dont { background: rgba(255,77,79,0.15); color: #ff6b6b;  border: 1px solid rgba(255,77,79,0.30); }
+.tips-badge-do    { background: rgba(0,200,83,0.18);  color: var(--g); border: 1px solid rgba(0,200,83,0.35); }
+.tips-badge-dont  { background: rgba(255,77,79,0.15); color: #ff6b6b; border: 1px solid rgba(255,77,79,0.30); }
+.tips-badge-quote { background: rgba(99,179,255,0.15); color: #63b3ff; border: 1px solid rgba(99,179,255,0.30); }
 
 .tips-cat-pill {
   font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em;
@@ -191,6 +194,12 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 .tips-text  { display: flex; flex-direction: column; gap: 0.25rem; }
 .tips-title { font-size: 0.95rem; font-weight: 800; color: #fff; line-height: 1.25; font-family: var(--display); }
 .tips-body  { font-size: 0.78rem; color: rgba(255,255,255,0.58); line-height: 1.55; }
+
+/* Quote card */
+.tips-card-quote { position: relative; align-items: flex-start; gap: 0; padding-left: 0.5rem; }
+.tips-quote-mark { position: absolute; top: -0.6rem; left: -0.25rem; font-size: 4.5rem; line-height: 1; color: rgba(99,179,255,0.22); font-family: Georgia, serif; font-weight: 900; pointer-events: none; user-select: none; }
+.tips-quote-text { font-size: 0.88rem; font-style: italic; color: rgba(255,255,255,0.92); line-height: 1.6; margin: 0 0 0.45rem 0; }
+.tips-quote-author { font-size: 0.73rem; font-weight: 700; color: #63b3ff; letter-spacing: 0.03em; }
 
 /* Slide animations */
 @keyframes tips-slide-in-next  { from { opacity:0; transform: translateX(28px);  } to { opacity:1; transform: translateX(0); } }

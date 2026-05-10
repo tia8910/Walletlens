@@ -78,6 +78,13 @@ export const translations = {
     targetsReached: 'Targets Reached',
     potentialProceeds: 'Potential Proceeds',
     assetsPlanned: 'Assets Planned',
+    // Tips & Quotes categories
+    tipsCatAll: 'All',
+    tipsCatRisk: 'Risk',
+    tipsCatPsych: 'Psychology',
+    tipsCatStrategy: 'Strategy',
+    tipsCatHodl: 'HODL',
+    tipsCatQuotes: 'Quotes',
     // Landing badges
     badge1: '✦ 100% Free',
     badge2: '✦ No Account',
@@ -177,6 +184,13 @@ export const translations = {
     targetsReached: `الأهداف المحققة`,
     potentialProceeds: `العائدات المحتملة`,
     assetsPlanned: `الأصول المخططة`,
+    // Tips & Quotes categories
+    tipsCatAll: `الكل`,
+    tipsCatRisk: `المخاطرة`,
+    tipsCatPsych: `علم النفس`,
+    tipsCatStrategy: `الاستراتيجية`,
+    tipsCatHodl: `HODL`,
+    tipsCatQuotes: `اقتباسات`,
     // Landing badges — AI generated
     badge1: `✦ مجاني 100%`,
     badge2: `✦ بلا حساب`,
