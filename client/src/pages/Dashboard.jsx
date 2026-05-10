@@ -205,22 +205,30 @@ function computeAI(enriched, prices, transactions, totalValue) {
 }
 
 // ── AI Analysis panel ─────────────────────────────────────────────────────
-function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
+function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoading }) {
+  const { t } = useLanguage()
   const ai = useMemo(
     () => computeAI(enriched, prices, transactions, totalValue),
     [enriched, prices, transactions, totalValue]
   )
 
+  if (pricesLoading && !ai) return (
+    <div className="ai-empty glass-card">
+      <div className="ai-empty-icon">⏳</div>
+      <p>{t('loadingAI')}</p>
+    </div>
+  )
+
   if (!ai) return (
     <div className="ai-empty glass-card">
       <div className="ai-empty-icon">🤖</div>
-      <p>Add holdings to unlock AI portfolio analysis.</p>
+      <p>{t('addHoldingsAI')}</p>
     </div>
   )
 
   return (
     <div className="ai-wrap">
-      {isDemo && <div className="dvx-badge-demo" style={{marginBottom:'0.75rem',display:'inline-block'}}>DEMO DATA</div>}
+      {isDemo && <div className="dvx-badge-demo" style={{marginBottom:'0.75rem',display:'inline-block'}}>{t('demoData')}</div>}
 
       {/* Health score orb */}
       <div className="ai-health-card glass-card">
@@ -240,15 +248,15 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
           </div>
           <div>
             <div className="ai-grade" style={{color: ai.gradeColor}}>{ai.grade}</div>
-            <div className="ai-grade-label">Portfolio Grade</div>
+            <div className="ai-grade-label">{t('portfolioGrade')}</div>
           </div>
         </div>
         <div className="ai-health-bars">
           {[
-            { label: 'Diversification', val: ai.concentrationScore, color: '#34d399' },
-            { label: 'Momentum',        val: ai.momentumScore,      color: '#3b82f6' },
-            { label: 'P&L Health',      val: ai.pnlHealth,          color: '#f59e0b' },
-            { label: 'Cap Spread',      val: ai.tierScore,          color: '#8b5cf6' },
+            { label: t('diversification'), val: ai.concentrationScore, color: '#34d399' },
+            { label: t('momentum'),        val: ai.momentumScore,      color: '#3b82f6' },
+            { label: t('pnlHealth'),       val: ai.pnlHealth,          color: '#f59e0b' },
+            { label: t('capSpread'),       val: ai.tierScore,          color: '#8b5cf6' },
           ].map(b => (
             <div key={b.label} className="ai-bar-row">
               <div className="ai-bar-label">{b.label}</div>
@@ -264,19 +272,19 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
       {/* Key indicators row */}
       <div className="ai-indicators">
         <div className="ai-ind-card glass-card">
-          <div className="ai-ind-label">Risk Level</div>
+          <div className="ai-ind-label">{t('riskLevel')}</div>
           <div className="ai-ind-val" style={{color: ai.riskColor}}>{ai.riskLevel}</div>
           <div className="ai-ind-sub">HHI {ai.hhi.toFixed(2)}</div>
         </div>
         <div className="ai-ind-card glass-card">
-          <div className="ai-ind-label">24h Momentum</div>
+          <div className="ai-ind-label">{t('momentum')}</div>
           <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? '#34d399' : '#f87171'}}>
             {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
           </div>
           <div className="ai-ind-sub">weighted avg</div>
         </div>
         <div className="ai-ind-card glass-card">
-          <div className="ai-ind-label">Sentiment</div>
+          <div className="ai-ind-label">{t('sentiment')}</div>
           <div className="ai-ind-val" style={{color: ai.sentimentColor}}>{ai.sentiment}</div>
           <div className="ai-ind-sub">{ai.buyCount}B · {ai.sellCount}S</div>
         </div>
@@ -289,22 +297,22 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* Market cap breakdown */}
       <div className="glass-card ai-mc-card">
-        <h4 className="ai-section-title">Market Cap Distribution</h4>
+        <h4 className="ai-section-title">{t('mcDistribution')}</h4>
         <div className="ai-mc-bar-track">
-          {ai.mcBreakdown.map(t => (
-            <div key={t.id} className="ai-mc-seg" style={{ width: `${t.pct}%`, background: t.color }}
-              title={`${t.label}: ${t.pct.toFixed(1)}%`} />
+          {ai.mcBreakdown.map(mc => (
+            <div key={mc.id} className="ai-mc-seg" style={{ width: `${mc.pct}%`, background: mc.color }}
+              title={`${mc.label}: ${mc.pct.toFixed(1)}%`} />
           ))}
         </div>
         <div className="ai-mc-legend">
-          {ai.mcBreakdown.map(t => (
-            <div key={t.id} className="ai-mc-item">
-              <span className="ai-mc-dot" style={{background: t.color}} />
+          {ai.mcBreakdown.map(mc => (
+            <div key={mc.id} className="ai-mc-item">
+              <span className="ai-mc-dot" style={{background: mc.color}} />
               <div className="ai-mc-info">
-                <span className="ai-mc-name">{t.emoji} {t.label}</span>
-                <span className="ai-mc-assets">{t.assets.map(a => a.coin_symbol?.toUpperCase()).join(', ')}</span>
+                <span className="ai-mc-name">{mc.emoji} {mc.label}</span>
+                <span className="ai-mc-assets">{mc.assets.map(a => a.coin_symbol?.toUpperCase()).join(', ')}</span>
               </div>
-              <span className="ai-mc-pct" style={{color: t.color}}>{t.pct.toFixed(1)}%</span>
+              <span className="ai-mc-pct" style={{color: mc.color}}>{mc.pct.toFixed(1)}%</span>
             </div>
           ))}
         </div>
@@ -312,7 +320,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* AI Insights */}
       <div className="glass-card ai-insights-card">
-        <h4 className="ai-section-title">🤖 AI Insights</h4>
+        <h4 className="ai-section-title">🤖 {t('aiInsights')}</h4>
         <div className="ai-insights-list">
           {ai.insights.map((ins, i) => (
             <div key={i} className={`ai-insight ai-insight-${ins.type}`}>
@@ -328,7 +336,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* Radar-style indicator ring (SVG) */}
       <div className="glass-card ai-radar-card">
-        <h4 className="ai-section-title">Portfolio Radar</h4>
+        <h4 className="ai-section-title">{t('portfolioRadar')}</h4>
         <AIRadar scores={{
           Diversity:    ai.concentrationScore,
           Momentum:     ai.momentumScore,
@@ -340,7 +348,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* ── Fear & Greed Meter ── */}
       <div className="glass-card ai-fg-card">
-        <h4 className="ai-section-title">Portfolio Fear &amp; Greed</h4>
+        <h4 className="ai-section-title">{t('fearGreed')}</h4>
         <FearGreedGauge value={ai.fearGreed} label={ai.fgLabel} color={ai.fgColor} />
         <p className="ai-fg-desc">
           Derived from momentum, P&amp;L bias, trade sentiment &amp; concentration — specific to <em>your</em> portfolio.
@@ -381,7 +389,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* ── Stress Test ── */}
       <div className="glass-card ai-stress-card">
-        <h4 className="ai-section-title">Stress Test Scenarios</h4>
+        <h4 className="ai-section-title">{t('stressTest')}</h4>
         <div className="ai-stress-grid">
           {ai.stressScenarios.map(s => {
             const newVal = totalValue * (1 + s.pct / 100)
@@ -405,7 +413,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* ── Entry Quality ── */}
       <div className="glass-card ai-entry-card">
-        <h4 className="ai-section-title">Entry Quality Analysis</h4>
+        <h4 className="ai-section-title">{t('entryQuality')}</h4>
         <p className="ai-entry-sub muted">Avg buy price vs current price per asset</p>
         <div className="ai-entry-list">
           {ai.entryQuality.map(h => (
@@ -435,7 +443,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo }) {
 
       {/* ── Rebalance Planner ── */}
       <div className="glass-card ai-rebal-card">
-        <h4 className="ai-section-title">Rebalance Planner</h4>
+        <h4 className="ai-section-title">{t('rebalancePlanner')}</h4>
         <p className="ai-entry-sub muted">Equal-weight target vs current allocation</p>
         <div className="ai-rebal-list">
           {ai.rebalance.map(h => (
@@ -706,6 +714,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
 
 // ── Data panel — short WLZ backup code ───────────────────────────────────
 function DataPanel({ onRefresh }) {
+  const { t } = useLanguage()
   const [code, setCode]     = useState('')
   const [copied, setCopied] = useState(false)
   const [msg, setMsg]       = useState('')
@@ -754,7 +763,7 @@ function DataPanel({ onRefresh }) {
       </p>
 
       <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
-        {Ico.export} Generate Backup Code
+        {Ico.export} {t('generateBackup')}
       </button>
 
       {code && (
@@ -1119,22 +1128,22 @@ export default function Dashboard() {
               {targetsAnalysis.rows.length > 0 && (
                 <div className="glass-card">
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
-                    <h3 style={{ margin:0 }}>Sell Targets</h3>
+                    <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
                     <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
                       onClick={() => setActiveTab('targets')}>
-                      View all →
+                      {t('viewAll')}
                     </button>
                   </div>
                   <div className="dvx-targets-mini">
-                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(t => (
-                      <div key={t.id} className={`dvx-target-mini-row ${t.reached ? 'dvx-target-reached' : ''}`}>
-                        <span className="dvx-target-mini-sym">{t.coinSymbol?.toUpperCase()}</span>
-                        <span className="dvx-target-mini-price">${fmt(t.price)}</span>
+                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(tgt => (
+                      <div key={tgt.id} className={`dvx-target-mini-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
+                        <span className="dvx-target-mini-sym">{tgt.coinSymbol?.toUpperCase()}</span>
+                        <span className="dvx-target-mini-price">${fmt(tgt.price)}</span>
                         <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
-                          <div className="dvx-target-bar-fill" style={{ width:`${t.progress}%`, background: t.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
                         </div>
-                        <span style={{ fontSize:'0.7rem', color: t.reached ? '#34d399' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
-                          {t.reached ? '✓' : `${t.progress.toFixed(0)}%`}
+                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? '#34d399' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
+                          {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
                         </span>
                       </div>
                     ))}
@@ -1144,22 +1153,22 @@ export default function Dashboard() {
 
               {/* Recent transactions */}
               <div className="glass-card">
-                <h3>Recent Transactions</h3>
+                <h3>{t('recentTransactions')}</h3>
                 {recentTxs.length === 0
-                  ? <p className="muted">No transactions yet.</p>
+                  ? <p className="muted">{t('noTransactions')}</p>
                   : <ul className="dvx-tx-list">
-                    {recentTxs.map(t => {
-                      const isBuy = t.type === 'buy' || t.type === 'deposit'
+                    {recentTxs.map(tx => {
+                      const isBuy = tx.type === 'buy' || tx.type === 'deposit'
                       return (
-                        <li key={t.id} className="dvx-tx-item holo-card-v2">
+                        <li key={tx.id} className="dvx-tx-item holo-card-v2">
                           <span className="dvx-tx-icon" style={{ color: isBuy ? '#34d399' : '#f87171' }}>
                             {isBuy ? Ico.buy : Ico.sell}
                           </span>
                           <div className="dvx-tx-meta">
-                            <strong>{isBuy ? 'Bought' : 'Sold'} {t.coin_symbol?.toUpperCase()}</strong>
-                            <span className="muted">{t.amount} @ ${fmt(t.price_per_unit || 0)}</span>
+                            <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
+                            <span className="muted">{tx.amount} @ ${fmt(tx.price_per_unit || 0)}</span>
                           </div>
-                          <span className="dvx-tx-amt">${fmt((t.amount || 0) * (t.price_per_unit || 0))}</span>
+                          <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
                         </li>
                       )
                     })}
@@ -1172,9 +1181,9 @@ export default function Dashboard() {
             <div className="dvx-col-side">
               {/* Allocation donut */}
               <div className="glass-card">
-                <h3>{pricesFailed ? 'Allocation (invested)' : 'Allocation'}</h3>
+                <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
                 {allocData.length === 0
-                  ? <p className="muted">No holdings.</p>
+                  ? <p className="muted">{t('noHoldings')}</p>
                   : <>
                     <ResponsiveContainer width="100%" height={190}>
                       <PieChart>
@@ -1372,6 +1381,7 @@ export default function Dashboard() {
           transactions={transactions}
           totalValue={totalValue}
           isDemo={isDemo}
+          pricesLoading={pricesLoading}
         />
       )}
 
@@ -1379,10 +1389,10 @@ export default function Dashboard() {
       {activeTab === 'wallets' && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
-            <h3>Wallets ({wallets.length})</h3>
+            <h3>{t('walletsTitle')(wallets.length)}</h3>
             <WalletPanel wallets={wallets} onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
+          <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
         </div>
       )}
 
@@ -1390,10 +1400,10 @@ export default function Dashboard() {
       {activeTab === 'data' && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
-            <h3>Backup & Restore</h3>
+            <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>← Back</button>
+          <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
         </div>
       )}
 

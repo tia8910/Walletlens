@@ -163,7 +163,7 @@ const ALL_ITEMS = [...TIPS, ...QUOTES]
 
 export default function TradeTips() {
   const { t } = useLanguage()
-  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('tips-dismissed') === '1')
+  const [dismissed, setDismissed] = useState(false)
   const [cat, setCat] = useState('All')
   const [idx, setIdx] = useState(0)
   const [anim, setAnim] = useState('in') // 'in' | 'out'
@@ -242,7 +242,6 @@ export default function TradeTips() {
   }
 
   const handleDismiss = () => {
-    sessionStorage.setItem('tips-dismissed', '1')
     setDismissed(true)
   }
 
