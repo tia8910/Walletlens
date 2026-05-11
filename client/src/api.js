@@ -81,7 +81,7 @@ try { runSchemaMigrations(); } catch (err) { console.warn('Schema migration fail
 // can render instantly on subsequent loads while a fresh fetch runs in
 // the background.
 const PRICE_CACHE_KEY = 'crypto_tracker_price_cache_v1';
-const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v1';
+const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v2';
 function _loadCache(key) {
   try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
@@ -714,7 +714,7 @@ export const api = {
     if (!ids) return {};
     const now = Date.now();
     const coinIds = ids.split(',');
-    const allCached = coinIds.every(id => coinImageCache[id]);
+    const allCached = coinIds.every(id => !!coinImageCache[id]);
 
     if (!allCached || now - lastImageFetch > CACHE_DURATION * 5) {
       const data = await fetchJSON(
