@@ -44,33 +44,27 @@ async function fetchJSON(url) {
 
 // Score a token. Returns { score 0-100, grade, color, signals[] }
 async function scoreToken(coinId) {
-  const cache = loadCache()
-  const cached = cache[coinId]
-  if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.result
-
-  // Stablecoins: safe by design
+  // Stablecoins always safe — check before cache to override any stale cached score
   if (STABLECOINS.has(coinId)) {
-    const result = { score: 90, grade: 'SAFE', color: '#34d399', signals: [
+    return { score: 90, grade: 'SAFE', color: '#34d399', signals: [
       { label: 'Fiat-pegged stablecoin — no rug risk', status: 'good' },
       { label: 'High liquidity by design', status: 'good' },
       { label: 'No smart contract price dependency', status: 'good' },
     ]}
-    cache[coinId] = { result, ts: Date.now() }
-    saveCache(cache)
-    return result
   }
 
-  // Major coins: auto-safe
+  // Major coins always safe — check before cache too
   if (SAFE_IDS.has(coinId)) {
-    const result = { score: 95, grade: 'SAFE', color: '#34d399', signals: [
+    return { score: 95, grade: 'SAFE', color: '#34d399', signals: [
       { label: 'Established blue-chip', status: 'good' },
       { label: 'High liquidity', status: 'good' },
       { label: 'Multi-year track record', status: 'good' },
     ]}
-    cache[coinId] = { result, ts: Date.now() }
-    saveCache(cache)
-    return result
   }
+
+  const cache = loadCache()
+  const cached = cache[coinId]
+  if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.result
 
   // Non-crypto IDs (metals, stocks, fiat)
   if (coinId.startsWith('metal:') || coinId.startsWith('stock:') || coinId.startsWith('fiat:')) {
