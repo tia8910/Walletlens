@@ -15,6 +15,14 @@ const SAFE_IDS = new Set([
   'the-graph','decentraland','the-sandbox','axie-infinity',
 ])
 
+// Stablecoins are low-risk by design — pegged to fiat, not rug-pullable
+const STABLECOINS = new Set([
+  'tether','usd-coin','dai','binance-usd','true-usd','frax',
+  'pax-dollar','gemini-dollar','liquity-usd','usdd','first-digital-usd',
+  'paypal-usd','euro-coin','stasis-eurs','usds','usual-usd','curve-dao-token',
+  'nusd','fei-protocol','reserve','rai','floating-stablecoin',
+])
+
 const CHAIN_MAP = {
   'ethereum': 1, 'binance-smart-chain': 56, 'polygon-pos': 137,
   'avalanche': 43114, 'arbitrum-one': 42161, 'optimistic-ethereum': 10,
@@ -39,6 +47,18 @@ async function scoreToken(coinId) {
   const cache = loadCache()
   const cached = cache[coinId]
   if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.result
+
+  // Stablecoins: safe by design
+  if (STABLECOINS.has(coinId)) {
+    const result = { score: 90, grade: 'SAFE', color: '#34d399', signals: [
+      { label: 'Fiat-pegged stablecoin — no rug risk', status: 'good' },
+      { label: 'High liquidity by design', status: 'good' },
+      { label: 'No smart contract price dependency', status: 'good' },
+    ]}
+    cache[coinId] = { result, ts: Date.now() }
+    saveCache(cache)
+    return result
+  }
 
   // Major coins: auto-safe
   if (SAFE_IDS.has(coinId)) {
