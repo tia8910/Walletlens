@@ -5,6 +5,7 @@ import walletsRouter from './routes/wallets.js';
 import transactionsRouter from './routes/transactions.js';
 import pricesRouter from './routes/prices.js';
 import exchangesRouter from './routes/exchanges.js';
+import aiRouter from './routes/ai.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +18,7 @@ app.use('/api/wallets', walletsRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/prices', pricesRouter);
 app.use('/api/exchanges', exchangesRouter);
+app.use('/api/ai', aiRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
