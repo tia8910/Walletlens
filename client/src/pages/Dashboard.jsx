@@ -834,6 +834,7 @@ export default function Dashboard() {
   const { t } = useLanguage()
   const [portfolio, setPortfolio]         = useState([])
   const [prices, setPrices]               = useState({})
+  const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
   const [coinTargets, setCoinTargets]     = useState({})
@@ -860,9 +861,14 @@ export default function Dashboard() {
     setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
     if (p.length) {
       setPricesLoading(true)
+      const ids = p.map(h => h.coin_id).join(',')
       try {
-        const px = await api.getPrices(p.map(h => h.coin_id).join(','))
+        const [px, imgs] = await Promise.all([
+          api.getPrices(ids),
+          api.getCoinImages(ids).catch(() => ({})),
+        ])
         setPrices(px || {})
+        setCoinImages(imgs || {})
       } catch {}
       setPricesLoading(false)
     }
@@ -877,7 +883,8 @@ export default function Dashboard() {
       const value   = h.amount * price
       const pnl     = value - h.total_invested
       const pnlPct  = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
-      return { ...h, price, value, pnl, pnlPct }
+      const coin_image = h.coin_image || coinImages[h.coin_id] || ''
+      return { ...h, coin_image, price, value, pnl, pnlPct }
     }).sort((a, b) => (b.value || b.total_invested) - (a.value || a.total_invested))
 
     const hasPortfolio = raw.length > 0
@@ -900,7 +907,7 @@ export default function Dashboard() {
       totalPnL: pnl, totalPnLPct: hasPrices && ti > 0 ? (pnl / ti) * 100 : 0,
       isDemo: false, pricesFailed: hasPortfolio && !hasPrices && loaded && !pricesLoading,
     }
-  }, [portfolio, prices, loaded, pricesLoading])
+  }, [portfolio, prices, coinImages, loaded, pricesLoading])
 
   // Count-up animation
   useEffect(() => {
