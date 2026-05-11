@@ -5,6 +5,14 @@ import App from './App'
 import { LanguageProvider } from './LanguageContext'
 import './index.css'
 
+// Auto-reload on stale chunk error (happens when a new deployment replaces old chunk files)
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason?.message?.includes('Failed to fetch dynamically imported module') ||
+      e.reason?.message?.includes('Importing a module script failed')) {
+    window.location.reload()
+  }
+})
+
 const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' : '/'
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -1,6 +1,6 @@
 // Service worker — network-first for HTML, cache-first for assets.
 // Never cache index.html so users always get the latest app shell.
-const SW_VERSION = 'v4'
+const SW_VERSION = 'v5'
 const STATIC = `walletlens-static-${SW_VERSION}`
 
 // Only cache immutable hashed assets (JS/CSS bundles), not HTML.
@@ -30,16 +30,14 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // Hashed assets (JS/CSS with content hash in filename): cache-first
+  // Hashed assets (JS/CSS with content hash in filename): network-first so
+  // new deployments always serve fresh chunks; fall back to cache if offline.
   if (url.pathname.startsWith('/assets/')) {
     e.respondWith(
-      caches.open(STATIC).then(async cache => {
-        const cached = await cache.match(req)
-        if (cached) return cached
-        const fresh = await fetch(req)
-        if (fresh?.ok) cache.put(req, fresh.clone())
+      fetch(req).then(fresh => {
+        if (fresh?.ok) caches.open(STATIC).then(c => c.put(req, fresh.clone()))
         return fresh
-      })
+      }).catch(() => caches.match(req))
     )
     return
   }
