@@ -10,6 +10,7 @@ import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
 import CoinLogo from '../components/CoinLogo'
 import PriceAlerts from '../components/PriceAlerts'
+import RiskScanner from '../components/RiskScanner'
 import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -852,6 +853,7 @@ export default function Dashboard() {
   const [pricesLoading, setPricesLoading] = useState(false)
   const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
+  const [showBreakEven, setShowBreakEven]     = useState(false)
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true) }, [])
@@ -1024,6 +1026,7 @@ export default function Dashboard() {
     { id: 'overview', label: t('overview'),  icon: Ico.overview },
     { id: 'ai',       label: t('ai'),       icon: Ico.ai },
     { id: 'alerts',   label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
+    { id: 'risk',     label: 'Risk',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
     { id: 'buy',      label: t('buy'),      icon: Ico.buy,    sheet: 'buy' },
     { id: 'sell',     label: t('sell'),     icon: Ico.sell,   sheet: 'sell' },
     { id: 'targets',  label: t('targets'),  icon: Ico.target },
@@ -1255,29 +1258,65 @@ export default function Dashboard() {
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
-                  {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
+                  <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+                    {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
+                    <button
+                      className={`dvx-breakeven-toggle ${showBreakEven ? 'active' : ''}`}
+                      onClick={() => setShowBreakEven(v => !v)}
+                      title="Toggle break-even view"
+                    >
+                      ⚖ Break-Even
+                    </button>
+                  </div>
                 </div>
                 {enriched.length === 0
                   ? <p className="muted">Nothing yet.</p>
                   : <>
                     <ul className="dvx-holdings">
                       {displayHoldings.map((h, i) => {
-                        const displayValue = h.value > 0 ? h.value : h.total_invested
-                        const hasPnl = h.pnl !== 0 && !pricesFailed
+                        const displayValue  = h.value > 0 ? h.value : h.total_invested
+                        const hasPnl        = h.pnl !== 0 && !pricesFailed
+                        const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
+                        const beDistance     = h.price > 0 && breakEvenPrice > 0
+                          ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
+                        const bePct = h.price > 0 && breakEvenPrice > 0
+                          ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
                         return (
                           <li key={h.coin_id} className="dvx-holding holo-card-v2"
                             onClick={() => !isDemo && navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
                             <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={36} className="dvx-holding-icon" />
                             <div className="dvx-holding-meta">
                               <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                              <span className="muted">
-                                {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
-                                {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
-                              </span>
+                              {showBreakEven ? (
+                                <span className="muted" style={{ fontSize:'0.72rem' }}>
+                                  Break-even: <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171', fontWeight:700 }}>
+                                    ${fmt(breakEvenPrice)}
+                                  </span>
+                                  {h.price > 0 && <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171' }}>
+                                    {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
+                                  </span>}
+                                </span>
+                              ) : (
+                                <span className="muted">
+                                  {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
+                                  {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
+                                </span>
+                              )}
+                              {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
+                                <div className="dvx-be-bar-wrap">
+                                  <div className="dvx-be-bar-track">
+                                    <div className="dvx-be-bar-fill" style={{
+                                      width: `${bePct}%`,
+                                      background: beDistance >= 0 ? '#34d399' : '#f87171',
+                                    }} />
+                                    <div className="dvx-be-bar-marker" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <div style={TEXT_RIGHT_STYLE}>
                               <div className="dvx-holding-val">${fmt(displayValue)}</div>
-                              {hasPnl && (
+                              {!showBreakEven && hasPnl && (
                                 <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
                                   {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
                                 </div>
@@ -1428,6 +1467,11 @@ export default function Dashboard() {
       {/* ══ PRICE ALERTS ══ */}
       {activeTab === 'alerts' && (
         <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+      )}
+
+      {/* ══ RUG PULL RISK ══ */}
+      {activeTab === 'risk' && (
+        <RiskScanner enriched={isDemo ? [] : enriched} />
       )}
 
       {/* ══ WALLETS ══ */}
