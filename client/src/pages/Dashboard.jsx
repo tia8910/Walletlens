@@ -8,6 +8,7 @@ import { api } from '../api'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
+import CoinLogo from '../components/CoinLogo'
 import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -1223,9 +1224,7 @@ export default function Dashboard() {
                         return (
                           <li key={h.coin_id} className="dvx-holding holo-card-v2"
                             onClick={() => !isDemo && navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
-                            <div className="dvx-holding-icon" style={{ background: PALETTE[i % PALETTE.length] + '22', color: PALETTE[i % PALETTE.length] }}>
-                              {h.coin_symbol?.slice(0, 3).toUpperCase()}
-                            </div>
+                            <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={36} className="dvx-holding-icon" />
                             <div className="dvx-holding-meta">
                               <strong>{h.coin_symbol?.toUpperCase()}</strong>
                               <span className="muted">
