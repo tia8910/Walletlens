@@ -124,6 +124,7 @@ export default function App() {
       <DynamicBackground />
 
       <header className="wl-topbar">
+        <PriceTicker />
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
@@ -140,7 +141,6 @@ export default function App() {
             <div className="wl-live-badge"><span className="wl-live-dot"/>{t('live')}</div>
           </div>
         </div>
-        <PriceTicker />
       </header>
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

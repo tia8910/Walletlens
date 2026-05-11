@@ -3108,6 +3108,14 @@ tr:last-child td { border-bottom: none; }
   backdrop-filter: blur(24px);
   border-bottom: 1px solid rgba(52,211,153,0.2);
 }
+/* Ticker inside topbar — flush, no rounded corners, no extra margin */
+.wl-topbar .ticker-strip {
+  border-radius: 0;
+  margin: 0;
+  border-left: none; border-right: none; border-top: none;
+  border-bottom: 1px solid rgba(52,211,153,0.12);
+  padding: 7px 0;
+}
 .wl-topbar-inner {
   display: flex;
   align-items: center;
