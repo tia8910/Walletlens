@@ -4784,8 +4784,10 @@ input[type="date"] { color-scheme: dark; }
   button, a, select, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
   }
-  /* Prevent horizontal overflow */
-  body { overflow-x: hidden; }
+  /* Prevent horizontal overflow — use clip on html, NOT overflow on body/wl-content
+     (overflow on body breaks position:sticky in iOS Safari / Chrome mobile) */
+  html { overflow-x: clip; }
+  .wl-app { overflow-x: clip; }
 
   /* Landing hero: tighten on small screens */
   .lp-hero { padding: 2rem 1rem 1.5rem; min-height: unset; }
@@ -4829,8 +4831,8 @@ input[type="date"] { color-scheme: dark; }
   .lp-final-cta { padding: 3rem 1rem; }
   .lp-final-h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
 
-  /* Dashboard tabs: scrollable */
-  .dvx-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 2px; gap: 0.35rem; }
+  /* Dashboard tabs: scrollable but sticky still works via overflow-x: auto on inner */
+  .dvx-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 2px; gap: 0.35rem; position: sticky; top: 88px; }
   .dvx-tabs::-webkit-scrollbar { display: none; }
   .dvx-tab { white-space: nowrap; flex-shrink: 0; font-size: 0.78rem; padding: 0.45rem 0.8rem; }
 
