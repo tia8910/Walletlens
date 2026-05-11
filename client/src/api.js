@@ -713,7 +713,7 @@ export const api = {
   getCoinImages: async (ids) => {
     if (!ids) return {};
     const now = Date.now();
-    const coinIds = ids.split(',');
+    const coinIds = ids.split(',').filter(Boolean);
     const allCached = coinIds.every(id => !!coinImageCache[id]);
 
     if (!allCached || now - lastImageFetch > CACHE_DURATION * 5) {
@@ -722,11 +722,22 @@ export const api = {
       );
       if (Array.isArray(data)) {
         for (const coin of data) {
-          coinImageCache[coin.id] = coin.image;
+          if (coin.image) coinImageCache[coin.id] = coin.image;
         }
         lastImageFetch = now;
         _saveCache(IMAGE_CACHE_KEY, coinImageCache);
       }
+
+      // For any coin not returned by the batch (e.g. renamed ID), try individual lookup
+      const missing = coinIds.filter(id => !coinImageCache[id] && !id.startsWith('metal:') && !id.startsWith('stock:') && !id.startsWith('fiat:'));
+      for (const id of missing.slice(0, 5)) {
+        try {
+          const coin = await fetchJSON(`${COINGECKO_BASE}/coins/${id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`);
+          if (coin?.image?.large) coinImageCache[id] = coin.image.large;
+          else if (coin?.image?.thumb) coinImageCache[id] = coin.image.thumb;
+        } catch {}
+      }
+      if (missing.length) _saveCache(IMAGE_CACHE_KEY, coinImageCache);
     }
 
     const result = {};
