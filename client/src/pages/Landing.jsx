@@ -215,22 +215,22 @@ export default function Landing() {
         <div className="lp-pain-grid">
           <PainCard delay={0}
             emoji="😰"
-            pain='"I don\'t know if I\'m actually up or down. The numbers are everywhere."'
+            pain="I don't know if I'm actually up or down. The numbers are everywhere."
             solution="One dashboard. Every asset. Real P&L calculated from your actual cost basis."
           />
           <PainCard delay={80}
             emoji="💸"
-            pain='"I held a token that rugged. I had no idea the contract was dangerous."'
+            pain="I held a token that rugged. I had no idea the contract was dangerous."
             solution="Rug Pull Risk Scanner scores every token — honeypot detection, holder concentration, contract verification."
           />
           <PainCard delay={160}
             emoji="😴"
-            pain='"I missed my target price because I wasn\'t watching the screen."'
+            pain="I missed my target price because I wasn't watching the screen."
             solution="Smart Price Alerts fire an audio alarm + browser notification the moment your target is hit."
           />
           <PainCard delay={240}
             emoji="🤯"
-            pain='"I know I\'m losing but I don\'t know exactly how much more I need to break even."'
+            pain="I know I'm losing but I don't know exactly how much more I need to break even."
             solution="Break-Even Calculator shows the exact price every holding needs to reach to recover your full investment."
           />
         </div>
