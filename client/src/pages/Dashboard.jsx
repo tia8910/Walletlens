@@ -1033,11 +1033,11 @@ export default function Dashboard() {
     <div className="dvx">
       {/* Tab nav */}
       <div className="dvx-tabs">
-        {tabs.map(t => (
-          <button key={t.id} className={`dvx-tab ${!t.sheet && activeTab === t.id ? 'dvx-tab-active' : ''}`}
-            onClick={() => t.sheet ? openSheet(t.sheet) : setActiveTab(t.id)}>
-            <span className="dvx-tab-icon">{t.icon}</span>
-            <span>{t.label}</span>
+        {tabs.map(tab => (
+          <button key={tab.id} className={`dvx-tab ${!tab.sheet && activeTab === tab.id ? 'dvx-tab-active' : ''}`}
+            onClick={() => tab.sheet ? openSheet(tab.sheet) : setActiveTab(tab.id)}>
+            <span className="dvx-tab-icon">{tab.icon}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -1357,9 +1357,7 @@ export default function Dashboard() {
               <div key={r.coinId} className="glass-card dvx-target-card">
                 <div className="dvx-target-header">
                   <div className="dvx-target-coin">
-                    <div className="dvx-holding-icon" style={{ background:'rgba(52,211,153,0.12)', color:'#34d399', width:36, height:36, fontSize:'0.7rem' }}>
-                      {r.coinSymbol?.slice(0, 3).toUpperCase()}
-                    </div>
+                    <CoinLogo symbol={r.coinSymbol} size={36} className="dvx-holding-icon" />
                     <div>
                       <strong style={{ color:'#fff' }}>{r.coinSymbol?.toUpperCase()}</strong>
                       <div className="muted" style={{ fontSize:'0.72rem' }}>
@@ -1374,36 +1372,36 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {r.targets.map((t, ti) => (
-                  <div key={t.id} className={`dvx-target-row ${t.reached ? 'dvx-target-reached' : ''}`}>
+                {r.targets.map((tgt, ti) => (
+                  <div key={tgt.id} className={`dvx-target-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
                     <div className="dvx-target-row-top">
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Target Price</span>
-                        <span className="dvx-target-val">${fmt(t.price)}</span>
+                        <span className="dvx-target-val">${fmt(tgt.price)}</span>
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Qty to Sell</span>
                         <span className="dvx-target-val">
-                          {t.quantity == null ? `All (${r.amount.toFixed(4)})` : t.sellQty.toFixed(4)}
+                          {tgt.quantity == null ? `All (${r.amount.toFixed(4)})` : tgt.sellQty.toFixed(4)}
                         </span>
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Proceeds</span>
-                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(t.proceeds)}</span>
+                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(tgt.proceeds)}</span>
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: t.reached ? '#34d399' : t.gainVsNow > 0 ? '#fff' : '#f87171' }}>
-                          {t.reached ? '✓ Reached' : `${t.gainVsNow >= 0 ? '+' : ''}${t.gainVsNow.toFixed(1)}%`}
+                        <span className="dvx-target-val" style={{ color: tgt.reached ? '#34d399' : tgt.gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                          {tgt.reached ? '✓ Reached' : `${tgt.gainVsNow >= 0 ? '+' : ''}${tgt.gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
                     </div>
                     <div className="dvx-target-bar-wrap">
                       <div className="dvx-target-bar-bg">
                         <div className="dvx-target-bar-fill"
-                          style={{ width:`${t.progress}%`, background: t.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                          style={{ width:`${tgt.progress}%`, background: tgt.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
                       </div>
-                      <span className="dvx-target-bar-pct">{t.progress.toFixed(0)}%</span>
+                      <span className="dvx-target-bar-pct">{tgt.progress.toFixed(0)}%</span>
                     </div>
                   </div>
                 ))}
