@@ -1,50 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 
-// Deterministic gradient color from a string (coin symbol/id)
-function symbolToGradient(sym) {
-  let h = 0
-  for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) >>> 0
-  const hue1 = h % 360
-  const hue2 = (hue1 + 40) % 360
-  return [`hsl(${hue1},70%,50%)`, `hsl(${hue2},80%,35%)`]
-}
-
-function GeneratedIcon({ symbol, size, className }) {
-  const sym = (symbol || '?').toUpperCase()
-  const label = sym.substring(0, sym.length > 3 ? 2 : 3)
-  const [c1, c2] = symbolToGradient(sym)
-  const id = `cg-${sym}`
-  const fs = size <= 24 ? size * 0.38 : size <= 36 ? size * 0.36 : size * 0.32
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={c1} />
-          <stop offset="100%" stopColor={c2} />
-        </linearGradient>
-      </defs>
-      <circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
-      <text
-        x="50%" y="50%"
-        dominantBaseline="central" textAnchor="middle"
-        fill="rgba(255,255,255,0.95)" fontWeight="800"
-        fontSize={fs} fontFamily="system-ui,sans-serif"
-        style={{ userSelect: 'none' }}
-      >{label}</text>
-    </svg>
-  )
-}
-
-// Coin logo with fallback chain:
-//   0. provided image URL (CoinGecko thumb/image)
-//   1. jsDelivr cryptocurrency-icons SVG (top ~200 coins)
-//   2. CoinCap symbol icon
-//   3. Generated gradient SVG icon (instant, no CDN)
+// Robust coin-logo fallback chain. Each <img> uses onError to bump to
+// the next stage; an additional 2.5s timer forces an advance if the
+// browser silently stalls (e.g. blocked by an extension, slow CDN).
 //
-// onLoad cancels the stall-timeout so loaded images stay visible.
-const STAGE_TIMEOUT_MS = 4000
+// Order is from most-likely to least-likely to render correctly:
+//   0. provided image URL (CoinGecko etc — usually right but can be slow / blocked)
+//   1. jsDelivr cryptocurrency-icons SVG (static CDN, top ~200 coins)
+//   2. CoinCap symbol icon (top ~100 coins)
+//   3. cryptoicons.org by symbol (long-tail coverage)
+//   4. coloured letter / category badge
+const STAGE_TIMEOUT_MS = 2500
 
-export default function CoinLogo({
+const CoinLogo = memo(function CoinLogo({
   image,
   symbol,
   size = 32,
@@ -55,30 +23,28 @@ export default function CoinLogo({
   const sym = (symbol || '').toLowerCase()
   const [stage, setStage] = useState(image ? 0 : 1)
   const stageRef = useRef(stage)
-  const loadedRef = useRef(false)
   stageRef.current = stage
 
+  // Reset whenever the source changes (route navigation)
   useEffect(() => {
-    loadedRef.current = false
     setStage(image ? 0 : 1)
   }, [image, sym])
 
+  // Force-advance if a stage hasn't loaded after STAGE_TIMEOUT_MS
   useEffect(() => {
-    if (stage >= 3) return
-    loadedRef.current = false
+    if (stage >= 4) return
     const t = setTimeout(() => {
-      if (stageRef.current === stage && !loadedRef.current) setStage(s => s + 1)
+      if (stageRef.current === stage) setStage(s => s + 1)
     }, STAGE_TIMEOUT_MS)
     return () => clearTimeout(t)
   }, [stage])
 
-  const onLoad = () => { loadedRef.current = true }
-  const common = { alt: '', width: size, height: size, className, loading: 'eager', referrerPolicy: 'no-referrer', onLoad }
+  const common = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer' }
 
   if (stage === 0 && image) {
     return <img {...common} src={image} onError={() => setStage(1)} />
   }
-  if (stage <= 1 && sym) {
+  if (stage === 1 && sym) {
     return (
       <img
         {...common}
@@ -96,5 +62,31 @@ export default function CoinLogo({
       />
     )
   }
-  return <GeneratedIcon symbol={fallbackChar || symbol} size={size} className={className} />
-}
+  if (stage === 3 && sym) {
+    return (
+      <img
+        {...common}
+        src={`https://cryptoicons.org/api/icon/${sym}/200`}
+        onError={() => setStage(4)}
+      />
+    )
+  }
+  return (
+    <div
+      className={className}
+      style={{
+        background: 'rgba(0,200,83,0.12)',
+        color: '#00c853',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 800, fontSize: Math.max(10, size * 0.36),
+        borderRadius: '50%',
+        width: size, height: size,
+        ...badgeStyle,
+      }}
+    >
+      {fallbackChar || (symbol || '?').toString().substring(0, 2).toUpperCase()}
+    </div>
+  )
+})
+
+export default CoinLogo

@@ -40,6 +40,11 @@ db.exec(`
     is_connected INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_transactions_wallet_id ON transactions(wallet_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_coin_id   ON transactions(coin_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_type      ON transactions(type);
+  CREATE INDEX IF NOT EXISTS idx_transactions_date      ON transactions(date);
 `);
 
 export default db;

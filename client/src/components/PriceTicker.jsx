@@ -17,6 +17,8 @@ export default function PriceTicker() {
 
   useEffect(() => {
     let cancelled = false
+    let intervalId = null
+
     async function load() {
       const data = await api.getMarketData()
       if (cancelled || !Array.isArray(data) || data.length === 0) return
@@ -32,9 +34,35 @@ export default function PriceTicker() {
         }))
       setItems(picks)
     }
+
+    function startPolling() {
+      if (intervalId) return
+      intervalId = setInterval(load, TICKER_REFRESH_MS)
+    }
+
+    function stopPolling() {
+      clearInterval(intervalId)
+      intervalId = null
+    }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        load()
+        startPolling()
+      }
+    }
+
     load()
-    const id = setInterval(load, TICKER_REFRESH_MS)
-    return () => { cancelled = true; clearInterval(id) }
+    if (!document.hidden) startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      cancelled = true
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   if (items.length === 0) return null
