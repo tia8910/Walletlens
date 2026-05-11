@@ -4792,10 +4792,8 @@ input[type="date"] { color-scheme: dark; }
   button, a, select, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
   }
-  /* Prevent horizontal overflow — use clip on html, NOT overflow on body/wl-content
-     (overflow on body breaks position:sticky in iOS Safari / Chrome mobile) */
-  html { overflow-x: clip; }
-  .wl-app { overflow-x: clip; }
+  /* Prevent horizontal overflow without breaking sticky or scroll */
+  .wl-app { max-width: 100vw; overflow-x: hidden; }
 
   /* Landing hero: tighten on small screens */
   .lp-hero { padding: 2rem 1rem 1.5rem; min-height: unset; }
