@@ -1,16 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 
-// Robust coin-logo fallback chain. Each <img> uses onError to bump to
-// the next stage; an additional 2.5s timer forces an advance if the
-// browser silently stalls (e.g. blocked by an extension, slow CDN).
-//
-// Order is from most-likely to least-likely to render correctly:
-//   0. provided image URL (CoinGecko etc — usually right but can be slow / blocked)
-//   1. jsDelivr cryptocurrency-icons SVG (static CDN, top ~200 coins)
+// Coin logo with fallback chain:
+//   0. provided image URL (CoinGecko thumb/image)
+//   1. jsDelivr cryptocurrency-icons SVG (top ~200 coins)
 //   2. CoinCap symbol icon (top ~100 coins)
-//   3. cryptoicons.org by symbol (long-tail coverage)
-//   4. coloured letter / category badge
-const STAGE_TIMEOUT_MS = 2500
+//   3. coloured letter badge
+//
+// onLoad stops the stage — only advances on error or 4s timeout (stalled load).
+const STAGE_TIMEOUT_MS = 4000
 
 export default function CoinLogo({
   image,
@@ -23,28 +20,31 @@ export default function CoinLogo({
   const sym = (symbol || '').toLowerCase()
   const [stage, setStage] = useState(image ? 0 : 1)
   const stageRef = useRef(stage)
+  const loadedRef = useRef(false)
   stageRef.current = stage
 
-  // Reset whenever the source changes (route navigation)
   useEffect(() => {
+    loadedRef.current = false
     setStage(image ? 0 : 1)
   }, [image, sym])
 
-  // Force-advance if a stage hasn't loaded after STAGE_TIMEOUT_MS
+  // Timeout only fires if image hasn't loaded yet (stalled request)
   useEffect(() => {
-    if (stage >= 4) return
+    if (stage >= 3) return
+    loadedRef.current = false
     const t = setTimeout(() => {
-      if (stageRef.current === stage) setStage(s => s + 1)
+      if (stageRef.current === stage && !loadedRef.current) setStage(s => s + 1)
     }, STAGE_TIMEOUT_MS)
     return () => clearTimeout(t)
   }, [stage])
 
-  const common = { alt: '', width: size, height: size, className, loading: 'eager', referrerPolicy: 'no-referrer' }
+  const onLoad = () => { loadedRef.current = true }
+  const common = { alt: '', width: size, height: size, className, loading: 'eager', referrerPolicy: 'no-referrer', onLoad }
 
   if (stage === 0 && image) {
     return <img {...common} src={image} onError={() => setStage(1)} />
   }
-  if (stage === 1 && sym) {
+  if (stage <= 1 && sym) {
     return (
       <img
         {...common}
@@ -59,15 +59,6 @@ export default function CoinLogo({
         {...common}
         src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
         onError={() => setStage(3)}
-      />
-    )
-  }
-  if (stage === 3 && sym) {
-    return (
-      <img
-        {...common}
-        src={`https://cryptoicons.org/api/icon/${sym}/200`}
-        onError={() => setStage(4)}
       />
     )
   }
