@@ -2920,7 +2920,7 @@ tr:last-child td { border-bottom: none; }
   border: 1px solid rgba(52,211,153,0.25);
   border-radius: 18px; padding: 0.45rem;
   margin-top: 1rem;
-  position: sticky; top: 88px; z-index: 50;
+  position: sticky; top: 82px; z-index: 50;
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
 }
 .dvx-tab {
@@ -3142,7 +3142,7 @@ tr:last-child td { border-bottom: none; }
   flex: 1;
 }
 .wl-topbar-brand strong { color: #fff; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
-.wl-topbar-right { margin-left: auto; }
+.wl-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 .wl-live-badge {
   display: flex;
   align-items: center;
@@ -4840,7 +4840,7 @@ input[type="date"] { color-scheme: dark; }
   .lp-final-h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
 
   /* Dashboard tabs: scrollable but sticky still works via overflow-x: auto on inner */
-  .dvx-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 2px; gap: 0.35rem; position: sticky; top: 88px; }
+  .dvx-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 2px; gap: 0.35rem; position: sticky; top: 82px; }
   .dvx-tabs::-webkit-scrollbar { display: none; }
   .dvx-tab { white-space: nowrap; flex-shrink: 0; font-size: 0.78rem; padding: 0.45rem 0.8rem; }
 
