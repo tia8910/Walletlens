@@ -854,6 +854,9 @@ export default function Dashboard() {
   const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
+  const [goalValue, setGoalValue]             = useState(() => { try { return parseFloat(localStorage.getItem('wl_goal') || '0') || 0 } catch { return 0 } })
+  const [editingGoal, setEditingGoal]         = useState(false)
+  const [goalInput, setGoalInput]             = useState('')
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true) }, [])
@@ -1101,6 +1104,56 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Top Movers */}
+          {!isDemo && enriched.length >= 2 && !pricesFailed && (
+            <div className="glass-card dvx-movers-card">
+              <h3 style={{ margin:'0 0 0.75rem' }}>📈 Today's Movers</h3>
+              <div className="dvx-movers-row">
+                {[...enriched]
+                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
+                  .sort((a, b) => (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0))
+                  .slice(0, 3)
+                  .map(h => {
+                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                    return (
+                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={28} />
+                        <div className="dvx-mover-meta">
+                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                          <span style={{ color:'#34d399' }}>+{chg.toFixed(2)}%</span>
+                        </div>
+                        <div className="dvx-mover-impact" style={{ color:'#34d399' }}>
+                          +${fmt(h.value * chg / 100)}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+              <div className="dvx-movers-divider" />
+              <div className="dvx-movers-row">
+                {[...enriched]
+                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
+                  .sort((a, b) => (prices[a.coin_id]?.usd_24h_change ?? 0) - (prices[b.coin_id]?.usd_24h_change ?? 0))
+                  .slice(0, 3)
+                  .map(h => {
+                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                    return (
+                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={28} />
+                        <div className="dvx-mover-meta">
+                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                          <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
+                        </div>
+                        <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
+                          {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
           {/* Quick actions */}
           <div className="dvx-quick-grid">
             <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => openSheet('buy')}>
@@ -1170,6 +1223,45 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </div>
               )}
+
+              {/* Net Worth History (30-day from transactions) */}
+              {!isDemo && transactions.length > 0 && (() => {
+                const now = Date.now()
+                const days = 30
+                const points = Array.from({ length: days }, (_, i) => {
+                  const cutoff = now - (days - 1 - i) * 86400000
+                  const invested = transactions
+                    .filter(tx => new Date(tx.date).getTime() <= cutoff)
+                    .reduce((s, tx) => {
+                      const val = (tx.amount || 0) * (tx.price_per_unit || 0)
+                      return tx.type === 'buy' ? s + val : s - val
+                    }, 0)
+                  return { day: i + 1, v: Math.max(0, invested) }
+                })
+                const minV = Math.min(...points.map(p => p.v))
+                const maxV = Math.max(...points.map(p => p.v))
+                if (maxV === minV) return null
+                return (
+                  <div className="glass-card">
+                    <div style={CHART_HDR_STYLE}>
+                      <h3 style={{ margin:0 }}>💰 Net Worth History</h3>
+                      <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={points} margin={{ left:0, right:0, top:4, bottom:0 }}>
+                        <defs>
+                          <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(59,130,246,0.3)' }}/>
+                        <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} fill="url(#nwg)" dot={false}/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              })()}
 
               {/* Targets near strike — compact overview widget */}
               {targetsAnalysis.rows.length > 0 && (
@@ -1252,6 +1344,66 @@ export default function Dashboard() {
                     </ul>
                   </>
                 }
+              </div>
+
+              {/* Goal Tracker */}
+              <div className="glass-card dvx-goal-card">
+                <div style={CHART_HDR_STYLE}>
+                  <h3 style={{ margin:0 }}>🎯 Portfolio Goal</h3>
+                  <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
+                    onClick={() => { setGoalInput(goalValue > 0 ? goalValue.toString() : ''); setEditingGoal(true) }}>
+                    {goalValue > 0 ? 'Edit' : 'Set Goal'}
+                  </button>
+                </div>
+                {editingGoal ? (
+                  <div className="dvx-goal-edit">
+                    <input
+                      className="dvx-goal-input"
+                      type="number"
+                      placeholder="e.g. 100000"
+                      value={goalInput}
+                      onChange={e => setGoalInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const v = parseFloat(goalInput) || 0
+                          setGoalValue(v)
+                          localStorage.setItem('wl_goal', v.toString())
+                          setEditingGoal(false)
+                        }
+                        if (e.key === 'Escape') setEditingGoal(false)
+                      }}
+                      autoFocus
+                    />
+                    <button className="dvx-goal-save" onClick={() => {
+                      const v = parseFloat(goalInput) || 0
+                      setGoalValue(v)
+                      localStorage.setItem('wl_goal', v.toString())
+                      setEditingGoal(false)
+                    }}>Save</button>
+                  </div>
+                ) : goalValue > 0 ? (() => {
+                  const progress = Math.min(100, (totalValue / goalValue) * 100)
+                  const remaining = Math.max(0, goalValue - totalValue)
+                  const reached = totalValue >= goalValue
+                  return (
+                    <div className="dvx-goal-body">
+                      <div className="dvx-goal-nums">
+                        <span className="dvx-goal-current">${fmt(totalValue)}</span>
+                        <span className="muted"> / ${fmt(goalValue)}</span>
+                      </div>
+                      <div className="dvx-goal-bar-track">
+                        <div className="dvx-goal-bar-fill" style={{ width:`${progress}%`, background: reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }} />
+                      </div>
+                      <div className="dvx-goal-footer">
+                        <span style={{ color: reached ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>
+                          {reached ? '🎉 Goal reached!' : `$${fmt(remaining)} to go · ${progress.toFixed(1)}%`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })() : (
+                  <p className="muted" style={{ fontSize:'0.82rem', margin:'0.5rem 0 0' }}>Set a target portfolio value to track your progress.</p>
+                )}
               </div>
 
               {/* All holdings */}

@@ -4747,3 +4747,28 @@ input[type="date"] { color-scheme: dark; }
   font-size: 0.9rem; line-height: 1.55; color: rgba(255,255,255,0.88);
   font-weight: 500; margin: 0;
 }
+
+/* ── Top Movers ─────────────────────────────────────────────────────────── */
+.dvx-movers-card { padding: 1rem; }
+.dvx-movers-row { display: flex; flex-direction: column; gap: 0.5rem; }
+.dvx-movers-divider { border-top: 1px solid rgba(255,255,255,0.07); margin: 0.6rem 0; }
+.dvx-mover-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem; border-radius: 10px; background: rgba(255,255,255,0.04); }
+.dvx-mover-up { border-left: 2px solid #34d399; }
+.dvx-mover-dn { border-left: 2px solid #f87171; }
+.dvx-mover-meta { flex: 1; display: flex; flex-direction: column; }
+.dvx-mover-meta strong { font-size: 0.82rem; }
+.dvx-mover-meta span { font-size: 0.72rem; font-weight: 600; }
+.dvx-mover-impact { font-size: 0.75rem; font-weight: 700; min-width: 4rem; text-align: right; }
+
+/* ── Goal Tracker ───────────────────────────────────────────────────────── */
+.dvx-goal-card { padding: 1rem; }
+.dvx-goal-edit { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.dvx-goal-input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.5rem 0.75rem; color: #fff; font-size: 0.9rem; outline: none; }
+.dvx-goal-input:focus { border-color: #34d399; }
+.dvx-goal-save { background: #34d399; color: #0a1628; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap; }
+.dvx-goal-body { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.dvx-goal-nums { font-size: 0.9rem; }
+.dvx-goal-current { font-size: 1.2rem; font-weight: 700; color: #fff; }
+.dvx-goal-bar-track { height: 10px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; }
+.dvx-goal-bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+.dvx-goal-footer { display: flex; justify-content: flex-end; }
