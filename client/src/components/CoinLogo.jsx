@@ -1,12 +1,47 @@
 import { useState, useEffect, useRef } from 'react'
 
+// Deterministic gradient color from a string (coin symbol/id)
+function symbolToGradient(sym) {
+  let h = 0
+  for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) >>> 0
+  const hue1 = h % 360
+  const hue2 = (hue1 + 40) % 360
+  return [`hsl(${hue1},70%,50%)`, `hsl(${hue2},80%,35%)`]
+}
+
+function GeneratedIcon({ symbol, size, className }) {
+  const sym = (symbol || '?').toUpperCase()
+  const label = sym.substring(0, sym.length > 3 ? 2 : 3)
+  const [c1, c2] = symbolToGradient(sym)
+  const id = `cg-${sym}`
+  const fs = size <= 24 ? size * 0.38 : size <= 36 ? size * 0.36 : size * 0.32
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={className} aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={c1} />
+          <stop offset="100%" stopColor={c2} />
+        </linearGradient>
+      </defs>
+      <circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
+      <text
+        x="50%" y="50%"
+        dominantBaseline="central" textAnchor="middle"
+        fill="rgba(255,255,255,0.95)" fontWeight="800"
+        fontSize={fs} fontFamily="system-ui,sans-serif"
+        style={{ userSelect: 'none' }}
+      >{label}</text>
+    </svg>
+  )
+}
+
 // Coin logo with fallback chain:
 //   0. provided image URL (CoinGecko thumb/image)
 //   1. jsDelivr cryptocurrency-icons SVG (top ~200 coins)
-//   2. CoinCap symbol icon (top ~100 coins)
-//   3. coloured letter badge
+//   2. CoinCap symbol icon
+//   3. Generated gradient SVG icon (instant, no CDN)
 //
-// onLoad stops the stage — only advances on error or 4s timeout (stalled load).
+// onLoad cancels the stall-timeout so loaded images stay visible.
 const STAGE_TIMEOUT_MS = 4000
 
 export default function CoinLogo({
@@ -28,7 +63,6 @@ export default function CoinLogo({
     setStage(image ? 0 : 1)
   }, [image, sym])
 
-  // Timeout only fires if image hasn't loaded yet (stalled request)
   useEffect(() => {
     if (stage >= 3) return
     loadedRef.current = false
@@ -62,20 +96,5 @@ export default function CoinLogo({
       />
     )
   }
-  return (
-    <div
-      className={className}
-      style={{
-        background: 'rgba(0,200,83,0.12)',
-        color: '#00c853',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 800, fontSize: Math.max(10, size * 0.36),
-        borderRadius: '50%',
-        width: size, height: size,
-        ...badgeStyle,
-      }}
-    >
-      {fallbackChar || (symbol || '?').toString().substring(0, 2).toUpperCase()}
-    </div>
-  )
+  return <GeneratedIcon symbol={fallbackChar || symbol} size={size} className={className} />
 }
