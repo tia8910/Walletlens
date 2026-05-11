@@ -371,7 +371,6 @@ export default function Landing() {
           <Link to="/about">{t('about')}</Link>
           <Link to="/blog">{t('blog')}</Link>
           <Link to="/privacy">{t('privacy')}</Link>
-          <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">{t('github')}</a>
           <button className="lp-lang-toggle lp-lang-toggle-sm" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
             {lang === 'en' ? '🌐 العربية' : '🌐 English'}
           </button>
