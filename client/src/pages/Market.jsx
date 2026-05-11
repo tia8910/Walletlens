@@ -21,10 +21,35 @@ export default function Market() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    load()
-    const interval = setInterval(load, 60_000)
-    return () => clearInterval(interval)
+    let intervalId = null
 
+    function startPolling() {
+      if (intervalId) return
+      intervalId = setInterval(load, 60_000)
+    }
+
+    function stopPolling() {
+      clearInterval(intervalId)
+      intervalId = null
+    }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        load()
+        startPolling()
+      }
+    }
+
+    load()
+    if (!document.hidden) startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [tab])
 
   async function load() {

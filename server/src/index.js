@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import walletsRouter from './routes/wallets.js';
 import transactionsRouter from './routes/transactions.js';
 import pricesRouter from './routes/prices.js';
@@ -8,6 +9,7 @@ import exchangesRouter from './routes/exchanges.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 

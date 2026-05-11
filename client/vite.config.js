@@ -6,6 +6,14 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'charts':       ['recharts'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

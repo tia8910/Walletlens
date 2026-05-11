@@ -338,13 +338,13 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
       {/* Radar-style indicator ring (SVG) */}
       <div className="glass-card ai-radar-card">
         <h4 className="ai-section-title">{t('portfolioRadar')}</h4>
-        <AIRadar scores={{
-          Diversity:    ai.concentrationScore,
-          Momentum:     ai.momentumScore,
-          'P&L':        ai.pnlHealth,
-          'Cap Spread': ai.tierScore,
-          'Asset Count':ai.assetScore,
-        }} />
+        <AIRadar
+          diversity={ai.concentrationScore}
+          momentum={ai.momentumScore}
+          pnl={ai.pnlHealth}
+          capSpread={ai.tierScore}
+          assetCount={ai.assetScore}
+        />
       </div>
 
       {/* ── Fear & Greed Meter ── */}
@@ -525,9 +525,11 @@ function FearGreedGauge({ value, label, color }) {
 }
 
 // ── Radar chart (pure SVG, no library needed) ─────────────────────────────
-function AIRadar({ scores }) {
-  const labels = Object.keys(scores)
-  const vals   = Object.values(scores)
+const RADAR_LABELS = ['Diversity', 'Momentum', 'P&L', 'Cap Spread', 'Asset Count']
+
+function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
+  const vals   = [diversity, momentum, pnl, capSpread, assetCount]
+  const labels = RADAR_LABELS
   const n = labels.length
   const cx = 130, cy = 130, r = 95
 
@@ -604,6 +606,13 @@ const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maxim
 const fmtN  = n => { const s = Math.abs(n) >= 1000 ? `$${(Math.abs(n)/1000).toFixed(1)}k` : `$${Math.abs(n).toFixed(0)}`; return n < 0 ? `-${s}` : s }
 const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['#34d399','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','#10b981','#a78bfa']
+
+const TOOLTIP_STYLE = {
+  background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(52,211,153,0.4)',
+  borderRadius: 10, fontSize: '0.76rem', color: '#fff',
+}
+const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
+const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
 function buildPerfSeries(base) {
   const pts = 30, start = (base || 1) * 0.82
@@ -875,7 +884,37 @@ export default function Dashboard() {
     setLoaded(true)
   }
 
-  useEffect(() => { loadAll(); const t = setInterval(loadAll, 60_000); return () => clearInterval(t) }, [])
+  useEffect(() => {
+    let intervalId = null
+
+    function startPolling() {
+      if (intervalId) return
+      intervalId = setInterval(loadAll, 60_000)
+    }
+
+    function stopPolling() {
+      clearInterval(intervalId)
+      intervalId = null
+    }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        loadAll()
+        startPolling()
+      }
+    }
+
+    loadAll()
+    if (!document.hidden) startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
     const raw = portfolio.map(h => {
@@ -990,11 +1029,6 @@ export default function Dashboard() {
     { id: 'data',     label: t('backup'),   icon: Ico.data },
   ]
 
-  const tooltipStyle = {
-    background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(52,211,153,0.4)',
-    borderRadius: 10, fontSize: '0.76rem', color: '#fff',
-  }
-
   return (
     <div className="dvx">
       {/* Tab nav */}
@@ -1092,7 +1126,7 @@ export default function Dashboard() {
             <div className="dvx-col-main">
               {/* Performance chart */}
               <div className="glass-card">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
+                <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>{t('dayPerformance')}</h3>
                   <span className="muted" style={{ fontSize:'0.72rem' }}>{t('simulatedTrend')}</span>
                 </div>
@@ -1104,7 +1138,7 @@ export default function Dashboard() {
                         <stop offset="100%" stopColor="#34d399" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'Value']}
+                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Value']}
                       labelFormatter={() => ''} cursor={{ stroke:'rgba(52,211,153,0.25)' }}/>
                     <Area type="monotone" dataKey="v" stroke="#34d399" strokeWidth={2.5} fill="url(#pg)" dot={false}/>
                   </AreaChart>
@@ -1121,7 +1155,7 @@ export default function Dashboard() {
                       <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.45)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => fmtN(v)} width={50}/>
-                      <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? '#34d399' : '#f87171'} fillOpacity={0.85}/>
@@ -1135,7 +1169,7 @@ export default function Dashboard() {
               {/* Targets near strike — compact overview widget */}
               {targetsAnalysis.rows.length > 0 && (
                 <div className="glass-card">
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
+                  <div style={CHART_HDR_STYLE}>
                     <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
                     <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
                       onClick={() => setActiveTab('targets')}>
@@ -1199,7 +1233,7 @@ export default function Dashboard() {
                           innerRadius="60%" outerRadius="88%" stroke="none" paddingAngle={2}>
                           {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="dvx-legend">
@@ -1217,7 +1251,7 @@ export default function Dashboard() {
 
               {/* All holdings */}
               <div className="glass-card">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
+                <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
                   {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
                 </div>
@@ -1239,7 +1273,7 @@ export default function Dashboard() {
                                 {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
                               </span>
                             </div>
-                            <div style={{ textAlign:'right', flexShrink:0 }}>
+                            <div style={TEXT_RIGHT_STYLE}>
                               <div className="dvx-holding-val">${fmt(displayValue)}</div>
                               {hasPnl && (
                                 <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
@@ -1292,7 +1326,7 @@ export default function Dashboard() {
                     axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
                   <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
                     tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
-                  <Tooltip contentStyle={tooltipStyle} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
                   <Bar dataKey="proceeds" radius={[6,6,0,0]}>
                     {targetsAnalysis.chartData.map((d, i) => (
                       <Cell key={i} fill={d.reached ? '#34d399' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
