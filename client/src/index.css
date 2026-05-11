@@ -4772,3 +4772,117 @@ input[type="date"] { color-scheme: dark; }
 .dvx-goal-bar-track { height: 10px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; }
 .dvx-goal-bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
 .dvx-goal-footer { display: flex; justify-content: flex-end; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE IMPROVEMENTS  ≤ 480px
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Global touch targets ── */
+@media (max-width: 768px) {
+  button, a, select, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+  }
+  /* Prevent horizontal overflow */
+  body { overflow-x: hidden; }
+
+  /* Landing hero: tighten on small screens */
+  .lp-hero { padding: 2rem 1rem 1.5rem; min-height: unset; }
+  .lp-hero-inner { gap: 0.6rem; }
+  .lp-logo-orb { transform: scale(0.8); margin-bottom: -0.5rem; }
+  .lp-brand-name { font-size: 1.35rem; }
+  .lp-hero-h1 { font-size: clamp(1.8rem, 9vw, 2.6rem); text-align: center; }
+  .lp-hero-sub { font-size: 0.88rem; text-align: center; padding: 0 0.5rem; }
+  .lp-cta-row { flex-direction: column; align-items: stretch; gap: 0.6rem; width: 100%; max-width: 320px; }
+  .lp-cta-primary, .lp-cta-ghost { justify-content: center; width: 100%; padding: 0.9rem 1rem; font-size: 1rem; border-radius: 14px; }
+  .lp-badges { gap: 0.4rem; }
+  .lp-badge { font-size: 0.65rem; padding: 0.2rem 0.55rem; }
+
+  /* Landing mockup — hide on mobile to save space */
+  .lp-hero-mockup { display: none; }
+
+  /* Landing sections */
+  .lp-section { padding: 2.5rem 1rem; }
+  .lp-section-h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
+  .lp-section-sub { font-size: 0.88rem; }
+
+  /* Pain grid */
+  .lp-pain-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .lp-pain-card { padding: 1rem 1.1rem; }
+
+  /* Steps */
+  .lp-steps { padding: 0 0.25rem; }
+  .lp-step { padding: 1rem; gap: 1rem; }
+  .lp-step-num { width: 36px; height: 36px; font-size: 0.85rem; flex-shrink: 0; }
+
+  /* Footer */
+  .lp-footer { padding: 1.5rem 1rem; }
+  .lp-footer-links { flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+
+  /* Stats bar */
+  .lp-stats { padding: 1.5rem 1rem; gap: 1rem; flex-wrap: wrap; }
+  .lp-stat-sep { display: none; }
+  .lp-stat-item { flex: 1; min-width: 80px; text-align: center; }
+
+  /* Final CTA */
+  .lp-final-cta { padding: 3rem 1rem; }
+  .lp-final-h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
+
+  /* Dashboard tabs: scrollable */
+  .dvx-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 2px; gap: 0.35rem; }
+  .dvx-tabs::-webkit-scrollbar { display: none; }
+  .dvx-tab { white-space: nowrap; flex-shrink: 0; font-size: 0.78rem; padding: 0.45rem 0.8rem; }
+
+  /* Dashboard hero value */
+  .dvx-hero-value { font-size: clamp(1.8rem, 9vw, 3rem); }
+  .dvx-hero { padding: 1.25rem; border-radius: 18px; }
+
+  /* Stats row: 2 cols */
+  .dvx-stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .dvx-stat-card { padding: 0.75rem; border-radius: 14px; }
+  .dvx-stat-val { font-size: 1.1rem; }
+
+  /* Quick actions: 2×2 */
+  .dvx-quick-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .dvx-quick-card { padding: 0.9rem 0.75rem; border-radius: 16px; }
+
+  /* Holdings list */
+  .dvx-holding { padding: 0.75rem; }
+  .dvx-holding-val { font-size: 0.9rem; }
+
+  /* Risk scanner cards */
+  .risk-card { padding: 0.9rem 1rem; }
+  .risk-card-top { gap: 0.75rem; }
+
+  /* Price alerts */
+  .pal-card { padding: 0.8rem 0.9rem; }
+  .pal-toasts { right: 0.5rem; left: 0.5rem; top: 0.5rem; }
+  .pal-toast { max-width: 100%; }
+
+  /* Goal tracker input */
+  .dvx-goal-edit { flex-direction: column; }
+  .dvx-goal-save { width: 100%; }
+
+  /* Top movers */
+  .dvx-movers-card h3 { font-size: 0.9rem; }
+  .dvx-mover-item { padding: 0.4rem 0.5rem; }
+
+  /* Targets tab */
+  .dvx-target-row-top { font-size: 0.8rem; }
+
+  /* Market page */
+  .market-card { padding: 0.65rem 0.75rem; }
+  .market-info strong { font-size: 0.88rem; }
+
+  /* Topbar brand */
+  .topbar-brand strong { font-size: 1rem; }
+  .topbar-ticker { font-size: 0.68rem; }
+}
+
+@media (max-width: 380px) {
+  .lp-hero-h1 { font-size: 1.65rem; }
+  .dvx-hero-value { font-size: 1.7rem; }
+  .dvx-quick-card strong { font-size: 0.8rem; }
+  .dvx-quick-card span { display: none; }
+  .dvx-stat-val { font-size: 1rem; }
+  .dvx-tab { font-size: 0.72rem; padding: 0.4rem 0.65rem; }
+}
