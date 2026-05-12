@@ -24,7 +24,7 @@ export default function QuickStatsPopup({ onClose }) {
         ])
         if (!portfolio.length) { setData(null); setLoading(false); return }
 
-        const ids = portfolio.map(h => h.coin_id)
+        const ids = portfolio.map(h => h.coin_id).join(',')
         const prices = await api.getPrices(ids)
 
         let totalValue = 0
