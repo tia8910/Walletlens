@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -79,7 +79,7 @@ function AlertProgress({ currentPrice, alert }) {
   )
 }
 
-export default function PriceAlerts({ enriched, prices }) {
+function PriceAlerts({ enriched, prices }) {
   const [alerts, setAlerts]         = useState(loadAlerts)
   const [showForm, setShowForm]     = useState(false)
   const [coinId, setCoinId]         = useState('')
@@ -330,3 +330,5 @@ export default function PriceAlerts({ enriched, prices }) {
     </div>
   )
 }
+
+export default memo(PriceAlerts)

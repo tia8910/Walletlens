@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import CoinLogo from './CoinLogo'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
@@ -286,7 +286,7 @@ const LEGEND = [
   { grade: 'DANGER',    color: '#ef4444', range: '0–34',   desc: 'Likely scam or extreme risk' },
 ]
 
-export default function RiskScanner({ enriched }) {
+function RiskScanner({ enriched }) {
   const cryptoHoldings = enriched.filter(h =>
     !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('fiat:')
   )
@@ -319,3 +319,5 @@ export default function RiskScanner({ enriched }) {
     </div>
   )
 }
+
+export default memo(RiskScanner)

@@ -50,7 +50,7 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 // the browser silently stalls (blocked extension, slow CDN).
 //
 // Order: provided URL → jsDelivr SVG → CoinCap → cryptoicons → generated gradient
-const STAGE_TIMEOUT_MS = 2500
+const STAGE_TIMEOUT_MS = 800
 
 const CoinLogo = memo(function CoinLogo({
   image,

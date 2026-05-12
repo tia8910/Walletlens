@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useLanguage } from '../LanguageContext'
 
 const CATEGORIES = [
@@ -161,7 +161,7 @@ function canvasToBlob(canvas) {
 
 const ALL_ITEMS = [...TIPS, ...QUOTES]
 
-export default function TradeTips() {
+function TradeTips() {
   const { t } = useLanguage()
   const [dismissed, setDismissed] = useState(false)
   const [cat, setCat] = useState('All')
@@ -333,3 +333,5 @@ function ShareIcon() {
     </svg>
   )
 }
+
+export default memo(TradeTips)
