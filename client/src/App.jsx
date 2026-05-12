@@ -6,6 +6,7 @@ import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
+import QuickStatsPopup from './components/QuickStatsPopup'
 import { useLanguage } from './LanguageContext'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
@@ -118,6 +119,7 @@ function Drawer({ open, onClose }) {
 export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const { t } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
 
@@ -183,7 +185,8 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220) }} aria-label="WalletLens"><Logo size={30} /></button>
+      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true) }} aria-label="Quick Stats"><Logo size={30} /></button>
+      {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
 
       <nav className="wl-bottom-nav">
         <NavLink to="/dashboard" className="wl-nav-item"><IconHome /><span>{t('home')}</span></NavLink>
