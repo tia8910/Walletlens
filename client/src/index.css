@@ -5291,3 +5291,78 @@ input[type="date"] { color-scheme: dark; }
 .wl-drawer-x svg { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .wl-drawer-x:hover svg { transform: rotate(-8deg) scale(1.3); }
 .wl-drawer-footer { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WalletLens Alpha
+   ══════════════════════════════════════════════════════════════════════════ */
+.alpha-root { display: flex; flex-direction: column; gap: 0.85rem; padding: 0 0 5rem; max-width: 600px; margin: 0 auto; }
+
+/* Header */
+.alpha-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.25rem; }
+.alpha-header-left { display: flex; align-items: center; gap: 0.85rem; }
+.alpha-logo { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, rgba(167,139,250,0.3), rgba(52,211,153,0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 900; color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+.alpha-title { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.alpha-subtitle { font-size: 0.74rem; margin-top: 0.1rem; }
+.alpha-refresh-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.5); cursor: pointer; padding: 0.45rem 0.65rem; display: flex; align-items: center; transition: background 0.15s, color 0.15s; }
+.alpha-refresh-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.alpha-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Portfolio score card */
+.alpha-score-card { padding: 1.25rem 1.35rem; }
+.alpha-score-label { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.1rem; }
+.alpha-score-body { display: flex; align-items: center; gap: 1.5rem; }
+.alpha-score-meta { flex: 1; }
+.alpha-score-grade { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.9rem; }
+.alpha-score-breakdown { display: flex; flex-direction: column; gap: 0.55rem; }
+.alpha-breakdown-row { display: grid; grid-template-columns: 90px 1fr 44px; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
+.alpha-breakdown-bar-wrap { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.alpha-breakdown-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.alpha-score-empty { padding: 1.5rem; text-align: center; }
+.alpha-empty-hint { font-size: 0.85rem; margin-top: 0.5rem; }
+
+/* Section cards */
+.alpha-section-card { padding: 1.1rem 1.25rem; }
+.alpha-section-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.9rem; }
+.alpha-section-icon { font-size: 1.15rem; }
+.alpha-section-title { font-size: 0.92rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+.alpha-section-sub { font-size: 0.74rem; margin-top: 0.1rem; }
+
+/* Pulse dot */
+.alpha-pulse-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--pulse-color, #34d399); box-shadow: 0 0 0 0 var(--pulse-color, #34d399); animation: alpha-pulse 1.8s ease-in-out infinite; }
+@keyframes alpha-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); } 50% { box-shadow: 0 0 0 5px rgba(52,211,153,0); } }
+
+/* Signal rows */
+.alpha-signal-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.alpha-signal-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+.alpha-signal-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.alpha-signal-body { flex: 1; min-width: 0; }
+.alpha-signal-title { font-size: 0.88rem; font-weight: 700; color: #fff; }
+.alpha-signal-sub { font-size: 0.74rem; margin-top: 0.1rem; }
+.alpha-signal-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex-shrink: 0; }
+.alpha-signal-value { font-size: 0.82rem; font-weight: 700; }
+
+/* Badge */
+.alpha-badge { font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid; letter-spacing: 0.04em; white-space: nowrap; }
+
+/* Coin list */
+.alpha-coin-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.alpha-coin-card { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+.alpha-coin-left { display: flex; align-items: center; gap: 0.65rem; }
+.alpha-coin-sym { font-size: 0.9rem; font-weight: 800; color: #fff; }
+.alpha-coin-name { font-size: 0.72rem; margin-top: 0.05rem; }
+.alpha-coin-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.alpha-coin-reason { font-size: 0.72rem; margin-top: 0.2rem; text-align: right; }
+.alpha-coin-sub { font-size: 0.7rem; font-weight: 600; text-align: right; }
+
+.alpha-loading-row { font-size: 0.82rem; padding: 0.5rem 0; }
+.alpha-disclaimer { font-size: 0.72rem; line-height: 1.5; text-align: center; padding: 0 1rem; }
+
+@media (max-width: 480px) {
+  .alpha-score-body { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .alpha-breakdown-row { grid-template-columns: 80px 1fr 40px; font-size: 0.74rem; }
+}
+
+/* Alpha nav tab special styling */
+.wl-nav-alpha svg { color: #a78bfa; }
+.wl-nav-alpha span { color: #a78bfa; }
+.wl-nav-alpha.active svg, .wl-nav-alpha.active span { color: #c4b5fd; }
