@@ -1167,7 +1167,7 @@ export default function Dashboard() {
           )}
 
           {/* AI Decision Engine */}
-          {!isDemo && enriched.length > 0 && (
+          {enriched.length > 0 && (
             <AIDecisionEngine
               enriched={enriched}
               prices={prices}
