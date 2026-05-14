@@ -1,5 +1,30 @@
 import { useState, useEffect, useRef, memo } from 'react'
 
+// Known non-crypto asset icons rendered inline — no CDN needed
+const ASSET_ICONS = {
+  'metal:xau': { emoji: '🥇', label: 'XAU', color1: '#f59e0b', color2: '#b45309' },
+  'metal:xag': { emoji: '🥈', label: 'XAG', color1: '#94a3b8', color2: '#475569' },
+}
+function isNonCrypto(coinId) {
+  if (!coinId) return false
+  return coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
+         coinId.startsWith('bond:') || coinId.startsWith('other:') ||
+         coinId.startsWith('metal:')
+}
+function nonCryptoLabel(coinId, symbol) {
+  if (coinId?.startsWith('fiat:'))  return coinId.slice(5).toUpperCase().substring(0, 3)
+  if (coinId?.startsWith('stock:')) return coinId.slice(6).toUpperCase().substring(0, 4)
+  if (coinId?.startsWith('bond:'))  return (symbol || 'BND').substring(0, 3).toUpperCase()
+  if (coinId?.startsWith('other:')) return (symbol || 'OTH').substring(0, 3).toUpperCase()
+  return (symbol || '?').substring(0, 3).toUpperCase()
+}
+function nonCryptoColor(coinId) {
+  if (coinId?.startsWith('stock:')) return ['#10b981', '#047857']
+  if (coinId?.startsWith('fiat:'))  return ['#0ea5e9', '#0369a1']
+  if (coinId?.startsWith('bond:'))  return ['#0284c7', '#075985']
+  return ['#a78bfa', '#6d28d9']
+}
+
 // Deterministic gradient from symbol — avoids every CDN/network round-trip
 // for the final fallback (letter badge).
 function symbolToGradient(sym) {
@@ -55,12 +80,56 @@ const STAGE_TIMEOUT_MS = 2500
 const CoinLogo = memo(function CoinLogo({
   image,
   symbol,
+  coinId,
   size = 32,
   className = 'coin-logo',
   badgeStyle,
   fallbackChar,
 }) {
   const sym = (symbol || '').toLowerCase()
+
+  // Short-circuit for non-crypto assets — no CDN has their icons
+  if (isNonCrypto(coinId)) {
+    const known = ASSET_ICONS[coinId]
+    if (known) {
+      const id = `gi-${coinId}`
+      return (
+        <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
+          <defs>
+            <radialGradient id={id} cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor={known.color1} />
+              <stop offset="100%" stopColor={known.color2} />
+            </radialGradient>
+          </defs>
+          <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
+          <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
+            fontSize="11" fontWeight="800" fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
+            {known.label}
+          </text>
+        </svg>
+      )
+    }
+    const label = fallbackChar || nonCryptoLabel(coinId, symbol)
+    const [c1, c2] = nonCryptoColor(coinId)
+    const id = `gi-nc-${coinId}`
+    return (
+      <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
+        <defs>
+          <radialGradient id={id} cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor={c1} />
+            <stop offset="100%" stopColor={c2} />
+          </radialGradient>
+        </defs>
+        <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
+        <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
+          fontSize={label.length > 3 ? '8' : label.length > 2 ? '10' : '12'} fontWeight="800"
+          fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
+          {label}
+        </text>
+      </svg>
+    )
+  }
+
   const [stage, setStage] = useState(image ? 0 : 1)
   const stageRef  = useRef(stage)
   const loadedRef = useRef(false)

@@ -963,7 +963,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             return (
               <div key={t.id} className="tx-card">
                 <div className="tx-left">
-                  <CoinLogo image={t.coin_image} symbol={sym} size={36} className="tx-coin-img" />
+                  <CoinLogo image={t.coin_image} symbol={sym} coinId={t.coin_id} size={36} className="tx-coin-img" />
                   <div className="tx-info">
                     <div className="tx-title">
                       <strong>{sym}</strong>

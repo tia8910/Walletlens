@@ -158,7 +158,7 @@ export default function AssetDetail() {
       {/* Asset header */}
       <div className="detail-hero">
         <div className="detail-hero-left">
-          <CoinLogo image={coin?.image} symbol={coin?.symbol} size={48} className="coin-logo" fallbackChar={coin?.categoryIcon} badgeStyle={coin?.categoryColor ? { background: `${coin.categoryColor}22`, color: coin.categoryColor } : undefined} />
+          <CoinLogo image={coin?.image} symbol={coin?.symbol} coinId={coin?.id} size={48} className="coin-logo" fallbackChar={coin?.categoryIcon} badgeStyle={coin?.categoryColor ? { background: `${coin.categoryColor}22`, color: coin.categoryColor } : undefined} />
           <div>
             <h2 className="detail-name">{coin?.name}</h2>
             <div className="detail-sub">
