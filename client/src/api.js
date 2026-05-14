@@ -258,54 +258,77 @@ async function fetchStockLive(coinId) {
     return stockCache[coinId];
   }
 
-  // Primary: Stooq (CORS-enabled CSV, no key). Works for most US tickers.
   const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
+  const CORS_PROXIES = [
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+  ];
+
+  // Primary: direct Stooq (works in most desktop browsers)
   try {
-    const res = await fetch(stooqUrl);
+    const res = await fetch(stooqUrl, { signal: AbortSignal.timeout(5000) });
     if (res.ok) {
-      const text = await res.text();
-      const parsed = parseStooqRow(text);
-      if (parsed) {
-        stockCache[coinId] = parsed;
-        stockCacheTime[coinId] = now;
-        return parsed;
-      }
+      const parsed = parseStooqRow(await res.text());
+      if (parsed) { stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed; }
     }
   } catch { /* fall through */ }
 
-  // Fallback 1: Stooq through a public CORS proxy (some browsers/networks block Stooq directly).
-  try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(stooqUrl)}`);
-    if (res.ok) {
-      const text = await res.text();
-      const parsed = parseStooqRow(text);
-      if (parsed) {
-        stockCache[coinId] = parsed;
-        stockCacheTime[coinId] = now;
-        return parsed;
+  // Stooq via each CORS proxy in turn
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy(stooqUrl), { signal: AbortSignal.timeout(6000) });
+      if (res.ok) {
+        const parsed = parseStooqRow(await res.text());
+        if (parsed) { stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed; }
       }
-    }
-  } catch { /* fall through */ }
+    } catch { /* next proxy */ }
+  }
 
-  // Fallback 2: Yahoo Finance quote JSON via CORS proxy.
-  try {
-    const yUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker.toUpperCase())}`;
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`);
-    if (res.ok) {
-      const data = await res.json();
-      const q = data?.quoteResponse?.result?.[0];
-      if (q && typeof q.regularMarketPrice === 'number') {
-        const parsed = {
-          usd: q.regularMarketPrice,
-          usd_24h_change: q.regularMarketChangePercent || 0,
-          name: q.longName || q.shortName || '',
-        };
-        stockCache[coinId] = parsed;
-        stockCacheTime[coinId] = now;
-        return parsed;
+  // Yahoo Finance v8 chart endpoint (more reliable than v7 quote)
+  const yahooV8 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker.toUpperCase())}?interval=1d&range=2d`;
+  for (const proxy of [null, ...CORS_PROXIES]) {
+    try {
+      const url = proxy ? proxy(yahooV8) : yahooV8;
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (res.ok) {
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (meta && typeof meta.regularMarketPrice === 'number') {
+          const parsed = {
+            usd: meta.regularMarketPrice,
+            usd_24h_change: meta.regularMarketChangePercent || 0,
+            name: meta.longName || meta.shortName || '',
+          };
+          stockCache[coinId] = parsed;
+          stockCacheTime[coinId] = now;
+          return parsed;
+        }
       }
-    }
-  } catch { /* fall through */ }
+    } catch { /* next */ }
+  }
+
+  // Yahoo Finance v7 quote endpoint
+  const yahooV7 = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker.toUpperCase())}`;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy(yahooV7), { signal: AbortSignal.timeout(6000) });
+      if (res.ok) {
+        const data = await res.json();
+        const q = data?.quoteResponse?.result?.[0];
+        if (q && typeof q.regularMarketPrice === 'number') {
+          const parsed = {
+            usd: q.regularMarketPrice,
+            usd_24h_change: q.regularMarketChangePercent || 0,
+            name: q.longName || q.shortName || '',
+          };
+          stockCache[coinId] = parsed;
+          stockCacheTime[coinId] = now;
+          return parsed;
+        }
+      }
+    } catch { /* next */ }
+  }
 
   return null;
 }

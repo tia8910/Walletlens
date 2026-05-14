@@ -141,15 +141,18 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     }
   }, [open]) // eslint-disable-line
 
+  const [priceFetchFailed, setPriceFetchFailed] = useState(false)
+
   // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
     const resolvedId = resolveAssetId()
-    if (!resolvedId) { setPrice(''); return }
-    setPrice('…')
+    if (!resolvedId) { setPrice(''); setPriceFetchFailed(false); return }
+    setPrice('…'); setPriceFetchFailed(false)
     api.getPrices(resolvedId).then(px => {
       const p = px?.[resolvedId]?.usd ?? px?.[resolvedId]?.price
-      setPrice(p ? String(p) : '')
-    }).catch(() => { setPrice('') })
+      if (p) { setPrice(String(p)); setPriceFetchFailed(false) }
+      else { setPrice(''); setPriceFetchFailed(true) }
+    }).catch(() => { setPrice(''); setPriceFetchFailed(true) })
   }, [selectedCoin, category, stockTicker, fiatCode]) // eslint-disable-line
 
   // Debounced crypto coin search
@@ -456,9 +459,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   value={amount} onChange={e => setAmount(e.target.value)} />
               </div>
               <div className="bs-field">
-                <label className="bs-label">Price (USD){price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#34d399'}}>fetching…</span>}</label>
-                <input className="bs-input" type={price === '…' ? 'text' : 'number'} placeholder="0.00" min="0" step="any"
-                  value={price === '…' ? '' : price} onChange={e => setPrice(e.target.value)}
+                <label className="bs-label">
+                  Price (USD)
+                  {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#34d399'}}>fetching…</span>}
+                  {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
+                </label>
+                <input className="bs-input" type={price === '…' ? 'text' : 'number'} placeholder="Enter price" min="0" step="any"
+                  value={price === '…' ? '' : price} onChange={e => { setPrice(e.target.value); setPriceFetchFailed(false) }}
                   disabled={price === '…'} />
               </div>
             </div>
