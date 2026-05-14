@@ -333,9 +333,127 @@ function getRank(iq) {
   return { label: 'Rookie', color: 'rgba(255,255,255,0.5)', icon: '🌱' }
 }
 
+// ── Share hack as image ────────────────────────────────────────────────────
+function drawHackImage(hack, color) {
+  const W = 1200, H = 630
+  const c = document.createElement('canvas')
+  c.width = W; c.height = H
+  const ctx = c.getContext('2d')
+
+  // Background
+  ctx.fillStyle = '#071a0c'
+  ctx.fillRect(0, 0, W, H)
+
+  // Subtle grid lines
+  ctx.strokeStyle = 'rgba(52,211,153,0.06)'
+  ctx.lineWidth = 1
+  for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke() }
+  for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke() }
+
+  // Left accent bar
+  ctx.fillStyle = color
+  ctx.fillRect(0, 0, 6, H)
+
+  // WalletLens logo (concentric circles)
+  const lx = 72, ly = 72, r = 38
+  ctx.strokeStyle = '#00c853'; ctx.lineWidth = 7
+  ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.stroke()
+  ctx.lineWidth = 4; ctx.globalAlpha = 0.55
+  ctx.beginPath(); ctx.arc(lx, ly, r * 0.59, 0, Math.PI * 2); ctx.stroke()
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#00c853'
+  ctx.beginPath(); ctx.arc(lx, ly, r * 0.34, 0, Math.PI * 2); ctx.fill()
+
+  // Brand name
+  ctx.fillStyle = '#ffffff'
+  ctx.font = 'bold 28px system-ui, sans-serif'
+  ctx.fillText('WalletLens', 122, 65)
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'
+  ctx.font = '18px system-ui, sans-serif'
+  ctx.fillText('walletlens.cc', 124, 90)
+
+  // Category pill
+  ctx.fillStyle = color + '33'
+  const pillW = 140, pillH = 36
+  ctx.beginPath(); ctx.roundRect(68, 150, pillW, pillH, 18); ctx.fill()
+  ctx.fillStyle = color
+  ctx.font = 'bold 17px system-ui, sans-serif'
+  ctx.fillText(`${hack.icon}  ${hack.cat}`, 88, 174)
+
+  // Title
+  ctx.fillStyle = '#ffffff'
+  ctx.font = 'bold 52px system-ui, sans-serif'
+  const words = hack.title.split(' ')
+  let line = '', y = 260, lineH = 64
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w
+    if (ctx.measureText(test).width > W - 136) { ctx.fillText(line, 68, y); line = w; y += lineH }
+    else line = test
+  }
+  ctx.fillText(line, 68, y)
+
+  // Body text (wrapped, smaller)
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'
+  ctx.font = '24px system-ui, sans-serif'
+  const bodyWords = hack.body.split(' ')
+  let bl = '', by = y + 70, bLineH = 38, bLines = 0
+  for (const w of bodyWords) {
+    const test = bl ? bl + ' ' + w : w
+    if (ctx.measureText(test).width > W - 136) {
+      if (bLines < 3) { ctx.fillText(bl, 68, by); by += bLineH; bLines++ }
+      bl = w
+    } else bl = test
+  }
+  if (bLines < 3 && bl) ctx.fillText(bl, 68, by)
+
+  // Bottom bar
+  ctx.fillStyle = 'rgba(255,255,255,0.06)'
+  ctx.fillRect(0, H - 60, W, 60)
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'
+  ctx.font = '18px system-ui, sans-serif'
+  ctx.fillText('💡 Investment Hack  •  walletlens.cc/academy', 68, H - 22)
+
+  return c.toDataURL('image/png')
+}
+
+async function shareHackToX(hack, color) {
+  const dataUrl = drawHackImage(hack, color)
+  const text = `${hack.icon} ${hack.title}\n\n${hack.body.slice(0, 160)}…\n\n#WalletLens #Crypto #InvestmentTips`
+  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.cc')}`
+
+  // Try Web Share API first (mobile)
+  if (navigator.canShare) {
+    try {
+      const res = await fetch(dataUrl)
+      const blob = await res.blob()
+      const file = new File([blob], 'walletlens-hack.png', { type: 'image/png' })
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: hack.title, text })
+        return
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Desktop fallback: download image + open X
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.download = 'walletlens-hack.png'
+  a.click()
+  setTimeout(() => window.open(xUrl, '_blank'), 400)
+}
+
 // ── HackCard ──────────────────────────────────────────────────────────────
 function HackCard({ hack, color }) {
   const [open, setOpen] = useState(false)
+  const [sharing, setSharing] = useState(false)
+
+  async function handleShare(e) {
+    e.stopPropagation()
+    setSharing(true)
+    await shareHackToX(hack, color)
+    setSharing(false)
+  }
+
   return (
     <div className={`acad-hack-card ${open ? 'acad-hack-open' : ''}`}
       onClick={() => setOpen(o => !o)}
@@ -346,7 +464,13 @@ function HackCard({ hack, color }) {
           <span className="acad-hack-cat" style={{ color }}>{hack.cat}</span>
           <div className="acad-hack-title">{hack.title}</div>
         </div>
-        <span className="acad-hack-chevron">{open ? '▲' : '▼'}</span>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+          <button className="hack-share-btn" onClick={handleShare} disabled={sharing}
+            title="Share on X">
+            {sharing ? '⏳' : '𝕏'}
+          </button>
+          <span className="acad-hack-chevron">{open ? '▲' : '▼'}</span>
+        </div>
       </div>
       {open && (
         <div className="acad-hack-body">{hack.body}</div>
