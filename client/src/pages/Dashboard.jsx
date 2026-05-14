@@ -619,39 +619,42 @@ const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', ali
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
 const TIMEFRAMES = [
-  { id: '4H',  label: '4H',  pts: 24,  volatility: 0.006, drift: 0.88 },
-  { id: '1D',  label: '1D',  pts: 24,  volatility: 0.010, drift: 0.75 },
-  { id: '7D',  label: '7D',  pts: 28,  volatility: 0.018, drift: 0.65 },
-  { id: '30D', label: '30D', pts: 30,  volatility: 0.014, drift: 0.55 },
+  { id: '4H',  label: '4H',  pts: 48,  waves: 3, amp: 0.012, trend: 0.004 },
+  { id: '1D',  label: '1D',  pts: 48,  waves: 2, amp: 0.022, trend: 0.010 },
+  { id: '7D',  label: '7D',  pts: 56,  waves: 3, amp: 0.038, trend: 0.022 },
+  { id: '30D', label: '30D', pts: 60,  waves: 4, amp: 0.055, trend: 0.040 },
 ]
 
 // Seeded random so each timeframe has a stable but unique shape
 function seededRand(seed) {
-  let s = seed
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff }
+  let s = seed >>> 0
+  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff }
 }
 
 function buildPerfSeries(base, tf = '30D') {
   const frame = TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]
-  const { pts, volatility, drift } = frame
-  const b = base || 1
-  const rand = seededRand({ '4H': 1, '1D': 2, '7D': 3, '30D': 4 }[tf] * 999983)
+  const { pts, waves, amp, trend } = frame
+  const b = base || 10000
+  const rand = seededRand({ '4H': 31337, '1D': 54321, '7D': 99991, '30D': 12345 }[tf])
 
-  // Each timeframe has a distinct trajectory shape
-  const startRatio = { '4H': 0.978, '1D': 0.945, '7D': 0.875, '30D': 0.82 }[tf]
-  let prev = b * startRatio
+  // Random phase offsets per wave so each TF looks unique
+  const phases = Array.from({ length: waves }, () => rand() * Math.PI * 2)
+  const amps   = Array.from({ length: waves }, () => 0.5 + rand() * 0.5)
+
+  const startRatio = { '4H': 0.985, '1D': 0.960, '7D': 0.920, '30D': 0.860 }[tf]
+  const base0 = b * startRatio
 
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
-    // 4H: nearly flat with micro-chop; 1D: slight dip then recovery; 7D: mid dip; 30D: long steady rise
-    const shapedTarget = tf === '1D'
-      ? b * startRatio + (b - b * startRatio) * (t < 0.3 ? t * 0.5 : t)
-      : tf === '7D'
-      ? b * startRatio + (b - b * startRatio) * (t < 0.4 ? t * 0.6 : 0.4 * 0.6 + (t - 0.4) * 1.4)
-      : b * startRatio + (b - b * startRatio) * t
-    prev = prev + (shapedTarget - prev) * drift + (rand() - 0.5) * (b * volatility)
-    return { i, v: Math.max(prev, 0) }
-  }).concat([{ i: pts - 1, v: b }]).slice(0, pts)
+    // Linear trend component (always ends near b)
+    const trendVal = base0 + (b - base0) * (t + trend * (rand() - 0.5))
+    // Wavy component: sum of sine waves with decaying amplitude toward end
+    const decay = 1 - t * 0.4
+    const wave = phases.reduce((s, ph, wi) => {
+      return s + Math.sin(t * Math.PI * 2 * (wi + 1) * (waves / 2) + ph) * amps[wi]
+    }, 0) / waves * b * amp * decay
+    return { i, v: Math.max(trendVal + wave, 0) }
+  })
 }
 
 // ── Wallet panel ─────────────────────────────────────────────────────────
