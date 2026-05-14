@@ -253,14 +253,18 @@ export default function Alpha() {
 
   const alphaScore = calcAlphaScore(enriched, prices)
 
-  // My portfolio signals
+  // My portfolio signals — only crypto holdings with confirmed live price
   const cryptoHoldings = enriched.filter(h =>
-    !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('fiat:')
+    !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('fiat:') &&
+    (prices[h.coin_id]?.usd ?? 0) > 0
   )
 
   const warnings = cryptoHoldings.filter(h => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-    return chg < -8 || (h.pnlPct || 0) < -30
+    const pnl = h.pnlPct || 0
+    // Skip if pnlPct is suspiciously at exactly -100 (no real price loaded)
+    if (pnl <= -99 && (prices[h.coin_id]?.usd ?? 0) <= 0) return false
+    return chg < -8 || pnl < -30
   })
 
   const opportunities = cryptoHoldings.filter(h => {
