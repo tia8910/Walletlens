@@ -625,34 +625,30 @@ const TIMEFRAMES = [
   { id: '30D', label: '30D', pts: 60,  waves: 4, amp: 0.055, trend: 0.040 },
 ]
 
-// Seeded random so each timeframe has a stable but unique shape
-function seededRand(seed) {
-  let s = seed >>> 0
-  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff }
-}
-
 function buildPerfSeries(base, tf = '30D') {
   const frame = TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]
-  const { pts, waves, amp, trend } = frame
-  const b = base || 10000
-  const rand = seededRand({ '4H': 31337, '1D': 54321, '7D': 99991, '30D': 12345 }[tf])
+  const { pts, waves, amp } = frame
+  const b = Math.max(base || 10000, 1)
 
-  // Random phase offsets per wave so each TF looks unique
-  const phases = Array.from({ length: waves }, () => rand() * Math.PI * 2)
-  const amps   = Array.from({ length: waves }, () => 0.5 + rand() * 0.5)
+  // Deterministic phase offsets per timeframe (no runtime RNG)
+  const tfPhases = {
+    '4H':  [0.5, 2.1, 4.3],
+    '1D':  [1.2, 3.7],
+    '7D':  [0.8, 2.5, 5.1],
+    '30D': [0.3, 1.9, 3.4, 5.8],
+  }
+  const phases = (tfPhases[tf] || tfPhases['30D']).slice(0, waves)
 
-  const startRatio = { '4H': 0.985, '1D': 0.960, '7D': 0.920, '30D': 0.860 }[tf]
+  const startRatio = { '4H': 0.985, '1D': 0.960, '7D': 0.920, '30D': 0.860 }[tf] || 0.860
   const base0 = b * startRatio
 
   return Array.from({ length: pts }, (_, i) => {
-    const t = i / (pts - 1)
-    // Linear trend component (always ends near b)
-    const trendVal = base0 + (b - base0) * (t + trend * (rand() - 0.5))
-    // Wavy component: sum of sine waves with decaying amplitude toward end
-    const decay = 1 - t * 0.4
-    const wave = phases.reduce((s, ph, wi) => {
-      return s + Math.sin(t * Math.PI * 2 * (wi + 1) * (waves / 2) + ph) * amps[wi]
-    }, 0) / waves * b * amp * decay
+    const t = i / Math.max(pts - 1, 1)
+    const trendVal = base0 + (b - base0) * t
+    const decay = 1 - t * 0.35
+    const wave = phases.reduce((sum, ph, wi) => {
+      return sum + Math.sin(t * Math.PI * 2 * (wi + 1) * 1.5 + ph)
+    }, 0) / phases.length * b * amp * decay
     return { i, v: Math.max(trendVal + wave, 0) }
   })
 }
