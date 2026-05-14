@@ -922,6 +922,15 @@ export default function Dashboard() {
     if (location.state?.tab) setActiveTab(location.state.tab)
   }, [location.state?.tab])
 
+  // Track dashboard tab switches as virtual page views in GA
+  useEffect(() => {
+    if (typeof window.gtag !== 'function') return
+    window.gtag('event', 'page_view', {
+      page_path: `/dashboard/${activeTab}`,
+      page_title: `Dashboard — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
+    })
+  }, [activeTab])
+
   async function loadAll() {
     const [p, txs, ws, ct] = await Promise.all([
       api.getPortfolio(), api.getTransactions(), api.getWallets(), api.getCoinTargets(),

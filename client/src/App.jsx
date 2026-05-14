@@ -125,6 +125,15 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
+  // Fire GA page_view on every SPA route change
+  useEffect(() => {
+    if (typeof window.gtag !== 'function') return
+    window.gtag('event', 'page_view', {
+      page_path: location.pathname + location.search,
+      page_title: document.title,
+    })
+  }, [location.pathname, location.search])
+
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
