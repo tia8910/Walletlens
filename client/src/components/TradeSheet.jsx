@@ -19,8 +19,10 @@ const CATEGORIES = [
 function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
   if (cat === 'gold')   return { id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   category: 'gold',   image: '' }
   if (cat === 'silver') return { id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', category: 'silver', image: '' }
-  if (cat === 'stock' && stockTicker)
-    return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: stockTicker.toUpperCase(), name: stockTicker.toUpperCase(), category: 'stock', image: '' }
+  if (cat === 'stock' && stockTicker) {
+    const info = POPULAR_TICKERS.find(t => t.ticker === stockTicker.toUpperCase())
+    return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: stockTicker.toUpperCase(), name: info?.name || stockTicker.toUpperCase(), category: 'stock', image: '' }
+  }
   if (cat === 'fiat' && fiatCode)
     return { id: `${FIAT_PREFIX}${fiatCode.toLowerCase()}`, symbol: fiatCode.toUpperCase(), name: fiatCode.toUpperCase(), category: 'fiat', image: '' }
   if (cat === 'bond' && otherInput)
@@ -98,6 +100,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Stock / fiat / other sub-fields
   const [stockTicker, setStockTicker]   = useState('')
   const [stockInput, setStockInput]     = useState('')
+  const [stockSector, setStockSector]   = useState('All')
   const [fiatCode, setFiatCode]         = useState('USD')
   const [otherName, setOtherName]       = useState('')
   // Common fields
@@ -345,25 +348,55 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 </div>
               )}
 
-              {/* Stock: popular list + custom ticker input */}
-              {category === 'stock' && (
-                <div className="bs-stock-wrap">
-                  <div className="bs-popular-chips">
-                    {POPULAR_TICKERS.map(t => (
-                      <button key={t.ticker}
-                        className={`bs-chip ${stockTicker === t.ticker ? 'active' : ''}`}
-                        onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker); setPrice('') }}>
-                        {t.ticker}
-                      </button>
-                    ))}
+              {/* Stock: sector filter + searchable ticker list */}
+              {category === 'stock' && (() => {
+                const sectors = ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))]
+                const query = stockInput.toUpperCase()
+                const filtered = POPULAR_TICKERS.filter(t =>
+                  (stockSector === 'All' || t.sector === stockSector) &&
+                  (!query || t.ticker.includes(query) || t.name.toUpperCase().includes(query))
+                )
+                const selectedInfo = POPULAR_TICKERS.find(t => t.ticker === stockTicker)
+                return (
+                  <div className="bs-stock-wrap">
+                    {/* Sector filter pills */}
+                    <div className="bs-sector-row">
+                      {sectors.map(s => (
+                        <button key={s} className={`bs-sector-btn ${stockSector === s ? 'active' : ''}`}
+                          onClick={() => setStockSector(s)}>{s}</button>
+                      ))}
+                    </div>
+                    {/* Search input */}
+                    <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
+                      <span className="bs-search-icon">{IcoSearch}</span>
+                      <input className="bs-input bs-search-input"
+                        placeholder="Search ticker or company…"
+                        value={stockInput}
+                        onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
+                      />
+                    </div>
+                    {/* Ticker grid */}
+                    <div className="bs-ticker-grid">
+                      {filtered.slice(0, 30).map(t => (
+                        <button key={t.ticker}
+                          className={`bs-ticker-btn ${stockTicker === t.ticker ? 'active' : ''}`}
+                          title={t.name}
+                          onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker); setPrice('') }}>
+                          <span className="bs-ticker-sym">{t.ticker}</span>
+                          <span className="bs-ticker-name">{t.name.length > 12 ? t.name.slice(0,11)+'…' : t.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {stockTicker && (
+                      <div className="bs-stock-selected">
+                        <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}</span>
+                        {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
+                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via Yahoo Finance / Stooq</span>
+                      </div>
+                    )}
                   </div>
-                  <input className="bs-input" placeholder="Or type ticker: e.g. AAPL, NVDA, BRK.B"
-                    value={stockInput}
-                    onChange={e => { setStockInput(e.target.value); setStockTicker(e.target.value.trim().toUpperCase()); setPrice('') }}
-                  />
-                  {stockTicker && <p className="bs-hint" style={{color: catInfo.color}}>Will fetch live price from Stooq for {stockTicker}</p>}
-                </div>
-              )}
+                )
+              })()}
 
               {/* Fiat: popular list + custom */}
               {category === 'fiat' && (

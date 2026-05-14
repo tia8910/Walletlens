@@ -3897,6 +3897,40 @@ select.bs-input option { background: #0a1a12; }
 .bs-chip.active { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.5); color: #34d399; }
 .bs-stock-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
 
+/* Sector filter row */
+.bs-sector-row { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.1rem; }
+.bs-sector-btn {
+  padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.45);
+  cursor: pointer; transition: all 0.14s;
+}
+.bs-sector-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.bs-sector-btn.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.45); color: #10b981; }
+
+/* Ticker grid */
+.bs-ticker-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.3rem; max-height: 200px; overflow-y: auto;
+}
+@media (min-width: 400px) { .bs-ticker-grid { grid-template-columns: repeat(4, 1fr); } }
+.bs-ticker-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0.45rem 0.25rem; border-radius: 0.55rem; border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255,255,255,0.04); cursor: pointer; transition: all 0.14s; gap: 1px;
+}
+.bs-ticker-btn:hover { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.07); }
+.bs-ticker-btn.active { border-color: rgba(16,185,129,0.6); background: rgba(16,185,129,0.15); }
+.bs-ticker-sym { font-size: 0.72rem; font-weight: 800; color: #fff; }
+.bs-ticker-btn.active .bs-ticker-sym { color: #10b981; }
+.bs-ticker-name { font-size: 0.55rem; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.2; }
+.bs-stock-selected {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  padding: 0.5rem 0.7rem; background: rgba(16,185,129,0.07);
+  border: 1px solid rgba(16,185,129,0.2); border-radius: 0.6rem;
+  font-size: 0.78rem;
+}
+
 .bs-success {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 0.6rem; padding: 2.5rem 1.25rem;
