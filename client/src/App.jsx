@@ -15,6 +15,7 @@ const Market       = lazy(() => import('./pages/Market'))
 const Whales       = lazy(() => import('./pages/Whales'))
 const Intel        = lazy(() => import('./pages/Intel'))
 const Alpha        = lazy(() => import('./pages/Alpha'))
+const Academy      = lazy(() => import('./pages/Academy'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
@@ -78,6 +79,13 @@ function Drawer({ open, onClose }) {
           <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>{t('market')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
+          <button className={active('/alpha')} onClick={() => go('/alpha')}>
+            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
+          </button>
+          <button className={active('/academy')} onClick={() => go('/academy')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <span style={{ color: '#fbbf24' }}>Academy</span>
+          </button>
         </div>
 
         <div className="wl-drawer-section">
@@ -191,6 +199,7 @@ export default function App() {
               <Route path="/whales" element={<Whales />} />
               <Route path="/intel" element={<Intel />} />
               <Route path="/alpha" element={<Alpha />} />
+              <Route path="/academy" element={<Academy />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
