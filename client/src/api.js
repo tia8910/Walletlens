@@ -4,8 +4,14 @@
 // unchanged. New code should prefer importing directly from data/*.
 
 // Cloudflare Worker proxy URL — set this after deploying workers/stock-price/index.js
-// Leave empty to skip worker and rely on CORS proxy fallbacks.
-const STOCK_WORKER_URL = 'https://stock-price.walletlens.workers.dev'
+// Leave empty ('') to skip and fall through to other sources.
+const STOCK_WORKER_URL = ''  // set to 'https://stock-price.walletlens.workers.dev' after deploying
+
+// ── Free stock price APIs (CORS-enabled, no proxy needed) ────────────────
+// Get your free key at https://finnhub.io  (60 req/min free)
+const FINNHUB_KEY = 'cvab09pr01qt5bk7jq5gcvab09pr01qt5bk7jq60'
+// Backup: https://www.alphavantage.co/support/#api-key  (25 req/day free)
+const ALPHA_VANTAGE_KEY = ''  // set your key here for extra fallback
 
 import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -280,7 +286,42 @@ async function fetchStockLive(coinId) {
     } catch { /* fall through */ }
   }
 
-  // ── 2. Yahoo Finance v8 direct (has CORS headers on some networks) ──
+  // ── 2. Finnhub (CORS-enabled, 60 req/min free) ──
+  if (FINNHUB_KEY) {
+    try {
+      const res = await fetchWithTimeout(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(tickerUp)}&token=${FINNHUB_KEY}`, 6000);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.c === 'number' && data.c > 0) {
+          const pct = data.pc > 0 ? ((data.c - data.pc) / data.pc) * 100 : 0;
+          const parsed = { usd: data.c, usd_24h_change: pct, name: tickerUp };
+          stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+          return parsed;
+        }
+      }
+    } catch { /* fall through */ }
+  }
+
+  // ── 3. Alpha Vantage (CORS-enabled, 25 req/day free) ──
+  if (ALPHA_VANTAGE_KEY) {
+    try {
+      const res = await fetchWithTimeout(
+        `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(tickerUp)}&apikey=${ALPHA_VANTAGE_KEY}`, 7000);
+      if (res.ok) {
+        const data = await res.json();
+        const q = data?.['Global Quote'];
+        const price = parseFloat(q?.['05. price']);
+        const pct = parseFloat(q?.['10. change percent']);
+        if (isFinite(price) && price > 0) {
+          const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: tickerUp };
+          stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+          return parsed;
+        }
+      }
+    } catch { /* fall through */ }
+  }
+
+  // ── 4. Yahoo Finance v8 direct (has CORS headers on some networks) ──
   const yahooV8 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tickerUp)}?interval=1d&range=2d`;
   try {
     const res = await fetchWithTimeout(yahooV8, 5000);
@@ -294,7 +335,7 @@ async function fetchStockLive(coinId) {
     }
   } catch { /* fall through */ }
 
-  // ── 3. Stooq direct ──
+  // ── 5. Stooq direct ──
   const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
   try {
     const res = await fetchWithTimeout(stooqUrl, 5000);
@@ -304,7 +345,7 @@ async function fetchStockLive(coinId) {
     }
   } catch { /* fall through */ }
 
-  // ── 4. CORS proxies (last resort, often blocked on mobile) ──
+  // ── 6. CORS proxies (last resort, often blocked on mobile) ──
   const PROXIES = [
     (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
     (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
