@@ -619,37 +619,50 @@ const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', ali
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
 const TIMEFRAMES = [
-  { id: '4H',  label: '4H',  pts: 48,  waves: 3, amp: 0.012, trend: 0.004 },
-  { id: '1D',  label: '1D',  pts: 48,  waves: 2, amp: 0.022, trend: 0.010 },
-  { id: '7D',  label: '7D',  pts: 56,  waves: 3, amp: 0.038, trend: 0.022 },
-  { id: '30D', label: '30D', pts: 60,  waves: 4, amp: 0.055, trend: 0.040 },
+  { id: '4H',  label: '4H',  pts: 48 },
+  { id: '1D',  label: '1D',  pts: 48 },
+  { id: '7D',  label: '7D',  pts: 56 },
+  { id: '30D', label: '30D', pts: 60 },
 ]
 
+// Pre-built normalised wave shapes [-1..1] per timeframe, rendered sharp & volatile
+const TF_WAVES = {
+  '4H':  [0,0.18,-0.12,0.22,-0.08,0.30,-0.20,0.15,-0.25,0.35,-0.10,0.28,
+           -0.18,0.40,-0.30,0.20,-0.15,0.38,-0.22,0.45,-0.35,0.25,-0.12,0.42,
+           -0.28,0.50,-0.40,0.30,-0.18,0.55,-0.32,0.60,-0.20,0.48,-0.38,0.65,
+           -0.25,0.58,-0.15,0.70,-0.30,0.62,-0.10,0.72,-0.20,0.75,-0.05,0.80],
+  '1D':  [0,0.25,-0.30,0.40,-0.15,0.55,-0.40,0.35,-0.50,0.60,-0.20,0.50,
+           -0.45,0.65,-0.30,0.70,-0.55,0.45,-0.35,0.75,-0.25,0.68,-0.42,0.80,
+           -0.35,0.85,-0.48,0.60,-0.20,0.88,-0.30,0.72,-0.15,0.90,-0.40,0.78,
+           -0.22,0.92,-0.35,0.82,-0.18,0.94,-0.28,0.86,-0.10,0.96,-0.08,1.00],
+  '7D':  [0,0.30,-0.50,0.45,-0.60,0.70,-0.35,0.80,-0.55,0.60,-0.70,0.85,
+           -0.40,0.90,-0.65,0.55,-0.80,0.75,-0.45,0.92,-0.58,0.68,-0.30,0.95,
+           -0.50,0.88,-0.72,0.78,-0.35,0.98,-0.60,0.82,-0.42,1.00,-0.55,0.90,
+           -0.30,1.02,-0.48,0.94,-0.25,1.05,-0.40,0.98,-0.20,1.08,-0.15,1.10,
+           -0.25,1.12,-0.10,1.15,-0.08,1.18,-0.05,1.20],
+  '30D': [0,0.40,-0.70,0.60,-0.80,0.90,-0.50,1.00,-0.85,0.70,-0.95,1.05,
+           -0.55,1.10,-0.90,0.80,-1.00,0.95,-0.60,1.15,-0.75,1.00,-0.40,1.20,
+           -0.80,1.08,-1.05,0.90,-0.50,1.25,-0.70,1.10,-0.35,1.30,-0.85,1.15,
+           -0.45,1.35,-0.65,1.20,-0.30,1.40,-0.55,1.28,-0.20,1.45,-0.40,1.32,
+           -0.15,1.48,-0.30,1.42,-0.10,1.50,-0.05,1.52,-0.08,1.55,-0.03,1.58],
+}
+
 function buildPerfSeries(base, tf = '30D') {
-  const frame = TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]
-  const { pts, waves, amp } = frame
+  const pts = (TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]).pts
   const b = Math.max(base || 10000, 1)
+  const rawWave = TF_WAVES[tf] || TF_WAVES['30D']
 
-  // Deterministic phase offsets per timeframe (no runtime RNG)
-  const tfPhases = {
-    '4H':  [0.5, 2.1, 4.3],
-    '1D':  [1.2, 3.7],
-    '7D':  [0.8, 2.5, 5.1],
-    '30D': [0.3, 1.9, 3.4, 5.8],
-  }
-  const phases = (tfPhases[tf] || tfPhases['30D']).slice(0, waves)
-
-  const startRatio = { '4H': 0.985, '1D': 0.960, '7D': 0.920, '30D': 0.860 }[tf] || 0.860
-  const base0 = b * startRatio
+  // Scale the pre-built wave to span from ~startRatio*b at index 0 to b at the end
+  const startRatio = { '4H': 0.92, '1D': 0.85, '7D': 0.75, '30D': 0.60 }[tf] || 0.75
+  const lo = startRatio * b
+  const hi = b
+  const wMin = Math.min(...rawWave), wMax = Math.max(...rawWave)
+  const wRange = wMax - wMin || 1
 
   return Array.from({ length: pts }, (_, i) => {
-    const t = i / Math.max(pts - 1, 1)
-    const trendVal = base0 + (b - base0) * t
-    const decay = 1 - t * 0.35
-    const wave = phases.reduce((sum, ph, wi) => {
-      return sum + Math.sin(t * Math.PI * 2 * (wi + 1) * 1.5 + ph)
-    }, 0) / phases.length * b * amp * decay
-    return { i, v: Math.max(trendVal + wave, 0) }
+    const w = rawWave[Math.round(i / (pts - 1) * (rawWave.length - 1))]
+    const v = lo + ((w - wMin) / wRange) * (hi - lo)
+    return { i, v: Math.max(v, 0) }
   })
 }
 
