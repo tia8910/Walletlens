@@ -193,11 +193,11 @@ export default function Alpha() {
         const p = priceData[h.coin_id]
         const currentPrice = p?.usd ?? 0
         const value = h.amount * currentPrice
-        const invested = h.amount * h.avg_price
+        const invested = h.total_invested ?? (h.amount * (h.avg_price ?? 0))
         const pnl = value - invested
         const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
-        return { ...h, value, invested, pnl, pnlPct, coin_image: imageData[h.coin_id] }
-      })
+        return { ...h, value, invested, pnl, pnlPct, coin_image: imageData[h.coin_id] || h.coin_image }
+      }).filter(h => h.value > 0 || h.invested > 0)
 
       setEnriched(enrichedData)
     } catch {}
