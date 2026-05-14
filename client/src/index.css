@@ -3867,6 +3867,36 @@ select.bs-input option { background: #0a1a12; }
 .bs-submit:active { transform: scale(0.98); }
 .bs-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Category grid */
+.bs-cat-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+@media (max-width: 380px) { .bs-cat-grid { grid-template-columns: repeat(3, 1fr); } }
+.bs-cat-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.2rem; padding: 0.5rem 0.25rem; border-radius: 0.6rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.55); font-size: 0.7rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.bs-cat-btn span { font-size: 1.1rem; }
+.bs-cat-btn:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+.bs-cat-btn.active { font-weight: 700; }
+
+/* Popular chips (stocks, fiat) */
+.bs-popular-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem; }
+.bs-chip {
+  padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.bs-chip:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
+.bs-chip.active { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.5); color: #34d399; }
+.bs-stock-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+
 .bs-success {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 0.6rem; padding: 2.5rem 1.25rem;
