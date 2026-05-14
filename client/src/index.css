@@ -5526,3 +5526,8 @@ input[type="date"] { color-scheme: dark; }
 .tour-cta { width: 100%; padding: 0.9rem; border-radius: 14px; border: none; color: #000; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 0.25rem; }
 .tour-cta:hover { opacity: 0.88; }
 .tour-cta:active { transform: scale(0.97); }
+
+/* AI Decision Engine — Claude badge + tip */
+.ade-ai-badge { font-size: 0.65rem; font-weight: 700; background: linear-gradient(135deg,#a78bfa,#60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-left: 0.5rem; letter-spacing: 0.04em; }
+.ade-tip { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.65rem 0.85rem; background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 0.8rem; line-height: 1.5; color: rgba(255,255,255,0.75); margin-top: 0.25rem; }
+.ade-tip-icon { flex-shrink: 0; font-size: 0.9rem; }
