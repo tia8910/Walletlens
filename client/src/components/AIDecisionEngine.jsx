@@ -179,7 +179,10 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
     <>
       <button className="ade-trigger" onClick={analyze}>
         <span className="ade-trigger-brain">🧠</span>
-        <span className="ade-trigger-text">What Should I Do Right Now?</span>
+        <span className="ade-trigger-text">
+          What Should I Do Right Now?
+          <span className="ade-trigger-sub">AI analyses your portfolio and gives you a verdict</span>
+        </span>
         <span className="ade-trigger-arrow">→</span>
       </button>
 
@@ -198,15 +201,20 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
 
             {thinking && (
               <div className="ade-thinking">
-                <div className="ade-thinking-orb">
-                  <span className="ade-thinking-emoji">🧠</span>
-                </div>
-                <div className="ade-thinking-text">
-                  Analysing your portfolio{dots}
-                  <div className="ade-thinking-steps">
-                    <span>Reading {enriched?.length ?? 0} holdings</span>
-                    <span>Checking market momentum</span>
-                    <span>Generating personalised advice</span>
+                <div className="ade-thinking-orb">🧠</div>
+                <div className="ade-thinking-text">Analysing your portfolio{dots}</div>
+                <div className="ade-thinking-steps">
+                  <div className="ade-thinking-step">
+                    <span className="ade-step-dot" />
+                    <span className="ade-step-label">Reading {enriched?.length ?? 0} holdings</span>
+                  </div>
+                  <div className="ade-thinking-step">
+                    <span className="ade-step-dot" />
+                    <span className="ade-step-label">Checking market momentum</span>
+                  </div>
+                  <div className="ade-thinking-step">
+                    <span className="ade-step-dot" />
+                    <span className="ade-step-label">Generating personalised verdict</span>
                   </div>
                 </div>
               </div>
@@ -214,7 +222,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
 
             {!thinking && result && (
               <div className="ade-body">
-                <div className="ade-verdict" style={{ borderColor: result.overallColor + '44', background: result.overallColor + '0d' }}>
+                <div className="ade-verdict" style={{ borderColor: result.overallColor + '44', background: result.overallColor + '0d', '--verdict-color': result.overallColor }}>
                   <div className="ade-verdict-headline" style={{ color: result.overallColor }}>
                     {result.headline}
                   </div>
@@ -227,7 +235,9 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                   )}
                   <div className="ade-verdict-meta">
                     <span className="ade-confidence">
-                      <span className="ade-conf-bar" style={{ width: result.confidence + '%', background: result.overallColor }} />
+                      <span className="ade-conf-track">
+                        <span className="ade-conf-bar" style={{ width: result.confidence + '%', background: result.overallColor }} />
+                      </span>
                       {result.confidence}% confidence
                     </span>
                     <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? '#34d399' : '#f87171' }}>
@@ -252,7 +262,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                           <div key={j} className="ade-reason">{r}</div>
                         ))}
                       </div>
-                      <div className="ade-action-badge" style={{ background: a.actionColor + '22', color: a.actionColor, borderColor: a.actionColor + '44' }}>
+                      <div className="ade-action-badge" style={{ background: a.actionColor + '22', color: a.actionColor, borderColor: a.actionColor + '44', '--badge-glow': a.actionColor + '44' }}>
                         {a.action}
                       </div>
                     </div>
