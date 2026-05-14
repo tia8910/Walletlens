@@ -1811,6 +1811,26 @@ tr:last-child td { border-bottom: none; }
 .btc-tx-usd { font-weight: 700; color: #10b981; }
 .btc-tx-time { font-size: 0.7rem; color: var(--text2); }
 
+/* ─── Whale Feed chain badge ─── */
+.whale-feed-chain {
+  flex-shrink: 0; font-size: 0.65rem; font-weight: 800;
+  padding: 0.2rem 0.45rem; border-radius: 6px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.whale-feed-chain.btc { background: rgba(247,147,26,0.18); color: #f7931a; }
+.whale-feed-chain.eth { background: rgba(98,126,234,0.18); color: #627eea; }
+
+/* ─── Exchange Flow row ─── */
+.exchange-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.7rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.exchange-row:last-child { border-bottom: none; }
+.exchange-rank { font-size: 0.72rem; color: var(--text2); min-width: 24px; font-weight: 700; }
+.exchange-logo img { border-radius: 50%; display: block; }
+.exchange-logo-placeholder { font-size: 1.4rem; }
+.exchange-info { flex: 1; min-width: 0; }
+
 /* ─── Whale Panel inside AssetDetail ─── */
 .whale-panel {
   background: var(--bg2); border: 1px solid var(--border);

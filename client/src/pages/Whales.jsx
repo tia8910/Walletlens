@@ -29,6 +29,8 @@ export default function Whales() {
   const [snapshot, setSnapshot] = useState([])
   const [trending, setTrending] = useState([])
   const [largeTx, setLargeTx] = useState([])
+  const [whaleFeed, setWhaleFeed] = useState([])
+  const [exchangeFlows, setExchangeFlows] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('movers')
   const [moverWindow, setMoverWindow] = useState('24h')
@@ -38,14 +40,18 @@ export default function Whales() {
   async function load() {
     setLoading(true)
     try {
-      const [snap, trend, btc] = await Promise.all([
+      const [snap, trend, btc, feed, flows] = await Promise.all([
         api.getWhaleMarketSnapshot(),
         api.getTrendingCoins(),
         api.getLargeBtcTransactions(500_000),
+        api.getWhaleAlertFeed(500_000),
+        api.getExchangeFlows(),
       ])
       setSnapshot(snap)
       setTrending(trend)
       setLargeTx(btc)
+      setWhaleFeed(feed)
+      setExchangeFlows(flows)
     } catch (e) { console.error(e) }
     setLoading(false)
   }
@@ -99,6 +105,8 @@ export default function Whales() {
           { k: 'volume', l: 'Volume Anomalies' },
           { k: 'trending', l: 'Trending' },
           { k: 'btc', l: 'BTC Whale Txs' },
+          { k: 'feed', l: '🐋 Whale Feed' },
+          { k: 'flows', l: '🏦 Exchange Flows' },
         ].map(t => (
           <button
             key={t.k}
@@ -239,6 +247,75 @@ export default function Whales() {
           ))}
         </div>
       )}
+
+      {!loading && tab === 'feed' && (
+        <div className="whale-card">
+          <h3 className="whale-card-h">🐋 Multi-Chain Whale Alert Feed</h3>
+          <p className="whale-help">Large transfers (&gt;$500K) across BTC and ETH mempools — live, no API key required.</p>
+          {whaleFeed.length === 0 && (
+            <p className="muted">No whale transfers detected right now. Try refresh.</p>
+          )}
+          {whaleFeed.map((tx, i) => (
+            <a
+              key={tx.hash + i}
+              className="btc-tx-row"
+              href={tx.chain === 'BTC'
+                ? `https://www.blockchain.com/btc/tx/${tx.hash}`
+                : `https://etherscan.io/tx/${tx.hash}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <div className={`whale-feed-chain ${tx.chain.toLowerCase()}`}>{tx.chain}</div>
+              <div className="btc-tx-main">
+                <div className="btc-tx-amt">{tx.amount.toFixed(2)} {tx.symbol}</div>
+                <div className="btc-tx-hash">{tx.hash.slice(0, 14)}…{tx.hash.slice(-6)}</div>
+              </div>
+              <div className="btc-tx-side">
+                <div className="btc-tx-usd">{fmtUsd(tx.usd)}</div>
+                <div className="btc-tx-time">{timeAgo(tx.time)}</div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {!loading && tab === 'flows' && (
+        <div className="whale-card">
+          <h3 className="whale-card-h">🏦 Exchange Flow Rankings</h3>
+          <p className="whale-help">Top exchanges by 24h BTC-equivalent volume. High trust score + high volume = healthy liquidity.</p>
+          {exchangeFlows.length === 0 && <p className="muted">Could not load exchange data.</p>}
+          {exchangeFlows.map((ex, i) => (
+            <div key={ex.id} className="exchange-row">
+              <div className="exchange-rank">#{i + 1}</div>
+              <div className="exchange-logo">
+                {ex.image ? <img src={ex.image} alt="" width={28} height={28} /> : <span className="exchange-logo-placeholder">🏦</span>}
+              </div>
+              <div className="exchange-info">
+                <div className="whale-name">{ex.name}</div>
+                {ex.country && <div className="whale-sym">{ex.country}</div>}
+              </div>
+              <div className="whale-stat">
+                <div className="whale-stat-val">{ex.volume24h >= 1000 ? (ex.volume24h / 1000).toFixed(1) + 'K' : ex.volume24h.toFixed(0)} BTC</div>
+                <div className="whale-stat-lbl">24h vol</div>
+              </div>
+              <div className="whale-stat">
+                <TrustBar score={ex.trustScore} />
+                <div className="whale-stat-lbl">trust {ex.trustScore}/10</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrustBar({ score }) {
+  const pct = (score / 10) * 100
+  const color = score >= 8 ? '#34d399' : score >= 5 ? '#fbbf24' : '#f87171'
+  return (
+    <div style={{ width: 60, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+      <div style={{ width: pct + '%', height: '100%', background: color, borderRadius: 3 }} />
     </div>
   )
 }
