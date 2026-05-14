@@ -618,13 +618,22 @@ const TOOLTIP_STYLE = {
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
-function buildPerfSeries(base) {
-  const pts = 30, start = (base || 1) * 0.82
+const TIMEFRAMES = [
+  { id: '4H',  label: '4H',  pts: 24,  volatility: 0.006, drift: 0.88 },
+  { id: '1D',  label: '1D',  pts: 24,  volatility: 0.010, drift: 0.75 },
+  { id: '7D',  label: '7D',  pts: 28,  volatility: 0.018, drift: 0.65 },
+  { id: '30D', label: '30D', pts: 30,  volatility: 0.014, drift: 0.55 },
+]
+
+function buildPerfSeries(base, tf = '30D') {
+  const frame = TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]
+  const { pts, volatility, drift } = frame
+  const start = (base || 1) * (tf === '4H' ? 0.97 : tf === '1D' ? 0.94 : tf === '7D' ? 0.88 : 0.82)
   let prev = start
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
     const target = start + (base - start) * t
-    prev = prev + (target - prev) * 0.55 + (Math.random() - 0.5) * ((base || 1) * 0.014)
+    prev = prev + (target - prev) * drift + (Math.random() - 0.5) * ((base || 1) * volatility)
     return { i, v: Math.max(prev, 0) }
   }).concat([{ i: pts - 1, v: base || 1 }]).slice(0, pts)
 }
@@ -1041,7 +1050,8 @@ export default function Dashboard() {
     raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
   }, [loaded, totalValue])
 
-  const perfSeries = useMemo(() => buildPerfSeries(totalValue), [totalValue])
+  const [perfTf, setPerfTf] = useState('30D')
+  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
 
   const allocData = useMemo(() => {
     if (!enriched.length) return []
@@ -1273,8 +1283,22 @@ export default function Dashboard() {
               {/* Performance chart */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
-                  <h3 style={{ margin:0 }}>{t('dayPerformance')}</h3>
-                  <span className="muted" style={{ fontSize:'0.72rem' }}>{t('simulatedTrend')}</span>
+                  <h3 style={{ margin:0 }}>Performance</h3>
+                  <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                    {TIMEFRAMES.map(tf => (
+                      <button key={tf.id} onClick={() => setPerfTf(tf.id)}
+                        style={{
+                          padding:'0.2rem 0.55rem', borderRadius:8, border:'none', cursor:'pointer',
+                          fontSize:'0.72rem', fontWeight:600,
+                          background: perfTf === tf.id ? '#34d399' : 'rgba(255,255,255,0.07)',
+                          color: perfTf === tf.id ? '#000' : 'rgba(255,255,255,0.55)',
+                          transition:'all 0.15s',
+                        }}>
+                        {tf.label}
+                      </button>
+                    ))}
+                    <span className="muted" style={{ fontSize:'0.65rem', marginLeft:'0.3rem' }}>{t('simulatedTrend')}</span>
+                  </div>
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:4, bottom:0 }}>
