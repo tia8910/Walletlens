@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
@@ -238,7 +239,11 @@ function RiskCard({ holding }) {
     let cancelled = false
     setLoading(true)
     scoreToken(holding.coin_id).then(r => {
-      if (!cancelled) { setResult(r); setLoading(false) }
+      if (!cancelled) {
+        setResult(r)
+        setLoading(false)
+        if (r) track('risk_scan_result', { symbol: holding.coin_symbol, grade: r.grade, score: r.score })
+      }
     }).catch(() => {
       if (!cancelled) setLoading(false)
     })
@@ -246,7 +251,7 @@ function RiskCard({ holding }) {
   }, [holding.coin_id])
 
   return (
-    <div className="glass-card risk-card" onClick={() => result && setExpanded(v => !v)}>
+    <div className="glass-card risk-card" onClick={() => { if (result) { setExpanded(v => !v); if (!expanded) track('risk_card_expand', { symbol: holding.coin_symbol, grade: result.grade }) } }}>
       <div className="risk-card-top">
         <div className="risk-card-left">
           <CoinLogo image={holding.coin_image} symbol={holding.coin_symbol} size={38} className="dvx-holding-icon" />

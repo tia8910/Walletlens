@@ -937,6 +937,8 @@ export default function Dashboard() {
       page_title: `Dashboard — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
     })
     track('dashboard_tab_switch', { tab: activeTab })
+    if (activeTab === 'ai')   track('ai_tab_view')
+    if (activeTab === 'risk') track('risk_tab_view')
   }, [activeTab])
 
   async function loadAll() {
