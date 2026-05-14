@@ -1,11 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, FIAT_PREFIX } from '../api'
+import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS } from '../api'
 import CoinLogo from './CoinLogo'
 
 const IcoClose  = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 const IcoSearch = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 
-// ── Leg resolvers (same logic as Transactions.jsx) ────────────────────────
+const CATEGORIES = [
+  { key: 'crypto', label: 'Crypto',  icon: '◆', color: '#6366f1' },
+  { key: 'stock',  label: 'Stocks',  icon: '📈', color: '#10b981' },
+  { key: 'gold',   label: 'Gold',    icon: '🥇', color: '#f59e0b' },
+  { key: 'silver', label: 'Silver',  icon: '🥈', color: '#94a3b8' },
+  { key: 'fiat',   label: 'Fiat',    icon: '💵', color: '#0ea5e9' },
+  { key: 'bond',   label: 'Bonds',   icon: '📜', color: '#0284c7' },
+  { key: 'other',  label: 'Other',   icon: '◈', color: '#a78bfa' },
+]
+
+// ── Preset asset for each non-crypto category ─────────────────────────────
+function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
+  if (cat === 'gold')   return { id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   category: 'gold',   image: '' }
+  if (cat === 'silver') return { id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', category: 'silver', image: '' }
+  if (cat === 'stock' && stockTicker)
+    return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: stockTicker.toUpperCase(), name: stockTicker.toUpperCase(), category: 'stock', image: '' }
+  if (cat === 'fiat' && fiatCode)
+    return { id: `${FIAT_PREFIX}${fiatCode.toLowerCase()}`, symbol: fiatCode.toUpperCase(), name: fiatCode.toUpperCase(), category: 'fiat', image: '' }
+  if (cat === 'bond' && otherInput)
+    return { id: `bond:${otherInput.toLowerCase()}`, symbol: otherInput.toUpperCase(), name: otherInput, category: 'bond', image: '' }
+  if (cat === 'other' && otherInput)
+    return { id: `other:${otherInput.toLowerCase()}`, symbol: otherInput.toUpperCase(), name: otherInput, category: 'other', image: '' }
+  return null
+}
+
+// ── Leg resolvers ─────────────────────────────────────────────────────────
 async function buildReceiveLeg(target, proceedsUsd) {
   const T = (target || '').toUpperCase()
   if (!T) return null
@@ -65,18 +90,17 @@ async function buildSpendLeg(source, costUsd) {
 }
 
 // ── TradeSheet ────────────────────────────────────────────────────────────
-// Props:
-//   open        – boolean
-//   type        – 'buy' | 'sell'
-//   onClose     – fn()
-//   wallets     – array of wallet objects
-//   onDone      – fn() called after successful submit
-//   holdings    – array of holding objects (for sell balance display)
-//   prefillCoin – { id, symbol, name, thumb? } — locks the asset field
 export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin }) {
+  const [category, setCategory]         = useState('crypto')
   const [coinSearch, setCoinSearch]     = useState('')
   const [coinResults, setCoinResults]   = useState([])
   const [selectedCoin, setSelectedCoin] = useState(null)
+  // Stock / fiat / other sub-fields
+  const [stockTicker, setStockTicker]   = useState('')
+  const [stockInput, setStockInput]     = useState('')
+  const [fiatCode, setFiatCode]         = useState('USD')
+  const [otherName, setOtherName]       = useState('')
+  // Common fields
   const [walletId, setWalletId]         = useState('')
   const [amount, setAmount]             = useState('')
   const [price, setPrice]               = useState('')
@@ -93,6 +117,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   const isBuy  = type === 'buy'
   const accent = isBuy ? '#34d399' : '#f87171'
+  const catInfo = CATEGORIES.find(c => c.key === category) || CATEGORIES[0]
 
   // Reset form when sheet opens
   useEffect(() => {
@@ -100,36 +125,57 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setCoinSearch(''); setCoinResults([]); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom('')
     setSellFor('USD'); setSellForCustom('')
+    setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
     if (prefillCoin) {
       setSelectedCoin(prefillCoin)
+      setCategory('crypto')
     } else {
       setSelectedCoin(null)
+      setCategory('crypto')
     }
   }, [open]) // eslint-disable-line
 
-  // Auto-fill price when coin selected
+  // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
-    if (!selectedCoin) return
-    api.getPrices(selectedCoin.id).then(px => {
-      const p = px?.[selectedCoin.id]?.usd ?? px?.[selectedCoin.id]?.price
+    const resolvedId = resolveAssetId()
+    if (!resolvedId) return
+    api.getPrices(resolvedId).then(px => {
+      const p = px?.[resolvedId]?.usd ?? px?.[resolvedId]?.price
       if (p) setPrice(String(p))
     }).catch(() => {})
-  }, [selectedCoin])
+  }, [selectedCoin, category, stockTicker, fiatCode]) // eslint-disable-line
 
-  // Debounced coin search
+  // Debounced crypto coin search
   useEffect(() => {
     clearTimeout(searchTimer.current)
-    if (!coinSearch || selectedCoin) return
+    if (category !== 'crypto' || !coinSearch || selectedCoin) return
     searchTimer.current = setTimeout(async () => {
       const res = await api.searchCoins(coinSearch).catch(() => [])
       setCoinResults(res.slice(0, 8))
     }, 350)
     return () => clearTimeout(searchTimer.current)
-  }, [coinSearch, selectedCoin])
+  }, [coinSearch, selectedCoin, category])
 
-  const holdingForCoin = holdings?.find(h => h.coin_id === selectedCoin?.id)
+  function resolveAssetId() {
+    if (category === 'crypto') return selectedCoin?.id || null
+    if (category === 'gold')   return GOLD_ID
+    if (category === 'silver') return SILVER_ID
+    if (category === 'stock' && stockTicker) return `${STOCK_PREFIX}${stockTicker.toLowerCase()}`
+    if (category === 'fiat' && fiatCode)    return `${FIAT_PREFIX}${fiatCode.toLowerCase()}`
+    if (category === 'bond' && otherName)   return `bond:${otherName.toLowerCase()}`
+    if (category === 'other' && otherName)  return `other:${otherName.toLowerCase()}`
+    return null
+  }
+
+  function resolveAssetMeta() {
+    if (category === 'crypto') return selectedCoin ? { id: selectedCoin.id, symbol: selectedCoin.symbol?.toUpperCase(), name: selectedCoin.name, image: selectedCoin.thumb || selectedCoin.image || '', category: 'crypto' } : null
+    return presetForCategory(category, stockTicker, fiatCode, otherName)
+  }
+
+  const asset = resolveAssetMeta()
+  const holdingForCoin = holdings?.find(h => h.coin_id === asset?.id)
   const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
 
   // Swipe-down to close
@@ -142,7 +188,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   }
 
   async function submit() {
-    if (!selectedCoin || !amount || !price) { setMsg('Fill all fields.'); return }
+    if (!asset || !amount || !price) { setMsg('Fill all fields.'); return }
     setBusy(true); setMsg('')
     try {
       const wid = walletId || (wallets[0]?.id ?? '1')
@@ -151,12 +197,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
       await api.addTransaction({
         wallet_id: wid, type,
-        coin_id: selectedCoin.id,
-        coin_symbol: selectedCoin.symbol?.toUpperCase(),
-        coin_name: selectedCoin.name,
-        coin_image: selectedCoin.thumb || selectedCoin.image || '',
+        coin_id: asset.id,
+        coin_symbol: asset.symbol,
+        coin_name: asset.name,
+        coin_image: asset.image || '',
         amount: amt, price_per_unit: ppu,
-        date, category: 'crypto',
+        date, category: asset.category || category,
       })
 
       // Buy-with spend leg
@@ -169,7 +215,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             category: leg.category, coin_id: leg.coin_id,
             coin_symbol: leg.symbol, coin_name: leg.name, coin_image: '',
             amount: leg.amount, price_per_unit: leg.pricePerUnit, date,
-            notes: `Spent on buying ${selectedCoin.symbol?.toUpperCase() || selectedCoin.id}`,
+            notes: `Spent on buying ${asset.symbol}`,
           })
         }
       }
@@ -184,7 +230,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             category: leg.category, coin_id: leg.coin_id,
             coin_symbol: leg.symbol, coin_name: leg.name, coin_image: '',
             amount: leg.amount, price_per_unit: leg.pricePerUnit, date,
-            notes: `Proceeds from selling ${selectedCoin.symbol?.toUpperCase() || selectedCoin.id}`,
+            notes: `Proceeds from selling ${asset.symbol}`,
           })
         }
       }
@@ -216,7 +262,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </svg>
             <p style={{ color:'#fff', fontWeight:700, fontSize:'1.05rem', margin:0 }}>Trade Recorded!</p>
             <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0' }}>
-              {isBuy ? 'Bought' : 'Sold'} {amount} {selectedCoin?.symbol?.toUpperCase()}
+              {isBuy ? 'Bought' : 'Sold'} {amount} {asset?.symbol}
             </p>
           </div>
         ) : (
@@ -227,42 +273,120 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
             </div>
 
-            {/* Asset field */}
+            {/* ── Category selector ── */}
+            {!prefillCoin && (
+              <div className="bs-field">
+                <label className="bs-label">Asset Category</label>
+                <div className="bs-cat-grid">
+                  {CATEGORIES.map(c => (
+                    <button
+                      key={c.key}
+                      className={`bs-cat-btn ${category === c.key ? 'active' : ''}`}
+                      style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
+                      onClick={() => { setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setPrice(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
+                    >
+                      <span>{c.icon}</span> {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Asset selector by category ── */}
             <div className="bs-field">
               <label className="bs-label">Asset</label>
-              {selectedCoin ? (
-                <div className="bs-coin-selected">
-                  {(selectedCoin.thumb || selectedCoin.image) && (
-                    <img src={selectedCoin.thumb || selectedCoin.image} alt="" className="bs-coin-thumb" />
-                  )}
-                  <div className="bs-coin-info">
-                    <strong>{selectedCoin.name}</strong>
-                    <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
-                  </div>
-                  {!prefillCoin && (
-                    <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setPrice('') }}>
-                      {IcoClose}
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="bs-search-wrap">
-                  <span className="bs-search-icon">{IcoSearch}</span>
-                  <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
-                    value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
-                  {coinResults.length > 0 && (
-                    <div className="bs-dropdown">
-                      {coinResults.map(c => (
-                        <button key={c.id} className="bs-dropdown-item"
-                          onClick={() => { setSelectedCoin(c); setCoinSearch(c.name); setCoinResults([]) }}>
-                          <CoinLogo image={c.thumb || c.image} symbol={c.symbol} size={22} className="bs-dropdown-logo" />
-                          <span>{c.name}</span>
-                          <span className="muted bs-sym">{c.symbol?.toUpperCase()}</span>
-                        </button>
-                      ))}
+
+              {/* Crypto: search */}
+              {category === 'crypto' && (
+                selectedCoin ? (
+                  <div className="bs-coin-selected">
+                    {(selectedCoin.thumb || selectedCoin.image) && (
+                      <img src={selectedCoin.thumb || selectedCoin.image} alt="" className="bs-coin-thumb" />
+                    )}
+                    <div className="bs-coin-info">
+                      <strong>{selectedCoin.name}</strong>
+                      <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
                     </div>
-                  )}
+                    {!prefillCoin && (
+                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setPrice('') }}>
+                        {IcoClose}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bs-search-wrap">
+                    <span className="bs-search-icon">{IcoSearch}</span>
+                    <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
+                      value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
+                    {coinResults.length > 0 && (
+                      <div className="bs-dropdown">
+                        {coinResults.map(c => (
+                          <button key={c.id} className="bs-dropdown-item"
+                            onClick={() => { setSelectedCoin(c); setCoinSearch(c.name); setCoinResults([]) }}>
+                            <CoinLogo image={c.thumb || c.image} symbol={c.symbol} size={22} className="bs-dropdown-logo" />
+                            <span>{c.name}</span>
+                            <span className="muted bs-sym">{c.symbol?.toUpperCase()}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
+
+              {/* Gold / Silver: preset, no search needed */}
+              {(category === 'gold' || category === 'silver') && (
+                <div className="bs-coin-selected">
+                  <span style={{ fontSize: '1.6rem' }}>{category === 'gold' ? '🥇' : '🥈'}</span>
+                  <div className="bs-coin-info">
+                    <strong>{category === 'gold' ? 'Gold (1 troy oz)' : 'Silver (1 troy oz)'}</strong>
+                    <span className="muted">{category === 'gold' ? 'XAU' : 'XAG'} · live spot price</span>
+                  </div>
                 </div>
+              )}
+
+              {/* Stock: popular list + custom ticker input */}
+              {category === 'stock' && (
+                <div className="bs-stock-wrap">
+                  <div className="bs-popular-chips">
+                    {POPULAR_TICKERS.map(t => (
+                      <button key={t.ticker}
+                        className={`bs-chip ${stockTicker === t.ticker ? 'active' : ''}`}
+                        onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker); setPrice('') }}>
+                        {t.ticker}
+                      </button>
+                    ))}
+                  </div>
+                  <input className="bs-input" placeholder="Or type ticker: e.g. AAPL, NVDA, BRK.B"
+                    value={stockInput}
+                    onChange={e => { setStockInput(e.target.value); setStockTicker(e.target.value.trim().toUpperCase()); setPrice('') }}
+                  />
+                  {stockTicker && <p className="bs-hint" style={{color: catInfo.color}}>Will fetch live price from Stooq for {stockTicker}</p>}
+                </div>
+              )}
+
+              {/* Fiat: popular list + custom */}
+              {category === 'fiat' && (
+                <div className="bs-stock-wrap">
+                  <div className="bs-popular-chips">
+                    {POPULAR_FIAT.map(f => (
+                      <button key={f.code}
+                        className={`bs-chip ${fiatCode === f.code ? 'active' : ''}`}
+                        onClick={() => { setFiatCode(f.code); setPrice('') }}>
+                        {f.symbol} {f.code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bond / Other: name input */}
+              {(category === 'bond' || category === 'other') && (
+                <input className="bs-input"
+                  placeholder={category === 'bond' ? 'e.g. US Treasury 10Y, I-Bond' : 'e.g. Real estate, Art, Watch'}
+                  value={otherName}
+                  onChange={e => setOtherName(e.target.value)}
+                />
               )}
             </div>
 
@@ -280,12 +404,16 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* Amount + Price */}
             <div className="bs-row-2">
               <div className="bs-field">
-                <label className="bs-label">Amount</label>
+                <label className="bs-label">
+                  {category === 'gold' || category === 'silver' ? 'Quantity (oz)' :
+                   category === 'stock' ? 'Shares' :
+                   category === 'fiat' ? 'Amount' : 'Amount'}
+                </label>
                 <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
                   value={amount} onChange={e => setAmount(e.target.value)} />
               </div>
               <div className="bs-field">
-                <label className="bs-label">Price ($)</label>
+                <label className="bs-label">Price (USD)</label>
                 <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
                   value={price} onChange={e => setPrice(e.target.value)} />
               </div>
@@ -357,7 +485,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 </div>
                 <p className="bs-hint">
                   {sellFor === 'REMOVE'
-                    ? <>Deducted from holdings only — no other balance credited.</>
+                    ? 'Deducted from holdings only — no other balance credited.'
                     : <>Proceeds{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} credited to <strong>{sellFor === 'CUSTOM' ? (sellForCustom.trim().toUpperCase() || '…') : sellFor}</strong>.</>}
                 </p>
               </div>
@@ -378,7 +506,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <button className="bs-submit"
               style={{ background: isBuy ? 'linear-gradient(135deg,#34d399,#10b981)' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
               onClick={submit}
-              disabled={busy || !selectedCoin || !amount || !price}>
+              disabled={busy || !asset || !amount || !price}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
           </div>
