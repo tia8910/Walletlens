@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import QuickStatsPopup from './components/QuickStatsPopup'
+import OnboardingTour from './components/OnboardingTour'
 import { useLanguage } from './LanguageContext'
 import { track } from './analytics'
 
@@ -209,6 +210,8 @@ export default function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
+
+      <OnboardingTour />
 
       <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
       {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
