@@ -1149,7 +1149,7 @@ export default function Dashboard() {
               </p>
             )}
             {!isDemo && totalValue > 0 && (
-              <button className="dvx-share-btn" onClick={() => setShareOpen(true)}>
+              <button className="dvx-share-btn" onClick={() => { setShareOpen(true); track('share_portfolio_open') }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 {t('shareGains')}
               </button>
@@ -1465,6 +1465,7 @@ export default function Dashboard() {
                       setGoalValue(v)
                       localStorage.setItem('wl_goal', v.toString())
                       setEditingGoal(false)
+                      track('goal_set', { goal_usd: Math.round(v) })
                     }}>Save</button>
                   </div>
                 ) : goalValue > 0 ? (() => {
@@ -1646,7 +1647,7 @@ export default function Dashboard() {
                   </div>
                   <button className="dvx-btn dvx-btn-primary"
                     style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
-                    onClick={() => navigate(`/asset/${encodeURIComponent(r.coinId)}`)}>
+                    onClick={() => { track('asset_click', { asset_id: r.coinId, source: 'risk_scanner' }); navigate(`/asset/${encodeURIComponent(r.coinId)}`) }}>
                     Manage
                   </button>
                 </div>

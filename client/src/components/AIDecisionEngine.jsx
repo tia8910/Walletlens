@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { track } from '../analytics'
 
 /* ─── engine ─────────────────────────────────────────────────────────────── */
 function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
@@ -114,11 +115,12 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
     setOpen(true)
     setResult(null)
     setThinking(true)
-    // Simulate "thinking" delay for effect
+    track('ai_engine_trigger', { holdings_count: enriched?.length || 0 })
     setTimeout(() => {
       const r = runEngine(enriched, prices, transactions, totalValue, totalInvested)
       setResult(r)
       setThinking(false)
+      if (r) track('ai_engine_result', { verdict: r.verdict, confidence: r.confidence })
     }, 1800)
   }
 
