@@ -239,6 +239,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       }
 
       setSuccess(true)
+      if (typeof gtag === 'function') {
+        gtag('event', 'trade_submitted', {
+          trade_type: type,
+          asset_symbol: asset.symbol,
+          asset_category: asset.category || category,
+          trade_value_usd: Math.round(amt * ppu),
+        })
+      }
       setTimeout(() => { onClose(); onDone() }, 1200)
     } catch { setMsg('Failed. Try again.') }
     finally { setBusy(false) }
