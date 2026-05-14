@@ -636,7 +636,13 @@ function WalletPanel({ wallets, onRefresh }) {
   async function add() {
     if (!name.trim()) return
     setBusy(true)
-    try { await api.createWallet({ name: name.trim() }); setName(''); onRefresh() }
+    try {
+      await api.createWallet({ name: name.trim() })
+      if (typeof gtag === 'function') {
+        gtag('event', 'wallet_created', { wallet_name: name.trim() })
+      }
+      setName(''); onRefresh()
+    }
     finally { setBusy(false) }
   }
 
