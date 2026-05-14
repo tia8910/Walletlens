@@ -625,17 +625,33 @@ const TIMEFRAMES = [
   { id: '30D', label: '30D', pts: 30,  volatility: 0.014, drift: 0.55 },
 ]
 
+// Seeded random so each timeframe has a stable but unique shape
+function seededRand(seed) {
+  let s = seed
+  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff }
+}
+
 function buildPerfSeries(base, tf = '30D') {
   const frame = TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]
   const { pts, volatility, drift } = frame
-  const start = (base || 1) * (tf === '4H' ? 0.97 : tf === '1D' ? 0.94 : tf === '7D' ? 0.88 : 0.82)
-  let prev = start
+  const b = base || 1
+  const rand = seededRand({ '4H': 1, '1D': 2, '7D': 3, '30D': 4 }[tf] * 999983)
+
+  // Each timeframe has a distinct trajectory shape
+  const startRatio = { '4H': 0.978, '1D': 0.945, '7D': 0.875, '30D': 0.82 }[tf]
+  let prev = b * startRatio
+
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
-    const target = start + (base - start) * t
-    prev = prev + (target - prev) * drift + (Math.random() - 0.5) * ((base || 1) * volatility)
+    // 4H: nearly flat with micro-chop; 1D: slight dip then recovery; 7D: mid dip; 30D: long steady rise
+    const shapedTarget = tf === '1D'
+      ? b * startRatio + (b - b * startRatio) * (t < 0.3 ? t * 0.5 : t)
+      : tf === '7D'
+      ? b * startRatio + (b - b * startRatio) * (t < 0.4 ? t * 0.6 : 0.4 * 0.6 + (t - 0.4) * 1.4)
+      : b * startRatio + (b - b * startRatio) * t
+    prev = prev + (shapedTarget - prev) * drift + (rand() - 0.5) * (b * volatility)
     return { i, v: Math.max(prev, 0) }
-  }).concat([{ i: pts - 1, v: base || 1 }]).slice(0, pts)
+  }).concat([{ i: pts - 1, v: b }]).slice(0, pts)
 }
 
 // ── Wallet panel ─────────────────────────────────────────────────────────
@@ -1300,7 +1316,7 @@ export default function Dashboard() {
                     <span className="muted" style={{ fontSize:'0.65rem', marginLeft:'0.3rem' }}>{t('simulatedTrend')}</span>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:4, bottom:0 }}>
                     <defs>
                       <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
