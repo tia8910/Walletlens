@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
+import { track } from '../analytics'
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '–'
@@ -111,7 +112,7 @@ export default function Whales() {
           <button
             key={t.k}
             className={`whale-tab ${tab === t.k ? 'active' : ''}`}
-            onClick={() => setTab(t.k)}
+            onClick={() => { setTab(t.k); track('whales_tab_switch', { tab: t.k }) }}
           >
             {t.l}
           </button>

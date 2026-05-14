@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
+import { track } from '../analytics'
 
 /* ── helpers ── */
 function fmtUsd(n) {
@@ -39,10 +40,12 @@ function WalletReader() {
   async function lookup() {
     if (!addr.trim()) return
     setLoading(true); setErr(''); setResult(null)
+    track('wallet_lookup', { chain })
     try {
       const data = await api.readWalletAddress(addr.trim(), chain)
       if (!data) { setErr('Could not fetch wallet data. Check the address and try again.'); setLoading(false); return }
       setResult(data)
+      track('wallet_lookup_success', { chain, whale_class: data.whaleClass })
     } catch { setErr('Lookup failed. Check the address format.') }
     setLoading(false)
   }
@@ -450,7 +453,7 @@ export default function Intel() {
 
       <div className="whale-tabs">
         {TABS.map(t => (
-          <button key={t.k} className={`whale-tab ${tab === t.k ? 'active' : ''}`} onClick={() => setTab(t.k)}>{t.l}</button>
+          <button key={t.k} className={`whale-tab ${tab === t.k ? 'active' : ''}`} onClick={() => { setTab(t.k); track('intel_tab_switch', { tab: t.k }) }}>{t.l}</button>
         ))}
       </div>
 

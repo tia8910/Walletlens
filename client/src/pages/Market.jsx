@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { track } from '../analytics'
 import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import EmptyState from '../components/EmptyState'
@@ -76,7 +77,7 @@ export default function Market() {
     setLoading(false)
   }
 
-  const openAsset = (id) => navigate(`/asset/${encodeURIComponent(id)}`)
+  const openAsset = (id) => { track('market_asset_click', { asset_id: id }); navigate(`/asset/${encodeURIComponent(id)}`) }
 
   return (
     <div className="page">
@@ -99,7 +100,7 @@ export default function Market() {
           <button
             key={t.key}
             className={`market-tab ${tab === t.key ? 'active' : ''}`}
-            onClick={() => setTab(t.key)}
+            onClick={() => { setTab(t.key); track('market_tab_switch', { tab: t.key }) }}
           >
             <span className="market-tab-icon">{t.icon}</span>
             <span>{t.label}</span>
