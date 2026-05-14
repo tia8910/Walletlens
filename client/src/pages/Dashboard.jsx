@@ -870,7 +870,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
               style={{ background: c.color, width: size, height: size }}
               title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
             >
-              {c.coin_image && <img src={c.coin_image} alt="" className="heatmap-img" style={{ width: Math.min(28, size * 0.35), height: Math.min(28, size * 0.35) }} />}
+              <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.min(28, Math.floor(size * 0.35))} className="heatmap-img" />
               <div className="heatmap-sym" style={{ fontSize: size < 80 ? '0.6rem' : '0.75rem' }}>{c.coin_symbol?.toUpperCase()}</div>
               <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: size < 80 ? '0.55rem' : '0.7rem' }}>
                 {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
@@ -1195,7 +1195,7 @@ export default function Dashboard() {
                     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
                     return (
                       <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={28} />
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
                         <div className="dvx-mover-meta">
                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
                           <span style={{ color:'#34d399' }}>+{chg.toFixed(2)}%</span>
@@ -1217,7 +1217,7 @@ export default function Dashboard() {
                     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
                     return (
                       <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={28} />
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
                         <div className="dvx-mover-meta">
                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
                           <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
@@ -1514,7 +1514,7 @@ export default function Dashboard() {
                         return (
                           <li key={h.coin_id} className="dvx-holding holo-card-v2"
                             onClick={() => !isDemo && navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
-                            <CoinLogo image={h.coin_image} symbol={h.coin_symbol} size={36} className="dvx-holding-icon" />
+                            <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                             <div className="dvx-holding-meta">
                               <strong>{h.coin_symbol?.toUpperCase()}</strong>
                               {showBreakEven ? (
