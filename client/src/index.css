@@ -5456,3 +5456,36 @@ input[type="date"] { color-scheme: dark; }
   .acad-badges-grid { grid-template-columns: 1fr; }
   .acad-iq-guide-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Crypto Guessr Game ────────────────────────────────────────────────── */
+.guessr-idle { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; padding: 1rem 0; text-align: center; }
+.guessr-idle-icon { font-size: 3rem; }
+.guessr-idle-title { font-size: 1.35rem; font-weight: 800; }
+.guessr-idle-sub { font-size: 0.82rem; line-height: 1.6; max-width: 280px; }
+.guessr-pts-table { display: flex; flex-direction: column; gap: 0.25rem; width: 100%; max-width: 220px; }
+.guessr-pts-row { font-size: 0.78rem; padding: 0.3rem 0.6rem; background: rgba(255,255,255,0.04); border-radius: 6px; text-align: left; }
+.guessr-playing { display: flex; flex-direction: column; gap: 0.9rem; }
+.guessr-header { display: flex; justify-content: space-between; align-items: center; }
+.guessr-round { font-size: 0.8rem; }
+.guessr-score-pill { background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3); border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.82rem; font-weight: 700; color: #a78bfa; }
+.guessr-mystery-coin { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1rem; background: rgba(255,255,255,0.04); border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); }
+.guessr-mystery-icon { font-size: 2.5rem; }
+.guessr-mystery-label { font-weight: 800; font-size: 1rem; }
+.guessr-pts-badge { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); border-radius: 20px; padding: 0.2rem 0.65rem; font-size: 0.74rem; color: #fbbf24; font-weight: 700; }
+.guessr-clues { display: flex; flex-direction: column; gap: 0.5rem; }
+.guessr-clue { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.84rem; line-height: 1.5; padding: 0.55rem 0.75rem; background: rgba(255,255,255,0.04); border-radius: 10px; animation: fadeInUp 0.3s ease; }
+.guessr-clue-num { min-width: 20px; height: 20px; background: rgba(167,139,250,0.25); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; color: #a78bfa; flex-shrink: 0; margin-top: 1px; }
+.guessr-reveal-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.6rem 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.6); cursor: pointer; transition: background 0.2s; }
+.guessr-reveal-btn:hover { background: rgba(255,255,255,0.1); }
+.guessr-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.guessr-option { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.5rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.guessr-option:hover { background: rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.4); }
+.guessr-result { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; border-radius: 14px; border: 1px solid; }
+.guessr-result-correct { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+.guessr-result-wrong { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
+.guessr-result-row { display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; font-weight: 700; }
+.guessr-result-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.guessr-result-opt { padding: 0.45rem 0.5rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.04); text-align: center; }
+.guessr-result-correct-opt { background: rgba(52,211,153,0.15); color: #34d399; }
+.guessr-result-wrong-opt { background: rgba(248,113,113,0.15); color: #f87171; text-decoration: line-through; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
