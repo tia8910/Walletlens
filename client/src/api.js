@@ -2,6 +2,11 @@
 // Constants, classifiers, and pure helpers live in src/data/* and are
 // re-exported here so existing imports from '../api' keep working
 // unchanged. New code should prefer importing directly from data/*.
+
+// Cloudflare Worker proxy URL — set this after deploying workers/stock-price/index.js
+// Leave empty to skip worker and rely on CORS proxy fallbacks.
+const STOCK_WORKER_URL = 'https://stock-price.walletlens.workers.dev'
+
 import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
   GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
@@ -258,76 +263,71 @@ async function fetchStockLive(coinId) {
     return stockCache[coinId];
   }
 
-  const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
-  const CORS_PROXIES = [
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
-  ];
+  const tickerUp = ticker.toUpperCase();
 
-  // Primary: direct Stooq (works in most desktop browsers)
+  // ── 1. Cloudflare Worker (our own CORS-safe proxy, most reliable on mobile) ──
+  if (STOCK_WORKER_URL) {
+    try {
+      const res = await fetchWithTimeout(`${STOCK_WORKER_URL}?symbol=${encodeURIComponent(tickerUp)}`, 7000);
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.price === 'number' && data.price > 0) {
+          const parsed = { usd: data.price, usd_24h_change: data.change_pct || 0, name: data.name || '' };
+          stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+          return parsed;
+        }
+      }
+    } catch { /* fall through */ }
+  }
+
+  // ── 2. Yahoo Finance v8 direct (has CORS headers on some networks) ──
+  const yahooV8 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(tickerUp)}?interval=1d&range=2d`;
   try {
-    const res = await fetch(stooqUrl, { signal: AbortSignal.timeout(5000) });
+    const res = await fetchWithTimeout(yahooV8, 5000);
+    if (res.ok) {
+      const meta = (await res.json())?.chart?.result?.[0]?.meta;
+      if (meta && typeof meta.regularMarketPrice === 'number') {
+        const parsed = { usd: meta.regularMarketPrice, usd_24h_change: meta.regularMarketChangePercent || 0, name: meta.longName || meta.shortName || '' };
+        stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+        return parsed;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // ── 3. Stooq direct ──
+  const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
+  try {
+    const res = await fetchWithTimeout(stooqUrl, 5000);
     if (res.ok) {
       const parsed = parseStooqRow(await res.text());
       if (parsed) { stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed; }
     }
   } catch { /* fall through */ }
 
-  // Stooq via each CORS proxy in turn
-  for (const proxy of CORS_PROXIES) {
-    try {
-      const res = await fetch(proxy(stooqUrl), { signal: AbortSignal.timeout(6000) });
-      if (res.ok) {
-        const parsed = parseStooqRow(await res.text());
-        if (parsed) { stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed; }
-      }
-    } catch { /* next proxy */ }
-  }
-
-  // Yahoo Finance v8 chart endpoint (more reliable than v7 quote)
-  const yahooV8 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker.toUpperCase())}?interval=1d&range=2d`;
-  for (const proxy of [null, ...CORS_PROXIES]) {
-    try {
-      const url = proxy ? proxy(yahooV8) : yahooV8;
-      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-      if (res.ok) {
-        const data = await res.json();
-        const meta = data?.chart?.result?.[0]?.meta;
-        if (meta && typeof meta.regularMarketPrice === 'number') {
-          const parsed = {
-            usd: meta.regularMarketPrice,
-            usd_24h_change: meta.regularMarketChangePercent || 0,
-            name: meta.longName || meta.shortName || '',
-          };
-          stockCache[coinId] = parsed;
-          stockCacheTime[coinId] = now;
-          return parsed;
-        }
-      }
-    } catch { /* next */ }
-  }
-
-  // Yahoo Finance v7 quote endpoint
-  const yahooV7 = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker.toUpperCase())}`;
-  for (const proxy of CORS_PROXIES) {
-    try {
-      const res = await fetch(proxy(yahooV7), { signal: AbortSignal.timeout(6000) });
-      if (res.ok) {
-        const data = await res.json();
-        const q = data?.quoteResponse?.result?.[0];
-        if (q && typeof q.regularMarketPrice === 'number') {
-          const parsed = {
-            usd: q.regularMarketPrice,
-            usd_24h_change: q.regularMarketChangePercent || 0,
-            name: q.longName || q.shortName || '',
-          };
-          stockCache[coinId] = parsed;
-          stockCacheTime[coinId] = now;
-          return parsed;
-        }
-      }
-    } catch { /* next */ }
+  // ── 4. CORS proxies (last resort, often blocked on mobile) ──
+  const PROXIES = [
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  for (const proxy of PROXIES) {
+    for (const target of [stooqUrl, yahooV8]) {
+      try {
+        const res = await fetchWithTimeout(proxy(target), 6000);
+        if (!res.ok) continue;
+        const text = await res.text();
+        // Try Stooq CSV parse
+        const csv = parseStooqRow(text);
+        if (csv) { stockCache[coinId] = csv; stockCacheTime[coinId] = now; return csv; }
+        // Try Yahoo JSON parse
+        try {
+          const meta = JSON.parse(text)?.chart?.result?.[0]?.meta;
+          if (meta && typeof meta.regularMarketPrice === 'number') {
+            const parsed = { usd: meta.regularMarketPrice, usd_24h_change: meta.regularMarketChangePercent || 0, name: meta.longName || '' };
+            stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed;
+          }
+        } catch { /* not JSON */ }
+      } catch { /* next */ }
+    }
   }
 
   return null;
