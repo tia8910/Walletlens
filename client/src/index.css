@@ -5608,3 +5608,28 @@ input[type="date"] { color-scheme: dark; }
 .ade-ai-badge { font-size: 0.65rem; font-weight: 700; background: linear-gradient(135deg,#a78bfa,#60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-left: 0.5rem; letter-spacing: 0.04em; }
 .ade-tip { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.65rem 0.85rem; background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 0.8rem; line-height: 1.5; color: rgba(255,255,255,0.75); margin-top: 0.25rem; }
 .ade-tip-icon { flex-shrink: 0; font-size: 0.9rem; }
+
+/* ── Academy Investment Hacks ─────────────────────────────────────────── */
+.acad-hacks-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.acad-hack-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 1rem 1.1rem;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  border-left: 3px solid var(--hack-color, #a78bfa);
+}
+.acad-hack-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+.acad-hack-open { background: rgba(255,255,255,0.05); }
+.acad-hack-header { display: flex; align-items: center; gap: 0.75rem; }
+.acad-hack-icon { font-size: 1.4rem; flex-shrink: 0; }
+.acad-hack-meta { flex: 1; min-width: 0; }
+.acad-hack-cat { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
+.acad-hack-title { font-size: 0.88rem; font-weight: 700; color: #fff; margin-top: 0.15rem; line-height: 1.3; }
+.acad-hack-chevron { font-size: 0.65rem; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+.acad-hack-body {
+  margin-top: 0.85rem; padding-top: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  font-size: 0.82rem; color: rgba(255,255,255,0.65);
+  line-height: 1.65;
+  animation: fadeInUp 0.2s ease;
+}

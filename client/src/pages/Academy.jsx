@@ -276,6 +276,34 @@ function CryptoGuessr({ onIqGain }) {
   )
 }
 
+// ── Investment Hacks ─────────────────────────────────────────────────────
+const HACKS = [
+  { icon: '🎯', cat: 'Entry', title: 'Buy in thirds, not all at once', body: 'Split your planned buy into 3 equal parts. Enter 1/3 now, 1/3 on a 10% dip, 1/3 on a 20% dip. You will never perfectly time the market — but you can average into a better price every time.' },
+  { icon: '🔒', cat: 'Risk', title: 'Set your stop-loss before you buy', body: 'Decide the maximum you are willing to lose BEFORE you enter a position. Write it down. When price hits that level, sell — no second-guessing. Emotional stops are no stops at all.' },
+  { icon: '🌊', cat: 'Strategy', title: 'DCA beats lump-sum for volatile assets', body: 'Invest a fixed amount every week or month regardless of price. Over time, you buy more when prices are low and less when they are high — automatically reducing your average cost.' },
+  { icon: '📊', cat: 'Portfolio', title: 'The 5% rule for new positions', body: 'Never put more than 5% of your portfolio into a single new, unproven position. If it does a 10x, you still win big. If it goes to zero, your portfolio survives. Let winners earn larger allocations.' },
+  { icon: '💰', cat: 'Profit', title: 'Take profit on the way up, not at the top', body: 'Sell 25% of a position when it doubles. Sell another 25% when it triples. You can never sell at the exact top — but taking profits on the way up guarantees you lock in real gains.' },
+  { icon: '🧠', cat: 'Psychology', title: 'Never check prices more than twice a day', body: 'Frequent price checking triggers emotional decisions. Set price alerts for key levels and check manually only at pre-set times. Boredom is your worst trading advisor.' },
+  { icon: '🔄', cat: 'Strategy', title: 'Rebalance quarterly, not reactively', body: 'Set a calendar reminder every 3 months to bring your portfolio back to target weights. Selling winners and buying laggards forces discipline — you sell high and buy low automatically.' },
+  { icon: '🛡️', cat: 'Risk', title: 'Keep 10-20% in stablecoins at all times', body: 'A permanent stablecoin reserve means you can always buy a crash. It also gives psychological comfort — you can watch a crash calmly knowing you have dry powder to deploy.' },
+  { icon: '📉', cat: 'Psychology', title: 'The 48-hour rule for panic sells', body: 'When you desperately want to sell during a crash, wait 48 hours. If you still want to sell after thinking it through calmly, then sell. Most panic impulses dissolve within 24 hours.' },
+  { icon: '🔍', cat: 'Research', title: 'Check on-chain data before trusting charts', body: 'Price can be manipulated. On-chain metrics (active addresses, transaction volume, exchange outflows) tell you what users are actually doing — not what traders want you to believe.' },
+  { icon: '⚖️', cat: 'Portfolio', title: 'Concentration is a feature, not a bug', body: 'Most wealth is made in 1-3 high-conviction bets, not 30 diversified ones. Have 3-5 core positions making up 70% of your portfolio. Diversification prevents loss; concentration creates wealth.' },
+  { icon: '🕐', cat: 'Entry', title: 'Volume confirms breakouts', body: 'A price breakout on low volume is likely fake. Wait for a breakout accompanied by volume 2× the average. That confirms real buying interest, not just a momentary squeeze.' },
+  { icon: '📅', cat: 'Strategy', title: 'Track your cost basis religiously', body: 'Always know exactly what you paid for each position. Without this, you cannot calculate real P&L, make rational sell decisions, or file accurate taxes. Use WalletLens to track every trade.' },
+  { icon: '🚫', cat: 'Risk', title: 'Avoid leverage until you are profitable without it', body: 'Leverage amplifies gains AND losses. If you cannot make money in spot markets consistently, leverage will just speed up your losses. Master the basics first.' },
+  { icon: '💎', cat: 'Psychology', title: 'Your conviction determines your position size', body: 'Size positions by how thoroughly you have researched them. High conviction = larger position. Heard-it-on-Twitter = 1% max. Conviction is earned through research, not hope.' },
+  { icon: '📈', cat: 'Strategy', title: 'The market rewards patience, not activity', body: 'Most profitable crypto investors make fewer than 20 trades per year. Every trade has friction (fees, tax events, emotional cost). Inactivity is often the highest-conviction trade.' },
+  { icon: '🌍', cat: 'Research', title: 'Follow the smart money, not the narrative', body: 'Watch where institutions and large wallets are accumulating. CoinGecko Whale Alerts, on-chain trackers, and dark pool data reveal where real money flows — often weeks before price reacts.' },
+  { icon: '⚡', cat: 'Entry', title: 'Fear and Greed Index as a contrarian signal', body: 'Extreme Fear (0-25) is historically the best time to accumulate. Extreme Greed (75-100) is when smart money quietly exits. Be greedy when others are fearful — Buffett\'s rule applies to crypto.' },
+]
+
+const CAT_COLORS = {
+  Entry: '#34d399', Risk: '#f87171', Strategy: '#a78bfa',
+  Portfolio: '#60a5fa', Profit: '#fbbf24', Psychology: '#f472b6',
+  Research: '#38bdf8',
+}
+
 // ── Achievements definition ───────────────────────────────────────────────
 const ACHIEVEMENTS = [
   { id: 'first_lesson',    icon: '📖', title: 'First Lesson',       desc: 'Complete your first daily challenge',         pts: 50  },
@@ -303,6 +331,28 @@ function getRank(iq) {
   if (iq >= 500)  return { label: 'Analyst', color: '#34d399', icon: '🥉' }
   if (iq >= 200)  return { label: 'Trader',  color: '#f59e0b', icon: '📈' }
   return { label: 'Rookie', color: 'rgba(255,255,255,0.5)', icon: '🌱' }
+}
+
+// ── HackCard ──────────────────────────────────────────────────────────────
+function HackCard({ hack, color }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`acad-hack-card ${open ? 'acad-hack-open' : ''}`}
+      onClick={() => setOpen(o => !o)}
+      style={{ '--hack-color': color }}>
+      <div className="acad-hack-header">
+        <span className="acad-hack-icon">{hack.icon}</span>
+        <div className="acad-hack-meta">
+          <span className="acad-hack-cat" style={{ color }}>{hack.cat}</span>
+          <div className="acad-hack-title">{hack.title}</div>
+        </div>
+        <span className="acad-hack-chevron">{open ? '▲' : '▼'}</span>
+      </div>
+      {open && (
+        <div className="acad-hack-body">{hack.body}</div>
+      )}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -496,6 +546,7 @@ export default function Academy() {
           { id: 'challenge', label: '📅 Daily Challenge' },
           { id: 'badges',    label: `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})` },
           { id: 'game',      label: '🕵️ Crypto Guessr' },
+          { id: 'hacks',     label: '💡 Investment Hacks' },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
             onClick={() => setActiveTab(tab.id)}>
@@ -611,6 +662,18 @@ export default function Academy() {
               return updated
             })
           }} />
+        </div>
+      )}
+
+      {/* ── HACKS TAB ── */}
+      {activeTab === 'hacks' && (
+        <div className="acad-hacks-list">
+          {HACKS.map((h, i) => {
+            const color = CAT_COLORS[h.cat] || '#a78bfa'
+            return (
+              <HackCard key={i} hack={h} color={color} />
+            )
+          })}
         </div>
       )}
 
