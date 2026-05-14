@@ -8,6 +8,7 @@ import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import QuickStatsPopup from './components/QuickStatsPopup'
 import { useLanguage } from './LanguageContext'
+import { track } from './analytics'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -39,7 +40,7 @@ function LangToggle() {
   return (
     <button
       className="wl-lang-btn"
-      onClick={() => setLang(l => l === 'en' ? 'ar' : 'en')}
+      onClick={() => { const next = lang === 'en' ? 'ar' : 'en'; setLang(() => next); track('language_toggle', { to: next }) }}
       title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
     >
       {lang === 'en' ? 'ع' : 'EN'}
@@ -52,7 +53,7 @@ function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
-  const go = (path, state) => { navigate(path, state ? { state } : undefined); onClose() }
+  const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
   return (
@@ -197,15 +198,15 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true) }} aria-label="Quick Stats"><Logo size={30} /></button>
+      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
       {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
 
       <nav className="wl-bottom-nav">
-        <NavLink to="/dashboard" className="wl-nav-item"><IconHome /><span>{t('home')}</span></NavLink>
-        <NavLink to="/transactions" className="wl-nav-item"><IconTrades /><span>{t('trades')}</span></NavLink>
-        <NavLink to="/market" className="wl-nav-item"><IconMarket /><span>{t('market')}</span></NavLink>
-        <NavLink to="/whales" className="wl-nav-item"><IconWhale /><span>{t('whales')}</span></NavLink>
-        <NavLink to="/intel" className="wl-nav-item"><IconIntel /><span>Intel</span></NavLink>
+        <NavLink to="/dashboard" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'dashboard' })}><IconHome /><span>{t('home')}</span></NavLink>
+        <NavLink to="/transactions" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'transactions' })}><IconTrades /><span>{t('trades')}</span></NavLink>
+        <NavLink to="/market" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'market' })}><IconMarket /><span>{t('market')}</span></NavLink>
+        <NavLink to="/whales" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'whales' })}><IconWhale /><span>{t('whales')}</span></NavLink>
+        <NavLink to="/intel" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'intel' })}><IconIntel /><span>Intel</span></NavLink>
       </nav>
     </div>
   )
