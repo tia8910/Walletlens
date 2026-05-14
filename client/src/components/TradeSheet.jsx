@@ -143,11 +143,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
     const resolvedId = resolveAssetId()
-    if (!resolvedId) return
+    if (!resolvedId) { setPrice(''); return }
+    setPrice('…')
     api.getPrices(resolvedId).then(px => {
       const p = px?.[resolvedId]?.usd ?? px?.[resolvedId]?.price
-      if (p) setPrice(String(p))
-    }).catch(() => {})
+      setPrice(p ? String(p) : '')
+    }).catch(() => { setPrice('') })
   }, [selectedCoin, category, stockTicker, fiatCode]) // eslint-disable-line
 
   // Debounced crypto coin search
@@ -191,7 +192,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   }
 
   async function submit() {
-    if (!asset || !amount || !price) { setMsg('Fill all fields.'); return }
+    if (!asset || !amount || !price || price === '…') { setMsg('Fill all fields.'); return }
     setBusy(true); setMsg('')
     try {
       const wid = walletId || (wallets[0]?.id ?? '1')
@@ -294,7 +295,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       key={c.key}
                       className={`bs-cat-btn ${category === c.key ? 'active' : ''}`}
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
-                      onClick={() => { setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setPrice(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
+                      onClick={() => { setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
                     >
                       <span>{c.icon}</span> {c.label}
                     </button>
@@ -319,7 +320,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
                     </div>
                     {!prefillCoin && (
-                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setPrice('') }}>
+                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch('') }}>
                         {IcoClose}
                       </button>
                     )}
@@ -389,7 +390,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                         <button key={t.ticker}
                           className={`bs-ticker-btn ${stockTicker === t.ticker ? 'active' : ''}`}
                           title={t.name}
-                          onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker); setPrice('') }}>
+                          onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
                           <span className="bs-ticker-sym">{t.ticker}</span>
                           <span className="bs-ticker-name">{t.name.length > 12 ? t.name.slice(0,11)+'…' : t.name}</span>
                         </button>
@@ -413,7 +414,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     {POPULAR_FIAT.map(f => (
                       <button key={f.code}
                         className={`bs-chip ${fiatCode === f.code ? 'active' : ''}`}
-                        onClick={() => { setFiatCode(f.code); setPrice('') }}>
+                        onClick={() => { setFiatCode(f.code) }}>
                         {f.symbol} {f.code}
                       </button>
                     ))}
@@ -454,9 +455,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   value={amount} onChange={e => setAmount(e.target.value)} />
               </div>
               <div className="bs-field">
-                <label className="bs-label">Price (USD)</label>
-                <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
-                  value={price} onChange={e => setPrice(e.target.value)} />
+                <label className="bs-label">Price (USD){price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#34d399'}}>fetching…</span>}</label>
+                <input className="bs-input" type={price === '…' ? 'text' : 'number'} placeholder="0.00" min="0" step="any"
+                  value={price === '…' ? '' : price} onChange={e => setPrice(e.target.value)}
+                  disabled={price === '…'} />
               </div>
             </div>
 
