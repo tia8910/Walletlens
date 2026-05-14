@@ -7,11 +7,32 @@
 // Leave empty ('') to skip and fall through to other sources.
 const STOCK_WORKER_URL = ''  // set to 'https://stock-price.walletlens.workers.dev' after deploying
 
-// ── Free stock price APIs (CORS-enabled, no proxy needed) ────────────────
-// Get your free key at https://finnhub.io  (60 req/min free)
-const FINNHUB_KEY = 'cvab09pr01qt5bk7jq5gcvab09pr01qt5bk7jq60'
-// Backup: https://www.alphavantage.co/support/#api-key  (25 req/day free)
-const ALPHA_VANTAGE_KEY = ''  // set your key here for extra fallback
+// ── Static stock price cache (served from same origin, no CORS) ──────────
+// Populated every 30 min by GitHub Actions workflow (update-stock-prices.yml)
+let staticStockPrices = null
+let staticStockPricesTime = 0
+const STATIC_PRICES_TTL = 25 * 60 * 1000 // 25 min
+
+async function fetchStaticStockPrices() {
+  const now = Date.now()
+  if (staticStockPrices && now - staticStockPricesTime < STATIC_PRICES_TTL) return staticStockPrices
+  try {
+    const res = await fetchWithTimeout('/stock-prices.json', 5000)
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.prices && typeof data.prices === 'object') {
+        staticStockPrices = data.prices
+        staticStockPricesTime = now
+        return staticStockPrices
+      }
+    }
+  } catch { /* file not deployed yet */ }
+  return null
+}
+
+// ── Optional external API keys (fallback only) ────────────────────────────
+const FINNHUB_KEY = ''       // https://finnhub.io (60 req/min free)
+const ALPHA_VANTAGE_KEY = '' // https://alphavantage.co (25 req/day free)
 
 import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -270,6 +291,14 @@ async function fetchStockLive(coinId) {
   }
 
   const tickerUp = ticker.toUpperCase();
+
+  // ── 0. Static prices file served from same origin (no CORS, always works) ──
+  const staticPrices = await fetchStaticStockPrices()
+  if (staticPrices?.[coinId]) {
+    const p = staticPrices[coinId]
+    stockCache[coinId] = p; stockCacheTime[coinId] = now;
+    return p;
+  }
 
   // ── 1. Cloudflare Worker (our own CORS-safe proxy, most reliable on mobile) ──
   if (STOCK_WORKER_URL) {
