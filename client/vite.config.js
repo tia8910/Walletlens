@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
+    target: 'esnext',
     outDir: 'dist',
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {
