@@ -11,6 +11,7 @@ import TradeTips from '../components/TradeTips'
 import CoinLogo from '../components/CoinLogo'
 import PriceAlerts from '../components/PriceAlerts'
 import RiskScanner from '../components/RiskScanner'
+import AIDecisionEngine from '../components/AIDecisionEngine'
 import { useLanguage } from '../LanguageContext'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -838,6 +839,58 @@ function StatCard({ label, value, sub, color }) {
   )
 }
 
+// ── Portfolio Heatmap ─────────────────────────────────────────────────────
+function PortfolioHeatmap({ enriched, prices, totalValue }) {
+  const cells = enriched
+    .filter(h => h.value > 0)
+    .map(h => {
+      const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+      const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
+      const intensity = Math.min(Math.abs(chg) / 20, 1)
+      const color = chg >= 0
+        ? `rgba(52,211,153,${0.15 + intensity * 0.65})`
+        : `rgba(248,113,113,${0.15 + intensity * 0.65})`
+      return { ...h, chg, sizePct, color }
+    })
+    .sort((a, b) => b.sizePct - a.sizePct)
+
+  if (!cells.length) return null
+
+  return (
+    <div className="glass-card heatmap-card">
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700 }}>🗺️ Portfolio Heatmap</h3>
+      <div className="heatmap-grid">
+        {cells.map((c, i) => {
+          const minSize = 60
+          const size = Math.max(minSize, Math.min(180, (c.sizePct / 100) * 800))
+          return (
+            <div
+              key={c.coin_id}
+              className="heatmap-cell"
+              style={{ background: c.color, width: size, height: size }}
+              title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
+            >
+              {c.coin_image && <img src={c.coin_image} alt="" className="heatmap-img" style={{ width: Math.min(28, size * 0.35), height: Math.min(28, size * 0.35) }} />}
+              <div className="heatmap-sym" style={{ fontSize: size < 80 ? '0.6rem' : '0.75rem' }}>{c.coin_symbol?.toUpperCase()}</div>
+              <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: size < 80 ? '0.55rem' : '0.7rem' }}>
+                {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
+              </div>
+              {size >= 90 && (
+                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{c.sizePct.toFixed(1)}% of portfolio</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="heatmap-legend">
+        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
+        <span style={{ color:'rgba(255,255,255,0.3)' }}>Darker = bigger move</span>
+        <span style={{ color:'rgba(52,211,153,0.9)' }}>■ Gaining</span>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -1102,6 +1155,22 @@ export default function Dashboard() {
               <StatCard label={t('assets')}      value={enriched.length} />
               <StatCard label={t('tradesCount')} value={transactions.length} />
             </div>
+          )}
+
+          {/* AI Decision Engine */}
+          {!isDemo && enriched.length > 0 && (
+            <AIDecisionEngine
+              enriched={enriched}
+              prices={prices}
+              transactions={transactions}
+              totalValue={totalValue}
+              totalInvested={totalInvested}
+            />
+          )}
+
+          {/* Portfolio Heatmap */}
+          {!isDemo && enriched.length >= 2 && !pricesFailed && (
+            <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
           )}
 
           {/* Top Movers */}
