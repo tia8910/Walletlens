@@ -3577,6 +3577,22 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.78rem; color: rgba(255,255,255,0.45); line-height: 1.55;
   margin: 0 0 0.75rem;
 }
+.dvx-api-key-box {
+  background: rgba(52,211,153,0.05);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.dvx-api-key-title {
+  font-size: 0.9rem; font-weight: 700; color: #e2e8f0;
+  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;
+}
+.dvx-badge-ok {
+  font-size: 0.7rem; background: rgba(52,211,153,0.15);
+  color: #34d399; border: 1px solid rgba(52,211,153,0.3);
+  border-radius: 99px; padding: 0.1rem 0.5rem; font-weight: 600;
+}
 .dvx-code-box {
   background: rgba(6,14,10,0.95);
   border: 1px solid rgba(52,211,153,0.35);
