@@ -182,9 +182,10 @@ export default function Alpha() {
 
       if (!ids.length) return
 
+      const idsStr = ids.join(',')
       const [priceData, imageData] = await Promise.all([
-        api.getPrices(ids).catch(() => ({})),
-        api.getCoinImages(ids).catch(() => ({})),
+        api.getPrices(idsStr).catch(() => ({})),
+        api.getCoinImages(idsStr).catch(() => ({})),
       ])
 
       setPrices(priceData)
