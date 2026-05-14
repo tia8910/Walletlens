@@ -73,6 +73,209 @@ function getDailyQuestion() {
   return QUESTIONS[daysSinceEpoch % QUESTIONS.length]
 }
 
+// ── Game: Crypto Guessr ───────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+const GUESSR_COINS = [
+  { name: 'Bitcoin',   symbol: 'BTC', emoji: '🟠', clues: ['I was created in 2009 by an anonymous person', 'My supply is capped at 21 million coins', 'I pioneered the blockchain technology', 'I am the largest cryptocurrency by market cap', 'My symbol comes from the first letter of my name'], wrong: ['Ethereum', 'Litecoin', 'Monero'] },
+  { name: 'Ethereum',  symbol: 'ETH', emoji: '💎', clues: ['I introduced smart contracts to the world', 'Vitalik Buterin co-created me in 2015', 'I transitioned from Proof of Work to Proof of Stake', 'DeFi and NFTs were born on my network', 'Gas fees are paid in my native token'], wrong: ['Solana', 'Cardano', 'Avalanche'] },
+  { name: 'Solana',    symbol: 'SOL', emoji: '🌊', clues: ['I can process over 65,000 transactions per second', 'I use a Proof of History consensus mechanism', 'I am known for extremely low transaction fees', 'I was founded by Anatoly Yakovenko in 2020', 'FTX\'s collapse caused my price to crash heavily'], wrong: ['Ethereum', 'Avalanche', 'Polkadot'] },
+  { name: 'Dogecoin',  symbol: 'DOGE', emoji: '🐶', clues: ['I started as an internet meme in 2013', 'My logo features a Shiba Inu dog', 'Elon Musk tweets about me frequently', 'I was created by Billy Markus and Jackson Palmer', 'I have no supply cap — new coins are minted every block'], wrong: ['Shiba Inu', 'Floki', 'SafeMoon'] },
+  { name: 'XRP',       symbol: 'XRP', emoji: '💧', clues: ['I was designed for fast cross-border payments', 'Ripple Labs created and holds a large supply of me', 'Banks use my network for international settlements', 'The SEC sued my creator claiming I am a security', 'Transactions on my network settle in 3-5 seconds'], wrong: ['Stellar', 'Litecoin', 'SWIFT'] },
+  { name: 'Cardano',   symbol: 'ADA', emoji: '🔵', clues: ['My name comes from an Italian mathematician', 'Charles Hoskinson co-founded Ethereum before creating me', 'I use peer-reviewed academic research for development', 'My native token is named after Ada Lovelace', 'I use the Ouroboros Proof of Stake protocol'], wrong: ['Polkadot', 'Algorand', 'Tezos'] },
+  { name: 'Chainlink', symbol: 'LINK', emoji: '🔗', clues: ['I connect smart contracts to real-world data', 'I am the leading decentralized oracle network', 'Without me, smart contracts would be blind to off-chain events', 'My nodes are run by independent node operators', 'Price feeds for DeFi protocols rely heavily on me'], wrong: ['The Graph', 'Band Protocol', 'API3'] },
+  { name: 'Polkadot',  symbol: 'DOT', emoji: '⚫', clues: ['Gavin Wood, an Ethereum co-founder, created me', 'I enable different blockchains to communicate with each other', 'Projects build on me by renting "parachain" slots', 'My relay chain coordinates the whole network', 'I use a nominated Proof of Stake consensus'], wrong: ['Cosmos', 'Avalanche', 'Kusama'] },
+  { name: 'Avalanche', symbol: 'AVAX', emoji: '🔺', clues: ['I can finalize transactions in under 2 seconds', 'I launched in 2020 and quickly became an Ethereum rival', 'I have three built-in blockchains: X, P, and C chains', 'I use the Avalanche consensus protocol', 'My name suggests speed and force'], wrong: ['Solana', 'Fantom', 'Near Protocol'] },
+  { name: 'Uniswap',   symbol: 'UNI', emoji: '🦄', clues: ['My mascot is a mythical horse with a horn', 'I am the most popular decentralized exchange on Ethereum', 'I use an Automated Market Maker model', 'I replaced order books with liquidity pools', 'Hayden Adams launched me in 2018'], wrong: ['SushiSwap', 'Curve', 'Balancer'] },
+  { name: 'Shiba Inu', symbol: 'SHIB', emoji: '🐕', clues: ['I was created anonymously in 2020 as a DOGE competitor', 'Half my supply was sent to Vitalik Buterin who burned most of it', 'My community calls themselves the "SHIB Army"', 'I trade at fractions of a cent with trillions in supply', 'I have a DEX called ShibaSwap'], wrong: ['Dogecoin', 'Floki', 'Baby Doge'] },
+  { name: 'Tether',    symbol: 'USDT', emoji: '💵', clues: ['I am pegged 1:1 to the US Dollar', 'I am the largest stablecoin by market cap', 'Tether Limited issues and backs me', 'I am the most traded cryptocurrency by volume', 'Controversy surrounds whether I am fully backed by reserves'], wrong: ['USD Coin', 'DAI', 'BUSD'] },
+  { name: 'Litecoin',  symbol: 'LTC', emoji: '🥈', clues: ['Charlie Lee, a former Google engineer, created me', 'I was launched in 2011 as the "silver to Bitcoin\'s gold"', 'I have a max supply of 84 million coins', 'My block time is 4x faster than Bitcoin', 'I use the Scrypt hashing algorithm'], wrong: ['Bitcoin Cash', 'Bitcoin SV', 'Dash'] },
+  { name: 'Cosmos',    symbol: 'ATOM', emoji: '🌌', clues: ['My vision is an "Internet of Blockchains"', 'I let independent chains communicate via IBC protocol', 'Tendermint BFT is my core consensus engine', 'My hub-and-zone architecture powers cross-chain transfers', 'Jae Kwon and Ethan Buchman co-founded me'], wrong: ['Polkadot', 'Algorand', 'Harmony'] },
+  { name: 'NEAR Protocol', symbol: 'NEAR', emoji: '🌐', clues: ['I use human-readable account names like "alice.near"', 'My sharding approach is called Nightshade', 'I focus on developer and user experience above all', 'I am carbon neutral and environmentally friendly', 'Aurora, an Ethereum-compatible layer, runs on top of me'], wrong: ['Fantom', 'Harmony', 'Algorand'] },
+]
+
+const GUESSR_ROUNDS = 5
+
+function CryptoGuessr({ onIqGain }) {
+  const [phase, setPhase] = useState('idle') // idle | playing | over
+  const [round, setRound] = useState(0)
+  const [clueIdx, setClueIdx] = useState(0)
+  const [score, setScore] = useState(0)
+  const [roundResult, setRoundResult] = useState(null) // null | 'correct' | 'wrong'
+  const [chosen, setChosen] = useState(null)
+  const [coins, setCoins] = useState([])
+  const [highScore, setHighScore] = useState(() => {
+    try { return parseInt(localStorage.getItem('wl_guessr_hs') || '0') } catch { return 0 }
+  })
+
+  function startGame() {
+    const picked = shuffle(GUESSR_COINS).slice(0, GUESSR_ROUNDS)
+    setCoins(picked)
+    setRound(0); setClueIdx(0); setScore(0); setRoundResult(null); setChosen(null)
+    setPhase('playing')
+    track('guessr_start')
+  }
+
+  function getOptions(coin) {
+    const wrongs = shuffle(coin.wrong).slice(0, 3)
+    return shuffle([coin.name, ...wrongs])
+  }
+
+  function revealClue() {
+    if (clueIdx < 4) setClueIdx(c => c + 1)
+  }
+
+  function handleGuess(name) {
+    if (roundResult !== null) return
+    const coin = coins[round]
+    const correct = name === coin.name
+    const pts = correct ? [50, 40, 30, 20, 10][clueIdx] : 0
+    setChosen(name)
+    setRoundResult(correct ? 'correct' : 'wrong')
+    if (pts > 0) setScore(s => s + pts)
+  }
+
+  function nextRound() {
+    if (round + 1 >= GUESSR_ROUNDS) {
+      endGame()
+    } else {
+      setRound(r => r + 1)
+      setClueIdx(0)
+      setRoundResult(null)
+      setChosen(null)
+    }
+  }
+
+  function endGame() {
+    setPhase('over')
+    const finalScore = score
+    if (finalScore > highScore) {
+      setHighScore(finalScore)
+      try { localStorage.setItem('wl_guessr_hs', String(finalScore)) } catch {}
+    }
+    const iqGain = Math.floor(finalScore / 5)
+    if (iqGain > 0) onIqGain(iqGain)
+    track('guessr_end', { score: finalScore })
+  }
+
+  if (phase === 'idle') {
+    return (
+      <div className="guessr-idle">
+        <div className="guessr-idle-icon">🕵️</div>
+        <div className="guessr-idle-title">Crypto Guessr</div>
+        <div className="guessr-idle-sub muted">
+          A mystery coin is described clue by clue.<br />
+          Guess earlier = more points. 5 rounds per game.
+        </div>
+        <div className="guessr-pts-table">
+          {['50 pts — 1st clue', '40 pts — 2nd clue', '30 pts — 3rd clue', '20 pts — 4th clue', '10 pts — 5th clue'].map(r => (
+            <div key={r} className="guessr-pts-row muted">{r}</div>
+          ))}
+        </div>
+        <div className="blitz-hs-row">
+          <span className="muted">Best score:</span>
+          <span className="blitz-hs">{highScore} pts</span>
+        </div>
+        <button className="blitz-start-btn" onClick={startGame}>Start Game 🕵️</button>
+      </div>
+    )
+  }
+
+  if (phase === 'over') {
+    const isNewHs = score >= highScore && score > 0
+    return (
+      <div className="blitz-over">
+        <div className="blitz-over-icon">{isNewHs ? '🏆' : '🕵️'}</div>
+        <div className="blitz-over-score">{score}</div>
+        <div className="blitz-over-label">points</div>
+        {isNewHs && <div className="blitz-new-hs">🎉 New high score!</div>}
+        <div className="blitz-iq-gain muted">+{Math.floor(score / 5)} IQ earned</div>
+        <div className="blitz-hs-row">
+          <span className="muted">Best:</span>
+          <span className="blitz-hs">{Math.max(score, highScore)} pts</span>
+        </div>
+        <button className="blitz-start-btn" onClick={startGame}>Play Again 🕵️</button>
+      </div>
+    )
+  }
+
+  const coin = coins[round]
+  if (!coin) return null
+  const clues = coin.clues.slice(0, clueIdx + 1)
+  const options = getOptions(coin)
+  const ptsAvailable = [50, 40, 30, 20, 10][clueIdx]
+
+  return (
+    <div className="guessr-playing">
+      <div className="guessr-header">
+        <div className="guessr-round muted">Round {round + 1} / {GUESSR_ROUNDS}</div>
+        <div className="guessr-score-pill">{score} pts</div>
+      </div>
+
+      <div className="guessr-mystery-coin">
+        <div className="guessr-mystery-icon">❓</div>
+        <div className="guessr-mystery-label">Mystery Coin</div>
+        <div className="guessr-pts-badge">+{ptsAvailable} pts if correct now</div>
+      </div>
+
+      <div className="guessr-clues">
+        {clues.map((clue, i) => (
+          <div key={i} className="guessr-clue">
+            <span className="guessr-clue-num">{i + 1}</span>
+            <span>{clue}</span>
+          </div>
+        ))}
+      </div>
+
+      {roundResult === null && clueIdx < 4 && (
+        <button className="guessr-reveal-btn" onClick={revealClue}>
+          Reveal next clue (−10 pts)
+        </button>
+      )}
+
+      {roundResult === null && (
+        <div className="guessr-options">
+          {options.map(name => (
+            <button key={name} className="guessr-option" onClick={() => handleGuess(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {roundResult !== null && (
+        <div className={`guessr-result ${roundResult === 'correct' ? 'guessr-result-correct' : 'guessr-result-wrong'}`}>
+          <div className="guessr-result-row">
+            <span>{roundResult === 'correct' ? '✅' : '❌'}</span>
+            <span>
+              {roundResult === 'correct'
+                ? `Correct! +${ptsAvailable} pts`
+                : `Wrong. It was ${coin.emoji} ${coin.name} (${coin.symbol})`}
+            </span>
+          </div>
+          <div className="guessr-result-options">
+            {options.map(name => (
+              <div key={name} className={`guessr-result-opt ${name === coin.name ? 'guessr-result-correct-opt' : name === chosen ? 'guessr-result-wrong-opt' : ''}`}>
+                {name}
+              </div>
+            ))}
+          </div>
+          <button className="blitz-start-btn" style={{ marginTop: '1rem' }} onClick={nextRound}>
+            {round + 1 >= GUESSR_ROUNDS ? 'See Results' : 'Next Round →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Achievements definition ───────────────────────────────────────────────
 const ACHIEVEMENTS = [
   { id: 'first_lesson',    icon: '📖', title: 'First Lesson',       desc: 'Complete your first daily challenge',         pts: 50  },
@@ -109,7 +312,7 @@ export default function Academy() {
   const [selected, setSelected]   = useState(null)
   const [timeLeft, setTimeLeft]   = useState(10)
   const [newBadges, setNewBadges] = useState([])
-  const [activeTab, setActiveTab] = useState('challenge') // challenge | badges | leaderboard
+  const [activeTab, setActiveTab] = useState('challenge') // challenge | badges | game
   const timerRef = useRef(null)
   const startTime = useRef(null)
 
@@ -289,10 +492,14 @@ export default function Academy() {
 
       {/* Tabs */}
       <div className="acad-tabs">
-        {['challenge', 'badges'].map(tab => (
-          <button key={tab} className={`acad-tab ${activeTab === tab ? 'acad-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab)}>
-            {tab === 'challenge' ? '📅 Daily Challenge' : `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})`}
+        {[
+          { id: 'challenge', label: '📅 Daily Challenge' },
+          { id: 'badges',    label: `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})` },
+          { id: 'game',      label: '🕵️ Crypto Guessr' },
+        ].map(tab => (
+          <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -391,6 +598,19 @@ export default function Academy() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── GAME TAB ── */}
+      {activeTab === 'game' && (
+        <div className="glass-card" style={{ padding: '1.25rem' }}>
+          <CryptoGuessr onIqGain={pts => {
+            setStore(prev => {
+              const updated = { ...prev, iq: (prev.iq || 0) + pts }
+              saveStore(updated)
+              return updated
+            })
+          }} />
         </div>
       )}
 
