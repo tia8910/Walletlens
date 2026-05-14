@@ -75,7 +75,7 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 // the browser silently stalls (blocked extension, slow CDN).
 //
 // Order: provided URL → jsDelivr SVG → CoinCap → cryptoicons → generated gradient
-const STAGE_TIMEOUT_MS = 2500
+const STAGE_TIMEOUT_MS = 1500
 
 const CoinLogo = memo(function CoinLogo({
   image,
@@ -161,7 +161,7 @@ const CoinLogo = memo(function CoinLogo({
     return (
       <img
         {...common}
-        src={`https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/${sym}.svg`}
+        src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`}
         onError={() => setStage(2)}
       />
     )
@@ -179,7 +179,7 @@ const CoinLogo = memo(function CoinLogo({
     return (
       <img
         {...common}
-        src={`https://cryptoicons.org/api/icon/${sym}/200`}
+        src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`}
         onError={() => setStage(4)}
       />
     )
