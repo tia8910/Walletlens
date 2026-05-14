@@ -79,6 +79,14 @@ export const translations = {
     feat11Desc: 'Weighted risk score across your whole portfolio. See counts by grade (SAFE / MODERATE / HIGH RISK / DANGER) and your most dangerous holding at a glance.',
     feat12Title: '100% Private by Design',
     feat12Desc: 'Zero account. Zero cloud sync. Every byte stays on your device. Not even we can see your portfolio.',
+    feat13Title: 'WalletLens Alpha',
+    feat13Desc: 'Deep-dive analytics for your crypto holdings. Live price enrichment, P&L per coin, momentum signals, and AI-powered HOLD/ADD/TRIM/SELL verdicts — all from your real portfolio data.',
+    feat14Title: '💡 Investment Hacks',
+    feat14Desc: '18 expert tips across Entry, Risk, Strategy, Portfolio, Profit, Psychology, and Research — each expandable and shareable to X as a branded image with one tap.',
+    feat15Title: '🎮 Crypto Guessr Game',
+    feat15Desc: 'Test your crypto knowledge with a 5-round guessing game. Earn up to 50 points per round from clues. Builds real market intuition while keeping it fun.',
+    feat16Title: '📈 Multi-Timeframe Chart',
+    feat16Desc: 'Switch your performance chart between 4H, 1D, 7D, and 30D. Each timeframe shows a distinct volatile wave shape — sharp peaks and dips like a real crypto chart.',
 
     // ── Landing — AI showcase ────────────────────────────────────────────────
     aiLabel: 'AI INTELLIGENCE',
@@ -309,6 +317,14 @@ export const translations = {
     feat11Desc: 'درجة مخاطر موزونة عبر محفظتك كاملة. شاهد الأعداد حسب التصنيف (آمن / معتدل / عالي المخاطر / خطر) وأخطر أصل لديك بلمحة واحدة.',
     feat12Title: 'خصوصية تامة بالتصميم',
     feat12Desc: 'بلا حساب. بلا مزامنة سحابية. كل بايت يبقى على جهازك. حتى نحن لا نستطيع رؤية محفظتك.',
+    feat13Title: 'واليت لنس ألفا',
+    feat13Desc: 'تحليل معمّق لحيازاتك من العملات الرقمية. إثراء الأسعار الحية، والربح/الخسارة لكل عملة، وإشارات الزخم، وأحكام AI للاحتفاظ/الإضافة/التقليص/البيع — كلها من بياناتك الحقيقية.',
+    feat14Title: '💡 حيل الاستثمار',
+    feat14Desc: '18 نصيحة خبراء تشمل الدخول، والمخاطر، والاستراتيجية، والمحفظة، والأرباح، وعلم النفس، والبحث — كل منها قابل للتوسع والمشاركة على X كصورة مميزة بلمسة واحدة.',
+    feat15Title: '🎮 لعبة Crypto Guessr',
+    feat15Desc: 'اختبر معرفتك بالعملات الرقمية بلعبة تخمين من 5 جولات. اجمع حتى 50 نقطة لكل جولة من خلال المؤشرات. تبني حدسًا حقيقيًا بالسوق مع المتعة.',
+    feat16Title: '📈 مخطط متعدد الأطر الزمنية',
+    feat16Desc: 'بدّل مخطط الأداء بين 4 ساعات وهيوم و7 أيام و30 يومًا. كل إطار زمني يعرض شكل موجة متقلب مميز — قمم وقيعان حادة كمخطط العملات الحقيقي.',
 
     // ── Landing — AI showcase ────────────────────────────────────────────────
     aiLabel: 'ذكاء اصطناعي',
