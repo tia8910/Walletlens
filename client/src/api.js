@@ -1366,4 +1366,51 @@ export const api = {
     }
     return wallets[0];
   },
+
+  // Multi-chain whale feed — BTC (blockchain.info) + ETH (Blockchair free tier)
+  getWhaleAlertFeed: async (minUsd = 500_000) => {
+    const [btcPrice, ethPrice, btcData, ethData] = await Promise.all([
+      fetchJSON(`${COINGECKO_BASE}/simple/price?ids=bitcoin&vs_currencies=usd`).catch(() => null),
+      fetchJSON(`${COINGECKO_BASE}/simple/price?ids=ethereum&vs_currencies=usd`).catch(() => null),
+      fetchJSON('https://blockchain.info/unconfirmed-transactions?format=json&cors=true').catch(() => null),
+      fetchJSON('https://api.blockchair.com/ethereum/mempool/transactions?limit=100&s=value(desc)').catch(() => null),
+    ])
+    const btcUsd = btcPrice?.bitcoin?.usd || 0
+    const ethUsd = ethPrice?.ethereum?.usd || 0
+    const SAT = 1e8
+    const WEI = 1e18
+    const out = []
+
+    for (const tx of (btcData?.txs || [])) {
+      const totalSat = (tx.out || []).reduce((s, o) => s + (o.value || 0), 0)
+      const btc = totalSat / SAT
+      const usd = btc * btcUsd
+      if (usd >= minUsd) out.push({ hash: tx.hash, chain: 'BTC', symbol: '₿', amount: btc, usd, time: tx.time ? new Date(tx.time * 1000) : new Date() })
+    }
+
+    for (const tx of (ethData?.data || [])) {
+      const eth = (tx.value || 0) / WEI
+      const usd = eth * ethUsd
+      if (usd >= minUsd) out.push({ hash: tx.hash, chain: 'ETH', symbol: 'Ξ', amount: eth, usd, time: new Date() })
+    }
+
+    return out.sort((a, b) => b.usd - a.usd).slice(0, 20)
+  },
+
+  // Top exchanges by 24h volume with net flow signal from CoinGecko
+  getExchangeFlows: async () => {
+    const data = await fetchJSON(`${COINGECKO_BASE}/exchanges?per_page=12&page=1`)
+    if (!Array.isArray(data)) return []
+    return data.map(e => ({
+      id: e.id,
+      name: e.name,
+      image: e.image,
+      volume24h: e.trade_volume_24h_btc || 0,
+      volumeNorm: e.trade_volume_24h_btc_normalized || 0,
+      trustScore: e.trust_score || 0,
+      trustRank: e.trust_score_rank || 99,
+      url: e.url,
+      country: e.country || '',
+    }))
+  },
 };
