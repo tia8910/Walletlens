@@ -6192,3 +6192,39 @@ input[type="date"] { color-scheme: dark; }
   background: rgba(255,255,255,0.09);
   border-color: var(--ex-color, rgba(255,255,255,0.2));
 }
+
+/* ── Partner links — Buy/Sell sheet ────────────────────────────────────── */
+.bs-partner-wrap { margin-top: 0.75rem; text-align: center; }
+.bs-partner-label { font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-bottom: 0.45rem; }
+.bs-partner-row { display: flex; gap: 0.4rem; justify-content: center; }
+.bs-partner-btn {
+  flex: 1;
+  padding: 0.4rem 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ex-color, #fff);
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.bs-partner-btn:hover { background: rgba(255,255,255,0.09); border-color: var(--ex-color, rgba(255,255,255,0.2)); }
+
+/* ── Partner links — Landing page ──────────────────────────────────────── */
+.lp-partner-row { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: 1.25rem 0 0.5rem; }
+.lp-partner-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+.lp-partner-btns { display: flex; gap: 0.5rem; }
+.lp-partner-btn {
+  padding: 0.45rem 1.1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ex-color, #fff);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.lp-partner-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--ex-color); transform: translateY(-1px); }
