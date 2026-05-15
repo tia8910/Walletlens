@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS } from '../api'
 import CoinLogo from './CoinLogo'
 import { track } from '../analytics'
+import ExchangePartners from './ExchangePartners'
 
 const IcoClose  = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 const IcoSearch = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -559,23 +560,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
 
-            {/* Partner exchanges */}
-            <div className="bs-partner-wrap">
-              <p className="bs-partner-label">Don't have an account? Trade on</p>
-              <div className="bs-partner-row">
-                {[
-                  { name: 'Binance', color: '#f0b90b', url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy' },
-                  { name: 'OKX',     color: '#fff',    url: 'https://okx.com/join/85929296' },
-                  { name: 'Bybit',   color: '#f7a600', url: 'https://www.bybit.com/invite?ref=3ORQD9' },
-                ].map(ex => (
-                  <a key={ex.name} href={ex.url} target="_blank" rel="noopener noreferrer"
-                    className="bs-partner-btn"
-                    style={{ '--ex-color': ex.color }}
-                    onClick={() => track('exchange_referral_click', { exchange: ex.name, source: type })}
-                  >{ex.name}</a>
-                ))}
-              </div>
-            </div>
+            <ExchangePartners compact source={type} />
           </div>
         )}
       </div>

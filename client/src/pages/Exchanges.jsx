@@ -1,33 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { track } from '../analytics'
-
-const PARTNER_EXCHANGES = [
-  {
-    name: 'Binance',
-    desc: 'World\'s largest crypto exchange. Low fees, 350+ coins.',
-    bonus: 'Earn USDC rewards on sign-up',
-    color: '#f0b90b',
-    url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy',
-    logo: 'B',
-  },
-  {
-    name: 'OKX',
-    desc: 'Top-tier exchange with advanced trading tools & Web3 wallet.',
-    bonus: 'Mystery box rewards for new users',
-    color: '#fff',
-    url: 'https://okx.com/join/85929296',
-    logo: 'O',
-  },
-  {
-    name: 'Bybit',
-    desc: 'Fast derivatives & spot trading, deep liquidity.',
-    bonus: 'Up to $30,000 welcome bonus',
-    color: '#f7a600',
-    url: 'https://www.bybit.com/invite?ref=3ORQD9',
-    logo: 'By',
-  },
-]
+import ExchangePartners from '../components/ExchangePartners'
 
 export default function Exchanges() {
   const [exchanges, setExchanges] = useState([])
@@ -75,33 +48,7 @@ export default function Exchanges() {
       </div>
 
       {/* ── Partner Exchanges ── */}
-      <div className="partner-exchanges-section">
-        <p className="partner-exchanges-label">Recommended Exchanges</p>
-        <div className="partner-exchanges-grid">
-          {PARTNER_EXCHANGES.map(ex => (
-            <a
-              key={ex.name}
-              href={ex.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="partner-exchange-card"
-              onClick={() => track('exchange_referral_click', { exchange: ex.name })}
-            >
-              <div className="partner-ex-logo" style={{ color: ex.color, borderColor: ex.color + '44' }}>
-                {ex.logo}
-              </div>
-              <div className="partner-ex-body">
-                <div className="partner-ex-name">{ex.name}</div>
-                <div className="partner-ex-desc">{ex.desc}</div>
-                <div className="partner-ex-bonus">🎁 {ex.bonus}</div>
-              </div>
-              <div className="partner-ex-cta" style={{ color: ex.color }}>
-                Sign Up →
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
+      <ExchangePartners source="exchanges" />
 
       <p className="muted">Connect your exchange accounts to sync balances and import transactions. API keys are stored locally.</p>
 

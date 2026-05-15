@@ -6228,3 +6228,131 @@ input[type="date"] { color-scheme: dark; }
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 .lp-partner-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--ex-color); transform: translateY(-1px); }
+
+/* ══ ExchangePartners component ══════════════════════════════════════════ */
+
+/* Full cards */
+.ep-cards-wrap { margin-bottom: 1.25rem; }
+.ep-cards-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 0.65rem;
+}
+.ep-cards-grid { display: flex; flex-direction: column; gap: 0.65rem; }
+
+.ep-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--ex-bg);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 0;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 0 0 0 var(--ex-glow);
+}
+.ep-card:hover {
+  transform: translateY(-2px) scale(1.005);
+  border-color: var(--ex-color);
+  box-shadow: 0 8px 32px var(--ex-glow), 0 0 0 1px var(--ex-color);
+}
+.ep-card-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ep-card:hover .ep-card-shine { opacity: 1; }
+
+.ep-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+}
+.ep-card-logo {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ep-card-info { flex: 1; min-width: 0; }
+.ep-card-name { font-size: 1rem; font-weight: 800; color: var(--ex-color); line-height: 1.1; }
+.ep-card-tagline { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 0.15rem; }
+.ep-card-arrow { font-size: 1.1rem; color: var(--ex-color); opacity: 0.6; transition: opacity 0.2s, transform 0.2s; }
+.ep-card:hover .ep-card-arrow { opacity: 1; transform: translateX(3px); }
+
+.ep-card-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 0 1rem; }
+.ep-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ep-card-fee {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+}
+.ep-card-bonus {
+  font-size: 0.72rem;
+  color: #34d399;
+  font-weight: 600;
+}
+
+/* Compact strip */
+.ep-strip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+.ep-strip-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+}
+.ep-strip-row { display: flex; gap: 0.4rem; flex: 1; }
+.ep-strip-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.45rem 0.5rem;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.ep-strip-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--ex-color);
+  box-shadow: 0 0 12px var(--ex-glow);
+  transform: translateY(-1px);
+}
+.ep-strip-logo { display: flex; align-items: center; width: 18px; height: 18px; overflow: hidden; }
+.ep-strip-logo svg { width: 18px; height: 18px; }
+.ep-strip-name { font-size: 0.76rem; font-weight: 700; }
