@@ -75,6 +75,7 @@ export function useBiometricLock() {
       track('biometric_unlock_success')
     } catch (e) {
       track('biometric_unlock_fail')
+      throw e
     }
   }
 
@@ -92,11 +93,23 @@ export function useBiometricLock() {
 // Full-screen lock overlay
 export function BiometricLockScreen({ onUnlock }) {
   const [trying, setTrying] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   async function attempt() {
     setTrying(true)
-    await onUnlock()
+    setFailed(false)
+    try {
+      await onUnlock()
+    } catch {
+      setFailed(true)
+    }
     setTrying(false)
+  }
+
+  function disableAndEnter() {
+    localStorage.removeItem('wl_biometric_enabled')
+    sessionStorage.removeItem('wl_biometric_unlocked')
+    window.location.reload()
   }
 
   return (
@@ -128,6 +141,21 @@ export function BiometricLockScreen({ onUnlock }) {
         <span style={{ fontSize: '1.2rem' }}>👆</span>
         {trying ? 'Verifying…' : 'Use Face ID / Touch ID'}
       </button>
+      {failed && (
+        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.75rem' }}>
+            Passkey not available on this device
+          </div>
+          <button onClick={disableAndEnter} style={{
+            background: 'transparent', color: 'rgba(255,255,255,0.45)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '8px', padding: '0.45rem 1rem',
+            fontSize: '0.82rem', cursor: 'pointer',
+          }}>
+            Disable lock &amp; enter
+          </button>
+        </div>
+      )}
     </div>
   )
 }
