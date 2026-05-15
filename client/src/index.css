@@ -5691,3 +5691,14 @@ input[type="date"] { color-scheme: dark; }
   cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
 .lp-share-x-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(0,0,0,0.6); }
+
+.dvx-weekly-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  font-size: 1rem; cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.dvx-weekly-btn:hover { background: rgba(255,255,255,0.12); }
