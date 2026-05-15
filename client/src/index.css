@@ -6404,3 +6404,28 @@ input[type="date"] { color-scheme: dark; }
 .ep-cards-grid-wide {
   grid-template-columns: 1fr;
 }
+
+/* ── Coin notes ── */
+.coin-note-card { margin-bottom: 1rem; }
+.coin-note-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 10px;
+  color: white;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.coin-note-input:focus { border-color: rgba(52,211,153,0.55); }
+.coin-note-input::placeholder { color: rgba(255,255,255,0.25); }
+
+/* ── PWA install prompt slide-up ── */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

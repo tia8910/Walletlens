@@ -38,6 +38,8 @@ export default function AssetDetail() {
   const [wallets, setWallets] = useState([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetType, setSheetType] = useState('buy')
+  const [note, setNote] = useState(() => api.getCoinNote(coinId))
+  const [noteEditing, setNoteEditing] = useState(false)
 
   useEffect(() => { loadData() }, [coinId])
   useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
@@ -253,6 +255,41 @@ export default function AssetDetail() {
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
+
+      {/* Private coin notes */}
+      <div className="glass-card coin-note-card">
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.5rem' }}>
+          <h3 style={{ margin:0, fontSize:'0.95rem' }}>📝 My Notes</h3>
+          {!noteEditing && (
+            <button className="btn-secondary btn-sm" onClick={() => setNoteEditing(true)}>
+              {note ? 'Edit' : '+ Add note'}
+            </button>
+          )}
+        </div>
+        {noteEditing ? (
+          <div>
+            <textarea
+              className="coin-note-input"
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Why did you buy? Price thesis, exit plan, reminders…"
+              rows={4}
+              autoFocus
+            />
+            <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.5rem' }}>
+              <button className="btn-sm" style={{ background:'#34d399', color:'#000', fontWeight:700, border:'none', borderRadius:8, padding:'0.35rem 0.9rem', cursor:'pointer' }}
+                onClick={() => { api.saveCoinNote(coinId, note); setNoteEditing(false) }}>
+                Save
+              </button>
+              <button className="btn-secondary btn-sm" onClick={() => { setNote(api.getCoinNote(coinId)); setNoteEditing(false) }}>Cancel</button>
+            </div>
+          </div>
+        ) : note ? (
+          <p style={{ margin:0, color:'rgba(255,255,255,0.75)', fontSize:'0.88rem', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{note}</p>
+        ) : (
+          <p className="muted" style={{ margin:0, fontSize:'0.85rem' }}>No notes yet. Tap "Add note" to record your thesis.</p>
+        )}
+      </div>
 
       {/* Sell plan / targets */}
       <div className="sell-plan-card">

@@ -12,6 +12,8 @@ import CoinLogo from '../components/CoinLogo'
 import PriceAlerts from '../components/PriceAlerts'
 import RiskScanner from '../components/RiskScanner'
 import AIDecisionEngine from '../components/AIDecisionEngine'
+import AISellPlan from '../components/AISellPlan'
+import { BiometricToggle } from '../components/BiometricLock'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
@@ -215,6 +217,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
 // ── AI Analysis panel ─────────────────────────────────────────────────────
 function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoading }) {
+  // AISellPlan is rendered at the bottom of the AI tab
   const { t } = useLanguage()
   const ai = useMemo(
     () => computeAI(enriched, prices, transactions, totalValue),
@@ -482,6 +485,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           ))}
         </div>
       </div>
+      <AISellPlan enriched={enriched} prices={prices} />
     </div>
   )
 }
@@ -2067,6 +2071,10 @@ export default function Dashboard() {
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
+          </div>
+          <div className="glass-card dvx-form-card">
+            <h3>Security</h3>
+            <BiometricToggle />
           </div>
           <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
         </div>

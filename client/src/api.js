@@ -1490,6 +1490,19 @@ export const api = {
     return out.sort((a, b) => b.usd - a.usd).slice(0, 20)
   },
 
+  // ── Coin notes (private, localStorage) ──
+  getCoinNote: (coinId) => {
+    const notes = loadData('coin_notes', {})
+    return Array.isArray(notes) ? '' : (notes[coinId] || '')
+  },
+  saveCoinNote: (coinId, note) => {
+    const notes = loadData('coin_notes', {})
+    const obj = Array.isArray(notes) ? {} : notes
+    if (note.trim()) obj[coinId] = note.trim()
+    else delete obj[coinId]
+    saveData('coin_notes', obj)
+  },
+
   // Top exchanges by 24h volume with net flow signal from CoinGecko
   getExchangeFlows: async () => {
     const data = await fetchJSON(`${COINGECKO_BASE}/exchanges?per_page=12&page=1`)

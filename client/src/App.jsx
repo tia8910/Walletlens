@@ -10,6 +10,8 @@ import QuickStatsPopup from './components/QuickStatsPopup'
 import OnboardingTour from './components/OnboardingTour'
 import { useLanguage } from './LanguageContext'
 import { track } from './analytics'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
+import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -139,6 +141,9 @@ export default function App() {
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const { t } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
+  const { locked, unlock } = useBiometricLock()
+
+  if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
@@ -215,6 +220,7 @@ export default function App() {
       </main>
 
       <OnboardingTour />
+      <PWAInstallPrompt />
 
       <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
       {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
