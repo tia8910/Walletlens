@@ -154,9 +154,6 @@ export default function App() {
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => { applySettings() }, [])
-
-  if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
-
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
   // Fire GA page_view on every SPA route change
@@ -167,6 +164,8 @@ export default function App() {
       page_title: document.title,
     })
   }, [location.pathname, location.search])
+
+  if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
   if (isLanding) {
     return (
