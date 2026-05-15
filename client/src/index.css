@@ -12,7 +12,8 @@
   --display: 'Inter', 'Cabinet Grotesk', system-ui, sans-serif;
 
   /* Surface — dark glass */
-  --bg: #000000;
+  --bg: #040d0a;
+  --card-bg: rgba(15, 23, 20, 0.92);
   --bg2: rgba(15, 23, 20, 0.92);
   --bg3: #0a180e;
   --bg4: #0d1f12;
@@ -2927,7 +2928,7 @@ tr:last-child td { border-bottom: none; }
 @keyframes dash-v2-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 .glass-card {
-  background: rgba(15, 23, 20, 0.92);
+  background: var(--card-bg, rgba(15, 23, 20, 0.92));
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid rgba(52, 211, 153, 0.45);
