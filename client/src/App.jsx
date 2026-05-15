@@ -12,6 +12,7 @@ import { useLanguage } from './LanguageContext'
 import { track } from './analytics'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
+import { applySettings } from './settingsUtils'
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -23,6 +24,7 @@ const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
+const Settings     = lazy(() => import('./pages/Settings'))
 
 function PageFallback() {
   return <div className="wl-page-fallback"><p>Loading…</p></div>
@@ -122,6 +124,14 @@ function Drawer({ open, onClose }) {
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'data' })}><IconData /><span>{t('importExport')}</span></button>
         </div>
 
+        <div className="wl-drawer-section">
+          <div className="wl-drawer-label">Account</div>
+          <button className={active('/settings')} onClick={() => go('/settings')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+          </button>
+        </div>
+
         <div className="wl-drawer-footer">
           <span className="wl-live-dot" /> {t('live')} · walletlens.cc
           <a className="wl-drawer-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer">
@@ -142,6 +152,8 @@ export default function App() {
   const { t } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
+
+  useEffect(() => { applySettings() }, [])
 
   if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
@@ -214,6 +226,7 @@ export default function App() {
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

@@ -13,7 +13,6 @@ import PriceAlerts from '../components/PriceAlerts'
 import RiskScanner from '../components/RiskScanner'
 import AIDecisionEngine from '../components/AIDecisionEngine'
 import AISellPlan from '../components/AISellPlan'
-import { BiometricToggle } from '../components/BiometricLock'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
@@ -2071,10 +2070,6 @@ export default function Dashboard() {
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
-          </div>
-          <div className="glass-card dvx-form-card">
-            <h3>Security</h3>
-            <BiometricToggle />
           </div>
           <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
         </div>
