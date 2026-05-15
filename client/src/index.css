@@ -6429,3 +6429,118 @@ input[type="date"] { color-scheme: dark; }
   from { opacity: 0; transform: translateX(-50%) translateY(20px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Settings page ── */
+.settings-page {
+  padding: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.settings-section {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+}
+.settings-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 0.9rem;
+}
+.settings-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.settings-row-toggle {
+  align-items: center;
+}
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+.settings-label > span:first-child {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: white;
+}
+.settings-hint {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.4);
+}
+.settings-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 0.75rem 0;
+}
+.settings-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+.settings-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.settings-chip.active {
+  background: var(--accent-dim, rgba(52,211,153,0.15));
+  border-color: var(--accent, #34d399);
+  color: var(--accent, #34d399);
+}
+.settings-chip-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.settings-toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.settings-toggle.on {
+  background: var(--accent, #34d399);
+}
+.settings-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  display: block;
+}
+.settings-toggle.on .settings-toggle-thumb {
+  transform: translateX(18px);
+}
