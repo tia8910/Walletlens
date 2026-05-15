@@ -80,26 +80,6 @@ const STOCK_BROKERS = [
   },
 ]
 
-const STOCK_BROKERS = [
-  {
-    name: 'IBKR',
-    tagline: 'Stocks, Options & Crypto',
-    fee: '$0 commissions on stocks',
-    bonus: 'Earn up to $1,000 IBKR stock',
-    color: '#e8121f',
-    bg: 'linear-gradient(135deg, #110003 0%, #1f0005 100%)',
-    glow: 'rgba(232,18,31,0.22)',
-    url: 'https://ibkr.com/referral/tarek972',
-    logo: (
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-ibkr">
-        {/* IBKR: bold red "I" bar + upward arrow — brokerage feel */}
-        <rect x="17" y="6" width="6" height="28" rx="3" fill="#e8121f"/>
-        <polygon points="20,5 27,15 23,15 23,28 17,28 17,15 13,15" fill="#e8121f" opacity="0.85"/>
-      </svg>
-    ),
-  },
-]
-
 // compact=true → slim strip for dashboard/sheet; compact=false → full cards
 export default function ExchangePartners({ compact = false, source = 'unknown' }) {
   if (compact) {
