@@ -2,14 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { track } from '../analytics'
 
 const RSS_FEEDS = [
-  { name: 'CoinTelegraph',   url: 'https://cointelegraph.com/rss',                    color: '#f7931a' },
-  { name: 'CoinDesk',        url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',  color: '#1a9fff' },
-  { name: 'Decrypt',         url: 'https://decrypt.co/feed',                          color: '#6b21a8' },
-  { name: 'Bitcoin Magazine', url: 'https://bitcoinmagazine.com/feed',                color: '#ff9900' },
+  { name: 'CoinTelegraph',    url: 'https://cointelegraph.com/rss',                   color: '#f7931a' },
+  { name: 'CoinDesk',         url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', color: '#1a9fff' },
+  { name: 'Decrypt',          url: 'https://decrypt.co/feed',                         color: '#6b21a8' },
+  { name: 'Bitcoin Magazine',  url: 'https://bitcoinmagazine.com/feed',               color: '#ff9900' },
 ]
-
-// CORS proxy — fetches any URL server-side, returns { contents: '...xml...' }
-const PROXY = 'https://api.allorigins.win/get?url='
 
 const COIN_KEYWORDS = {
   bitcoin:              ['bitcoin', 'btc'],
@@ -63,48 +60,69 @@ function timeAgo(pubDate) {
   return `${Math.floor(h / 24)}d ago`
 }
 
-function parseRssXml(xmlText, feed) {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(xmlText, 'text/xml')
-  const items = Array.from(doc.querySelectorAll('item'))
-  return items.slice(0, 30).map(item => {
-    const get = tag => item.querySelector(tag)?.textContent?.trim() || ''
-
-    // thumbnail: try media:content[url], enclosure[url], or img in description
-    let thumbnail = ''
-    const mc = item.querySelector('content') // media:content
-    if (mc) thumbnail = mc.getAttribute('url') || ''
-    if (!thumbnail) {
-      const enc = item.querySelector('enclosure')
-      if (enc) thumbnail = enc.getAttribute('url') || ''
-    }
-    if (!thumbnail) {
-      const desc = get('description')
-      const m = desc.match(/<img[^>]+src=["']([^"']+)["']/i)
-      if (m) thumbnail = m[1]
-    }
-
-    const rawDesc = get('description')
-    const desc = rawDesc.replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim()
-
-    return {
-      title:       get('title'),
-      link:        get('link') || item.querySelector('link')?.getAttribute('href') || '',
-      description: desc.slice(0, 300),
-      pubDate:     get('pubDate'),
-      thumbnail,
-      source:      feed.name,
-      sourceColor: feed.color,
-    }
-  })
+// Manual timeout wrapper (AbortSignal.timeout not available on all mobile browsers)
+function fetchWithTimeout(url, ms) {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), ms)
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id))
 }
 
+function parseRssXml(xmlText, feed) {
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(xmlText, 'text/xml')
+    const items = Array.from(doc.querySelectorAll('item'))
+    return items.slice(0, 25).map(item => {
+      const get = tag => item.querySelector(tag)?.textContent?.trim() || ''
+
+      let thumbnail = ''
+      const mc = item.querySelector('content')
+      if (mc) thumbnail = mc.getAttribute('url') || ''
+      if (!thumbnail) {
+        const enc = item.querySelector('enclosure')
+        if (enc) thumbnail = enc.getAttribute('url') || ''
+      }
+      if (!thumbnail) {
+        const m = get('description').match(/<img[^>]+src=["']([^"']+)["']/i)
+        if (m) thumbnail = m[1]
+      }
+
+      const rawDesc = get('description')
+      const desc = rawDesc.replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim()
+
+      return {
+        title:       get('title'),
+        link:        get('link') || '',
+        description: desc.slice(0, 300),
+        pubDate:     get('pubDate'),
+        thumbnail,
+        source:      feed.name,
+        sourceColor: feed.color,
+      }
+    }).filter(a => a.title && a.link)
+  } catch {
+    return []
+  }
+}
+
+// Try corsproxy.io first (returns raw content, more reliable)
+// Fall back to allorigins.win (returns JSON wrapper)
 async function fetchFeed(feed) {
-  const url = PROXY + encodeURIComponent(feed.url)
-  const res = await fetch(url, { signal: AbortSignal.timeout(12000) })
+  // Primary: corsproxy.io
+  try {
+    const res = await fetchWithTimeout('https://corsproxy.io/?' + encodeURIComponent(feed.url), 10000)
+    if (res.ok) {
+      const xml = await res.text()
+      const items = parseRssXml(xml, feed)
+      if (items.length) return items
+    }
+  } catch { /* try next */ }
+
+  // Fallback: allorigins.win
+  const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 12000)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
-  if (!json.contents) throw new Error('empty proxy response')
+  if (!json.contents) throw new Error('empty')
   return parseRssXml(json.contents, feed)
 }
 
@@ -161,19 +179,18 @@ export default function NewsFeed({ enriched = [] }) {
     setLoading(true)
     setError(null)
     try {
-      // Try /news.json from GitHub Actions cache first (fast, no CORS)
       let items = []
+
+      // 1. Try GitHub Actions cached /news.json (fastest, no CORS)
       try {
-        const res = await fetch('/news.json?t=' + Math.floor(Date.now() / 3600000))
+        const res = await fetchWithTimeout('/news.json?t=' + Math.floor(Date.now() / 3600000), 5000)
         if (res.ok) {
           const data = await res.json()
-          if (data.articles?.length) {
-            items = data.articles
-          }
+          if (data.articles?.length) items = data.articles
         }
-      } catch { /* not cached yet */ }
+      } catch { /* not deployed yet */ }
 
-      // Fall back to live RSS via allorigins.win CORS proxy
+      // 2. Live RSS via CORS proxy
       if (!items.length) {
         const results = await Promise.allSettled(RSS_FEEDS.map(fetchFeed))
         for (const r of results) {
@@ -181,9 +198,8 @@ export default function NewsFeed({ enriched = [] }) {
         }
       }
 
-      if (!items.length) throw new Error('No articles returned')
+      if (!items.length) throw new Error('no articles')
 
-      // Deduplicate + sort
       const seen = new Set()
       const deduped = items
         .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
@@ -197,7 +213,7 @@ export default function NewsFeed({ enriched = [] }) {
       setArticles(deduped)
       setLastFetch(Date.now())
     } catch {
-      setError('Could not load news. Check your connection and try again.')
+      setError('Could not load news. Please try again.')
     } finally {
       setLoading(false)
     }
