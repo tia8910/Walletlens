@@ -50,11 +50,17 @@ const CRYPTO_EXCHANGES = [
     glow: 'rgba(247,166,0,0.22)',
     url: 'https://www.bybit.com/invite?ref=3ORQD9',
     logo: (
-      <svg viewBox="0 0 56 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="20" className="ep-logo-pulse">
-        {/* Bybit wordmark: white bold BY + orange bar + white T */}
-        <text x="0" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">BY</text>
-        <rect x="28" y="2" width="4" height="14" fill="#F7A600" rx="1"/>
-        <text x="32" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">T</text>
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
+        {/* Bybit official icon: white "B" path + orange vertical bar (the I) + white "T" path */}
+        {/* B shape */}
+        <rect x="4" y="6" width="4" height="24" rx="1.5" fill="white"/>
+        <path d="M8 6 h7 a6 6 0 0 1 0 12 h-7z" fill="white"/>
+        <path d="M8 18 h8 a6 6 0 0 1 0 12 h-8z" fill="white"/>
+        {/* Orange I bar */}
+        <rect x="21" y="6" width="4" height="24" rx="1.5" fill="#F7A600"/>
+        {/* T shape */}
+        <rect x="25" y="6" width="7" height="4" rx="1.5" fill="white"/>
+        <rect x="27" y="10" width="3" height="20" rx="1.5" fill="white"/>
       </svg>
     ),
   },
