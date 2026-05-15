@@ -466,6 +466,24 @@ export default function Landing() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           Share WalletLens on X
         </button>
+        {/* Partner exchanges on landing */}
+        <div className="lp-partner-row">
+          <p className="lp-partner-label">Start trading on</p>
+          <div className="lp-partner-btns">
+            {[
+              { name: 'Binance', color: '#f0b90b', url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy' },
+              { name: 'OKX',     color: '#fff',    url: 'https://okx.com/join/85929296' },
+              { name: 'Bybit',   color: '#f7a600', url: 'https://www.bybit.com/invite?ref=3ORQD9' },
+            ].map(ex => (
+              <a key={ex.name} href={ex.url} target="_blank" rel="noopener noreferrer"
+                className="lp-partner-btn"
+                style={{ '--ex-color': ex.color }}
+                onClick={() => track('exchange_referral_click', { exchange: ex.name, source: 'landing' })}
+              >{ex.name}</a>
+            ))}
+          </div>
+        </div>
+
         <div className="lp-final-links">
           <button className="lp-link" onClick={() => navigate('/market')}>{t('navMarket')}</button>
           <span>·</span>
