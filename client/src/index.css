@@ -5925,7 +5925,7 @@ input[type="date"] { color-scheme: dark; }
   align-items: center;
   white-space: nowrap;
   height: 100%;
-  animation: news-ticker-scroll 8s linear infinite;
+  animation: news-ticker-scroll 40s linear infinite;
 }
 @keyframes news-ticker-scroll {
   from { transform: translateX(0); }
@@ -5940,7 +5940,7 @@ input[type="date"] { color-scheme: dark; }
 .news-ticker-title {
   font-size: 0.78rem;
   color: rgba(255,255,255,0.75);
-  max-width: 340px;
+  max-width: 500px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
