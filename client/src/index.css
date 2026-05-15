@@ -6120,3 +6120,75 @@ input[type="date"] { color-scheme: dark; }
   transition: background 0.15s, color 0.15s;
 }
 .news-modal-share-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ── Partner Exchanges — Exchanges page ────────────────────────────────── */
+.partner-exchanges-section { margin-bottom: 1.25rem; }
+.partner-exchanges-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.partner-exchanges-grid { display: flex; flex-direction: column; gap: 0.65rem; }
+.partner-exchange-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.partner-exchange-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+.partner-ex-logo {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  background: rgba(255,255,255,0.04);
+}
+.partner-ex-body { flex: 1; min-width: 0; }
+.partner-ex-name { font-size: 0.9rem; font-weight: 700; color: #fff; }
+.partner-ex-desc { font-size: 0.76rem; color: rgba(255,255,255,0.45); margin-top: 0.15rem; }
+.partner-ex-bonus { font-size: 0.73rem; color: #34d399; margin-top: 0.2rem; }
+.partner-ex-cta { font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+
+/* ── Partner strip — Dashboard ─────────────────────────────────────────── */
+.dvx-partner-strip {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.dvx-partner-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ex-color, #fff);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.dvx-partner-btn:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: var(--ex-color, rgba(255,255,255,0.2));
+}
