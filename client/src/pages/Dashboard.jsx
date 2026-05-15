@@ -823,7 +823,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
         {results.map(cat => (
           <div key={cat.id}
             className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${expanded === cat.id ? 'eval-cat-open' : ''}`}
-            onClick={() => setExpanded(expanded === cat.id ? null : cat.id)}
+            onClick={() => { const opening = expanded !== cat.id; setExpanded(opening ? cat.id : null); if (opening) track('eval_cat_expand', { cat: cat.id, pass: cat.pass, score: cat.score }) }}
             style={{ '--eval-color': cat.color }}>
             <div className="eval-cat-header">
               <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon}</span>
@@ -1209,8 +1209,10 @@ export default function Dashboard() {
       page_title: `Dashboard — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
     })
     track('dashboard_tab_switch', { tab: activeTab })
-    if (activeTab === 'ai')   track('ai_tab_view')
-    if (activeTab === 'risk') track('risk_tab_view')
+    if (activeTab === 'ai')     track('ai_tab_view')
+    if (activeTab === 'risk')   track('risk_tab_view')
+    if (activeTab === 'eval')   track('eval_tab_view')
+    if (activeTab === 'alerts') track('alerts_tab_view')
   }, [activeTab])
 
   async function loadAll() {
@@ -1550,7 +1552,7 @@ export default function Dashboard() {
                   <h3 style={{ margin:0 }}>Performance</h3>
                   <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
                     {TIMEFRAMES.map(tf => (
-                      <button key={tf.id} onClick={() => setPerfTf(tf.id)}
+                      <button key={tf.id} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
                         style={{
                           padding:'0.2rem 0.55rem', borderRadius:8, border:'none', cursor:'pointer',
                           fontSize:'0.72rem', fontWeight:600,

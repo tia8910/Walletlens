@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import { useLanguage } from '../LanguageContext'
+import { track } from '../analytics'
 
 // ── Animated counter ──────────────────────────────────────────────────────
 function Counter({ to, prefix = '', suffix = '', duration = 1800 }) {
@@ -134,6 +135,8 @@ export default function Landing() {
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
 
+  useEffect(() => { track('landing_view') }, [])
+
   function handleLogoPulse() {
     setLogoAnim(true)
     setTimeout(() => setLogoAnim(false), 600)
@@ -168,16 +171,16 @@ export default function Landing() {
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
           <div className="lp-cta-row">
-            <button className="lp-cta-primary" onClick={() => navigate('/dashboard')}>
+            <button className="lp-cta-primary" onClick={() => { track('landing_cta_launch'); navigate('/dashboard') }}>
               {t('ctaLaunch')}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
-            <button className="lp-cta-ghost" onClick={() => navigate('/market')}>
+            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_market'); navigate('/market') }}>
               {t('ctaMarket')}
             </button>
           </div>
 
-          <button className="lp-lang-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
+          <button className="lp-lang-toggle" onClick={() => { const newLang = lang === 'en' ? 'ar' : 'en'; track('landing_lang_toggle', { to: newLang }); setLang(newLang) }}>
             {lang === 'en' ? '🌐 العربية' : '🌐 English'}
           </button>
 
@@ -454,7 +457,7 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/transactions')}>{t('navTransactions')}</button>
           <span>·</span>
-          <a className="lp-link lp-x-link" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer">
+          <a className="lp-link lp-x-link" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" onClick={() => track('landing_x_follow')}>
             <svg className="lp-x-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             @walletlenss
           </a>
@@ -467,10 +470,10 @@ export default function Landing() {
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
         <nav className="lp-footer-links">
-          <Link to="/about">{t('about')}</Link>
-          <Link to="/blog">{t('blog')}</Link>
-          <Link to="/privacy">{t('privacy')}</Link>
-          <a className="lp-footer-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" title="Follow @walletlenss on X">
+          <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
+          <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
+          <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <a className="lp-footer-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" title="Follow @walletlenss on X" onClick={() => track('landing_x_follow')}>
             <svg className="lp-x-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             @walletlenss
           </a>

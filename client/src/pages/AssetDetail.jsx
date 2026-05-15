@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } from '../api'
+import { track } from '../analytics'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
 import TradeSheet from '../components/TradeSheet'
@@ -128,6 +129,7 @@ export default function AssetDetail() {
     if (!price || price <= 0) return
     const qty = tInputQty === '' ? null : parseFloat(tInputQty)
     await api.addCoinTarget(coinId, { price, quantity: qty })
+    track('target_add', { coin_id: coinId, target_price: price })
     setTInputPrice(''); setTInputQty(''); setShowAddTarget(false)
     loadData()
   }

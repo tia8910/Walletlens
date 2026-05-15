@@ -450,13 +450,14 @@ function HackCard({ hack, color }) {
   async function handleShare(e) {
     e.stopPropagation()
     setSharing(true)
+    track('hack_share', { title: hack.title })
     await shareHackToX(hack, color)
     setSharing(false)
   }
 
   return (
     <div className={`acad-hack-card ${open ? 'acad-hack-open' : ''}`}
-      onClick={() => setOpen(o => !o)}
+      onClick={() => { if (!open) track('hack_expand', { title: hack.title, cat: hack.cat }); setOpen(o => !o) }}
       style={{ '--hack-color': color }}>
       <div className="acad-hack-header">
         <span className="acad-hack-icon">{hack.icon}</span>
@@ -673,7 +674,7 @@ export default function Academy() {
           { id: 'hacks',     label: '💡 Investment Hacks' },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}>
+            onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
             {tab.label}
           </button>
         ))}
