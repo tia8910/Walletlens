@@ -458,7 +458,7 @@ export default function Landing() {
             try {
               const res = await fetch('/brand-features.svg')
               const blob = await res.blob()
-              const file = new File([blob], 'walletlens.png', { type: 'image/svg+xml' })
+              const file = new File([blob], 'walletlens.svg', { type: 'image/svg+xml' })
               if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: decodeURIComponent(text) }); return }
             } catch {}
           }
