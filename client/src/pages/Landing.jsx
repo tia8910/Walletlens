@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import { useLanguage } from '../LanguageContext'
+import { track } from '../analytics'
 
 // ── Animated counter ──────────────────────────────────────────────────────
 function Counter({ to, prefix = '', suffix = '', duration = 1800 }) {
@@ -134,6 +135,8 @@ export default function Landing() {
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
 
+  useEffect(() => { track('landing_view') }, [])
+
   function handleLogoPulse() {
     setLogoAnim(true)
     setTimeout(() => setLogoAnim(false), 600)
@@ -168,16 +171,16 @@ export default function Landing() {
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
           <div className="lp-cta-row">
-            <button className="lp-cta-primary" onClick={() => navigate('/dashboard')}>
+            <button className="lp-cta-primary" onClick={() => { track('landing_cta_launch'); navigate('/dashboard') }}>
               {t('ctaLaunch')}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
-            <button className="lp-cta-ghost" onClick={() => navigate('/market')}>
+            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_market'); navigate('/market') }}>
               {t('ctaMarket')}
             </button>
           </div>
 
-          <button className="lp-lang-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
+          <button className="lp-lang-toggle" onClick={() => { const newLang = lang === 'en' ? 'ar' : 'en'; track('landing_lang_toggle', { to: newLang }); setLang(newLang) }}>
             {lang === 'en' ? '🌐 العربية' : '🌐 English'}
           </button>
 
