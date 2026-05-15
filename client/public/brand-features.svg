@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050f08"/>
+      <stop offset="100%" stop-color="#071a0c"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00c853" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#00c853" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00c853"/>
+      <stop offset="100%" stop-color="#00c853" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="60"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Glow orb top-left -->
+  <circle cx="120" cy="120" r="200" fill="#00c853" opacity="0.07" filter="url(#blur)"/>
+  <!-- Glow orb bottom-right -->
+  <circle cx="1100" cy="530" r="180" fill="#00c853" opacity="0.05" filter="url(#blur)"/>
+
+  <!-- Grid lines -->
+  <g stroke="#34d399" stroke-width="0.5" opacity="0.06">
+    <line x1="0" y1="105" x2="1200" y2="105"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="525" x2="1200" y2="525"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Left accent bar -->
+  <rect x="0" y="0" width="5" height="630" fill="#00c853"/>
+
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentLine)"/>
+
+  <!-- ── LOGO ── -->
+  <!-- Outer ring -->
+  <circle cx="72" cy="72" r="44" fill="none" stroke="#00c853" stroke-width="7"/>
+  <!-- Middle ring -->
+  <circle cx="72" cy="72" r="26" fill="none" stroke="#00c853" stroke-width="5" opacity="0.55"/>
+  <!-- Inner dot -->
+  <circle cx="72" cy="72" r="13" fill="#00c853"/>
+
+  <!-- Brand name -->
+  <text x="132" y="62" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="-0.5">WalletLens</text>
+  <text x="134" y="88" font-size="16" fill="#00c853" opacity="0.8">walletlens.cc</text>
+
+  <!-- Tagline -->
+  <text x="132" y="112" font-size="13" fill="rgba(255,255,255,0.4)" letter-spacing="0.08em">YOUR CRYPTO PORTFOLIO — FULLY IN FOCUS</text>
+
+  <!-- Separator line -->
+  <line x1="44" y1="135" x2="1156" y2="135" stroke="rgba(52,211,153,0.15)" stroke-width="1"/>
+
+  <!-- ── SECTION LABEL ── -->
+  <text x="44" y="168" font-size="11" font-weight="700" fill="#00c853" letter-spacing="0.12em" opacity="0.8">ALL FEATURES</text>
+
+  <!-- ── FEATURE GRID — 3 columns × 6 rows ── -->
+
+  <!-- COL 1 (x=44) -->
+  <!-- R1 -->
+  <rect x="44" y="182" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="182" width="3" height="56" rx="1" fill="#34d399"/>
+  <text x="60" y="204" font-size="13" font-weight="700" fill="#ffffff">⚠️  Risk Scanner</text>
+  <text x="60" y="224" font-size="11" fill="rgba(255,255,255,0.5)">Every token scored 0–100 before you invest</text>
+  <!-- R2 -->
+  <rect x="44" y="246" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="246" width="3" height="56" rx="1" fill="#f87171"/>
+  <text x="60" y="268" font-size="13" font-weight="700" fill="#ffffff">🔍  Scam Catcher</text>
+  <text x="60" y="288" font-size="11" fill="rgba(255,255,255,0.5)">Honeypot, freeze authority &amp; rug pull detection</text>
+  <!-- R3 -->
+  <rect x="44" y="310" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="310" width="3" height="56" rx="1" fill="#fb923c"/>
+  <text x="60" y="332" font-size="13" font-weight="700" fill="#ffffff">🔔  Smart Price Alerts</text>
+  <text x="60" y="352" font-size="11" fill="rgba(255,255,255,0.5)">Audio alarm fires the moment price hits your level</text>
+  <!-- R4 -->
+  <rect x="44" y="374" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="374" width="3" height="56" rx="1" fill="#60a5fa"/>
+  <text x="60" y="396" font-size="13" font-weight="700" fill="#ffffff">💰  Break-Even Calculator</text>
+  <text x="60" y="416" font-size="11" fill="rgba(255,255,255,0.5)">Know exactly what price you need to break even</text>
+  <!-- R5 -->
+  <rect x="44" y="438" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="438" width="3" height="56" rx="1" fill="#a78bfa"/>
+  <text x="60" y="460" font-size="13" font-weight="700" fill="#ffffff">🧠  AI Decision Engine</text>
+  <text x="60" y="480" font-size="11" fill="rgba(255,255,255,0.5)">HOLD / ADD / TRIM / SELL — per position, right now</text>
+  <!-- R6 -->
+  <rect x="44" y="502" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="44" y="502" width="3" height="56" rx="1" fill="#34d399"/>
+  <text x="60" y="524" font-size="13" font-weight="700" fill="#ffffff">🤖  AI Portfolio Analysis</text>
+  <text x="60" y="544" font-size="11" fill="rgba(255,255,255,0.5)">Health grade, stress tests &amp; rebalancing plan</text>
+
+  <!-- COL 2 (x=430) -->
+  <!-- R1 -->
+  <rect x="430" y="182" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="182" width="3" height="56" rx="1" fill="#fbbf24"/>
+  <text x="446" y="204" font-size="13" font-weight="700" fill="#ffffff">🎯  Sell Targets Planner</text>
+  <text x="446" y="224" font-size="11" fill="rgba(255,255,255,0.5)">Map every exit before emotions take over</text>
+  <!-- R2 -->
+  <rect x="430" y="246" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="246" width="3" height="56" rx="1" fill="#f472b6"/>
+  <text x="446" y="268" font-size="13" font-weight="700" fill="#ffffff">🐋  Whale Signal Tracker</text>
+  <text x="446" y="288" font-size="11" fill="rgba(255,255,255,0.5)">Accumulation signals &amp; unusual volume intel</text>
+  <!-- R3 -->
+  <rect x="430" y="310" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="310" width="3" height="56" rx="1" fill="#fbbf24"/>
+  <text x="446" y="332" font-size="13" font-weight="700" fill="#ffffff">👛  Multi-Wallet Support</text>
+  <text x="446" y="352" font-size="11" fill="rgba(255,255,255,0.5)">Track every wallet across exchanges &amp; self-custody</text>
+  <!-- R4 -->
+  <rect x="430" y="374" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="374" width="3" height="56" rx="1" fill="#60a5fa"/>
+  <text x="446" y="396" font-size="13" font-weight="700" fill="#ffffff">💾  Encrypted Backup</text>
+  <text x="446" y="416" font-size="11" fill="rgba(255,255,255,0.5)">Export WLZ file — your data never touches servers</text>
+  <!-- R5 -->
+  <rect x="430" y="438" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="438" width="3" height="56" rx="1" fill="#34d399"/>
+  <text x="446" y="460" font-size="13" font-weight="700" fill="#ffffff">🔒  100% Private by Design</text>
+  <text x="446" y="480" font-size="11" fill="rgba(255,255,255,0.5)">Zero account — every byte stays on your device</text>
+  <!-- R6 -->
+  <rect x="430" y="502" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="430" y="502" width="3" height="56" rx="1" fill="#f87171"/>
+  <text x="446" y="524" font-size="13" font-weight="700" fill="#ffffff">📊  Portfolio Risk Overview</text>
+  <text x="446" y="544" font-size="11" fill="rgba(255,255,255,0.5)">Weighted risk score — SAFE to DANGER at a glance</text>
+
+  <!-- COL 3 (x=816) -->
+  <!-- R1 -->
+  <rect x="816" y="182" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="182" width="3" height="56" rx="1" fill="#34d399"/>
+  <text x="832" y="204" font-size="13" font-weight="700" fill="#ffffff">⚡  WalletLens Alpha</text>
+  <text x="832" y="224" font-size="11" fill="rgba(255,255,255,0.5)">Live P&amp;L, momentum &amp; AI verdicts per coin</text>
+  <!-- R2 -->
+  <rect x="816" y="246" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="246" width="3" height="56" rx="1" fill="#fbbf24"/>
+  <text x="832" y="268" font-size="13" font-weight="700" fill="#ffffff">💡  Investment Hacks</text>
+  <text x="832" y="288" font-size="11" fill="rgba(255,255,255,0.5)">18 expert tips — shareable to X as branded image</text>
+  <!-- R3 -->
+  <rect x="816" y="310" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="310" width="3" height="56" rx="1" fill="#a78bfa"/>
+  <text x="832" y="332" font-size="13" font-weight="700" fill="#ffffff">🎮  Crypto Guessr</text>
+  <text x="832" y="352" font-size="11" fill="rgba(255,255,255,0.5)">5-round crypto quiz that builds real market intuition</text>
+  <!-- R4 -->
+  <rect x="816" y="374" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="374" width="3" height="56" rx="1" fill="#60a5fa"/>
+  <text x="832" y="396" font-size="13" font-weight="700" fill="#ffffff">📈  Multi-Timeframe Chart</text>
+  <text x="832" y="416" font-size="11" fill="rgba(255,255,255,0.5)">4H / 1D / 7D / 30D volatile wave performance chart</text>
+  <!-- R5 -->
+  <rect x="816" y="438" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="438" width="3" height="56" rx="1" fill="#34d399"/>
+  <text x="832" y="460" font-size="13" font-weight="700" fill="#ffffff">🔍  Wallet Evaluation</text>
+  <text x="832" y="480" font-size="11" fill="rgba(255,255,255,0.5)">8-point portfolio health score with actionable fixes</text>
+  <!-- R6 -->
+  <rect x="816" y="502" width="340" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(52,211,153,0.1)" stroke-width="1"/>
+  <rect x="816" y="502" width="3" height="56" rx="1" fill="#f472b6"/>
+  <text x="832" y="524" font-size="13" font-weight="700" fill="#ffffff">🎓  Academy</text>
+  <text x="832" y="544" font-size="11" fill="rgba(255,255,255,0.5)">Crypto quiz, IQ guide &amp; investment knowledge hub</text>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="598" width="1200" height="32" fill="rgba(0,200,83,0.06)"/>
+  <text x="44" y="619" font-size="12" fill="rgba(255,255,255,0.35)">Free Forever  •  Zero Account  •  100% On-Device</text>
+  <text x="1156" y="619" font-size="13" font-weight="700" fill="#00c853" text-anchor="end">walletlens.cc</text>
+
+  <!-- Bottom accent line -->
+  <rect x="0" y="627" width="1200" height="3" fill="url(#accentLine)"/>
+</svg>
