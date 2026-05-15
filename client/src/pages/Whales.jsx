@@ -36,7 +36,7 @@ export default function Whales() {
   const [tab, setTab] = useState('movers')
   const [moverWindow, setMoverWindow] = useState('24h')
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { track('whales_view'); load() }, [])
 
   async function load() {
     setLoading(true)

@@ -21,6 +21,8 @@ export default function Market() {
   const [stocks, setStocks] = useState({})
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => { track('market_view') }, [])
+
   useEffect(() => {
     let intervalId = null
 
