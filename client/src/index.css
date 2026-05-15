@@ -5645,3 +5645,35 @@ input[type="date"] { color-scheme: dark; }
 }
 .hack-share-btn:hover { background: #000; color: #fff; transform: scale(1.05); }
 .hack-share-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Wallet Evaluation ───────────────────────────────────────────────────── */
+.eval-header-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.eval-header-left { flex: 1; min-width: 0; }
+.eval-missing-count { margin-top: 0.6rem; font-size: 0.82rem; font-weight: 600; color: #fbbf24; }
+.eval-ring-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.eval-ring-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; }
+.eval-ring-score { font-size: 2rem; font-weight: 800; line-height: 1; }
+.eval-ring-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.eval-grid { display: flex; flex-direction: column; gap: 0.55rem; }
+.eval-cat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-left: 3px solid var(--eval-color, #34d399);
+  border-radius: 14px; padding: 0.9rem 1rem;
+  cursor: pointer; transition: background 0.15s;
+}
+.eval-cat-card:hover { background: rgba(255,255,255,0.05); }
+.eval-cat-pass { border-left-color: var(--eval-color); }
+.eval-cat-fail { border-left-color: #f87171; opacity: 0.95; }
+.eval-cat-header { display: flex; align-items: center; gap: 0.75rem; }
+.eval-cat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.eval-cat-info { flex: 1; min-width: 0; }
+.eval-cat-label { font-size: 0.88rem; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem; }
+.eval-cat-bar-wrap { height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+.eval-cat-bar { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.eval-cat-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.eval-cat-score { font-size: 0.9rem; font-weight: 700; min-width: 28px; text-align: right; }
+.eval-cat-badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
+.eval-badge-pass { background: rgba(52,211,153,0.15); color: #34d399; }
+.eval-badge-fail { background: rgba(248,113,113,0.15); color: #f87171; }
+.eval-cat-tip { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.07); font-size: 0.81rem; color: rgba(255,255,255,0.65); line-height: 1.6; animation: fadeInUp 0.2s ease; }

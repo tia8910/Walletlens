@@ -618,6 +618,241 @@ const TOOLTIP_STYLE = {
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
+// ── Wallet Evaluation ─────────────────────────────────────────────────────
+const EVAL_CATEGORIES = [
+  {
+    id: 'btc_anchor',
+    label: 'BTC Anchor',
+    icon: '₿',
+    color: '#f7931a',
+    check: (enriched, totalValue) => {
+      const btc = enriched.find(h => h.coin_id === 'bitcoin' || h.coin_symbol?.toLowerCase() === 'btc')
+      if (!btc) return { pass: false, score: 0, tip: 'Add Bitcoin as a portfolio anchor. BTC historically acts as a safe haven during crypto downturns and gives your portfolio a stability base.' }
+      const w = btc.value / totalValue * 100
+      if (w < 5) return { pass: false, score: 40, tip: `BTC is only ${w.toFixed(1)}% of your portfolio. Consider increasing to at least 20% — it reduces volatility and acts as a hedge.` }
+      if (w > 70) return { pass: true, score: 70, tip: `BTC is ${w.toFixed(1)}% of your portfolio — heavily concentrated. Consider diversifying to other quality assets.` }
+      return { pass: true, score: 100, tip: `Solid BTC anchor at ${w.toFixed(1)}% — gives your portfolio a stable foundation.` }
+    },
+  },
+  {
+    id: 'eth_exposure',
+    label: 'ETH / Smart Contract',
+    icon: 'Ξ',
+    color: '#627eea',
+    check: (enriched, totalValue) => {
+      const eth = enriched.find(h => h.coin_id === 'ethereum' || h.coin_symbol?.toLowerCase() === 'eth')
+      const hasAlt = enriched.some(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
+      if (!eth && !hasAlt) return { pass: false, score: 0, tip: 'No smart-contract layer exposure. ETH (or SOL/ADA/AVAX) drives DeFi, NFTs, and Web3 — missing this entire sector.' }
+      const asset = eth || enriched.find(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
+      const w = asset.value / totalValue * 100
+      return { pass: true, score: 90, tip: `Good — ${asset.coin_symbol?.toUpperCase()} covers your smart-contract exposure at ${w.toFixed(1)}%.` }
+    },
+  },
+  {
+    id: 'diversification',
+    label: 'Diversification',
+    icon: '⚖️',
+    color: '#34d399',
+    check: (enriched, totalValue) => {
+      const n = enriched.length
+      const weights = enriched.map(h => h.value / totalValue)
+      const hhi = weights.reduce((s, w) => s + w * w, 0)
+      if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 assets to reduce single-coin risk.` }
+      if (hhi > 0.5) return { pass: false, score: 30, tip: `One coin dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single asset exceeds 50%.` }
+      if (n < 5) return { pass: false, score: 60, tip: `${n} holdings is okay but aim for 5–10. Add 1–2 more quality assets from different sectors.` }
+      return { pass: true, score: 95, tip: `Well diversified across ${n} assets with balanced weights.` }
+    },
+  },
+  {
+    id: 'stablecoin',
+    label: 'Stablecoin Reserve',
+    icon: '🏦',
+    color: '#60a5fa',
+    check: (enriched, totalValue) => {
+      const stables = ['tether','usd-coin','dai','binance-usd','true-usd','frax']
+      const stableHoldings = enriched.filter(h => stables.includes(h.coin_id) || ['usdt','usdc','dai','busd','tusd','frax'].includes(h.coin_symbol?.toLowerCase()))
+      const stableVal = stableHoldings.reduce((s, h) => s + h.value, 0)
+      const pct = stableVal / totalValue * 100
+      if (pct === 0) return { pass: false, score: 0, tip: 'No stablecoin reserve. Holding 5–15% in USDT/USDC gives you dry powder to buy dips without selling at a loss.' }
+      if (pct < 5) return { pass: false, score: 50, tip: `Only ${pct.toFixed(1)}% in stablecoins. Increase to 5–15% for a proper "buy the dip" reserve.` }
+      if (pct > 40) return { pass: true, score: 65, tip: `${pct.toFixed(1)}% in stablecoins is high — you might be over-hedged and missing upside. Deploy some into quality assets.` }
+      return { pass: true, score: 100, tip: `${pct.toFixed(1)}% stablecoin reserve — perfect dry powder for opportunities.` }
+    },
+  },
+  {
+    id: 'large_cap',
+    label: 'Large-Cap Weight',
+    icon: '🐋',
+    color: '#3b82f6',
+    check: (enriched, totalValue) => {
+      const largeCap = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
+      const lcVal = enriched.filter(h => largeCap.has(h.coin_id)).reduce((s, h) => s + h.value, 0)
+      const pct = lcVal / totalValue * 100
+      if (pct < 40) return { pass: false, score: 20, tip: `Only ${pct.toFixed(1)}% in large-cap coins. Heavy small-cap exposure means higher risk of total loss — add more BTC/ETH/SOL.` }
+      if (pct < 60) return { pass: false, score: 70, tip: `${pct.toFixed(1)}% large-cap. Aim for at least 60% in proven coins to anchor your portfolio against micro-cap wipeouts.` }
+      return { pass: true, score: 95, tip: `${pct.toFixed(1)}% large-cap — solid foundation that absorbs volatility.` }
+    },
+  },
+  {
+    id: 'sell_targets',
+    label: 'Profit Targets Set',
+    icon: '🎯',
+    color: '#fbbf24',
+    check: (enriched, totalValue, targets) => {
+      const coinsWithTargets = new Set(targets.map(tg => tg.coin_id))
+      const covered = enriched.filter(h => coinsWithTargets.has(h.coin_id)).length
+      const total = enriched.length
+      if (covered === 0) return { pass: false, score: 0, tip: 'No sell targets set. Without a plan, emotions will decide when you sell — usually at the wrong time. Go to Targets and set exit levels.' }
+      if (covered < total * 0.5) return { pass: false, score: 40, tip: `Only ${covered}/${total} holdings have sell targets. Set exit points for every position so you never exit on panic.` }
+      return { pass: true, score: 95, tip: `${covered}/${total} holdings have sell targets — disciplined exit planning.` }
+    },
+  },
+  {
+    id: 'pnl_health',
+    label: 'P&L Health',
+    icon: '💚',
+    color: '#34d399',
+    check: (enriched, totalValue) => {
+      if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
+      const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100
+      if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
+      if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
+      if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits into stablecoins to lock in gains.` }
+      return { pass: true, score: 90, tip: `Portfolio up ${avgPnlPct.toFixed(1)}% — healthy. Keep managing risk.` }
+    },
+  },
+  {
+    id: 'sector_spread',
+    label: 'Sector Spread',
+    icon: '🗂️',
+    color: '#a78bfa',
+    check: (enriched) => {
+      const sectors = {
+        store_of_value: new Set(['bitcoin','litecoin','bitcoin-cash']),
+        smart_contract: new Set(['ethereum','solana','cardano','avalanche-2','polkadot','near','cosmos']),
+        defi: new Set(['uniswap','aave','compound-governance-token','maker','curve-dao-token','synthetix-network-token']),
+        exchange: new Set(['binancecoin','ftx-token','huobi-token','crypto-com-chain']),
+        oracle: new Set(['chainlink','band-protocol','api3']),
+        payment: new Set(['ripple','stellar','nano','algorand']),
+        gaming: new Set(['axie-infinity','the-sandbox','decentraland','enjincoin']),
+      }
+      const covered = new Set()
+      for (const h of enriched) for (const [sec, ids] of Object.entries(sectors)) if (ids.has(h.coin_id)) covered.add(sec)
+      const n = covered.size
+      if (n < 2) return { pass: false, score: 20, tip: `Only ${n} sector covered. Spread across Store of Value, Smart Contracts, DeFi, and Payments to reduce sector-specific risk.` }
+      if (n < 3) return { pass: false, score: 60, tip: `${n} sectors covered. Add 1–2 more: consider DeFi (AAVE/UNI) or Oracles (LINK) for true diversification.` }
+      return { pass: true, score: 90, tip: `${n} crypto sectors covered — well-rounded portfolio strategy.` }
+    },
+  },
+]
+
+function computeWalletEval(enriched, totalValue, targets = []) {
+  if (!enriched.length) return null
+  const results = EVAL_CATEGORIES.map(cat => {
+    const result = cat.check(enriched, totalValue, targets)
+    return { ...cat, ...result }
+  })
+  const overall = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
+  const missing = results.filter(r => !r.pass)
+  const strong = results.filter(r => r.pass)
+  return { results, overall, missing, strong }
+}
+
+function EvalScoreRing({ score }) {
+  const r = 54, circ = 2 * Math.PI * r
+  const dash = circ * score / 100
+  const color = score >= 80 ? '#34d399' : score >= 55 ? '#fbbf24' : '#f87171'
+  const label = score >= 80 ? 'Strong' : score >= 55 ? 'Needs Work' : 'At Risk'
+  return (
+    <div className="eval-ring-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10"/>
+        <circle cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="10"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          transform="rotate(-90 70 70)" style={{ transition: 'stroke-dasharray 1.2s ease' }}/>
+      </svg>
+      <div className="eval-ring-inner">
+        <div className="eval-ring-score" style={{ color }}>{score}</div>
+        <div className="eval-ring-label" style={{ color }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+
+function WalletEvalTab({ enriched, totalValue, targets }) {
+  const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
+  const [expanded, setExpanded] = useState(null)
+
+  if (!enriched.length) return (
+    <div className="dvx-form-page">
+      <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem' }}>
+        <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🔍</div>
+        <h3 style={{ marginBottom:'0.5rem' }}>No Holdings to Evaluate</h3>
+        <p className="muted">Add some crypto holdings first and we'll tell you what your wallet is missing.</p>
+      </div>
+    </div>
+  )
+
+  const { results, overall, missing } = eval_
+
+  return (
+    <div className="dvx-form-page">
+      {/* Header score */}
+      <div className="glass-card eval-header-card">
+        <div className="eval-header-left">
+          <h2 style={{ margin:0, fontSize:'1.25rem' }}>Wallet Evaluation</h2>
+          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>
+            What your portfolio is missing vs best practices
+          </p>
+          {missing.length > 0 && (
+            <div className="eval-missing-count">
+              ⚠️ {missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
+            </div>
+          )}
+          {missing.length === 0 && (
+            <div className="eval-missing-count" style={{ color:'#34d399' }}>
+              ✅ All checks passed — excellent wallet health!
+            </div>
+          )}
+        </div>
+        <EvalScoreRing score={overall} />
+      </div>
+
+      {/* Category cards */}
+      <div className="eval-grid">
+        {results.map(cat => (
+          <div key={cat.id}
+            className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${expanded === cat.id ? 'eval-cat-open' : ''}`}
+            onClick={() => setExpanded(expanded === cat.id ? null : cat.id)}
+            style={{ '--eval-color': cat.color }}>
+            <div className="eval-cat-header">
+              <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon}</span>
+              <div className="eval-cat-info">
+                <div className="eval-cat-label">{cat.label}</div>
+                <div className="eval-cat-bar-wrap">
+                  <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: cat.color }} />
+                </div>
+              </div>
+              <div className="eval-cat-right">
+                <span className="eval-cat-score" style={{ color: cat.color }}>{cat.score}</span>
+                <span className={`eval-cat-badge ${cat.pass ? 'eval-badge-pass' : 'eval-badge-fail'}`}>
+                  {cat.pass ? '✓' : '✗'}
+                </span>
+              </div>
+            </div>
+            {expanded === cat.id && (
+              <div className="eval-cat-tip">
+                <span style={{ marginRight:'0.5rem' }}>{cat.pass ? '💡' : '🔧'}</span>
+                {cat.tip}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const TIMEFRAMES = [
   { id: '4H',  label: '4H',  pts: 48 },
   { id: '1D',  label: '1D',  pts: 48 },
@@ -1140,6 +1375,7 @@ export default function Dashboard() {
     { id: 'ai',       label: t('ai'),       icon: Ico.ai },
     { id: 'alerts',   label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
     { id: 'risk',     label: 'Risk',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
+    { id: 'eval',     label: 'Eval',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
     { id: 'buy',      label: t('buy'),      icon: Ico.buy,    sheet: 'buy' },
     { id: 'sell',     label: t('sell'),     icon: Ico.sell,   sheet: 'sell' },
     { id: 'targets',  label: t('targets'),  icon: Ico.target },
@@ -1765,6 +2001,15 @@ export default function Dashboard() {
       {/* ══ RUG PULL RISK ══ */}
       {activeTab === 'risk' && (
         <RiskScanner enriched={isDemo ? [] : enriched} />
+      )}
+
+      {/* ══ WALLET EVAL ══ */}
+      {activeTab === 'eval' && (
+        <WalletEvalTab
+          enriched={isDemo ? [] : enriched}
+          totalValue={totalValue}
+          targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
+        />
       )}
 
       {/* ══ WALLETS ══ */}
