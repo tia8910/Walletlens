@@ -113,18 +113,30 @@ export default function NewsTicker() {
           ref={trackRef}
         >
           {doubled.map((item, i) => (
-            <a
-              key={i}
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="news-ticker-item"
-              onClick={() => track('news_ticker_click', { source: item.source, title: item.title?.slice(0, 60) })}
-            >
-              <span className="news-ticker-source" style={{ color: item.sourceColor }}>{item.source}</span>
-              <span className="news-ticker-title">{item.title}</span>
+            <span key={i} className="news-ticker-item">
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="news-ticker-link"
+                onClick={() => track('news_ticker_click', { source: item.source, title: item.title?.slice(0, 60) })}
+              >
+                <span className="news-ticker-source" style={{ color: item.sourceColor }}>{item.source}</span>
+                <span className="news-ticker-title">{item.title}</span>
+              </a>
+              <button
+                className="news-ticker-share"
+                title="Share on X"
+                onClick={e => {
+                  e.stopPropagation()
+                  const text = encodeURIComponent(item.title)
+                  const url  = encodeURIComponent(item.link)
+                  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener')
+                  track('news_ticker_share', { source: item.source, title: item.title?.slice(0, 60) })
+                }}
+              >𝕏</button>
               <span className="news-ticker-dot">·</span>
-            </a>
+            </span>
           ))}
         </div>
       </div>
