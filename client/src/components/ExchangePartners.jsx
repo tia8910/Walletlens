@@ -11,8 +11,15 @@ const EXCHANGES = [
     glow: 'rgba(240,185,11,0.25)',
     url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy',
     logo: (
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-        <path d="M12.116 16.482l7.884-7.884 7.888 7.888-4.592.003-3.296-3.297-3.293 3.294-4.591-.004zM7 20l3.293-3.293 3.294 3.293-3.294 3.294L7 20zm9.825.003 3.175-3.175 3.174 3.174-3.174 3.175-3.175-3.174zm7.587-3.293L27.706 20l-3.294 3.294L21.118 20l3.294-3.29zM12.116 23.518l4.591.003 3.293 3.294 3.296-3.297 4.592.003-7.888 7.888-7.884-7.891z" fill="#F0B90B"/>
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-spin">
+        {/* Binance BNB official diamond cross: center + 4 rotated squares */}
+        <g transform="translate(20,20)">
+          <rect x="-4.2" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
+          <rect x="-4.2" y="-13.8" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
+          <rect x="-4.2" y="5.4" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
+          <rect x="-13.8" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
+          <rect x="5.4" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
+        </g>
       </svg>
     ),
   },
@@ -45,11 +52,12 @@ const EXCHANGES = [
     glow: 'rgba(247,166,0,0.22)',
     url: 'https://www.bybit.com/invite?ref=3ORQD9',
     logo: (
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-        <path d="M6 10h12c3.314 0 6 2.686 6 6s-2.686 6-6 6H6V10z" fill="#F7A600"/>
-        <path d="M6 22h13c3.866 0 7 3.134 7 7s-3.134 7-7 7H6V22z" fill="#F7A600" opacity="0.7"/>
-        <circle cx="18" cy="16" r="3" fill="#1a1000"/>
-        <circle cx="19" cy="29" r="3.5" fill="#1a1000"/>
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
+        {/* Bybit official logo: bold yellow "b" — vertical bar + two right-side bumps */}
+        <rect x="8" y="6" width="6" height="28" rx="3" fill="#F7A600"/>
+        <path d="M14 6 h7 a7 7 0 0 1 0 14 h-7 z" fill="#F7A600"/>
+        <path d="M14 20 h8 a8 8 0 0 1 0 14 h-8 z" fill="#F7A600"/>
+        <rect x="14" y="6" width="3" height="28" fill="#F7A600"/>
       </svg>
     ),
   },

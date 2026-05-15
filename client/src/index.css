@@ -6356,3 +6356,30 @@ input[type="date"] { color-scheme: dark; }
 .ep-strip-logo { display: flex; align-items: center; width: 18px; height: 18px; overflow: hidden; }
 .ep-strip-logo svg { width: 18px; height: 18px; }
 .ep-strip-name { font-size: 0.76rem; font-weight: 700; }
+
+/* ── Exchange logo animations ── */
+@keyframes ep-logo-breathe {
+  0%, 100% { filter: drop-shadow(0 0 4px currentColor); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 10px currentColor); transform: scale(1.08); }
+}
+@keyframes ep-logo-rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ep-logo-spin {
+  animation: ep-logo-rotate-slow 12s linear infinite;
+  transform-origin: center;
+  filter: drop-shadow(0 0 5px #f0b90b88);
+}
+.ep-card:hover .ep-logo-spin {
+  animation-duration: 3s;
+  filter: drop-shadow(0 0 10px #f0b90bcc);
+}
+.ep-logo-pulse {
+  filter: drop-shadow(0 0 4px #f7a60088);
+  animation: ep-logo-breathe 3s ease-in-out infinite;
+}
+.ep-card:hover .ep-logo-pulse {
+  animation-duration: 1.2s;
+  filter: drop-shadow(0 0 12px #f7a600cc);
+}
