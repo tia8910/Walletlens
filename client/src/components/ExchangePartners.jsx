@@ -50,31 +50,17 @@ const CRYPTO_EXCHANGES = [
     glow: 'rgba(247,166,0,0.22)',
     url: 'https://www.bybit.com/invite?ref=3ORQD9',
     logo: (
-      <svg viewBox="0 0 56 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="20" className="ep-logo-pulse">
-        {/* Bybit wordmark: white bold BY + orange bar + white T */}
-        <text x="0" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">BY</text>
-        <rect x="28" y="2" width="4" height="14" fill="#F7A600" rx="1"/>
-        <text x="32" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">T</text>
-      </svg>
-    ),
-  },
-]
-
-const STOCK_BROKERS = [
-  {
-    name: 'IBKR',
-    tagline: 'Stocks, Options & Crypto',
-    fee: '$0 commissions on stocks',
-    bonus: 'Earn up to $1,000 IBKR stock',
-    color: '#e8121f',
-    bg: 'linear-gradient(135deg, #110003 0%, #1f0005 100%)',
-    glow: 'rgba(232,18,31,0.22)',
-    url: 'https://ibkr.com/referral/tarek972',
-    logo: (
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-ibkr">
-        {/* IBKR: bold red "I" bar + upward arrow — brokerage feel */}
-        <rect x="17" y="6" width="6" height="28" rx="3" fill="#e8121f"/>
-        <polygon points="20,5 27,15 23,15 23,28 17,28 17,15 13,15" fill="#e8121f" opacity="0.85"/>
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
+        {/* Bybit official icon: white "B" path + orange vertical bar (the I) + white "T" path */}
+        {/* B shape */}
+        <rect x="4" y="6" width="4" height="24" rx="1.5" fill="white"/>
+        <path d="M8 6 h7 a6 6 0 0 1 0 12 h-7z" fill="white"/>
+        <path d="M8 18 h8 a6 6 0 0 1 0 12 h-8z" fill="white"/>
+        {/* Orange I bar */}
+        <rect x="21" y="6" width="4" height="24" rx="1.5" fill="#F7A600"/>
+        {/* T shape */}
+        <rect x="25" y="6" width="7" height="4" rx="1.5" fill="white"/>
+        <rect x="27" y="10" width="3" height="20" rx="1.5" fill="white"/>
       </svg>
     ),
   },
