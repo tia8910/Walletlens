@@ -5,6 +5,7 @@ import { track } from '../analytics'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
 import TradeSheet from '../components/TradeSheet'
+import ExchangePartners from '../components/ExchangePartners'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -350,6 +351,7 @@ export default function AssetDetail() {
         holdings={holdings ? [{ ...holdings, coin_id: coinId, coin_symbol: coin?.symbol, amount }] : []}
         prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
       />
+      <ExchangePartners compact source="asset_detail" />
     </div>
   )
 }

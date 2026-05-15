@@ -1898,6 +1898,9 @@ export default function Dashboard() {
                   </>
                 }
               </div>
+
+              {/* Exchange partners strip below holdings */}
+              <ExchangePartners compact source="holdings" />
             </div>
           </div>
         </>
