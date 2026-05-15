@@ -12,14 +12,12 @@ const CRYPTO_EXCHANGES = [
     url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy',
     logo: (
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-spin">
-        {/* Binance BNB official diamond cross: center + 4 rotated squares */}
-        <g transform="translate(20,20)">
-          <rect x="-4.2" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
-          <rect x="-4.2" y="-13.8" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
-          <rect x="-4.2" y="5.4" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
-          <rect x="-13.8" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
-          <rect x="5.4" y="-4.2" width="8.4" height="8.4" fill="#F0B90B" transform="rotate(45)"/>
-        </g>
+        {/* Binance BNB: 5 diamonds (polygon) in cross — top, left, center, right, bottom */}
+        <polygon points="20,6 24,10 20,14 16,10" fill="#F0B90B"/>
+        <polygon points="20,26 24,30 20,34 16,30" fill="#F0B90B"/>
+        <polygon points="6,20 10,16 14,20 10,24" fill="#F0B90B"/>
+        <polygon points="26,20 30,16 34,20 30,24" fill="#F0B90B"/>
+        <polygon points="20,16 24,20 20,24 16,20" fill="#F0B90B"/>
       </svg>
     ),
   },
@@ -52,12 +50,11 @@ const CRYPTO_EXCHANGES = [
     glow: 'rgba(247,166,0,0.22)',
     url: 'https://www.bybit.com/invite?ref=3ORQD9',
     logo: (
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
-        {/* Bybit official logo: bold yellow "b" — vertical bar + two right-side bumps */}
-        <rect x="8" y="6" width="6" height="28" rx="3" fill="#F7A600"/>
-        <path d="M14 6 h7 a7 7 0 0 1 0 14 h-7 z" fill="#F7A600"/>
-        <path d="M14 20 h8 a8 8 0 0 1 0 14 h-8 z" fill="#F7A600"/>
-        <rect x="14" y="6" width="3" height="28" fill="#F7A600"/>
+      <svg viewBox="0 0 56 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="20" className="ep-logo-pulse">
+        {/* Bybit wordmark: white bold BY + orange bar + white T */}
+        <text x="0" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">BY</text>
+        <rect x="28" y="2" width="4" height="14" fill="#F7A600" rx="1"/>
+        <text x="32" y="16" fill="white" fontFamily="Arial Black,Impact,sans-serif" fontWeight="900" fontSize="16" letterSpacing="-0.5">T</text>
       </svg>
     ),
   },

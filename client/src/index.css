@@ -6353,8 +6353,8 @@ input[type="date"] { color-scheme: dark; }
   box-shadow: 0 0 12px var(--ex-glow);
   transform: translateY(-1px);
 }
-.ep-strip-logo { display: flex; align-items: center; width: 18px; height: 18px; overflow: hidden; }
-.ep-strip-logo svg { width: 18px; height: 18px; }
+.ep-strip-logo { display: flex; align-items: center; height: 18px; overflow: visible; }
+.ep-strip-logo svg { height: 18px; width: auto; }
 .ep-strip-name { font-size: 0.76rem; font-weight: 700; }
 
 /* ── Exchange logo animations ── */
