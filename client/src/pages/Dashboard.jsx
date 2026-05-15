@@ -1202,6 +1202,7 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t }) }, [])
   const [shareOpen, setShareOpen]         = useState(false)
+  const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [hidden, setHidden]               = useState(false)
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
@@ -1324,8 +1325,17 @@ export default function Dashboard() {
     raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
   }, [loaded, totalValue])
 
+  useEffect(() => {
+    if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
+  }, [loaded, totalValue])
+
   const [perfTf, setPerfTf] = useState('30D')
   const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
+  const perfHasRealData = useMemo(() => {
+    const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[perfTf] || 30
+    if (days === 0) return false
+    return getSnapshotsForDays(days).length >= 2
+  }, [perfTf, perfSeries])
 
   const allocData = useMemo(() => {
     if (!enriched.length) return []
@@ -1434,6 +1444,11 @@ export default function Dashboard() {
               <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'} ${hidden ? 'dvx-hidden-val' : ''}`}>
                 {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) ${t('allTime')}`}
               </p>
+            )}
+            {!isDemo && totalValue > 0 && (
+              <button className="dvx-weekly-btn" onClick={() => { setWeeklyOpen(true); track('weekly_report_open') }} title="Weekly Report">
+                📅
+              </button>
             )}
             {!isDemo && totalValue > 0 && (
               <button className="dvx-share-btn" onClick={() => { setShareOpen(true); track('share_portfolio_open') }}>
@@ -1572,7 +1587,8 @@ export default function Dashboard() {
                         {tf.label}
                       </button>
                     ))}
-                    <span className="muted" style={{ fontSize:'0.65rem', marginLeft:'0.3rem' }}>{t('simulatedTrend')}</span>
+                    {!perfHasRealData && <span className="muted" style={{ fontSize:'0.65rem', marginLeft:'0.3rem' }}>{t('simulatedTrend')}</span>}
+                    {perfHasRealData && <span style={{ fontSize:'0.65rem', marginLeft:'0.3rem', color:'#34d399', opacity:0.7 }}>real data</span>}
                   </div>
                 </div>
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
@@ -2054,6 +2070,13 @@ export default function Dashboard() {
         onDone={loadAll}
         holdings={enriched}
       />
+      {weeklyOpen && (
+        <WeeklyReport
+          enriched={isDemo ? [] : enriched}
+          totalValue={totalValue}
+          onClose={() => setWeeklyOpen(false)}
+        />
+      )}
       {shareOpen && (
         <ShareCard
           totalValue={totalValue}
