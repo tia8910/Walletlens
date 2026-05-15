@@ -153,7 +153,7 @@ export default function AssetDetail() {
 
   return (
     <div className="page">
-      <button className="back-btn" onClick={() => navigate('/')}>
+      <button className="back-btn" onClick={() => navigate(-1)}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back
       </button>

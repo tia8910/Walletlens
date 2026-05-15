@@ -80,6 +80,9 @@ function Drawer({ open, onClose }) {
           <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>{t('market')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
+          <button className={active('/intel')} onClick={() => go('/intel')}>
+            <IconIntel /><span style={{ color: '#38bdf8' }}>Intel</span>
+          </button>
           <button className={active('/alpha')} onClick={() => go('/alpha')}>
             <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
           </button>
