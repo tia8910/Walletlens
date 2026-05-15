@@ -57,7 +57,8 @@ const KNOWN_LARGE = new Set(['solana','binancecoin','xrp','cardano','dogecoin','
 function isNonCrypto(coinId, coinSymbol) {
   const id = (coinId || '').toLowerCase()
   const sym = (coinSymbol || '').toLowerCase()
-  if (id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:')) return true
+  if (id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:') || id.startsWith('fiat:')) return true
+  if (id.includes('appartment') || id.includes('apartment')) return true
   if (['xau','xag','xpt','xpd'].includes(sym)) return true
   if (['usd','eur','gbp','us'].includes(sym)) return true
   if (['aapl','msft','tsla','amzn','nvda','googl','meta','nflx'].includes(sym)) return true
@@ -80,8 +81,8 @@ function categorizeAsset(h) {
   const sym = (h.coin_symbol || '').toLowerCase()
   if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
   if (id.startsWith('stock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
-  if (id.startsWith('real:') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
-  if (id.startsWith('cash:') || ['usd','eur','gbp','jpy','us','usdt','usdc','dai','busd','tusd','frax','usdd'].includes(sym)) return 'cash'
+  if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
+  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us','usdt','usdc','dai','busd','tusd','frax','usdd'].includes(sym)) return 'cash'
   return 'crypto'
 }
 
@@ -214,14 +215,24 @@ function computeAI(enriched, prices, transactions, totalValue) {
     fearGreed >= 45 ? '#34d399' :
     fearGreed >= 25 ? '#3b82f6' : '#8b5cf6'
 
-  // ── Stress test scenarios ─────────────────────────────────────────────────
+  // ── Stress test scenarios (asset-class-aware) ─────────────────────────────
+  // Apply per-asset volatility multipliers so gold/real estate aren't hit -60%
+  const VOLATILITY = { crypto: 1, metals: 0.35, stocks: 0.5, realestate: 0.2, cash: 0.02 }
+  function stressPortfolio(pct) {
+    return enriched.reduce((sum, h) => {
+      const mult = VOLATILITY[categorizeAsset(h)] ?? 1
+      const adjustedPct = pct * mult
+      const newVal = h.value * (1 + adjustedPct / 100)
+      return sum + newVal
+    }, 0)
+  }
   const stressScenarios = [
     { label: 'Mild Dip',   pct: -10, color: '#f59e0b', icon: '📉' },
     { label: 'Correction', pct: -30, color: '#f87171', icon: '🩸' },
     { label: 'Bear Market',pct: -60, color: '#8b5cf6', icon: '🐻' },
     { label: 'Bull +50%',  pct: +50, color: '#34d399', icon: '🚀' },
     { label: 'Moon +200%', pct: +200,color: '#ffd700', icon: '🌕' },
-  ]
+  ].map(s => ({ ...s, stressedVal: stressPortfolio(s.pct) }))
 
   // ── Entry quality per asset ────────────────────────────────────────────────
   const entryQuality = enriched.map(h => {
@@ -447,7 +458,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         <h4 className="ai-section-title">{t('stressTest')}</h4>
         <div className="ai-stress-grid">
           {ai.stressScenarios.map(s => {
-            const newVal = totalValue * (1 + s.pct / 100)
+            const newVal = s.stressedVal ?? totalValue * (1 + s.pct / 100)
             const diff   = newVal - totalValue
             return (
               <div key={s.label} className="ai-stress-item" style={{ borderColor: s.color + '33' }}>

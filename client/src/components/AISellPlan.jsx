@@ -12,10 +12,31 @@ function generateSellPlan(enriched, prices) {
   const rows = enriched.map(h => {
     const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
     const value   = h.amount * price
+    const sym     = h.coin_symbol?.toUpperCase()
+
+    // Non-crypto assets without live price: show as "manually tracked"
+    const id = (h.coin_id || '').toLowerCase()
+    const symL = (h.coin_symbol || '').toLowerCase()
+    const isNonCryptoAsset =
+      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') ||
+      id.startsWith('cash:')  || id.startsWith('fiat:')  ||
+      id.includes('appartment') || id.includes('apartment') ||
+      ['xau','xag','xpt','xpd'].includes(symL)
+
+    if (isNonCryptoAsset && price === 0) {
+      const investedVal = h.total_invested || 0
+      return {
+        sym, pnlPct: 0, weight: totalValue > 0 ? (investedVal / totalValue) * 100 : 0,
+        value: investedVal, price: 0,
+        action: 'MANUALLY TRACKED', urgency: 'low',
+        reason: `${sym} is a non-crypto asset without live price feed. Value reflects your recorded cost basis.`,
+        targets: [{ label: 'Update price manually', price: null, note: 'Edit your holding to set current market value' }],
+      }
+    }
+
     const pnlPct  = h.total_invested > 0 ? ((value - h.total_invested) / h.total_invested) * 100 : 0
     const weight  = totalValue > 0 ? (value / totalValue) * 100 : 0
     const chg24   = prices[h.coin_id]?.usd_24h_change ?? 0
-    const sym     = h.coin_symbol?.toUpperCase()
 
     // Rule-based action
     let action, targets, reason, urgency
@@ -90,7 +111,7 @@ function generateSellPlan(enriched, prices) {
 
     return { sym, pnlPct, weight, value, price, action, targets, reason, urgency }
   }).sort((a, b) => {
-    const order = { 'high': 0, 'medium': 1, 'low': 2 }
+    const order = { 'high': 0, 'medium': 1, 'low': 2, 'manually tracked': 3 }
     return order[a.urgency] - order[b.urgency]
   })
 
@@ -108,8 +129,8 @@ function generateSellPlan(enriched, prices) {
   return { rows, summary }
 }
 
-const URGENCY_COLOR = { high: '#f87171', medium: '#fbbf24', low: '#34d399' }
-const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: '#34d39915' }
+const URGENCY_COLOR = { high: '#f87171', medium: '#fbbf24', low: '#34d399', 'manually tracked': '#a78bfa' }
+const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: '#34d39915', 'manually tracked': '#a78bfa15' }
 
 export default function AISellPlan({ enriched = [], prices = {} }) {
   const [open, setOpen] = useState(false)

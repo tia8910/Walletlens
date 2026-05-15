@@ -86,13 +86,16 @@ const STOCK_BROKERS = [
 ]
 
 // compact=true → slim strip for dashboard/sheet; compact=false → full cards
-export default function ExchangePartners({ compact = false, source = 'unknown' }) {
+// cryptoOnly → only show crypto exchanges; stockOnly → only show stock brokers
+export default function ExchangePartners({ compact = false, source = 'unknown', cryptoOnly = false, stockOnly = false }) {
+  const exchanges = stockOnly ? STOCK_BROKERS : cryptoOnly ? CRYPTO_EXCHANGES : [...CRYPTO_EXCHANGES, ...STOCK_BROKERS]
+  if (!exchanges.length) return null
   if (compact) {
     return (
       <div className="ep-strip-wrap">
-        <span className="ep-strip-label">Trade on</span>
+        <span className="ep-strip-label">{stockOnly ? 'Trade stocks on' : 'Trade on'}</span>
         <div className="ep-strip-row">
-          {[...CRYPTO_EXCHANGES, ...STOCK_BROKERS].map(ex => (
+          {exchanges.map(ex => (
             <a
               key={ex.name}
               href={ex.url}
