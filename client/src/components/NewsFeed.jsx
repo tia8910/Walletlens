@@ -1,48 +1,45 @@
 import { useEffect, useState, useCallback } from 'react'
 import { track } from '../analytics'
 
-// RSS sources fetched via rss2json (free, no auth, CORS-friendly)
+// Fallback RSS proxy (used only if /news.json not deployed yet)
 const RSS_FEEDS = [
-  { name: 'CoinTelegraph', url: 'https://cointelegraph.com/rss', color: '#f7931a' },
+  { name: 'CoinTelegraph', url: 'https://cointelegraph.com/rss',               color: '#f7931a' },
   { name: 'CoinDesk',      url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', color: '#1a9fff' },
-  { name: 'Decrypt',       url: 'https://decrypt.co/feed', color: '#6b21a8' },
+  { name: 'Decrypt',       url: 'https://decrypt.co/feed',                    color: '#6b21a8' },
 ]
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json?count=40&rss_url='
 
-// Map CoinGecko IDs → search keywords for article filtering
+// Map CoinGecko IDs → search keywords
 const COIN_KEYWORDS = {
-  bitcoin:         ['bitcoin', 'btc'],
-  ethereum:        ['ethereum', 'eth'],
-  solana:          ['solana', 'sol'],
-  binancecoin:     ['binance', 'bnb'],
-  xrp:             ['xrp', 'ripple'],
-  cardano:         ['cardano', 'ada'],
-  dogecoin:        ['dogecoin', 'doge'],
-  'avalanche-2':   ['avalanche', 'avax'],
-  polkadot:        ['polkadot', 'dot'],
-  chainlink:       ['chainlink', 'link'],
-  polygon:         ['polygon', 'matic'],
-  litecoin:        ['litecoin', 'ltc'],
-  tron:            ['tron', 'trx'],
-  'shiba-inu':     ['shiba', 'shib'],
-  'uniswap':       ['uniswap', 'uni'],
-  'cosmos':        ['cosmos', 'atom'],
-  'near':          ['near protocol', 'near'],
-  'aptos':         ['aptos', 'apt'],
-  'arbitrum':      ['arbitrum', 'arb'],
-  'optimism':      ['optimism', 'op'],
-  'sui':           ['sui'],
-  'pepe':          ['pepe'],
-  'render-token':  ['render', 'rndr'],
+  bitcoin:              ['bitcoin', 'btc'],
+  ethereum:             ['ethereum', 'eth'],
+  solana:               ['solana', 'sol'],
+  binancecoin:          ['binance', 'bnb'],
+  xrp:                  ['xrp', 'ripple'],
+  cardano:              ['cardano', 'ada'],
+  dogecoin:             ['dogecoin', 'doge'],
+  'avalanche-2':        ['avalanche', 'avax'],
+  polkadot:             ['polkadot', 'dot'],
+  chainlink:            ['chainlink', 'link'],
+  polygon:              ['polygon', 'matic'],
+  litecoin:             ['litecoin', 'ltc'],
+  tron:                 ['tron', 'trx'],
+  'shiba-inu':          ['shiba', 'shib'],
+  uniswap:              ['uniswap', 'uni'],
+  cosmos:               ['cosmos', 'atom'],
+  near:                 ['near protocol', 'near'],
+  aptos:                ['aptos', 'apt'],
+  arbitrum:             ['arbitrum', 'arb'],
+  optimism:             ['optimism', ' op '],
+  sui:                  ['sui'],
+  pepe:                 ['pepe'],
+  'render-token':       ['render', 'rndr'],
   'injective-protocol': ['injective', 'inj'],
 }
 
 function getKeywords(coinId, coinName, symbol) {
   const preset = COIN_KEYWORDS[coinId] || []
-  const extras = [
-    coinName?.toLowerCase(),
-    symbol?.toLowerCase(),
-  ].filter(Boolean)
+  const extras = [coinName?.toLowerCase(), symbol?.toLowerCase()].filter(Boolean)
   return [...new Set([...preset, ...extras])]
 }
 
@@ -59,25 +56,22 @@ function articleMatchesCoins(article, coinKeywordMap) {
 function timeAgo(pubDate) {
   const diff = Date.now() - new Date(pubDate).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)   return 'just now'
-  if (m < 60)  return `${m}m ago`
+  if (m < 1)  return 'just now'
+  if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24)  return `${h}h ago`
+  if (h < 24) return `${h}h ago`
   return `${Math.floor(h / 24)}d ago`
 }
 
-function stripHtml(html) {
-  return (html || '').replace(/<[^>]+>/g, '').replace(/&[a-z]+;/gi, ' ').trim()
-}
-
-function NewsCard({ article, source, matchedCoins }) {
+function NewsCard({ article, matchedCoins }) {
+  const color = article.sourceColor || '#888'
   return (
     <a
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
       className="news-card"
-      onClick={() => track('news_article_click', { source, title: article.title?.slice(0, 60) })}
+      onClick={() => track('news_article_click', { source: article.source, title: article.title?.slice(0, 60) })}
     >
       {article.thumbnail && (
         <div className="news-card-thumb">
@@ -86,7 +80,7 @@ function NewsCard({ article, source, matchedCoins }) {
       )}
       <div className="news-card-body">
         <div className="news-card-meta">
-          <span className="news-source-tag" style={{ color: source.color }}>{source.name}</span>
+          <span className="news-source-tag" style={{ color }}>{article.source}</span>
           <span className="news-card-time">{timeAgo(article.pubDate)}</span>
         </div>
         <div className="news-card-title">{article.title}</div>
@@ -97,20 +91,62 @@ function NewsCard({ article, source, matchedCoins }) {
             ))}
           </div>
         )}
-        <div className="news-card-desc">{stripHtml(article.description).slice(0, 120)}…</div>
+        {article.description && (
+          <div className="news-card-desc">{article.description.slice(0, 120)}…</div>
+        )}
       </div>
     </a>
   )
 }
 
-export default function NewsFeed({ enriched = [] }) {
-  const [articles, setArticles] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
-  const [filter, setFilter]     = useState('my-coins') // 'my-coins' | 'all'
-  const [lastFetch, setLastFetch] = useState(null)
+async function fetchFromCachedJson() {
+  const res = await fetch('/news.json?t=' + Math.floor(Date.now() / 600000)) // 10-min cache bust
+  if (!res.ok) throw new Error('not found')
+  const data = await res.json()
+  if (!data.articles?.length) throw new Error('empty')
+  return data.articles.map(a => ({
+    ...a,
+    _fromCache: true,
+  }))
+}
 
-  // Build keyword map from user's holdings
+async function fetchFromRss2Json() {
+  const results = await Promise.allSettled(
+    RSS_FEEDS.map(feed =>
+      fetch(RSS2JSON + encodeURIComponent(feed.url))
+        .then(r => r.json())
+        .then(data => ({ feed, items: data.items || [] }))
+    )
+  )
+  const all = []
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      for (const item of r.value.items) {
+        all.push({
+          title:       item.title || '',
+          link:        item.link || '',
+          description: (item.description || '').replace(/<[^>]+>/g, '').slice(0, 300),
+          pubDate:     item.pubDate || '',
+          thumbnail:   item.thumbnail || '',
+          categories:  item.categories || [],
+          source:      r.value.feed.name,
+          sourceColor: r.value.feed.color,
+        })
+      }
+    }
+  }
+  if (!all.length) throw new Error('rss2json returned no articles')
+  return all
+}
+
+export default function NewsFeed({ enriched = [] }) {
+  const [articles, setArticles]     = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [filter, setFilter]         = useState('my-coins')
+  const [lastFetch, setLastFetch]   = useState(null)
+  const [source, setSource]         = useState('')
+
   const coinKeywordMap = {}
   for (const h of enriched) {
     if (!h.coin_id) continue
@@ -122,24 +158,17 @@ export default function NewsFeed({ enriched = [] }) {
     setLoading(true)
     setError(null)
     try {
-      const results = await Promise.allSettled(
-        RSS_FEEDS.map(feed =>
-          fetch(RSS2JSON + encodeURIComponent(feed.url))
-            .then(r => r.json())
-            .then(data => ({ feed, items: data.items || [] }))
-        )
-      )
-      const all = []
-      for (const r of results) {
-        if (r.status === 'fulfilled') {
-          for (const item of r.value.items) {
-            all.push({ ...item, _source: r.value.feed })
-          }
-        }
+      let items
+      try {
+        items = await fetchFromCachedJson()
+        setSource('cached')
+      } catch {
+        items = await fetchFromRss2Json()
+        setSource('live')
       }
-      // Sort by date descending, deduplicate by title
+      // Deduplicate
       const seen = new Set()
-      const deduped = all
+      const deduped = items
         .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
         .filter(a => {
           const key = a.title?.slice(0, 60)
@@ -161,29 +190,21 @@ export default function NewsFeed({ enriched = [] }) {
     track('news_feed_view')
   }, [fetchNews])
 
-  // Filter articles
   const displayed = articles.filter(a => {
     if (filter === 'all' || !hasHoldings) return true
     return articleMatchesCoins(a, coinKeywordMap)
   })
 
-  // Compute matched coins per article
   function getMatchedCoins(article) {
-    const haystack = (
-      (article.title || '') + ' ' + (article.description || '')
-    ).toLowerCase()
+    const haystack = ((article.title || '') + ' ' + (article.description || '')).toLowerCase()
     return enriched
-      .filter(h => {
-        const kws = coinKeywordMap[h.coin_id] || []
-        return kws.some(kw => haystack.includes(kw))
-      })
+      .filter(h => (coinKeywordMap[h.coin_id] || []).some(kw => haystack.includes(kw)))
       .map(h => h.symbol || h.coin_id)
       .slice(0, 3)
   }
 
   return (
     <div className="news-feed-wrap">
-      {/* Header */}
       <div className="news-feed-header">
         <div className="news-feed-title">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -217,11 +238,11 @@ export default function NewsFeed({ enriched = [] }) {
       {lastFetch && (
         <div className="news-last-updated">
           Updated {timeAgo(lastFetch)} · {displayed.length} articles
+          {source === 'cached' ? ' · auto-updated every 2h' : ''}
           {hasHoldings && filter === 'my-coins' && ` about your ${enriched.length} coins`}
         </div>
       )}
 
-      {/* Content */}
       {loading && (
         <div className="news-skeleton-list">
           {[1,2,3,4,5].map(i => (
@@ -256,12 +277,7 @@ export default function NewsFeed({ enriched = [] }) {
       {!loading && !error && displayed.length > 0 && (
         <div className="news-card-list">
           {displayed.map((article, i) => (
-            <NewsCard
-              key={i}
-              article={article}
-              source={article._source}
-              matchedCoins={getMatchedCoins(article)}
-            />
+            <NewsCard key={i} article={article} matchedCoins={getMatchedCoins(article)} />
           ))}
         </div>
       )}
