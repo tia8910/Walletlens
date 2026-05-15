@@ -388,7 +388,8 @@ export default function AssetDetail() {
         holdings={holdings ? [{ ...holdings, coin_id: coinId, coin_symbol: coin?.symbol, amount }] : []}
         prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
       />
-      <ExchangePartners compact source="asset_detail" />
+      {categoryFor(coinId) === 'crypto' && <ExchangePartners compact source="asset_detail" cryptoOnly />}
+      {categoryFor(coinId) === 'stock' && <ExchangePartners compact source="asset_detail" stockOnly />}
     </div>
   )
 }
