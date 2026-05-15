@@ -1,6 +1,6 @@
 import { track } from '../analytics'
 
-const EXCHANGES = [
+const CRYPTO_EXCHANGES = [
   {
     name: 'Binance',
     tagline: 'World\'s #1 Exchange',
@@ -63,6 +63,26 @@ const EXCHANGES = [
   },
 ]
 
+const STOCK_BROKERS = [
+  {
+    name: 'IBKR',
+    tagline: 'Stocks, Options & Crypto',
+    fee: '$0 commissions on stocks',
+    bonus: 'Earn up to $1,000 IBKR stock',
+    color: '#e8121f',
+    bg: 'linear-gradient(135deg, #110003 0%, #1f0005 100%)',
+    glow: 'rgba(232,18,31,0.22)',
+    url: 'https://ibkr.com/referral/tarek972',
+    logo: (
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-ibkr">
+        {/* IBKR: bold red "I" bar + upward arrow — brokerage feel */}
+        <rect x="17" y="6" width="6" height="28" rx="3" fill="#e8121f"/>
+        <polygon points="20,5 27,15 23,15 23,28 17,28 17,15 13,15" fill="#e8121f" opacity="0.85"/>
+      </svg>
+    ),
+  },
+]
+
 // compact=true → slim strip for dashboard/sheet; compact=false → full cards
 export default function ExchangePartners({ compact = false, source = 'unknown' }) {
   if (compact) {
@@ -70,7 +90,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown' }
       <div className="ep-strip-wrap">
         <span className="ep-strip-label">Trade on</span>
         <div className="ep-strip-row">
-          {EXCHANGES.map(ex => (
+          {[...CRYPTO_EXCHANGES, ...STOCK_BROKERS].map(ex => (
             <a
               key={ex.name}
               href={ex.url}
@@ -93,16 +113,52 @@ export default function ExchangePartners({ compact = false, source = 'unknown' }
     <div className="ep-cards-wrap">
       <p className="ep-cards-label">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Recommended Exchanges
+        Trade with Our Exchange Partners
       </p>
       <div className="ep-cards-grid">
-        {EXCHANGES.map(ex => (
+        {CRYPTO_EXCHANGES.map(ex => (
           <a
             key={ex.name}
             href={ex.url}
             target="_blank"
             rel="noopener noreferrer"
             className="ep-card"
+            style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
+            onClick={() => track('exchange_referral_click', { exchange: ex.name, source })}
+          >
+            <div className="ep-card-shine" />
+            <div className="ep-card-top">
+              <div className="ep-card-logo">{ex.logo}</div>
+              <div className="ep-card-info">
+                <div className="ep-card-name">{ex.name}</div>
+                <div className="ep-card-tagline">{ex.tagline}</div>
+              </div>
+              <div className="ep-card-arrow">→</div>
+            </div>
+            <div className="ep-card-divider" />
+            <div className="ep-card-bottom">
+              <span className="ep-card-fee">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                {ex.fee}
+              </span>
+              <span className="ep-card-bonus">🎁 {ex.bonus}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      <p className="ep-cards-label ep-cards-label-stocks">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Also Trade Stocks &amp; Options
+      </p>
+      <div className="ep-cards-grid ep-cards-grid-wide">
+        {STOCK_BROKERS.map(ex => (
+          <a
+            key={ex.name}
+            href={ex.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ep-card ep-card-broker"
             style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
             onClick={() => track('exchange_referral_click', { exchange: ex.name, source })}
           >
