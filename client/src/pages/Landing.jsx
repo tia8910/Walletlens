@@ -4,6 +4,7 @@ import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import ExchangePartners from '../components/ExchangePartners'
 
 // ── Animated counter ──────────────────────────────────────────────────────
 function Counter({ to, prefix = '', suffix = '', duration = 1800 }) {
@@ -467,22 +468,7 @@ export default function Landing() {
           Share WalletLens on X
         </button>
         {/* Partner exchanges on landing */}
-        <div className="lp-partner-row">
-          <p className="lp-partner-label">Start trading on</p>
-          <div className="lp-partner-btns">
-            {[
-              { name: 'Binance', color: '#f0b90b', url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy' },
-              { name: 'OKX',     color: '#fff',    url: 'https://okx.com/join/85929296' },
-              { name: 'Bybit',   color: '#f7a600', url: 'https://www.bybit.com/invite?ref=3ORQD9' },
-            ].map(ex => (
-              <a key={ex.name} href={ex.url} target="_blank" rel="noopener noreferrer"
-                className="lp-partner-btn"
-                style={{ '--ex-color': ex.color }}
-                onClick={() => track('exchange_referral_click', { exchange: ex.name, source: 'landing' })}
-              >{ex.name}</a>
-            ))}
-          </div>
-        </div>
+        <ExchangePartners compact source="landing" />
 
         <div className="lp-final-links">
           <button className="lp-link" onClick={() => navigate('/market')}>{t('navMarket')}</button>

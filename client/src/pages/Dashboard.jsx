@@ -17,6 +17,7 @@ import { track } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
 import WeeklyReport from '../components/WeeklyReport'
 import NewsTicker from '../components/NewsTicker'
+import ExchangePartners from '../components/ExchangePartners'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
 const Ico = {
@@ -1481,19 +1482,7 @@ export default function Dashboard() {
           )}
 
           {/* Partner exchange strip */}
-          <div className="dvx-partner-strip">
-            {[
-              { name: 'Binance', color: '#f0b90b', url: 'https://www.binance.com/referral/earn-together/refer2earn-usdc/claim?hl=en&ref=GRO_28502_SYKM0&utm_source=referral_entrance&utm_medium=web_share_copy' },
-              { name: 'OKX',     color: '#fff',    url: 'https://okx.com/join/85929296' },
-              { name: 'Bybit',   color: '#f7a600', url: 'https://www.bybit.com/invite?ref=3ORQD9' },
-            ].map(ex => (
-              <a key={ex.name} href={ex.url} target="_blank" rel="noopener noreferrer"
-                className="dvx-partner-btn"
-                onClick={() => track('exchange_referral_click', { exchange: ex.name, source: 'dashboard' })}
-                style={{ '--ex-color': ex.color }}
-              >{ex.name}</a>
-            ))}
-          </div>
+          <ExchangePartners compact source="dashboard" />
 
           {/* AI Decision Engine */}
           {enriched.length > 0 && (
