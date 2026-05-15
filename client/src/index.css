@@ -5677,3 +5677,17 @@ input[type="date"] { color-scheme: dark; }
 .eval-badge-pass { background: rgba(52,211,153,0.15); color: #34d399; }
 .eval-badge-fail { background: rgba(248,113,113,0.15); color: #f87171; }
 .eval-cat-tip { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.07); font-size: 0.81rem; color: rgba(255,255,255,0.65); line-height: 1.6; animation: fadeInUp 0.2s ease; }
+
+/* ── Landing share button ─────────────────────────────────────────────────── */
+.lp-share-x-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.lp-share-x-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(0,0,0,0.6); }
