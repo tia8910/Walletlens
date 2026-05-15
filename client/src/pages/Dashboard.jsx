@@ -42,24 +42,56 @@ const Ico = {
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
 const MC_TIERS = [
-  { id: 'mega',  label: 'Mega Cap',  min: 100e9,  color: '#34d399', emoji: '🐋' },
-  { id: 'large', label: 'Large Cap', min: 10e9,   color: '#3b82f6', emoji: '🔵' },
-  { id: 'mid',   label: 'Mid Cap',   min: 1e9,    color: '#f59e0b', emoji: '🟡' },
-  { id: 'small', label: 'Small Cap', min: 100e6,  color: '#f87171', emoji: '🔴' },
-  { id: 'micro', label: 'Micro Cap', min: 0,      color: '#8b5cf6', emoji: '💜' },
+  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: '#34d399', emoji: '🐋' },
+  { id: 'large',      label: 'Large Cap',        min: 10e9,   color: '#3b82f6', emoji: '🔵' },
+  { id: 'mid',        label: 'Mid Cap',          min: 1e9,    color: '#f59e0b', emoji: '🟡' },
+  { id: 'small',      label: 'Small Cap',        min: 100e6,  color: '#f87171', emoji: '🔴' },
+  { id: 'micro',      label: 'Micro Cap',        min: 0,      color: '#8b5cf6', emoji: '💜' },
+  { id: 'non-crypto', label: 'Non-Crypto Assets', min: -1,    color: '#a78bfa', emoji: '🏦' },
 ]
 
 // Known mega/large-cap IDs to classify without needing live market cap data
 const KNOWN_MEGA = new Set(['bitcoin','ethereum'])
 const KNOWN_LARGE = new Set(['solana','binancecoin','xrp','cardano','dogecoin','avalanche-2','polkadot','chainlink','polygon','litecoin','tron','shiba-inu'])
 
-function classifyMcTier(coinId, marketCap) {
+function isNonCrypto(coinId, coinSymbol) {
+  const id = (coinId || '').toLowerCase()
+  const sym = (coinSymbol || '').toLowerCase()
+  if (id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:')) return true
+  if (['xau','xag','xpt','xpd'].includes(sym)) return true
+  if (['usd','eur','gbp','us'].includes(sym)) return true
+  if (['aapl','msft','tsla','amzn','nvda','googl','meta','nflx'].includes(sym)) return true
+  return false
+}
+
+function classifyMcTier(coinId, marketCap, coinSymbol) {
+  if (isNonCrypto(coinId, coinSymbol)) return MC_TIERS[5] // non-crypto
   if (marketCap > 0) {
-    return MC_TIERS.find(t => marketCap >= t.min) || MC_TIERS[MC_TIERS.length - 1]
+    return MC_TIERS.find(t => t.min >= 0 && marketCap >= t.min) || MC_TIERS[4]
   }
   if (KNOWN_MEGA.has(coinId))  return MC_TIERS[0]
   if (KNOWN_LARGE.has(coinId)) return MC_TIERS[1]
   return MC_TIERS[3]
+}
+
+// ── Asset category classifier ─────────────────────────────────────────────
+function categorizeAsset(h) {
+  const id = (h.coin_id || '').toLowerCase()
+  const sym = (h.coin_symbol || '').toLowerCase()
+  if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
+  if (id.startsWith('stock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
+  if (id.startsWith('real:') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
+  if (id.startsWith('cash:') || ['usd','eur','gbp','jpy','us','usdt','usdc','dai','busd','tusd','frax','usdd'].includes(sym)) return 'cash'
+  return 'crypto'
+}
+
+const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
+const CATEGORY_LABELS = {
+  crypto: '₿ Crypto',
+  metals: '🟡 Precious Metals',
+  stocks: '📈 Stocks & ETFs',
+  realestate: '🏠 Real Estate',
+  cash: '💵 Cash & Stables',
 }
 
 // ── AI analysis engine ────────────────────────────────────────────────────
@@ -90,7 +122,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const pnlHealth = Math.min(100, Math.max(0, 50 + pnlScore))
 
   // 5. Market cap tier diversity (reward spreading across tiers)
-  const tierSet = new Set(enriched.map(h => classifyMcTier(h.coin_id, h.market_cap || 0).id))
+  const tierSet = new Set(enriched.map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
   const tierScore = Math.min(100, tierSet.size * 28)
 
   // Overall health score (weighted average)
@@ -110,7 +142,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
   // Market cap breakdown
   const mcBreakdown = MC_TIERS.map(tier => {
-    const assets = enriched.filter(h => classifyMcTier(h.coin_id, h.market_cap || 0).id === tier.id)
+    const assets = enriched.filter(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id === tier.id)
     const value  = assets.reduce((s, h) => s + h.value, 0)
     return { ...tier, assets, value, pct: totalValue > 0 ? (value / totalValue) * 100 : 0 }
   }).filter(t => t.assets.length > 0)
@@ -134,12 +166,24 @@ function computeAI(enriched, prices, transactions, totalValue) {
   if (momentum > 3) insights.push({ type: 'good', text: `Strong bullish momentum: weighted 24h gain of +${momentum.toFixed(2)}% across holdings.` })
   else if (momentum < -3) insights.push({ type: 'warn', text: `Bearish pressure: weighted 24h loss of ${momentum.toFixed(2)}% across holdings.` })
 
-  const hasMetals = enriched.some(h => h.coin_id === 'metal:xau' || h.coin_id === 'metal:xag')
-  const hasStocks = enriched.some(h => (h.coin_id || '').startsWith('stock:'))
-  if (!hasMetals && !hasStocks) insights.push({ type: 'info', text: 'Portfolio is 100% crypto — adding gold/silver or stocks could hedge volatility.' })
+  const hasMetals = enriched.some(h => categorizeAsset(h) === 'metals')
+  const hasStocks = enriched.some(h => categorizeAsset(h) === 'stocks')
+  const hasRealEstate = enriched.some(h => categorizeAsset(h) === 'realestate')
+  const hasCrypto = enriched.some(h => categorizeAsset(h) === 'crypto')
+  const nonCryptoCount = [hasMetals, hasStocks, hasRealEstate].filter(Boolean).length
 
-  if (tierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${tierSet.size} market-cap tiers — balanced risk profile.` })
-  else if (!tierSet.has('mid') && !tierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap assets — mid/small-cap exposure could boost upside.' })
+  if (hasCrypto && nonCryptoCount >= 2) {
+    insights.push({ type: 'good', text: `Strong cross-asset diversification — crypto combined with ${[hasMetals && 'precious metals', hasStocks && 'stocks', hasRealEstate && 'real estate'].filter(Boolean).join(' & ')}.` })
+  } else if (hasCrypto && nonCryptoCount === 1) {
+    const which = hasMetals ? 'precious metals' : hasStocks ? 'stocks' : 'real estate'
+    insights.push({ type: 'good', text: `Good diversification — crypto + ${which} adds a hedge against crypto-only volatility.` })
+  } else if (!hasMetals && !hasStocks && !hasRealEstate) {
+    insights.push({ type: 'info', text: 'Portfolio is 100% crypto — adding gold/silver or stocks could hedge volatility.' })
+  }
+
+  const cryptoTierSet = new Set(enriched.filter(h => categorizeAsset(h) === 'crypto').map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
+  if (cryptoTierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${cryptoTierSet.size} crypto market-cap tiers — balanced risk profile.` })
+  else if (hasCrypto && !cryptoTierSet.has('mid') && !cryptoTierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap crypto — mid/small-cap exposure could boost upside.' })
 
   // Indicators
   const riskLevel = hhiNorm > 0.6 ? 'High' : hhiNorm > 0.3 ? 'Medium' : 'Low'
@@ -1839,60 +1883,77 @@ export default function Dashboard() {
                 {enriched.length === 0
                   ? <p className="muted">Nothing yet.</p>
                   : <>
-                    <ul className="dvx-holdings">
-                      {displayHoldings.map((h, i) => {
-                        const displayValue  = h.value > 0 ? h.value : h.total_invested
-                        const hasPnl        = h.pnl !== 0 && !pricesFailed
-                        const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
-                        const beDistance     = h.price > 0 && breakEvenPrice > 0
-                          ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
-                        const bePct = h.price > 0 && breakEvenPrice > 0
-                          ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
-                        return (
-                          <li key={h.coin_id} className="dvx-holding holo-card-v2"
-                            onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
-                            <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
-                            <div className="dvx-holding-meta">
-                              <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                              {showBreakEven ? (
-                                <span className="muted" style={{ fontSize:'0.72rem' }}>
-                                  Break-even: <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171', fontWeight:700 }}>
-                                    ${fmt(breakEvenPrice)}
-                                  </span>
-                                  {h.price > 0 && <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171' }}>
-                                    {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
-                                  </span>}
-                                </span>
-                              ) : (
-                                <span className="muted">
-                                  {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
-                                  {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
-                                </span>
-                              )}
-                              {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
-                                <div className="dvx-be-bar-wrap">
-                                  <div className="dvx-be-bar-track">
-                                    <div className="dvx-be-bar-fill" style={{
-                                      width: `${bePct}%`,
-                                      background: beDistance >= 0 ? '#34d399' : '#f87171',
-                                    }} />
-                                    <div className="dvx-be-bar-marker" />
-                                  </div>
-                                </div>
-                              )}
+                    <div>
+                      {(() => {
+                        const grouped = {}
+                        displayHoldings.forEach(h => {
+                          const cat = categorizeAsset(h)
+                          if (!grouped[cat]) grouped[cat] = []
+                          grouped[cat].push(h)
+                        })
+                        return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => (
+                          <div key={cat}>
+                            <div style={{ fontSize:'0.75rem', fontWeight:700, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.07em', padding:'0.5rem 0 0.25rem' }}>
+                              {CATEGORY_LABELS[cat]}
                             </div>
-                            <div style={TEXT_RIGHT_STYLE}>
-                              <div className="dvx-holding-val">${fmt(displayValue)}</div>
-                              {!showBreakEven && hasPnl && (
-                                <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
-                                  {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
+                            <ul className="dvx-holdings" style={{ margin:0 }}>
+                              {grouped[cat].map(h => {
+                                const displayValue  = h.value > 0 ? h.value : h.total_invested
+                                const hasPnl        = h.pnl !== 0 && !pricesFailed
+                                const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
+                                const beDistance     = h.price > 0 && breakEvenPrice > 0
+                                  ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
+                                const bePct = h.price > 0 && breakEvenPrice > 0
+                                  ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
+                                return (
+                                  <li key={h.coin_id} className="dvx-holding holo-card-v2"
+                                    onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
+                                    <div className="dvx-holding-meta">
+                                      <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                      {showBreakEven ? (
+                                        <span className="muted" style={{ fontSize:'0.72rem' }}>
+                                          Break-even: <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171', fontWeight:700 }}>
+                                            ${fmt(breakEvenPrice)}
+                                          </span>
+                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171' }}>
+                                            {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
+                                          </span>}
+                                        </span>
+                                      ) : (
+                                        <span className="muted">
+                                          {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
+                                          {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
+                                        </span>
+                                      )}
+                                      {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
+                                        <div className="dvx-be-bar-wrap">
+                                          <div className="dvx-be-bar-track">
+                                            <div className="dvx-be-bar-fill" style={{
+                                              width: `${bePct}%`,
+                                              background: beDistance >= 0 ? '#34d399' : '#f87171',
+                                            }} />
+                                            <div className="dvx-be-bar-marker" />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={TEXT_RIGHT_STYLE}>
+                                      <div className="dvx-holding-val">${fmt(displayValue)}</div>
+                                      {!showBreakEven && hasPnl && (
+                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
+                                          {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
+                                        </div>
+                                      )}
+                                    </div>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        ))
+                      })()}
+                    </div>
                     {enriched.length > 6 && (
                       <button className="dvx-show-more" onClick={() => setShowAllHoldings(v => !v)}>
                         {showAllHoldings ? '▲ Show less' : `▼ Show all ${enriched.length} assets`}
