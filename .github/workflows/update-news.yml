@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch crypto news from RSS feeds
@@ -23,10 +23,10 @@ jobs:
           import urllib.request, xml.etree.ElementTree as ET, json, time, html, re
 
           FEEDS = [
-            {"name": "CoinTelegraph", "url": "https://cointelegraph.com/rss",              "color": "#f7931a"},
-            {"name": "CoinDesk",      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/", "color": "#1a9fff"},
-            {"name": "Decrypt",       "url": "https://decrypt.co/feed",                   "color": "#6b21a8"},
-            {"name": "Bitcoin Magazine","url":"https://bitcoinmagazine.com/feed",           "color": "#ff9900"},
+            {"name": "CoinTelegraph",    "url": "https://cointelegraph.com/rss",                    "color": "#f7931a"},
+            {"name": "CoinDesk",         "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",  "color": "#1a9fff"},
+            {"name": "Decrypt",          "url": "https://decrypt.co/feed",                          "color": "#6b21a8"},
+            {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/feed",                  "color": "#ff9900"},
           ]
 
           def strip_tags(text):
@@ -37,7 +37,6 @@ jobs:
             return re.sub(r'\s+', ' ', text).strip()
 
           def find_image(item):
-            # Try media:content, enclosure, or img in description
             ns = {'media': 'http://search.yahoo.com/mrss/'}
             mc = item.find('media:content', ns)
             if mc is not None:
@@ -46,7 +45,7 @@ jobs:
             enc = item.find('enclosure')
             if enc is not None:
               url = enc.get('url', '')
-              if url and ('jpg' in url or 'png' in url or 'jpeg' in url or 'webp' in url):
+              if url and any(x in url for x in ['jpg','png','jpeg','webp']):
                 return url
             desc = item.findtext('description') or ''
             m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', desc)
@@ -74,7 +73,6 @@ jobs:
                 desc  = strip_tags(item.findtext('description') or '')
                 pub   = item.findtext('pubDate') or ''
                 img   = find_image(item)
-                cats  = [c.text or '' for c in item.findall('category')]
                 key   = title[:60]
                 if not title or key in seen_titles:
                   continue
@@ -85,7 +83,6 @@ jobs:
                   'description': desc[:300],
                   'pubDate':     pub,
                   'thumbnail':   img,
-                  'categories':  cats,
                   'source':      feed['name'],
                   'sourceColor': feed['color'],
                 })
@@ -94,7 +91,6 @@ jobs:
             except Exception as e:
               print(f"  {feed['name']} failed: {e}")
 
-          # Sort by pubDate descending (RFC 2822 format)
           def parse_date(pub):
             import email.utils
             try:
@@ -104,21 +100,21 @@ jobs:
           articles.sort(key=lambda a: parse_date(a['pubDate']), reverse=True)
 
           output = {
-            'updated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-            'count':   len(articles),
-            'articles': articles[:120],  # keep latest 120
+            'updated':  time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+            'count':    len(articles),
+            'articles': articles[:120],
           }
 
-          with open('news.json', 'w') as f:
+          with open('client/public/news.json', 'w') as f:
             json.dump(output, f)
 
-          print(f"Total: {len(articles)} articles saved to news.json")
+          print(f"Total: {len(articles)} articles saved to client/public/news.json")
           EOF
 
       - name: Commit updated news
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add news.json
+          git add client/public/news.json
           git diff --staged --quiet || git commit -m "chore: update crypto news [skip ci]"
           git push
