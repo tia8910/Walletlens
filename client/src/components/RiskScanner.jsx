@@ -71,13 +71,68 @@ async function scoreToken(coinId, forceRefresh = false) {
     ], breakdown: { cg: 95, gp: null }}
   }
 
-  if (coinId.startsWith('metal:') || coinId.startsWith('stock:') || coinId.startsWith('fiat:')) {
+  // Non-crypto asset classes — use asset-appropriate risk profiles
+  const idL = coinId.toLowerCase()
+  const NON_CRYPTO_PREFIXES = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
+  const NON_CRYPTO_SUBSTRINGS = ['appartment', 'apartment', 'property', 'realestate']
+  const isRealEstate = idL.startsWith('real:') || idL.startsWith('other:') || NON_CRYPTO_SUBSTRINGS.some(s => idL.includes(s))
+  const isBond = idL.startsWith('bond:')
+  const isStock = idL.startsWith('stock:')
+  const isMetal = idL.startsWith('metal:')
+  const isFiat = idL.startsWith('fiat:') || idL.startsWith('cash:')
+
+  if (NON_CRYPTO_PREFIXES.some(p => idL.startsWith(p)) || NON_CRYPTO_SUBSTRINGS.some(s => idL.includes(s))) {
+    let score, signals
+    if (isRealEstate) {
+      score = 72
+      signals = [
+        { label: 'Physical asset — no smart contract risk', status: 'good' },
+        { label: 'Illiquid — cannot sell quickly', status: 'warn' },
+        { label: 'Subject to local market & legal risk', status: 'warn' },
+        { label: 'No live price feed — manually tracked', status: 'info' },
+      ]
+    } else if (isBond) {
+      score = 85
+      signals = [
+        { label: 'Fixed-income instrument — lower volatility', status: 'good' },
+        { label: 'Regulated debt security', status: 'good' },
+        { label: 'Subject to interest rate risk', status: 'warn' },
+        { label: 'Credit risk depends on issuer', status: 'info' },
+      ]
+    } else if (isStock) {
+      score = 80
+      signals = [
+        { label: 'Exchange-listed equity — regulated', status: 'good' },
+        { label: 'No smart contract or rug risk', status: 'good' },
+        { label: 'Subject to company & market risk', status: 'warn' },
+        { label: 'Liquid — tradable on stock exchanges', status: 'good' },
+      ]
+    } else if (isMetal) {
+      score = 88
+      signals = [
+        { label: 'Store of value — thousands of years track record', status: 'good' },
+        { label: 'No counterparty or smart contract risk', status: 'good' },
+        { label: 'Regulated commodity markets', status: 'good' },
+        { label: 'Lower volatility than crypto', status: 'good' },
+      ]
+    } else if (isFiat) {
+      score = 90
+      signals = [
+        { label: 'Government-backed currency', status: 'good' },
+        { label: 'No smart contract risk', status: 'good' },
+        { label: 'Subject to inflation risk over time', status: 'info' },
+      ]
+    } else {
+      score = 78
+      signals = [
+        { label: 'Non-crypto asset — no token/rug risk', status: 'good' },
+        { label: 'Manually tracked asset', status: 'info' },
+      ]
+    }
+    const grade = score >= 80 ? 'SAFE' : score >= 60 ? 'MODERATE' : 'HIGH RISK'
+    const color = score >= 80 ? '#34d399' : score >= 60 ? '#f59e0b' : '#f87171'
+    const result = { score, grade, color, signals, breakdown: { cg: score, gp: null } }
     const cache = loadCache()
-    const result = { score: 90, grade: 'SAFE', color: '#34d399', signals: [
-      { label: 'Regulated asset class', status: 'good' },
-      { label: 'No smart contract risk', status: 'good' },
-      { label: 'Established market infrastructure', status: 'good' },
-    ], breakdown: { cg: 90, gp: null }}
     cache[coinId] = { result, ts: Date.now() }
     saveCache(cache)
     return result
