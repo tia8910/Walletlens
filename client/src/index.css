@@ -5925,7 +5925,7 @@ input[type="date"] { color-scheme: dark; }
   align-items: center;
   white-space: nowrap;
   height: 100%;
-  animation: news-ticker-scroll 25s linear infinite;
+  animation: news-ticker-scroll 8s linear infinite;
 }
 @keyframes news-ticker-scroll {
   from { transform: translateX(0); }
