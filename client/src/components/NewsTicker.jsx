@@ -89,12 +89,59 @@ export default function NewsTicker() {
     return () => { cancelled = true }
   }, [])
 
+  const [modalOpen, setModalOpen] = useState(false)
+
   if (!items.length) return null
 
-  // Duplicate items so the scroll loops seamlessly
   const doubled = [...items, ...items]
 
   return (
+    <>
+    {modalOpen && (
+      <div className="news-modal-overlay" onClick={() => setModalOpen(false)}>
+        <div className="news-modal" onClick={e => e.stopPropagation()}>
+          <div className="news-modal-header">
+            <span className="news-modal-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+                <path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/>
+              </svg>
+              Crypto News · {items.length} articles
+            </span>
+            <button className="news-modal-close" onClick={() => setModalOpen(false)}>✕</button>
+          </div>
+          <div className="news-modal-list">
+            {items.map((item, i) => (
+              <div key={i} className="news-modal-card">
+                <div className="news-modal-card-meta">
+                  <span className="news-source-tag" style={{ color: item.sourceColor }}>{item.source}</span>
+                  <span className="news-card-time">{timeAgo(item.pubDate)}</span>
+                </div>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="news-modal-card-title"
+                  onClick={() => track('news_modal_click', { source: item.source })}
+                >{item.title}</a>
+                {item.description && (
+                  <p className="news-modal-card-desc">{item.description.slice(0, 150)}…</p>
+                )}
+                <button
+                  className="news-modal-share-btn"
+                  onClick={() => {
+                    const text = encodeURIComponent(`${item.title} — via walletlens.cc`)
+                    const url  = encodeURIComponent(item.link)
+                    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener')
+                    track('news_modal_share', { source: item.source })
+                  }}
+                >𝕏 Share</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
     <div
       className="news-ticker-wrap"
       onMouseEnter={() => setPaused(true)}
@@ -141,5 +188,18 @@ export default function NewsTicker() {
         </div>
       </div>
     </div>
+    <div className="news-show-all-wrap">
+      <button
+        className="news-show-all-btn"
+        onClick={() => { setModalOpen(true); track('news_show_all') }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+          <path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/>
+        </svg>
+        Show all {items.length} articles
+      </button>
+    </div>
+    </>
   )
 }
