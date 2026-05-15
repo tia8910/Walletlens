@@ -6383,3 +6383,24 @@ input[type="date"] { color-scheme: dark; }
   animation-duration: 1.2s;
   filter: drop-shadow(0 0 12px #f7a600cc);
 }
+
+/* ── IBKR logo animation ── */
+@keyframes ep-logo-ibkr-rise {
+  0%, 100% { filter: drop-shadow(0 0 4px #e8121f88); transform: translateY(0); }
+  50% { filter: drop-shadow(0 0 10px #e8121fcc); transform: translateY(-3px); }
+}
+.ep-logo-ibkr {
+  animation: ep-logo-ibkr-rise 2.8s ease-in-out infinite;
+}
+.ep-card:hover .ep-logo-ibkr {
+  animation-duration: 1s;
+  filter: drop-shadow(0 0 14px #e8121fdd);
+}
+
+/* ── Broker section label + wide grid ── */
+.ep-cards-label-stocks {
+  margin-top: 1rem;
+}
+.ep-cards-grid-wide {
+  grid-template-columns: 1fr;
+}
