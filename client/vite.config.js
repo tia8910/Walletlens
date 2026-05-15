@@ -5,7 +5,10 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
+    target: 'es2020',
     outDir: 'dist',
+    // Skip gzip size report — saves ~5s on large builds
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks: {

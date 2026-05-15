@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 
 // Top-of-page auto-scrolling live price strip — pulls top market caps
@@ -65,10 +65,11 @@ export default function PriceTicker() {
     }
   }, [])
 
-  if (items.length === 0) return null
+  // Duplicate the list so the marquee loops seamlessly.
+  // useMemo prevents rebuilding the array on every render.
+  const doubled = useMemo(() => [...items, ...items], [items])
 
-  // Duplicate the list so the marquee loops seamlessly
-  const doubled = [...items, ...items]
+  if (doubled.length === 0) return null
 
   return (
     <div className="ticker-strip" aria-hidden="true">

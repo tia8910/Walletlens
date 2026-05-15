@@ -146,6 +146,9 @@ const BINANCE_ID_OVERRIDES = {
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
+// In-flight deduplication: if two callers hit this simultaneously (e.g.
+// PriceTicker + Market page both mounting), only one network request fires.
+const _marketInFlight = {};
 async function _loadMarketSnapshot(perPage = 250) {
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
@@ -158,46 +161,57 @@ async function _loadMarketSnapshot(perPage = 250) {
     return fresh.v.slice(0, perPage);
   }
 
-  // Primary: CoinGecko
-  const data = await fetchJSON(
-    `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
-  );
-  if (Array.isArray(data) && data.length > 0) {
-    cache[perPage] = { t: now, v: data };
-    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
-    return data;
-  }
+  // Deduplicate concurrent callers — reuse the same in-flight promise
+  // instead of each caller firing its own network request.
+  const key = perPage;
+  if (_marketInFlight[key]) return _marketInFlight[key];
 
-  // Fallback: CoinCap
-  try {
-    const ccData = await fetchJSON(`https://rest.coincap.io/v3/assets?limit=${perPage}`);
-    const list = Array.isArray(ccData?.data) ? ccData.data : [];
-    if (list.length > 0) {
-      const mapped = list.map((a, i) => ({
-        id: a.id,
-        symbol: (a.symbol || '').toLowerCase(),
-        name: a.name,
-        image: `https://assets.coincap.io/assets/icons/${(a.symbol || '').toLowerCase()}@2x.png`,
-        current_price: parseFloat(a.priceUsd) || 0,
-        market_cap: parseFloat(a.marketCapUsd) || 0,
-        market_cap_rank: i + 1,
-        total_volume: parseFloat(a.volumeUsd24Hr) || 0,
-        price_change_percentage_24h: parseFloat(a.changePercent24Hr) || 0,
-        price_change_percentage_24h_in_currency: parseFloat(a.changePercent24Hr) || 0,
-        price_change_percentage_1h_in_currency: 0,
-        price_change_percentage_7d_in_currency: 0,
-      }));
-      cache[perPage] = { t: now, v: mapped };
-      try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
-      return mapped;
+  _marketInFlight[key] = (async () => {
+    try {
+      // Primary: CoinGecko
+      const data = await fetchJSON(
+        `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
+      );
+      if (Array.isArray(data) && data.length > 0) {
+        cache[perPage] = { t: now, v: data };
+        try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+        return data;
+      }
+
+      // Fallback: CoinCap
+      const ccData = await fetchJSON(`https://rest.coincap.io/v3/assets?limit=${perPage}`);
+      const list = Array.isArray(ccData?.data) ? ccData.data : [];
+      if (list.length > 0) {
+        const mapped = list.map((a, i) => ({
+          id: a.id,
+          symbol: (a.symbol || '').toLowerCase(),
+          name: a.name,
+          image: `https://assets.coincap.io/assets/icons/${(a.symbol || '').toLowerCase()}@2x.png`,
+          current_price: parseFloat(a.priceUsd) || 0,
+          market_cap: parseFloat(a.marketCapUsd) || 0,
+          market_cap_rank: i + 1,
+          total_volume: parseFloat(a.volumeUsd24Hr) || 0,
+          price_change_percentage_24h: parseFloat(a.changePercent24Hr) || 0,
+          price_change_percentage_24h_in_currency: parseFloat(a.changePercent24Hr) || 0,
+          price_change_percentage_1h_in_currency: 0,
+          price_change_percentage_7d_in_currency: 0,
+        }));
+        cache[perPage] = { t: now, v: mapped };
+        try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+        return mapped;
+      }
+    } finally {
+      delete _marketInFlight[key];
     }
-  } catch {}
 
-  // Last resort: stale cache > nothing
-  if (fresh && Array.isArray(fresh.v)) return fresh.v.slice(0, perPage);
-  if (cache[250]?.v) return cache[250].v.slice(0, perPage);
-  if (cache[50]?.v)  return cache[50].v.slice(0, perPage);
-  return [];
+    // Last resort: stale cache > nothing
+    if (fresh && Array.isArray(fresh.v)) return fresh.v.slice(0, perPage);
+    if (cache[250]?.v) return cache[250].v.slice(0, perPage);
+    if (cache[50]?.v)  return cache[50].v.slice(0, perPage);
+    return [];
+  })();
+
+  return _marketInFlight[key];
 }
 
 // Net-balance fold over a transactions array — pure helper now in
