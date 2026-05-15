@@ -1,10 +1,10 @@
 const SETTINGS_KEY = 'wl_settings'
 
 const THEMES = [
-  { id: 'dark',   bg: '#040d0a', card: '#0d1f14' },
-  { id: 'amoled', bg: '#000000', card: '#0a0f0a' },
-  { id: 'navy',   bg: '#050a18', card: '#0d1630' },
-  { id: 'purple', bg: '#0d0714', card: '#150d24' },
+  { id: 'dark',   bg: '#040d0a', card: 'rgba(13, 31, 20, 0.92)' },
+  { id: 'amoled', bg: '#000000', card: 'rgba(10, 15, 10, 0.95)' },
+  { id: 'navy',   bg: '#050a18', card: 'rgba(13, 22, 48, 0.92)' },
+  { id: 'purple', bg: '#0d0714', card: 'rgba(21, 13, 36, 0.92)' },
 ]
 
 const ACCENTS = [

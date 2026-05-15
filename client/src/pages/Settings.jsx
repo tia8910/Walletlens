@@ -7,10 +7,10 @@ import { applySettings as _applySettings } from '../settingsUtils'
 const SETTINGS_KEY = 'wl_settings'
 
 const THEMES = [
-  { id: 'dark',   label: 'Dark',   bg: '#040d0a', card: '#0d1f14' },
-  { id: 'amoled', label: 'AMOLED', bg: '#000000', card: '#0a0f0a' },
-  { id: 'navy',   label: 'Navy',   bg: '#050a18', card: '#0d1630' },
-  { id: 'purple', label: 'Purple', bg: '#0d0714', card: '#150d24' },
+  { id: 'dark',   label: 'Dark',   bg: '#040d0a' },
+  { id: 'amoled', label: 'AMOLED', bg: '#000000' },
+  { id: 'navy',   label: 'Navy',   bg: '#050a18' },
+  { id: 'purple', label: 'Purple', bg: '#0d0714' },
 ]
 
 const ACCENTS = [
