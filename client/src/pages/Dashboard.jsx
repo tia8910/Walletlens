@@ -14,6 +14,8 @@ import RiskScanner from '../components/RiskScanner'
 import AIDecisionEngine from '../components/AIDecisionEngine'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
+import WeeklyReport from '../components/WeeklyReport'
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
 const Ico = {
@@ -860,40 +862,47 @@ const TIMEFRAMES = [
   { id: '30D', label: '30D', pts: 60 },
 ]
 
-// Pre-built normalised wave shapes [-1..1] per timeframe, rendered sharp & volatile
-const TF_WAVES = {
-  '4H':  [0,0.18,-0.12,0.22,-0.08,0.30,-0.20,0.15,-0.25,0.35,-0.10,0.28,
-           -0.18,0.40,-0.30,0.20,-0.15,0.38,-0.22,0.45,-0.35,0.25,-0.12,0.42,
-           -0.28,0.50,-0.40,0.30,-0.18,0.55,-0.32,0.60,-0.20,0.48,-0.38,0.65,
-           -0.25,0.58,-0.15,0.70,-0.30,0.62,-0.10,0.72,-0.20,0.75,-0.05,0.80],
-  '1D':  [0,0.25,-0.30,0.40,-0.15,0.55,-0.40,0.35,-0.50,0.60,-0.20,0.50,
-           -0.45,0.65,-0.30,0.70,-0.55,0.45,-0.35,0.75,-0.25,0.68,-0.42,0.80,
-           -0.35,0.85,-0.48,0.60,-0.20,0.88,-0.30,0.72,-0.15,0.90,-0.40,0.78,
-           -0.22,0.92,-0.35,0.82,-0.18,0.94,-0.28,0.86,-0.10,0.96,-0.08,1.00],
-  '7D':  [0,0.30,-0.50,0.45,-0.60,0.70,-0.35,0.80,-0.55,0.60,-0.70,0.85,
-           -0.40,0.90,-0.65,0.55,-0.80,0.75,-0.45,0.92,-0.58,0.68,-0.30,0.95,
-           -0.50,0.88,-0.72,0.78,-0.35,0.98,-0.60,0.82,-0.42,1.00,-0.55,0.90,
-           -0.30,1.02,-0.48,0.94,-0.25,1.05,-0.40,0.98,-0.20,1.08,-0.15,1.10,
-           -0.25,1.12,-0.10,1.15,-0.08,1.18,-0.05,1.20],
-  '30D': [0,0.40,-0.70,0.60,-0.80,0.90,-0.50,1.00,-0.85,0.70,-0.95,1.05,
-           -0.55,1.10,-0.90,0.80,-1.00,0.95,-0.60,1.15,-0.75,1.00,-0.40,1.20,
-           -0.80,1.08,-1.05,0.90,-0.50,1.25,-0.70,1.10,-0.35,1.30,-0.85,1.15,
-           -0.45,1.35,-0.65,1.20,-0.30,1.40,-0.55,1.28,-0.20,1.45,-0.40,1.32,
-           -0.15,1.48,-0.30,1.42,-0.10,1.50,-0.05,1.52,-0.08,1.55,-0.03,1.58],
-}
-
 function buildPerfSeries(base, tf = '30D') {
-  const pts = (TIMEFRAMES.find(f => f.id === tf) || TIMEFRAMES[3]).pts
+  const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[tf] || 30
+  const pts = { '4H': 48, '1D': 48, '7D': 56, '30D': 60 }[tf] || 60
   const b = Math.max(base || 10000, 1)
-  const rawWave = TF_WAVES[tf] || TF_WAVES['30D']
 
-  // Scale the pre-built wave to span from ~startRatio*b at index 0 to b at the end
+  // For 1D/7D/30D try to use real snapshots
+  if (days > 0) {
+    const snaps = getSnapshotsForDays(days)
+    if (snaps.length >= 2) {
+      // Interpolate snapshots to pts data points
+      const first = snaps[0], last = snaps[snaps.length - 1]
+      const timeRange = last.ts - first.ts || 1
+      return Array.from({ length: pts }, (_, i) => {
+        const t = i / (pts - 1)
+        const targetTs = first.ts + t * timeRange
+        // Find surrounding snapshots and interpolate
+        let lo = snaps[0], hi = snaps[snaps.length - 1]
+        for (let j = 0; j < snaps.length - 1; j++) {
+          if (snaps[j].ts <= targetTs && snaps[j + 1].ts >= targetTs) {
+            lo = snaps[j]; hi = snaps[j + 1]; break
+          }
+        }
+        const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
+        const v = lo.v + (hi.v - lo.v) * segT
+        return { i, v: Math.max(v, 0) }
+      })
+    }
+  }
+
+  // Fallback: pre-built wave shapes (simulated)
+  const TF_WAVES = {
+    '4H':  [0,0.18,-0.12,0.22,-0.08,0.30,-0.20,0.15,-0.25,0.35,-0.10,0.28,-0.18,0.40,-0.30,0.20,-0.15,0.38,-0.22,0.45,-0.35,0.25,-0.12,0.42,-0.28,0.50,-0.40,0.30,-0.18,0.55,-0.32,0.60,-0.20,0.48,-0.38,0.65,-0.25,0.58,-0.15,0.70,-0.30,0.62,-0.10,0.72,-0.20,0.75,-0.05,0.80],
+    '1D':  [0,0.25,-0.30,0.40,-0.15,0.55,-0.40,0.35,-0.50,0.60,-0.20,0.50,-0.45,0.65,-0.30,0.70,-0.55,0.45,-0.35,0.75,-0.25,0.68,-0.42,0.80,-0.35,0.85,-0.48,0.60,-0.20,0.88,-0.30,0.72,-0.15,0.90,-0.40,0.78,-0.22,0.92,-0.35,0.82,-0.18,0.94,-0.28,0.86,-0.10,0.96,-0.08,1.00],
+    '7D':  [0,0.30,-0.50,0.45,-0.60,0.70,-0.35,0.80,-0.55,0.60,-0.70,0.85,-0.40,0.90,-0.65,0.55,-0.80,0.75,-0.45,0.92,-0.58,0.68,-0.30,0.95,-0.50,0.88,-0.72,0.78,-0.35,0.98,-0.60,0.82,-0.42,1.00,-0.55,0.90,-0.30,1.02,-0.48,0.94,-0.25,1.05,-0.40,0.98,-0.20,1.08,-0.15,1.10,-0.25,1.12,-0.10,1.15,-0.08,1.18,-0.05,1.20],
+    '30D': [0,0.40,-0.70,0.60,-0.80,0.90,-0.50,1.00,-0.85,0.70,-0.95,1.05,-0.55,1.10,-0.90,0.80,-1.00,0.95,-0.60,1.15,-0.75,1.00,-0.40,1.20,-0.80,1.08,-1.05,0.90,-0.50,1.25,-0.70,1.10,-0.35,1.30,-0.85,1.15,-0.45,1.35,-0.65,1.20,-0.30,1.40,-0.55,1.28,-0.20,1.45,-0.40,1.32,-0.15,1.48,-0.30,1.42,-0.10,1.50,-0.05,1.52,-0.08,1.55,-0.03,1.58],
+  }
+  const rawWave = TF_WAVES[tf] || TF_WAVES['30D']
   const startRatio = { '4H': 0.92, '1D': 0.85, '7D': 0.75, '30D': 0.60 }[tf] || 0.75
-  const lo = startRatio * b
-  const hi = b
+  const lo = startRatio * b, hi = b
   const wMin = Math.min(...rawWave), wMax = Math.max(...rawWave)
   const wRange = wMax - wMin || 1
-
   return Array.from({ length: pts }, (_, i) => {
     const w = rawWave[Math.round(i / (pts - 1) * (rawWave.length - 1))]
     const v = lo + ((w - wMin) / wRange) * (hi - lo)
