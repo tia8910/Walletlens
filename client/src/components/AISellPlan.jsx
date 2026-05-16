@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { track } from '../analytics'
+import { track, trackAI } from '../analytics'
 
 function generateSellPlan(enriched, prices) {
   if (!enriched.length) return null
@@ -143,6 +143,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
   function generate() {
     if (!enriched.length) return
     track('ai_sell_plan_generate')
+    trackAI({ action: 'sell_plan_generate', assetCount: enriched.length, planGenerated: true })
     setOpen(true)
   }
 

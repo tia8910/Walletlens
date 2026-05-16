@@ -14,7 +14,7 @@ import RiskScanner from '../components/RiskScanner'
 import AIDecisionEngine from '../components/AIDecisionEngine'
 import AISellPlan from '../components/AISellPlan'
 import { useLanguage } from '../LanguageContext'
-import { track } from '../analytics'
+import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
 import WeeklyReport from '../components/WeeklyReport'
 import NewsTicker from '../components/NewsTicker'
@@ -1388,6 +1388,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
   }, [loaded, totalValue])
+
+  useEffect(() => {
+    if (!loaded || !enriched.length) return
+    const cats = new Set(enriched.map(h => categorizeAsset(h)))
+    const assetTypes = [...cats].join('+')
+    trackPortfolioLoaded({
+      assetCount: enriched.length,
+      totalValue,
+      hasProfit: enriched.some(h => h.pnl > 0),
+      assetTypes,
+    })
+  }, [loaded])
 
   const [perfTf, setPerfTf] = useState('30D')
   const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
