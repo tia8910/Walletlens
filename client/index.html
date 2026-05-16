@@ -76,6 +76,14 @@
       base-uri 'self';
     " />
 
+    <!-- API preconnects — shave DNS+TCP+TLS off the first market data fetch -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <link rel="preconnect" href="https://api.gold-api.com" crossorigin />
+    <link rel="preconnect" href="https://rest.coincap.io" crossorigin />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

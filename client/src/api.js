@@ -65,6 +65,16 @@ const CORS_PROXIES = [
   (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
+// In-flight promise registry — prevents duplicate concurrent fetches for the
+// same logical key (e.g. market snapshot requested by Ticker + Dashboard at once).
+const _inflight = new Map();
+function dedupe(key, fn) {
+  if (_inflight.has(key)) return _inflight.get(key);
+  const p = fn().finally(() => _inflight.delete(key));
+  _inflight.set(key, p);
+  return p;
+}
+
 // Per-attempt timeout for any single fetch — without this, a slow proxy
 // can stall the whole pipeline for 30s+ before failing over.
 const FETCH_TIMEOUT_MS = 4500;
@@ -146,7 +156,7 @@ const BINANCE_ID_OVERRIDES = {
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
-async function _loadMarketSnapshot(perPage = 250) {
+async function _loadMarketSnapshotInner(perPage = 250) {
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
   const now = Date.now();
@@ -200,6 +210,10 @@ async function _loadMarketSnapshot(perPage = 250) {
   return [];
 }
 
+function _loadMarketSnapshot(perPage = 250) {
+  return dedupe(`market-${perPage}`, () => _loadMarketSnapshotInner(perPage));
+}
+
 // Net-balance fold over a transactions array — pure helper now in
 // ./data/portfolio. Aliased here so existing callers keep their name.
 const _foldBalances = _foldBalancesPure;
@@ -225,7 +239,7 @@ const FIAT_CACHE_DURATION = 15 * 60_000;   // 15 min — FX moves slowly
 // ─── Real-time metal prices (gold / silver) ───
 // Tries gold-api.com first (CORS-enabled, no key), falls back to CoinGecko's
 // pax-gold token for gold (tracks physical gold ~1:1).
-async function fetchMetalsLive() {
+async function _fetchMetalsLiveInner() {
   const now = Date.now();
   if (metalCache && now - metalCacheTime < METAL_CACHE_DURATION) return metalCache;
 
@@ -265,6 +279,9 @@ async function fetchMetalsLive() {
     metalCacheTime = now;
   }
   return metalCache || {};
+}
+function fetchMetalsLive() {
+  return dedupe('metals', _fetchMetalsLiveInner);
 }
 
 // ─── Real-time US stock prices via Stooq (CORS-enabled CSV) ───

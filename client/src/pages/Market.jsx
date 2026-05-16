@@ -13,6 +13,8 @@ const TABS = [
   { key: 'stocks', label: 'Stocks', icon: '📈' },
 ]
 
+const PAGE_SIZE = 50
+
 export default function Market() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('crypto')
@@ -20,6 +22,7 @@ export default function Market() {
   const [metals, setMetals] = useState({})
   const [stocks, setStocks] = useState({})
   const [loading, setLoading] = useState(true)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   useEffect(() => { track('market_view') }, [])
 
@@ -54,6 +57,9 @@ export default function Market() {
       document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [tab])
+
+  // Reset visible window whenever the tab changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [tab])
 
   async function load() {
     // Don't block the UI on a fresh fetch — the helpers paint from
@@ -122,7 +128,7 @@ export default function Market() {
           )}
           {tab === 'crypto' && (
             <div className="market-list">
-              {coins.map((coin, i) => (
+              {coins.slice(0, visibleCount).map((coin, i) => (
                 <div key={coin.id} className="market-card" onClick={() => openAsset(coin.id)}>
                   <div className="market-rank">{i + 1}</div>
                   <CoinLogo image={coin.image} symbol={coin.symbol} size={32} className="market-img" />
@@ -139,6 +145,15 @@ export default function Market() {
                   <div className="market-cap muted">${(coin.market_cap / 1e9).toFixed(1)}B</div>
                 </div>
               ))}
+              {visibleCount < coins.length && (
+                <button
+                  className="btn-outline"
+                  style={{ width: '100%', marginTop: '0.75rem' }}
+                  onClick={() => setVisibleCount(v => Math.min(v + PAGE_SIZE, coins.length))}
+                >
+                  Load {Math.min(PAGE_SIZE, coins.length - visibleCount)} more
+                </button>
+              )}
             </div>
           )}
 
