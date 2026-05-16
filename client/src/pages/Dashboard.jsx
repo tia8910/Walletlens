@@ -980,9 +980,10 @@ function WalletPanel({ wallets, onRefresh }) {
     setBusy(true)
     try {
       await api.createWallet({ name: name.trim() })
-      if (typeof gtag === 'function') {
-        gtag('event', 'wallet_created', { wallet_name: name.trim() })
-      }
+      track('wallet_created', {
+        wallet_name: name.trim(),
+        wallet_count: (wallets?.length || 0) + 1,
+      })
       setName(''); onRefresh()
     }
     finally { setBusy(false) }
