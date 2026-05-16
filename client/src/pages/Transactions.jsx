@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
+import { track } from '../analytics'
 
 // ─── Receive-leg resolver for sell proceeds ───
 // Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
@@ -499,6 +500,21 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         }
       }
     }
+
+    // GA4 transaction tracking
+    const valueUsd = Math.round(amount * pricePerUnit)
+    track(form.type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
+      asset_symbol:   (form.coin_symbol || form.coin_id || '').toUpperCase(),
+      asset_name:     form.coin_name || form.coin_id,
+      asset_category: form.category || 'crypto',
+      value_usd:      valueUsd,
+      value_tier:     valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
+      amount:         parseFloat(amount.toFixed(6)),
+      price_usd:      Math.round(pricePerUnit),
+      exchange:       form.exchange || 'unspecified',
+      source:         'transactions_page',
+    })
+    track('trade_submitted', { trade_type: form.type, asset_symbol: form.coin_symbol, trade_value_usd: valueUsd })
 
     setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '', buy_with: 'NONE', buy_with_custom: '' })
     setCoinSearch('')

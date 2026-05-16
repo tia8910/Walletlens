@@ -245,11 +245,32 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       }
 
       setSuccess(true)
+
+      // Detailed GA4 transaction events
+      const valueUsd = Math.round(amt * ppu)
+      const valueTier = valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100'
+      const assetCat = asset.category || category || 'crypto'
+
+      // Fire specific buy/sell event for GA4 funnels
+      track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
+        asset_symbol:    asset.symbol?.toUpperCase(),
+        asset_name:      asset.name,
+        asset_category:  assetCat,
+        value_usd:       valueUsd,
+        value_tier:      valueTier,
+        amount:          parseFloat(amt.toFixed(6)),
+        price_usd:       Math.round(ppu),
+        wallet_id:       wid,
+        paid_with:       isBuy ? (buyWith === 'NONE' ? 'none' : buyWith) : undefined,
+        received_as:     !isBuy ? (sellFor === 'REMOVE' ? 'removed' : sellFor) : undefined,
+      })
+
+      // Also keep the combined event for backwards compat
       track('trade_submitted', {
         trade_type: type,
         asset_symbol: asset.symbol,
-        asset_category: asset.category || category,
-        trade_value_usd: Math.round(amt * ppu),
+        asset_category: assetCat,
+        trade_value_usd: valueUsd,
       })
       setTimeout(() => { onClose(); onDone() }, 1200)
     } catch { setMsg('Failed. Try again.') }
