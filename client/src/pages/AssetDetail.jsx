@@ -45,6 +45,9 @@ export default function AssetDetail() {
   useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
   useEffect(() => { loadChart() }, [coinId, chartDays])
   useEffect(() => {
+    if (coinId) track('asset_detail_view', { coin_id: coinId, asset_category: categoryFor(coinId) })
+  }, [coinId])
+  useEffect(() => {
     setSignals(null)
     if (!coinId || isNonCryptoId(coinId)) return
     api.getCoinSmartSignals(coinId, 30).then(setSignals).catch(() => {})
@@ -132,13 +135,27 @@ export default function AssetDetail() {
     if (!price || price <= 0) return
     const qty = tInputQty === '' ? null : parseFloat(tInputQty)
     await api.addCoinTarget(coinId, { price, quantity: qty })
-    track('target_add', { coin_id: coinId, target_price: price })
+    const currentPrice = coin?.price || 0
+    const pctFromCurrent = currentPrice > 0 ? ((price - currentPrice) / currentPrice) * 100 : null
+    track('target_set', {
+      coin_id:         coinId,
+      asset_symbol:    coin?.symbol?.toUpperCase() || coinId,
+      target_price:    price,
+      current_price:   Math.round(currentPrice * 100) / 100,
+      pct_from_current: pctFromCurrent !== null ? Math.round(pctFromCurrent * 10) / 10 : undefined,
+      direction:       pctFromCurrent !== null ? (pctFromCurrent >= 0 ? 'above' : 'below') : undefined,
+      has_quantity:    qty !== null ? 'yes' : 'no',
+    })
     setTInputPrice(''); setTInputQty(''); setShowAddTarget(false)
     loadData()
   }
 
   async function handleRemoveTarget(targetId) {
     await api.removeCoinTargetItem(coinId, targetId)
+    track('target_removed', {
+      coin_id:      coinId,
+      asset_symbol: coin?.symbol?.toUpperCase() || coinId,
+    })
     loadData()
   }
 
@@ -188,7 +205,7 @@ export default function AssetDetail() {
       <div className="chart-card">
         <div className="chart-tabs">
           {[{ d: 1, l: '24H' }, { d: 7, l: '7D' }, { d: 30, l: '1M' }, { d: 90, l: '3M' }, { d: 365, l: '1Y' }].map(({ d, l }) => (
-            <button key={d} className={`chart-tab ${chartDays === d ? 'active' : ''}`} onClick={() => setChartDays(d)}>{l}</button>
+            <button key={d} className={`chart-tab ${chartDays === d ? 'active' : ''}`} onClick={() => { setChartDays(d); track('asset_chart_timeframe', { coin_id: coinId, days: d, label: l }) }}>{l}</button>
           ))}
         </div>
         {chartData.length > 0 ? (
@@ -278,7 +295,7 @@ export default function AssetDetail() {
             />
             <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.5rem' }}>
               <button className="btn-sm" style={{ background:'#34d399', color:'#000', fontWeight:700, border:'none', borderRadius:8, padding:'0.35rem 0.9rem', cursor:'pointer' }}
-                onClick={() => { api.saveCoinNote(coinId, note); setNoteEditing(false) }}>
+                onClick={() => { api.saveCoinNote(coinId, note); setNoteEditing(false); track('asset_note_save', { coin_id: coinId }) }}>
                 Save
               </button>
               <button className="btn-secondary btn-sm" onClick={() => { setNote(api.getCoinNote(coinId)); setNoteEditing(false) }}>Cancel</button>
@@ -367,12 +384,12 @@ export default function AssetDetail() {
 
       {/* Buy/Sell actions */}
       <div className="detail-actions">
-        <button className="action-btn buy-btn detail-act" onClick={() => { setSheetType('buy'); setSheetOpen(true) }}>
+        <button className="action-btn buy-btn detail-act" onClick={() => { setSheetType('buy'); setSheetOpen(true); track('asset_trade_open', { trade_type: 'buy', coin_id: coinId, asset_category: categoryFor(coinId) }) }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Buy {coin?.symbol}
         </button>
         {holdings && (
-          <button className="action-btn sell-btn detail-act" onClick={() => { setSheetType('sell'); setSheetOpen(true) }}>
+          <button className="action-btn sell-btn detail-act" onClick={() => { setSheetType('sell'); setSheetOpen(true); track('asset_trade_open', { trade_type: 'sell', coin_id: coinId, asset_category: categoryFor(coinId) }) }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Sell {coin?.symbol}
           </button>

@@ -991,7 +991,7 @@ function WalletPanel({ wallets, onRefresh }) {
 
   async function del(id) {
     if (!window.confirm('Delete this wallet and all its transactions?')) return
-    await api.deleteWallet(id); onRefresh()
+    track('wallet_deleted'); await api.deleteWallet(id); onRefresh()
   }
 
   return (
@@ -1915,7 +1915,12 @@ export default function Dashboard() {
                       setGoalValue(v)
                       localStorage.setItem('wl_goal', v.toString())
                       setEditingGoal(false)
-                      track('goal_set', { goal_usd: Math.round(v) })
+                      track('goal_set', {
+                        goal_usd: Math.round(v),
+                        current_usd: Math.round(totalValue),
+                        progress_pct: v > 0 ? Math.round((totalValue / v) * 100) : 0,
+                        gap_usd: Math.round(Math.max(0, v - totalValue)),
+                      })
                     }}>Save</button>
                   </div>
                 ) : goalValue > 0 ? (() => {
