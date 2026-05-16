@@ -132,13 +132,27 @@ export default function AssetDetail() {
     if (!price || price <= 0) return
     const qty = tInputQty === '' ? null : parseFloat(tInputQty)
     await api.addCoinTarget(coinId, { price, quantity: qty })
-    track('target_add', { coin_id: coinId, target_price: price })
+    const currentPrice = coin?.price || 0
+    const pctFromCurrent = currentPrice > 0 ? ((price - currentPrice) / currentPrice) * 100 : null
+    track('target_set', {
+      coin_id:         coinId,
+      asset_symbol:    coin?.symbol?.toUpperCase() || coinId,
+      target_price:    price,
+      current_price:   Math.round(currentPrice * 100) / 100,
+      pct_from_current: pctFromCurrent !== null ? Math.round(pctFromCurrent * 10) / 10 : undefined,
+      direction:       pctFromCurrent !== null ? (pctFromCurrent >= 0 ? 'above' : 'below') : undefined,
+      has_quantity:    qty !== null ? 'yes' : 'no',
+    })
     setTInputPrice(''); setTInputQty(''); setShowAddTarget(false)
     loadData()
   }
 
   async function handleRemoveTarget(targetId) {
     await api.removeCoinTargetItem(coinId, targetId)
+    track('target_removed', {
+      coin_id:      coinId,
+      asset_symbol: coin?.symbol?.toUpperCase() || coinId,
+    })
     loadData()
   }
 
