@@ -216,6 +216,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const searchTimeout = useRef(null)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
     if (location.state?.openAdd) {

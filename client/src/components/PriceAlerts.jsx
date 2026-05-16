@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { track } from '../analytics'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -115,6 +116,7 @@ export default function PriceAlerts({ enriched, prices }) {
         fireNotification(`${dir} ${a.coin_symbol}`, body)
         playAlarm()
         addToast(`${dir} ${a.coin_symbol?.toUpperCase()} — ${body}`)
+        track('alert_triggered', { coin_id: a.coin_id, coin_symbol: a.coin_symbol, condition: a.condition, target_price: a.targetPrice, triggered_price: cur })
       }
     }
     if (changed) setAlerts(updated)
@@ -144,13 +146,17 @@ export default function PriceAlerts({ enriched, prices }) {
     setAlerts(prev => [newAlert, ...prev])
     setShowForm(false)
     setTargetInput('')
+    track('alert_created', { coin_id: coinId, condition, target_price: price })
   }
 
   function deleteAlert(id) {
+    const a = alerts.find(x => x.id === id)
+    track('alert_deleted', { coin_id: a?.coin_id, coin_symbol: a?.coin_symbol })
     setAlerts(prev => prev.filter(a => a.id !== id))
   }
 
   function resetAlert(id) {
+    track('alert_reset', { coin_id: alerts.find(a => a.id === id)?.coin_id })
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, triggered: false, snoozed: false, triggeredAt: null, triggeredPrice: null } : a))
   }
 

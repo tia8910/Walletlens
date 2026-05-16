@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { BiometricToggle } from '../components/BiometricLock'
@@ -40,6 +40,7 @@ export { applySettings } from '../settingsUtils'
 export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
+  useEffect(() => { track('settings_view') }, [])
 
   function update(key, val) {
     const next = { ...settings, [key]: val }

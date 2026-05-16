@@ -991,7 +991,7 @@ function WalletPanel({ wallets, onRefresh }) {
 
   async function del(id) {
     if (!window.confirm('Delete this wallet and all its transactions?')) return
-    await api.deleteWallet(id); onRefresh()
+    track('wallet_deleted'); await api.deleteWallet(id); onRefresh()
   }
 
   return (
