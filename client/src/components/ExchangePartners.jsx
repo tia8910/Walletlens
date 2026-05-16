@@ -1,4 +1,4 @@
-import { track } from '../analytics'
+import { track, trackReferral } from '../analytics'
 
 const CRYPTO_EXCHANGES = [
   {
@@ -103,7 +103,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
               rel="noopener noreferrer"
               className="ep-strip-btn"
               style={{ '--ex-color': ex.color, '--ex-glow': ex.glow }}
-              onClick={() => track('exchange_referral_click', { exchange: ex.name, source })}
+              onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
             >
               <span className="ep-strip-logo">{ex.logo}</span>
               <span className="ep-strip-name" style={{ color: ex.color }}>{ex.name}</span>
@@ -129,7 +129,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
             rel="noopener noreferrer"
             className="ep-card"
             style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
-            onClick={() => track('exchange_referral_click', { exchange: ex.name, source })}
+            onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
           >
             <div className="ep-card-shine" />
             <div className="ep-card-top">
@@ -165,7 +165,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
             rel="noopener noreferrer"
             className="ep-card ep-card-broker"
             style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
-            onClick={() => track('exchange_referral_click', { exchange: ex.name, source })}
+            onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
           >
             <div className="ep-card-shine" />
             <div className="ep-card-top">
