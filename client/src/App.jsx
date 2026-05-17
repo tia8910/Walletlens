@@ -56,6 +56,53 @@ function LangToggle() {
   )
 }
 
+// ── PWA install button in topbar ─────────────────────────────────────
+function PWATopbarButton() {
+  const [prompt, setPrompt] = useState(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (localStorage.getItem('wl_pwa_dismissed')) return
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
+    if (isIOS) { setVisible(true); return }
+    const handler = (e) => { e.preventDefault(); setPrompt(e); setVisible(true) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  if (!visible) return null
+
+  async function handleClick() {
+    track('pwa_topbar_install_click')
+    if (prompt) {
+      prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      track('pwa_install_outcome', { outcome, source: 'topbar' })
+      if (outcome === 'accepted') { setVisible(false); localStorage.setItem('wl_pwa_dismissed', '1') }
+    } else {
+      // iOS or non-Chromium: show a toast/tip
+      alert('Tap Share → "Add to Home Screen" to install WalletLens')
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      title="Add to Home Screen"
+      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="12" y1="6" x2="12" y2="12"/>
+        <line x1="9" y1="9" x2="12" y2="6"/>
+        <line x1="15" y1="9" x2="12" y2="6"/>
+        <line x1="9" y1="16" x2="15" y2="16"/>
+      </svg>
+    </button>
+  )
+}
+
 // ── Slide-out drawer ──────────────────────────────────────────────────
 function Drawer({ open, onClose }) {
   const navigate = useNavigate()
@@ -197,6 +244,7 @@ export default function App() {
             <strong>WalletLens</strong>
           </div>
           <div className="wl-topbar-right">
+            <PWATopbarButton />
             <a className="wl-topbar-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" title="Follow @walletlenss">
               <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </a>

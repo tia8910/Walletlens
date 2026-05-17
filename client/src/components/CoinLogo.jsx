@@ -133,9 +133,8 @@ const CoinLogo = memo(function CoinLogo({
   const STAGES = [
     image ? `img:${image}` : null,
     sym   ? `jsdelivr:${sym}` : null,
-    coinId ? `coingecko-search:${coinId}` : null,
     sym   ? `coincap:${sym}` : null,
-    sym   ? `binance:${sym}` : null,
+    sym   ? `lcw:${sym}` : null,
     sym   ? `cryptoicons:${sym}` : null,
   ].filter(Boolean)
 
@@ -169,12 +168,10 @@ const CoinLogo = memo(function CoinLogo({
     return <img {...common} src={image} onError={advance} />
   } else if (currentStage.startsWith('jsdelivr:')) {
     return <img {...common} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
-  } else if (currentStage.startsWith('coingecko-search:')) {
-    return <img {...common} src={`https://coin-images.coingecko.com/coins/images/thumb/${coinId}.png`} onError={advance} />
   } else if (currentStage.startsWith('coincap:')) {
     return <img {...common} src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`} onError={advance} />
-  } else if (currentStage.startsWith('binance:')) {
-    return <img {...common} src={`https://bin.bnbstatic.com/image/pgc/202309/coin-icons/${sym.toUpperCase()}.png`} onError={advance} />
+  } else if (currentStage.startsWith('lcw:')) {
+    return <img {...common} src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`} onError={advance} />
   } else if (currentStage.startsWith('cryptoicons:')) {
     return <img {...common} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
   }
