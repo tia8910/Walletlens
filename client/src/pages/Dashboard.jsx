@@ -73,7 +73,7 @@ function classifyMcTier(coinId, marketCap, coinSymbol) {
   }
   if (KNOWN_MEGA.has(coinId))  return MC_TIERS[0]
   if (KNOWN_LARGE.has(coinId)) return MC_TIERS[1]
-  return MC_TIERS[3]
+  return MC_TIERS[4]
 }
 
 // ── Asset category classifier ─────────────────────────────────────────────

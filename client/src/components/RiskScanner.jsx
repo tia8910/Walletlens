@@ -676,9 +676,12 @@ export default function RiskScanner({ enriched }) {
   const [results, setResults]   = useState({})
   const [scanGen, setScanGen]   = useState(0) // bump to force re-scan all
 
-  const cryptoHoldings = enriched.filter(h =>
-    !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('fiat:')
-  )
+  const NON_CRYPTO = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
+  const cryptoHoldings = enriched.filter(h => {
+    const id = (h.coin_id || '').toLowerCase()
+    return !NON_CRYPTO.some(p => id.startsWith(p)) &&
+           !id.includes('appartment') && !id.includes('apartment') && !id.includes('property')
+  })
 
   // Sort by score ascending (most risky first) once results come in
   const sorted = [...cryptoHoldings].sort((a, b) => {

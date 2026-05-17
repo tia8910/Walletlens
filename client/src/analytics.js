@@ -4,7 +4,7 @@
 // Recommended dims: page, asset_count, portfolio_value_tier, tab, symbol, source
 
 export function track(eventName, params = {}) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', eventName, {
     page: window.location.pathname,
     ...params,
@@ -15,7 +15,7 @@ export function track(eventName, params = {}) {
 
 // Call once after holdings are loaded to record portfolio snapshot
 export function trackPortfolioLoaded({ assetCount, totalValue, hasProfit, assetTypes }) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   const valueTier =
     totalValue >= 100000 ? '100k+' :
     totalValue >= 10000  ? '10k-100k' :
@@ -33,7 +33,7 @@ export function trackPortfolioLoaded({ assetCount, totalValue, hasProfit, assetT
 
 // Track when user adds a holding
 export function trackHoldingAdded({ symbol, assetClass, valueUsd, isFirstHolding }) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', 'holding_added', {
     page: window.location.pathname,
     symbol: symbol?.toUpperCase(),
@@ -45,7 +45,7 @@ export function trackHoldingAdded({ symbol, assetClass, valueUsd, isFirstHolding
 
 // Track feature engagement depth
 export function trackFeatureEngagement(feature, depth = 1) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', 'feature_engagement', {
     page: window.location.pathname,
     feature_name: feature,
@@ -55,7 +55,7 @@ export function trackFeatureEngagement(feature, depth = 1) {
 
 // Track referral link clicks with full context
 export function trackReferral({ exchange, source, assetContext }) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', 'referral_click', {
     page: window.location.pathname,
     exchange_name: exchange,
@@ -66,7 +66,7 @@ export function trackReferral({ exchange, source, assetContext }) {
 
 // Track search / market browsing
 export function trackSearch({ query, resultsCount, source }) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', 'search', {
     search_term: query,
     results_count: resultsCount,
@@ -76,7 +76,7 @@ export function trackSearch({ query, resultsCount, source }) {
 
 // Track AI feature usage
 export function trackAI({ action, assetCount, planGenerated }) {
-  if (typeof gtag !== 'function') return
+  if (typeof window.gtag !== 'function') return
   gtag('event', 'ai_interaction', {
     page: window.location.pathname,
     ai_action: action,
