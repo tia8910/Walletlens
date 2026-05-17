@@ -1652,6 +1652,32 @@ export default function Dashboard() {
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t, source = 'dashboard') => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
+
+  // ── Timed nudge toast (fires after 20s if no trade sheet opened) ──────────
+  const [nudgeVisible, setNudgeVisible] = useState(false)
+  useEffect(() => {
+    if (sheetOpen) { setNudgeVisible(false); return }
+    const t = setTimeout(() => {
+      if (!sheetOpen) { setNudgeVisible(true); track('trade_nudge_shown') }
+    }, 20000)
+    return () => clearTimeout(t)
+  }, [sheetOpen])
+
+  // ── Quick Strip visibility tracking (IntersectionObserver) ───────────────
+  const quickStripRef = useRef(null)
+  useEffect(() => {
+    const el = quickStripRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    let fired = false
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !fired) {
+        fired = true
+        track('trade_cta_visible', { source: 'quick_strip' })
+      }
+    }, { threshold: 0.5 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [hidden, setHidden]               = useState(false)
@@ -1958,7 +1984,7 @@ export default function Dashboard() {
 
           {/* Quick Trade nudge — shown for portfolio holders */}
           {enriched.length > 0 && (
-            <div style={{
+            <div ref={quickStripRef} style={{
               display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
             }}>
               <button onClick={() => openSheet('buy', 'quick_strip')} style={{
