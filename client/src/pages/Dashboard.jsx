@@ -1257,43 +1257,159 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 // ── Empty portfolio state ─────────────────────────────────────────────────
 function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
   if (!loaded) return null
-  const steps = [
-    { icon: '➕', label: 'Add a trade', desc: 'Log your first buy', action: onAddTrade, primary: true },
-    { icon: '🔍', label: 'Browse market', desc: 'Explore live prices', action: () => navigate('/market') },
-    { icon: '🐋', label: 'Watch whales', desc: 'Follow smart money', action: () => navigate('/whales') },
+
+  // Inject keyframes once
+  if (typeof document !== 'undefined' && !document.getElementById('ep-kf')) {
+    const s = document.createElement('style')
+    s.id = 'ep-kf'
+    s.textContent = `
+      @keyframes ep-spin   { to { transform: rotate(360deg) } }
+      @keyframes ep-spin-r { to { transform: rotate(-360deg) } }
+      @keyframes ep-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+      @keyframes ep-pulse  { 0%,100%{opacity:.18;transform:scale(1)} 50%{opacity:.35;transform:scale(1.06)} }
+      @keyframes ep-shimmer{ 0%{background-position:200% center} 100%{background-position:-200% center} }
+      @keyframes ep-dot    { 0%,100%{opacity:.15;transform:scale(.8)} 50%{opacity:.8;transform:scale(1.2)} }
+      @keyframes ep-bounce { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-6px) scale(1.04)} 60%{transform:translateY(-3px) scale(1.02)} }
+    `
+    document.head.appendChild(s)
+  }
+
+  const DOTS = [
+    { top:'12%', left:'8%',  size:6,  color:'#34d399', delay:'0s',   dur:'2.1s' },
+    { top:'18%', left:'88%', size:4,  color:'#60a5fa', delay:'.4s',  dur:'1.8s' },
+    { top:'72%', left:'5%',  size:5,  color:'#a78bfa', delay:'.8s',  dur:'2.4s' },
+    { top:'78%', left:'91%', size:7,  color:'#34d399', delay:'1.1s', dur:'1.6s' },
+    { top:'45%', left:'3%',  size:4,  color:'#f59e0b', delay:'.2s',  dur:'2.8s' },
+    { top:'55%', left:'93%', size:5,  color:'#60a5fa', delay:'1.5s', dur:'2.0s' },
+    { top:'30%', left:'50%', size:3,  color:'#34d399', delay:'.6s',  dur:'1.9s' },
   ]
+
+  const COINS = [
+    { symbol:'BTC', color:'#f7931a', angle:0   },
+    { symbol:'ETH', color:'#627eea', angle:72  },
+    { symbol:'SOL', color:'#9945ff', angle:144 },
+    { symbol:'XRP', color:'#00aae4', angle:216 },
+    { symbol:'BNB', color:'#f3ba2f', angle:288 },
+  ]
+
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, rgba(52,211,153,0.06) 0%, rgba(59,130,246,0.04) 100%)',
-      border: '1px solid rgba(52,211,153,0.15)',
-      borderRadius: '20px', padding: '2rem 1.5rem',
-      textAlign: 'center', marginTop: '1rem',
-    }}>
-      <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>📊</div>
-      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff', marginBottom: '0.5rem' }}>
-        Your portfolio is empty
+    <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
+
+      {/* Floating dots */}
+      {DOTS.map((d,i) => (
+        <div key={i} style={{
+          position:'absolute', top:d.top, left:d.left,
+          width:d.size, height:d.size, borderRadius:'50%',
+          background:d.color,
+          animation:`ep-dot ${d.dur} ${d.delay} ease-in-out infinite`,
+          pointerEvents:'none',
+        }}/>
+      ))}
+
+      {/* Orbit rings + coin badges */}
+      <div style={{ position:'relative', width:220, height:220, margin:'0 auto 1.5rem' }}>
+
+        {/* Outer ring */}
+        <div style={{
+          position:'absolute', inset:0, borderRadius:'50%',
+          border:'1.5px dashed rgba(52,211,153,0.2)',
+          animation:'ep-spin 18s linear infinite',
+        }}/>
+
+        {/* Middle ring */}
+        <div style={{
+          position:'absolute', inset:22, borderRadius:'50%',
+          border:'1px solid rgba(96,165,250,0.15)',
+          animation:'ep-spin-r 12s linear infinite',
+        }}/>
+
+        {/* Inner pulse ring */}
+        <div style={{
+          position:'absolute', inset:44, borderRadius:'50%',
+          border:'1.5px solid rgba(52,211,153,0.3)',
+          animation:'ep-pulse 3s ease-in-out infinite',
+        }}/>
+
+        {/* Orbiting coin badges */}
+        {COINS.map((c, i) => {
+          const rad = (c.angle * Math.PI) / 180
+          const r = 96
+          const x = 110 + r * Math.cos(rad) - 16
+          const y = 110 + r * Math.sin(rad) - 16
+          return (
+            <div key={c.symbol} style={{
+              position:'absolute', left:x, top:y,
+              width:32, height:32, borderRadius:'50%',
+              background:`${c.color}22`,
+              border:`1.5px solid ${c.color}55`,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:'0.6rem', fontWeight:800, color:c.color,
+              boxShadow:`0 0 10px ${c.color}30`,
+              animation:`ep-spin ${18}s linear infinite`,
+              transformOrigin:`${110 - x + 16}px ${110 - y + 16}px`,
+            }}>{c.symbol}</div>
+          )
+        })}
+
+        {/* Centre icon */}
+        <div style={{
+          position:'absolute', inset:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <div style={{
+            width:78, height:78, borderRadius:'50%',
+            background:'linear-gradient(135deg,rgba(52,211,153,0.18),rgba(96,165,250,0.12))',
+            border:'1.5px solid rgba(52,211,153,0.4)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:'2rem',
+            boxShadow:'0 0 32px rgba(52,211,153,0.18), 0 0 8px rgba(52,211,153,0.1)',
+            animation:'ep-float 3.5s ease-in-out infinite',
+          }}>📈</div>
+        </div>
       </div>
-      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
-        Start tracking your investments to unlock AI insights,<br />price alerts, risk scores and performance charts.
+
+      {/* Headline */}
+      <div style={{ fontWeight:800, fontSize:'1.25rem', color:'#fff', marginBottom:'0.5rem', lineHeight:1.3 }}>
+        Start your first trade
       </div>
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1.5rem' }}>
-        {steps.map(s => (
+      <div style={{ fontSize:'0.875rem', color:'rgba(255,255,255,0.45)', marginBottom:'2rem', lineHeight:1.65 }}>
+        Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
+      </div>
+
+      {/* Primary CTA */}
+      <button onClick={onAddTrade} style={{
+        display:'inline-flex', alignItems:'center', gap:'0.5rem',
+        padding:'0.85rem 2rem', borderRadius:'50px', border:'none', cursor:'pointer',
+        fontSize:'0.95rem', fontWeight:800, color:'#000',
+        background:'linear-gradient(90deg,#34d399,#60a5fa,#a78bfa,#34d399)',
+        backgroundSize:'300% 100%',
+        animation:'ep-shimmer 3s linear infinite, ep-bounce 2.8s ease-in-out infinite',
+        boxShadow:'0 4px 24px rgba(52,211,153,0.35)',
+        marginBottom:'1.25rem',
+      }}>
+        <span style={{ fontSize:'1.1rem' }}>➕</span> Add a trade
+      </button>
+
+      {/* Secondary actions */}
+      <div style={{ display:'flex', gap:'0.6rem', justifyContent:'center', flexWrap:'wrap', marginBottom:'1.25rem' }}>
+        {[
+          { icon:'🔍', label:'Browse market', action:() => navigate('/market'), color:'#60a5fa' },
+          { icon:'🐋', label:'Watch whales',  action:() => navigate('/whales'),  color:'#a78bfa' },
+        ].map(s => (
           <button key={s.label} onClick={s.action} style={{
-            flex: '1 1 120px', maxWidth: '160px',
-            background: s.primary ? '#34d399' : 'rgba(255,255,255,0.06)',
-            color: s.primary ? '#000' : '#fff',
-            border: s.primary ? 'none' : '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '14px', padding: '0.9rem 0.75rem',
-            cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
-            transition: 'opacity 0.15s',
+            display:'inline-flex', alignItems:'center', gap:'0.4rem',
+            padding:'0.55rem 1.1rem', borderRadius:'50px',
+            background:'rgba(255,255,255,0.05)',
+            border:`1px solid ${s.color}33`,
+            color:s.color, fontWeight:700, fontSize:'0.82rem', cursor:'pointer',
+            transition:'background 0.15s',
           }}>
-            <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{s.icon}</div>
-            <div>{s.label}</div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 400, opacity: 0.65, marginTop: '0.2rem' }}>{s.desc}</div>
+            {s.icon} {s.label}
           </button>
         ))}
       </div>
-      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
+
+      <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.2)' }}>
         Your data stays on your device — no account needed
       </div>
     </div>
