@@ -60,7 +60,6 @@ function LangToggle() {
 function PWATopbarButton() {
   const [prompt, setPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
-  const [tooltip, setTooltip] = useState(false)
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
@@ -82,50 +81,28 @@ function PWATopbarButton() {
       track('pwa_install_outcome', { outcome, source: 'topbar' })
       if (outcome === 'accepted') setInstalled(true)
     } else {
-      setTooltip(v => !v)
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
+      const msg = isIOS
+        ? 'Tap the Share button → "Add to Home Screen"'
+        : 'Click your browser menu → "Install app" or "Add to Home Screen"'
+      alert(msg)
     }
   }
 
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
-  const instructions = isIOS
-    ? '📱 Tap Share → "Add to Home Screen"'
-    : '🖥️ Click ☰ browser menu → "Install app" or "Add to Home Screen"'
-
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <button
-        onClick={handleClick}
-        title="Add WalletLens to Home Screen"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
-          <rect x="5" y="2" width="14" height="20" rx="2"/>
-          <line x1="12" y1="6" x2="12" y2="12"/>
-          <line x1="9" y1="9" x2="12" y2="6"/>
-          <line x1="15" y1="9" x2="12" y2="6"/>
-          <line x1="9" y1="16" x2="15" y2="16"/>
-        </svg>
-      </button>
-      {tooltip && (
-        <div style={{
-          position: 'absolute', top: '110%', right: 0, zIndex: 9999,
-          background: 'linear-gradient(135deg,#0d2018,#071410)',
-          border: '1px solid rgba(52,211,153,0.35)', borderRadius: 12,
-          padding: '0.75rem 1rem', minWidth: 220, maxWidth: 280,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5,
-        }}>
-          <div style={{ fontWeight: 700, color: '#34d399', marginBottom: '0.3rem' }}>Add to Home Screen</div>
-          {instructions}
-          <button onClick={() => setTooltip(false)} style={{
-            display: 'block', marginTop: '0.6rem', width: '100%',
-            background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.25)',
-            borderRadius: 8, padding: '0.3rem', color: 'rgba(255,255,255,0.5)',
-            fontSize: '0.75rem', cursor: 'pointer',
-          }}>Got it</button>
-        </div>
-      )}
-    </div>
+    <button
+      onClick={handleClick}
+      title="Add WalletLens to Home Screen"
+      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="12" y1="6" x2="12" y2="12"/>
+        <line x1="9" y1="9" x2="12" y2="6"/>
+        <line x1="15" y1="9" x2="12" y2="6"/>
+        <line x1="9" y1="16" x2="15" y2="16"/>
+      </svg>
+    </button>
   )
 }
 
