@@ -1788,9 +1788,6 @@ export default function Dashboard() {
           {/* Live news ticker */}
           <NewsTicker />
 
-          {/* Tips & quotes banner */}
-          <TradeTips />
-
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
@@ -1837,6 +1834,9 @@ export default function Dashboard() {
               <StatCard label={t('tradesCount')} value={transactions.length} />
             </div>
           )}
+
+          {/* Tips & quotes banner */}
+          <TradeTips />
 
           {/* Partner exchange strip */}
           <ExchangePartners compact source="dashboard" />
@@ -1907,114 +1907,91 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Quick actions */}
-          <div className="dvx-quick-grid">
-            <button className="dvx-quick-card dvx-quick-buy holo-card-v2" onClick={() => openSheet('buy')}>
-              <span className="dvx-quick-icon">{Ico.buy}</span>
-              <strong>{t('buy')}</strong>
-              <span>{t('recordPurchase')}</span>
-            </button>
-            <button className="dvx-quick-card dvx-quick-sell holo-card-v2" onClick={() => openSheet('sell')}>
-              <span className="dvx-quick-icon">{Ico.sell}</span>
-              <strong>{t('sell')}</strong>
-              <span>{t('recordSale')}</span>
-            </button>
-            <button className="dvx-quick-card holo-card-v2" onClick={() => setActiveTab('wallets')}>
-              <span className="dvx-quick-icon">{Ico.wallet}</span>
-              <strong>{t('wallets')}</strong>
-              <span>{t('walletCount')(wallets.length)}</span>
-            </button>
-            <button className="dvx-quick-card holo-card-v2" onClick={() => navigate('/transactions')}>
-              <span className="dvx-quick-icon">{Ico.history}</span>
-              <strong>{t('history')}</strong>
-              <span>{t('tradesLabel')(transactions.length)}</span>
-            </button>
-          </div>
+          {/* Performance chart — full width, above the grid */}
+          {enriched.length > 0 && <div className="glass-card perf-card">
+            {/* Header: value + change */}
+            <div style={{ marginBottom:'1rem' }}>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
+                Portfolio Value
+              </div>
+              <div style={{ display:'flex', alignItems:'flex-end', gap:'0.75rem', flexWrap:'wrap' }}>
+                <span style={{ fontSize:'1.75rem', fontWeight:800, color:'white', letterSpacing:'-0.03em', lineHeight:1 }}>
+                  ${fmt(perfHover != null ? perfHover : totalValue)}
+                </span>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', paddingBottom:'0.15rem' }}>
+                  <span style={{
+                    fontSize:'0.85rem', fontWeight:700,
+                    color: perfChange.pct >= 0 ? '#34d399' : '#f87171',
+                    background: perfChange.pct >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+                    borderRadius:6, padding:'0.15rem 0.5rem',
+                  }}>
+                    {perfChange.pct >= 0 ? '▲' : '▼'} {Math.abs(perfChange.pct).toFixed(2)}%
+                  </span>
+                  <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? '#34d399' : '#f87171', fontWeight:600 }}>
+                    {perfChange.abs >= 0 ? '+' : ''}${fmt(Math.abs(perfChange.abs))}
+                  </span>
+                  <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.3)' }}>{perfTf}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeframe pills */}
+            <div style={{ display:'flex', gap:'0.3rem', marginBottom:'0.75rem' }}>
+              {TIMEFRAMES.map(tf => (
+                <button key={tf.id} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
+                  style={{
+                    padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
+                    fontSize:'0.75rem', fontWeight:700,
+                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.07)',
+                    color: perfTf === tf.id ? '#000' : 'rgba(255,255,255,0.5)',
+                    transition:'all 0.15s',
+                  }}>
+                  {tf.label}
+                </button>
+              ))}
+              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? '#34d399' : 'rgba(255,255,255,0.25)', alignSelf:'center' }}>
+                {perfHasRealData ? '● live' : '○ simulated'}
+              </span>
+            </div>
+
+            {/* Chart */}
+            {(() => {
+              const up = perfChange.pct >= 0
+              const strokeColor = up ? '#34d399' : '#f87171'
+              const gradId = up ? 'pg-up' : 'pg-dn'
+              return (
+                <ResponsiveContainer key={perfTf} width="100%" height={200}>
+                  <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}
+                    onMouseMove={s => { if (s?.activePayload?.[0]) setPerfHover(s.activePayload[0].value) }}
+                    onMouseLeave={() => setPerfHover(null)}>
+                    <defs>
+                      <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35}/>
+                        <stop offset="85%" stopColor={strokeColor} stopOpacity={0.03}/>
+                        <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis hide />
+                    <YAxis hide domain={['auto', 'auto']} />
+                    <Tooltip
+                      contentStyle={{ background:'#0d1f14', border:'1px solid rgba(52,211,153,0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
+                      itemStyle={{ color:'white', fontWeight:700, fontSize:'0.9rem' }}
+                      labelStyle={{ display:'none' }}
+                      formatter={v => [`$${fmt(v)}`, '']}
+                      cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
+                    />
+                    <Area type="monotoneX" dataKey="v" stroke={strokeColor} strokeWidth={2}
+                      fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}/>
+                  </AreaChart>
+                </ResponsiveContainer>
+              )
+            })()}
+          </div>}
 
           {/* Main grid */}
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
-              {/* Performance chart — Binance-style */}
-              {enriched.length > 0 && <div className="glass-card perf-card">
-                {/* Header: value + change */}
-                <div style={{ marginBottom:'1rem' }}>
-                  <div style={{ fontSize:'0.72rem', fontWeight:600, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
-                    Portfolio Value
-                  </div>
-                  <div style={{ display:'flex', alignItems:'flex-end', gap:'0.75rem', flexWrap:'wrap' }}>
-                    <span style={{ fontSize:'1.75rem', fontWeight:800, color:'white', letterSpacing:'-0.03em', lineHeight:1 }}>
-                      ${fmt(perfHover != null ? perfHover : totalValue)}
-                    </span>
-                    <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', paddingBottom:'0.15rem' }}>
-                      <span style={{
-                        fontSize:'0.85rem', fontWeight:700,
-                        color: perfChange.pct >= 0 ? '#34d399' : '#f87171',
-                        background: perfChange.pct >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
-                        borderRadius:6, padding:'0.15rem 0.5rem',
-                      }}>
-                        {perfChange.pct >= 0 ? '▲' : '▼'} {Math.abs(perfChange.pct).toFixed(2)}%
-                      </span>
-                      <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? '#34d399' : '#f87171', fontWeight:600 }}>
-                        {perfChange.abs >= 0 ? '+' : ''}${fmt(Math.abs(perfChange.abs))}
-                      </span>
-                      <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.3)' }}>{perfTf}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Timeframe pills */}
-                <div style={{ display:'flex', gap:'0.3rem', marginBottom:'0.75rem' }}>
-                  {TIMEFRAMES.map(tf => (
-                    <button key={tf.id} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
-                      style={{
-                        padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
-                        fontSize:'0.75rem', fontWeight:700,
-                        background: perfTf === tf.id ? (perfChange.pct >= 0 ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.07)',
-                        color: perfTf === tf.id ? '#000' : 'rgba(255,255,255,0.5)',
-                        transition:'all 0.15s',
-                      }}>
-                      {tf.label}
-                    </button>
-                  ))}
-                  <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? '#34d399' : 'rgba(255,255,255,0.25)', alignSelf:'center' }}>
-                    {perfHasRealData ? '● live' : '○ simulated'}
-                  </span>
-                </div>
-
-                {/* Chart */}
-                {(() => {
-                  const up = perfChange.pct >= 0
-                  const strokeColor = up ? '#34d399' : '#f87171'
-                  const gradId = up ? 'pg-up' : 'pg-dn'
-                  return (
-                    <ResponsiveContainer key={perfTf} width="100%" height={200}>
-                      <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}
-                        onMouseMove={s => { if (s?.activePayload?.[0]) setPerfHover(s.activePayload[0].value) }}
-                        onMouseLeave={() => setPerfHover(null)}>
-                        <defs>
-                          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35}/>
-                            <stop offset="85%" stopColor={strokeColor} stopOpacity={0.03}/>
-                            <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <XAxis hide />
-                        <YAxis hide domain={['auto', 'auto']} />
-                        <Tooltip
-                          contentStyle={{ background:'#0d1f14', border:'1px solid rgba(52,211,153,0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
-                          itemStyle={{ color:'white', fontWeight:700, fontSize:'0.9rem' }}
-                          labelStyle={{ display:'none' }}
-                          formatter={v => [`$${fmt(v)}`, '']}
-                          cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
-                        />
-                        <Area type="monotoneX" dataKey="v" stroke={strokeColor} strokeWidth={2}
-                          fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  )
-                })()}
-              </div>}
 
               {/* P&L bar chart */}
               {pnlData.length > 0 && (
