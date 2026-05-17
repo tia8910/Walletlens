@@ -547,10 +547,17 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     <div className="page">
       <div className="page-header">
         <h2>Transactions</h2>
-        <button className="fab" onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'}>
+        <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
+          background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.15)',
+          color: showForm ? '#f87171' : '#34d399',
+          border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)'}`,
+          borderRadius: '10px', padding: '0.4rem 0.85rem',
+          fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.35rem',
+        }}>
           {showForm
-            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
+            ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</>
+            : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</>}
         </button>
       </div>
 
