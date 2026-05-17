@@ -53,6 +53,7 @@ export default function Privacy() {
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
+        <Link to="/terms">Terms of Service</Link>
         <Link to="/about">About</Link>
         <Link to="/blog">Blog</Link>
         <a className="lp-footer-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer">

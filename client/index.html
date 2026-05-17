@@ -111,11 +111,19 @@
         "Installable as a PWA"
       ],
       "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.cc/privacy",
+      "termsOfService": "https://walletlens.cc/terms",
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.8",
         "bestRating": "5",
         "ratingCount": "120"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.cc/",
+        "logo": "https://walletlens.cc/icon-512.svg"
       }
     }
     </script>
@@ -197,7 +205,34 @@
       "url": "https://walletlens.cc/",
       "logo": "https://walletlens.cc/icon-512.svg",
       "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
-      "slogan": "Zoom in your wealth"
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://x.com/walletlenss",
+        "https://github.com/tia8910/walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.cc/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Market",    "url": "https://walletlens.cc/market" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.cc/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "About",     "url": "https://walletlens.cc/about" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "Privacy Policy",   "url": "https://walletlens.cc/privacy" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Terms of Service", "url": "https://walletlens.cc/terms" }
+      ]
     }
     </script>
 

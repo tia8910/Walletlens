@@ -24,6 +24,7 @@ const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
+const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
 
 function PageFallback() {
@@ -227,6 +228,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes></Suspense></ErrorBoundary>
       </div>
     )
@@ -276,6 +278,7 @@ export default function App() {
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Suspense>
