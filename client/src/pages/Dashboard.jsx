@@ -1656,12 +1656,12 @@ export default function Dashboard() {
   // ── Timed nudge toast (fires after 20s if no trade sheet opened) ──────────
   const [nudgeVisible, setNudgeVisible] = useState(false)
   useEffect(() => {
-    if (sheetOpen) { setNudgeVisible(false); return }
+    if (sheetOpen || transactions.length > 0) { setNudgeVisible(false); return }
     const t = setTimeout(() => {
-      if (!sheetOpen) { setNudgeVisible(true); track('trade_nudge_shown') }
+      if (!sheetOpen && transactions.length === 0) { setNudgeVisible(true); track('trade_nudge_shown') }
     }, 20000)
     return () => clearTimeout(t)
-  }, [sheetOpen])
+  }, [sheetOpen, transactions.length])
 
   // ── Quick Strip visibility tracking (IntersectionObserver) ───────────────
   const quickStripRef = useRef(null)
