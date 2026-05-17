@@ -15,7 +15,7 @@ import AIDecisionEngine from '../components/AIDecisionEngine'
 import AISellPlan from '../components/AISellPlan'
 import { useLanguage } from '../LanguageContext'
 import { track, trackPortfolioLoaded } from '../analytics'
-import { saveSnapshot, getSnapshotsForDays } from '../snapshots'
+import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import WeeklyReport from '../components/WeeklyReport'
 import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
@@ -1401,8 +1401,7 @@ export default function Dashboard() {
   const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
   const perfHasRealData = useMemo(() => {
     const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[perfTf] || 30
-    if (days === 0) return false
-    return getSnapshotsForDays(days).length >= 2
+    return hasRealData(days)
   }, [perfTf, perfSeries])
   const perfChange = useMemo(() => {
     if (!perfSeries.length) return { abs: 0, pct: 0 }
