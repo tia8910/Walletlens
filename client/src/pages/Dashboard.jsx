@@ -2539,7 +2539,7 @@ export default function Dashboard() {
           onClick={() => openSheet('buy', 'fab')}
           title="Add a trade"
           style={{
-            position: 'fixed', bottom: '80px', right: '16px', zIndex: 9000,
+            position: 'fixed', bottom: '80px', left: '16px', zIndex: 9000,
             width: 56, height: 56, borderRadius: '50%',
             background: 'linear-gradient(135deg, #34d399, #059669)',
             border: 'none', cursor: 'pointer',
