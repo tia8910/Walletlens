@@ -1688,7 +1688,7 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const recentTxs       = useMemo(() => (transactions.length ? transactions : DEMO.transactions).slice(0, 8), [transactions])
+  const recentTxs       = useMemo(() => transactions.slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
@@ -1936,7 +1936,7 @@ export default function Dashboard() {
             {/* Left column */}
             <div className="dvx-col-main">
               {/* Performance chart — Binance-style */}
-              <div className="glass-card perf-card">
+              {enriched.length > 0 && <div className="glass-card perf-card">
                 {/* Header: value + change */}
                 <div style={{ marginBottom:'1rem' }}>
                   <div style={{ fontSize:'0.72rem', fontWeight:600, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
@@ -2014,7 +2014,7 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   )
                 })()}
-              </div>
+              </div>}
 
               {/* P&L bar chart */}
               {pnlData.length > 0 && (
