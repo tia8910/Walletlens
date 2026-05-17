@@ -67,9 +67,10 @@ function PWATopbarButton() {
       setInstalled(true); return
     }
     const handler = (e) => { e.preventDefault(); setPrompt(e) }
+    const onInstalled = () => { setInstalled(true); setPrompt(null); track('pwa_installed', { source: 'app_installed_event' }) }
     window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => { setInstalled(true); setPrompt(null) })
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', onInstalled)
+    return () => { window.removeEventListener('beforeinstallprompt', handler); window.removeEventListener('appinstalled', onInstalled) }
   }, [])
 
   // Only show when native install prompt is available and not yet installed
@@ -197,7 +198,12 @@ export default function App() {
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
 
-  useEffect(() => { applySettings() }, [])
+  useEffect(() => {
+    applySettings()
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      track('pwa_session', { installed: true })
+    }
+  }, [])
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
   // Fire GA page_view on every SPA route change
