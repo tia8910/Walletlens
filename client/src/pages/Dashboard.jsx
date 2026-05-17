@@ -1235,6 +1235,33 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
   )
 }
 
+// ── Tools Tab (AI + Risk Scanner + Wallet Eval) ──────────────────────────
+function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets }) {
+  const [tool, setTool] = useState('ai')
+  const subTabs = [
+    { id: 'ai',   label: 'AI Analysis' },
+    { id: 'risk', label: 'Risk Scanner' },
+    { id: 'eval', label: 'Eval' },
+  ]
+  return (
+    <div>
+      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'rgba(255,255,255,0.04)', borderRadius:'12px', padding:'0.3rem' }}>
+        {subTabs.map(s => (
+          <button key={s.id} onClick={() => setTool(s.id)} style={{
+            flex:1, padding:'0.45rem', borderRadius:'9px', border:'none', cursor:'pointer', fontWeight:700, fontSize:'0.8rem',
+            background: tool === s.id ? 'rgba(52,211,153,0.18)' : 'none',
+            color: tool === s.id ? '#34d399' : 'rgba(255,255,255,0.5)',
+            transition:'all 0.15s',
+          }}>{s.label}</button>
+        ))}
+      </div>
+      {tool === 'ai'   && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
+      {tool === 'risk' && <RiskScanner enriched={isDemo ? [] : enriched} />}
+      {tool === 'eval' && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
+    </div>
+  )
+}
+
 // ── Targets Tab ──────────────────────────────────────────────────────────
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const navigate = useNavigate()
@@ -1449,7 +1476,7 @@ export default function Dashboard() {
   const [tickerValue, setTickerValue] = useState(0)
 
   useEffect(() => {
-    if (location.state?.tab) setActiveTab(location.state.tab)
+    if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
   }, [location.state?.tab])
 
   // Track dashboard tab switches as virtual page views in GA
@@ -1460,9 +1487,7 @@ export default function Dashboard() {
       page_title: `Dashboard — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
     })
     track('dashboard_tab_switch', { tab: activeTab })
-    if (activeTab === 'ai')     track('ai_tab_view')
-    if (activeTab === 'risk')   track('risk_tab_view')
-    if (activeTab === 'eval')   track('eval_tab_view')
+    if (activeTab === 'tools')  track('tools_tab_view')
     if (activeTab === 'alerts') track('alerts_tab_view')
   }, [activeTab])
 
@@ -1653,25 +1678,37 @@ export default function Dashboard() {
   }, [enriched, coinTargets])
 
   const tabs = [
-    { id: 'overview', label: t('overview'),  icon: Ico.overview },
-    { id: 'ai',       label: t('ai'),       icon: Ico.ai },
+    { id: 'overview', label: t('overview'), icon: Ico.overview },
+    { id: 'tools',    label: 'Analysis',    icon: Ico.ai },
     { id: 'alerts',   label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
-    { id: 'risk',     label: 'Risk',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
-    { id: 'eval',     label: 'Eval',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
-    { id: 'buy',      label: t('buy'),      icon: Ico.buy,    sheet: 'buy' },
-    { id: 'sell',     label: t('sell'),     icon: Ico.sell,   sheet: 'sell' },
     { id: 'targets',  label: t('targets'),  icon: Ico.target },
-    { id: 'wallets',  label: t('wallets'),  icon: Ico.wallet },
-    { id: 'data',     label: t('backup'),   icon: Ico.data },
+    { id: 'manage',   label: 'Manage',      icon: Ico.wallet },
   ]
+
+  // Map legacy tab names from location.state to new names
+  const normalizeTab = (id) => {
+    if (id === 'ai' || id === 'risk' || id === 'eval') return 'tools'
+    if (id === 'wallets' || id === 'data') return 'manage'
+    return id
+  }
 
   return (
     <div className="dvx">
-      {/* Tab nav */}
+      {/* ── Action buttons row (Buy / Sell) ── */}
+      <div className="dvx-action-row">
+        <button className="dvx-action-btn dvx-action-buy" onClick={() => openSheet('buy')}>
+          {Ico.buy} <span>{t('buy')}</span>
+        </button>
+        <button className="dvx-action-btn dvx-action-sell" onClick={() => openSheet('sell')}>
+          {Ico.sell} <span>{t('sell')}</span>
+        </button>
+      </div>
+
+      {/* Tab nav — 5 tabs */}
       <div className="dvx-tabs">
         {tabs.map(tab => (
-          <button key={tab.id} className={`dvx-tab ${!tab.sheet && activeTab === tab.id ? 'dvx-tab-active' : ''}`}
-            onClick={() => tab.sheet ? openSheet(tab.sheet) : setActiveTab(tab.id)}>
+          <button key={tab.id} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}>
             <span className="dvx-tab-icon">{tab.icon}</span>
             <span>{tab.label}</span>
           </button>
@@ -2244,15 +2281,16 @@ export default function Dashboard() {
         />
       )}
 
-      {/* ══ AI ANALYSIS ══ */}
-      {activeTab === 'ai' && (
-        <AIPanel
+      {/* ══ ANALYSIS (AI + Risk + Eval) ══ */}
+      {activeTab === 'tools' && (
+        <ToolsTab
           enriched={enriched}
           prices={prices}
           transactions={transactions}
           totalValue={totalValue}
           isDemo={isDemo}
           pricesLoading={pricesLoading}
+          coinTargets={coinTargets}
         />
       )}
 
@@ -2261,39 +2299,17 @@ export default function Dashboard() {
         <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
       )}
 
-      {/* ══ RUG PULL RISK ══ */}
-      {activeTab === 'risk' && (
-        <RiskScanner enriched={isDemo ? [] : enriched} />
-      )}
-
-      {/* ══ WALLET EVAL ══ */}
-      {activeTab === 'eval' && (
-        <WalletEvalTab
-          enriched={isDemo ? [] : enriched}
-          totalValue={totalValue}
-          targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
-        />
-      )}
-
-      {/* ══ WALLETS ══ */}
-      {activeTab === 'wallets' && (
+      {/* ══ MANAGE (Wallets + Backup) ══ */}
+      {activeTab === 'manage' && (
         <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
             <h3>{t('walletsTitle')(wallets.length)}</h3>
             <WalletPanel wallets={wallets} onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
-        </div>
-      )}
-
-      {/* ══ DATA / BACKUP ══ */}
-      {activeTab === 'data' && (
-        <div className="dvx-form-page">
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
           </div>
-          <button className="dvx-back" onClick={() => setActiveTab('overview')}>{t('back')}</button>
         </div>
       )}
 
