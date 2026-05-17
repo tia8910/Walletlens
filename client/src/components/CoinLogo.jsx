@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, memo } from 'react'
+import { getCachedCoinImage } from '../api'
 
 // Known non-crypto asset icons rendered inline — no CDN needed
 const ASSET_ICONS = {
@@ -130,12 +131,17 @@ const CoinLogo = memo(function CoinLogo({
     )
   }
 
+  // Prefer the stored image and API cache (exact coinId match = correct icon).
+  // Only fall back to symbol-based CDNs as last resort — they can return
+  // wrong icons when the same symbol exists for multiple coins (WLD, NS, FET…).
+  const cachedImg = coinId ? getCachedCoinImage(coinId) : null
   const STAGES = [
-    image ? `img:${image}` : null,
-    sym   ? `jsdelivr:${sym}` : null,
-    sym   ? `coincap:${sym}` : null,
-    sym   ? `lcw:${sym}` : null,
-    sym   ? `cryptoicons:${sym}` : null,
+    image    ? `img:${image}` : null,
+    cachedImg && cachedImg !== image ? `img:${cachedImg}` : null,
+    sym      ? `jsdelivr:${sym}` : null,
+    sym      ? `coincap:${sym}` : null,
+    sym      ? `lcw:${sym}` : null,
+    sym      ? `cryptoicons:${sym}` : null,
   ].filter(Boolean)
 
   const [stageIdx, setStageIdx] = useState(image ? 0 : 1)
@@ -165,7 +171,8 @@ const CoinLogo = memo(function CoinLogo({
   if (!currentStage) {
     // exhausted all stages
   } else if (currentStage.startsWith('img:')) {
-    return <img {...common} src={image} onError={advance} />
+    const src = currentStage.slice(4)
+    return <img {...common} src={src} onError={advance} />
   } else if (currentStage.startsWith('jsdelivr:')) {
     return <img {...common} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
   } else if (currentStage.startsWith('coincap:')) {
