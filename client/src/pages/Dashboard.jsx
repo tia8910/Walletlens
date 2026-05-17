@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
@@ -9,16 +9,22 @@ import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
 import CoinLogo from '../components/CoinLogo'
-import PriceAlerts from '../components/PriceAlerts'
-import RiskScanner from '../components/RiskScanner'
-import AIDecisionEngine from '../components/AIDecisionEngine'
-import AISellPlan from '../components/AISellPlan'
 import { useLanguage } from '../LanguageContext'
 import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
-import WeeklyReport from '../components/WeeklyReport'
 import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
+
+// Heavy components only loaded when the user opens that tab
+const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
+const RiskScanner    = lazy(() => import('../components/RiskScanner'))
+const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
+const AISellPlan     = lazy(() => import('../components/AISellPlan'))
+const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
+
+function TabFallback() {
+  return <div style={{ padding:'2rem', textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:'0.85rem' }}>Loading…</div>
+}
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
 const Ico = {
@@ -540,7 +546,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           ))}
         </div>
       </div>
-      <AISellPlan enriched={enriched} prices={prices} />
+      <Suspense fallback={<TabFallback />}><AISellPlan enriched={enriched} prices={prices} /></Suspense>
     </div>
   )
 }
@@ -1256,7 +1262,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
         ))}
       </div>
       {tool === 'ai'   && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
-      {tool === 'risk' && <RiskScanner enriched={isDemo ? [] : enriched} />}
+      {tool === 'risk' && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
       {tool === 'eval' && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
     </div>
   )
@@ -1643,6 +1649,20 @@ export default function Dashboard() {
   const recentTxs       = useMemo(() => (transactions.length ? transactions : DEMO.transactions).slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
+  // Stale manual price check — warn if any non-crypto asset price is >7 days old
+  const staleAssets = useMemo(() => {
+    const manual = api.getManualPrices ? api.getManualPrices() : {}
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+    return enriched.filter(h => {
+      const id = (h.coin_id || '').toLowerCase()
+      const isManual = id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('other:') || id.startsWith('bond:')
+      if (!isManual) return false
+      const m = manual[h.coin_id]
+      if (!m?.updated_at) return true
+      return new Date(m.updated_at).getTime() < cutoff
+    })
+  }, [enriched])
+
   // ── Sell-targets analysis ────────────────────────────────────────────────
   const targetsAnalysis = useMemo(() => {
     const rows = []
@@ -1782,13 +1802,13 @@ export default function Dashboard() {
 
           {/* AI Decision Engine */}
           {enriched.length > 0 && (
-            <AIDecisionEngine
+            <Suspense fallback={<TabFallback />}><AIDecisionEngine
               enriched={enriched}
               prices={prices}
               transactions={transactions}
               totalValue={totalValue}
               totalInvested={totalInvested}
-            />
+            /></Suspense>
           )}
 
           {/* Portfolio Heatmap */}
@@ -2164,6 +2184,18 @@ export default function Dashboard() {
                 )}
               </div>
 
+              {/* Stale price warning */}
+              {staleAssets.length > 0 && (
+                <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
+                  <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
+                  <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.7)', lineHeight:1.5 }}>
+                    <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
+                    {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
+                    Update them via Add Trade to keep your portfolio value accurate.
+                  </div>
+                </div>
+              )}
+
               {/* All holdings */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
@@ -2296,7 +2328,7 @@ export default function Dashboard() {
 
       {/* ══ PRICE ALERTS ══ */}
       {activeTab === 'alerts' && (
-        <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+        <Suspense fallback={<TabFallback />}><PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} /></Suspense>
       )}
 
       {/* ══ MANAGE (Wallets + Backup) ══ */}
@@ -2323,11 +2355,11 @@ export default function Dashboard() {
         holdings={enriched}
       />
       {weeklyOpen && (
-        <WeeklyReport
+        <Suspense fallback={null}><WeeklyReport
           enriched={isDemo ? [] : enriched}
           totalValue={totalValue}
           onClose={() => setWeeklyOpen(false)}
-        />
+        /></Suspense>
       )}
       {shareOpen && (
         <ShareCard
