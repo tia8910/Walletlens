@@ -57,6 +57,7 @@ function LangToggle() {
 }
 
 // ── PWA install button in topbar ─────────────────────────────────────
+// Only shown on Chrome/Edge where beforeinstallprompt fires — no-op on Firefox/iOS
 function PWATopbarButton() {
   const [prompt, setPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
@@ -67,32 +68,25 @@ function PWATopbarButton() {
     }
     const handler = (e) => { e.preventDefault(); setPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => setInstalled(true))
+    window.addEventListener('appinstalled', () => { setInstalled(true); setPrompt(null) })
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  if (installed) return null
+  // Only show when native install prompt is available and not yet installed
+  if (!prompt || installed) return null
 
   async function handleClick() {
     track('pwa_topbar_install_click')
-    if (prompt) {
-      prompt.prompt()
-      const { outcome } = await prompt.userChoice
-      track('pwa_install_outcome', { outcome, source: 'topbar' })
-      if (outcome === 'accepted') setInstalled(true)
-    } else {
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
-      const msg = isIOS
-        ? 'Tap the Share button → "Add to Home Screen"'
-        : 'Click your browser menu → "Install app" or "Add to Home Screen"'
-      alert(msg)
-    }
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    track('pwa_install_outcome', { outcome, source: 'topbar' })
+    if (outcome === 'accepted') setInstalled(true)
   }
 
   return (
     <button
       onClick={handleClick}
-      title="Add WalletLens to Home Screen"
+      title="Install WalletLens"
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
