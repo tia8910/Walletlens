@@ -5,18 +5,18 @@
   --g: #34d399;
   --gd: #10b981;
   --gl: rgba(52, 211, 153, 0.12);
-  --ink: #050f08;
-  --ink2: #0f2318;
+  --ink: #09090e;
+  --ink2: #13141c;
   --ink3: rgba(52, 211, 153, 0.55);
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --display: 'Inter', 'Cabinet Grotesk', system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --display: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Surface — dark glass */
-  --bg: #040d0a;
-  --card-bg: rgba(15, 23, 20, 0.92);
-  --bg2: rgba(15, 23, 20, 0.92);
-  --bg3: #0a180e;
-  --bg4: #0d1f12;
+  /* Surface — deep charcoal, neutral undertone */
+  --bg: #0e0f14;
+  --card-bg: rgba(20, 21, 30, 0.92);
+  --bg2: rgba(20, 21, 30, 0.92);
+  --bg3: #13141c;
+  --bg4: #191a24;
   --border: rgba(52, 211, 153, 0.38);
 
   /* Text */
@@ -37,7 +37,7 @@
   --red-bg: rgba(248, 113, 113, 0.12);
   --orange: #fbbf24;
 
-  --header-gradient: linear-gradient(135deg, #000000 0%, #0f2318 50%, #34d399 110%);
+  --header-gradient: linear-gradient(135deg, #09090e 0%, #191a24 50%, #34d399 110%);
   --header-gradient-alt: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 
   /* Floating mesh — dark emerald tones */
@@ -54,7 +54,7 @@
 }
 
 body {
-  font-family: 'Inter', 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -4773,9 +4773,9 @@ input[type="date"] { color-scheme: dark; }
 /* ── Doc pages (About, Privacy, Blog) ─────────────────────────────────── */
 .doc-page {
   min-height: 100vh;
-  background: #071a0c;
+  background: var(--bg);
   color: var(--text);
-  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-family: var(--display);
   display: flex; flex-direction: column;
 }
 .doc-header {
