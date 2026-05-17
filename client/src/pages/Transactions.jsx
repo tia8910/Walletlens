@@ -528,7 +528,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
   async function handleDelete(id) {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return
+    const tx = transactions.find(t => t.id === id)
     await api.deleteTransaction(id)
+    track('trade_deleted', {
+      trade_type:     tx?.type,
+      asset_symbol:   (tx?.coin_symbol || tx?.coin_id || '').toUpperCase(),
+      asset_category: tx?.category || 'crypto',
+      value_usd:      tx ? Math.round((tx.amount || 0) * (tx.price_per_unit || 0)) : undefined,
+    })
     loadData()
   }
 
