@@ -24,7 +24,7 @@ async function buildReceiveLeg(target, proceedsUsd) {
   if (T === 'BTC') {
     const prices = await api.getPrices('bitcoin')
     const btcUsd = prices?.bitcoin?.usd || 0
-    if (!btcUsd) return null
+    if (!btcUsd) return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: 0, pricePerUnit: 0 }
     return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: proceedsUsd / btcUsd, pricePerUnit: btcUsd }
   }
   if (T === 'EUR') {

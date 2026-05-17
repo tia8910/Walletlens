@@ -39,6 +39,7 @@ export default function AssetDetail() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetType, setSheetType] = useState('buy')
   const [note, setNote] = useState(() => api.getCoinNote(coinId))
+  useEffect(() => { setNote(api.getCoinNote(coinId)) }, [coinId])
   const [noteEditing, setNoteEditing] = useState(false)
 
   useEffect(() => { loadData() }, [coinId])

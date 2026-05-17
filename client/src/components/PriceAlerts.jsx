@@ -121,7 +121,7 @@ export default function PriceAlerts({ enriched, prices }) {
     }
     if (changed) setAlerts(updated)
     prevPricesRef.current = prices
-  }, [prices])
+  }, [prices, addToast])
 
   const addToast = useCallback((msg) => {
     const id = Date.now()
