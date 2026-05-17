@@ -1241,6 +1241,52 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
   )
 }
 
+// ── Empty portfolio state ─────────────────────────────────────────────────
+function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
+  if (!loaded) return null
+  const steps = [
+    { icon: '➕', label: 'Add a trade', desc: 'Log your first buy', action: onAddTrade, primary: true },
+    { icon: '🔍', label: 'Browse market', desc: 'Explore live prices', action: () => navigate('/market') },
+    { icon: '🐋', label: 'Watch whales', desc: 'Follow smart money', action: () => navigate('/whales') },
+  ]
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(52,211,153,0.06) 0%, rgba(59,130,246,0.04) 100%)',
+      border: '1px solid rgba(52,211,153,0.15)',
+      borderRadius: '20px', padding: '2rem 1.5rem',
+      textAlign: 'center', marginTop: '1rem',
+    }}>
+      <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>📊</div>
+      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff', marginBottom: '0.5rem' }}>
+        Your portfolio is empty
+      </div>
+      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+        Start tracking your investments to unlock AI insights,<br />price alerts, risk scores and performance charts.
+      </div>
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1.5rem' }}>
+        {steps.map(s => (
+          <button key={s.label} onClick={s.action} style={{
+            flex: '1 1 120px', maxWidth: '160px',
+            background: s.primary ? '#34d399' : 'rgba(255,255,255,0.06)',
+            color: s.primary ? '#000' : '#fff',
+            border: s.primary ? 'none' : '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '14px', padding: '0.9rem 0.75rem',
+            cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+            transition: 'opacity 0.15s',
+          }}>
+            <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{s.icon}</div>
+            <div>{s.label}</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 400, opacity: 0.65, marginTop: '0.2rem' }}>{s.desc}</div>
+          </button>
+        ))}
+      </div>
+      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
+        Your data stays on your device — no account needed
+      </div>
+    </div>
+  )
+}
+
 // ── Tools Tab (AI + Risk Scanner + Wallet Eval) ──────────────────────────
 function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets }) {
   const [tool, setTool] = useState('ai')
@@ -1564,12 +1610,8 @@ export default function Dashboard() {
     const hasPrices    = raw.some(h => h.value > 0)
 
     if (!hasPortfolio && loaded) {
-      const demoEnriched = DEMO.holdings.map(h => ({
-        ...h, pnl: h.value - h.total_invested,
-        pnlPct: ((h.value - h.total_invested) / h.total_invested) * 100,
-      }))
-      return { enriched: demoEnriched, totalValue: DEMO.totalValue, totalInvested: DEMO.totalInvested,
-        totalPnL: DEMO.totalPnL, totalPnLPct: DEMO.totalPnLPct, isDemo: true, pricesFailed: false }
+      return { enriched: [], totalValue: 0, totalInvested: 0,
+        totalPnL: 0, totalPnLPct: 0, isDemo: false, pricesFailed: false }
     }
 
     const tv  = hasPrices ? raw.reduce((s, h) => s + h.value, 0) : raw.reduce((s, h) => s + h.total_invested, 0)
@@ -1738,14 +1780,19 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
+          {/* Empty state for new users */}
+          {!loaded || enriched.length === 0 ? (
+            <EmptyPortfolio onAddTrade={() => openSheet('buy')} navigate={navigate} loaded={loaded} />
+          ) : null}
+
           {/* Live news ticker */}
           <NewsTicker />
 
           {/* Tips & quotes banner */}
           <TradeTips />
 
-          {/* Hero */}
-          <div className="dvx-hero glass-card lens-pulse">
+          {/* Hero + stats — only shown when portfolio has holdings */}
+          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
@@ -1777,16 +1824,10 @@ export default function Dashboard() {
                 {t('shareGains')}
               </button>
             )}
-            {isDemo && (
-              <div className="dvx-hero-actions">
-                <button className="dvx-hero-cta" onClick={() => setActiveTab('wallets')}>{t('createWallet')}</button>
-                <button className="dvx-hero-cta dvx-hero-cta-buy" onClick={() => openSheet('buy')}>{t('addTrade')}</button>
-              </div>
-            )}
-          </div>
+          </div>}
 
           {/* Stats row */}
-          {!isDemo && (
+          {enriched.length > 0 && (
             <div className="dvx-stats-row">
               <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
               <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}

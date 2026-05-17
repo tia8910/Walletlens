@@ -1,85 +1,29 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
-import { loadData, saveData } from '../data/storage'
 
 const KEY = 'wl_welcomed_v1'
-const DEMO_KEY = 'wl_demo_loaded_v1'
-
-// Seed a realistic demo portfolio so new users see value immediately.
-// Uses transactions (not raw holdings) so the portfolio engine works correctly.
-function seedDemoPortfolio() {
-  if (localStorage.getItem(DEMO_KEY)) return
-  const txs = loadData('transactions')
-  if (txs.length > 0) return // real user — don't overwrite
-
-  // Ensure a default wallet exists
-  let wallets = loadData('wallets')
-  if (!wallets.length) {
-    wallets = [{ id: 1, name: 'My Wallet', created_at: new Date().toISOString() }]
-    saveData('wallets', wallets)
-  }
-  const walletId = wallets[0].id
-
-  const now = new Date()
-  const daysAgo = (d) => new Date(now - d * 86400000).toISOString().split('T')[0]
-
-  const demoTxs = [
-    {
-      id: 9001, wallet_id: walletId, type: 'buy', category: 'crypto',
-      coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin',
-      coin_image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
-      amount: 0.05, price_per_unit: 62000, total_cost: 3100,
-      exchange: 'Binance', notes: '', date: daysAgo(30), created_at: new Date().toISOString(),
-    },
-    {
-      id: 9002, wallet_id: walletId, type: 'buy', category: 'crypto',
-      coin_id: 'ethereum', coin_symbol: 'ETH', coin_name: 'Ethereum',
-      coin_image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
-      amount: 0.8, price_per_unit: 3200, total_cost: 2560,
-      exchange: 'Coinbase', notes: '', date: daysAgo(21), created_at: new Date().toISOString(),
-    },
-    {
-      id: 9003, wallet_id: walletId, type: 'buy', category: 'crypto',
-      coin_id: 'solana', coin_symbol: 'SOL', coin_name: 'Solana',
-      coin_image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
-      amount: 10, price_per_unit: 148, total_cost: 1480,
-      exchange: 'Kraken', notes: '', date: daysAgo(14), created_at: new Date().toISOString(),
-    },
-    {
-      id: 9004, wallet_id: walletId, type: 'buy', category: 'crypto',
-      coin_id: 'tether', coin_symbol: 'USDT', coin_name: 'Tether',
-      coin_image: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
-      amount: 500, price_per_unit: 1, total_cost: 500,
-      exchange: '', notes: 'Cash reserve', date: daysAgo(7), created_at: new Date().toISOString(),
-    },
-  ]
-
-  saveData('transactions', [...txs, ...demoTxs])
-  localStorage.setItem(DEMO_KEY, '1')
-  track('demo_portfolio_loaded')
-}
 
 const STEPS = [
   {
     icon: '👋',
     title: 'Welcome to WalletLens',
-    desc: "We've loaded a sample portfolio so you can see everything in action. Replace it with your own trades anytime.",
+    desc: 'Your smart portfolio tracker. Track crypto, stocks, metals and more — with AI insights, price alerts and risk analysis. Free, no sign-up needed.',
     cta: 'Show me around',
     accent: '#a78bfa',
   },
   {
     icon: '📈',
-    title: 'Track Every Trade',
-    desc: 'Log buys and sells in the Trades tab. WalletLens calculates your P&L, average cost, and portfolio performance automatically.',
+    title: 'Add Your First Trade',
+    desc: 'Tap the Trades button to log a buy or sell. WalletLens calculates your P&L, average cost, and performance automatically.',
     cta: 'Got it',
     accent: '#34d399',
   },
   {
     icon: '🤖',
     title: 'AI-Powered Insights',
-    desc: 'Get personalized buy/sell signals, risk scores, and price alerts — all in one dashboard. No API keys needed.',
-    cta: "Let's go →",
+    desc: 'Get personalised buy/sell signals, risk scores, and price alerts — all without entering any API keys.',
+    cta: "Let's start →",
     accent: '#60a5fa',
     final: true,
   },
@@ -92,7 +36,6 @@ export default function WelcomeModal() {
 
   useEffect(() => {
     if (localStorage.getItem(KEY)) return
-    seedDemoPortfolio()
     const t = setTimeout(() => setVisible(true), 600)
     return () => clearTimeout(t)
   }, [])
@@ -137,7 +80,6 @@ export default function WelcomeModal() {
         textAlign: 'center',
         position: 'relative',
       }}>
-        {/* Skip */}
         {!s.final && (
           <button onClick={skip} style={{
             position: 'absolute', top: '1rem', right: '1rem',
@@ -146,7 +88,6 @@ export default function WelcomeModal() {
           }}>Skip</button>
         )}
 
-        {/* Progress dots */}
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '1.5rem' }}>
           {STEPS.map((_, i) => (
             <div key={i} style={{
@@ -158,9 +99,8 @@ export default function WelcomeModal() {
           ))}
         </div>
 
-        {/* Icon */}
         <div style={{
-          fontSize: '3rem', marginBottom: '1rem',
+          fontSize: '3rem',
           background: s.accent + '18', border: `1px solid ${s.accent}30`,
           width: '72px', height: '72px', borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
