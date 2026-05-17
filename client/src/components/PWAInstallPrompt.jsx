@@ -91,12 +91,18 @@ export default function PWAInstallPrompt() {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
-        {isChromium && prompt && (
+        {isChromium && prompt ? (
           <button onClick={install} style={{
             background: '#34d399', color: '#000', border: 'none',
             borderRadius: '8px', padding: '0.35rem 0.75rem',
             fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
           }}>Install</button>
+        ) : !isChromium && (
+          <button onClick={dismiss} style={{
+            background: '#34d399', color: '#000', border: 'none',
+            borderRadius: '8px', padding: '0.35rem 0.75rem',
+            fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
+          }}>Got it</button>
         )}
         <button onClick={dismiss} style={{
           background: 'transparent', color: 'rgba(255,255,255,0.4)', border: 'none',
