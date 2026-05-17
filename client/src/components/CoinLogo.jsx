@@ -74,8 +74,8 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 // successfully loaded image. A 2.5 s timer forces an advance only when
 // the browser silently stalls (blocked extension, slow CDN).
 //
-// Order: provided URL → jsDelivr SVG → CoinCap → cryptoicons → generated gradient
-const STAGE_TIMEOUT_MS = 1500
+// Order: provided URL → jsDelivr SVG → CoinGecko assets → CoinCap → cryptoicons → generated gradient
+const STAGE_TIMEOUT_MS = 8000
 
 const CoinLogo = memo(function CoinLogo({
   image,
@@ -130,59 +130,53 @@ const CoinLogo = memo(function CoinLogo({
     )
   }
 
-  const [stage, setStage] = useState(image ? 0 : 1)
-  const stageRef  = useRef(stage)
-  const loadedRef = useRef(false)
-  stageRef.current = stage
+  const STAGES = [
+    image ? `img:${image}` : null,
+    sym   ? `jsdelivr:${sym}` : null,
+    coinId ? `coingecko-search:${coinId}` : null,
+    sym   ? `coincap:${sym}` : null,
+    sym   ? `binance:${sym}` : null,
+    sym   ? `cryptoicons:${sym}` : null,
+  ].filter(Boolean)
 
-  // Reset whenever the source changes (route navigation)
+  const [stageIdx, setStageIdx] = useState(image ? 0 : 1)
+  const stageIdxRef = useRef(stageIdx)
+  const loadedRef   = useRef(false)
+  stageIdxRef.current = stageIdx
+
   useEffect(() => {
     loadedRef.current = false
-    setStage(image ? 0 : 1)
-  }, [image, sym])
+    setStageIdx(image ? 0 : 1)
+  }, [image, sym, coinId])
 
-  // Force-advance only if the current stage hasn't loaded within the timeout
   useEffect(() => {
-    if (stage >= 4) return
+    if (stageIdx >= STAGES.length) return
     loadedRef.current = false
     const t = setTimeout(() => {
-      if (stageRef.current === stage && !loadedRef.current) setStage(s => s + 1)
+      if (stageIdxRef.current === stageIdx && !loadedRef.current) setStageIdx(s => s + 1)
     }, STAGE_TIMEOUT_MS)
     return () => clearTimeout(t)
-  }, [stage])
+  }, [stageIdx])
 
-  const onLoad  = () => { loadedRef.current = true }
-  const common  = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer', onLoad }
+  const onLoad   = () => { loadedRef.current = true }
+  const advance  = () => setStageIdx(s => s + 1)
+  const common   = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer', onLoad }
 
-  if (stage === 0 && image) {
-    return <img {...common} src={image} onError={() => setStage(1)} />
-  }
-  if (stage === 1 && sym) {
-    return (
-      <img
-        {...common}
-        src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`}
-        onError={() => setStage(2)}
-      />
-    )
-  }
-  if (stage === 2 && sym) {
-    return (
-      <img
-        {...common}
-        src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
-        onError={() => setStage(3)}
-      />
-    )
-  }
-  if (stage === 3 && sym) {
-    return (
-      <img
-        {...common}
-        src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`}
-        onError={() => setStage(4)}
-      />
-    )
+  const currentStage = STAGES[stageIdx]
+  if (!currentStage) {
+    // exhausted all stages
+  } else if (currentStage.startsWith('img:')) {
+    return <img {...common} src={image} onError={advance} />
+  } else if (currentStage.startsWith('jsdelivr:')) {
+    return <img {...common} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
+  } else if (currentStage.startsWith('coingecko-search:')) {
+    return <img {...common} src={`https://coin-images.coingecko.com/coins/images/thumb/${coinId}.png`} onError={advance} />
+  } else if (currentStage.startsWith('coincap:')) {
+    return <img {...common} src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`} onError={advance} />
+  } else if (currentStage.startsWith('binance:')) {
+    return <img {...common} src={`https://bin.bnbstatic.com/image/pgc/202309/coin-icons/${sym.toUpperCase()}.png`} onError={advance} />
+  } else if (currentStage.startsWith('cryptoicons:')) {
+    return <img {...common} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
   }
   return (
     <GeneratedIcon
