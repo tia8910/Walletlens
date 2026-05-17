@@ -1285,11 +1285,11 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
   ]
 
   const COINS = [
-    { symbol:'BTC', color:'#f7931a', angle:0   },
-    { symbol:'ETH', color:'#627eea', angle:72  },
-    { symbol:'SOL', color:'#9945ff', angle:144 },
-    { symbol:'XRP', color:'#00aae4', angle:216 },
-    { symbol:'BNB', color:'#f3ba2f', angle:288 },
+    { symbol:'BTC', coinId:'bitcoin',     color:'#f7931a', angle:0   },
+    { symbol:'ETH', coinId:'ethereum',    color:'#627eea', angle:72  },
+    { symbol:'SOL', coinId:'solana',      color:'#9945ff', angle:144 },
+    { symbol:'XRP', coinId:'ripple',      color:'#00aae4', angle:216 },
+    { symbol:'BNB', coinId:'binancecoin', color:'#f3ba2f', angle:288 },
   ]
 
   return (
@@ -1330,24 +1330,26 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
           animation:'ep-pulse 3s ease-in-out infinite',
         }}/>
 
-        {/* Orbiting coin badges */}
-        {COINS.map((c, i) => {
+        {/* Orbiting coin badges with official logos */}
+        {COINS.map((c) => {
           const rad = (c.angle * Math.PI) / 180
           const r = 96
-          const x = 110 + r * Math.cos(rad) - 16
-          const y = 110 + r * Math.sin(rad) - 16
+          const x = 110 + r * Math.cos(rad) - 18
+          const y = 110 + r * Math.sin(rad) - 18
           return (
             <div key={c.symbol} style={{
               position:'absolute', left:x, top:y,
-              width:32, height:32, borderRadius:'50%',
-              background:`${c.color}22`,
-              border:`1.5px solid ${c.color}55`,
+              width:36, height:36, borderRadius:'50%',
+              background:`${c.color}18`,
+              border:`1.5px solid ${c.color}50`,
               display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:'0.6rem', fontWeight:800, color:c.color,
-              boxShadow:`0 0 10px ${c.color}30`,
-              animation:`ep-spin ${18}s linear infinite`,
-              transformOrigin:`${110 - x + 16}px ${110 - y + 16}px`,
-            }}>{c.symbol}</div>
+              boxShadow:`0 0 12px ${c.color}35`,
+              animation:`ep-spin 18s linear infinite`,
+              transformOrigin:`${110 - x + 18}px ${110 - y + 18}px`,
+              overflow:'hidden',
+            }}>
+              <CoinLogo coinId={c.coinId} symbol={c.symbol} size={28} className="coin-logo" />
+            </div>
           )
         })}
 
