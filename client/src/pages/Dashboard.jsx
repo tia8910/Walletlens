@@ -61,6 +61,7 @@ function isNonCrypto(coinId, coinSymbol) {
   if (id.includes('appartment') || id.includes('apartment')) return true
   if (['xau','xag','xpt','xpd'].includes(sym)) return true
   if (['usd','eur','gbp','us'].includes(sym)) return true
+  if (['usdt','usdc','dai','busd','tusd','frax','usdd','pyusd','gusd','lusd','susd','ust','usdp'].includes(sym)) return true
   if (['aapl','msft','tsla','amzn','nvda','googl','meta','nflx'].includes(sym)) return true
   return false
 }
