@@ -1966,6 +1966,45 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Quick Trade nudge — shown for portfolio holders */}
+          {enriched.length > 0 && (
+            <div style={{
+              display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
+            }}>
+              <button onClick={() => openSheet('buy')} style={{
+                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(52,211,153,0.22), rgba(52,211,153,0.10))',
+                color: '#34d399', fontWeight: 800, fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
+                boxShadow: '0 0 0 1px rgba(52,211,153,0.3), 0 4px 16px rgba(52,211,153,0.15)',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Buy
+              </button>
+              <button onClick={() => openSheet('sell')} style={{
+                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'rgba(248,113,113,0.10)',
+                color: '#f87171', fontWeight: 800, fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
+                boxShadow: '0 0 0 1px rgba(248,113,113,0.25)',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Sell
+              </button>
+              <button onClick={() => navigate('/transactions')} style={{
+                padding: '0.75rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '0.82rem',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+                whiteSpace: 'nowrap',
+              }}>
+                History
+              </button>
+            </div>
+          )}
+
           {/* Tips & quotes banner */}
           <TradeTips />
 
@@ -2503,6 +2542,29 @@ export default function Dashboard() {
         onDone={loadAll}
         holdings={enriched}
       />
+
+      {/* ── Floating trade FAB ── */}
+      {!sheetOpen && (
+        <button
+          onClick={() => openSheet('buy')}
+          title="Add a trade"
+          style={{
+            position: 'fixed', bottom: '80px', right: '16px', zIndex: 9000,
+            width: 56, height: 56, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #34d399, #059669)',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 20px rgba(52,211,153,0.55), 0 0 0 0 rgba(52,211,153,0.4)',
+            animation: 'fab-pulse 2.5s ease-in-out infinite',
+            color: '#000',
+          }}
+          aria-label="Add a trade"
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      )}
       {weeklyOpen && (
         <Suspense fallback={null}><WeeklyReport
           enriched={isDemo ? [] : enriched}
