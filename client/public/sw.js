@@ -1,9 +1,13 @@
-// Service worker — network-first for HTML, cache-first for assets.
+// Service worker — network-first for HTML, cache-first for hashed assets,
+// stale-while-revalidate for semi-static JSON (news, stock prices).
 // Never cache index.html so users always get the latest app shell.
-const SW_VERSION = 'v5'
+const SW_VERSION = 'v6'
 const STATIC = `walletlens-static-${SW_VERSION}`
 
-// Only cache immutable hashed assets (JS/CSS bundles), not HTML.
+// Semi-static JSON files updated by CI on a schedule. Serve from cache
+// instantly while revalidating in the background (stale-while-revalidate).
+const SEMI_STATIC = new Set(['/news.json', '/stock-prices.json'])
+
 self.addEventListener('install', (e) => {
   self.skipWaiting()
 })
@@ -38,6 +42,23 @@ self.addEventListener('fetch', (e) => {
         if (fresh?.ok) caches.open(STATIC).then(c => c.put(req, fresh.clone()))
         return fresh
       }).catch(() => caches.match(req))
+    )
+    return
+  }
+
+  // Semi-static JSON files (news.json, stock-prices.json): stale-while-revalidate.
+  // Return cached version immediately (fast), then update cache in the background.
+  if (SEMI_STATIC.has(url.pathname)) {
+    e.respondWith(
+      caches.open(STATIC).then(cache =>
+        cache.match(req).then(cached => {
+          const revalidate = fetch(req).then(fresh => {
+            if (fresh?.ok) cache.put(req, fresh.clone())
+            return fresh
+          }).catch(() => cached)
+          return cached || revalidate
+        })
+      )
     )
     return
   }

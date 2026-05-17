@@ -6,6 +6,8 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    target: 'es2020',
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: {

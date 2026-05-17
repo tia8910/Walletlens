@@ -1,7 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Landing from './pages/Landing'
-import Dashboard from './pages/Dashboard'
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
@@ -14,6 +13,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 
+const Dashboard    = lazy(() => import('./pages/Dashboard'))
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
 const Whales       = lazy(() => import('./pages/Whales'))

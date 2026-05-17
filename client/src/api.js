@@ -78,10 +78,26 @@ async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
   }
 }
 
+// In-flight request deduplication: if two callers ask for the same URL
+// concurrently, the second awaits the first promise instead of firing a
+// duplicate network request.
+const _inflight = new Map();
+
 // Fetch JSON from a URL, retrying through multiple CORS proxies if the
 // direct request fails (rate-limit, CORS block, network error, or
 // timeout). Returns null only if every attempt fails.
 async function fetchJSON(url) {
+  if (_inflight.has(url)) return _inflight.get(url);
+  const promise = _doFetchJSON(url);
+  _inflight.set(url, promise);
+  try {
+    return await promise;
+  } finally {
+    _inflight.delete(url);
+  }
+}
+
+async function _doFetchJSON(url) {
   try {
     const res = await fetchWithTimeout(url);
     if (res.ok) return await res.json();
