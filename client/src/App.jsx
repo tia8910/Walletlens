@@ -59,19 +59,19 @@ function LangToggle() {
 // ── PWA install button in topbar ─────────────────────────────────────
 function PWATopbarButton() {
   const [prompt, setPrompt] = useState(null)
-  const [visible, setVisible] = useState(false)
+  const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
-    if (localStorage.getItem('wl_pwa_dismissed')) return
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
-    if (isIOS) { setVisible(true); return }
-    const handler = (e) => { e.preventDefault(); setPrompt(e); setVisible(true) }
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setInstalled(true); return
+    }
+    const handler = (e) => { e.preventDefault(); setPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setInstalled(true))
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  if (!visible) return null
+  if (installed) return null
 
   async function handleClick() {
     track('pwa_topbar_install_click')
@@ -79,17 +79,20 @@ function PWATopbarButton() {
       prompt.prompt()
       const { outcome } = await prompt.userChoice
       track('pwa_install_outcome', { outcome, source: 'topbar' })
-      if (outcome === 'accepted') { setVisible(false); localStorage.setItem('wl_pwa_dismissed', '1') }
+      if (outcome === 'accepted') setInstalled(true)
     } else {
-      // iOS or non-Chromium: show a toast/tip
-      alert('Tap Share → "Add to Home Screen" to install WalletLens')
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
+      const msg = isIOS
+        ? 'Tap the Share button → "Add to Home Screen"'
+        : 'Click your browser menu → "Install app" or "Add to Home Screen"'
+      alert(msg)
     }
   }
 
   return (
     <button
       onClick={handleClick}
-      title="Add to Home Screen"
+      title="Add WalletLens to Home Screen"
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
