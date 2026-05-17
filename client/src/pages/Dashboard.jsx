@@ -1651,7 +1651,7 @@ export default function Dashboard() {
   const [goalInput, setGoalInput]             = useState('')
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
-  const openSheet = useCallback((t) => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t }) }, [])
+  const openSheet = useCallback((t, source = 'dashboard') => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [hidden, setHidden]               = useState(false)
@@ -1887,16 +1887,6 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
-      {/* ── Action buttons row (Buy / Sell) ── */}
-      <div className="dvx-action-row">
-        <button className="dvx-action-btn dvx-action-buy" onClick={() => openSheet('buy')}>
-          {Ico.buy} <span>{t('buy')}</span>
-        </button>
-        <button className="dvx-action-btn dvx-action-sell" onClick={() => openSheet('sell')}>
-          {Ico.sell} <span>{t('sell')}</span>
-        </button>
-      </div>
-
       {/* Tab nav — 5 tabs */}
       <div className="dvx-tabs">
         {tabs.map(tab => (
@@ -1913,7 +1903,7 @@ export default function Dashboard() {
         <>
           {/* Empty state for new users */}
           {!loaded || enriched.length === 0 ? (
-            <EmptyPortfolio onAddTrade={() => openSheet('buy')} navigate={navigate} loaded={loaded} />
+            <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} navigate={navigate} loaded={loaded} />
           ) : null}
 
           {/* Live news ticker */}
@@ -1971,7 +1961,7 @@ export default function Dashboard() {
             <div style={{
               display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
             }}>
-              <button onClick={() => openSheet('buy')} style={{
+              <button onClick={() => openSheet('buy', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'linear-gradient(135deg, rgba(52,211,153,0.22), rgba(52,211,153,0.10))',
                 color: '#34d399', fontWeight: 800, fontSize: '0.9rem',
@@ -1982,7 +1972,7 @@ export default function Dashboard() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Buy
               </button>
-              <button onClick={() => openSheet('sell')} style={{
+              <button onClick={() => openSheet('sell', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'rgba(248,113,113,0.10)',
                 color: '#f87171', fontWeight: 800, fontSize: '0.9rem',
@@ -2546,7 +2536,7 @@ export default function Dashboard() {
       {/* ── Floating trade FAB ── */}
       {!sheetOpen && (
         <button
-          onClick={() => openSheet('buy')}
+          onClick={() => openSheet('buy', 'fab')}
           title="Add a trade"
           style={{
             position: 'fixed', bottom: '80px', right: '16px', zIndex: 9000,
