@@ -3,28 +3,45 @@ import { track } from '../analytics'
 
 const DISMISSED_KEY = 'wl_pwa_dismissed'
 
+function detectPlatform() {
+  const ua = navigator.userAgent
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+  const isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream
+  const isSafariDesktop = /^((?!chrome|android).)*safari/i.test(ua) && !isIOS
+  const isFirefox = /firefox/i.test(ua)
+  const isChromium = /chrome|chromium|edg/i.test(ua) && !/firefox/i.test(ua)
+  const isMobile = /android|iphone|ipad|ipod/i.test(ua)
+  return { isStandalone, isIOS, isSafariDesktop, isFirefox, isChromium, isMobile }
+}
+
 export default function PWAInstallPrompt() {
-  const [prompt, setPrompt] = useState(null)
+  const [prompt, setPrompt] = useState(null)   // beforeinstallprompt event
   const [show, setShow] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
+  const [platform, setPlatform] = useState(null)
 
   useEffect(() => {
     if (localStorage.getItem(DISMISSED_KEY)) return
-    if (window.matchMedia('(display-mode: standalone)').matches) return
+    const p = detectPlatform()
+    setPlatform(p)
+    if (p.isStandalone) return
 
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
-    if (ios) {
-      setTimeout(() => { setIsIOS(true); setShow(true) }, 3000)
+    if (p.isIOS) {
+      setTimeout(() => setShow(true), 3000)
       return
     }
 
-    const handler = (e) => {
-      e.preventDefault()
-      setPrompt(e)
-      setTimeout(() => setShow(true), 3000)
+    if (p.isChromium) {
+      const handler = (e) => {
+        e.preventDefault()
+        setPrompt(e)
+        setTimeout(() => setShow(true), 3000)
+      }
+      window.addEventListener('beforeinstallprompt', handler)
+      return () => window.removeEventListener('beforeinstallprompt', handler)
     }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+
+    // Firefox, Safari desktop, other browsers — show generic bookmark prompt
+    setTimeout(() => setShow(true), 4000)
   }, [])
 
   function dismiss() {
@@ -43,7 +60,14 @@ export default function PWAInstallPrompt() {
     localStorage.setItem(DISMISSED_KEY, '1')
   }
 
-  if (!show) return null
+  if (!show || !platform) return null
+
+  const { isIOS, isSafariDesktop, isFirefox, isChromium, isMobile } = platform
+
+  let instruction = 'Install for faster access, offline use & a native feel'
+  if (isIOS) instruction = 'Tap the Share button → "Add to Home Screen"'
+  else if (isSafariDesktop) instruction = 'Click Safari menu → "Add to Dock" or bookmark with ⌘D'
+  else if (isFirefox) instruction = isMobile ? 'Tap ⋮ menu → "Add to Home Screen"' : 'Bookmark with Ctrl+D for quick access'
 
   return (
     <div style={{
@@ -63,13 +87,11 @@ export default function PWAInstallPrompt() {
           Add WalletLens to Home Screen
         </div>
         <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-          {isIOS
-            ? 'Tap Share → "Add to Home Screen" for instant access'
-            : 'Install for faster access, offline use & a native feel'}
+          {instruction}
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
-        {!isIOS && (
+        {isChromium && prompt && (
           <button onClick={install} style={{
             background: '#34d399', color: '#000', border: 'none',
             borderRadius: '8px', padding: '0.35rem 0.75rem',
