@@ -2581,6 +2581,34 @@ export default function Dashboard() {
           </svg>
         </button>
       )}
+      {/* ── Nudge toast — appears after 20s idle ── */}
+      {nudgeVisible && !sheetOpen && (
+        <div style={{
+          position: 'fixed', bottom: '148px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9001, display: 'flex', alignItems: 'center', gap: '0.75rem',
+          background: 'rgba(20,21,30,0.97)', border: '1px solid rgba(52,211,153,0.3)',
+          borderRadius: '50px', padding: '0.6rem 1rem 0.6rem 0.75rem',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          animation: 'slideUpFade 0.3s ease',
+          whiteSpace: 'nowrap',
+        }}>
+          <span style={{ fontSize: '1rem' }}>📊</span>
+          <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Log your latest trade</span>
+          <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
+            padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
+            background: '#34d399', color: '#000', fontWeight: 800, fontSize: '0.8rem',
+          }}>Buy</button>
+          <button onClick={() => { setNudgeVisible(false); openSheet('sell', 'nudge_toast') }} style={{
+            padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
+            background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 800, fontSize: '0.8rem',
+            border: '1px solid rgba(248,113,113,0.3)',
+          }}>Sell</button>
+          <button onClick={() => setNudgeVisible(false)} style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
+          }}>×</button>
+        </div>
+      )}
+
       {weeklyOpen && (
         <Suspense fallback={null}><WeeklyReport
           enriched={isDemo ? [] : enriched}
