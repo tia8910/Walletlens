@@ -54,6 +54,7 @@ export {
 };
 // Re-export the pure helper that was already named-exported here
 export const foldBalances = _foldBalancesPure;
+export const getCachedCoinImage = (coinId) => coinImageCache[coinId] || null;
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
