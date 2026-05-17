@@ -92,6 +92,12 @@ export default function PriceAlerts({ enriched, prices }) {
   const alertsRef                   = useRef(alerts)
   alertsRef.current = alerts
 
+  const addToast = useCallback((msg) => {
+    const id = Date.now()
+    setToasts(t => [...t, { id, msg }])
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 6000)
+  }, [])
+
   // Sync to localStorage whenever alerts change
   useEffect(() => { saveAlerts(alerts) }, [alerts])
 
@@ -122,12 +128,6 @@ export default function PriceAlerts({ enriched, prices }) {
     if (changed) setAlerts(updated)
     prevPricesRef.current = prices
   }, [prices, addToast])
-
-  const addToast = useCallback((msg) => {
-    const id = Date.now()
-    setToasts(t => [...t, { id, msg }])
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 6000)
-  }, [])
 
   function addAlert(e) {
     e.preventDefault()

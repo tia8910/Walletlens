@@ -1235,6 +1235,191 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
   )
 }
 
+// ── Targets Tab ──────────────────────────────────────────────────────────
+function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
+  const navigate = useNavigate()
+  const [adding, setAdding] = useState({}) // coinId → { price, qty }
+
+  async function saveTarget(coinId, priceVal, qtyVal) {
+    const p = parseFloat(priceVal)
+    const q = qtyVal ? parseFloat(qtyVal) : null
+    if (!p || p <= 0) return
+    await api.addCoinTarget(coinId, { price: p, quantity: q })
+    track('goal_set', { coin_id: coinId, target_price: p })
+    setAdding(prev => { const n = { ...prev }; delete n[coinId]; return n })
+    onTargetsChange()
+  }
+
+  async function removeTarget(coinId, targetId) {
+    await api.removeCoinTargetItem(coinId, targetId)
+    track('target_deleted', { coin_id: coinId })
+    onTargetsChange()
+  }
+
+  // Summary stats
+  const { totalTargets, totalReached, totalPotentialProceeds, chartData, rows } = targetsAnalysis
+
+  return (
+    <div className="dvx-targets-page">
+      {/* Summary cards */}
+      <div className="dvx-stats-row">
+        <StatCard label="Total Targets" value={totalTargets} />
+        <StatCard label="Reached" value={totalReached} color={totalReached > 0 ? '#34d399' : undefined} />
+        <StatCard label="Potential Proceeds"
+          value={`$${totalPotentialProceeds >= 1000 ? (totalPotentialProceeds/1000).toFixed(1)+'k' : fmt(totalPotentialProceeds)}`}
+          color="#34d399" />
+        <StatCard label="Assets Planned" value={rows.length} />
+      </div>
+
+      {/* Proceeds chart */}
+      {chartData.length > 0 && (
+        <div className="glass-card">
+          <h3 style={{ margin:'0 0 0.75rem' }}>Projected Proceeds by Target</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
+              <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
+              <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }}
+                axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
+              <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
+                tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
+              <Bar dataKey="proceeds" radius={[6,6,0,0]}>
+                {chartData.map((d, i) => (
+                  <Cell key={i} fill={d.reached ? '#34d399' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem' }}>
+            <span><span style={{ color:'#34d399' }}>■</span> Reached</span>
+            <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
+          </div>
+        </div>
+      )}
+
+      {/* All holdings — show target state + add form for each */}
+      {enriched.length === 0 ? (
+        <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
+          <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
+          <p style={{ color:'rgba(255,255,255,0.5)', marginBottom:'1rem' }}>Add holdings first to set price targets.</p>
+          <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>Add Trade</button>
+        </div>
+      ) : (
+        enriched.map(h => {
+          const plan = coinTargets[h.coin_id]?.targets || []
+          const currentPrice = h.price
+          const isAdding = !!adding[h.coin_id]
+          const addState = adding[h.coin_id] || {}
+
+          return (
+            <div key={h.coin_id} className="glass-card dvx-target-card">
+              {/* Holding header */}
+              <div className="dvx-target-header">
+                <div className="dvx-target-coin" style={{ cursor:'pointer' }}
+                  onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
+                  <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={36} className="dvx-holding-icon" />
+                  <div>
+                    <strong style={{ color:'#fff' }}>{h.coin_symbol?.toUpperCase()}</strong>
+                    <div className="muted" style={{ fontSize:'0.72rem' }}>
+                      {currentPrice > 0 ? `$${fmt(currentPrice)}` : '—'} · {Number(h.amount).toLocaleString(undefined, { maximumFractionDigits:6 })} held
+                      {h.value > 0 && ` · $${fmt(h.value)}`}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  className="dvx-btn dvx-btn-primary"
+                  style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
+                  onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', qty:'' } })}>
+                  {isAdding ? 'Cancel' : '+ Target'}
+                </button>
+              </div>
+
+              {/* Inline add-target form */}
+              {isAdding && (
+                <div style={{ display:'flex', gap:'0.5rem', alignItems:'flex-end', marginBottom:'0.75rem', flexWrap:'wrap' }}>
+                  <div style={{ flex:'1 1 100px' }}>
+                    <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'3px' }}>Target Price ($)</div>
+                    <input
+                      type="number" placeholder="e.g. 75000" min="0" step="any"
+                      value={addState.price || ''}
+                      onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
+                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(52,211,153,0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                    />
+                  </div>
+                  <div style={{ flex:'1 1 100px' }}>
+                    <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'3px' }}>Qty to Sell (optional)</div>
+                    <input
+                      type="number" placeholder={`All (${h.amount.toFixed(4)})`} min="0" step="any"
+                      value={addState.qty || ''}
+                      onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
+                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(52,211,153,0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                    />
+                  </div>
+                  <button
+                    className="dvx-btn dvx-btn-primary"
+                    style={{ padding:'0.45rem 1rem', borderRadius:8, whiteSpace:'nowrap' }}
+                    onClick={() => saveTarget(h.coin_id, addState.price, addState.qty)}>
+                    Save
+                  </button>
+                </div>
+              )}
+
+              {/* Existing targets */}
+              {plan.map(t => {
+                const sellQty   = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
+                const proceeds  = sellQty * t.price
+                const progress  = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
+                const reached   = currentPrice >= t.price && currentPrice > 0
+                const gainVsNow = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
+                return (
+                  <div key={t.id} className={`dvx-target-row ${reached ? 'dvx-target-reached' : ''}`}>
+                    <div className="dvx-target-row-top">
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Target Price</span>
+                        <span className="dvx-target-val">${fmt(t.price)}</span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Qty to Sell</span>
+                        <span className="dvx-target-val">{t.quantity == null ? `All (${h.amount.toFixed(4)})` : sellQty.toFixed(4)}</span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Proceeds</span>
+                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(proceeds)}</span>
+                      </div>
+                      <div className="dvx-target-cell">
+                        <span className="dvx-target-lbl">Distance</span>
+                        <span className="dvx-target-val" style={{ color: reached ? '#34d399' : gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                          {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
+                        </span>
+                      </div>
+                      <button onClick={() => removeTarget(h.coin_id, t.id)} title="Remove target"
+                        style={{ background:'none', border:'none', color:'rgba(248,113,113,0.7)', cursor:'pointer', fontSize:'1rem', padding:'0 4px', flexShrink:0 }}>✕</button>
+                    </div>
+                    <div className="dvx-target-bar-wrap">
+                      <div className="dvx-target-bar-bg">
+                        <div className="dvx-target-bar-fill"
+                          style={{ width:`${progress}%`, background: reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                      </div>
+                      <span className="dvx-target-bar-pct">{progress.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Empty state per holding */}
+              {plan.length === 0 && !isAdding && (
+                <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', padding:'0.25rem 0 0.1rem' }}>
+                  No targets set — tap "+ Target" to add one
+                </div>
+              )}
+            </div>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -2050,114 +2235,13 @@ export default function Dashboard() {
 
       {/* ══ SELL TARGETS ══ */}
       {activeTab === 'targets' && (
-        <div className="dvx-targets-page">
-          {/* Summary cards */}
-          <div className="dvx-stats-row">
-            <StatCard label={t('totalTargets')}    value={targetsAnalysis.totalTargets} />
-            <StatCard label={t('targetsReached')}  value={targetsAnalysis.totalReached}
-              color={targetsAnalysis.totalReached > 0 ? '#34d399' : undefined} />
-            <StatCard label={t('potentialProceeds')}
-              value={`$${targetsAnalysis.totalPotentialProceeds >= 1000
-                ? (targetsAnalysis.totalPotentialProceeds/1000).toFixed(1)+'k'
-                : fmt(targetsAnalysis.totalPotentialProceeds)}`}
-              color="#34d399" />
-            <StatCard label={t('assetsPlanned')} value={targetsAnalysis.rows.length} />
-          </div>
-
-          {/* Proceeds bar chart */}
-          {targetsAnalysis.chartData.length > 0 && (
-            <div className="glass-card">
-              <h3 style={{ margin:'0 0 0.75rem' }}>Projected Proceeds by Target</h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={targetsAnalysis.chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
-                  <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
-                  <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }}
-                    axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
-                  <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
-                    tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
-                  <Bar dataKey="proceeds" radius={[6,6,0,0]}>
-                    {targetsAnalysis.chartData.map((d, i) => (
-                      <Cell key={i} fill={d.reached ? '#34d399' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem' }}>
-                <span><span style={{ color:'#34d399' }}>■</span> Reached</span>
-                <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
-              </div>
-            </div>
-          )}
-
-          {/* Per-asset target rows */}
-          {targetsAnalysis.rows.length === 0 ? (
-            <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
-              <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
-              <p style={{ color:'rgba(255,255,255,0.5)', marginBottom:'1rem' }}>
-                No sell targets set yet. Add price targets on any asset to plan your exits.
-              </p>
-              <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/market')}>
-                Browse Assets
-              </button>
-            </div>
-          ) : (
-            targetsAnalysis.rows.map(r => (
-              <div key={r.coinId} className="glass-card dvx-target-card">
-                <div className="dvx-target-header">
-                  <div className="dvx-target-coin">
-                    <CoinLogo symbol={r.coinSymbol} size={36} className="dvx-holding-icon" />
-                    <div>
-                      <strong style={{ color:'#fff' }}>{r.coinSymbol?.toUpperCase()}</strong>
-                      <div className="muted" style={{ fontSize:'0.72rem' }}>
-                        Current: {r.currentPrice > 0 ? `$${fmt(r.currentPrice)}` : '—'} · Holding: {Number(r.amount).toLocaleString(undefined, { maximumFractionDigits:6 })}
-                      </div>
-                    </div>
-                  </div>
-                  <button className="dvx-btn dvx-btn-primary"
-                    style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
-                    onClick={() => { track('asset_click', { asset_id: r.coinId, source: 'risk_scanner' }); navigate(`/asset/${encodeURIComponent(r.coinId)}`) }}>
-                    Manage
-                  </button>
-                </div>
-
-                {r.targets.map((tgt, ti) => (
-                  <div key={tgt.id} className={`dvx-target-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
-                    <div className="dvx-target-row-top">
-                      <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Target Price</span>
-                        <span className="dvx-target-val">${fmt(tgt.price)}</span>
-                      </div>
-                      <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Qty to Sell</span>
-                        <span className="dvx-target-val">
-                          {tgt.quantity == null ? `All (${r.amount.toFixed(4)})` : tgt.sellQty.toFixed(4)}
-                        </span>
-                      </div>
-                      <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Proceeds</span>
-                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(tgt.proceeds)}</span>
-                      </div>
-                      <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: tgt.reached ? '#34d399' : tgt.gainVsNow > 0 ? '#fff' : '#f87171' }}>
-                          {tgt.reached ? '✓ Reached' : `${tgt.gainVsNow >= 0 ? '+' : ''}${tgt.gainVsNow.toFixed(1)}%`}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="dvx-target-bar-wrap">
-                      <div className="dvx-target-bar-bg">
-                        <div className="dvx-target-bar-fill"
-                          style={{ width:`${tgt.progress}%`, background: tgt.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
-                      </div>
-                      <span className="dvx-target-bar-pct">{tgt.progress.toFixed(0)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
+        <TargetsTab
+          enriched={enriched}
+          targetsAnalysis={targetsAnalysis}
+          coinTargets={coinTargets}
+          prices={prices}
+          onTargetsChange={loadAll}
+        />
       )}
 
       {/* ══ AI ANALYSIS ══ */}
