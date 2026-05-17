@@ -992,7 +992,7 @@ function WalletPanel({ wallets, onRefresh }) {
 
   async function del(id) {
     if (!window.confirm('Delete this wallet and all its transactions?')) return
-    track('wallet_deleted'); await api.deleteWallet(id); onRefresh()
+    await api.deleteWallet(id); track('wallet_deleted', { wallet_id: id }); onRefresh()
   }
 
   return (
@@ -1037,13 +1037,26 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
     if (!walletId || !coin || !symbol || !amount || !price) { setMsg('Fill all fields.'); return }
     setBusy(true)
     try {
+      const amt = parseFloat(amount), ppu = parseFloat(price)
       await api.addTransaction({
         wallet_id: walletId, type,
         coin_id: coin.toLowerCase().replace(/\s+/g, '-'),
         coin_symbol: symbol.toUpperCase(), coin_name: coin,
-        amount: parseFloat(amount), price_per_unit: parseFloat(price),
+        amount: amt, price_per_unit: ppu,
         date, category: 'crypto',
       })
+      const valueUsd = Math.round(amt * ppu)
+      track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
+        asset_symbol:   symbol.toUpperCase(),
+        asset_name:     coin,
+        asset_category: 'crypto',
+        value_usd:      valueUsd,
+        value_tier:     valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
+        amount:         parseFloat(amt.toFixed(6)),
+        price_usd:      Math.round(ppu),
+        source:         'manage_tab',
+      })
+      track('trade_submitted', { trade_type: type, asset_symbol: symbol.toUpperCase(), asset_category: 'crypto', trade_value_usd: valueUsd, source: 'manage_tab' })
       setMsg('Trade added!'); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
     } finally { setBusy(false) }
