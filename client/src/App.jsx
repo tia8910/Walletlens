@@ -11,6 +11,7 @@ import OnboardingTour from './components/OnboardingTour'
 import { useLanguage } from './LanguageContext'
 import { track } from './analytics'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import WelcomeModal from './components/WelcomeModal'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 
@@ -282,6 +283,7 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
+      <WelcomeModal />
       <OnboardingTour />
       <PWAInstallPrompt />
 

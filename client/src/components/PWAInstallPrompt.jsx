@@ -25,23 +25,36 @@ export default function PWAInstallPrompt() {
     setPlatform(p)
     if (p.isStandalone) return
 
+    // Show only after the user has interacted with the app, not on a timer
+    let shown = false
+    function showOnInteraction() {
+      if (shown) return
+      shown = true
+      window.removeEventListener('click', showOnInteraction)
+      setShow(true)
+    }
+
     if (p.isIOS) {
-      setTimeout(() => setShow(true), 3000)
-      return
+      window.addEventListener('click', showOnInteraction, { once: true })
+      return () => window.removeEventListener('click', showOnInteraction)
     }
 
     if (p.isChromium) {
       const handler = (e) => {
         e.preventDefault()
         setPrompt(e)
-        setTimeout(() => setShow(true), 3000)
+        window.addEventListener('click', showOnInteraction, { once: true })
       }
       window.addEventListener('beforeinstallprompt', handler)
-      return () => window.removeEventListener('beforeinstallprompt', handler)
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handler)
+        window.removeEventListener('click', showOnInteraction)
+      }
     }
 
-    // Firefox, Safari desktop, other browsers — show generic bookmark prompt
-    setTimeout(() => setShow(true), 4000)
+    // Firefox, Safari desktop — show after first interaction
+    window.addEventListener('click', showOnInteraction, { once: true })
+    return () => window.removeEventListener('click', showOnInteraction)
   }, [])
 
   function dismiss() {
