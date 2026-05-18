@@ -206,8 +206,19 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
   return newAlerts
 }
 
+// Top coins to watch when no holdings are provided (market-wide mode)
+const TOP_COINS = [
+  { id: 'bitcoin',  coin_id: 'bitcoin',  coin_symbol: 'BTC', coin_name: 'Bitcoin',  image: '' },
+  { id: 'ethereum', coin_id: 'ethereum', coin_symbol: 'ETH', coin_name: 'Ethereum', image: '' },
+  { id: 'solana',   coin_id: 'solana',   coin_symbol: 'SOL', coin_name: 'Solana',   image: '' },
+  { id: 'ripple',   coin_id: 'ripple',   coin_symbol: 'XRP', coin_name: 'XRP',      image: '' },
+  { id: 'binancecoin', coin_id: 'binancecoin', coin_symbol: 'BNB', coin_name: 'BNB', image: '' },
+  { id: 'dogecoin', coin_id: 'dogecoin', coin_symbol: 'DOGE', coin_name: 'Dogecoin', image: '' },
+]
+
 // ── Main component ─────────────────────────────────────────────────────────
 export default function SmartAlerts({ enriched = [], prices = {} }) {
+  const marketMode = enriched.length === 0
   const [alerts, setAlerts]       = useState(loadAlerts)
   const [cfg, setCfg]             = useState(loadConfig)
   const [showCfg, setShowCfg]     = useState(false)
@@ -223,7 +234,8 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
   useEffect(() => { saveConfig(cfg) }, [cfg])
 
   const runCheck = useCallback(async () => {
-    if (!cfg.enabled || !enriched.length) return
+    if (!cfg.enabled) return
+    const watchList = enriched.length > 0 ? enriched : TOP_COINS
     setChecking(true)
     try {
       const [whales, marketSnap] = await Promise.all([
@@ -238,7 +250,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       } catch {}
 
       const newOnes = correlate({
-        holdings: enriched,
+        holdings: watchList,
         whales,
         marketSnap,
         newsArticles,
@@ -323,7 +335,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           <span className="sa-header-icon">⚡</span>
           <div>
             <h3 className="sa-title">Smart Alerts 2.0</h3>
-            <p className="sa-subtitle">Fires when whale + price + news + volume align</p>
+            <p className="sa-subtitle">{marketMode ? 'Watching BTC · ETH · SOL · XRP · BNB · DOGE' : 'Fires when whale + price + news + volume align'}</p>
           </div>
           {unread > 0 && <span className="sa-badge">{unread}</span>}
         </div>
@@ -424,7 +436,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           <div className="sa-empty-icon">⚡</div>
           <p>No correlated signals yet.</p>
           <p className="sa-empty-sub">Smart Alerts fires when whale activity, price momentum, volume anomaly, or breaking news align for a coin you hold.</p>
-          {!enriched.length && <p className="sa-empty-sub" style={{ color: 'var(--g)' }}>Add holdings to start monitoring.</p>}
+          {marketMode && <p className="sa-empty-sub" style={{ color: 'var(--g)' }}>Watching BTC, ETH, SOL, XRP, BNB, DOGE market-wide.</p>}
         </div>
       )}
 
