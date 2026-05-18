@@ -98,6 +98,7 @@ function buildCSS(p) {
 
 function applyTheme(id) {
   const p = PALETTE[id] || PALETTE.emerald
+  // Inject style tag for broad coverage
   let el = document.getElementById('wl-theme-vars')
   if (!el) {
     el = document.createElement('style')
@@ -105,6 +106,33 @@ function applyTheme(id) {
     document.head.appendChild(el)
   }
   el.textContent = buildCSS(p)
+  // Also set directly on :root as inline style — highest specificity, cannot be overridden
+  const r = document.documentElement
+  r.style.setProperty('--g', p.g)
+  r.style.setProperty('--gd', p.gd)
+  r.style.setProperty('--g-rgb', p.gRgb)
+  r.style.setProperty('--gd-rgb', p.gdRgb)
+  r.style.setProperty('--gl', p.gl)
+  r.style.setProperty('--ink3', p.ink3)
+  r.style.setProperty('--bg', p.bg)
+  r.style.setProperty('--card-bg', p.cardBg)
+  r.style.setProperty('--bg2', p.cardBg)
+  r.style.setProperty('--bg3', p.bg3)
+  r.style.setProperty('--bg4', p.bg4)
+  r.style.setProperty('--border', p.border)
+  r.style.setProperty('--accent', p.accent)
+  r.style.setProperty('--accent2', p.accent2)
+  r.style.setProperty('--accent3', p.accent)
+  r.style.setProperty('--accent-bg', p.accentBg)
+  r.style.setProperty('--green', p.green)
+  r.style.setProperty('--green-bg', p.greenBg)
+  r.style.setProperty('--text2', p.text2)
+  r.style.setProperty('--shadow-glow', p.glow)
+  r.style.setProperty('--header-gradient', p.hg)
+  r.style.setProperty('--header-gradient-alt', p.hga)
+  r.style.setProperty('--mesh-1', p.mesh1)
+  r.style.setProperty('--mesh-2', p.mesh2)
+  r.style.setProperty('--mesh-3', p.mesh3)
   document.body.style.background = p.bg
   document.body.style.transition = 'background 0.35s'
 }

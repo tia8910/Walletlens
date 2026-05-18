@@ -7,13 +7,6 @@ import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 
 const SETTINGS_KEY = 'wl_settings'
 
-const THEMES = [
-  { id: 'dark',   label: 'Dark',   bg: '#040d0a' },
-  { id: 'amoled', label: 'AMOLED', bg: '#000000' },
-  { id: 'navy',   label: 'Navy',   bg: '#050a18' },
-  { id: 'purple', label: 'Purple', bg: '#0d0714' },
-]
-
 const ACCENTS = [
   { id: 'green',  label: 'Green',  color: 'var(--g)' },
   { id: 'blue',   label: 'Blue',   color: '#38bdf8' },
@@ -52,7 +45,6 @@ export default function Settings() {
     track('settings_change', { key, val })
   }
 
-  const theme  = settings.theme  || 'dark'
   const accent = settings.accent || 'green'
   const fontSize = settings.fontSize || 'md'
   const notifPrice  = settings.notifPrice  ?? true
@@ -75,26 +67,6 @@ export default function Settings() {
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title">🎨 Appearance</h3>
-
-        <div className="settings-row">
-          <div className="settings-label">
-            <span>Theme</span>
-            <span className="settings-hint">Background style</span>
-          </div>
-          <div className="settings-chips">
-            {THEMES.map(t => (
-              <button key={t.id}
-                className={`settings-chip ${theme === t.id ? 'active' : ''}`}
-                style={theme === t.id ? { '--chip-active': 'var(--accent)' } : {}}
-                onClick={() => update('theme', t.id)}>
-                <span className="settings-chip-swatch" style={{ background: t.bg, border: `2px solid ${theme === t.id ? 'var(--accent, #34d399)' : '#333'}` }}/>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="settings-divider"/>
 
         {/* Color Theme */}
         <div className="settings-row">
