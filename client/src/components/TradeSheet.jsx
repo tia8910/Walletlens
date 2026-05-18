@@ -9,7 +9,7 @@ const IcoSearch = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto',  icon: '◆', color: '#6366f1' },
-  { key: 'stock',  label: 'Stocks',  icon: '📈', color: '#10b981' },
+  { key: 'stock',  label: 'Stocks',  icon: '📈', color: 'var(--gd)' },
   { key: 'gold',   label: 'Gold',    icon: '🥇', color: '#f59e0b' },
   { key: 'silver', label: 'Silver',  icon: '🥈', color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat',    icon: '💵', color: '#0ea5e9' },
@@ -121,7 +121,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const dragStartY                      = useRef(null)
 
   const isBuy  = type === 'buy'
-  const accent = isBuy ? '#34d399' : '#f87171'
+  const accent = isBuy ? 'var(--g)' : '#f87171'
   const catInfo = CATEGORIES.find(c => c.key === category) || CATEGORIES[0]
 
   // Reset form when sheet opens
@@ -481,7 +481,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-field">
                 <label className="bs-label">
                   Price (USD)
-                  {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#34d399'}}>fetching…</span>}
+                  {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'var(--g)'}}>fetching…</span>}
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
                 <input className="bs-input" type={price === '…' ? 'text' : 'number'} placeholder="Enter price" min="0" step="any"
@@ -575,7 +575,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0.25rem 0' }}>{msg}</p>}
 
             <button className="bs-submit"
-              style={{ background: isBuy ? 'linear-gradient(135deg,#34d399,#10b981)' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
+              style={{ background: isBuy ? 'linear-gradient(135deg,var(--g),var(--gd))' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
               onClick={submit}
               disabled={busy || !asset || !amount || !price}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}

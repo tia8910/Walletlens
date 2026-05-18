@@ -8,7 +8,7 @@ const THEMES = [
 ]
 
 const ACCENTS = [
-  { id: 'green',  color: '#34d399' },
+  { id: 'green',  color: 'var(--g)' },
   { id: 'blue',   color: '#38bdf8' },
   { id: 'purple', color: '#a78bfa' },
   { id: 'gold',   color: '#fbbf24' },

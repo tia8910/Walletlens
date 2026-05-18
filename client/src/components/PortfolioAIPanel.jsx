@@ -28,7 +28,7 @@ export default function PortfolioAIPanel({ analysis }) {
             <ScoreRing value={analysis.healthScore} color={analysis.healthColor} label="Health" desc={analysis.healthLabel} descColor={analysis.healthColor} />
             <ScoreRing
               value={analysis.diversificationScore}
-              color={analysis.diversificationScore > 60 ? '#10b981' : analysis.diversificationScore > 30 ? '#f59e0b' : '#ef4444'}
+              color={analysis.diversificationScore > 60 ? 'var(--gd)' : analysis.diversificationScore > 30 ? '#f59e0b' : '#ef4444'}
               label="Diversity"
               desc={analysis.diversificationScore > 60 ? 'Good' : analysis.diversificationScore > 30 ? 'Fair' : 'Low'}
             />
@@ -58,13 +58,13 @@ export default function PortfolioAIPanel({ analysis }) {
                 value={analysis.portfolioSharpe == null ? '–' : analysis.portfolioSharpe.toFixed(2)}
                 hint="Risk-adjusted return (annualised return ÷ volatility). >1 = good."
                 color={analysis.portfolioSharpe == null ? '#94a3b8'
-                  : analysis.portfolioSharpe > 1 ? '#10b981'
+                  : analysis.portfolioSharpe > 1 ? 'var(--gd)'
                   : analysis.portfolioSharpe > 0 ? '#f59e0b' : '#ef4444'}
               />
-              <DeepMetric label="30d Return" value={`${(analysis.portfolio30dReturn * 100).toFixed(1)}%`} hint="Weighted average of each asset's 30-day return." color={analysis.portfolio30dReturn >= 0 ? '#10b981' : '#ef4444'} />
-              <DeepMetric label="Max Drawdown" value={`${(analysis.portfolioMaxDD * 100).toFixed(0)}%`} hint="Worst peak-to-trough drop over last 30 days (weighted)." color={analysis.portfolioMaxDD > 0.3 ? '#ef4444' : analysis.portfolioMaxDD > 0.15 ? '#f59e0b' : '#10b981'} />
-              <DeepMetric label="Ann. Volatility" value={`${(analysis.annualisedVol * 100).toFixed(0)}%`} hint="Annualised stdev of daily log returns (weighted)." color={analysis.annualisedVol > 1 ? '#ef4444' : analysis.annualisedVol > 0.6 ? '#f59e0b' : '#10b981'} />
-              <DeepMetric label="High-Vol Exp." value={`${analysis.highVolExposurePct.toFixed(0)}%`} hint="% of portfolio in assets with >100% annualised volatility." color={analysis.highVolExposurePct > 50 ? '#ef4444' : analysis.highVolExposurePct > 25 ? '#f59e0b' : '#10b981'} />
+              <DeepMetric label="30d Return" value={`${(analysis.portfolio30dReturn * 100).toFixed(1)}%`} hint="Weighted average of each asset's 30-day return." color={analysis.portfolio30dReturn >= 0 ? 'var(--gd)' : '#ef4444'} />
+              <DeepMetric label="Max Drawdown" value={`${(analysis.portfolioMaxDD * 100).toFixed(0)}%`} hint="Worst peak-to-trough drop over last 30 days (weighted)." color={analysis.portfolioMaxDD > 0.3 ? '#ef4444' : analysis.portfolioMaxDD > 0.15 ? '#f59e0b' : 'var(--gd)'} />
+              <DeepMetric label="Ann. Volatility" value={`${(analysis.annualisedVol * 100).toFixed(0)}%`} hint="Annualised stdev of daily log returns (weighted)." color={analysis.annualisedVol > 1 ? '#ef4444' : analysis.annualisedVol > 0.6 ? '#f59e0b' : 'var(--gd)'} />
+              <DeepMetric label="High-Vol Exp." value={`${analysis.highVolExposurePct.toFixed(0)}%`} hint="% of portfolio in assets with >100% annualised volatility." color={analysis.highVolExposurePct > 50 ? '#ef4444' : analysis.highVolExposurePct > 25 ? '#f59e0b' : 'var(--gd)'} />
             </div>
           )}
 

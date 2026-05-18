@@ -129,8 +129,8 @@ function generateSellPlan(enriched, prices) {
   return { rows, summary }
 }
 
-const URGENCY_COLOR = { high: '#f87171', medium: '#fbbf24', low: '#34d399', 'manually tracked': '#a78bfa' }
-const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: '#34d39915', 'manually tracked': '#a78bfa15' }
+const URGENCY_COLOR = { high: '#f87171', medium: '#fbbf24', low: 'var(--g)', 'manually tracked': '#a78bfa' }
+const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: 'rgba(var(--g-rgb),0.08)', 'manually tracked': '#a78bfa15' }
 
 export default function AISellPlan({ enriched = [], prices = {} }) {
   const [open, setOpen] = useState(false)
@@ -160,7 +160,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
         </div>
         {!open && (
           <button onClick={generate} style={{
-            background:'#34d399', color:'#000', border:'none',
+            background:'var(--g)', color:'#000', border:'none',
             borderRadius:10, padding:'0.5rem 1.1rem',
             fontWeight:700, fontSize:'0.85rem', cursor:'pointer',
             flexShrink:0,
@@ -206,7 +206,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                     }}>{row.action}</span>
                   </div>
                   <div style={{ textAlign:'right', fontSize:'0.8rem' }}>
-                    <span style={{ color: row.pnlPct >= 0 ? '#34d399' : '#f87171', fontWeight:600 }}>
+                    <span style={{ color: row.pnlPct >= 0 ? 'var(--g)' : '#f87171', fontWeight:600 }}>
                       {row.pnlPct >= 0 ? '+' : ''}{row.pnlPct.toFixed(1)}%
                     </span>
                     <span className="muted" style={{ marginLeft:'0.4rem' }}>{row.weight.toFixed(1)}% portfolio</span>

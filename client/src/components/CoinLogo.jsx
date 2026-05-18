@@ -20,7 +20,7 @@ function nonCryptoLabel(coinId, symbol) {
   return (symbol || '?').substring(0, 3).toUpperCase()
 }
 function nonCryptoColor(coinId) {
-  if (coinId?.startsWith('stock:')) return ['#10b981', '#047857']
+  if (coinId?.startsWith('stock:')) return ['var(--gd)', '#047857']
   if (coinId?.startsWith('fiat:'))  return ['#0ea5e9', '#0369a1']
   if (coinId?.startsWith('bond:'))  return ['#0284c7', '#075985']
   return ['#a78bfa', '#6d28d9']

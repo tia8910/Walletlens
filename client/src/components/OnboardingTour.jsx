@@ -17,7 +17,7 @@ const STEPS = [
     title: 'Add Your First Trade',
     desc: 'Tap Trades in the bottom nav to log a buy or sell. WalletLens tracks your P&L, average cost, and performance automatically.',
     cta: 'Got it →',
-    accent: '#34d399',
+    accent: 'var(--g)',
     nav: '/transactions',
     navLabel: 'Go to Trades',
   },
@@ -78,7 +78,7 @@ const STEPS = [
     title: 'You\'re all set!',
     desc: 'Start by adding your first trade, or explore the Market to discover new opportunities. WalletLens works best with your real portfolio.',
     cta: 'Start using WalletLens',
-    accent: '#34d399',
+    accent: 'var(--g)',
     final: true,
   },
 ]

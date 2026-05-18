@@ -49,7 +49,7 @@ const Ico = {
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
 const MC_TIERS = [
-  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: '#34d399', emoji: '🐋' },
+  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: 'var(--g)', emoji: '🐋' },
   { id: 'large',      label: 'Large Cap',        min: 10e9,   color: '#3b82f6', emoji: '🔵' },
   { id: 'mid',        label: 'Mid Cap',          min: 1e9,    color: '#f59e0b', emoji: '🟡' },
   { id: 'small',      label: 'Small Cap',        min: 100e6,  color: '#f87171', emoji: '🔴' },
@@ -147,7 +147,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const grade = health >= 88 ? 'A+' : health >= 80 ? 'A' : health >= 72 ? 'B+' :
                 health >= 64 ? 'B'  : health >= 55 ? 'C+': health >= 45 ? 'C'  : 'D'
 
-  const gradeColor = health >= 72 ? '#34d399' : health >= 55 ? '#f59e0b' : '#f87171'
+  const gradeColor = health >= 72 ? 'var(--g)' : health >= 55 ? '#f59e0b' : '#f87171'
 
   // Market cap breakdown
   const mcBreakdown = MC_TIERS.map(tier => {
@@ -196,13 +196,13 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
   // Indicators
   const riskLevel = hhiNorm > 0.6 ? 'High' : hhiNorm > 0.3 ? 'Medium' : 'Low'
-  const riskColor = hhiNorm > 0.6 ? '#f87171' : hhiNorm > 0.3 ? '#f59e0b' : '#34d399'
+  const riskColor = hhiNorm > 0.6 ? '#f87171' : hhiNorm > 0.3 ? '#f59e0b' : 'var(--g)'
 
   const buyCount = transactions.filter(t => t.type === 'buy').length
   const sellCount = transactions.filter(t => t.type === 'sell').length
   const tradeRatio = buyCount + sellCount > 0 ? buyCount / (buyCount + sellCount) : 0.5
   const sentiment = tradeRatio > 0.65 ? 'Accumulating' : tradeRatio < 0.35 ? 'Distributing' : 'Balanced'
-  const sentimentColor = tradeRatio > 0.65 ? '#34d399' : tradeRatio < 0.35 ? '#f87171' : '#f59e0b'
+  const sentimentColor = tradeRatio > 0.65 ? 'var(--g)' : tradeRatio < 0.35 ? '#f87171' : '#f59e0b'
 
   // ── Fear / Greed score (0=extreme fear, 100=extreme greed) ───────────────
   // Signals: momentum, pnl bias, trade sentiment, diversification
@@ -220,7 +220,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const fgColor =
     fearGreed >= 80 ? '#f87171' :
     fearGreed >= 60 ? '#f59e0b' :
-    fearGreed >= 45 ? '#34d399' :
+    fearGreed >= 45 ? 'var(--g)' :
     fearGreed >= 25 ? '#3b82f6' : '#8b5cf6'
 
   // ── Stress test scenarios (asset-class-aware) ─────────────────────────────
@@ -238,7 +238,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
     { label: 'Mild Dip',   pct: -10, color: '#f59e0b', icon: '📉' },
     { label: 'Correction', pct: -30, color: '#f87171', icon: '🩸' },
     { label: 'Bear Market',pct: -60, color: '#8b5cf6', icon: '🐻' },
-    { label: 'Bull +50%',  pct: +50, color: '#34d399', icon: '🚀' },
+    { label: 'Bull +50%',  pct: +50, color: 'var(--g)', icon: '🚀' },
     { label: 'Moon +200%', pct: +200,color: '#ffd700', icon: '🌕' },
   ].map(s => ({ ...s, stressedVal: stressPortfolio(s.pct) }))
 
@@ -327,7 +327,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-health-bars">
           {[
-            { label: t('diversification'), val: ai.concentrationScore, color: '#34d399' },
+            { label: t('diversification'), val: ai.concentrationScore, color: 'var(--g)' },
             { label: t('momentum'),        val: ai.momentumScore,      color: '#3b82f6' },
             { label: t('pnlHealth'),       val: ai.pnlHealth,          color: '#f59e0b' },
             { label: t('capSpread'),       val: ai.tierScore,          color: '#8b5cf6' },
@@ -352,7 +352,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">{t('momentum')}</div>
-          <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? '#34d399' : '#f87171'}}>
+          <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? 'var(--g)' : '#f87171'}}>
             {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
           </div>
           <div className="ai-ind-sub">weighted avg</div>
@@ -432,7 +432,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
       {/* ── Today's P&L ── */}
       <div className="glass-card ai-today-card">
         <h4 className="ai-section-title">{t('todayPerformance')}</h4>
-        <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? '#34d399' : '#f87171' }}>
+        <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? 'var(--g)' : '#f87171' }}>
           {ai.todayPnL >= 0 ? '+' : ''}${Math.abs(ai.todayPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className="ai-today-assets">
@@ -445,14 +445,14 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <div className="ai-today-bar-wrap">
                   <div className="ai-today-bar" style={{
                     width: `${Math.min(Math.abs(chg) * 5, 100)}%`,
-                    background: chg >= 0 ? '#34d399' : '#f87171',
+                    background: chg >= 0 ? 'var(--g)' : '#f87171',
                     marginLeft: chg < 0 ? 'auto' : undefined,
                   }} />
                 </div>
-                <span className="ai-today-chg" style={{ color: chg >= 0 ? '#34d399' : '#f87171' }}>
+                <span className="ai-today-chg" style={{ color: chg >= 0 ? 'var(--g)' : '#f87171' }}>
                   {chg >= 0 ? '+' : ''}{chg.toFixed(2)}%
                 </span>
-                <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? '#34d399' : '#f87171' }}>
+                <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? 'var(--g)' : '#f87171' }}>
                   {dayPnL >= 0 ? '+' : ''}${Math.abs(dayPnL).toFixed(0)}
                 </span>
               </div>
@@ -503,11 +503,11 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <div className="ai-entry-bar-bg">
                   <div className="ai-entry-bar-fill" style={{
                     width: `${h.entryScore}%`,
-                    background: h.priceDiff >= 0 ? '#34d399' : '#f87171',
+                    background: h.priceDiff >= 0 ? 'var(--g)' : '#f87171',
                   }} />
                 </div>
               </div>
-              <span className="ai-entry-score" style={{ color: h.priceDiff >= 0 ? '#34d399' : '#f87171' }}>
+              <span className="ai-entry-score" style={{ color: h.priceDiff >= 0 ? 'var(--g)' : '#f87171' }}>
                 {h.priceDiff >= 0 ? '+' : ''}{h.priceDiff.toFixed(1)}%
               </span>
             </div>
@@ -534,7 +534,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <div className="ai-rebal-bar-row">
                   <span className="ai-rebal-bar-lbl">Target</span>
                   <div className="ai-rebal-bar-track">
-                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.targetW, 100)}%`, background: '#34d399' }} />
+                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.targetW, 100)}%`, background: 'var(--g)' }} />
                   </div>
                   <span className="ai-rebal-bar-val">{h.targetW.toFixed(1)}%</span>
                 </div>
@@ -565,7 +565,7 @@ function FearGreedGauge({ value, label, color }) {
   const zones = [
     { label: 'Extreme Fear', color: '#8b5cf6', from: 0,  to: 20 },
     { label: 'Fear',         color: '#3b82f6', from: 20, to: 40 },
-    { label: 'Neutral',      color: '#34d399', from: 40, to: 60 },
+    { label: 'Neutral',      color: 'var(--g)', from: 40, to: 60 },
     { label: 'Greed',        color: '#f59e0b', from: 60, to: 80 },
     { label: 'Extreme Greed',color: '#f87171', from: 80, to: 100 },
   ]
@@ -636,11 +636,11 @@ function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(52,211,153,0.12)" strokeWidth="1" />
       })}
       {/* Data polygon */}
-      <polygon points={polygon} fill="rgba(52,211,153,0.15)" stroke="#34d399" strokeWidth="2" />
+      <polygon points={polygon} fill="rgba(52,211,153,0.15)" stroke="var(--g)" strokeWidth="2" />
       {/* Data points */}
       {vals.map((v, i) => {
         const [x, y] = point(i, v)
-        return <circle key={i} cx={x} cy={y} r="4" fill="#34d399" />
+        return <circle key={i} cx={x} cy={y} r="4" fill="var(--g)" />
       })}
       {/* Labels */}
       {labels.map((lbl, i) => {
@@ -679,7 +679,7 @@ const DEMO = {
 const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtN  = n => { const s = Math.abs(n) >= 1000 ? `$${(Math.abs(n)/1000).toFixed(1)}k` : `$${Math.abs(n).toFixed(0)}`; return n < 0 ? `-${s}` : s }
 const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
-const PALETTE = ['#34d399','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','#10b981','#a78bfa']
+const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
 const TOOLTIP_STYLE = {
   background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(52,211,153,0.4)',
@@ -722,7 +722,7 @@ const EVAL_CATEGORIES = [
     id: 'diversification',
     label: 'Diversification',
     icon: '⚖️',
-    color: '#34d399',
+    color: 'var(--g)',
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => h.value / totalValue)
@@ -781,7 +781,7 @@ const EVAL_CATEGORIES = [
     id: 'pnl_health',
     label: 'P&L Health',
     icon: '💚',
-    color: '#34d399',
+    color: 'var(--g)',
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
       const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100
@@ -831,7 +831,7 @@ function computeWalletEval(enriched, totalValue, targets = []) {
 function EvalScoreRing({ score }) {
   const r = 54, circ = 2 * Math.PI * r
   const dash = circ * score / 100
-  const color = score >= 80 ? '#34d399' : score >= 55 ? '#fbbf24' : '#f87171'
+  const color = score >= 80 ? 'var(--g)' : score >= 55 ? '#fbbf24' : '#f87171'
   const label = score >= 80 ? 'Strong' : score >= 55 ? 'Needs Work' : 'At Risk'
   return (
     <div className="eval-ring-wrap">
@@ -880,7 +880,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
             </div>
           )}
           {missing.length === 0 && (
-            <div className="eval-missing-count" style={{ color:'#34d399' }}>
+            <div className="eval-missing-count" style={{ color:'var(--g)' }}>
               ✅ All checks passed — excellent wallet health!
             </div>
           )}
@@ -1276,13 +1276,13 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
   }
 
   const DOTS = [
-    { top:'12%', left:'8%',  size:6,  color:'#34d399', delay:'0s',   dur:'2.1s' },
+    { top:'12%', left:'8%',  size:6,  color:'var(--g)', delay:'0s',   dur:'2.1s' },
     { top:'18%', left:'88%', size:4,  color:'#60a5fa', delay:'.4s',  dur:'1.8s' },
     { top:'72%', left:'5%',  size:5,  color:'#a78bfa', delay:'.8s',  dur:'2.4s' },
-    { top:'78%', left:'91%', size:7,  color:'#34d399', delay:'1.1s', dur:'1.6s' },
+    { top:'78%', left:'91%', size:7,  color:'var(--g)', delay:'1.1s', dur:'1.6s' },
     { top:'45%', left:'3%',  size:4,  color:'#f59e0b', delay:'.2s',  dur:'2.8s' },
     { top:'55%', left:'93%', size:5,  color:'#60a5fa', delay:'1.5s', dur:'2.0s' },
-    { top:'30%', left:'50%', size:3,  color:'#34d399', delay:'.6s',  dur:'1.9s' },
+    { top:'30%', left:'50%', size:3,  color:'var(--g)', delay:'.6s',  dur:'1.9s' },
   ]
 
   const COINS = [
@@ -1384,7 +1384,7 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         display:'inline-flex', alignItems:'center', gap:'0.5rem',
         padding:'0.85rem 2rem', borderRadius:'50px', border:'none', cursor:'pointer',
         fontSize:'0.95rem', fontWeight:800, color:'#000',
-        background:'linear-gradient(90deg,#34d399,#60a5fa,#a78bfa,#34d399)',
+        background:'linear-gradient(90deg,var(--g),#60a5fa,#a78bfa,var(--g))',
         backgroundSize:'300% 100%',
         animation:'ep-shimmer 3s linear infinite, ep-bounce 2.8s ease-in-out infinite',
         boxShadow:'0 4px 24px rgba(52,211,153,0.35)',
@@ -1434,7 +1434,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
           <button key={s.id} onClick={() => setTool(s.id)} style={{
             flex:1, padding:'0.45rem', borderRadius:'9px', border:'none', cursor:'pointer', fontWeight:700, fontSize:'0.8rem',
             background: tool === s.id ? 'rgba(52,211,153,0.18)' : 'none',
-            color: tool === s.id ? '#34d399' : 'rgba(255,255,255,0.5)',
+            color: tool === s.id ? 'var(--g)' : 'rgba(255,255,255,0.5)',
             transition:'all 0.15s',
           }}>{s.label}</button>
         ))}
@@ -1475,10 +1475,10 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
       {/* Summary cards */}
       <div className="dvx-stats-row">
         <StatCard label="Total Targets" value={totalTargets} />
-        <StatCard label="Reached" value={totalReached} color={totalReached > 0 ? '#34d399' : undefined} />
+        <StatCard label="Reached" value={totalReached} color={totalReached > 0 ? 'var(--g)' : undefined} />
         <StatCard label="Potential Proceeds"
           value={`$${totalPotentialProceeds >= 1000 ? (totalPotentialProceeds/1000).toFixed(1)+'k' : fmt(totalPotentialProceeds)}`}
-          color="#34d399" />
+          color="var(--g)" />
         <StatCard label="Assets Planned" value={rows.length} />
       </div>
 
@@ -1496,13 +1496,13 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
               <Bar dataKey="proceeds" radius={[6,6,0,0]}>
                 {chartData.map((d, i) => (
-                  <Cell key={i} fill={d.reached ? '#34d399' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
+                  <Cell key={i} fill={d.reached ? 'var(--g)' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem' }}>
-            <span><span style={{ color:'#34d399' }}>■</span> Reached</span>
+            <span><span style={{ color:'var(--g)' }}>■</span> Reached</span>
             <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
           </div>
         </div>
@@ -1595,11 +1595,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Proceeds</span>
-                        <span className="dvx-target-val" style={{ color:'#34d399' }}>${fmt(proceeds)}</span>
+                        <span className="dvx-target-val" style={{ color:'var(--g)' }}>${fmt(proceeds)}</span>
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: reached ? '#34d399' : gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? '#fff' : '#f87171' }}>
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
@@ -1609,7 +1609,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     <div className="dvx-target-bar-wrap">
                       <div className="dvx-target-bar-bg">
                         <div className="dvx-target-bar-fill"
-                          style={{ width:`${progress}%`, background: reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                          style={{ width:`${progress}%`, background: reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
                       </div>
                       <span className="dvx-target-bar-pct">{progress.toFixed(0)}%</span>
                     </div>
@@ -1999,7 +1999,7 @@ export default function Dashboard() {
             <div className="dvx-stats-row">
               <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
               <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
-                color={totalPnL >= 0 ? '#34d399' : '#f87171'}
+                color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
               <StatCard label={t('assets')}      value={enriched.length} />
               <StatCard label={t('tradesCount')} value={transactions.length} />
@@ -2014,7 +2014,7 @@ export default function Dashboard() {
               <button onClick={() => openSheet('buy', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'linear-gradient(135deg, rgba(52,211,153,0.22), rgba(52,211,153,0.10))',
-                color: '#34d399', fontWeight: 800, fontSize: '0.9rem',
+                color: 'var(--g)', fontWeight: 800, fontSize: '0.9rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
                 boxShadow: '0 0 0 1px rgba(52,211,153,0.3), 0 4px 16px rgba(52,211,153,0.15)',
                 transition: 'box-shadow 0.15s',
@@ -2083,9 +2083,9 @@ export default function Dashboard() {
                         <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
                         <div className="dvx-mover-meta">
                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'#34d399' }}>+{chg.toFixed(2)}%</span>
+                          <span style={{ color:'var(--g)' }}>+{chg.toFixed(2)}%</span>
                         </div>
-                        <div className="dvx-mover-impact" style={{ color:'#34d399' }}>
+                        <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
                           +${fmt(h.value * chg / 100)}
                         </div>
                       </div>
@@ -2131,13 +2131,13 @@ export default function Dashboard() {
                 <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', paddingBottom:'0.15rem' }}>
                   <span style={{
                     fontSize:'0.85rem', fontWeight:700,
-                    color: perfChange.pct >= 0 ? '#34d399' : '#f87171',
+                    color: perfChange.pct >= 0 ? 'var(--g)' : '#f87171',
                     background: perfChange.pct >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
                     borderRadius:6, padding:'0.15rem 0.5rem',
                   }}>
                     {perfChange.pct >= 0 ? '▲' : '▼'} {Math.abs(perfChange.pct).toFixed(2)}%
                   </span>
-                  <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? '#34d399' : '#f87171', fontWeight:600 }}>
+                  <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? 'var(--g)' : '#f87171', fontWeight:600 }}>
                     {perfChange.abs >= 0 ? '+' : ''}${fmt(Math.abs(perfChange.abs))}
                   </span>
                   <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.3)' }}>{perfTf}</span>
@@ -2152,14 +2152,14 @@ export default function Dashboard() {
                   style={{
                     padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
                     fontSize:'0.75rem', fontWeight:700,
-                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? '#34d399' : '#f87171') : 'rgba(255,255,255,0.07)',
+                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? 'var(--g)' : '#f87171') : 'rgba(255,255,255,0.07)',
                     color: perfTf === tf.id ? '#000' : 'rgba(255,255,255,0.5)',
                     transition:'all 0.15s',
                   }}>
                   {tf.label}
                 </button>
               ))}
-              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? '#34d399' : 'rgba(255,255,255,0.25)', alignSelf:'center' }}>
+              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g)' : 'rgba(255,255,255,0.25)', alignSelf:'center' }}>
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
@@ -2167,7 +2167,7 @@ export default function Dashboard() {
             {/* Chart */}
             {(() => {
               const up = perfChange.pct >= 0
-              const strokeColor = up ? '#34d399' : '#f87171'
+              const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
               return (
                 <ResponsiveContainer key={perfTf} width="100%" height={200}>
@@ -2216,7 +2216,7 @@ export default function Dashboard() {
                       <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
-                          <Cell key={i} fill={d.pnl >= 0 ? '#34d399' : '#f87171'} fillOpacity={0.85}/>
+                          <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
                         ))}
                       </Bar>
                     </BarChart>
@@ -2279,9 +2279,9 @@ export default function Dashboard() {
                         <span className="dvx-target-mini-sym">{tgt.coinSymbol?.toUpperCase()}</span>
                         <span className="dvx-target-mini-price">${fmt(tgt.price)}</span>
                         <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
-                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }}/>
+                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
                         </div>
-                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? '#34d399' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
+                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
                           {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
                         </span>
                       </div>
@@ -2300,7 +2300,7 @@ export default function Dashboard() {
                       const isBuy = tx.type === 'buy' || tx.type === 'deposit'
                       return (
                         <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                          <span className="dvx-tx-icon" style={{ color: isBuy ? '#34d399' : '#f87171' }}>
+                          <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
                             {isBuy ? Ico.buy : Ico.sell}
                           </span>
                           <div className="dvx-tx-meta">
@@ -2398,10 +2398,10 @@ export default function Dashboard() {
                         <span className="muted"> / ${fmt(goalValue)}</span>
                       </div>
                       <div className="dvx-goal-bar-track">
-                        <div className="dvx-goal-bar-fill" style={{ width:`${progress}%`, background: reached ? '#34d399' : 'linear-gradient(90deg,#3b82f6,#34d399)' }} />
+                        <div className="dvx-goal-bar-fill" style={{ width:`${progress}%`, background: reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }} />
                       </div>
                       <div className="dvx-goal-footer">
-                        <span style={{ color: reached ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>
+                        <span style={{ color: reached ? 'var(--g)' : 'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>
                           {reached ? '🎉 Goal reached!' : `$${fmt(remaining)} to go · ${progress.toFixed(1)}%`}
                         </span>
                       </div>
@@ -2472,10 +2472,10 @@ export default function Dashboard() {
                                       <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
-                                          Break-even: <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171', fontWeight:700 }}>
+                                          Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>
                                             ${fmt(breakEvenPrice)}
                                           </span>
-                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? '#34d399' : '#f87171' }}>
+                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171' }}>
                                             {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
                                           </span>}
                                         </span>
@@ -2490,7 +2490,7 @@ export default function Dashboard() {
                                           <div className="dvx-be-bar-track">
                                             <div className="dvx-be-bar-fill" style={{
                                               width: `${bePct}%`,
-                                              background: beDistance >= 0 ? '#34d399' : '#f87171',
+                                              background: beDistance >= 0 ? 'var(--g)' : '#f87171',
                                             }} />
                                             <div className="dvx-be-bar-marker" />
                                           </div>
@@ -2500,7 +2500,7 @@ export default function Dashboard() {
                                     <div style={TEXT_RIGHT_STYLE}>
                                       <div className="dvx-holding-val">${fmt(displayValue)}</div>
                                       {!showBreakEven && hasPnl && (
-                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? '#34d399' : '#f87171', marginTop:'0.1rem' }}>
+                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? 'var(--g)' : '#f87171', marginTop:'0.1rem' }}>
                                           {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
                                         </div>
                                       )}
@@ -2591,7 +2591,7 @@ export default function Dashboard() {
           style={{
             position: 'fixed', bottom: '80px', left: '16px', zIndex: 9000,
             width: 56, height: 56, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #34d399, #059669)',
+            background: 'linear-gradient(135deg,var(--g),var(--gd))',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 20px rgba(52,211,153,0.55), 0 0 0 0 rgba(52,211,153,0.4)',
@@ -2620,7 +2620,7 @@ export default function Dashboard() {
           <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Log your latest trade</span>
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
-            background: '#34d399', color: '#000', fontWeight: 800, fontSize: '0.8rem',
+            background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',
           }}>Buy</button>
           <button onClick={() => { setNudgeVisible(false); openSheet('sell', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',

@@ -106,7 +106,7 @@ export default function PWAInstallPrompt() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flexShrink: 0 }}>
         {isChromium && prompt && (
           <button onClick={install} style={{
-            background: '#34d399', color: '#000', border: 'none',
+            background: 'var(--g)', color: '#000', border: 'none',
             borderRadius: '8px', padding: '0.35rem 0.75rem',
             fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
           }}>Install</button>

@@ -209,7 +209,7 @@ export default function Landing() {
         <div className="lp-section-label">{t('painLabel')}</div>
         <h2 className="lp-section-h2">
           {t('painH2a')}<br />
-          <span style={{ color: '#34d399' }}>{t('painH2b')}</span>
+          <span style={{ color: 'var(--g)' }}>{t('painH2b')}</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth: 560, margin: '0 auto 2.5rem' }}>
           {t('painIntro')}

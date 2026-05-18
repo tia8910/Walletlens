@@ -132,7 +132,7 @@ export function BiometricLockScreen({ onUnlock }) {
         onClick={attempt}
         disabled={trying}
         style={{
-          background: '#34d399', color: '#000', border: 'none',
+          background: 'var(--g)', color: '#000', border: 'none',
           borderRadius: '50px', padding: '0.85rem 2.5rem',
           fontWeight: 700, fontSize: '1rem', cursor: trying ? 'default' : 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -185,7 +185,7 @@ export function BiometricToggle() {
       <button
         onClick={enabled ? disable : enable}
         style={{
-          background: enabled ? '#34d399' : 'rgba(255,255,255,0.08)',
+          background: enabled ? 'var(--g)' : 'rgba(255,255,255,0.08)',
           color: enabled ? '#000' : 'rgba(255,255,255,0.6)',
           border: 'none', borderRadius: '8px',
           padding: '0.4rem 0.9rem',

@@ -299,7 +299,7 @@ const HACKS = [
 ]
 
 const CAT_COLORS = {
-  Entry: '#34d399', Risk: '#f87171', Strategy: '#a78bfa',
+  Entry: 'var(--g)', Risk: '#f87171', Strategy: '#a78bfa',
   Portfolio: '#60a5fa', Profit: '#fbbf24', Psychology: '#f472b6',
   Research: '#38bdf8',
 }
@@ -328,7 +328,7 @@ function getRank(iq) {
   if (iq >= 5000) return { label: 'Legend', color: '#ffd700', icon: '👑' }
   if (iq >= 2000) return { label: 'Whale',  color: '#a78bfa', icon: '🥇' }
   if (iq >= 1000) return { label: 'Strategist', color: '#60a5fa', icon: '🥈' }
-  if (iq >= 500)  return { label: 'Analyst', color: '#34d399', icon: '🥉' }
+  if (iq >= 500)  return { label: 'Analyst', color: 'var(--g)', icon: '🥉' }
   if (iq >= 200)  return { label: 'Trader',  color: '#f59e0b', icon: '📈' }
   return { label: 'Rookie', color: 'rgba(255,255,255,0.5)', icon: '🌱' }
 }
@@ -687,7 +687,7 @@ export default function Academy() {
           <div className="acad-challenge-meta">
             <span className="acad-cat-badge">{question.cat}</span>
             {phase === 'playing' && (
-              <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : '#34d399' }}>
+              <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : 'var(--g)' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 {timeLeft}s
               </div>
@@ -729,7 +729,7 @@ export default function Academy() {
             <div className="acad-done-msg">
               <span className="acad-done-icon">✅</span>
               <div>
-                <div style={{ fontWeight: 700, color: '#34d399' }}>Challenge complete for today!</div>
+                <div style={{ fontWeight: 700, color: 'var(--g)' }}>Challenge complete for today!</div>
                 <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Come back tomorrow for a new question. Streak: {store.streak}🔥</div>
               </div>
             </div>

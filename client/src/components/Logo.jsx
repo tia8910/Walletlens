@@ -10,11 +10,11 @@ export default function Logo({ size = 32, animated = false, className = '' }) {
       {/* outer thin ring */}
       <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(52,211,153,0.25)" strokeWidth="1.5" />
       {/* green lens ring */}
-      <circle cx="50" cy="50" r="38" fill="none" stroke="#34d399" strokeWidth="7" />
+      <circle cx="50" cy="50" r="38" fill="none" stroke="var(--g)" strokeWidth="7" />
       {/* dark iris circle (offset like a lens) */}
       <circle cx="43" cy="44" r="18" fill="#0d2818" />
       {/* inner green fill circle (pupil/light) */}
-      <circle cx="50" cy="50" r="16" fill="#34d399" />
+      <circle cx="50" cy="50" r="16" fill="var(--g)" />
       {/* highlight specular */}
       <circle cx="42" cy="42" r="5" fill="rgba(255,255,255,0.35)" />
     </svg>

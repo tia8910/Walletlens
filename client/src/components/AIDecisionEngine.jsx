@@ -50,7 +50,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
     const actionColor =
       action === 'SELL'  ? '#f87171' :
       action === 'TRIM'  ? '#fbbf24' :
-      action === 'ADD'   ? '#34d399' :
+      action === 'ADD'   ? 'var(--g)' :
       action === 'HOLD'  ? '#60a5fa' : '#a78bfa'
 
     return { sym, action, actionColor, score, reasons, pnlPct, chg24h, w, value: h.value, coin_image: h.coin_image }
@@ -63,7 +63,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
   if (momentum > 5 && sellOrTrim.length === 0) {
     headline = 'Portfolio is performing well — hold your positions'
     summary  = `Strong bullish momentum (+${momentum.toFixed(1)}% weighted). All positions look healthy. No urgent action required.`
-    overallColor = '#34d399'
+    overallColor = 'var(--g)'
   } else if (momentum < -5 && sellOrTrim.length >= 2) {
     headline = 'Market is turning — consider reducing risk'
     summary  = `Bearish momentum (${momentum.toFixed(1)}% weighted) with ${sellOrTrim.length} positions signalling exit. Protect capital.`
@@ -75,7 +75,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
   } else if (sentiment === 'accumulating' && momentum > 0) {
     headline = "You're in accumulation mode — keep building"
     summary  = `Your trade history shows strong buy conviction. Momentum is positive. Continue DCA on your core positions.`
-    overallColor = '#34d399'
+    overallColor = 'var(--g)'
   } else {
     headline = 'Mixed signals — stay patient and watch the market'
     summary  = `No strong directional signal right now. Monitor your positions and wait for clearer market structure.`
@@ -240,7 +240,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                       </span>
                       {result.confidence}% confidence
                     </span>
-                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? '#34d399' : '#f87171' }}>
+                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g)' : '#f87171' }}>
                       {result.momentum >= 0 ? '▲' : '▼'} {Math.abs(result.momentum).toFixed(1)}% momentum
                     </span>
                   </div>

@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 export default function DynamicBackground({
   particleCount = 220,
   linkDistance = 150,
-  color = '#34d399',
+  color = 'var(--g)',
 }) {
   const canvasRef = useRef(null)
   const reduceMotion = typeof window !== 'undefined' &&
