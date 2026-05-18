@@ -22,6 +22,7 @@ import ExchangePartners from '../components/ExchangePartners'
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
+const RiskBudget     = lazy(() => import('../components/RiskBudget'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
@@ -1501,9 +1502,10 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
 function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets }) {
   const [tool, setTool] = useState('ai')
   const subTabs = [
-    { id: 'ai',   label: 'AI Analysis' },
-    { id: 'risk', label: 'Risk Scanner' },
-    { id: 'eval', label: 'Eval' },
+    { id: 'ai',     label: 'AI Analysis' },
+    { id: 'risk',   label: 'Risk Scanner' },
+    { id: 'budget', label: 'Risk Budget' },
+    { id: 'eval',   label: 'Eval' },
   ]
   return (
     <div>
@@ -1517,9 +1519,10 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
           }}>{s.label}</button>
         ))}
       </div>
-      {tool === 'ai'   && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
-      {tool === 'risk' && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
-      {tool === 'eval' && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
+      {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
+      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
+      {tool === 'budget' && <Suspense fallback={<TabFallback />}><RiskBudget enriched={isDemo ? [] : enriched} totalValue={totalValue} /></Suspense>}
+      {tool === 'eval'   && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
     </div>
   )
 }
