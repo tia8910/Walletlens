@@ -1917,6 +1917,7 @@ export default function Dashboard() {
     <div className="dvx">
       {/* ── Theme strip — top of page ── */}
       <div className="theme-strip">
+        <span className="theme-strip-heading">🎨 Theme</span>
         {THEMES.map(th => (
           <button
             key={th.id}
