@@ -1,5 +1,20 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { track } from '../analytics'
+
+function getThemeColors() {
+  const style = getComputedStyle(document.documentElement)
+  const g = style.getPropertyValue('--g').trim() || '#00c853'
+  const gRgb = style.getPropertyValue('--g-rgb').trim() || '0,200,83'
+  // Derive darker bg from theme
+  const bgMap = {
+    '0,200,83':    { bg0: '#020f07', bg1: '#041208', accent: g },      // green
+    '139,92,246':  { bg0: '#0d0a1a', bg1: '#120f22', accent: g },      // solana purple
+    '59,130,246':  { bg0: '#05080f', bg1: '#080d1a', accent: g },      // blue
+    '234,179,8':   { bg0: '#100e02', bg1: '#1a1503', accent: g },      // gold
+    '239,68,68':   { bg0: '#100505', bg1: '#180808', accent: g },      // red
+  }
+  return bgMap[gRgb] || { bg0: '#020f07', bg1: '#041208', accent: g }
+}
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '$0'
@@ -32,7 +47,38 @@ function rr(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL }) {
+function drawSparkline(ctx, series, x, y, w, h, positive) {
+  if (!series || series.length < 2) return
+  const vals = series.map(p => p.v || 0)
+  const min = Math.min(...vals), max = Math.max(...vals)
+  const range = max - min || 1
+  const pts = vals.map((v, i) => ({
+    px: x + (i / (vals.length - 1)) * w,
+    py: y + h - ((v - min) / range) * h,
+  }))
+  // Fill
+  const grad = ctx.createLinearGradient(0, y, 0, y + h)
+  grad.addColorStop(0, positive ? 'rgba(0,230,118,0.25)' : 'rgba(255,82,82,0.18)')
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.beginPath()
+  ctx.moveTo(pts[0].px, y + h)
+  pts.forEach(p => ctx.lineTo(p.px, p.py))
+  ctx.lineTo(pts[pts.length - 1].px, y + h)
+  ctx.closePath()
+  ctx.fillStyle = grad
+  ctx.fill()
+  // Line
+  ctx.beginPath()
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.px, p.py) : ctx.lineTo(p.px, p.py))
+  ctx.strokeStyle = positive ? '#00e676' : '#ff5252'
+  ctx.lineWidth = 2.5
+  ctx.shadowColor = positive ? '#00e676' : '#ff5252'
+  ctx.shadowBlur = 8
+  ctx.stroke()
+  ctx.shadowBlur = 0
+}
+
+function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, perfSeries, theme }) {
   const W = 1200, H = 630, dpr = 1
   canvas.width = W * dpr
   canvas.height = H * dpr
@@ -41,30 +87,32 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   const ctx = canvas.getContext('2d')
   ctx.scale(dpr, dpr)
 
+  const accent = theme?.accent || '#00c853'
+
   // ── Background ──────────────────────────────────────────────────────────
   const bg = ctx.createLinearGradient(0, 0, W, H)
-  bg.addColorStop(0, '#020f07')
-  bg.addColorStop(0.6, '#041208')
-  bg.addColorStop(1, '#071a0c')
+  bg.addColorStop(0, theme?.bg0 || '#020f07')
+  bg.addColorStop(0.6, theme?.bg1 || '#041208')
+  bg.addColorStop(1, theme?.bg1 || '#071a0c')
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, W, H)
 
   // Subtle radial glow top-left
   const glow = ctx.createRadialGradient(200, 120, 0, 200, 120, 480)
-  glow.addColorStop(0, 'rgba(var(--g-rgb),0.12)')
+  glow.addColorStop(0, accent + '22')
   glow.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, W, H)
 
   // Glow bottom-right
   const glow2 = ctx.createRadialGradient(W - 150, H - 80, 0, W - 150, H - 80, 320)
-  glow2.addColorStop(0, 'rgba(var(--g-rgb),0.07)')
+  glow2.addColorStop(0, accent + '14')
   glow2.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = glow2
   ctx.fillRect(0, 0, W, H)
 
   // ── Grid lines ──────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(var(--g-rgb),0.04)'
+  ctx.strokeStyle = accent + '0a'
   ctx.lineWidth = 1
   for (let i = 1; i < 6; i++) {
     ctx.beginPath(); ctx.moveTo(0, H / 6 * i); ctx.lineTo(W, H / 6 * i); ctx.stroke()
@@ -72,23 +120,23 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   }
 
   // Left accent bar
-  ctx.fillStyle = '#00c853'
+  ctx.fillStyle = accent
   ctx.fillRect(0, 0, 5, H)
 
   // ── Border ──────────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(var(--g-rgb),0.18)'
+  ctx.strokeStyle = accent + '30'
   ctx.lineWidth = 1.5
   rr(ctx, 1, 1, W - 2, H - 2, 24)
   ctx.stroke()
 
   // ── WalletLens logo (concentric circles) ────────────────────────────────
   const lx = 70, ly = 52
-  ctx.strokeStyle = '#00c853'; ctx.lineWidth = 5
+  ctx.strokeStyle = accent; ctx.lineWidth = 5
   ctx.beginPath(); ctx.arc(lx, ly, 28, 0, Math.PI * 2); ctx.stroke()
   ctx.lineWidth = 3.5; ctx.globalAlpha = 0.55
   ctx.beginPath(); ctx.arc(lx, ly, 16, 0, Math.PI * 2); ctx.stroke()
   ctx.globalAlpha = 1
-  ctx.fillStyle = '#00c853'
+  ctx.fillStyle = accent
   ctx.beginPath(); ctx.arc(lx, ly, 9, 0, Math.PI * 2); ctx.fill()
 
   // ── WalletLens wordmark ──────────────────────────────────────────────────
@@ -101,7 +149,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillText('walletlens.cc', lx + 40, ly + 28)
 
   // ── Tagline (top right) ──────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(var(--g-rgb),0.55)'
+  ctx.fillStyle = accent + '99'
   ctx.font = '13px system-ui, sans-serif'
   ctx.textAlign = 'right'
   ctx.fillText('Zoom in your wealth 🔍', W - 48, 52)
@@ -153,6 +201,9 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     ctx.font = 'bold 14px system-ui, sans-serif'
     ctx.fillText((todayPos ? '+' : '') + fmtUsd(todayPnL), 64 + pnlW + 18, 270)
   }
+
+  // ── Sparkline ─────────────────────────────────────────────────────────────
+  drawSparkline(ctx, perfSeries, W / 2 + 20, 130, W / 2 - 68, 150, totalPnL >= 0)
 
   // ── Divider ──────────────────────────────────────────────────────────────
   ctx.strokeStyle = 'rgba(255,255,255,0.07)'
@@ -207,11 +258,11 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   })
 
   // ── Bottom bar ───────────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(var(--g-rgb),0.06)'
+  ctx.fillStyle = accent + '10'
   ctx.fillRect(0, H - 52, W, 52)
 
   ctx.textAlign = 'right'
-  ctx.fillStyle = '#00c853'
+  ctx.fillStyle = accent
   ctx.font = 'bold 14px system-ui, sans-serif'
   ctx.fillText('Track yours free → walletlens.cc', W - 48, H - 20)
 
@@ -221,7 +272,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), 64, H - 20)
 }
 
-export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, onClose }) {
+export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, perfSeries, onClose }) {
   const canvasRef = useRef(null)
   const [ready, setReady] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -248,7 +299,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   const tweetText = () => {
     const pnlSign = totalPnL >= 0 ? '+' : ''
     return encodeURIComponent(
-      `My crypto portfolio: ${fmtUsd(totalValue)} (${pnlSign}${fmtPct(totalPnLPct)} all-time) 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.cc`
+      `My crypto portfolio: ${fmtUsd(totalValue)} (${pnlSign}${fmtPct(totalPnLPct)} all-time) 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.cc/?ref=share`
     )
   }
 
@@ -284,7 +335,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
         </div>
 
         <canvas
-          ref={el => { if (el && !ready) { setTimeout(() => { drawCard(el, { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL }); canvasRef.current = el; setReady(true) }, 0) } }}
+          ref={el => { if (el && !ready) { setTimeout(() => { drawCard(el, { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, perfSeries, theme: getThemeColors() }); canvasRef.current = el; setReady(true) }, 0) } }}
           className="share-canvas"
         />
 

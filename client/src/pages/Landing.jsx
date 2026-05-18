@@ -137,7 +137,11 @@ export default function Landing() {
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
 
-  useEffect(() => { track('landing_view') }, [])
+  useEffect(() => {
+    track('landing_view')
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref) track('referral_visit', { ref_source: ref })
+  }, [])
 
   function handleLogoPulse() {
     setLogoAnim(true)

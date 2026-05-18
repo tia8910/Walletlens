@@ -11,6 +11,7 @@ import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
 import CoinLogo from '../components/CoinLogo'
+import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded } from '../analytics'
@@ -1788,6 +1789,8 @@ export default function Dashboard() {
   }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
+  const [milestone, setMilestone]         = useState(null)
+  const prevPnLRef                        = useRef(null)
   const { theme, setTheme } = useTheme()
   const [hidden, setHidden]               = useState(false)
   const tickerStart = useRef(null)
@@ -1928,6 +1931,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
   }, [loaded, totalValue])
+
+  // Milestone detection
+  useEffect(() => {
+    if (!loaded || totalValue === 0 || milestone) return
+    const dayChangePct = perfChange?.pct || 0
+    const m = detectMilestone({ totalValue, totalPnL, prevTotalPnL: prevPnLRef.current, dayChangePct })
+    if (m) setMilestone(m)
+    prevPnLRef.current = totalPnL
+  }, [loaded, totalValue, totalPnL])
 
   useEffect(() => {
     if (!loaded || !enriched.length) return
@@ -2826,7 +2838,20 @@ export default function Dashboard() {
           totalPnLPct={totalPnLPct}
           topHoldings={enriched.slice(0, 4)}
           todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+          perfSeries={perfSeries}
           onClose={() => setShareOpen(false)}
+        />
+      )}
+      {milestone && (
+        <MilestonePopup
+          milestone={milestone}
+          totalValue={totalValue}
+          totalPnL={totalPnL}
+          totalPnLPct={totalPnLPct}
+          topHoldings={enriched.slice(0, 4)}
+          todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+          onShare={() => { setMilestone(null); setShareOpen(true) }}
+          onDismiss={() => setMilestone(null)}
         />
       )}
     </div>
