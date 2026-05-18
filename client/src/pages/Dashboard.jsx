@@ -1257,6 +1257,126 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 }
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
+function ConstellationMap() {
+  const canvasRef = useRef(null)
+  const NODES = [
+    { symbol:'BTC', coinId:'bitcoin',     color:'#f7931a', x:0.50, y:0.18 },
+    { symbol:'ETH', coinId:'ethereum',    color:'#627eea', x:0.82, y:0.42 },
+    { symbol:'SOL', coinId:'solana',      color:'#9945ff', x:0.68, y:0.78 },
+    { symbol:'XRP', coinId:'ripple',      color:'#00aae4', x:0.28, y:0.72 },
+    { symbol:'BNB', coinId:'binancecoin', color:'#f3ba2f', x:0.15, y:0.38 },
+    { symbol:'ADA', coinId:'cardano',     color:'#0033ad', x:0.62, y:0.12 },
+    { symbol:'DOT', coinId:'polkadot',    color:'#e6007a', x:0.88, y:0.68 },
+  ]
+  // Edges (constellation lines between node indices)
+  const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[1,6],[2,6]]
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    let w = 0, h = 0, raf = 0, t = 0
+
+    function resize() {
+      w = canvas.clientWidth; h = canvas.clientHeight
+      canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    // Background twinkle stars
+    const STARS = Array.from({ length: 55 }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.2 + 0.3,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.008 + Math.random() * 0.014,
+    }))
+
+    function getColor() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
+    }
+    function getRgb() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
+    }
+
+    function draw() {
+      t += 0.016
+      ctx.clearRect(0, 0, w, h)
+
+      const col = getColor()
+      const rgb = getRgb()
+
+      // Twinkle stars
+      for (const s of STARS) {
+        const alpha = 0.15 + 0.5 * (0.5 + 0.5 * Math.sin(s.phase + t * s.speed * 60))
+        ctx.beginPath()
+        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`
+        ctx.fill()
+      }
+
+      // Constellation edges — fade in/out per edge with offset phases
+      EDGES.forEach(([a, b], i) => {
+        const na = NODES[a], nb = NODES[b]
+        const ax = na.x * w, ay = na.y * h
+        const bx = nb.x * w, by = nb.y * h
+        const alpha = 0.08 + 0.18 * (0.5 + 0.5 * Math.sin(t * 0.4 + i * 0.9))
+        const grad = ctx.createLinearGradient(ax, ay, bx, by)
+        grad.addColorStop(0, `rgba(${rgb},${alpha})`)
+        grad.addColorStop(0.5, `rgba(${rgb},${alpha * 1.8})`)
+        grad.addColorStop(1, `rgba(${rgb},${alpha})`)
+        ctx.strokeStyle = grad
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 6])
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke()
+        ctx.setLineDash([])
+      })
+
+      // Node glow pulses
+      NODES.forEach((n, i) => {
+        const nx = n.x * w, ny = n.y * h
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.2 + i * 1.1)
+        const r = 22 + pulse * 8
+        const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, r)
+        grad.addColorStop(0, `rgba(${rgb},${0.22 * pulse})`)
+        grad.addColorStop(1, 'rgba(0,0,0,0)')
+        ctx.fillStyle = grad
+        ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill()
+      })
+
+      raf = requestAnimationFrame(draw)
+    }
+
+    resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
+    draw()
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [])
+
+  return (
+    <div style={{ position:'relative', width:'100%', height:260, margin:'0 auto 1.5rem' }}>
+      <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%' }} aria-hidden="true" />
+      {NODES.map((n, i) => (
+        <div key={n.symbol} style={{
+          position:'absolute',
+          left:`calc(${n.x * 100}% - 18px)`,
+          top:`calc(${n.y * 100}% - 18px)`,
+          width:36, height:36, borderRadius:'50%',
+          background:`${n.color}18`,
+          border:`1.5px solid ${n.color}70`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          boxShadow:`0 0 14px ${n.color}40`,
+          overflow:'hidden', zIndex:1,
+          animation:`ep-node-pulse 2.4s ${(i * 0.35).toFixed(1)}s ease-in-out infinite`,
+        }}>
+          <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
   if (!loaded) return null
 
@@ -1265,112 +1385,18 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
     const s = document.createElement('style')
     s.id = 'ep-kf'
     s.textContent = `
-      @keyframes ep-spin   { to { transform: rotate(360deg) } }
-      @keyframes ep-spin-r { to { transform: rotate(-360deg) } }
-      @keyframes ep-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-      @keyframes ep-pulse  { 0%,100%{opacity:.18;transform:scale(1)} 50%{opacity:.35;transform:scale(1.06)} }
       @keyframes ep-shimmer{ 0%{background-position:200% center} 100%{background-position:-200% center} }
-      @keyframes ep-dot    { 0%,100%{opacity:.15;transform:scale(.8)} 50%{opacity:.8;transform:scale(1.2)} }
       @keyframes ep-bounce { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-6px) scale(1.04)} 60%{transform:translateY(-3px) scale(1.02)} }
+      @keyframes ep-node-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 14px currentColor} 50%{transform:scale(1.12);box-shadow:0 0 22px currentColor} }
     `
     document.head.appendChild(s)
   }
 
-  const DOTS = [
-    { top:'12%', left:'8%',  size:6,  color:'var(--g)', delay:'0s',   dur:'2.1s' },
-    { top:'18%', left:'88%', size:4,  color:'#60a5fa', delay:'.4s',  dur:'1.8s' },
-    { top:'72%', left:'5%',  size:5,  color:'#a78bfa', delay:'.8s',  dur:'2.4s' },
-    { top:'78%', left:'91%', size:7,  color:'var(--g)', delay:'1.1s', dur:'1.6s' },
-    { top:'45%', left:'3%',  size:4,  color:'#f59e0b', delay:'.2s',  dur:'2.8s' },
-    { top:'55%', left:'93%', size:5,  color:'#60a5fa', delay:'1.5s', dur:'2.0s' },
-    { top:'30%', left:'50%', size:3,  color:'var(--g)', delay:'.6s',  dur:'1.9s' },
-  ]
-
-  const COINS = [
-    { symbol:'BTC', coinId:'bitcoin',     color:'#f7931a', angle:0   },
-    { symbol:'ETH', coinId:'ethereum',    color:'#627eea', angle:72  },
-    { symbol:'SOL', coinId:'solana',      color:'#9945ff', angle:144 },
-    { symbol:'XRP', coinId:'ripple',      color:'#00aae4', angle:216 },
-    { symbol:'BNB', coinId:'binancecoin', color:'#f3ba2f', angle:288 },
-  ]
-
   return (
     <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
 
-      {/* Floating dots */}
-      {DOTS.map((d,i) => (
-        <div key={i} style={{
-          position:'absolute', top:d.top, left:d.left,
-          width:d.size, height:d.size, borderRadius:'50%',
-          background:d.color,
-          animation:`ep-dot ${d.dur} ${d.delay} ease-in-out infinite`,
-          pointerEvents:'none',
-        }}/>
-      ))}
-
-      {/* Orbit rings + coin badges */}
-      <div style={{ position:'relative', width:220, height:220, margin:'0 auto 1.5rem' }}>
-
-        {/* Outer ring */}
-        <div style={{
-          position:'absolute', inset:0, borderRadius:'50%',
-          border:'1.5px dashed var(--g)', opacity:0.2,
-          animation:'ep-spin 18s linear infinite',
-        }}/>
-
-        {/* Middle ring */}
-        <div style={{
-          position:'absolute', inset:22, borderRadius:'50%',
-          border:'1px solid var(--g)', opacity:0.15,
-          animation:'ep-spin-r 12s linear infinite',
-        }}/>
-
-        {/* Inner pulse ring */}
-        <div style={{
-          position:'absolute', inset:44, borderRadius:'50%',
-          border:'1.5px solid var(--g)', opacity:0.3,
-          animation:'ep-pulse 3s ease-in-out infinite',
-        }}/>
-
-        {/* Orbiting coin badges with official logos */}
-        {COINS.map((c) => {
-          const rad = (c.angle * Math.PI) / 180
-          const r = 96
-          const x = 110 + r * Math.cos(rad) - 18
-          const y = 110 + r * Math.sin(rad) - 18
-          return (
-            <div key={c.symbol} style={{
-              position:'absolute', left:x, top:y,
-              width:36, height:36, borderRadius:'50%',
-              background:`${c.color}18`,
-              border:`1.5px solid ${c.color}50`,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              boxShadow:`0 0 12px ${c.color}35`,
-              animation:`ep-spin 18s linear infinite`,
-              transformOrigin:`${110 - x + 18}px ${110 - y + 18}px`,
-              overflow:'hidden',
-            }}>
-              <CoinLogo coinId={c.coinId} symbol={c.symbol} size={28} className="coin-logo" />
-            </div>
-          )
-        })}
-
-        {/* Centre icon */}
-        <div style={{
-          position:'absolute', inset:0,
-          display:'flex', alignItems:'center', justifyContent:'center',
-        }}>
-          <div style={{
-            width:78, height:78, borderRadius:'50%',
-            background:'linear-gradient(135deg,rgba(var(--g-rgb),0.18),rgba(96,165,250,0.12))',
-            border:'1.5px solid rgba(var(--g-rgb),0.4)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:'2rem',
-            boxShadow:'0 0 32px rgba(var(--g-rgb),0.18), 0 0 8px rgba(var(--g-rgb),0.1)',
-            animation:'ep-float 3.5s ease-in-out infinite',
-          }}>📈</div>
-        </div>
-      </div>
+      {/* Constellation star map */}
+      <ConstellationMap />
 
       {/* Headline */}
       <div style={{ fontWeight:800, fontSize:'1.25rem', color:'#fff', marginBottom:'0.5rem', lineHeight:1.3 }}>
