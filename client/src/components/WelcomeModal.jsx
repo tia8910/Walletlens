@@ -17,7 +17,7 @@ const STEPS = [
     title: 'Add Your First Trade',
     desc: 'Tap the Trades button to log a buy or sell. WalletLens calculates your P&L, average cost, and performance automatically.',
     cta: 'Got it',
-    accent: '#34d399',
+    accent: 'var(--g)',
   },
   {
     icon: '🤖',

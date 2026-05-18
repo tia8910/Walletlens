@@ -51,8 +51,8 @@ function WalletReader() {
   }
 
   function whaleLabel(balUsd) {
-    if (balUsd >= 10_000_000) return { l: '🐋 Mega Whale', c: '#34d399' }
-    if (balUsd >= 1_000_000)  return { l: '🐳 Whale',       c: '#34d399' }
+    if (balUsd >= 10_000_000) return { l: '🐋 Mega Whale', c: 'var(--g)' }
+    if (balUsd >= 1_000_000)  return { l: '🐳 Whale',       c: 'var(--g)' }
     if (balUsd >= 100_000)    return { l: '🦈 Shark',        c: '#fbbf24' }
     if (balUsd >= 10_000)     return { l: '🐬 Dolphin',      c: '#60a5fa' }
     return { l: '🐟 Retail',  c: 'rgba(255,255,255,0.5)' }
@@ -180,7 +180,7 @@ function GemsTab({ market }) {
             <div className="gem-score-ring" style={{ '--gem-score': c.gemScore }}>
               <svg viewBox="0 0 36 36" width="56" height="56">
                 <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                <circle cx="18" cy="18" r="15" fill="none" stroke={c.gemScore >= 70 ? '#34d399' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa'}
+                <circle cx="18" cy="18" r="15" fill="none" stroke={c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa'}
                   strokeWidth="3" strokeDasharray={`${(c.gemScore/100)*94.2} 94.2`}
                   strokeLinecap="round" transform="rotate(-90 18 18)" />
               </svg>
@@ -206,7 +206,7 @@ function GemsTab({ market }) {
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
-            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(52,211,153,0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? '#34d399' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
+            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(52,211,153,0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
               {c.gemScore} gem score
             </div>
           </Link>
@@ -248,7 +248,7 @@ function AlphaTab({ market, trending }) {
     .sort((a, b) => Math.abs(b.price_change_percentage_24h_in_currency||0) - Math.abs(a.price_change_percentage_24h_in_currency||0))
     .slice(0, 4)
     .forEach(c => signals.push({
-      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? '#34d399' : '#f87171',
+      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g)' : '#f87171',
       tag: c.price_change_percentage_24h_in_currency >= 0 ? 'Breakout' : 'Capitulation',
       coin: c, detail: `${fmtPct(c.price_change_percentage_24h_in_currency)} · MCap ${fmtUsd(c.market_cap)}`,
     }))
@@ -304,7 +304,7 @@ function IndicatorsTab({ market, globalData }) {
   const altOutperforming = top50.filter(c => (c.price_change_percentage_24h_in_currency||0) > btcChange).length
   const altseasonScore = Math.round((altOutperforming / top50.length) * 100)
   const altseasonLabel = altseasonScore >= 75 ? 'Alt Season 🔥' : altseasonScore >= 50 ? 'Alts Heating Up' : altseasonScore >= 25 ? 'BTC Season' : 'BTC Dominates ₿'
-  const altseasonColor = altseasonScore >= 75 ? '#f59e0b' : altseasonScore >= 50 ? '#34d399' : altseasonScore >= 25 ? '#60a5fa' : '#818cf8'
+  const altseasonColor = altseasonScore >= 75 ? '#f59e0b' : altseasonScore >= 50 ? 'var(--g)' : altseasonScore >= 25 ? '#60a5fa' : '#818cf8'
 
   // Simple RSI-like signal for top 10 (using 24h change as proxy)
   const top10 = market.slice(0,10)

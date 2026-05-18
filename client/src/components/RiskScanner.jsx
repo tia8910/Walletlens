@@ -56,7 +56,7 @@ async function fetchJSON(url) {
 // Returns { score 0-100, grade, color, signals[], breakdown{} }
 async function scoreToken(coinId, forceRefresh = false) {
   if (STABLECOINS.has(coinId)) {
-    return { score: 90, grade: 'SAFE', color: '#34d399', signals: [
+    return { score: 90, grade: 'SAFE', color: 'var(--g)', signals: [
       { label: 'Fiat-pegged stablecoin — no rug risk', status: 'good' },
       { label: 'High liquidity by design', status: 'good' },
       { label: 'No smart contract price dependency', status: 'good' },
@@ -64,7 +64,7 @@ async function scoreToken(coinId, forceRefresh = false) {
   }
 
   if (SAFE_IDS.has(coinId)) {
-    return { score: 95, grade: 'SAFE', color: '#34d399', signals: [
+    return { score: 95, grade: 'SAFE', color: 'var(--g)', signals: [
       { label: 'Established blue-chip asset', status: 'good' },
       { label: 'High liquidity across major exchanges', status: 'good' },
       { label: 'Multi-year on-chain track record', status: 'good' },
@@ -130,7 +130,7 @@ async function scoreToken(coinId, forceRefresh = false) {
       ]
     }
     const grade = score >= 80 ? 'SAFE' : score >= 60 ? 'MODERATE' : 'HIGH RISK'
-    const color = score >= 80 ? '#34d399' : score >= 60 ? '#f59e0b' : '#f87171'
+    const color = score >= 80 ? 'var(--g)' : score >= 60 ? '#f59e0b' : '#f87171'
     const result = { score, grade, color, signals, breakdown: { cg: score, gp: null } }
     const cache = loadCache()
     cache[coinId] = { result, ts: Date.now() }
@@ -314,7 +314,7 @@ async function scoreToken(coinId, forceRefresh = false) {
   const rawScore = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 50
   const score = Math.max(5, Math.min(100, rawScore))
   const grade = score >= 80 ? 'SAFE' : score >= 60 ? 'MODERATE' : score >= 35 ? 'HIGH RISK' : 'DANGER'
-  const color = score >= 80 ? '#34d399' : score >= 60 ? '#f59e0b' : score >= 35 ? '#f87171' : '#ef4444'
+  const color = score >= 80 ? 'var(--g)' : score >= 60 ? '#f59e0b' : score >= 35 ? '#f87171' : '#ef4444'
 
   const result = { score, grade, color, signals }
   const newCache = loadCache()
@@ -344,7 +344,7 @@ function PortfolioRiskSummary({ results, holdings }) {
   const gradeCounts = { SAFE: 0, MODERATE: 0, 'HIGH RISK': 0, DANGER: 0 }
   scanned.forEach(h => { gradeCounts[results[h.coin_id].grade]++ })
 
-  const gradeColor = weightedScore >= 80 ? '#34d399' : weightedScore >= 60 ? '#f59e0b' : weightedScore >= 35 ? '#f87171' : '#ef4444'
+  const gradeColor = weightedScore >= 80 ? 'var(--g)' : weightedScore >= 60 ? '#f59e0b' : weightedScore >= 35 ? '#f87171' : '#ef4444'
   const gradeLabel = weightedScore >= 80 ? 'SAFE' : weightedScore >= 60 ? 'MODERATE' : weightedScore >= 35 ? 'HIGH RISK' : 'DANGER'
 
   // Most dangerous holding
@@ -372,7 +372,7 @@ function PortfolioRiskSummary({ results, holdings }) {
         </div>
         <div className="risk-summary-breakdown">
           {Object.entries(gradeCounts).filter(([, v]) => v > 0).map(([grade, count]) => {
-            const c = grade === 'SAFE' ? '#34d399' : grade === 'MODERATE' ? '#f59e0b' : grade === 'HIGH RISK' ? '#f87171' : '#ef4444'
+            const c = grade === 'SAFE' ? 'var(--g)' : grade === 'MODERATE' ? '#f59e0b' : grade === 'HIGH RISK' ? '#f87171' : '#ef4444'
             return (
               <div key={grade} className="risk-summary-grade-row">
                 <span className="risk-summary-dot" style={{ background: c }} />
@@ -397,7 +397,7 @@ function PortfolioRiskSummary({ results, holdings }) {
 
 // ── Signal badge ──────────────────────────────────────────────────────────
 function SignalBadge({ status, label }) {
-  const colors = { good: '#34d399', warn: '#f59e0b', bad: '#f87171' }
+  const colors = { good: 'var(--g)', warn: '#f59e0b', bad: '#f87171' }
   const icons  = { good: '✓', warn: '⚠', bad: '✕' }
   return (
     <div className="risk-signal">
@@ -532,13 +532,13 @@ async function checkScamAddress(input) {
     if (info.is_honeypot === '1') {
       danger += 40; flags.push({ icon: '🚨', text: 'HONEYPOT — you cannot sell this token', color: '#ef4444' })
     } else if (info.is_honeypot === '0') {
-      flags.push({ icon: '✓', text: 'Not a honeypot — selling is possible', color: '#34d399' })
+      flags.push({ icon: '✓', text: 'Not a honeypot — selling is possible', color: 'var(--g)' })
     }
 
     if (info.is_open_source === '0') {
       danger += 15; flags.push({ icon: '✕', text: 'Contract is NOT verified — hidden code', color: '#f87171' })
     } else if (info.is_open_source === '1') {
-      flags.push({ icon: '✓', text: 'Contract is open source and verified', color: '#34d399' })
+      flags.push({ icon: '✓', text: 'Contract is open source and verified', color: 'var(--g)' })
     }
 
     if (info.can_mint === '1') {
@@ -558,7 +558,7 @@ async function checkScamAddress(input) {
     } else if (buyTax > 0 || sellTax > 0) {
       flags.push({ icon: '⚠', text: `Tax: buy ${buyTax.toFixed(1)}% / sell ${sellTax.toFixed(1)}%`, color: '#f59e0b' })
     } else {
-      flags.push({ icon: '✓', text: 'Zero buy/sell tax', color: '#34d399' })
+      flags.push({ icon: '✓', text: 'Zero buy/sell tax', color: 'var(--g)' })
     }
 
     const holders = info.holders || []
@@ -569,7 +569,7 @@ async function checkScamAddress(input) {
       } else if (top3Pct > 20) {
         flags.push({ icon: '⚠', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}%`, color: '#f59e0b' })
       } else {
-        flags.push({ icon: '✓', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: '#34d399' })
+        flags.push({ icon: '✓', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: 'var(--g)' })
       }
     }
 
@@ -579,7 +579,7 @@ async function checkScamAddress(input) {
     if (danger >= 40) { verdict = 'LIKELY SCAM';    verdictColor = '#ef4444' }
     else if (danger >= 20) { verdict = 'HIGH RISK'; verdictColor = '#f87171' }
     else if (danger >= 5)  { verdict = 'CAUTION';   verdictColor = '#f59e0b' }
-    else { verdict = 'LOOKS CLEAN'; verdictColor = '#34d399' }
+    else { verdict = 'LOOKS CLEAN'; verdictColor = 'var(--g)' }
 
     return { verdict, verdictColor, flags, score, name: info.token_name }
   }
@@ -666,7 +666,7 @@ function ScamCatcher() {
 
 // ── Legend ────────────────────────────────────────────────────────────────
 const LEGEND = [
-  { grade: 'SAFE',      color: '#34d399', range: '80–100', desc: 'Established, liquid, low contract risk' },
+  { grade: 'SAFE',      color: 'var(--g)', range: '80–100', desc: 'Established, liquid, low contract risk' },
   { grade: 'MODERATE',  color: '#f59e0b', range: '60–79',  desc: 'Some risk factors — monitor closely' },
   { grade: 'HIGH RISK', color: '#f87171', range: '35–59',  desc: 'Multiple red flags — be cautious' },
   { grade: 'DANGER',    color: '#ef4444', range: '0–34',   desc: 'Likely scam or extreme risk' },

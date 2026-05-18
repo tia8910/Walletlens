@@ -56,7 +56,7 @@ function calcAlphaScore(enriched, prices) {
 
   const total = momentumScore + pnlScore + divScore + oppScore
   const grade = total >= 80 ? 'STRONG' : total >= 60 ? 'GOOD' : total >= 40 ? 'NEUTRAL' : total >= 20 ? 'WEAK' : 'POOR'
-  const color = total >= 80 ? '#34d399' : total >= 60 ? '#60a5fa' : total >= 40 ? '#f59e0b' : '#f87171'
+  const color = total >= 80 ? 'var(--g)' : total >= 60 ? '#60a5fa' : total >= 40 ? '#f59e0b' : '#f87171'
   return { total, grade, color, momentum, momentumScore, pnlScore, divScore, oppScore }
 }
 
@@ -116,7 +116,7 @@ function CoinCard({ coin, badge, badgeColor, reason, sub }) {
 }
 
 // ── Animated pulse dot ────────────────────────────────────────────────────
-function PulseDot({ color = '#34d399' }) {
+function PulseDot({ color = 'var(--g)' }) {
   return <span className="alpha-pulse-dot" style={{ '--pulse-color': color }} />
 }
 
@@ -313,9 +313,9 @@ export default function Alpha() {
                 <div className="alpha-breakdown-row">
                   <span className="muted">Momentum</span>
                   <div className="alpha-breakdown-bar-wrap">
-                    <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.momentumScore / 30) * 100}%`, background: alphaScore.momentum >= 0 ? '#34d399' : '#f87171' }} />
+                    <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.momentumScore / 30) * 100}%`, background: alphaScore.momentum >= 0 ? 'var(--g)' : '#f87171' }} />
                   </div>
-                  <span style={{ color: alphaScore.momentum >= 0 ? '#34d399' : '#f87171' }}>
+                  <span style={{ color: alphaScore.momentum >= 0 ? 'var(--g)' : '#f87171' }}>
                     {alphaScore.momentum >= 0 ? '+' : ''}{alphaScore.momentum.toFixed(1)}%
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export default function Alpha() {
               return (
                 <SignalRow key={h.coin_id}
                   icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
-                  color="#34d399"
+                  color="var(--g)"
                   title={h.coin_symbol?.toUpperCase()}
                   value={`+${chg.toFixed(1)}% today`}
                   sub={`Up ${(h.pnlPct || 0).toFixed(0)}% from entry — momentum building`}
@@ -385,7 +385,7 @@ export default function Alpha() {
             {strongHoldings.length > 0 && warnings.length === 0 && opportunities.length === 0 && (
               <SignalRow
                 icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
-                color="#34d399"
+                color="var(--g)"
                 title="All positions healthy"
                 sub="No warnings detected across your crypto holdings"
                 badge="CLEAR"
@@ -430,7 +430,7 @@ export default function Alpha() {
               <CoinCard key={c.id}
                 coin={{ symbol: c.symbol, name: c.name, thumb: c.image }}
                 badge={`+${(c.price_change_percentage_24h || 0).toFixed(1)}%`}
-                badgeColor="#34d399"
+                badgeColor="var(--g)"
                 reason={`$${c.current_price?.toLocaleString(undefined, { maximumFractionDigits: 6 })} · Rank #${c.market_cap_rank}`}
               />
             ))}

@@ -10,7 +10,7 @@ export const ASSET_CATEGORIES = {
   fiat:   { key: 'fiat',   label: 'Fiat',   icon: '💵', color: '#0ea5e9' },
   gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
   silver: { key: 'silver', label: 'Silver', icon: '🥈', color: '#94a3b8' },
-  stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: '#10b981' },
+  stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: 'var(--gd)' },
   bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0284c7' },
   other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
 }

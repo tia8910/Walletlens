@@ -276,7 +276,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           Save &amp; Continue
         </button>
         <p className="ai-adv-key-hint muted">
-          Get a free key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color:'#34d399'}}>console.anthropic.com</a>
+          Get a free key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color:'var(--g)'}}>console.anthropic.com</a>
         </p>
       </div>
     )

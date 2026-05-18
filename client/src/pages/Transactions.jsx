@@ -153,8 +153,8 @@ function generateAnalysis(detail, type) {
   score = Math.max(0, Math.min(100, score))
 
   let sentiment, sentimentColor, sentimentEmoji
-  if (score >= 75) { sentiment = 'Strong Bullish'; sentimentColor = '#10b981'; sentimentEmoji = '🚀' }
-  else if (score >= 60) { sentiment = 'Bullish'; sentimentColor = '#34d399'; sentimentEmoji = '📈' }
+  if (score >= 75) { sentiment = 'Strong Bullish'; sentimentColor = 'var(--gd)'; sentimentEmoji = '🚀' }
+  else if (score >= 60) { sentiment = 'Bullish'; sentimentColor = 'var(--g)'; sentimentEmoji = '📈' }
   else if (score >= 45) { sentiment = 'Neutral'; sentimentColor = '#f59e0b'; sentimentEmoji = '⚖️' }
   else if (score >= 30) { sentiment = 'Bearish'; sentimentColor = '#f97316'; sentimentEmoji = '📉' }
   else { sentiment = 'Strong Bearish'; sentimentColor = '#ef4444'; sentimentEmoji = '🔻' }
@@ -549,7 +549,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         <h2>Transactions</h2>
         <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
           background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.15)',
-          color: showForm ? '#f87171' : '#34d399',
+          color: showForm ? '#f87171' : 'var(--g)',
           border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)'}`,
           borderRadius: '10px', padding: '0.4rem 0.85rem',
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
@@ -752,7 +752,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <div className="ai-meter-track">
                       <div className="ai-meter-fill" style={{
                         width: `${coinAnalysis.score}%`,
-                        background: coinAnalysis.score >= 60 ? 'linear-gradient(90deg, #f59e0b, #10b981)' :
+                        background: coinAnalysis.score >= 60 ? 'linear-gradient(90deg, #f59e0b, var(--gd))' :
                           coinAnalysis.score >= 40 ? 'linear-gradient(90deg, #f97316, #f59e0b)' :
                           'linear-gradient(90deg, #ef4444, #f97316)'
                       }} />

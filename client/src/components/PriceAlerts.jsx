@@ -64,7 +64,7 @@ function AlertProgress({ currentPrice, alert }) {
     pct = currentPrice <= targetPrice ? 100 : Math.min((targetPrice / currentPrice) * 100, 100)
   }
   const reached = alert.triggered
-  const color = reached ? '#34d399' : pct >= 80 ? '#f59e0b' : '#3b82f6'
+  const color = reached ? 'var(--g)' : pct >= 80 ? '#f59e0b' : '#3b82f6'
   const dist = condition === 'above'
     ? ((targetPrice - currentPrice) / currentPrice * 100)
     : ((currentPrice - targetPrice) / currentPrice * 100)
@@ -256,7 +256,7 @@ export default function PriceAlerts({ enriched, prices }) {
               return (
                 <p className="pal-hint muted">
                   Current: ${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })} ·{' '}
-                  <span style={{ color: dist >= 0 ? '#34d399' : '#f87171' }}>
+                  <span style={{ color: dist >= 0 ? 'var(--g)' : '#f87171' }}>
                     {dist >= 0 ? '+' : ''}{dist}% away
                   </span>
                 </p>
@@ -280,7 +280,7 @@ export default function PriceAlerts({ enriched, prices }) {
                 <div className="pal-card-top">
                   <div className="pal-card-left">
                     <span className="pal-sym">{a.coin_symbol?.toUpperCase()}</span>
-                    <span className="pal-cond-badge" style={{ color: a.condition === 'above' ? '#34d399' : '#f87171' }}>
+                    <span className="pal-cond-badge" style={{ color: a.condition === 'above' ? 'var(--g)' : '#f87171' }}>
                       {a.condition === 'above' ? '↑ above' : '↓ below'} ${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                     </span>
                   </div>
@@ -305,7 +305,7 @@ export default function PriceAlerts({ enriched, prices }) {
               <div className="pal-card-top">
                 <div className="pal-card-left">
                   <span className="pal-sym">{a.coin_symbol?.toUpperCase()}</span>
-                  <span className="pal-cond-badge" style={{ color: '#34d399' }}>
+                  <span className="pal-cond-badge" style={{ color: 'var(--g)' }}>
                     ✓ {a.condition === 'above' ? '↑' : '↓'} ${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                   </span>
                 </div>

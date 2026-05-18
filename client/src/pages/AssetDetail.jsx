@@ -168,7 +168,7 @@ export default function AssetDetail() {
   const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
   const avgBuy = amount > 0 ? invested / amount : 0
   const isUp = chartData.length > 1 && chartData[chartData.length - 1]?.price >= chartData[0]?.price
-  const chartColor = isUp ? '#10b981' : '#ef4444'
+  const chartColor = isUp ? 'var(--gd)' : '#ef4444'
 
 
   return (
@@ -295,7 +295,7 @@ export default function AssetDetail() {
               autoFocus
             />
             <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.5rem' }}>
-              <button className="btn-sm" style={{ background:'#34d399', color:'#000', fontWeight:700, border:'none', borderRadius:8, padding:'0.35rem 0.9rem', cursor:'pointer' }}
+              <button className="btn-sm" style={{ background:'var(--g)', color:'#000', fontWeight:700, border:'none', borderRadius:8, padding:'0.35rem 0.9rem', cursor:'pointer' }}
                 onClick={() => { api.saveCoinNote(coinId, note); setNoteEditing(false); track('asset_note_save', { coin_id: coinId }) }}>
                 Save
               </button>
@@ -370,7 +370,7 @@ export default function AssetDetail() {
                   </div>
                   <div className="sp-progress">
                     <div className="sp-bar-bg">
-                      <div className="sp-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: reached ? '#10b981' : '#00c853' }} />
+                      <div className="sp-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: reached ? 'var(--gd)' : '#00c853' }} />
                     </div>
                     <span className={`sp-pct ${reached ? 'positive' : ''}`}>
                       {reached ? '✓ Reached' : `${pct.toFixed(1)}% of target`}
@@ -421,7 +421,7 @@ function WhalePanel({ s, symbol }) {
     score >= -50 ? 'Mild Distribution' :
     'Strong Distribution'
   const scoreColor =
-    score >= 50 ? '#10b981' :
+    score >= 50 ? 'var(--gd)' :
     score >= 20 ? '#22c55e' :
     score >= -20 ? '#94a3b8' :
     score >= -50 ? '#f59e0b' :
@@ -466,14 +466,14 @@ function WhalePanel({ s, symbol }) {
           value={(s.adNormalized * 100).toFixed(0) + '%'}
           help="Volume-weighted price direction. Positive = buying pressure."
           barPct={(s.adNormalized + 1) * 50}
-          color={s.adNormalized >= 0 ? '#10b981' : '#ef4444'}
+          color={s.adNormalized >= 0 ? 'var(--gd)' : '#ef4444'}
         />
         <Indicator
           label="Momentum"
           value={(s.momentum * 100).toFixed(1) + '%'}
           help="Fast vs slow MA. Positive = uptrend."
           barPct={Math.max(0, Math.min(100, 50 + s.momentum * 200))}
-          color={s.momentum >= 0 ? '#10b981' : '#ef4444'}
+          color={s.momentum >= 0 ? 'var(--gd)' : '#ef4444'}
         />
         <Indicator
           label="Range Position"
