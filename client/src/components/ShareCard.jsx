@@ -166,13 +166,15 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
 
   ctx.fillStyle = '#ffffff'
   ctx.font = 'bold 76px system-ui, sans-serif'
-  ctx.fillText(fmtUsd(totalValue), 64, 220)
+  ctx.fillText(totalValue == null ? '••••••' : fmtUsd(totalValue), 64, 220)
 
   // ── P&L pill ─────────────────────────────────────────────────────────────
-  const pnlPositive = totalPnL >= 0
+  const pnlPositive = (totalPnL ?? 0) >= 0
   const pnlColor = pnlPositive ? '#00e676' : '#ff5252'
   const pnlBg = pnlPositive ? 'rgba(0,230,118,0.14)' : 'rgba(255,82,82,0.14)'
-  const pnlText = (pnlPositive ? '▲ ' : '▼ ') + (pnlPositive ? '+' : '') + fmtUsd(totalPnL) + '   ' + fmtPct(totalPnLPct)
+  const pnlText = totalPnL == null
+    ? '▲ ••••  ••••'
+    : (pnlPositive ? '▲ ' : '▼ ') + (pnlPositive ? '+' : '') + fmtUsd(totalPnL) + '   ' + fmtPct(totalPnLPct)
   ctx.font = 'bold 20px system-ui, sans-serif'
   const pnlW = ctx.measureText(pnlText).width + 36
   ctx.fillStyle = pnlBg
@@ -197,7 +199,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     ctx.fillText('Today', 64 + pnlW + 18, 252)
     ctx.fillStyle = todayColor
     ctx.font = 'bold 14px system-ui, sans-serif'
-    ctx.fillText((todayPos ? '+' : '') + fmtUsd(todayPnL), 64 + pnlW + 18, 270)
+    ctx.fillText(todayPnL == null ? '••••' : (todayPos ? '+' : '') + fmtUsd(todayPnL), 64 + pnlW + 18, 270)
   }
 
   // ── Sparkline ─────────────────────────────────────────────────────────────
@@ -244,14 +246,14 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     // Value
     ctx.fillStyle = 'rgba(255,255,255,0.5)'
     ctx.font = '13px system-ui, sans-serif'
-    ctx.fillText(fmtUsd(h.value), cx, barY + barH + 45)
+    ctx.fillText(h.value == null ? '••••' : fmtUsd(h.value), cx, barY + barH + 45)
 
     // P&L pct
     const pnlPct = h.pnlPct ?? h.pct24h
     if (pnlPct != null) {
       ctx.fillStyle = pnlPct >= 0 ? '#00e676' : '#ff5252'
       ctx.font = 'bold 13px system-ui, sans-serif'
-      ctx.fillText(fmtPct(pnlPct), cx, barY + barH + 63)
+      ctx.fillText(h.pnl == null ? '••••' : fmtPct(pnlPct), cx, barY + barH + 63)
     }
   })
 
@@ -275,6 +277,21 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   const [ready, setReady] = useState(false)
   const [copied, setCopied] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [hideNumbers, setHideNumbers] = useState(false)
+
+  function redraw(hide) {
+    if (!canvasRef.current) return
+    const masked = hide
+      ? { totalValue: null, totalPnL: null, totalPnLPct: null, topHoldings: topHoldings.map(h => ({ ...h, value: null, pnl: null, pnlPct: null })), todayPnL: null }
+      : { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL }
+    drawCard(canvasRef.current, { ...masked, perfSeries, theme: getThemeColors() })
+  }
+
+  function toggleHide() {
+    const next = !hideNumbers
+    setHideNumbers(next)
+    redraw(next)
+  }
 
   function download() {
     track('portfolio_share_download')
@@ -329,7 +346,26 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
       <div className="share-modal">
         <div className="share-modal-header">
           <span>Share Your Portfolio</span>
-          <button className="share-close" onClick={onClose}>✕</button>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+            <button
+              onClick={toggleHide}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:'0.35rem',
+                padding:'0.3rem 0.7rem', borderRadius:'20px', border:'1px solid rgba(255,255,255,0.15)',
+                background: hideNumbers ? 'rgba(255,255,255,0.12)' : 'none',
+                color: hideNumbers ? '#fff' : 'rgba(255,255,255,0.45)',
+                fontSize:'0.75rem', fontWeight:700, cursor:'pointer',
+              }}
+              title={hideNumbers ? 'Show numbers' : 'Hide numbers'}
+            >
+              {hideNumbers
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+              {hideNumbers ? 'Hidden' : 'Visible'}
+            </button>
+            <button className="share-close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <canvas
