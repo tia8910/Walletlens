@@ -152,6 +152,7 @@ export const TOKEN_UNLOCKS = [
   { coin_id: 'eigenlayer',       symbol: 'EIGEN',severity: 'medium',   unlockPct: 2.5,  nextUnlock: '2025-09-30', note: 'Sep 2025: large early contributor unlock' },
 ]
 
+
 // ── Crypto category map ────────────────────────────────────────────────────
 // Maps CoinGecko coin_id → short category label shown as a badge
 export const CRYPTO_CATEGORIES = {
