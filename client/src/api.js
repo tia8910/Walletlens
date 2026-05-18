@@ -504,6 +504,24 @@ function parseStooqBatchCsv(text) {
 }
 
 async function fetchTwelveDataBatch(tickers) {
+  // ── 0. Same-origin /api/stocks Pages Function — runs server-side, no CORS ──
+  try {
+    const url = `/api/stocks?symbols=${encodeURIComponent(tickers.join(','))}`;
+    const res = await fetchWithTimeout(url, 6000);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object' && !data.error) {
+        const out = {};
+        for (const [sym, q] of Object.entries(data)) {
+          if (typeof q.price === 'number' && q.price > 0) {
+            out[sym.toUpperCase()] = { usd: q.price, usd_24h_change: q.change_pct || 0, name: q.name || sym, source: q.source || 'edge' };
+          }
+        }
+        if (Object.keys(out).length > 0) return out;
+      }
+    }
+  } catch {}
+
   // ── 1. Stooq batch CSV — all tickers in one request, no key, CORS-enabled ──
   try {
     const syms = tickers.map(t => `${t.toLowerCase()}.us`).join('%3B'); // %3B = ;
