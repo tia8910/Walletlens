@@ -1775,4 +1775,6 @@ export const api = {
       country: e.country || '',
     }))
   },
+
+  getFiatRates: fetchFiatRates,
 };
