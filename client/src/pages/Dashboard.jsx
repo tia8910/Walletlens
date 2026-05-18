@@ -1800,7 +1800,9 @@ export default function Dashboard() {
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
   const { theme, setTheme } = useTheme()
-  const [hidden, setHidden]               = useState(false)
+  const [hidden, setHidden]               = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').hideValues === true } catch { return false }
+  })
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
   const [displayCurrency, setDisplayCurrency] = useState(() => {
@@ -2116,7 +2118,12 @@ export default function Dashboard() {
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
-              <button className="dvx-eye-btn" onClick={() => { setHidden(h => { track('hide_values_toggle', { hidden: !h }); return !h }) }} title={hidden ? 'Show values' : 'Hide values'}>
+              <button className="dvx-eye-btn" onClick={() => { setHidden(h => {
+  const next = !h
+  track('hide_values_toggle', { hidden: next })
+  try { const s = JSON.parse(localStorage.getItem('wl_settings') || '{}'); localStorage.setItem('wl_settings', JSON.stringify({ ...s, hideValues: next })) } catch {}
+  return next
+}) }} title={hidden ? 'Show values' : 'Hide values'}>
                 {hidden
                   ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
