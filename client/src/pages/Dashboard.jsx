@@ -2239,8 +2239,20 @@ export default function Dashboard() {
           {/* Tips & quotes banner */}
           <TradeTips />
 
-          {/* Partner exchange strip */}
-          <ExchangePartners compact source="dashboard" />
+          {/* Partner exchange strip — contextual label based on P&L */}
+          {enriched.some(h => categorizeAsset(h) !== 'stocks') && (
+            <div>
+              {totalPnL < 0 && (
+                <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
+                  📉 Buy the dip on
+                </p>
+              )}
+              <ExchangePartners compact source="dashboard" cryptoOnly />
+            </div>
+          )}
+          {enriched.some(h => categorizeAsset(h) === 'stocks') && (
+            <ExchangePartners compact source="dashboard_stocks" stockOnly />
+          )}
 
           {/* AI Decision Engine */}
           {enriched.length > 0 && (
