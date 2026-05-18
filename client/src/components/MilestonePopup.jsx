@@ -16,6 +16,19 @@ function markSeen(key) {
 export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangePct }) {
   const seen = loadSeen()
 
+  // Pre-seed all round milestones already well exceeded so they don't retroactively fire
+  let seenUpdated = false
+  for (const m of ROUND_MILESTONES) {
+    const key = `round_${m}`
+    if (totalValue > m * 1.1 && !seen.has(key)) {
+      seen.add(key)
+      seenUpdated = true
+    }
+  }
+  if (seenUpdated) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...seen])) } catch {}
+  }
+
   // First time P&L turns positive
   if (prevTotalPnL !== null && prevTotalPnL <= 0 && totalPnL > 0) {
     const key = 'first_profit'
