@@ -1260,13 +1260,13 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 function ConstellationMap() {
   const canvasRef = useRef(null)
   const NODES = [
-    { symbol:'BTC', coinId:'bitcoin',     color:'#f7931a', x:0.50, y:0.18 },
-    { symbol:'ETH', coinId:'ethereum',    color:'#627eea', x:0.82, y:0.42 },
-    { symbol:'SOL', coinId:'solana',      color:'#9945ff', x:0.68, y:0.78 },
-    { symbol:'XRP', coinId:'ripple',      color:'#00aae4', x:0.28, y:0.72 },
-    { symbol:'BNB', coinId:'binancecoin', color:'#f3ba2f', x:0.15, y:0.38 },
-    { symbol:'ADA', coinId:'cardano',     color:'#0033ad', x:0.62, y:0.12 },
-    { symbol:'DOT', coinId:'polkadot',    color:'#e6007a', x:0.88, y:0.68 },
+    { symbol:'BTC',  coinId:'bitcoin',    color:'#f7931a', x:0.50, y:0.14 }, // crypto
+    { symbol:'ETH',  coinId:'ethereum',   color:'#627eea', x:0.82, y:0.38 }, // crypto
+    { symbol:'GOLD', coinId:'gold',       color:'#ffd700', x:0.68, y:0.80 }, // gold
+    { symbol:'SLVR', coinId:'silver',     color:'#c0c8d8', x:0.18, y:0.72 }, // silver
+    { symbol:'AAPL', coinId:'apple',      color:'#a2aaad', x:0.12, y:0.32 }, // shares
+    { symbol:'NVDA', coinId:'nvidia',     color:'#76b900', x:0.62, y:0.10 }, // shares
+    { symbol:'USD',  coinId:'usd-coin',   color:'#22c55e', x:0.88, y:0.64 }, // cash
   ]
   // Edges (constellation lines between node indices)
   const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[1,6],[2,6]]
