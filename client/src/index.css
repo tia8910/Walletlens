@@ -2775,7 +2775,7 @@ tr:last-child td { border-bottom: none; }
   display: flex; align-items: center; justify-content: center;
   font-size: 2.4rem;
   cursor: pointer; z-index: 60;
-  border: 4px solid rgba(110, 231, 183, 0.5);
+  border: 4px solid rgba(var(--g-rgb), 0.5);
   animation: lens-pulse-strong 2.3s ease-in-out infinite;
   transition: transform 0.22s ease;
 }
