@@ -58,7 +58,7 @@
    ══════════════════════════════════════════ */
 
 /* ── Gold ── */
-[data-theme="gold"] {
+:root[data-theme="gold"] {
   --g: #f5c542;
   --gd: #d4a017;
   --gl: rgba(245, 197, 66, 0.12);
@@ -89,7 +89,7 @@
 }
 
 /* ── Silver ── */
-[data-theme="silver"] {
+:root[data-theme="silver"] {
   --g: #c0c8d8;
   --gd: #8a96aa;
   --gl: rgba(192, 200, 216, 0.12);
@@ -120,7 +120,7 @@
 }
 
 /* ── Bitcoin (Orange) ── */
-[data-theme="bitcoin"] {
+:root[data-theme="bitcoin"] {
   --g: #f7931a;
   --gd: #c97012;
   --gl: rgba(247, 147, 26, 0.12);
@@ -151,7 +151,7 @@
 }
 
 /* ── Ethereum (Blue) ── */
-[data-theme="ethereum"] {
+:root[data-theme="ethereum"] {
   --g: #627eea;
   --gd: #3a57d4;
   --gl: rgba(98, 126, 234, 0.12);
@@ -181,57 +181,49 @@
   --shadow-glow: 0 0 0 1px rgba(98, 126, 234, 0.25), 0 0 40px rgba(98, 126, 234, 0.15);
 }
 
-/* Theme picker modal */
-.theme-picker-backdrop {
-  position: fixed; inset: 0; z-index: 10000;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-  display: flex; align-items: flex-end; justify-content: center;
-}
-.theme-picker-sheet {
+/* ── Theme strip (top of dashboard) ── */
+.theme-strip {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 0.65rem 1rem 0.5rem;
   background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 24px 24px 0 0;
-  padding: 1.25rem 1.25rem 2rem;
-  width: 100%; max-width: 480px;
-  animation: theme-sheet-up 0.28s cubic-bezier(.22,.68,0,1.2) both;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-@keyframes theme-sheet-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-.theme-picker-handle {
-  width: 36px; height: 4px; border-radius: 2px;
-  background: rgba(255,255,255,0.18); margin: 0 auto 1.1rem;
-}
-.theme-picker-title {
-  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: rgba(255,255,255,0.4);
-  margin-bottom: 1rem; text-align: center;
-}
-.theme-picker-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem;
-}
-.theme-swatch-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
-  background: none; border: none; cursor: pointer; padding: 0;
-}
-.theme-swatch-circle {
-  width: 48px; height: 48px; border-radius: 50%;
-  border: 3px solid transparent;
-  transition: all 0.2s;
+.theme-strip-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  background: none; border: none; cursor: pointer; padding: 0.35rem 0.5rem;
+  border-radius: 14px;
   position: relative;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  transition: background 0.2s;
 }
-.theme-swatch-btn.active .theme-swatch-circle {
-  border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--g), 0 4px 16px rgba(0,0,0,0.5);
+.theme-strip-btn:hover { background: rgba(255,255,255,0.06); }
+.theme-strip-active { background: rgba(255,255,255,0.08) !important; }
+
+.theme-strip-icon {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700;
+  color: rgba(0,0,0,0.75);
+  transition: transform 0.22s, box-shadow 0.22s;
+  border: 2px solid transparent;
 }
-.theme-swatch-label {
-  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
-  color: rgba(255,255,255,0.55); text-align: center;
-  text-transform: uppercase;
+.theme-strip-active .theme-strip-icon {
+  transform: scale(1.18);
+  border-color: rgba(255,255,255,0.55);
 }
-.theme-swatch-btn.active .theme-swatch-label { color: var(--g); }
+.theme-strip-btn:hover .theme-strip-icon { transform: scale(1.1); }
+
+.theme-strip-label {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+  line-height: 1;
+}
+.theme-strip-active .theme-strip-label { color: var(--g); }
+
+.theme-strip-dot {
+  position: absolute; bottom: 0.15rem; left: 50%; transform: translateX(-50%);
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--g);
+}
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
