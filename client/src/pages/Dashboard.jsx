@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { api } from '../api'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
@@ -2735,6 +2735,7 @@ export default function Dashboard() {
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
                                         <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                         {(() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
+                                        {(() => { const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id); return u ? <span className="dvx-cat-badge" style={{ background: u.severity === 'critical' ? 'rgba(248,113,113,0.15)' : u.severity === 'high' ? 'rgba(245,158,11,0.15)' : 'rgba(96,165,250,0.15)', color: u.severity === 'critical' ? '#f87171' : u.severity === 'high' ? '#f59e0b' : '#60a5fa', borderColor: u.severity === 'critical' ? '#f8717155' : u.severity === 'high' ? '#f59e0b55' : '#60a5fa55' }} title={u.note}>🔓 {u.unlockPct}%/mo</span> : null })()}
                                       </div>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>

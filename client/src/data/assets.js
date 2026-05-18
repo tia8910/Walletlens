@@ -127,6 +127,31 @@ export function assetClass(id) {
 
 export function isCrypto(id) { return assetClass(id) === 'crypto' }
 
+// ── Token Unlock Database ──────────────────────────────────────────────────
+// severity: 'critical' >5%/mo, 'high' 2-5%/mo, 'medium' 0.5-2%/mo of circulating supply
+export const TOKEN_UNLOCKS = [
+  { coin_id: 'aptos',            symbol: 'APT',  severity: 'critical', unlockPct: 6.8,  nextUnlock: null,          note: '~6.8% of supply monthly from foundation/team vesting' },
+  { coin_id: 'sui',              symbol: 'SUI',  severity: 'critical', unlockPct: 5.2,  nextUnlock: null,          note: '~5.2% monthly — large investor + team cliff unlocks ongoing' },
+  { coin_id: 'starknet',         symbol: 'STRK', severity: 'critical', unlockPct: 8.1,  nextUnlock: '2025-09-01', note: '~8% monthly; massive team/investor unlocks through 2026' },
+  { coin_id: 'zksync',           symbol: 'ZK',   severity: 'critical', unlockPct: 7.4,  nextUnlock: '2025-06-17', note: '17 Jun 2025: large 1-year cliff for early investors' },
+  { coin_id: 'sei-network',      symbol: 'SEI',  severity: 'critical', unlockPct: 4.9,  nextUnlock: null,          note: 'Ongoing large team & ecosystem unlocks' },
+  { coin_id: 'arbitrum',         symbol: 'ARB',  severity: 'high',     unlockPct: 3.0,  nextUnlock: null,          note: 'Investor/team linear vesting through Mar 2027' },
+  { coin_id: 'optimism',         symbol: 'OP',   severity: 'high',     unlockPct: 2.8,  nextUnlock: '2026-05-31', note: 'Ongoing ecosystem + investor unlocks' },
+  { coin_id: 'celestia',         symbol: 'TIA',  severity: 'high',     unlockPct: 4.2,  nextUnlock: null,          note: 'Rapid linear unlock of investor/team allocation' },
+  { coin_id: 'blur',             symbol: 'BLUR', severity: 'high',     unlockPct: 3.5,  nextUnlock: null,          note: 'Ongoing community + team emissions' },
+  { coin_id: 'dydx',             symbol: 'DYDX', severity: 'high',     unlockPct: 2.4,  nextUnlock: null,          note: 'Investor vesting continues through 2026' },
+  { coin_id: 'immutable-x',      symbol: 'IMX',  severity: 'high',     unlockPct: 2.1,  nextUnlock: null,          note: 'Project development & investor token releases' },
+  { coin_id: 'worldcoin-wld',    symbol: 'WLD',  severity: 'high',     unlockPct: 3.8,  nextUnlock: '2025-07-24', note: '24 Jul 2025: large team unlock (~440M WLD)' },
+  { coin_id: 'wormhole',         symbol: 'W',    severity: 'high',     unlockPct: 4.0,  nextUnlock: null,          note: 'Heavy contributor & ecosystem vesting schedule' },
+  { coin_id: 'pyth-network',     symbol: 'PYTH', severity: 'high',     unlockPct: 2.6,  nextUnlock: null,          note: 'Publisher rewards + early contributor unlock' },
+  { coin_id: 'jito-governance-token', symbol: 'JTO', severity: 'high', unlockPct: 2.3,  nextUnlock: null,          note: 'Insider + team linear vesting' },
+  { coin_id: 'avalanche-2',      symbol: 'AVAX', severity: 'medium',   unlockPct: 1.2,  nextUnlock: null,          note: 'Foundation + team ongoing emissions' },
+  { coin_id: 'near',             symbol: 'NEAR', severity: 'medium',   unlockPct: 1.4,  nextUnlock: null,          note: 'Ecosystem grants & team vesting' },
+  { coin_id: 'apecoin',          symbol: 'APE',  severity: 'medium',   unlockPct: 1.8,  nextUnlock: null,          note: 'DAO treasury + contributor unlocks' },
+  { coin_id: 'gmx',              symbol: 'GMX',  severity: 'medium',   unlockPct: 1.0,  nextUnlock: null,          note: 'Protocol incentive emissions' },
+  { coin_id: 'eigenlayer',       symbol: 'EIGEN',severity: 'medium',   unlockPct: 2.5,  nextUnlock: '2025-09-30', note: 'Sep 2025: large early contributor unlock' },
+]
+
 // ── Crypto category map ────────────────────────────────────────────────────
 // Maps CoinGecko coin_id → short category label shown as a badge
 export const CRYPTO_CATEGORIES = {

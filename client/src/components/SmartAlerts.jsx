@@ -2,6 +2,86 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
+import { TOKEN_UNLOCKS } from '../data/assets'
+
+// ── Token Unlock Database is defined in data/assets.js ──────────────────────
+
+const UNLOCK_SEVERITY = {
+  critical: { color: '#f87171', bg: 'rgba(248,113,113,0.10)', icon: '🔓', label: 'Critical Unlock' },
+  high:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)',  icon: '🔓', label: 'High Unlock'     },
+  medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',  icon: '🔔', label: 'Unlock Watch'    },
+}
+
+function TokenUnlockAlerts({ enriched }) {
+  const [expanded, setExpanded] = useState(false)
+  const holdingIds = new Set((enriched || []).map(h => h.coin_id))
+  const matches = TOKEN_UNLOCKS.filter(u => holdingIds.has(u.coin_id))
+  if (!matches.length) return null
+
+  const critCount = matches.filter(m => m.severity === 'critical').length
+  const highCount = matches.filter(m => m.severity === 'high').length
+  const shown = expanded ? matches : matches.slice(0, 3)
+
+  return (
+    <div className="tua-root">
+      <div className="tua-header" onClick={() => setExpanded(v => !v)}>
+        <span className="tua-header-icon">🔓</span>
+        <div className="tua-header-text">
+          <span className="tua-header-title">Token Unlock Alerts</span>
+          <span className="tua-header-sub">
+            {critCount > 0 && <span style={{ color: '#f87171' }}>{critCount} critical</span>}
+            {critCount > 0 && highCount > 0 && ' · '}
+            {highCount > 0 && <span style={{ color: '#f59e0b' }}>{highCount} high</span>}
+            {' '}{matches.length} of your holdings have unlock pressure
+          </span>
+        </div>
+        <span className="tua-chevron">{expanded ? '▲' : '▼'}</span>
+      </div>
+
+      {expanded && (
+        <div className="tua-list">
+          {shown.map(u => {
+            const sev = UNLOCK_SEVERITY[u.severity]
+            const daysUntil = u.nextUnlock ? Math.round((new Date(u.nextUnlock) - Date.now()) / 86400000) : null
+            return (
+              <div key={u.coin_id} className="tua-card" style={{ background: sev.bg, borderColor: sev.color + '33' }}>
+                <div className="tua-card-top">
+                  <CoinLogo coinId={u.coin_id} symbol={u.symbol} size={28} />
+                  <div className="tua-card-info">
+                    <div className="tua-card-sym">
+                      <strong>{u.symbol}</strong>
+                      <span className="tua-sev-pill" style={{ color: sev.color, borderColor: sev.color + '55', background: sev.color + '18' }}>
+                        {sev.icon} {sev.label}
+                      </span>
+                    </div>
+                    <div className="tua-card-note">{u.note}</div>
+                  </div>
+                  <div className="tua-card-right">
+                    <span className="tua-unlock-pct" style={{ color: sev.color }}>~{u.unlockPct}%/mo</span>
+                    {daysUntil !== null && daysUntil > 0 && (
+                      <span className="tua-next-unlock">Next cliff: {daysUntil}d</span>
+                    )}
+                    {daysUntil !== null && daysUntil <= 0 && (
+                      <span className="tua-next-unlock" style={{ color: '#f87171' }}>Unlock now!</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {matches.length > 3 && (
+            <button className="tua-show-more" onClick={() => setExpanded(v => !v)}>
+              {expanded && shown.length === matches.length ? '▲ Show less' : `▼ Show all ${matches.length}`}
+            </button>
+          )}
+          <a href="https://token.unlocks.app" target="_blank" rel="noopener noreferrer" className="tua-source-link">
+            📅 View full unlock calendar → token.unlocks.app
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Storage ────────────────────────────────────────────────────────────────
 const SK_ALERTS  = 'wl_smart_alerts'
@@ -328,6 +408,9 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           </div>
         </div>
       )}
+
+      {/* ── Token Unlock Alerts ── */}
+      <TokenUnlockAlerts enriched={enriched} />
 
       {/* ── Header ── */}
       <div className="sa-header">

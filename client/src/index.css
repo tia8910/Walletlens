@@ -6820,6 +6820,30 @@ input[type="date"] { color-scheme: dark; }
 }
 
 /* ── Smart Alerts 2.0 ─────────────────────────────────────────────────── */
+/* ── Token Unlock Alerts ── */
+.tua-root { background: rgba(255,255,255,0.03); border: 1px solid rgba(248,113,113,0.2); border-radius: 14px; overflow: hidden; }
+.tua-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; cursor: pointer; user-select: none; }
+.tua-header:hover { background: rgba(255,255,255,0.03); }
+.tua-header-icon { font-size: 1.3rem; }
+.tua-header-text { flex: 1; }
+.tua-header-title { font-weight: 700; color: #fff; font-size: 0.9rem; display: block; }
+.tua-header-sub { font-size: 0.73rem; color: rgba(255,255,255,0.45); }
+.tua-chevron { font-size: 0.7rem; color: rgba(255,255,255,0.3); }
+.tua-list { padding: 0 0.75rem 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.tua-card { border: 1px solid; border-radius: 10px; padding: 0.65rem 0.75rem; }
+.tua-card-top { display: flex; align-items: flex-start; gap: 0.65rem; }
+.tua-card-info { flex: 1; min-width: 0; }
+.tua-card-sym { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
+.tua-card-sym strong { color: #fff; font-size: 0.88rem; }
+.tua-sev-pill { font-size: 0.62rem; font-weight: 700; padding: 0.07rem 0.45rem; border-radius: 20px; border: 1px solid; }
+.tua-card-note { font-size: 0.7rem; color: rgba(255,255,255,0.45); line-height: 1.4; }
+.tua-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; flex-shrink: 0; }
+.tua-unlock-pct { font-size: 0.8rem; font-weight: 800; }
+.tua-next-unlock { font-size: 0.65rem; color: rgba(255,255,255,0.4); white-space: nowrap; }
+.tua-show-more { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 0.72rem; padding: 0.35rem 0.75rem; cursor: pointer; width: 100%; margin-top: 0.25rem; }
+.tua-source-link { display: block; text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.3); padding: 0.5rem 0 0.25rem; text-decoration: none; }
+.tua-source-link:hover { color: rgba(255,255,255,0.6); }
+
 .sa-root { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem; position: relative; }
 
 .sa-toast {
