@@ -298,6 +298,9 @@ export default function App() {
         <NavLink to="/whales" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'whales' })}><IconWhale /><span>{t('whales')}</span></NavLink>
         <NavLink to="/alpha" className="wl-nav-item wl-nav-alpha" onClick={() => track('bottom_nav', { to: 'alpha' })}><IconAlpha /><span>Alpha</span></NavLink>
       </nav>
+      <div className="wl-cf-badge-bar">
+        <img src="/cf-badge.png" alt="Protected by Cloudflare" className="wl-cf-badge" />
+      </div>
     </div>
   )
 }

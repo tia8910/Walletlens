@@ -3656,13 +3656,31 @@ tr:last-child td { border-bottom: none; }
   flex: 1;
   width: 100%;
   padding-top: 100px; /* topbar height + ticker */
-  padding-bottom: 4.5rem; /* bottom nav */
+  padding-bottom: 7rem; /* bottom nav + cf badge bar */
 }
 
 /* Bottom nav */
-.wl-bottom-nav {
+.wl-cf-badge-bar {
   position: fixed;
   bottom: 0; left: 0; right: 0;
+  z-index: 199;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.35rem 0 env(safe-area-inset-bottom, 0.35rem);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.wl-cf-badge {
+  height: 28px;
+  width: auto;
+  opacity: 0.85;
+  border-radius: 6px;
+}
+.wl-bottom-nav {
+  position: fixed;
+  bottom: calc(28px + 0.7rem + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
   z-index: 200;
   display: flex;
   background: var(--card-bg);
