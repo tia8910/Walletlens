@@ -493,6 +493,7 @@ export default function Landing() {
           <Logo size={24} />
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
+        <img src="/cf-badge.png" alt="Protected by Cloudflare" className="lp-cf-badge" />
         <nav className="lp-footer-links">
           <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
           <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>

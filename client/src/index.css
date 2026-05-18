@@ -5066,6 +5066,7 @@ input[type="date"] { color-scheme: dark; }
 /* Landing footer update */
 .lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
 .lp-footer-brand { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; }
+.lp-cf-badge { height: 32px; width: auto; border-radius: 7px; opacity: 0.9; }
 .lp-footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
 .lp-footer-links a { color: var(--muted); text-decoration: none; font-size: .85rem; transition: color .15s; }
 .lp-footer-links a:hover { color: #00e676; }
