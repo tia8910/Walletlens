@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { api } from '../api'
+import { POPULAR_FIAT } from '../data/assets'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
@@ -1787,6 +1788,24 @@ export default function Dashboard() {
   const [hidden, setHidden]               = useState(false)
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
+  const [displayCurrency, setDisplayCurrency] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').displayCurrency || 'USD' } catch { return 'USD' }
+  })
+  const [fxRates, setFxRates] = useState({})
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+
+  useEffect(() => {
+    api.getFiatRates().then(r => setFxRates(r || {})).catch(() => {})
+  }, [])
+
+  function saveCurrency(code) {
+    setDisplayCurrency(code)
+    setShowCurrencyPicker(false)
+    try {
+      const s = JSON.parse(localStorage.getItem('wl_settings') || '{}')
+      localStorage.setItem('wl_settings', JSON.stringify({ ...s, displayCurrency: code }))
+    } catch {}
+  }
 
   useEffect(() => {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
@@ -2079,8 +2098,46 @@ export default function Dashboard() {
               </button>
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
-              {hidden ? '••••••' : `$${fmt(loaded ? tickerValue : 0)}`}
+              {hidden ? '••••••' : (() => {
+                const usdVal = loaded ? tickerValue : 0
+                if (displayCurrency === 'BTC') {
+                  const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price
+                  return btcPrice ? `₿ ${(usdVal / btcPrice).toFixed(6)}` : `$${fmt(usdVal)}`
+                }
+                const fiat = POPULAR_FIAT.find(f => f.code === displayCurrency)
+                const rate = fxRates[displayCurrency] || (displayCurrency === 'USD' ? 1 : null)
+                return rate ? `${fiat?.symbol || displayCurrency} ${fmt(usdVal * rate)}` : `$${fmt(usdVal)}`
+              })()}
             </h2>
+            <div className="dvx-currency-switcher">
+              {[...POPULAR_FIAT.slice(0, 3).map(f => f.code), 'BTC'].map(code => (
+                <button
+                  key={code}
+                  className={`dvx-currency-pill${displayCurrency === code ? ' active' : ''}`}
+                  onClick={() => saveCurrency(code)}
+                >
+                  {code === 'BTC' ? '₿' : code}
+                </button>
+              ))}
+              <button
+                className={`dvx-currency-pill${!['USD','EUR','GBP','BTC'].includes(displayCurrency) ? ' active' : ''}`}
+                onClick={() => setShowCurrencyPicker(p => !p)}
+                title="More currencies"
+              >
+                {!['USD','EUR','GBP','BTC'].includes(displayCurrency)
+                  ? (POPULAR_FIAT.find(f => f.code === displayCurrency)?.symbol || displayCurrency)
+                  : '···'}
+              </button>
+              {showCurrencyPicker && (
+                <div className="dvx-currency-dropdown">
+                  {POPULAR_FIAT.filter(f => !['USD','EUR','GBP'].includes(f.code)).map(f => (
+                    <button key={f.code} className={`dvx-currency-opt${displayCurrency === f.code ? ' active' : ''}`} onClick={() => saveCurrency(f.code)}>
+                      {f.symbol} {f.code} <span>{f.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {!pricesFailed && totalPnL !== 0 && (
               <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'} ${hidden ? 'dvx-hidden-val' : ''}`}>
                 {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) ${t('allTime')}`}
