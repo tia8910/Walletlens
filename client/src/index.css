@@ -6905,3 +6905,44 @@ input[type="date"] { color-scheme: dark; }
   background: rgba(var(--g-rgb),0.14); border-color: rgba(var(--g-rgb),0.4); color: var(--g);
 }
 .sa-alert-tab:hover:not(.active) { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
+
+/* ── Risk Budget ─────────────────────────────────────────────────────── */
+.rb-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
+.rb-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+.rb-sum-card {
+  flex: 1; min-width: 100px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+  padding: 0.6rem 0.85rem; display: flex; flex-direction: column; gap: 0.2rem;
+}
+.rb-sum-card.rb-alert { border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
+.rb-sum-label { font-size: 0.68rem; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.rb-sum-val { font-size: 1rem; font-weight: 700; color: #fff; }
+.rb-row {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.65rem;
+  transition: border-color 0.2s;
+}
+.rb-row--alert { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.06); }
+.rb-row-header { display: flex; align-items: center; gap: 0.75rem; }
+.rb-row-name { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
+.rb-sym { font-size: 0.95rem; font-weight: 700; color: #fff; }
+.rb-alloc { font-size: 0.72rem; color: rgba(255,255,255,0.4); }
+.rb-budget-input-wrap { display: flex; align-items: center; gap: 0.3rem; }
+.rb-input {
+  width: 68px; padding: 0.35rem 0.5rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; text-align: right; outline: none;
+}
+.rb-input:focus { border-color: rgba(var(--g-rgb),0.6); background: rgba(var(--g-rgb),0.08); }
+.rb-pct-label { font-size: 0.8rem; color: rgba(255,255,255,0.5); font-weight: 600; }
+.rb-bar-wrap { display: flex; flex-direction: column; gap: 0.35rem; }
+.rb-bar-track {
+  height: 6px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden;
+}
+.rb-bar-fill {
+  height: 100%; border-radius: 6px; background: var(--g); transition: width 0.4s ease;
+}
+.rb-bar-fill.rb-bar--warn { background: #f59e0b; }
+.rb-bar-fill.rb-bar--danger { background: #f87171; }
+.rb-bar-labels { display: flex; justify-content: space-between; font-size: 0.72rem; }
+.rb-hint { font-size: 0.72rem; color: rgba(255,255,255,0.3); text-align: center; margin-top: 0.5rem; line-height: 1.5; }
