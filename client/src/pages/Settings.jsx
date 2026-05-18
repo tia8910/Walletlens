@@ -84,7 +84,12 @@ export default function Settings() {
                   background: `radial-gradient(circle at 35% 35%, ${t.light}, ${t.swatch})`,
                   border: colorTheme === t.id ? '2px solid white' : '2px solid transparent',
                   fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{t.icon}</span>
+                  overflow: 'hidden', padding: 0,
+                }}>
+                  {t.logo
+                    ? <img src={t.logo} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : t.icon}
+                </span>
                 {t.name}
               </button>
             ))}
