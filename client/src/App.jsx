@@ -1,5 +1,4 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
-import cfBadge from './assets/cf-badge.png'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 const Landing   = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -207,28 +206,6 @@ export default function App() {
     }
   }, [])
 
-  useEffect(() => {
-    if (document.getElementById('wl-cf-bar')) return
-    const bar = document.createElement('div')
-    bar.id = 'wl-cf-bar'
-    Object.assign(bar.style, {
-      position: 'fixed', bottom: '0', left: '0', right: '0',
-      height: '36px', zIndex: '99999',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
-      borderTop: '1px solid rgba(255,255,255,0.08)',
-    })
-    const img = document.createElement('img')
-    img.src = cfBadge
-    img.alt = 'Protected by Cloudflare'
-    Object.assign(img.style, { height: '24px', width: 'auto', borderRadius: '5px', opacity: '0.9' })
-    bar.appendChild(img)
-    document.body.appendChild(bar)
-    // push bottom nav up
-    const nav = document.querySelector('.wl-bottom-nav')
-    if (nav) nav.style.bottom = '36px'
-    return () => { bar.remove() }
-  }, [])
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
   // Fire GA page_view on every SPA route change
