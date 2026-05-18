@@ -163,7 +163,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     searchTimer.current = setTimeout(async () => {
       const res = await api.searchCoins(coinSearch).catch(() => [])
       setCoinResults(res.slice(0, 8))
-    }, 350)
+    }, 200)
     return () => clearTimeout(searchTimer.current)
   }, [coinSearch, selectedCoin, category])
 

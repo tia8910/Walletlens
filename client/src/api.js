@@ -68,7 +68,7 @@ const CORS_PROXIES = [
 
 // Per-attempt timeout for any single fetch — without this, a slow proxy
 // can stall the whole pipeline for 30s+ before failing over.
-const FETCH_TIMEOUT_MS = 4500;
+const FETCH_TIMEOUT_MS = 3000;
 async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), ms);
@@ -125,6 +125,32 @@ let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
+
+// Pre-warm Binance prices for the most-traded coins in the background
+// so the trade sheet gets an instant cache hit instead of waiting on fetch.
+const TOP_BINANCE_TICKERS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','ADAUSDT','DOGEUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','LTCUSDT','BCHUSDT','NEARUSDT','ARBUSDT','OPUSDT','SUIUSDT'];
+const TOP_BINANCE_ID = {'BTC':'bitcoin','ETH':'ethereum','BNB':'binancecoin','SOL':'solana','XRP':'ripple','ADA':'cardano','DOGE':'dogecoin','AVAX':'avalanche-2','DOT':'polkadot','LINK':'chainlink','LTC':'litecoin','BCH':'bitcoin-cash','NEAR':'near','ARB':'arbitrum','OP':'optimism','SUI':'sui'};
+setTimeout(() => {
+  if (Object.keys(priceCache).length > 0) return; // already warm
+  fetchWithTimeout('https://api.binance.com/api/v3/ticker/price', 5000).then(async r => {
+    if (!r?.ok) return;
+    const list = await r.json();
+    if (!Array.isArray(list)) return;
+    const wanted = new Set(TOP_BINANCE_TICKERS);
+    const now = Date.now();
+    for (const row of list) {
+      if (!wanted.has(row.symbol)) continue;
+      const tkr = row.symbol.replace(/USDT$/, '');
+      const id = TOP_BINANCE_ID[tkr];
+      if (!id) continue;
+      const usd = parseFloat(row.price);
+      if (!isFinite(usd) || usd <= 0) continue;
+      priceCache[id] = { ...(priceCache[id] || {}), usd, symbol: tkr, source: 'binance' };
+    }
+    lastPriceFetch = now;
+    _saveCache(PRICE_CACHE_KEY, priceCache);
+  }).catch(() => {});
+}, 800);
 
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
 // where the slug doesn't match the exchange ticker. Anything not listed
@@ -701,7 +727,7 @@ export const api = {
             // tickers locally so unknown symbols can never poison the batch.
             if (tradeable.length > 0) {
               try {
-                const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', 7000);
+                const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', 4500);
                 if (res.ok) {
                   const list = await res.json();
                   if (Array.isArray(list)) {
@@ -741,29 +767,30 @@ export const api = {
             if (stableIds.length > 0) _saveCache(PRICE_CACHE_KEY, priceCache);
           } catch {}
 
-          // Anything Binance couldn't resolve falls through to CoinGecko/CoinCap below.
-          // Primary: CoinGecko /coins/markets — returns price, 24h change,
-          // market cap AND image in one shot, so the separate getCoinImages
-          // call gets a free piggyback fill.
-          const data = await fetchJSON(
-            `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${cryptoIds.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
-          );
-          if (Array.isArray(data) && data.length > 0) {
-            for (const c of data) {
-              if (!c?.id) continue;
-              priceCache[c.id] = {
-                usd: c.current_price,
-                usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
-                usd_market_cap: c.market_cap || 0,
-                name: c.name,
-                symbol: c.symbol,
-              };
-              if (c.image) coinImageCache[c.id] = c.image;
+          // Only call CoinGecko for IDs Binance didn't fill — skip the whole
+          // round-trip if Binance covered everything (common case for top coins).
+          const afterBinance = cryptoIds.filter(id => !priceCache[id]);
+          if (afterBinance.length > 0) {
+            const data = await fetchJSON(
+              `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${afterBinance.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
+            );
+            if (Array.isArray(data) && data.length > 0) {
+              for (const c of data) {
+                if (!c?.id) continue;
+                priceCache[c.id] = {
+                  usd: c.current_price,
+                  usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                  usd_market_cap: c.market_cap || 0,
+                  name: c.name,
+                  symbol: c.symbol,
+                };
+                if (c.image) coinImageCache[c.id] = c.image;
+              }
+              lastPriceFetch = now;
+              lastImageFetch = now;
+              _saveCache(PRICE_CACHE_KEY, priceCache);
+              _saveCache(IMAGE_CACHE_KEY, coinImageCache);
             }
-            lastPriceFetch = now;
-            lastImageFetch = now;
-            _saveCache(PRICE_CACHE_KEY, priceCache);
-            _saveCache(IMAGE_CACHE_KEY, coinImageCache);
           }
           // Fallback: CoinCap for any IDs still missing
           const missing = cryptoIds.filter(id => !priceCache[id]);
@@ -805,7 +832,7 @@ export const api = {
               const pid = PAPRIKA_ID_MAP[id];
               if (!pid) return;
               try {
-                const res = await fetchWithTimeout(`https://api.coinpaprika.com/v1/tickers/${pid}`, 5000);
+                const res = await fetchWithTimeout(`https://api.coinpaprika.com/v1/tickers/${pid}`, 3000);
                 if (res.ok) {
                   const d = await res.json();
                   const usd = d?.quotes?.USD?.price;
