@@ -79,11 +79,9 @@ function drawSparkline(ctx, series, x, y, w, h, positive) {
 }
 
 function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, perfSeries, theme }) {
-  const W = 1200, H = 630, dpr = 1
+  const W = 1200, H = 630, dpr = window.devicePixelRatio || 1
   canvas.width = W * dpr
   canvas.height = H * dpr
-  canvas.style.width = W + 'px'
-  canvas.style.height = H + 'px'
   const ctx = canvas.getContext('2d')
   ctx.scale(dpr, dpr)
 
