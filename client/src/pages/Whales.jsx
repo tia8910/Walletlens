@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+
+const SmartAlerts = lazy(() => import('../components/SmartAlerts'))
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '–'
@@ -102,6 +104,7 @@ export default function Whales() {
 
       <div className="whale-tabs">
         {[
+          { k: 'smart', l: '⚡ Smart Alerts' },
           { k: 'movers', l: 'Top Movers' },
           { k: 'volume', l: 'Volume Anomalies' },
           { k: 'trending', l: 'Trending' },
@@ -119,7 +122,13 @@ export default function Whales() {
         ))}
       </div>
 
-      {loading && <div className="card"><p className="muted">Loading whale signals…</p></div>}
+      {tab === 'smart' && (
+        <Suspense fallback={<div className="card"><p className="muted">Loading…</p></div>}>
+          <SmartAlerts enriched={[]} prices={{}} />
+        </Suspense>
+      )}
+
+      {loading && tab !== 'smart' && <div className="card"><p className="muted">Loading whale signals…</p></div>}
 
       {!loading && tab === 'movers' && (
         <>
