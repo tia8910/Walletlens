@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 const Landing   = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -298,9 +299,12 @@ export default function App() {
         <NavLink to="/whales" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'whales' })}><IconWhale /><span>{t('whales')}</span></NavLink>
         <NavLink to="/alpha" className="wl-nav-item wl-nav-alpha" onClick={() => track('bottom_nav', { to: 'alpha' })}><IconAlpha /><span>Alpha</span></NavLink>
       </nav>
-      <div className="wl-cf-badge-bar">
-        <img src="/cf-badge.png" alt="Protected by Cloudflare" className="wl-cf-badge" />
-      </div>
+      {createPortal(
+        <div className="wl-cf-badge-bar">
+          <img src="/cf-badge.png" alt="Protected by Cloudflare" className="wl-cf-badge" />
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
