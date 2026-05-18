@@ -18,7 +18,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
 
   // Pre-seed milestones already exceeded so they don't retroactively fire
   let seenUpdated = false
-  // If portfolio is already in profit, mark first_profit as seen
+  // If portfolio is already in profit on first load, mark first_profit as seen
   if (totalPnL > 0 && prevTotalPnL === null && !seen.has('first_profit')) {
     seen.add('first_profit')
     seenUpdated = true
