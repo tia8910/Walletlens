@@ -456,10 +456,10 @@ async function fetchFiatRates() {
     if (res.ok) {
       const data = await res.json();
       if (data?.rates) {
-        // rates[X] = X per 1 USD. We want usd_per_unit = 1 / rates[X].
+        // rates[X] = X per 1 USD — store as-is for direct multiplication
         const out = { USD: 1 };
         for (const [code, perUsd] of Object.entries(data.rates)) {
-          if (typeof perUsd === 'number' && perUsd > 0) out[code] = 1 / perUsd;
+          if (typeof perUsd === 'number' && perUsd > 0) out[code] = perUsd;
         }
         fiatRatesCache = out;
         fiatRatesCacheTime = now;
@@ -476,7 +476,7 @@ async function fetchFiatRates() {
       if (data?.rates) {
         const out = { USD: 1 };
         for (const [code, perUsd] of Object.entries(data.rates)) {
-          if (typeof perUsd === 'number' && perUsd > 0) out[code] = 1 / perUsd;
+          if (typeof perUsd === 'number' && perUsd > 0) out[code] = perUsd;
         }
         fiatRatesCache = out;
         fiatRatesCacheTime = now;
