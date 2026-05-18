@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import cfBadge from './assets/cf-badge.png'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 const Landing   = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -301,7 +302,7 @@ export default function App() {
       </nav>
       {createPortal(
         <div className="wl-cf-badge-bar">
-          <img src="/cf-badge.png" alt="Protected by Cloudflare" className="wl-cf-badge" />
+          <img src={cfBadge} alt="Protected by Cloudflare" className="wl-cf-badge" />
         </div>,
         document.body
       )}
