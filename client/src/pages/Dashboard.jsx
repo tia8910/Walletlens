@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { api } from '../api'
-import { POPULAR_FIAT } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS } from '../data/assets'
 import TradeSheet from '../components/TradeSheet'
 import ShareCard from '../components/ShareCard'
 import TradeTips from '../components/TradeTips'
@@ -99,6 +99,18 @@ function categorizeAsset(h) {
   return 'crypto'
 }
 
+// Returns { label, color } category badge for a holding
+function getAssetCategoryBadge(h) {
+  const id = h.coin_id || ''
+  if (id.startsWith('stock:')) {
+    const sector = getStockSector(id) || 'Stock'
+    return { label: sector, color: STOCK_SECTOR_COLORS[sector] || '#6366f1' }
+  }
+  const cat = getCryptoCategory(id)
+  if (cat) return { label: cat, color: CRYPTO_CATEGORY_COLORS[cat] || '#6366f1' }
+  return null
+}
+
 const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
 const CATEGORY_LABELS = {
   crypto: '₿ Crypto',
@@ -139,13 +151,25 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const tierSet = new Set(enriched.map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
   const tierScore = Math.min(100, tierSet.size * 28)
 
+  // 6. Crypto category diversity (L1, DeFi, AI, RWA, etc.)
+  const cryptoHoldings = enriched.filter(h => categorizeAsset(h) === 'crypto')
+  const cryptoCatSet = new Set(cryptoHoldings.map(h => getCryptoCategory(h.coin_id)).filter(Boolean))
+  const cryptoCatScore = cryptoHoldings.length === 0 ? 50 : Math.min(100, cryptoCatSet.size * 22)
+
+  // 7. Stock sector diversity
+  const stockHoldings = enriched.filter(h => categorizeAsset(h) === 'stocks')
+  const stockSectorSet = new Set(stockHoldings.map(h => getStockSector(h.coin_id)).filter(Boolean))
+  const stockSectorScore = stockHoldings.length === 0 ? 50 : Math.min(100, stockSectorSet.size * 30)
+
   // Overall health score (weighted average)
   const health = Math.round(
-    concentrationScore * 0.30 +
-    assetScore         * 0.20 +
+    concentrationScore * 0.25 +
+    assetScore         * 0.15 +
     momentumScore      * 0.15 +
     pnlHealth          * 0.20 +
-    tierScore          * 0.15
+    tierScore          * 0.10 +
+    cryptoCatScore     * 0.10 +
+    stockSectorScore   * 0.05
   )
 
   // Grade
@@ -198,6 +222,24 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const cryptoTierSet = new Set(enriched.filter(h => categorizeAsset(h) === 'crypto').map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
   if (cryptoTierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${cryptoTierSet.size} crypto market-cap tiers — balanced risk profile.` })
   else if (hasCrypto && !cryptoTierSet.has('mid') && !cryptoTierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap crypto — mid/small-cap exposure could boost upside.' })
+
+  // Crypto category diversity insight
+  if (cryptoCatSet.size >= 3) {
+    insights.push({ type: 'good', text: `Crypto holdings span ${cryptoCatSet.size} categories (${[...cryptoCatSet].join(', ')}) — good sector diversification.` })
+  } else if (cryptoHoldings.length >= 3 && cryptoCatSet.size <= 1) {
+    insights.push({ type: 'warn', text: `All crypto in ${cryptoCatSet.size === 1 ? [...cryptoCatSet][0] : 'one'} category — consider adding DeFi, AI, or RWA exposure.` })
+  } else if (cryptoCatSet.size === 2) {
+    insights.push({ type: 'info', text: `Crypto covers ${[...cryptoCatSet].join(' & ')} — diversifying into more categories reduces sector risk.` })
+  }
+
+  // Stock sector diversity insight
+  if (stockHoldings.length >= 2) {
+    if (stockSectorSet.size >= 3) {
+      insights.push({ type: 'good', text: `Stocks span ${stockSectorSet.size} sectors (${[...stockSectorSet].join(', ')}) — well diversified.` })
+    } else if (stockSectorSet.size === 1) {
+      insights.push({ type: 'warn', text: `All stocks in ${[...stockSectorSet][0]} sector — sector concentration risk. Consider adding Healthcare, Finance, or Consumer.` })
+    }
+  }
 
   // Indicators
   const riskLevel = hhiNorm > 0.6 ? 'High' : hhiNorm > 0.3 ? 'Medium' : 'Low'
@@ -273,6 +315,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   return {
     health, grade, gradeColor,
     concentrationScore, assetScore, momentumScore: Math.round(momentumScore), pnlHealth: Math.round(pnlHealth), tierScore,
+    cryptoCatScore, stockSectorScore, cryptoCategories: [...cryptoCatSet], stockSectors: [...stockSectorSet],
     hhi, momentum, riskLevel, riskColor,
     mcBreakdown, insights,
     sentiment, sentimentColor, buyCount, sellCount,
@@ -2689,7 +2732,10 @@ export default function Dashboard() {
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                                     <div className="dvx-holding-meta">
-                                      <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                      <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
+                                        <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                        {(() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
+                                      </div>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
                                           Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>
