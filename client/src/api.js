@@ -787,6 +787,41 @@ export const api = {
               _saveCache(PRICE_CACHE_KEY, priceCache);
             }
           }
+          // Last resort: CoinPaprika (no key, native CORS)
+          const stillMissing = cryptoIds.filter(id => !priceCache[id]);
+          if (stillMissing.length > 0) {
+            // CoinPaprika uses its own IDs (e.g. "btc-bitcoin") — map common CoinGecko IDs
+            const PAPRIKA_ID_MAP = {
+              'bitcoin':'btc-bitcoin','ethereum':'eth-ethereum','tether':'usdt-tether',
+              'binancecoin':'bnb-binance-coin','ripple':'xrp-xrp','cardano':'ada-cardano',
+              'solana':'sol-solana','dogecoin':'doge-dogecoin','tron':'trx-tron',
+              'avalanche-2':'avax-avalanche','polkadot':'dot-polkadot','litecoin':'ltc-litecoin',
+              'chainlink':'link-chainlink','uniswap':'uni-uniswap','cosmos':'atom-cosmos',
+              'near':'near-near-protocol','usd-coin':'usdc-usd-coin','dai':'dai-dai',
+              'bitcoin-cash':'bch-bitcoin-cash','shiba-inu':'shib-shiba-inu','sui':'sui-sui',
+              'aptos':'apt-aptos','arbitrum':'arb-arbitrum','optimism':'op-optimism',
+            };
+            await Promise.all(stillMissing.map(async id => {
+              const pid = PAPRIKA_ID_MAP[id];
+              if (!pid) return;
+              try {
+                const res = await fetchWithTimeout(`https://api.coinpaprika.com/v1/tickers/${pid}`, 5000);
+                if (res.ok) {
+                  const d = await res.json();
+                  const usd = d?.quotes?.USD?.price;
+                  if (typeof usd === 'number' && usd > 0) {
+                    priceCache[id] = {
+                      usd,
+                      usd_24h_change: d?.quotes?.USD?.percent_change_24h || 0,
+                      usd_market_cap: d?.quotes?.USD?.market_cap || 0,
+                      source: 'coinpaprika',
+                    };
+                  }
+                }
+              } catch {}
+            }));
+            _saveCache(PRICE_CACHE_KEY, priceCache);
+          }
         }
         for (const id of cryptoIds) {
           if (priceCache[id]) result[id] = { ...priceCache[id], source: 'coingecko' };

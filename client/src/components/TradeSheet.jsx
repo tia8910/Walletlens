@@ -336,9 +336,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               {category === 'crypto' && (
                 selectedCoin ? (
                   <div className="bs-coin-selected">
-                    {(selectedCoin.thumb || selectedCoin.image) && (
-                      <img src={selectedCoin.thumb || selectedCoin.image} alt="" className="bs-coin-thumb" />
-                    )}
+                    <CoinLogo image={selectedCoin.thumb || selectedCoin.image} symbol={selectedCoin.symbol} coinId={selectedCoin.id} size={28} className="bs-coin-thumb" />
                     <div className="bs-coin-info">
                       <strong>{selectedCoin.name}</strong>
                       <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
