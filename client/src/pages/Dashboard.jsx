@@ -2735,7 +2735,18 @@ export default function Dashboard() {
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
                                         <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                         {(() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
-                                        {(() => { const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id); return u ? <span className="dvx-cat-badge" style={{ background: u.severity === 'critical' ? 'rgba(248,113,113,0.15)' : u.severity === 'high' ? 'rgba(245,158,11,0.15)' : 'rgba(96,165,250,0.15)', color: u.severity === 'critical' ? '#f87171' : u.severity === 'high' ? '#f59e0b' : '#60a5fa', borderColor: u.severity === 'critical' ? '#f8717155' : u.severity === 'high' ? '#f59e0b55' : '#60a5fa55' }} title={u.note}>🔓 {u.unlockPct}%/mo</span> : null })()}
+                                        {(() => {
+                                          const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id)
+                                          if (!u) return null
+                                          const col = u.severity === 'critical' ? '#f87171' : u.severity === 'high' ? '#f59e0b' : '#60a5fa'
+                                          const daysUntil = u.nextUnlock ? Math.round((new Date(u.nextUnlock) - Date.now()) / 86400000) : null
+                                          const dateStr = u.nextUnlock ? new Date(u.nextUnlock).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'2-digit' }) : null
+                                          return (
+                                            <span className="dvx-cat-badge dvx-unlock-badge" style={{ background: col + '18', color: col, borderColor: col + '44' }} title={u.note}>
+                                              🔓 {u.unlockPct}%/mo{dateStr ? ` · ${daysUntil !== null && daysUntil <= 0 ? 'now!' : dateStr}` : ''}
+                                            </span>
+                                          )
+                                        })()}
                                       </div>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
