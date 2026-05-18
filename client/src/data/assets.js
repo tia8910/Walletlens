@@ -38,6 +38,7 @@ export const POPULAR_FIAT = [
   { code: 'CNY', name: 'Chinese Yuan',      symbol: '¥' },
   { code: 'INR', name: 'Indian Rupee',      symbol: '₹' },
   { code: 'AED', name: 'UAE Dirham',        symbol: 'د.إ' },
+  { code: 'EGP', name: 'Egyptian Pound',   symbol: 'E£' },
 ]
 
 export const POPULAR_TICKERS = [
