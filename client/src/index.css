@@ -2370,6 +2370,8 @@ tr:last-child td { border-bottom: none; }
   z-index: -3;
   pointer-events: none;
   display: block;
+  will-change: contents;
+  transform: translateZ(0);
 }
 
 /* ═══ Lens glow — sharper, more dramatic premium pulse ═══ */

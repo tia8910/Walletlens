@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 export default function DynamicBackground({
-  particleCount = 220,
+  particleCount = 120,
   linkDistance = 150,
   color = '#34d399',
 }) {
@@ -15,6 +15,7 @@ export default function DynamicBackground({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     let raf = 0
+    let running = true
     let w = 0, h = 0
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
@@ -40,44 +41,76 @@ export default function DynamicBackground({
       }
     }
 
+    // Pre-parse hex color once so rgba() strings can be built without repeated hex parsing
+    const rC = parseInt(color.slice(1, 3), 16)
+    const gC = parseInt(color.slice(3, 5), 16)
+    const bC = parseInt(color.slice(5, 7), 16)
+    const rgb = `${rC},${gC},${bC}`
+
+    // Batch line segments into alpha buckets to reduce stroke() calls from O(n²) to O(buckets)
+    const BUCKETS = 6
+    const buckets = Array.from({ length: BUCKETS }, () => [])
+    const linkDist2 = linkDistance * linkDistance
+
     function step() {
       ctx.clearRect(0, 0, w, h)
 
-      // Sharp connecting lines
-      ctx.lineWidth = 0.9
+      for (let b = 0; b < BUCKETS; b++) buckets[b].length = 0
+
+      // Collect connecting line segments, sorted into alpha buckets
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
         for (let j = i + 1; j < particles.length; j++) {
-          const b = particles[j]
-          const dx = a.x - b.x, dy = a.y - b.y
+          const p = particles[j]
+          const dx = a.x - p.x
+          const dy = a.y - p.y
           const d2 = dx * dx + dy * dy
-          if (d2 < linkDistance * linkDistance) {
+          if (d2 < linkDist2) {
             const alpha = 1 - Math.sqrt(d2) / linkDistance
-            ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.22})`
-            ctx.beginPath()
-            ctx.moveTo(a.x, a.y)
-            ctx.lineTo(b.x, b.y)
-            ctx.stroke()
+            const bIdx = Math.min(BUCKETS - 1, (alpha * BUCKETS) | 0)
+            const bkt = buckets[bIdx]
+            bkt.push(a.x, a.y, p.x, p.y)
           }
         }
       }
 
-      // Sharp rectangular particles with glow
+      // One beginPath+stroke per bucket instead of per line segment
+      ctx.lineWidth = 0.9
+      for (let bIdx = 0; bIdx < BUCKETS; bIdx++) {
+        const segs = buckets[bIdx]
+        if (segs.length === 0) continue
+        const alpha = (((bIdx + 0.5) / BUCKETS) * 0.22).toFixed(3)
+        ctx.strokeStyle = `rgba(${rgb},${alpha})`
+        ctx.beginPath()
+        for (let k = 0; k < segs.length; k += 4) {
+          ctx.moveTo(segs[k], segs[k + 1])
+          ctx.lineTo(segs[k + 2], segs[k + 3])
+        }
+        ctx.stroke()
+      }
+
+      // Move and draw particles — no shadowBlur (expensive GPU state change per rect)
       ctx.fillStyle = color
-      ctx.shadowBlur = 18
-      ctx.shadowColor = color
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
         if (p.x < -10) p.x = w + 10
-        if (p.x > w + 10) p.x = -10
+        else if (p.x > w + 10) p.x = -10
         if (p.y < -10) p.y = h + 10
-        if (p.y > h + 10) p.y = -10
+        else if (p.y > h + 10) p.y = -10
         ctx.fillRect(p.x, p.y, p.size, p.size)
       }
-      ctx.shadowBlur = 0
 
-      raf = requestAnimationFrame(step)
+      if (running) raf = requestAnimationFrame(step)
+    }
+
+    function onVisibility() {
+      if (document.hidden) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      } else if (running && raf === 0) {
+        raf = requestAnimationFrame(step)
+      }
     }
 
     resize()
@@ -86,10 +119,13 @@ export default function DynamicBackground({
 
     const ro = new ResizeObserver(() => { resize(); seed() })
     ro.observe(canvas)
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
+      running = false
       cancelAnimationFrame(raf)
       ro.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [particleCount, linkDistance, color, reduceMotion])
 
