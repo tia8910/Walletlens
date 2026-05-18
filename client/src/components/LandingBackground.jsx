@@ -186,7 +186,7 @@ export default function LandingBackground() {
       ctx.fillRect(0, 0, w, h)
 
       // Subtle grid lines (trading chart feel)
-      ctx.strokeStyle = 'rgba(52,211,153,0.04)'
+      ctx.strokeStyle = 'rgba(var(--g-rgb),0.04)'
       ctx.lineWidth = 1
       const gridRows = 6
       for (let i = 1; i < gridRows; i++) {

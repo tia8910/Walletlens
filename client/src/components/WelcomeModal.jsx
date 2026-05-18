@@ -73,7 +73,7 @@ export default function WelcomeModal() {
     }}>
       <div style={{
         background: 'linear-gradient(135deg, #0d2018 0%, #071410 100%)',
-        border: '1px solid rgba(52,211,153,0.25)',
+        border: '1px solid rgba(var(--g-rgb),0.25)',
         borderRadius: '20px', padding: '2rem 1.75rem',
         maxWidth: '360px', width: '100%',
         boxShadow: '0 24px 64px rgba(0,0,0,0.6)',

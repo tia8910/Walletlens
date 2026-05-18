@@ -548,9 +548,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       <div className="page-header">
         <h2>Transactions</h2>
         <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
-          background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(52,211,153,0.15)',
+          background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(var(--g-rgb),0.15)',
           color: showForm ? '#f87171' : 'var(--g)',
-          border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)'}`,
+          border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(var(--g-rgb),0.3)'}`,
           borderRadius: '10px', padding: '0.4rem 0.85rem',
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.35rem',

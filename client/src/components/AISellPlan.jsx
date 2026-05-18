@@ -179,7 +179,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
         <div style={{ marginTop:'1rem' }}>
           {/* Summary */}
           <div style={{
-            background:'rgba(52,211,153,0.06)', border:'1px solid rgba(52,211,153,0.2)',
+            background:'rgba(var(--g-rgb),0.06)', border:'1px solid rgba(var(--g-rgb),0.2)',
             borderRadius:10, padding:'0.75rem 1rem', marginBottom:'1rem',
             fontSize:'0.85rem', color:'rgba(255,255,255,0.8)', lineHeight:1.6,
           }}>

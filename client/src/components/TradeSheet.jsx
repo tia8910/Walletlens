@@ -304,7 +304,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         ) : (
           <div className="bs-body">
             <div className="bs-type-row">
-              <div className="bs-type-pill" style={{ background: isBuy ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)', color: accent, borderColor: accent + '55' }}>
+              <div className="bs-type-pill" style={{ background: isBuy ? 'rgba(var(--g-rgb),0.12)' : 'rgba(248,113,113,0.12)', color: accent, borderColor: accent + '55' }}>
                 {isBuy ? 'Buy Order' : 'Sell Order'}
               </div>
             </div>

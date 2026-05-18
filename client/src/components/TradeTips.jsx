@@ -93,7 +93,7 @@ function buildShareCanvas(tip) {
   ctx.fillRect(0, 0, size, size)
 
   // Glow orb
-  const glowColor = isQuote ? 'rgba(99,179,255,0.22)' : tip.type === 'do' ? 'rgba(0,200,83,0.28)' : 'rgba(255,77,79,0.24)'
+  const glowColor = isQuote ? 'rgba(99,179,255,0.22)' : tip.type === 'do' ? 'rgba(var(--g-rgb),0.28)' : 'rgba(255,77,79,0.24)'
   const glow = ctx.createRadialGradient(size * 0.85, size * 0.15, 20, size * 0.85, size * 0.15, size * 0.55)
   glow.addColorStop(0, glowColor); glow.addColorStop(1, 'transparent')
   ctx.fillStyle = glow
@@ -143,7 +143,7 @@ function buildShareCanvas(tip) {
   }
 
   // Bottom brand bar
-  ctx.fillStyle = isQuote ? 'rgba(99,179,255,0.10)' : 'rgba(0,200,83,0.12)'
+  ctx.fillStyle = isQuote ? 'rgba(99,179,255,0.10)' : 'rgba(var(--g-rgb),0.12)'
   ctx.fillRect(0, size - 130, size, 130)
   ctx.fillStyle = isQuote ? '#63b3ff' : '#00c853'
   ctx.font = '700 38px system-ui, sans-serif'

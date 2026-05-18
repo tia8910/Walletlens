@@ -170,8 +170,8 @@ export function BiometricToggle() {
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0.85rem 1rem',
-      background: 'rgba(52,211,153,0.05)',
-      border: '1px solid rgba(52,211,153,0.15)',
+      background: 'rgba(var(--g-rgb),0.05)',
+      border: '1px solid rgba(var(--g-rgb),0.15)',
       borderRadius: '12px',
     }}>
       <div>

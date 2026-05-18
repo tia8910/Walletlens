@@ -3114,6 +3114,7 @@ tr:last-child td { border-bottom: none; }
   border-radius: 28px;
   padding: 2rem;
   position: relative;
+  box-shadow: 0 2px 24px rgba(var(--g-rgb),0.07), inset 0 1px 0 rgba(var(--g-rgb),0.08);
 }
 .glass-card h3 {
   font-size: 1.05rem; font-weight: 700; color: #fff;

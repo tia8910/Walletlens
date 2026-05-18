@@ -51,20 +51,20 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
 
   // Subtle radial glow top-left
   const glow = ctx.createRadialGradient(200, 120, 0, 200, 120, 480)
-  glow.addColorStop(0, 'rgba(0,200,83,0.12)')
+  glow.addColorStop(0, 'rgba(var(--g-rgb),0.12)')
   glow.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, W, H)
 
   // Glow bottom-right
   const glow2 = ctx.createRadialGradient(W - 150, H - 80, 0, W - 150, H - 80, 320)
-  glow2.addColorStop(0, 'rgba(0,200,83,0.07)')
+  glow2.addColorStop(0, 'rgba(var(--g-rgb),0.07)')
   glow2.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = glow2
   ctx.fillRect(0, 0, W, H)
 
   // ── Grid lines ──────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(0,200,83,0.04)'
+  ctx.strokeStyle = 'rgba(var(--g-rgb),0.04)'
   ctx.lineWidth = 1
   for (let i = 1; i < 6; i++) {
     ctx.beginPath(); ctx.moveTo(0, H / 6 * i); ctx.lineTo(W, H / 6 * i); ctx.stroke()
@@ -76,7 +76,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillRect(0, 0, 5, H)
 
   // ── Border ──────────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(0,200,83,0.18)'
+  ctx.strokeStyle = 'rgba(var(--g-rgb),0.18)'
   ctx.lineWidth = 1.5
   rr(ctx, 1, 1, W - 2, H - 2, 24)
   ctx.stroke()
@@ -101,7 +101,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillText('walletlens.cc', lx + 40, ly + 28)
 
   // ── Tagline (top right) ──────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(0,200,83,0.55)'
+  ctx.fillStyle = 'rgba(var(--g-rgb),0.55)'
   ctx.font = '13px system-ui, sans-serif'
   ctx.textAlign = 'right'
   ctx.fillText('Zoom in your wealth 🔍', W - 48, 52)
@@ -179,7 +179,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     // Bar gradient
     const barGrad = ctx.createLinearGradient(0, barY, 0, barY + barH)
     barGrad.addColorStop(0, h.pnl >= 0 ? 'rgba(0,230,118,0.95)' : 'rgba(255,82,82,0.85)')
-    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(0,200,83,0.25)' : 'rgba(200,0,0,0.2)')
+    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(var(--g-rgb),0.25)' : 'rgba(200,0,0,0.2)')
     ctx.fillStyle = barGrad
     ctx.shadowColor = h.pnl >= 0 ? '#00e676' : '#ff5252'
     ctx.shadowBlur = 14
@@ -207,7 +207,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   })
 
   // ── Bottom bar ───────────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(0,200,83,0.06)'
+  ctx.fillStyle = 'rgba(var(--g-rgb),0.06)'
   ctx.fillRect(0, H - 52, W, 52)
 
   ctx.textAlign = 'right'
