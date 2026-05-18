@@ -3397,8 +3397,8 @@ tr:last-child td { border-bottom: none; }
 /* Tab nav */
 .dvx-tabs {
   display: flex; gap: 0.5rem; flex-wrap: wrap;
-  background: rgba(15,23,20,0.92);
-  border: 1px solid rgba(var(--g-rgb),0.25);
+  background: var(--card-bg);
+  border: 1px solid rgba(var(--g-rgb),0.35);
   border-radius: 18px; padding: 0.45rem;
   margin-top: 1rem;
   position: sticky; top: 82px; z-index: 50;
