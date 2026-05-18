@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import EmptyState from '../components/EmptyState'
+import ExchangePartners from '../components/ExchangePartners'
 
 function fmt(n) { return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
@@ -96,6 +97,7 @@ export default function Market() {
           <p className="muted">Live prices · auto-refresh every 60s</p>
         </div>
       </div>
+      <ExchangePartners compact source="market" />
 
       <div className="market-tabs">
         {TABS.map(t => (
