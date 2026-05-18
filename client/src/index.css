@@ -3540,6 +3540,17 @@ tr:last-child td { border-bottom: none; }
 }
 .dvx-holding-meta { flex: 1; display: flex; flex-direction: column; gap: 0.06rem; }
 .dvx-holding-meta strong { color: #fff; font-size: 0.9rem; }
+.dvx-cat-badge {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.08rem 0.4rem;
+  border-radius: 20px;
+  border: 1px solid;
+  line-height: 1.4;
+  vertical-align: middle;
+}
 .dvx-holding-meta .muted { font-size: 0.72rem; }
 .dvx-holding-val { font-weight: 800; color: var(--g); font-size: 0.95rem; }
 

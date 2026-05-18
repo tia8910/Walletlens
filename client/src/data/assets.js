@@ -126,3 +126,96 @@ export function assetClass(id) {
 }
 
 export function isCrypto(id) { return assetClass(id) === 'crypto' }
+
+// ── Crypto category map ────────────────────────────────────────────────────
+// Maps CoinGecko coin_id → short category label shown as a badge
+export const CRYPTO_CATEGORIES = {
+  // Layer 1
+  bitcoin: 'L1', ethereum: 'L1', solana: 'L1', cardano: 'L1', avalanche: 'L1',
+  'avalanche-2': 'L1', polkadot: 'L1', cosmos: 'L1', 'near-protocol': 'L1',
+  algorand: 'L1', tezos: 'L1', elrond: 'L1', multiversx: 'L1', fantom: 'L1',
+  aptos: 'L1', sui: 'L1', ton: 'L1', 'the-open-network': 'L1', stellar: 'L1',
+  tron: 'L1', hedera: 'L1', 'hedera-hashgraph': 'L1', iota: 'L1', nano: 'L1',
+  // Layer 2 / Scaling
+  polygon: 'L2', 'matic-network': 'L2', arbitrum: 'L2', optimism: 'L2',
+  base: 'L2', 'immutable-x': 'L2', 'loopring': 'L2', starknet: 'L2',
+  'starkware': 'L2', 'zksync': 'L2', 'polygon-ecosystem-token': 'L2',
+  // DeFi
+  uniswap: 'DeFi', aave: 'DeFi', maker: 'DeFi', 'maker-dao': 'DeFi',
+  'curve-dao-token': 'DeFi', compound: 'DeFi', synthetix: 'DeFi',
+  'yearn-finance': 'DeFi', sushi: 'DeFi', 'sushiswap': 'DeFi',
+  'pancakeswap-token': 'DeFi', '1inch': 'DeFi', balancer: 'DeFi',
+  'kyber-network': 'DeFi', dydx: 'DeFi', 'gmx': 'DeFi', jupiter: 'DeFi',
+  thorchain: 'DeFi', 'lido-dao': 'DeFi', convex: 'DeFi', frax: 'DeFi',
+  // AI / Data
+  'fetch-ai': 'AI', 'ocean-protocol': 'AI', 'singularitynet': 'AI',
+  numeraire: 'AI', 'artificial-superintelligence-alliance': 'AI',
+  worldcoin: 'AI', 'near-protocol': 'AI', 'grass': 'AI', 'bittensor': 'AI',
+  'render-token': 'AI', 'akash-network': 'AI', 'io-net': 'AI',
+  // RWA (Real World Assets)
+  chainlink: 'RWA', 'ondo-finance': 'RWA', 'mantra-dao': 'RWA',
+  polymesh: 'RWA', centrifuge: 'RWA', 'maple-finance': 'RWA',
+  goldfinch: 'RWA', realtoken: 'RWA',
+  // Meme
+  dogecoin: 'Meme', 'shiba-inu': 'Meme', pepe: 'Meme', 'bonk': 'Meme',
+  floki: 'Meme', 'baby-doge-coin': 'Meme', 'dogwifcoin': 'Meme',
+  'book-of-meme': 'Meme', 'cat-in-a-dogs-world': 'Meme', memecoin: 'Meme',
+  // GameFi / NFT
+  'axie-infinity': 'GameFi', 'the-sandbox': 'GameFi', decentraland: 'GameFi',
+  'gala': 'GameFi', 'illuvium': 'GameFi', 'stepn': 'GameFi',
+  'blur': 'NFT', 'apecoin': 'NFT', 'flow': 'GameFi',
+  // Infrastructure / Oracle
+  'chainlink': 'Oracle', 'band-protocol': 'Oracle', 'api3': 'Oracle',
+  filecoin: 'Infra', 'arweave': 'Infra', helium: 'Infra',
+  'the-graph': 'Infra', 'livepeer': 'Infra',
+  // Exchange tokens
+  'binancecoin': 'CEX', 'okb': 'CEX', 'kucoin-shares': 'CEX',
+  'crypto-com-chain': 'CEX', 'huobi-token': 'CEX', 'gate': 'CEX',
+  // Privacy
+  monero: 'Privacy', 'zcash': 'Privacy', dash: 'Privacy',
+  // Stablecoins
+  tether: 'Stable', 'usd-coin': 'Stable', dai: 'Stable',
+  'binance-usd': 'Stable', 'true-usd': 'Stable', 'frax': 'Stable',
+  'usdd': 'Stable', 'gemini-dollar': 'Stable',
+}
+
+// Category badge color map
+export const CRYPTO_CATEGORY_COLORS = {
+  L1:      '#6366f1',
+  L2:      '#8b5cf6',
+  DeFi:    '#06b6d4',
+  AI:      '#a855f7',
+  RWA:     '#f59e0b',
+  Meme:    '#f97316',
+  GameFi:  '#10b981',
+  NFT:     '#ec4899',
+  Infra:   '#64748b',
+  Oracle:  '#0ea5e9',
+  CEX:     '#f0b90b',
+  Privacy: '#94a3b8',
+  Stable:  '#22c55e',
+}
+
+// Stock sector colors
+export const STOCK_SECTOR_COLORS = {
+  Tech:     '#6366f1',
+  Finance:  '#0ea5e9',
+  Health:   '#10b981',
+  Consumer: '#f59e0b',
+  Energy:   '#f97316',
+  ETF:      '#94a3b8',
+}
+
+// Get sector for a stock coin_id like 'stock:aapl'
+export function getStockSector(coinId) {
+  if (!coinId?.startsWith('stock:')) return null
+  const ticker = coinId.replace('stock:', '').toUpperCase()
+  const found = POPULAR_TICKERS.find(t => t.ticker === ticker)
+  return found?.sector || 'Stock'
+}
+
+// Get crypto category for a coin_id
+export function getCryptoCategory(coinId) {
+  if (!coinId) return null
+  return CRYPTO_CATEGORIES[coinId.toLowerCase()] || null
+}
