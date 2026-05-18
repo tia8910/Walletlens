@@ -18,6 +18,7 @@ import ExchangePartners from '../components/ExchangePartners'
 
 // Heavy components only loaded when the user opens that tab
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
+const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
@@ -1707,6 +1708,32 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────
+function AlertsSection({ enriched, prices, isDemo }) {
+  const [alertTab, setAlertTab] = useState('smart')
+  return (
+    <div>
+      <div className="sa-alert-tabs">
+        <button className={`sa-alert-tab ${alertTab === 'smart' ? 'active' : ''}`} onClick={() => setAlertTab('smart')}>
+          ⚡ Smart Alerts
+        </button>
+        <button className={`sa-alert-tab ${alertTab === 'price' ? 'active' : ''}`} onClick={() => setAlertTab('price')}>
+          🔔 Price Alerts
+        </button>
+      </div>
+      {alertTab === 'smart' && (
+        <Suspense fallback={<TabFallback />}>
+          <SmartAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+        </Suspense>
+      )}
+      {alertTab === 'price' && (
+        <Suspense fallback={<TabFallback />}>
+          <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+        </Suspense>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -2632,9 +2659,9 @@ export default function Dashboard() {
         />
       )}
 
-      {/* ══ PRICE ALERTS ══ */}
+      {/* ══ ALERTS (Price + Smart) ══ */}
       {activeTab === 'alerts' && (
-        <Suspense fallback={<TabFallback />}><PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} /></Suspense>
+        <AlertsSection enriched={enriched} prices={prices} isDemo={isDemo} />
       )}
 
       {/* ══ MANAGE (Wallets + Backup) ══ */}
