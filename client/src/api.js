@@ -474,6 +474,103 @@ async function fetchFiatRates() {
   return fiatRatesCache || { USD: 1 };
 }
 
+// ─── Batch stock quotes ───────────────────────────────────────────────────
+// Fetches multiple tickers at once from Yahoo Finance v7 (supports CORS on
+// most networks). Falls back to individual fetchStockLive calls for misses.
+let batchStockCache = {};
+let batchStockCacheTime = 0;
+
+async function fetchBatchStocks(tickers) {
+  // Return cache if fresh
+  const now = Date.now();
+  const allCached = tickers.every(t => batchStockCache[t] && now - batchStockCacheTime < STOCK_CACHE_DURATION);
+  if (allCached) return batchStockCache;
+
+  const symbols = tickers.join(',');
+
+  // ── Primary: Yahoo Finance v7 batch (CORS-enabled on most networks) ──
+  try {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
+    const res = await fetchWithTimeout(url, 5000);
+    if (res.ok) {
+      const data = await res.json();
+      const quotes = data?.quoteResponse?.result;
+      if (Array.isArray(quotes) && quotes.length > 0) {
+        for (const q of quotes) {
+          const sym = q.symbol?.toUpperCase();
+          if (!sym) continue;
+          const usd = q.regularMarketPrice;
+          if (typeof usd === 'number' && usd > 0) {
+            batchStockCache[sym] = {
+              usd,
+              usd_24h_change: q.regularMarketChangePercent || 0,
+              name: q.shortName || sym,
+              source: 'yahoo',
+            };
+          }
+        }
+        batchStockCacheTime = now;
+        // Return what we got — individual fallback handles misses
+        return batchStockCache;
+      }
+    }
+  } catch {}
+
+  // ── Fallback: query2 Yahoo endpoint ──
+  try {
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
+    const res = await fetchWithTimeout(url, 5000);
+    if (res.ok) {
+      const data = await res.json();
+      const quotes = data?.quoteResponse?.result;
+      if (Array.isArray(quotes) && quotes.length > 0) {
+        for (const q of quotes) {
+          const sym = q.symbol?.toUpperCase();
+          if (!sym) continue;
+          const usd = q.regularMarketPrice;
+          if (typeof usd === 'number' && usd > 0) {
+            batchStockCache[sym] = {
+              usd,
+              usd_24h_change: q.regularMarketChangePercent || 0,
+              name: q.shortName || sym,
+              source: 'yahoo2',
+            };
+          }
+        }
+        batchStockCacheTime = now;
+        return batchStockCache;
+      }
+    }
+  } catch {}
+
+  // ── CORS proxy fallback for Yahoo v7 ──
+  for (const wrap of [
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ]) {
+    try {
+      const target = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
+      const res = await fetchWithTimeout(wrap(target), 5000);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const quotes = data?.quoteResponse?.result;
+      if (Array.isArray(quotes) && quotes.length > 0) {
+        for (const q of quotes) {
+          const sym = q.symbol?.toUpperCase();
+          if (!sym) continue;
+          const usd = q.regularMarketPrice;
+          if (typeof usd === 'number' && usd > 0) {
+            batchStockCache[sym] = { usd, usd_24h_change: q.regularMarketChangePercent || 0, name: q.shortName || sym, source: 'yahoo-proxy' };
+          }
+        }
+        batchStockCacheTime = now;
+        return batchStockCache;
+      }
+    } catch {}
+  }
+
+  return batchStockCache;
+}
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
 function stooqSymbolFor(id) {
   if (id === GOLD_ID) return 'xauusd';
@@ -687,13 +784,23 @@ export const api = {
       }));
     }
 
-    // Stocks
+    // Stocks — batch fetch first, fall back to individual for misses
     if (stockIds.length > 0) {
-      tasks.push(Promise.all(stockIds.map(async id => {
-        const live = await fetchStockLive(id);
-        if (live) result[id] = { ...live, source: 'stooq' };
-        else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
-      })));
+      tasks.push((async () => {
+        const tickers = stockIds.map(id => id.slice(STOCK_PREFIX.length).toUpperCase());
+        await fetchBatchStocks(tickers);
+        await Promise.all(stockIds.map(async id => {
+          const ticker = id.slice(STOCK_PREFIX.length).toUpperCase();
+          if (batchStockCache[ticker]) {
+            result[id] = batchStockCache[ticker];
+          } else {
+            // Individual fallback for tickers batch missed
+            const live = await fetchStockLive(id);
+            if (live) result[id] = { ...live, source: 'stooq' };
+            else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+          }
+        }));
+      })());
     }
 
     // Crypto (CoinGecko) — only IDs that don't already have a manual override
