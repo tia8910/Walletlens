@@ -36,7 +36,7 @@ const ALPHA_VANTAGE_KEY = '' // https://alphavantage.co (25 req/day free)
 
 import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
-  GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
+  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX,
   PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
   assetClass, isCrypto,
 } from './data/assets';
@@ -48,7 +48,7 @@ import { foldBalances as _foldBalancesPure, diffHoldings, aggregatePortfolio } f
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
-  GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
+  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX,
   PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
   assetClass, isCrypto,
 };
@@ -259,9 +259,11 @@ async function fetchMetalsLive() {
   const out = {};
   // Primary: gold-api.com
   try {
-    const [goldRes, silverRes] = await Promise.all([
+    const [goldRes, silverRes, copperRes, platinumRes] = await Promise.all([
       fetch('https://api.gold-api.com/price/XAU'),
       fetch('https://api.gold-api.com/price/XAG'),
+      fetch('https://api.gold-api.com/price/XCU'),
+      fetch('https://api.gold-api.com/price/XPT'),
     ]);
     if (goldRes.ok) {
       const g = await goldRes.json();
@@ -273,6 +275,18 @@ async function fetchMetalsLive() {
       const s = await silverRes.json();
       if (s && typeof s.price === 'number') {
         out[SILVER_ID] = { usd: s.price, usd_24h_change: 0, name: 'Silver (1 oz)', symbol: 'XAG', source: 'gold-api' };
+      }
+    }
+    if (copperRes.ok) {
+      const c = await copperRes.json();
+      if (c && typeof c.price === 'number') {
+        out[COPPER_ID] = { usd: c.price, usd_24h_change: 0, name: 'Copper (1 lb)', symbol: 'XCU', source: 'gold-api' };
+      }
+    }
+    if (platinumRes.ok) {
+      const pt = await platinumRes.json();
+      if (pt && typeof pt.price === 'number') {
+        out[PLATINUM_ID] = { usd: pt.price, usd_24h_change: 0, name: 'Platinum (1 oz)', symbol: 'XPT', source: 'gold-api' };
       }
     }
   } catch (err) { /* fall through */ }
@@ -641,6 +655,8 @@ async function fetchBatchStocks(tickers) {
 function stooqSymbolFor(id) {
   if (id === GOLD_ID) return 'xauusd';
   if (id === SILVER_ID) return 'xagusd';
+  if (id === COPPER_ID) return 'xcuusd';
+  if (id === PLATINUM_ID) return 'xptusd';
   if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
   return null;
 }
@@ -812,10 +828,10 @@ export const api = {
     const manual = loadData('manual_prices', {});
 
     const stockIds = coinIds.filter(id => id.startsWith(STOCK_PREFIX));
-    const metalIds = coinIds.filter(id => id === GOLD_ID || id === SILVER_ID);
+    const metalIds = coinIds.filter(id => id === GOLD_ID || id === SILVER_ID || id === COPPER_ID || id === PLATINUM_ID);
     const fiatIds = coinIds.filter(id => id.startsWith(FIAT_PREFIX));
     const cryptoLikeIds = coinIds.filter(id =>
-      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID &&
+      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID && id !== COPPER_ID && id !== PLATINUM_ID &&
       !id.startsWith('bond:') && !id.startsWith('other:') && !id.startsWith(FIAT_PREFIX)
     );
     const manualFallbackIds = coinIds.filter(id => id.startsWith('bond:') || id.startsWith('other:'));
@@ -1259,6 +1275,8 @@ export const api = {
     const nonCrypto =
       coinId === GOLD_ID ||
       coinId === SILVER_ID ||
+      coinId === COPPER_ID ||
+      coinId === PLATINUM_ID ||
       coinId.startsWith(STOCK_PREFIX) ||
       coinId.startsWith(FIAT_PREFIX) ||
       coinId.startsWith('bond:') ||
@@ -1552,6 +1570,8 @@ export const api = {
         if (!cat) {
           if (id === GOLD_ID) cat = 'gold';
           else if (id === SILVER_ID) cat = 'silver';
+          else if (id === COPPER_ID) cat = 'copper';
+          else if (id === PLATINUM_ID) cat = 'platinum';
           else if (id.startsWith(STOCK_PREFIX)) cat = 'stock';
           else if (id.startsWith(FIAT_PREFIX)) cat = 'fiat';
           else cat = 'crypto';

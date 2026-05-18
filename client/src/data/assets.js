@@ -2,14 +2,18 @@
 // by data utilities and pure helpers without dragging in network code.
 export const GOLD_ID     = 'metal:xau'   // 1 troy oz gold
 export const SILVER_ID   = 'metal:xag'   // 1 troy oz silver
+export const COPPER_ID   = 'metal:xcu'   // 1 lb copper
+export const PLATINUM_ID = 'metal:xpt'   // 1 troy oz platinum
 export const STOCK_PREFIX = 'stock:'     // followed by lowercase ticker
 export const FIAT_PREFIX  = 'fiat:'      // followed by lowercase ISO code
 
 export const ASSET_CATEGORIES = {
   crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
   fiat:   { key: 'fiat',   label: 'Fiat',   icon: '💵', color: '#0ea5e9' },
-  gold:   { key: 'gold',   label: 'Gold',   icon: '🥇', color: '#f59e0b' },
-  silver: { key: 'silver', label: 'Silver', icon: '🥈', color: '#94a3b8' },
+  gold:     { key: 'gold',     label: 'Gold',     icon: '🥇', color: '#f59e0b' },
+  silver:   { key: 'silver',   label: 'Silver',   icon: '🥈', color: '#94a3b8' },
+  copper:   { key: 'copper',   label: 'Copper',   icon: '🟤', color: '#b45309' },
+  platinum: { key: 'platinum', label: 'Platinum', icon: '⬜', color: '#cbd5e1' },
   stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: 'var(--gd)' },
   bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0284c7' },
   other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
@@ -17,8 +21,10 @@ export const ASSET_CATEGORIES = {
 export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
 export const PRESET_ASSETS = {
-  gold:   { coin_id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   unit: 'oz' },
-  silver: { coin_id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', unit: 'oz' },
+  gold:     { coin_id: GOLD_ID,     symbol: 'XAU', name: 'Gold (1 oz)',     unit: 'oz' },
+  silver:   { coin_id: SILVER_ID,   symbol: 'XAG', name: 'Silver (1 oz)',   unit: 'oz' },
+  copper:   { coin_id: COPPER_ID,   symbol: 'XCU', name: 'Copper (1 lb)',   unit: 'lb' },
+  platinum: { coin_id: PLATINUM_ID, symbol: 'XPT', name: 'Platinum (1 oz)', unit: 'oz' },
 }
 
 export const POPULAR_FIAT = [
@@ -109,6 +115,8 @@ export function assetClass(id) {
   if (!id) return 'crypto'
   if (id === GOLD_ID) return 'gold'
   if (id === SILVER_ID) return 'silver'
+  if (id === COPPER_ID) return 'copper'
+  if (id === PLATINUM_ID) return 'platinum'
   if (id.startsWith(STOCK_PREFIX)) return 'stock'
   if (id.startsWith(FIAT_PREFIX)) return 'fiat'
   if (id.startsWith('bond:')) return 'bond'
