@@ -628,15 +628,15 @@ function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
         <polygon key={pct} points={labels.map((_, i) => {
           const [x, y] = point(i, pct); return `${x},${y}`
         }).join(' ')}
-          fill="none" stroke="rgba(52,211,153,0.1)" strokeWidth="1" />
+          fill="none" stroke="rgba(var(--g-rgb),0.1)" strokeWidth="1" />
       ))}
       {/* Axis lines */}
       {labels.map((_, i) => {
         const [x, y] = point(i, 100)
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(52,211,153,0.12)" strokeWidth="1" />
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(var(--g-rgb),0.12)" strokeWidth="1" />
       })}
       {/* Data polygon */}
-      <polygon points={polygon} fill="rgba(52,211,153,0.15)" stroke="var(--g)" strokeWidth="2" />
+      <polygon points={polygon} fill="rgba(var(--g-rgb),0.15)" stroke="var(--g)" strokeWidth="2" />
       {/* Data points */}
       {vals.map((v, i) => {
         const [x, y] = point(i, v)
@@ -682,7 +682,7 @@ const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
 const TOOLTIP_STYLE = {
-  background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(52,211,153,0.4)',
+  background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(var(--g-rgb),0.4)',
   borderRadius: 10, fontSize: '0.76rem', color: '#fff',
 }
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
@@ -1249,7 +1249,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
       <div className="heatmap-legend">
         <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
         <span style={{ color:'rgba(255,255,255,0.3)' }}>Darker = bigger move</span>
-        <span style={{ color:'rgba(52,211,153,0.9)' }}>■ Gaining</span>
+        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ Gaining</span>
       </div>
     </div>
   )
@@ -1313,7 +1313,7 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         {/* Outer ring */}
         <div style={{
           position:'absolute', inset:0, borderRadius:'50%',
-          border:'1.5px dashed rgba(52,211,153,0.2)',
+          border:'1.5px dashed rgba(var(--g-rgb),0.2)',
           animation:'ep-spin 18s linear infinite',
         }}/>
 
@@ -1327,7 +1327,7 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         {/* Inner pulse ring */}
         <div style={{
           position:'absolute', inset:44, borderRadius:'50%',
-          border:'1.5px solid rgba(52,211,153,0.3)',
+          border:'1.5px solid rgba(var(--g-rgb),0.3)',
           animation:'ep-pulse 3s ease-in-out infinite',
         }}/>
 
@@ -1361,11 +1361,11 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         }}>
           <div style={{
             width:78, height:78, borderRadius:'50%',
-            background:'linear-gradient(135deg,rgba(52,211,153,0.18),rgba(96,165,250,0.12))',
-            border:'1.5px solid rgba(52,211,153,0.4)',
+            background:'linear-gradient(135deg,rgba(var(--g-rgb),0.18),rgba(96,165,250,0.12))',
+            border:'1.5px solid rgba(var(--g-rgb),0.4)',
             display:'flex', alignItems:'center', justifyContent:'center',
             fontSize:'2rem',
-            boxShadow:'0 0 32px rgba(52,211,153,0.18), 0 0 8px rgba(52,211,153,0.1)',
+            boxShadow:'0 0 32px rgba(var(--g-rgb),0.18), 0 0 8px rgba(var(--g-rgb),0.1)',
             animation:'ep-float 3.5s ease-in-out infinite',
           }}>📈</div>
         </div>
@@ -1387,7 +1387,7 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         background:'linear-gradient(90deg,var(--g),#60a5fa,#a78bfa,var(--g))',
         backgroundSize:'300% 100%',
         animation:'ep-shimmer 3s linear infinite, ep-bounce 2.8s ease-in-out infinite',
-        boxShadow:'0 4px 24px rgba(52,211,153,0.35)',
+        boxShadow:'0 4px 24px rgba(var(--g-rgb),0.35)',
         marginBottom:'1.25rem',
       }}>
         <span style={{ fontSize:'1.1rem' }}>➕</span> Add a trade
@@ -1433,7 +1433,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
         {subTabs.map(s => (
           <button key={s.id} onClick={() => setTool(s.id)} style={{
             flex:1, padding:'0.45rem', borderRadius:'9px', border:'none', cursor:'pointer', fontWeight:700, fontSize:'0.8rem',
-            background: tool === s.id ? 'rgba(52,211,153,0.18)' : 'none',
+            background: tool === s.id ? 'rgba(var(--g-rgb),0.18)' : 'none',
             color: tool === s.id ? 'var(--g)' : 'rgba(255,255,255,0.5)',
             transition:'all 0.15s',
           }}>{s.label}</button>
@@ -1488,7 +1488,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
           <h3 style={{ margin:'0 0 0.75rem' }}>Projected Proceeds by Target</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
-              <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
+              <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
               <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }}
                 axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
               <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
@@ -1554,7 +1554,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       type="number" placeholder="e.g. 75000" min="0" step="any"
                       value={addState.price || ''}
                       onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
-                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(52,211,153,0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
                     />
                   </div>
                   <div style={{ flex:'1 1 100px' }}>
@@ -1563,7 +1563,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       type="number" placeholder={`All (${h.amount.toFixed(4)})`} min="0" step="any"
                       value={addState.qty || ''}
                       onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
-                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(52,211,153,0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
                     />
                   </div>
                   <button
@@ -2013,10 +2013,10 @@ export default function Dashboard() {
             }}>
               <button onClick={() => openSheet('buy', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(52,211,153,0.22), rgba(52,211,153,0.10))',
+                background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.22), rgba(var(--g-rgb),0.10))',
                 color: 'var(--g)', fontWeight: 800, fontSize: '0.9rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
-                boxShadow: '0 0 0 1px rgba(52,211,153,0.3), 0 4px 16px rgba(52,211,153,0.15)',
+                boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
                 transition: 'box-shadow 0.15s',
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2132,7 +2132,7 @@ export default function Dashboard() {
                   <span style={{
                     fontSize:'0.85rem', fontWeight:700,
                     color: perfChange.pct >= 0 ? 'var(--g)' : '#f87171',
-                    background: perfChange.pct >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+                    background: perfChange.pct >= 0 ? 'rgba(var(--g-rgb),0.12)' : 'rgba(248,113,113,0.12)',
                     borderRadius:6, padding:'0.15rem 0.5rem',
                   }}>
                     {perfChange.pct >= 0 ? '▲' : '▼'} {Math.abs(perfChange.pct).toFixed(2)}%
@@ -2184,7 +2184,7 @@ export default function Dashboard() {
                     <XAxis hide />
                     <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip
-                      contentStyle={{ background:'#0d1f14', border:'1px solid rgba(52,211,153,0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
+                      contentStyle={{ background:'#0d1f14', border:'1px solid rgba(var(--g-rgb),0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
                       itemStyle={{ color:'white', fontWeight:700, fontSize:'0.9rem' }}
                       labelStyle={{ display:'none' }}
                       formatter={v => [`$${fmt(v)}`, '']}
@@ -2209,7 +2209,7 @@ export default function Dashboard() {
                   <h3 style={{ margin:'0 0 0.75rem' }}>Profit / Loss by Asset</h3>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
-                      <CartesianGrid stroke="rgba(52,211,153,0.07)" vertical={false}/>
+                      <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
                       <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.45)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => fmtN(v)} width={50}/>
@@ -2610,7 +2610,7 @@ export default function Dashboard() {
         <div style={{
           position: 'fixed', bottom: '148px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 9001, display: 'flex', alignItems: 'center', gap: '0.75rem',
-          background: 'rgba(20,21,30,0.97)', border: '1px solid rgba(52,211,153,0.3)',
+          background: 'rgba(20,21,30,0.97)', border: '1px solid rgba(var(--g-rgb),0.3)',
           borderRadius: '50px', padding: '0.6rem 1rem 0.6rem 0.75rem',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'slideUpFade 0.3s ease',

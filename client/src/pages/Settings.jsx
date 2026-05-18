@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
+import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -40,6 +41,7 @@ export { applySettings } from '../settingsUtils'
 export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
+  const { theme: colorTheme, setTheme: setColorTheme } = useTheme()
   useEffect(() => { track('settings_view') }, [])
 
   function update(key, val) {
@@ -87,6 +89,31 @@ export default function Settings() {
                 onClick={() => update('theme', t.id)}>
                 <span className="settings-chip-swatch" style={{ background: t.bg, border: `2px solid ${theme === t.id ? 'var(--accent, #34d399)' : '#333'}` }}/>
                 {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-divider"/>
+
+        {/* Color Theme */}
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>Color Theme</span>
+            <span className="settings-hint">Changes accent colors across the app</span>
+          </div>
+          <div className="settings-chips" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+            {COLOR_THEMES.map(t => (
+              <button key={t.id}
+                className={`settings-chip ${colorTheme === t.id ? 'active' : ''}`}
+                onClick={() => { setColorTheme(t.id); track('theme_changed', { theme: t.id, source: 'settings' }) }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span className="settings-chip-swatch" style={{
+                  background: `radial-gradient(circle at 35% 35%, ${t.light}, ${t.swatch})`,
+                  border: colorTheme === t.id ? '2px solid white' : '2px solid transparent',
+                  fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{t.icon}</span>
+                {t.name}
               </button>
             ))}
           </div>

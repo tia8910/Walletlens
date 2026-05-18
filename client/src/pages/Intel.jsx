@@ -206,7 +206,7 @@ function GemsTab({ market }) {
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
-            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(52,211,153,0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
+            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(var(--g-rgb),0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
               {c.gemScore} gem score
             </div>
           </Link>
@@ -369,7 +369,7 @@ function IndicatorsTab({ market, globalData }) {
               <div className="ind-mom-bar-wrap">
                 <div className="ind-mom-bar" style={{
                   width: barW + '%',
-                  background: ch >= 0 ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)',
+                  background: ch >= 0 ? 'rgba(var(--g-rgb),0.5)' : 'rgba(248,113,113,0.5)',
                   marginLeft: ch >= 0 ? '50%' : `calc(50% - ${barW}%)`
                 }} />
                 <div className="ind-mom-center" />

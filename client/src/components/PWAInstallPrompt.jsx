@@ -87,10 +87,10 @@ export default function PWAInstallPrompt() {
       position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
       width: 'calc(100% - 2rem)', maxWidth: '420px',
       background: 'linear-gradient(135deg, #0d2018 0%, #071410 100%)',
-      border: '1px solid rgba(52,211,153,0.3)',
+      border: '1px solid rgba(var(--g-rgb),0.3)',
       borderRadius: '16px', padding: '1rem 1.1rem',
       display: 'flex', alignItems: 'center', gap: '0.75rem',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(52,211,153,0.1)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--g-rgb),0.1)',
       zIndex: 9999,
       animation: 'slideUpFade 0.35s ease',
     }}>

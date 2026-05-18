@@ -221,7 +221,7 @@ export default function AssetDetail() {
               <XAxis dataKey="date" hide />
               <YAxis domain={['auto', 'auto']} hide />
               <Tooltip
-                contentStyle={{ background: 'rgba(15,23,20,0.95)', border: '1px solid rgba(52,211,153,0.38)', borderRadius: 10, fontSize: '0.82rem' }}
+                contentStyle={{ background: 'rgba(15,23,20,0.95)', border: '1px solid rgba(var(--g-rgb),0.38)', borderRadius: 10, fontSize: '0.82rem' }}
                 formatter={(val) => ['$' + fmt(val), 'Price']}
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.time || ''}
               />
