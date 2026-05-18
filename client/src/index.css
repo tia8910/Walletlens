@@ -3665,7 +3665,7 @@ tr:last-child td { border-bottom: none; }
   bottom: 0; left: 0; right: 0;
   z-index: 200;
   display: flex;
-  background: rgba(0,0,0,0.92);
+  background: var(--card-bg);
   backdrop-filter: blur(24px);
   border-top: 1px solid rgba(var(--g-rgb),0.35);
   padding: 0.3rem 0 env(safe-area-inset-bottom, 0.4rem);
