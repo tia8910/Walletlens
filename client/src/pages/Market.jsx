@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
-import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID } from '../api'
+import { api, ASSET_CATEGORIES, POPULAR_TICKERS, STOCK_PREFIX, GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import EmptyState from '../components/EmptyState'
 
@@ -68,7 +68,7 @@ export default function Market() {
         const data = await api.getMarketData()
         if (Array.isArray(data)) setCoins(data)
       } else if (tab === 'metals') {
-        const res = await api.getPrices([GOLD_ID, SILVER_ID].join(','))
+        const res = await api.getPrices([GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID].join(','))
         setMetals(res || {})
       } else if (tab === 'stocks') {
         const ids = POPULAR_TICKERS.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`).join(',')
@@ -145,8 +145,10 @@ export default function Market() {
           {tab === 'metals' && (
             <div className="market-list">
               {[
-                { id: GOLD_ID, symbol: 'XAU', name: 'Gold (1 oz)', icon: ASSET_CATEGORIES.gold.icon, color: ASSET_CATEGORIES.gold.color },
-                { id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', icon: ASSET_CATEGORIES.silver.icon, color: ASSET_CATEGORIES.silver.color },
+                { id: GOLD_ID,     symbol: 'XAU', name: 'Gold (1 oz)',     icon: ASSET_CATEGORIES.gold.icon,     color: ASSET_CATEGORIES.gold.color },
+                { id: SILVER_ID,   symbol: 'XAG', name: 'Silver (1 oz)',   icon: ASSET_CATEGORIES.silver.icon,   color: ASSET_CATEGORIES.silver.color },
+                { id: PLATINUM_ID, symbol: 'XPT', name: 'Platinum (1 oz)', icon: ASSET_CATEGORIES.platinum.icon, color: ASSET_CATEGORIES.platinum.color },
+                { id: COPPER_ID,   symbol: 'XCU', name: 'Copper (1 lb)',   icon: ASSET_CATEGORIES.copper.icon,   color: ASSET_CATEGORIES.copper.color },
               ].map((m, i) => {
                 const p = metals[m.id]
                 const price = p?.usd
