@@ -1260,13 +1260,13 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 function ConstellationMap() {
   const canvasRef = useRef(null)
   const NODES = [
-    { symbol:'BTC',  coinId:'bitcoin',    color:'#f7931a', x:0.50, y:0.14 }, // crypto
-    { symbol:'ETH',  coinId:'ethereum',   color:'#627eea', x:0.82, y:0.38 }, // crypto
-    { symbol:'GOLD', coinId:'gold',       color:'#ffd700', x:0.68, y:0.80 }, // gold
-    { symbol:'SLVR', coinId:'silver',     color:'#c0c8d8', x:0.18, y:0.72 }, // silver
-    { symbol:'AAPL', coinId:'apple',      color:'#a2aaad', x:0.12, y:0.32 }, // shares
-    { symbol:'NVDA', coinId:'nvidia',     color:'#76b900', x:0.62, y:0.10 }, // shares
-    { symbol:'USD',  coinId:'usd-coin',   color:'#22c55e', x:0.88, y:0.64 }, // cash
+    { symbol:'BTC',  coinId:'bitcoin',  color:'#f7931a', x:0.50, y:0.14 },
+    { symbol:'ETH',  coinId:'ethereum', color:'#627eea', x:0.82, y:0.38 },
+    { symbol:'GOLD', color:'#ffd700',   x:0.68, y:0.80, icon:'🥇', iconBg:'linear-gradient(135deg,#b8860b,#ffd700)' },
+    { symbol:'SLVR', color:'#c0c8d8',   x:0.18, y:0.72, icon:'🥈', iconBg:'linear-gradient(135deg,#808080,#c0c8d8)' },
+    { symbol:'AAPL', color:'#a2aaad',   x:0.12, y:0.32, logo:'https://logo.clearbit.com/apple.com', logoBg:'#000' },
+    { symbol:'NVDA', color:'#76b900',   x:0.62, y:0.10, logo:'https://logo.clearbit.com/nvidia.com', logoBg:'#000' },
+    { symbol:'USD',  coinId:'usd-coin', color:'#22c55e', x:0.88, y:0.64 },
   ]
   // Edges (constellation lines between node indices)
   const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[1,6],[2,6]]
@@ -1363,14 +1363,25 @@ function ConstellationMap() {
           left:`calc(${n.x * 100}% - 18px)`,
           top:`calc(${n.y * 100}% - 18px)`,
           width:36, height:36, borderRadius:'50%',
-          background:`${n.color}18`,
+          background: n.logoBg || n.iconBg || `${n.color}18`,
           border:`1.5px solid ${n.color}70`,
           display:'flex', alignItems:'center', justifyContent:'center',
           boxShadow:`0 0 14px ${n.color}40`,
           overflow:'hidden', zIndex:1,
           animation:`ep-node-pulse 2.4s ${(i * 0.35).toFixed(1)}s ease-in-out infinite`,
         }}>
-          <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
+          {n.logo
+            ? <img src={n.logo} alt={n.symbol} width={24} height={24}
+                style={{ borderRadius:'50%', objectFit:'contain' }}
+                onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }}
+              />
+            : null}
+          {n.logo
+            ? <span style={{ display:'none', fontSize:'0.6rem', fontWeight:800, color:n.color }}>{n.symbol}</span>
+            : n.icon
+              ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
+              : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
+          }
         </div>
       ))}
     </div>
