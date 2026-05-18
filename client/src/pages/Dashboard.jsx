@@ -1262,8 +1262,8 @@ function ConstellationMap() {
   const NODES = [
     { symbol:'BTC',  coinId:'bitcoin',  color:'#f7931a', x:0.50, y:0.14 },
     { symbol:'ETH',  coinId:'ethereum', color:'#627eea', x:0.82, y:0.38 },
-    { symbol:'GOLD', color:'#ffd700',   x:0.68, y:0.80, icon:'🥇', iconBg:'linear-gradient(135deg,#b8860b,#ffd700)' },
-    { symbol:'SLVR', color:'#c0c8d8',   x:0.18, y:0.72, icon:'🥈', iconBg:'linear-gradient(135deg,#808080,#c0c8d8)' },
+    { symbol:'GOLD', color:'#ffd700', x:0.68, y:0.80, iconBg:'linear-gradient(135deg,#7a5c00,#c8960c)', svg:'gold' },
+    { symbol:'SLVR', color:'#c0c8d8', x:0.18, y:0.72, iconBg:'linear-gradient(135deg,#4a4a4a,#9aa0ac)', svg:'silver' },
     { symbol:'AAPL', color:'#a2aaad',   x:0.12, y:0.32, logo:'https://logo.clearbit.com/apple.com', logoBg:'#000' },
     { symbol:'NVDA', color:'#76b900',   x:0.62, y:0.10, logo:'https://logo.clearbit.com/nvidia.com', logoBg:'#000' },
     { symbol:'USD',  coinId:'usd-coin', color:'#22c55e', x:0.88, y:0.64 },
@@ -1378,9 +1378,29 @@ function ConstellationMap() {
             : null}
           {n.logo
             ? <span style={{ display:'none', fontSize:'0.6rem', fontWeight:800, color:n.color }}>{n.symbol}</span>
-            : n.icon
-              ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
-              : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
+            : n.svg === 'gold'
+              ? <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
+                  <path d="M3 12 L5 2 L17 2 L19 12 Z" fill="url(#gBar)" stroke="#a07800" strokeWidth="0.5"/>
+                  <path d="M5 2 L17 2 L17 5 L5 5 Z" fill="rgba(255,255,255,0.25)"/>
+                  <defs><linearGradient id="gBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ffe066"/>
+                    <stop offset="50%" stopColor="#c8960c"/>
+                    <stop offset="100%" stopColor="#7a5c00"/>
+                  </linearGradient></defs>
+                </svg>
+              : n.svg === 'silver'
+                ? <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
+                    <path d="M3 12 L5 2 L17 2 L19 12 Z" fill="url(#sBar)" stroke="#6b7280" strokeWidth="0.5"/>
+                    <path d="M5 2 L17 2 L17 5 L5 5 Z" fill="rgba(255,255,255,0.25)"/>
+                    <defs><linearGradient id="sBar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#e2e8f0"/>
+                      <stop offset="50%" stopColor="#9aa0ac"/>
+                      <stop offset="100%" stopColor="#4a4a4a"/>
+                    </linearGradient></defs>
+                  </svg>
+                : n.icon
+                  ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
+                  : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
           }
         </div>
       ))}
