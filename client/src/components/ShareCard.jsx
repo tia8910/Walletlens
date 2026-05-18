@@ -173,7 +173,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   const pnlColor = pnlPositive ? '#00e676' : '#ff5252'
   const pnlBg = pnlPositive ? 'rgba(0,230,118,0.14)' : 'rgba(255,82,82,0.14)'
   const pnlText = totalPnL == null
-    ? '▲ ••••  ••••'
+    ? (pnlPositive ? '▲ ' : '▼ ') + '••••   ' + fmtPct(totalPnLPct)
     : (pnlPositive ? '▲ ' : '▼ ') + (pnlPositive ? '+' : '') + fmtUsd(totalPnL) + '   ' + fmtPct(totalPnLPct)
   ctx.font = 'bold 20px system-ui, sans-serif'
   const pnlW = ctx.measureText(pnlText).width + 36
@@ -230,7 +230,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     // Bar gradient
     const barGrad = ctx.createLinearGradient(0, barY, 0, barY + barH)
     barGrad.addColorStop(0, h.pnl >= 0 ? 'rgba(0,230,118,0.95)' : 'rgba(255,82,82,0.85)')
-    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(var(--g-rgb),0.25)' : 'rgba(200,0,0,0.2)')
+    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(0,230,118,0.18)' : 'rgba(200,0,0,0.2)')
     ctx.fillStyle = barGrad
     ctx.shadowColor = h.pnl >= 0 ? '#00e676' : '#ff5252'
     ctx.shadowBlur = 14
@@ -282,7 +282,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   function redraw(hide) {
     if (!canvasRef.current) return
     const masked = hide
-      ? { totalValue: null, totalPnL: null, totalPnLPct: null, topHoldings: topHoldings.map(h => ({ ...h, value: null, pnl: null, pnlPct: null })), todayPnL: null }
+      ? { totalValue: null, totalPnL: null, totalPnLPct, topHoldings: topHoldings.map(h => ({ ...h, value: null, pnl: null, pnlPct: h.pnlPct ?? h.pct24h })), todayPnL: null }
       : { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL }
     drawCard(canvasRef.current, { ...masked, perfSeries, theme: getThemeColors() })
   }
@@ -295,10 +295,17 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
 
   function download() {
     track('portfolio_share_download')
-    const a = document.createElement('a')
-    a.href = canvasRef.current.toDataURL('image/png')
-    a.download = 'walletlens-portfolio.png'
-    a.click()
+    // iOS Safari doesn't support anchor download — open dataUrl in new tab instead
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const dataUrl = canvasRef.current.toDataURL('image/png')
+    if (isSafari) {
+      window.open(dataUrl, '_blank')
+    } else {
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = 'walletlens-portfolio.png'
+      a.click()
+    }
   }
 
   async function copyImage() {
@@ -322,23 +329,27 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
     if (sharing) return
     setSharing(true)
     track('portfolio_share_x')
+    let usedWebShare = false
     try {
-      // Try Web Share API with image file (works on mobile)
+      // Try Web Share API with image file — on mobile this opens the native share sheet
+      // and the image attaches automatically when the user picks X/Twitter
       if (navigator.canShare) {
-        const dataUrl = canvasRef.current.toDataURL('image/png')
-        const res = await fetch(dataUrl)
-        const blob = await res.blob()
+        const blob = await new Promise(resolve => canvasRef.current.toBlob(resolve, 'image/png'))
         const file = new File([blob], 'walletlens-portfolio.png', { type: 'image/png' })
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'My WalletLens Portfolio', text: decodeURIComponent(tweetText()) })
-          setSharing(false); return
+          usedWebShare = true
         }
       }
-    } catch { /* fall through to desktop */ }
-    // Desktop fallback: download image + open X
+    } catch (e) {
+      // AbortError = user dismissed share sheet — that's fine, don't fall through
+      if (e?.name === 'AbortError') { setSharing(false); return }
+    }
+    setSharing(false)
+    if (usedWebShare) return
+    // Desktop fallback: download image then open X compose
     download()
     setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetText()}`, '_blank', 'noopener'), 400)
-    setSharing(false)
   }
 
   return (
