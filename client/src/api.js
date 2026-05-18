@@ -480,33 +480,35 @@ async function fetchFiatRates() {
 let batchStockCache = {};
 let batchStockCacheTime = 0;
 
-// Financial Modeling Prep demo key — free, no signup, CORS-enabled
-const FMP_KEY = 'demo';
-
-async function fetchFMPBatch(tickers) {
-  // FMP /quote accepts comma-separated symbols, returns price + changesPercentage
-  try {
-    const syms = tickers.join(',');
-    const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(syms)}?apikey=${FMP_KEY}`;
-    const res = await fetchWithTimeout(url, 5000);
-    if (res.ok) {
+// NASDAQ public API — used by their own website, no key, CORS-enabled
+async function fetchNasdaqBatch(tickers) {
+  const out = {};
+  // NASDAQ's /api/quote/{symbol}/info endpoint returns price data per symbol
+  // Fire all in parallel — each is a lightweight JSON call
+  await Promise.all(tickers.map(async sym => {
+    try {
+      const url = `https://api.nasdaq.com/api/quote/${encodeURIComponent(sym)}/info?assetclass=stocks`;
+      const res = await fetchWithTimeout(url, 5000);
+      if (!res.ok) return;
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const out = {};
-        for (const q of data) {
-          if (!q?.symbol || typeof q.price !== 'number' || q.price <= 0) continue;
-          out[q.symbol.toUpperCase()] = {
-            usd: q.price,
-            usd_24h_change: q.changesPercentage || 0,
-            name: q.name || q.symbol,
-            source: 'fmp',
-          };
-        }
-        if (Object.keys(out).length > 0) return out;
-      }
-    }
-  } catch {}
-  return null;
+      const info = data?.data;
+      if (!info) return;
+      // primaryData.lastSalePrice looks like "$213.55"
+      const rawPrice = info.primaryData?.lastSalePrice?.replace(/[^0-9.]/g, '');
+      const usd = parseFloat(rawPrice);
+      if (!isFinite(usd) || usd <= 0) return;
+      // percentageChange looks like "+1.23%" or "-0.45%"
+      const rawPct = info.primaryData?.percentageChange?.replace(/[^0-9.\-+]/g, '') || '0';
+      const pct = parseFloat(rawPct) || 0;
+      out[sym.toUpperCase()] = {
+        usd,
+        usd_24h_change: pct,
+        name: info.companyName || sym,
+        source: 'nasdaq',
+      };
+    } catch {}
+  }));
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 async function fetchOneTicker(sym) {
@@ -556,10 +558,10 @@ async function fetchBatchStocks(tickers) {
   const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
   if (missing.length === 0) return batchStockCache;
 
-  // Primary: FMP batch — one request for all tickers
-  const fmpResult = await fetchFMPBatch(missing);
-  if (fmpResult) {
-    for (const [sym, data] of Object.entries(fmpResult)) {
+  // Primary: NASDAQ public API — parallel per-ticker, no key needed
+  const nasdaqResult = await fetchNasdaqBatch(missing);
+  if (nasdaqResult) {
+    for (const [sym, data] of Object.entries(nasdaqResult)) {
       batchStockCache[sym] = data;
     }
   }
