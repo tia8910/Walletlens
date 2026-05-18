@@ -1945,7 +1945,9 @@ export default function Dashboard() {
   // Milestone detection
   useEffect(() => {
     if (!loaded || totalValue === 0 || milestone) return
-    const dayChangePct = perfChange?.pct || 0
+    // Use actual 24h coin price changes, not the chart timeframe % which can be all-time
+    const todayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
+    const dayChangePct = totalValue > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0
     const m = detectMilestone({ totalValue, totalPnL, prevTotalPnL: prevPnLRef.current, dayChangePct })
     if (m) setMilestone(m)
     prevPnLRef.current = totalPnL
