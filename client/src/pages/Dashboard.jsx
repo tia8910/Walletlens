@@ -2003,8 +2003,11 @@ export default function Dashboard() {
             <span className="theme-strip-icon" style={{
               background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
               boxShadow: theme === th.id ? `0 0 14px ${th.swatch}88` : 'none',
+              overflow: 'hidden', padding: th.logo ? 0 : undefined,
             }}>
-              {th.icon}
+              {th.logo
+                ? <img src={th.logo} alt={th.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : th.icon}
             </span>
             <span className="theme-strip-label">{th.name}</span>
             {theme === th.id && <span className="theme-strip-dot" />}
