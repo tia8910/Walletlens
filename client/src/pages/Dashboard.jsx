@@ -1379,15 +1379,37 @@ function ConstellationMap() {
           {n.logo
             ? <span style={{ display:'none', fontSize:'0.6rem', fontWeight:800, color:n.color }}>{n.symbol}</span>
             : n.svg === 'gold'
-              ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                  <div style={{ width:20, height:10, background:'linear-gradient(180deg,#ffe066 0%,#c8960c 55%,#7a5c00 100%)', borderRadius:2, border:'1px solid #a07800', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.4)' }}/>
-                  <div style={{ width:24, height:5, background:'linear-gradient(180deg,#c8960c 0%,#7a5c00 100%)', borderRadius:'0 0 2px 2px', border:'1px solid #a07800', borderTop:'none' }}/>
-                </div>
+              ? <svg width="30" height="22" viewBox="0 0 30 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* right side face */}
+                  <polygon points="22,4 28,7 28,17 22,14" fill="#7a5200"/>
+                  {/* front face */}
+                  <polygon points="2,7 22,7 22,17 2,17" fill="#c8860a"/>
+                  {/* top face */}
+                  <polygon points="2,7 22,7 28,4 8,4" fill="#f5c518"/>
+                  {/* top shine */}
+                  <polygon points="4,4.5 26,4.5 28,4 8,4" fill="rgba(255,255,255,0.35)"/>
+                  {/* emboss border on front */}
+                  <polygon points="4,9 20,9 20,15 4,15" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="0.7"/>
+                  {/* text FINE GOLD */}
+                  <text x="12" y="12.2" textAnchor="middle" fontSize="3" fill="rgba(0,0,0,0.45)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.3">FINE GOLD</text>
+                  <text x="12" y="15" textAnchor="middle" fontSize="2.4" fill="rgba(0,0,0,0.35)" fontFamily="Arial">999.9</text>
+                </svg>
               : n.svg === 'silver'
-                ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                    <div style={{ width:20, height:10, background:'linear-gradient(180deg,#e8ecf4 0%,#9aa0ac 55%,#4a4a4a 100%)', borderRadius:2, border:'1px solid #6b7280', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.5)' }}/>
-                    <div style={{ width:24, height:5, background:'linear-gradient(180deg,#9aa0ac 0%,#4a4a4a 100%)', borderRadius:'0 0 2px 2px', border:'1px solid #6b7280', borderTop:'none' }}/>
-                  </div>
+                ? <svg width="30" height="22" viewBox="0 0 30 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* right side face */}
+                    <polygon points="22,4 28,7 28,17 22,14" fill="#4a4a55"/>
+                    {/* front face */}
+                    <polygon points="2,7 22,7 22,17 2,17" fill="#8a9099"/>
+                    {/* top face */}
+                    <polygon points="2,7 22,7 28,4 8,4" fill="#d8dde6"/>
+                    {/* top shine */}
+                    <polygon points="4,4.5 26,4.5 28,4 8,4" fill="rgba(255,255,255,0.5)"/>
+                    {/* emboss border on front */}
+                    <polygon points="4,9 20,9 20,15 4,15" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="0.7"/>
+                    {/* text FINE SILVER */}
+                    <text x="12" y="12.2" textAnchor="middle" fontSize="2.6" fill="rgba(0,0,0,0.4)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.2">FINE SILVER</text>
+                    <text x="12" y="15" textAnchor="middle" fontSize="2.4" fill="rgba(0,0,0,0.3)" fontFamily="Arial">999.9</text>
+                  </svg>
                 : n.icon
                   ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
                   : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
