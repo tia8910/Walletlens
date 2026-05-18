@@ -5,7 +5,8 @@ const CRYPTO_EXCHANGES = [
     name: 'Binance',
     tagline: 'World\'s #1 Exchange',
     fee: '0.1% spot fee',
-    bonus: 'Earn USDC on sign-up',
+    bonus: 'Get USDC rewards on sign-up',
+    reward: 'USDC Rewards',
     color: '#f0b90b',
     bg: 'linear-gradient(135deg, #1a1400 0%, #2a1f00 100%)',
     glow: 'rgba(240,185,11,0.25)',
@@ -25,7 +26,8 @@ const CRYPTO_EXCHANGES = [
     name: 'OKX',
     tagline: 'Advanced Web3 Trading',
     fee: '0.08% maker fee',
-    bonus: 'Mystery box for new users',
+    bonus: 'Earn up to 100 USDT on sign-up',
+    reward: 'Up to 100 USDT',
     color: '#e2e8f0',
     bg: 'linear-gradient(135deg, #0a0a0f 0%, #16161f 100%)',
     glow: 'rgba(226,232,240,0.15)',
@@ -44,7 +46,8 @@ const CRYPTO_EXCHANGES = [
     name: 'Bybit',
     tagline: 'Fast Derivatives & Spot',
     fee: '0.1% taker fee',
-    bonus: 'Up to $30,000 welcome bonus',
+    bonus: 'Claim 20 USDT referee reward',
+    reward: '20 USDT Bonus',
     color: '#f7a600',
     bg: 'linear-gradient(135deg, #1a1000 0%, #241800 100%)',
     glow: 'rgba(247,166,0,0.22)',
@@ -71,7 +74,8 @@ const STOCK_BROKERS = [
     name: 'IBKR',
     tagline: 'Stocks, Options & Crypto',
     fee: '$0 commissions on stocks',
-    bonus: 'Earn up to $1,000 IBKR stock',
+    bonus: 'Earn up to $1,000 in IBKR stock',
+    reward: 'Up to $1,000 Stock',
     color: '#e8121f',
     bg: 'linear-gradient(135deg, #110003 0%, #1f0005 100%)',
     glow: 'rgba(232,18,31,0.22)',
@@ -93,7 +97,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
   if (compact) {
     return (
       <div className="ep-strip-wrap">
-        <span className="ep-strip-label">{stockOnly ? 'Trade stocks on' : 'Trade on'}</span>
+        <span className="ep-strip-label">🎁 Sign up &amp; earn rewards</span>
         <div className="ep-strip-row">
           {exchanges.map(ex => (
             <a
@@ -106,7 +110,10 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
               onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
             >
               <span className="ep-strip-logo">{ex.logo}</span>
-              <span className="ep-strip-name" style={{ color: ex.color }}>{ex.name}</span>
+              <span className="ep-strip-info">
+                <span className="ep-strip-name" style={{ color: ex.color }}>{ex.name}</span>
+                {ex.reward && <span className="ep-strip-reward">{ex.reward}</span>}
+              </span>
             </a>
           ))}
         </div>
