@@ -480,95 +480,64 @@ async function fetchFiatRates() {
 let batchStockCache = {};
 let batchStockCacheTime = 0;
 
-async function fetchBatchStocks(tickers) {
-  // Return cache if fresh
-  const now = Date.now();
-  const allCached = tickers.every(t => batchStockCache[t] && now - batchStockCacheTime < STOCK_CACHE_DURATION);
-  if (allCached) return batchStockCache;
-
-  const symbols = tickers.join(',');
-
-  // ── Primary: Yahoo Finance v7 batch (CORS-enabled on most networks) ──
-  try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
-    const res = await fetchWithTimeout(url, 5000);
-    if (res.ok) {
-      const data = await res.json();
-      const quotes = data?.quoteResponse?.result;
-      if (Array.isArray(quotes) && quotes.length > 0) {
-        for (const q of quotes) {
-          const sym = q.symbol?.toUpperCase();
-          if (!sym) continue;
-          const usd = q.regularMarketPrice;
-          if (typeof usd === 'number' && usd > 0) {
-            batchStockCache[sym] = {
-              usd,
-              usd_24h_change: q.regularMarketChangePercent || 0,
-              name: q.shortName || sym,
-              source: 'yahoo',
-            };
-          }
+async function fetchOneTicker(sym) {
+  const ticker = sym.toUpperCase();
+  // Yahoo v8/chart — no crumb needed for single-symbol calls
+  for (const host of ['query1', 'query2']) {
+    try {
+      const url = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const res = await fetchWithTimeout(url, 4000);
+      if (res.ok) {
+        const meta = (await res.json())?.chart?.result?.[0]?.meta;
+        if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+          return {
+            usd: meta.regularMarketPrice,
+            usd_24h_change: meta.regularMarketChangePercent || 0,
+            name: meta.longName || meta.shortName || ticker,
+            source: 'yahoo',
+          };
         }
-        batchStockCacheTime = now;
-        // Return what we got — individual fallback handles misses
-        return batchStockCache;
       }
+    } catch {}
+  }
+  // Stooq CSV (no CORS issues on desktop, sometimes on mobile)
+  try {
+    const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
+    const res = await fetchWithTimeout(stooqUrl, 4000);
+    if (res.ok) {
+      const parsed = parseStooqRow(await res.text());
+      if (parsed) return { ...parsed, source: 'stooq' };
     }
   } catch {}
-
-  // ── Fallback: query2 Yahoo endpoint ──
-  try {
-    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
-    const res = await fetchWithTimeout(url, 5000);
-    if (res.ok) {
-      const data = await res.json();
-      const quotes = data?.quoteResponse?.result;
-      if (Array.isArray(quotes) && quotes.length > 0) {
-        for (const q of quotes) {
-          const sym = q.symbol?.toUpperCase();
-          if (!sym) continue;
-          const usd = q.regularMarketPrice;
-          if (typeof usd === 'number' && usd > 0) {
-            batchStockCache[sym] = {
-              usd,
-              usd_24h_change: q.regularMarketChangePercent || 0,
-              name: q.shortName || sym,
-              source: 'yahoo2',
-            };
-          }
-        }
-        batchStockCacheTime = now;
-        return batchStockCache;
-      }
-    }
-  } catch {}
-
-  // ── CORS proxy fallback for Yahoo v7 ──
+  // CORS proxy fallback (Yahoo v8)
   for (const wrap of [
     (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
     (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   ]) {
     try {
-      const target = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
-      const res = await fetchWithTimeout(wrap(target), 5000);
+      const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const res = await fetchWithTimeout(wrap(target), 4000);
       if (!res.ok) continue;
-      const data = await res.json();
-      const quotes = data?.quoteResponse?.result;
-      if (Array.isArray(quotes) && quotes.length > 0) {
-        for (const q of quotes) {
-          const sym = q.symbol?.toUpperCase();
-          if (!sym) continue;
-          const usd = q.regularMarketPrice;
-          if (typeof usd === 'number' && usd > 0) {
-            batchStockCache[sym] = { usd, usd_24h_change: q.regularMarketChangePercent || 0, name: q.shortName || sym, source: 'yahoo-proxy' };
-          }
-        }
-        batchStockCacheTime = now;
-        return batchStockCache;
+      const meta = (await res.json())?.chart?.result?.[0]?.meta;
+      if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+        return { usd: meta.regularMarketPrice, usd_24h_change: meta.regularMarketChangePercent || 0, name: meta.longName || ticker, source: 'yahoo-proxy' };
       }
     } catch {}
   }
+  return null;
+}
 
+async function fetchBatchStocks(tickers) {
+  const now = Date.now();
+  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
+  if (missing.length === 0) return batchStockCache;
+
+  // Fire all tickers in parallel — each uses its own fallback chain
+  const results = await Promise.all(missing.map(async t => ({ t, data: await fetchOneTicker(t) })));
+  for (const { t, data } of results) {
+    if (data) batchStockCache[t] = data;
+  }
+  batchStockCacheTime = now;
   return batchStockCache;
 }
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
