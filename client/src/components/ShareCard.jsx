@@ -329,19 +329,25 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
     if (sharing) return
     setSharing(true)
     track('portfolio_share_x')
+    let usedWebShare = false
     try {
-      // Try Web Share API with image file (works on mobile)
+      // Try Web Share API with image file — on mobile this opens the native share sheet
+      // and the image attaches automatically when the user picks X/Twitter
       if (navigator.canShare) {
         const blob = await new Promise(resolve => canvasRef.current.toBlob(resolve, 'image/png'))
         const file = new File([blob], 'walletlens-portfolio.png', { type: 'image/png' })
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'My WalletLens Portfolio', text: decodeURIComponent(tweetText()) })
-          return
+          usedWebShare = true
         }
       }
-    } catch { /* fall through to desktop */ }
-    finally { setSharing(false) }
-    // Desktop fallback: download image + open X
+    } catch (e) {
+      // AbortError = user dismissed share sheet — that's fine, don't fall through
+      if (e?.name === 'AbortError') { setSharing(false); return }
+    }
+    setSharing(false)
+    if (usedWebShare) return
+    // Desktop fallback: download image then open X compose
     download()
     setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetText()}`, '_blank', 'noopener'), 400)
   }
