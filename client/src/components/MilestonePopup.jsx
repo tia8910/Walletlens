@@ -25,7 +25,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
   }
   for (const m of ROUND_MILESTONES) {
     const key = `round_${m}`
-    if (totalValue > m * 1.1 && !seen.has(key)) {
+    if (totalValue > m * 1.01 && !seen.has(key)) {
       seen.add(key)
       seenUpdated = true
     }
