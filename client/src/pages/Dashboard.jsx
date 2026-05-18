@@ -1379,25 +1379,15 @@ function ConstellationMap() {
           {n.logo
             ? <span style={{ display:'none', fontSize:'0.6rem', fontWeight:800, color:n.color }}>{n.symbol}</span>
             : n.svg === 'gold'
-              ? <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
-                  <path d="M3 12 L5 2 L17 2 L19 12 Z" fill="url(#gBar)" stroke="#a07800" strokeWidth="0.5"/>
-                  <path d="M5 2 L17 2 L17 5 L5 5 Z" fill="rgba(255,255,255,0.25)"/>
-                  <defs><linearGradient id="gBar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ffe066"/>
-                    <stop offset="50%" stopColor="#c8960c"/>
-                    <stop offset="100%" stopColor="#7a5c00"/>
-                  </linearGradient></defs>
-                </svg>
+              ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                  <div style={{ width:20, height:10, background:'linear-gradient(180deg,#ffe066 0%,#c8960c 55%,#7a5c00 100%)', borderRadius:2, border:'1px solid #a07800', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.4)' }}/>
+                  <div style={{ width:24, height:5, background:'linear-gradient(180deg,#c8960c 0%,#7a5c00 100%)', borderRadius:'0 0 2px 2px', border:'1px solid #a07800', borderTop:'none' }}/>
+                </div>
               : n.svg === 'silver'
-                ? <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
-                    <path d="M3 12 L5 2 L17 2 L19 12 Z" fill="url(#sBar)" stroke="#6b7280" strokeWidth="0.5"/>
-                    <path d="M5 2 L17 2 L17 5 L5 5 Z" fill="rgba(255,255,255,0.25)"/>
-                    <defs><linearGradient id="sBar" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#e2e8f0"/>
-                      <stop offset="50%" stopColor="#9aa0ac"/>
-                      <stop offset="100%" stopColor="#4a4a4a"/>
-                    </linearGradient></defs>
-                  </svg>
+                ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                    <div style={{ width:20, height:10, background:'linear-gradient(180deg,#e8ecf4 0%,#9aa0ac 55%,#4a4a4a 100%)', borderRadius:2, border:'1px solid #6b7280', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.5)' }}/>
+                    <div style={{ width:24, height:5, background:'linear-gradient(180deg,#9aa0ac 0%,#4a4a4a 100%)', borderRadius:'0 0 2px 2px', border:'1px solid #6b7280', borderTop:'none' }}/>
+                  </div>
                 : n.icon
                   ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
                   : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
