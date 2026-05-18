@@ -1211,8 +1211,9 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
       const chg = prices[h.coin_id]?.usd_24h_change ?? 0
       const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
       const intensity = Math.min(Math.abs(chg) / 20, 1)
+      const gRgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
       const color = chg >= 0
-        ? `rgba(52,211,153,${0.15 + intensity * 0.65})`
+        ? `rgba(${gRgb},${0.15 + intensity * 0.65})`
         : `rgba(248,113,113,${0.15 + intensity * 0.65})`
       return { ...h, chg, sizePct, color }
     })

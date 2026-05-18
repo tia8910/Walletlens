@@ -3107,7 +3107,7 @@ tr:last-child td { border-bottom: none; }
 @keyframes dash-v2-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 .glass-card {
-  background: var(--card-bg, rgba(15, 23, 20, 0.92));
+  background: var(--card-bg);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid rgba(var(--g-rgb),0.45);
