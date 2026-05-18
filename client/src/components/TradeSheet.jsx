@@ -297,15 +297,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 17 9"/>
             </svg>
             <p style={{ color:'#fff', fontWeight:700, fontSize:'1.05rem', margin:0 }}>Trade Recorded!</p>
-            <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0.75rem' }}>
+            <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0' }}>
               {isBuy ? 'Bought' : 'Sold'} {amount} {asset?.symbol}
             </p>
-            <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:14, padding:'0.85rem', width:'100%', textAlign:'left', marginTop:'0.25rem' }}>
-              <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.6rem' }}>
-                {isBuy ? '⚡ Execute this trade on' : '📤 Sell on exchange'}
-              </p>
-              <ExchangePartners compact source={`trade_success_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
-            </div>
           </div>
         ) : (
           <div className="bs-body">
@@ -313,6 +307,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-type-pill" style={{ background: isBuy ? 'rgba(var(--g-rgb),0.12)' : 'rgba(248,113,113,0.12)', color: accent, borderColor: accent + '55' }}>
                 {isBuy ? 'Buy Order' : 'Sell Order'}
               </div>
+            </div>
+
+            {/* ── Get it on exchange (before form) ── */}
+            <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:12, padding:'0.7rem 0.85rem', marginBottom:'0.5rem' }}>
+              <p style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.38)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
+                {isBuy ? "Don't have it yet? Buy on" : 'Sell on exchange'}
+              </p>
+              <ExchangePartners compact source={`trade_form_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
             </div>
 
             {/* ── Category selector ── */}
@@ -585,7 +587,6 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
 
-            <ExchangePartners compact source={type} />
           </div>
         )}
       </div>
