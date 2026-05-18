@@ -6,6 +6,7 @@ export const THEMES = [
   { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: '🥈' },
   { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿'  },
   { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ'  },
+  { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎', logo: 'https://assets.coincap.io/assets/icons/sol@2x.png' },
 ]
 
 const PALETTE = {
@@ -78,6 +79,20 @@ const PALETTE = {
     hga: 'linear-gradient(135deg,#627eea 0%,#3a57d4 100%)',
     mesh1: 'rgba(98,126,234,0.06)', mesh2: 'rgba(58,87,212,0.04)', mesh3: 'rgba(98,126,234,0.05)',
     glow: '0 0 0 1px rgba(98,126,234,0.25),0 0 40px rgba(98,126,234,0.15)',
+  },
+  solana: {
+    g: '#9945ff', gd: '#7c3aed', gRgb: '153,69,255', gdRgb: '124,58,237',
+    gl: 'rgba(153,69,255,0.12)', ink3: 'rgba(153,69,255,0.55)',
+    bg: '#0a070f', cardBg: 'rgba(22,10,40,0.90)',
+    bg3: '#120a1e', bg4: '#180d28',
+    border: 'rgba(153,69,255,0.38)',
+    ink: '#060408', ink2: '#120a1e', text2: 'rgba(153,69,255,0.80)',
+    accent: '#9945ff', accent2: '#7c3aed', accentBg: 'rgba(153,69,255,0.12)',
+    green: '#9945ff', greenBg: 'rgba(153,69,255,0.14)',
+    hg: 'linear-gradient(135deg,#060408 0%,#180d28 50%,#9945ff 110%)',
+    hga: 'linear-gradient(135deg,#9945ff 0%,#14f195 100%)',
+    mesh1: 'rgba(153,69,255,0.07)', mesh2: 'rgba(20,241,149,0.04)', mesh3: 'rgba(153,69,255,0.05)',
+    glow: '0 0 0 1px rgba(153,69,255,0.28),0 0 40px rgba(153,69,255,0.18)',
   },
 }
 
