@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 export default function DynamicBackground({
   particleCount = 220,
   linkDistance = 150,
-  color = 'var(--g)',
+  color = null,
 }) {
   const canvasRef = useRef(null)
   const reduceMotion = typeof window !== 'undefined' &&
@@ -17,6 +17,16 @@ export default function DynamicBackground({
     let raf = 0
     let w = 0, h = 0
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+
+    function getColor() {
+      if (color) return color
+      return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
+    }
+
+    function getRgb() {
+      const rgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
+      return rgb
+    }
 
     function resize() {
       w = canvas.clientWidth
@@ -42,6 +52,8 @@ export default function DynamicBackground({
 
     function step() {
       ctx.clearRect(0, 0, w, h)
+      const rgb = getRgb()
+      const col = getColor()
 
       // Sharp connecting lines
       ctx.lineWidth = 0.9
@@ -53,7 +65,7 @@ export default function DynamicBackground({
           const d2 = dx * dx + dy * dy
           if (d2 < linkDistance * linkDistance) {
             const alpha = 1 - Math.sqrt(d2) / linkDistance
-            ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.22})`
+            ctx.strokeStyle = `rgba(${rgb}, ${alpha * 0.22})`
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)
             ctx.lineTo(b.x, b.y)
@@ -63,9 +75,9 @@ export default function DynamicBackground({
       }
 
       // Sharp rectangular particles with glow
-      ctx.fillStyle = color
+      ctx.fillStyle = col
       ctx.shadowBlur = 18
-      ctx.shadowColor = color
+      ctx.shadowColor = col
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
