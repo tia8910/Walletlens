@@ -1266,7 +1266,7 @@ function ConstellationMap() {
     { symbol:'SLVR', color:'#c0c8d8', x:0.18, y:0.72, iconBg:'linear-gradient(135deg,#4a4a4a,#9aa0ac)', svg:'silver' },
     { symbol:'AAPL', color:'#a2aaad',   x:0.12, y:0.32, logo:'https://logo.clearbit.com/apple.com', logoBg:'#000' },
     { symbol:'NVDA', color:'#76b900',   x:0.62, y:0.10, logo:'https://logo.clearbit.com/nvidia.com', logoBg:'#000' },
-    { symbol:'USD',  coinId:'usd-coin', color:'#22c55e', x:0.88, y:0.64 },
+    { symbol:'USD',  color:'#22c55e', x:0.88, y:0.64, svg:'usd' },
   ]
   // Edges (constellation lines between node indices)
   const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[1,6],[2,6]]
@@ -1410,9 +1410,14 @@ function ConstellationMap() {
                     <text x="12" y="12.2" textAnchor="middle" fontSize="2.6" fill="rgba(0,0,0,0.4)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.2">FINE SILVER</text>
                     <text x="12" y="15" textAnchor="middle" fontSize="2.4" fill="rgba(0,0,0,0.3)" fontFamily="Arial">999.9</text>
                   </svg>
-                : n.icon
-                  ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
-                  : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
+                : n.svg === 'usd'
+                  ? <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="14" cy="14" r="13" fill="#1a3a1a" stroke="#22c55e" strokeWidth="1.5"/>
+                      <text x="14" y="19" textAnchor="middle" fontSize="16" fill="#22c55e" fontFamily="Arial" fontWeight="bold">$</text>
+                    </svg>
+                  : n.icon
+                    ? <span style={{ fontSize:'1.1rem', lineHeight:1 }}>{n.icon}</span>
+                    : <CoinLogo coinId={n.coinId} symbol={n.symbol} size={28} className="coin-logo" />
           }
         </div>
       ))}
