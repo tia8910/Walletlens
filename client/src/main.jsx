@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { LanguageProvider } from './LanguageContext'
+import { ThemeProvider } from './ThemeContext'
 import './index.css'
 
 // Auto-reload on stale chunk error (happens when a new deployment replaces old chunk files)
@@ -18,9 +19,11 @@ const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter basename={basename}>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 )
