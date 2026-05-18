@@ -480,35 +480,76 @@ async function fetchFiatRates() {
 let batchStockCache = {};
 let batchStockCacheTime = 0;
 
-// NASDAQ public API — used by their own website, no key, CORS-enabled
-async function fetchNasdaqBatch(tickers) {
+function parseStooqBatchCsv(text) {
+  // Stooq multi-ticker CSV: first line = headers, subsequent lines = one ticker each
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return null;
+  const headers = lines[0].split(',');
+  const nameIdx   = headers.indexOf('Name');
+  const closeIdx  = headers.indexOf('Close');
+  const openIdx   = headers.indexOf('Open');
   const out = {};
-  // NASDAQ's /api/quote/{symbol}/info endpoint returns price data per symbol
-  // Fire all in parallel — each is a lightweight JSON call
-  await Promise.all(tickers.map(async sym => {
-    try {
-      const url = `https://api.nasdaq.com/api/quote/${encodeURIComponent(sym)}/info?assetclass=stocks`;
-      const res = await fetchWithTimeout(url, 5000);
-      if (!res.ok) return;
-      const data = await res.json();
-      const info = data?.data;
-      if (!info) return;
-      // primaryData.lastSalePrice looks like "$213.55"
-      const rawPrice = info.primaryData?.lastSalePrice?.replace(/[^0-9.]/g, '');
-      const usd = parseFloat(rawPrice);
-      if (!isFinite(usd) || usd <= 0) return;
-      // percentageChange looks like "+1.23%" or "-0.45%"
-      const rawPct = info.primaryData?.percentageChange?.replace(/[^0-9.\-+]/g, '') || '0';
-      const pct = parseFloat(rawPct) || 0;
-      out[sym.toUpperCase()] = {
-        usd,
-        usd_24h_change: pct,
-        name: info.companyName || sym,
-        source: 'nasdaq',
-      };
-    } catch {}
-  }));
-  return Object.keys(out).length > 0 ? out : null;
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',');
+    const name = nameIdx >= 0 ? vals[nameIdx] : '';
+    const close = parseFloat(vals[closeIdx]);
+    const open  = parseFloat(vals[openIdx]);
+    if (!isFinite(close) || close <= 0) continue;
+    const change = isFinite(open) && open > 0 ? ((close - open) / open) * 100 : 0;
+    // Symbol is the Name column value (Stooq uses full name; use ticker from caller)
+    // Use position in lines to map back to tickers — stored separately
+    out[i - 1] = { usd: close, usd_24h_change: change, name };
+  }
+  return out;
+}
+
+async function fetchTwelveDataBatch(tickers) {
+  // ── 1. Stooq batch CSV — all tickers in one request, no key, CORS-enabled ──
+  try {
+    const syms = tickers.map(t => `${t.toLowerCase()}.us`).join('%3B'); // %3B = ;
+    const url = `https://stooq.com/q/l/?s=${syms}&f=sd2t2ohlcvn&h&e=csv`;
+    const res = await fetchWithTimeout(url, 6000);
+    if (res.ok) {
+      const text = await res.text();
+      const byIdx = parseStooqBatchCsv(text);
+      if (byIdx && Object.keys(byIdx).length > 0) {
+        const out = {};
+        for (const [idx, data] of Object.entries(byIdx)) {
+          const sym = tickers[Number(idx)];
+          if (sym) out[sym.toUpperCase()] = { ...data, source: 'stooq' };
+        }
+        if (Object.keys(out).length > 0) return out;
+      }
+    }
+  } catch {}
+
+  // ── 2. corsproxy → Yahoo Finance v8 chart for each ticker in parallel ──
+  try {
+    const results = await Promise.all(tickers.map(async sym => {
+      for (const wrap of [
+        (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+        (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+      ]) {
+        try {
+          const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+          const res = await fetchWithTimeout(wrap(target), 5000);
+          if (!res.ok) continue;
+          const meta = (await res.json())?.chart?.result?.[0]?.meta;
+          if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+            return { sym: sym.toUpperCase(), usd: meta.regularMarketPrice, usd_24h_change: meta.regularMarketChangePercent || 0, name: meta.longName || sym };
+          }
+        } catch {}
+      }
+      return null;
+    }));
+    const out = {};
+    for (const r of results) {
+      if (r) out[r.sym] = { usd: r.usd, usd_24h_change: r.usd_24h_change, name: r.name, source: 'yahoo-proxy' };
+    }
+    if (Object.keys(out).length > 0) return out;
+  } catch {}
+
+  return null;
 }
 
 async function fetchOneTicker(sym) {
@@ -558,10 +599,10 @@ async function fetchBatchStocks(tickers) {
   const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
   if (missing.length === 0) return batchStockCache;
 
-  // Primary: NASDAQ public API — parallel per-ticker, no key needed
-  const nasdaqResult = await fetchNasdaqBatch(missing);
-  if (nasdaqResult) {
-    for (const [sym, data] of Object.entries(nasdaqResult)) {
+  // Primary: Twelve Data → Stooq batch → Yahoo proxy
+  const batchResult = await fetchTwelveDataBatch(missing);
+  if (batchResult) {
+    for (const [sym, data] of Object.entries(batchResult)) {
       batchStockCache[sym] = data;
     }
   }
