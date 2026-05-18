@@ -3,7 +3,7 @@
 // • /assets/ (hashed JS/CSS): network-first, cache fallback
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v7'
+const SW_VERSION = 'v8'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
