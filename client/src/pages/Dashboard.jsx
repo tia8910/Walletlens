@@ -1314,21 +1314,21 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         {/* Outer ring */}
         <div style={{
           position:'absolute', inset:0, borderRadius:'50%',
-          border:'1.5px dashed rgba(var(--g-rgb),0.2)',
+          border:'1.5px dashed var(--g)', opacity:0.2,
           animation:'ep-spin 18s linear infinite',
         }}/>
 
         {/* Middle ring */}
         <div style={{
           position:'absolute', inset:22, borderRadius:'50%',
-          border:'1px solid rgba(96,165,250,0.15)',
+          border:'1px solid var(--g)', opacity:0.15,
           animation:'ep-spin-r 12s linear infinite',
         }}/>
 
         {/* Inner pulse ring */}
         <div style={{
           position:'absolute', inset:44, borderRadius:'50%',
-          border:'1.5px solid rgba(var(--g-rgb),0.3)',
+          border:'1.5px solid var(--g)', opacity:0.3,
           animation:'ep-pulse 3s ease-in-out infinite',
         }}/>
 
