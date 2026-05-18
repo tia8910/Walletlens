@@ -315,6 +315,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
             </div>
 
+            {/* ── Get it on exchange (before form) ── */}
+            <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:12, padding:'0.7rem 0.85rem', marginBottom:'0.5rem' }}>
+              <p style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.38)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
+                {isBuy ? "Don't have it yet? Buy on" : 'Sell on exchange'}
+              </p>
+              <ExchangePartners compact source={`trade_form_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
+            </div>
+
             {/* ── Category selector ── */}
             {!prefillCoin && (
               <div className="bs-field">
@@ -585,7 +593,6 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
 
-            <ExchangePartners compact source={type} />
           </div>
         )}
       </div>

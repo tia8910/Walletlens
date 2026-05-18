@@ -1492,6 +1492,14 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         ))}
       </div>
 
+      {/* Exchange strip — buy before you track */}
+      <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:14, padding:'0.85rem', textAlign:'left', marginBottom:'1rem' }}>
+        <p style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
+          🚀 Buy crypto on
+        </p>
+        <ExchangePartners compact source="empty_portfolio" cryptoOnly />
+      </div>
+
       <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.2)' }}>
         Your data stays on your device — no account needed
       </div>
