@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
@@ -1793,6 +1794,8 @@ export default function Dashboard() {
   })
   const [fxRates, setFxRates] = useState({})
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const currencyBtnRef = useRef(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
   useEffect(() => {
     api.getFiatRates().then(r => setFxRates(r || {})).catch(() => {})
@@ -2120,22 +2123,33 @@ export default function Dashboard() {
                 </button>
               ))}
               <button
+                ref={currencyBtnRef}
                 className={`dvx-currency-pill${!['USD','EUR','GBP','BTC'].includes(displayCurrency) ? ' active' : ''}`}
-                onClick={() => setShowCurrencyPicker(p => !p)}
+                onClick={() => {
+                  if (currencyBtnRef.current) {
+                    const r = currencyBtnRef.current.getBoundingClientRect()
+                    setDropdownPos({ top: r.bottom + 6, left: r.left })
+                  }
+                  setShowCurrencyPicker(p => !p)
+                }}
                 title="More currencies"
               >
                 {!['USD','EUR','GBP','BTC'].includes(displayCurrency)
                   ? (POPULAR_FIAT.find(f => f.code === displayCurrency)?.symbol || displayCurrency)
                   : '···'}
               </button>
-              {showCurrencyPicker && (
-                <div className="dvx-currency-dropdown">
-                  {POPULAR_FIAT.filter(f => !['USD','EUR','GBP'].includes(f.code)).map(f => (
-                    <button key={f.code} className={`dvx-currency-opt${displayCurrency === f.code ? ' active' : ''}`} onClick={() => saveCurrency(f.code)}>
-                      {f.symbol} {f.code} <span>{f.name}</span>
-                    </button>
-                  ))}
-                </div>
+              {showCurrencyPicker && createPortal(
+                <>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowCurrencyPicker(false)} />
+                  <div className="dvx-currency-dropdown" style={{ top: dropdownPos.top, left: dropdownPos.left }}>
+                    {POPULAR_FIAT.filter(f => !['USD','EUR','GBP'].includes(f.code)).map(f => (
+                      <button key={f.code} className={`dvx-currency-opt${displayCurrency === f.code ? ' active' : ''}`} onClick={() => saveCurrency(f.code)}>
+                        {f.symbol} {f.code} <span>{f.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>,
+                document.body
               )}
             </div>
             {!pricesFailed && totalPnL !== 0 && (
