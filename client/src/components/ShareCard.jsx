@@ -173,7 +173,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   const pnlColor = pnlPositive ? '#00e676' : '#ff5252'
   const pnlBg = pnlPositive ? 'rgba(0,230,118,0.14)' : 'rgba(255,82,82,0.14)'
   const pnlText = totalPnL == null
-    ? '▲ ••••  ••••'
+    ? (pnlPositive ? '▲ ' : '▼ ') + '••••   ' + fmtPct(totalPnLPct)
     : (pnlPositive ? '▲ ' : '▼ ') + (pnlPositive ? '+' : '') + fmtUsd(totalPnL) + '   ' + fmtPct(totalPnLPct)
   ctx.font = 'bold 20px system-ui, sans-serif'
   const pnlW = ctx.measureText(pnlText).width + 36
@@ -253,7 +253,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     if (pnlPct != null) {
       ctx.fillStyle = pnlPct >= 0 ? '#00e676' : '#ff5252'
       ctx.font = 'bold 13px system-ui, sans-serif'
-      ctx.fillText(h.pnl == null ? '••••' : fmtPct(pnlPct), cx, barY + barH + 63)
+      ctx.fillText(fmtPct(pnlPct), cx, barY + barH + 63)
     }
   })
 
@@ -282,7 +282,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   function redraw(hide) {
     if (!canvasRef.current) return
     const masked = hide
-      ? { totalValue: null, totalPnL: null, totalPnLPct: null, topHoldings: topHoldings.map(h => ({ ...h, value: null, pnl: null, pnlPct: null })), todayPnL: null }
+      ? { totalValue: null, totalPnL: null, totalPnLPct, topHoldings: topHoldings.map(h => ({ ...h, value: null, pnl: null, pnlPct: h.pnlPct ?? h.pct24h })), todayPnL: null }
       : { totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL }
     drawCard(canvasRef.current, { ...masked, perfSeries, theme: getThemeColors() })
   }
