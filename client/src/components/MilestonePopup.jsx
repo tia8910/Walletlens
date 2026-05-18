@@ -16,8 +16,13 @@ function markSeen(key) {
 export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangePct }) {
   const seen = loadSeen()
 
-  // Pre-seed all round milestones already well exceeded so they don't retroactively fire
+  // Pre-seed milestones already exceeded so they don't retroactively fire
   let seenUpdated = false
+  // If portfolio is already in profit, mark first_profit as seen
+  if (totalPnL > 0 && prevTotalPnL === null && !seen.has('first_profit')) {
+    seen.add('first_profit')
+    seenUpdated = true
+  }
   for (const m of ROUND_MILESTONES) {
     const key = `round_${m}`
     if (totalValue > m * 1.1 && !seen.has(key)) {
@@ -29,10 +34,10 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...seen])) } catch {}
   }
 
-  // First time P&L turns positive
+  // First time P&L turns positive — only if we had a real previous reading (not first load)
   if (prevTotalPnL !== null && prevTotalPnL <= 0 && totalPnL > 0) {
     const key = 'first_profit'
-    if (!seen.has(key)) return { key, type: 'first_profit', emoji: '🎉', title: 'First profit!', sub: `You're up $${totalPnL.toFixed(2)} — your portfolio is in the green!` }
+    if (!seen.has(key)) return { key, type: 'first_profit', emoji: '🎉', title: 'First profit!', sub: `Your portfolio just turned green — congrats!` }
   }
 
   // Round number milestone
