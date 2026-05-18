@@ -230,7 +230,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     // Bar gradient
     const barGrad = ctx.createLinearGradient(0, barY, 0, barY + barH)
     barGrad.addColorStop(0, h.pnl >= 0 ? 'rgba(0,230,118,0.95)' : 'rgba(255,82,82,0.85)')
-    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(var(--g-rgb),0.25)' : 'rgba(200,0,0,0.2)')
+    barGrad.addColorStop(1, h.pnl >= 0 ? 'rgba(0,230,118,0.18)' : 'rgba(200,0,0,0.2)')
     ctx.fillStyle = barGrad
     ctx.shadowColor = h.pnl >= 0 ? '#00e676' : '#ff5252'
     ctx.shadowBlur = 14
@@ -295,10 +295,17 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
 
   function download() {
     track('portfolio_share_download')
-    const a = document.createElement('a')
-    a.href = canvasRef.current.toDataURL('image/png')
-    a.download = 'walletlens-portfolio.png'
-    a.click()
+    // iOS Safari doesn't support anchor download — open dataUrl in new tab instead
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const dataUrl = canvasRef.current.toDataURL('image/png')
+    if (isSafari) {
+      window.open(dataUrl, '_blank')
+    } else {
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = 'walletlens-portfolio.png'
+      a.click()
+    }
   }
 
   async function copyImage() {
@@ -325,20 +332,18 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
     try {
       // Try Web Share API with image file (works on mobile)
       if (navigator.canShare) {
-        const dataUrl = canvasRef.current.toDataURL('image/png')
-        const res = await fetch(dataUrl)
-        const blob = await res.blob()
+        const blob = await new Promise(resolve => canvasRef.current.toBlob(resolve, 'image/png'))
         const file = new File([blob], 'walletlens-portfolio.png', { type: 'image/png' })
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'My WalletLens Portfolio', text: decodeURIComponent(tweetText()) })
-          setSharing(false); return
+          return
         }
       }
     } catch { /* fall through to desktop */ }
+    finally { setSharing(false) }
     // Desktop fallback: download image + open X
     download()
     setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetText()}`, '_blank', 'noopener'), 400)
-    setSharing(false)
   }
 
   return (
