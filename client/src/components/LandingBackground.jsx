@@ -185,15 +185,6 @@ export default function LandingBackground() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
-      // Subtle grid lines (trading chart feel)
-      ctx.strokeStyle = 'rgba(var(--g-rgb),0.04)'
-      ctx.lineWidth = 1
-      const gridRows = 6
-      for (let i = 1; i < gridRows; i++) {
-        const y = (h / gridRows) * i
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
-      }
-
       for (let i = candles.length - 1; i >= 0; i--) {
         const c = candles[i]
 
