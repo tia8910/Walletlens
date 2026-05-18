@@ -8,11 +8,11 @@ export default function Logo({ size = 32, animated = false, className = '' }) {
       aria-label="WalletLens"
     >
       {/* outer thin ring */}
-      <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(52,211,153,0.25)" strokeWidth="1.5" />
+      <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(var(--g-rgb),0.25)" strokeWidth="1.5" />
       {/* green lens ring */}
       <circle cx="50" cy="50" r="38" fill="none" stroke="var(--g)" strokeWidth="7" />
       {/* dark iris circle (offset like a lens) */}
-      <circle cx="43" cy="44" r="18" fill="#0d2818" />
+      <circle cx="43" cy="44" r="18" fill="var(--bg)" />
       {/* inner green fill circle (pupil/light) */}
       <circle cx="50" cy="50" r="16" fill="var(--g)" />
       {/* highlight specular */}

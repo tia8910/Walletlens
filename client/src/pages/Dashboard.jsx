@@ -2594,7 +2594,7 @@ export default function Dashboard() {
             background: 'linear-gradient(135deg,var(--g),var(--gd))',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(52,211,153,0.55), 0 0 0 0 rgba(52,211,153,0.4)',
+            boxShadow: '0 4px 20px rgba(var(--g-rgb),0.55), 0 0 0 0 rgba(var(--g-rgb),0.4)',
             animation: 'fab-pulse 2.5s ease-in-out infinite',
             color: '#000',
           }}
