@@ -319,9 +319,9 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   }
 
   const tweetText = () => {
-    const pnlSign = totalPnL >= 0 ? '+' : ''
+    const pnlSign = totalPnLPct >= 0 ? '+' : ''
     return encodeURIComponent(
-      `My crypto portfolio: ${fmtUsd(totalValue)} (${pnlSign}${fmtPct(totalPnLPct)} all-time) 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.cc/?ref=share`
+      `My crypto portfolio is ${pnlSign}${fmtPct(totalPnLPct)} all-time 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.cc/?ref=share`
     )
   }
 
