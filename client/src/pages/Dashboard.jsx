@@ -1681,7 +1681,6 @@ export default function Dashboard() {
   }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
-  const [themePickerOpen, setThemePickerOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [hidden, setHidden]               = useState(false)
   const tickerStart = useRef(null)
@@ -1916,8 +1915,29 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
-      {/* Tab nav — 5 tabs + theme icon */}
-      <div className="dvx-tabs" style={{ position: 'relative' }}>
+      {/* ── Theme strip — top of page ── */}
+      <div className="theme-strip">
+        {THEMES.map(th => (
+          <button
+            key={th.id}
+            className={`theme-strip-btn ${theme === th.id ? 'theme-strip-active' : ''}`}
+            onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
+            title={th.name}
+          >
+            <span className="theme-strip-icon" style={{
+              background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+              boxShadow: theme === th.id ? `0 0 14px ${th.swatch}88` : 'none',
+            }}>
+              {th.icon}
+            </span>
+            <span className="theme-strip-label">{th.name}</span>
+            {theme === th.id && <span className="theme-strip-dot" />}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab nav — 5 tabs */}
+      <div className="dvx-tabs">
         {tabs.map(tab => (
           <button key={tab.id} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
             onClick={() => setActiveTab(tab.id)}>
@@ -1925,45 +1945,7 @@ export default function Dashboard() {
             <span>{tab.label}</span>
           </button>
         ))}
-        {/* Theme picker trigger */}
-        <button
-          onClick={() => setThemePickerOpen(true)}
-          title="Change theme"
-          style={{
-            flexShrink: 0, width: 32, height: 32, borderRadius: '50%',
-            border: '2px solid var(--border)',
-            background: THEMES.find(t => t.id === theme)?.swatch || 'var(--g)',
-            cursor: 'pointer', padding: 0,
-            boxShadow: '0 0 0 2px var(--bg), 0 2px 8px rgba(0,0,0,0.4)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            alignSelf: 'center', marginLeft: 'auto',
-          }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-        />
       </div>
-
-      {/* Theme picker modal */}
-      {themePickerOpen && (
-        <div className="theme-picker-backdrop" onClick={() => setThemePickerOpen(false)}>
-          <div className="theme-picker-sheet" onClick={e => e.stopPropagation()}>
-            <div className="theme-picker-handle" />
-            <p className="theme-picker-title">Choose Theme</p>
-            <div className="theme-picker-grid">
-              {THEMES.map(t => (
-                <button
-                  key={t.id}
-                  className={`theme-swatch-btn ${theme === t.id ? 'active' : ''}`}
-                  onClick={() => { setTheme(t.id); setThemePickerOpen(false); track('theme_changed', { theme: t.id }) }}
-                >
-                  <div className="theme-swatch-circle" style={{ background: t.swatch }} />
-                  <span className="theme-swatch-label">{t.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
