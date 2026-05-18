@@ -3667,8 +3667,9 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   background: rgba(0,0,0,0.92);
   backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(var(--g-rgb),0.2);
+  border-top: 1px solid rgba(var(--g-rgb),0.35);
   padding: 0.3rem 0 env(safe-area-inset-bottom, 0.4rem);
+  box-shadow: 0 -4px 32px rgba(var(--g-rgb),0.18), 0 -1px 0 rgba(var(--g-rgb),0.12);
 }
 .wl-nav-item {
   flex: 1;
