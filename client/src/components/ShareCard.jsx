@@ -253,7 +253,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     if (pnlPct != null) {
       ctx.fillStyle = pnlPct >= 0 ? '#00e676' : '#ff5252'
       ctx.font = 'bold 13px system-ui, sans-serif'
-      ctx.fillText(fmtPct(pnlPct), cx, barY + barH + 63)
+      ctx.fillText(h.pnl == null ? '••••' : fmtPct(pnlPct), cx, barY + barH + 63)
     }
   })
 
