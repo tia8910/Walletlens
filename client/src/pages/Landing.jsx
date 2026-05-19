@@ -354,11 +354,6 @@ export default function Landing() {
             title="🏆 Milestone Celebrations"
             desc="Confetti pops when your portfolio hits $1K, $10K, $100K, your first profit, or a big green day. The wins deserve to be celebrated."
           />
-          <FeatureCard delay={80} accent="52,211,153"
-            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>}
-            title="🔊 Trade Sound Effects"
-            desc="A satisfying cha-ching on every buy and a swoosh on every sell — Web Audio API, no downloads, just instant audio feedback that makes trading feel real."
-          />
         </div>
       </section>
 
