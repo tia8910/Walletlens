@@ -23,6 +23,7 @@ import CorrelationMatrix from '../components/CorrelationMatrix'
 import SectorHeatmap from '../components/SectorHeatmap'
 import GoalTracker from '../components/GoalTracker'
 import WalletImport from '../components/WalletImport'
+import SmartImport from '../components/SmartImport'
 
 // Heavy components only loaded when the user opens that tab
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
@@ -2817,6 +2818,11 @@ export default function Dashboard() {
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
+          </div>
+          <div className="glass-card dvx-form-card">
+            <h3>Smart Import</h3>
+            <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>Import holdings from a portfolio screenshot (AI-powered) or an Excel / CSV file.</p>
+            <SmartImport wallets={wallets} onImported={loadAll} />
           </div>
         </div>
       )}
