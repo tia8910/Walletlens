@@ -221,7 +221,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                           const r = matrix.mat[rowH.coin_id]?.[colH.coin_id] ?? null
                           const isDiag = rowH.coin_id === colH.coin_id
                           return (
-                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'rgba(255,255,255,0.25)' : corrTextColor(r), padding: '0 2px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'var(--text-sub)' : corrTextColor(r), padding: '0 2px', border: '1px solid var(--border)' }}>
                               {isDiag ? '—' : (r !== null ? r.toFixed(2) : '—')}
                             </td>
                           )
@@ -231,7 +231,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   </tbody>
                 </table>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)' }}>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'var(--text-sub)' }}>
                 {[
                   { color: '#f87171', label: '> 0.8  High risk' },
                   { color: '#fb923c', label: '0.5–0.8  Correlated' },

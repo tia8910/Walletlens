@@ -16,7 +16,7 @@ function ProgressRing({ pct }) {
   const filled = Math.min(pct / 100, 1) * circ
   return (
     <svg width="88" height="88" style={{ flexShrink: 0 }}>
-      <circle cx="44" cy="44" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+      <circle cx="44" cy="44" r={r} fill="none" stroke="var(--border)" strokeWidth="7" />
       <circle
         cx="44" cy="44" r={r} fill="none"
         stroke={pct >= 100 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#3b82f6'}
@@ -26,7 +26,7 @@ function ProgressRing({ pct }) {
         transform="rotate(-90 44 44)"
         style={{ transition: 'stroke-dasharray 0.6s ease' }}
       />
-      <text x="44" y="49" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">
+      <text x="44" y="49" textAnchor="middle" fill="var(--text)" fontSize="13" fontWeight="700">
         {Math.min(Math.round(pct), 100)}%
       </text>
     </svg>
