@@ -1,36 +1,43 @@
 import { useEffect, useState, useRef } from 'react'
 
-// Fetch 30-day daily closes for a coin from CoinGecko (free, no key)
-async function fetch30dPrices(coinId) {
-  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=30&interval=daily`
-  const tryFetch = u => fetch(u, { signal: AbortSignal.timeout(10000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-  try {
-    const data = await tryFetch(url).catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)))
-    return (data.prices || []).map(p => p[1])
-  } catch {
-    return null
+const PROXIES = [
+  url => url,
+  url => 'https://corsproxy.io/?' + encodeURIComponent(url),
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+]
+
+async function batchFetchSparklines(coinIds) {
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}&sparkline=true&price_change_percentage=7d&per_page=50`
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(10000) })
+      if (!res.ok) continue
+      const data = await res.json()
+      const series = {}
+      for (const coin of data) {
+        if (coin.sparkline_in_7d?.price?.length >= 10) {
+          series[coin.id] = coin.sparkline_in_7d.price
+        }
+      }
+      return series
+    } catch { /* try next proxy */ }
   }
+  return null
 }
 
-// Pearson correlation between two equal-length arrays of daily returns
 function pearson(a, b) {
   if (!a || !b || a.length < 3 || b.length < 3) return null
   const n = Math.min(a.length, b.length)
-
-  // Convert prices → daily returns
   const ra = [], rb = []
   for (let i = 1; i < n; i++) {
     if (a[i - 1] === 0 || b[i - 1] === 0) continue
     ra.push((a[i] - a[i - 1]) / a[i - 1])
     rb.push((b[i] - b[i - 1]) / b[i - 1])
   }
-
   const mn = ra.length
   if (mn < 2) return null
-
   const meanA = ra.reduce((s, v) => s + v, 0) / mn
   const meanB = rb.reduce((s, v) => s + v, 0) / mn
-
   let num = 0, dA = 0, dB = 0
   for (let i = 0; i < mn; i++) {
     const da = ra[i] - meanA, db = rb[i] - meanB
@@ -42,17 +49,12 @@ function pearson(a, b) {
 
 function corrColor(r) {
   if (r === null) return 'rgba(255,255,255,0.04)'
-  if (r >= 0.8)  return 'rgba(248,113,113,0.55)'   // high positive → red (risk!)
-  if (r >= 0.5)  return 'rgba(251,146,60,0.40)'    // medium
-  if (r >= 0.2)  return 'rgba(250,204,21,0.25)'    // slight
-  if (r >= -0.2) return 'rgba(148,163,184,0.18)'   // near-zero
-  if (r >= -0.5) return 'rgba(96,165,250,0.30)'    // slight negative (diversifying)
-  return 'rgba(34,197,94,0.40)'                    // strong negative (hedge!)
-}
-
-function corrLabel(r) {
-  if (r === null) return '—'
-  return r.toFixed(2)
+  if (r >= 0.8)  return 'rgba(248,113,113,0.55)'
+  if (r >= 0.5)  return 'rgba(251,146,60,0.40)'
+  if (r >= 0.2)  return 'rgba(250,204,21,0.25)'
+  if (r >= -0.2) return 'rgba(148,163,184,0.18)'
+  if (r >= -0.5) return 'rgba(96,165,250,0.30)'
+  return 'rgba(34,197,94,0.40)'
 }
 
 function corrTextColor(r) {
@@ -66,15 +68,14 @@ function corrTextColor(r) {
 }
 
 const MAX_ASSETS = 8
+let _cache = null, _cacheTime = 0
 
 export default function CorrelationMatrix({ enriched = [] }) {
   const [matrix, setMatrix]   = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
   const [open, setOpen]       = useState(false)
-  const cache = useRef({})
 
-  // Only crypto holdings with a coin_id (not stocks/metals)
   const cryptoHoldings = enriched
     .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:'))
     .slice(0, MAX_ASSETS)
@@ -83,22 +84,18 @@ export default function CorrelationMatrix({ enriched = [] }) {
     if (cryptoHoldings.length < 2) return
     setLoading(true); setError(null)
 
-    // Fetch price series (with simple cache)
-    const series = {}
-    await Promise.all(cryptoHoldings.map(async h => {
-      if (cache.current[h.coin_id]) {
-        series[h.coin_id] = cache.current[h.coin_id]
-        return
-      }
-      const prices = await fetch30dPrices(h.coin_id)
-      if (prices) {
-        cache.current[h.coin_id] = prices
-        series[h.coin_id] = prices
-      }
-    }))
+    const now = Date.now()
+    let series = _cache && now - _cacheTime < 10 * 60 * 1000 ? _cache : null
+
+    if (!series) {
+      series = await batchFetchSparklines(cryptoHoldings.map(h => h.coin_id))
+      if (series) { _cache = series; _cacheTime = now }
+    }
+
+    if (!series) { setError('Price data unavailable. Try again later.'); setLoading(false); return }
 
     const ids = cryptoHoldings.map(h => h.coin_id).filter(id => series[id])
-    if (ids.length < 2) { setError('Not enough price data.'); setLoading(false); return }
+    if (ids.length < 2) { setError('Not enough price data for your holdings.'); setLoading(false); return }
 
     const mat = {}
     for (const a of ids) {
@@ -120,14 +117,9 @@ export default function CorrelationMatrix({ enriched = [] }) {
 
   return (
     <div className="cm-root glass-card" style={{ marginBottom: '0.75rem' }}>
-      {/* Header — always visible */}
       <button
         onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
-          padding: '0.9rem 1.1rem', color: 'inherit',
-        }}
+        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.9rem 1.1rem', color: 'inherit' }}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -137,7 +129,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
           Correlation Matrix
         </span>
         <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>
-          30-day · {cryptoHoldings.length} assets
+          7-day · {cryptoHoldings.length} assets
         </span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -149,25 +141,27 @@ export default function CorrelationMatrix({ enriched = [] }) {
         <div style={{ padding: '0 1rem 1rem' }}>
           {loading && (
             <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>
-              Fetching 30-day price data…
+              Fetching price data…
             </div>
           )}
           {error && (
-            <div style={{ color: '#f87171', fontSize: '0.8rem', padding: '0.5rem 0' }}>{error}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
+              <span style={{ color: '#f87171', fontSize: '0.8rem' }}>{error}</span>
+              <button onClick={() => { setError(null); setMatrix(null); _cache = null; compute() }}
+                style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
+                Retry
+              </button>
+            </div>
           )}
           {matrix && (
             <>
-              {/* Grid */}
               <div style={{ overflowX: 'auto', marginBottom: '0.8rem' }}>
                 <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: matrix.ids.length * 52 }}>
                   <thead>
                     <tr>
                       <td style={{ width: 44 }} />
                       {matrix.holdings.map(h => (
-                        <th key={h.coin_id} style={{
-                          fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)',
-                          textAlign: 'center', padding: '0 4px 6px', width: 44,
-                        }}>
+                        <th key={h.coin_id} style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textAlign: 'center', padding: '0 4px 6px', width: 44 }}>
                           {(h.coin_symbol || h.coin_id).toUpperCase().slice(0, 5)}
                         </th>
                       ))}
@@ -176,28 +170,15 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   <tbody>
                     {matrix.holdings.map(rowH => (
                       <tr key={rowH.coin_id}>
-                        <td style={{
-                          fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)',
-                          paddingRight: '6px', whiteSpace: 'nowrap', textAlign: 'right',
-                        }}>
+                        <td style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', paddingRight: '6px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                           {(rowH.coin_symbol || rowH.coin_id).toUpperCase().slice(0, 5)}
                         </td>
                         {matrix.holdings.map(colH => {
                           const r = matrix.mat[rowH.coin_id]?.[colH.coin_id] ?? null
                           const isDiag = rowH.coin_id === colH.coin_id
                           return (
-                            <td key={colH.coin_id} style={{
-                              width: 44, height: 36,
-                              background: corrColor(r),
-                              borderRadius: 6,
-                              textAlign: 'center',
-                              fontSize: isDiag ? '0.65rem' : '0.68rem',
-                              fontWeight: 700,
-                              color: isDiag ? 'rgba(255,255,255,0.25)' : corrTextColor(r),
-                              padding: '0 2px',
-                              border: '1px solid rgba(255,255,255,0.04)',
-                            }}>
-                              {isDiag ? '—' : corrLabel(r)}
+                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'rgba(255,255,255,0.25)' : corrTextColor(r), padding: '0 2px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              {isDiag ? '—' : (r !== null ? r.toFixed(2) : '—')}
                             </td>
                           )
                         })}
@@ -206,8 +187,6 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   </tbody>
                 </table>
               </div>
-
-              {/* Legend */}
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)' }}>
                 {[
                   { color: '#f87171', label: '> 0.8  High risk' },
@@ -222,8 +201,6 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   </span>
                 ))}
               </div>
-
-              {/* Insight */}
               {(() => {
                 const pairs = []
                 for (const a of matrix.ids) {
@@ -238,11 +215,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                 const symA = (matrix.holdings.find(h => h.coin_id === worst.a)?.coin_symbol || worst.a).toUpperCase()
                 const symB = (matrix.holdings.find(h => h.coin_id === worst.b)?.coin_symbol || worst.b).toUpperCase()
                 return (
-                  <div style={{
-                    marginTop: '0.75rem', padding: '0.6rem 0.8rem', borderRadius: 10,
-                    background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)',
-                    fontSize: '0.74rem', color: '#fca5a5', lineHeight: 1.5,
-                  }}>
+                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', borderRadius: 10, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.74rem', color: '#fca5a5', lineHeight: 1.5 }}>
                     ⚠️ <strong>{symA} & {symB}</strong> move together ({worst.r.toFixed(2)}) — holding both adds concentration risk without diversification.
                   </div>
                 )

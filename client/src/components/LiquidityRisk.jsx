@@ -30,39 +30,35 @@ export default function LiquidityRisk({ holdings }) {
   const cryptoHoldings = (holdings || []).filter(h => isCrypto(h.coin_id || h.id))
 
   useEffect(() => {
-    if (!open || cryptoHoldings.length === 0) return
-    if (data) return
-
+    if (!open || cryptoHoldings.length === 0 || data) return
     const ids = cryptoHoldings.map(h => h.coin_id || h.id).join(',')
-    setLoading(true)
-    setError(null)
-
-    const CG_URL = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`
-    const tryFetch = url => fetch(url, { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-
-    tryFetch(CG_URL)
-      .catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(CG_URL)))
-      .then(markets => {
-        const volMap = {}
-        markets.forEach(m => { volMap[m.id] = m.total_volume })
-
-        const rows = cryptoHoldings
-          .map(h => {
-            const id = h.coin_id || h.id
-            const vol = volMap[id] || 0
-            const impact = vol > 0 ? (h.value / vol) * 100 : null
-            return { id, symbol: h.coin_symbol || h.symbol, value: h.value, vol, impact }
-          })
-          .filter(r => r.vol > 0)
-          .sort((a, b) => (b.impact ?? -1) - (a.impact ?? -1))
-
-        setData(rows)
-        setLoading(false)
-      })
-      .catch(() => {
-        setError('Failed to fetch volume data. Try again later.')
-        setLoading(false)
-      })
+    setLoading(true); setError(null)
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`
+    const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
+    ;(async () => {
+      let markets = null
+      for (const proxy of proxies) {
+        try {
+          const res = await fetch(proxy(url), { signal: AbortSignal.timeout(8000) })
+          if (!res.ok) continue
+          markets = await res.json()
+          break
+        } catch { /* try next */ }
+      }
+      if (!markets) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
+      const volMap = {}
+      markets.forEach(m => { volMap[m.id] = m.total_volume })
+      const rows = cryptoHoldings
+        .map(h => {
+          const id = h.coin_id || h.id
+          const vol = volMap[id] || 0
+          const impact = vol > 0 ? (h.value / vol) * 100 : null
+          return { id, symbol: h.coin_symbol || h.symbol, value: h.value, vol, impact }
+        })
+        .filter(r => r.vol > 0)
+        .sort((a, b) => (b.impact ?? -1) - (a.impact ?? -1))
+      setData(rows); setLoading(false)
+    })()
   }, [open, cryptoHoldings.length])
 
   if (cryptoHoldings.length === 0) return null
