@@ -2743,15 +2743,14 @@ export default function Dashboard() {
                 }
               </div>
 
-              {/* Correlation matrix — 30d price correlations */}
-              {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-
-              <SectorHeatmap />
-
               {/* Exchange partners strip below holdings */}
               <ExchangePartners compact source="holdings" />
             </div>
           </div>
+
+          {/* Full-width below grid: Correlation Matrix + Sector Heatmap */}
+          {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
+          <SectorHeatmap />
         </>
       )}
 
