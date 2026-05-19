@@ -1,5 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS } from '../api'
+
+function playTradeSound(isBuy) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    if (isBuy) {
+      const notes = [523.25, 783.99]
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator(), gain = ctx.createGain()
+        osc.connect(gain); gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12)
+        gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12)
+        gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + i * 0.12 + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35)
+        osc.start(ctx.currentTime + i * 0.12); osc.stop(ctx.currentTime + i * 0.12 + 0.35)
+      })
+    } else {
+      const osc = ctx.createOscillator(), gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(440, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.25)
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3)
+    }
+  } catch {}
+}
 import CoinLogo from './CoinLogo'
 import { track } from '../analytics'
 import ExchangePartners from './ExchangePartners'
@@ -589,7 +617,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             <button className="bs-submit"
               style={{ background: isBuy ? 'linear-gradient(135deg,var(--g),var(--gd))' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
-              onClick={() => { submit() }}
+              onClick={() => { playTradeSound(isBuy); submit() }}
               disabled={busy || !asset || !amount || !price}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
