@@ -217,7 +217,7 @@ export default function App() {
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
-        <DynamicBackground particleCount={120} linkDistance={160} />
+        <DynamicBackground particleCount={80} linkDistance={160} />
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/blog" element={<Blog />} />

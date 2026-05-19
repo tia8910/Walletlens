@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 export default function DynamicBackground({
-  particleCount = 220,
+  particleCount = 55,
   linkDistance = 150,
   color = null,
 }) {
@@ -18,14 +18,16 @@ export default function DynamicBackground({
     let w = 0, h = 0
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-    function getColor() {
-      if (color) return color
-      return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
-    }
+    // Cache CSS color vars — read getComputedStyle every ~2s instead of every frame
+    let cachedCol = '#34d399'
+    let cachedRgb = '52,211,153'
+    let colorTick = 0
 
-    function getRgb() {
-      const rgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
-      return rgb
+    function updateColors() {
+      if (color) { cachedCol = color; return }
+      const style = getComputedStyle(document.documentElement)
+      cachedCol = style.getPropertyValue('--g').trim() || '#34d399'
+      cachedRgb = style.getPropertyValue('--g-rgb').trim() || '52,211,153'
     }
 
     function resize() {
@@ -50,48 +52,71 @@ export default function DynamicBackground({
       }
     }
 
-    function step() {
-      ctx.clearRect(0, 0, w, h)
-      const rgb = getRgb()
-      const col = getColor()
+    // Pre-allocated opacity bins to avoid GC pressure per frame.
+    // Lines are grouped by alpha level so we do O(BINS) canvas state changes
+    // instead of O(pairs) — drops canvas ops from thousands to 8.
+    const BINS = 8
+    const lineBins = Array.from({ length: BINS }, () => [])
+    const linkDist2 = linkDistance * linkDistance
 
-      // Sharp connecting lines
-      ctx.lineWidth = 0.9
+    function step() {
+      // Pause rendering when tab is hidden — resume instantly on focus
+      if (document.hidden) { raf = requestAnimationFrame(step); return }
+
+      // Refresh CSS color vars every ~2 s instead of every frame
+      if (++colorTick % 120 === 0) updateColors()
+
+      ctx.clearRect(0, 0, w, h)
+
+      // Clear bins from the previous frame
+      for (let b = 0; b < BINS; b++) lineBins[b].length = 0
+
+      // Classify each line segment into an opacity bucket
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
         for (let j = i + 1; j < particles.length; j++) {
           const b = particles[j]
           const dx = a.x - b.x, dy = a.y - b.y
           const d2 = dx * dx + dy * dy
-          if (d2 < linkDistance * linkDistance) {
+          if (d2 < linkDist2) {
             const alpha = 1 - Math.sqrt(d2) / linkDistance
-            ctx.strokeStyle = `rgba(${rgb}, ${alpha * 0.22})`
-            ctx.beginPath()
-            ctx.moveTo(a.x, a.y)
-            ctx.lineTo(b.x, b.y)
-            ctx.stroke()
+            const bin = Math.min(BINS - 1, (alpha * BINS) | 0)
+            lineBins[bin].push(a.x, a.y, b.x, b.y)
           }
         }
       }
 
-      // Sharp rectangular particles with glow
-      ctx.fillStyle = col
-      ctx.shadowBlur = 18
-      ctx.shadowColor = col
+      // Draw each bucket in a single path — 8 ctx.stroke calls total
+      ctx.lineWidth = 0.9
+      for (let bin = 0; bin < BINS; bin++) {
+        const coords = lineBins[bin]
+        if (!coords.length) continue
+        const alpha = ((bin + 0.5) / BINS) * 0.22
+        ctx.strokeStyle = `rgba(${cachedRgb},${alpha.toFixed(3)})`
+        ctx.beginPath()
+        for (let k = 0; k < coords.length; k += 4) {
+          ctx.moveTo(coords[k], coords[k + 1])
+          ctx.lineTo(coords[k + 2], coords[k + 3])
+        }
+        ctx.stroke()
+      }
+
+      // Move and draw particles (no shadowBlur — GPU compositing cost removed)
+      ctx.fillStyle = cachedCol
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
         if (p.x < -10) p.x = w + 10
-        if (p.x > w + 10) p.x = -10
+        else if (p.x > w + 10) p.x = -10
         if (p.y < -10) p.y = h + 10
-        if (p.y > h + 10) p.y = -10
+        else if (p.y > h + 10) p.y = -10
         ctx.fillRect(p.x, p.y, p.size, p.size)
       }
-      ctx.shadowBlur = 0
 
       raf = requestAnimationFrame(step)
     }
 
+    updateColors()
     resize()
     seed()
     step()

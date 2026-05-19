@@ -3,7 +3,7 @@
 // • /assets/ (hashed JS/CSS): network-first, cache fallback
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v40'
+const SW_VERSION = 'v41'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
@@ -51,12 +51,17 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Hashed assets (/assets/): network-first, long-lived cache fallback
+  // ── Hashed assets (/assets/): cache-first — Vite embeds a content-hash in every
+  // filename so a cached entry is always valid; no network round-trip needed.
   if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
     e.respondWith(
-      fetch(req)
-        .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
-        .catch(() => caches.match(req))
+      caches.match(req).then(cached => {
+        if (cached) return cached
+        return fetch(req).then(res => {
+          if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone()))
+          return res
+        })
+      })
     )
     return
   }

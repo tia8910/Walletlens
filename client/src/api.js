@@ -260,10 +260,10 @@ async function fetchMetalsLive() {
   // Primary: gold-api.com
   try {
     const [goldRes, silverRes, copperRes, platinumRes] = await Promise.all([
-      fetch('https://api.gold-api.com/price/XAU'),
-      fetch('https://api.gold-api.com/price/XAG'),
-      fetch('https://api.gold-api.com/price/XCU'),
-      fetch('https://api.gold-api.com/price/XPT'),
+      fetchWithTimeout('https://api.gold-api.com/price/XAU', 6000),
+      fetchWithTimeout('https://api.gold-api.com/price/XAG', 6000),
+      fetchWithTimeout('https://api.gold-api.com/price/XCU', 6000),
+      fetchWithTimeout('https://api.gold-api.com/price/XPT', 6000),
     ]);
     if (goldRes.ok) {
       const g = await goldRes.json();
@@ -452,7 +452,7 @@ async function fetchFiatRates() {
 
   // Primary: open.er-api.com — returns rates vs USD base
   try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', 6000);
     if (res.ok) {
       const data = await res.json();
       if (data?.rates) {
@@ -470,7 +470,7 @@ async function fetchFiatRates() {
 
   // Fallback: frankfurter.app (European Central Bank reference rates)
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const res = await fetchWithTimeout('https://api.frankfurter.app/latest?from=USD', 6000);
     if (res.ok) {
       const data = await res.json();
       if (data?.rates) {
@@ -680,14 +680,14 @@ function parseStooqCsv(text, days) {
 async function fetchStooqHistory(symbol, days = 30) {
   const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
   try {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, 6000);
     if (res.ok) {
       const out = parseStooqCsv(await res.text(), days);
       if (out.length > 0) return out;
     }
   } catch {}
   try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`);
+    const res = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, 6000);
     if (res.ok) {
       return parseStooqCsv(await res.text(), days);
     }
@@ -1373,6 +1373,8 @@ export const api = {
   },
 
   // Bulk smart signals with 1h localStorage cache. Non-crypto IDs silently skipped.
+  // Fetches up to 2 coins concurrently to stay within CoinGecko rate limits while
+  // being ~2x faster than the old sequential approach.
   getBulkSmartSignals: async (coinIds, days = 30) => {
     const out = {};
     if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
@@ -1390,15 +1392,22 @@ export const api = {
         toFetch.push(id);
       }
     }
-    for (const id of toFetch) {
-      try {
-        const s = await api.getCoinSmartSignals(id, days);
-        out[id] = s;
-        cache[id] = { t: now, v: s };
-      } catch { out[id] = null; }
-      await new Promise(r => setTimeout(r, 120));
+    if (toFetch.length > 0) {
+      // Concurrency-limited pool: 2 simultaneous CoinGecko requests
+      const CONCURRENCY = 2;
+      const iter = toFetch[Symbol.iterator]();
+      async function worker() {
+        for (const id of iter) {
+          try {
+            const s = await api.getCoinSmartSignals(id, days);
+            out[id] = s;
+            cache[id] = { t: now, v: s };
+          } catch { out[id] = null; }
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, toFetch.length) }, worker));
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
     }
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
     return out;
   },
 
