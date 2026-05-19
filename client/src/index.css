@@ -745,16 +745,7 @@ body::after {
 }
 .dashboard-grid > .hero-card { order: 1; margin: 0; }
 .dashboard-grid > .portfolio-ai { order: 2; margin: 0; }
-@media (min-width: 1200px) {
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    align-items: stretch;
-    gap: 1.5rem;
-  }
-  .dashboard-grid > .hero-card     { order: 0; grid-column: 1; grid-row: 1; }
-  .dashboard-grid > .portfolio-ai  { order: 0; grid-column: 2; grid-row: 1; }
-}
+/* removed desktop 2-col hero layout — single column matches mobile */
 
 /* ─── Bottom Nav (mobile) ─── */
 .bottom-nav { display: none; }
@@ -3168,8 +3159,8 @@ tr:last-child td { border-bottom: none; }
 }
 @media (min-width: 1080px) {
   .dash-v2-grid {
-    grid-template-columns: 8fr 4fr;
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 }
 .dash-v2-col-main, .dash-v2-col-side {
@@ -3500,7 +3491,7 @@ tr:last-child td { border-bottom: none; }
   display: grid; grid-template-columns: 1fr;
   gap: 1.25rem;
 }
-@media (min-width: 900px) { .dvx-grid { grid-template-columns: 7fr 5fr; } }
+/* single-column layout matches mobile — no 2-col split on desktop */
 .dvx-col-main, .dvx-col-side { display: flex; flex-direction: column; gap: 1.25rem; }
 
 /* Tx list */
@@ -3873,8 +3864,8 @@ tr:last-child td { border-bottom: none; }
 }
 .dvx-show-more:hover { color: var(--g); border-color: rgba(var(--g-rgb),0.45); }
 
-/* Horizontal padding for the dvx container */
-.dvx { padding-left: 1rem; padding-right: 1rem; }
+/* Horizontal padding + max-width centering for the dvx container */
+.dvx { padding-left: 1rem; padding-right: 1rem; max-width: 880px; margin-left: auto; margin-right: auto; width: 100%; box-sizing: border-box; }
 @media (min-width: 640px) { .dvx { padding-left: 1.25rem; padding-right: 1.25rem; } }
 @media (min-width: 1024px) { .dvx { padding-left: 1.5rem; padding-right: 1.5rem; } }
 
