@@ -262,6 +262,23 @@
   color-scheme: light;
 }
 
+/* ── Landing page is ALWAYS dark — reset all CSS vars inside .lp ── */
+[data-wl-light] .lp {
+  --text: rgba(255,255,255,0.95);
+  --text-muted: rgba(255,255,255,0.65);
+  --text-sub: rgba(255,255,255,0.4);
+  --bg: #0a0a0f;
+  --bg3: #12121a;
+  --bg4: #0f0f18;
+  --card-bg: rgba(255,255,255,0.04);
+  --surface-1: rgba(255,255,255,0.04);
+  --surface-2: rgba(255,255,255,0.07);
+  --surface-3: rgba(255,255,255,0.11);
+  --border: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.95);
+  color-scheme: dark;
+}
+
 /* Body + page background */
 [data-wl-light] body,
 [data-wl-light] .dvx  { color: var(--text); }
@@ -536,8 +553,6 @@
 [data-wl-light] .ade-verdict-summary { color: var(--text-muted); }
 [data-wl-light] .ade-confidence { color: var(--text-sub); }
 [data-wl-light] .ade-tip { color: var(--text-muted); }
-[data-wl-light] .lp-step-desc { color: var(--text-muted); }
-[data-wl-light] .lp-asset-desc { color: var(--text-sub); }
 
 /* ── Misc components ── */
 [data-wl-light] .dvx-movers-divider { background: rgba(0,0,0,0.08); }
@@ -666,10 +681,6 @@
 [data-wl-light] .eval-cat-bar-wrap { background: rgba(0,0,0,0.08); }
 [data-wl-light] .eval-cat-tip { color: var(--text-muted); border-top-color: rgba(0,0,0,0.06); }
 
-/* ── LiquidityRisk step/asset descriptions ── */
-[data-wl-light] .lp-step-title { color: var(--text); }
-[data-wl-light] .lp-asset-name { color: var(--text); }
-
 /* ── Weekly button ── */
 [data-wl-light] .dvx-weekly-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
 
@@ -754,6 +765,117 @@
 [data-wl-light] .alpha-disclaimer     { color: var(--text-sub); }
 [data-wl-light] .alpha-empty-hint     { color: var(--text-muted); }
 [data-wl-light] .alpha-score-empty    { color: var(--text-muted); }
+
+/* ── AI Analysis indicators (ai-*) ── */
+[data-wl-light] .ai-empty          { color: var(--text-muted); }
+[data-wl-light] .ai-orb-label      { color: var(--text-sub); }
+[data-wl-light] .ai-grade-label    { color: var(--text-sub); }
+[data-wl-light] .ai-bar-label      { color: var(--text-muted); }
+[data-wl-light] .ai-section-title  { color: var(--text); }
+[data-wl-light] .ai-mc-name        { color: var(--text); }
+[data-wl-light] .ai-mc-assets      { color: var(--text-sub); }
+[data-wl-light] .ai-fg-desc        { color: var(--text-muted); }
+[data-wl-light] .ai-today-sym      { color: var(--text); }
+[data-wl-light] .ai-stress-label   { color: var(--text-muted); }
+[data-wl-light] .ai-stress-val     { color: var(--text-muted); }
+[data-wl-light] .ai-entry-sym      { color: var(--text); }
+[data-wl-light] .ai-rebal-sym      { color: var(--text); }
+[data-wl-light] .ai-rebal-bar-lbl  { color: var(--text-sub); }
+[data-wl-light] .ai-rebal-bar-val  { color: var(--text-sub); }
+
+/* ── AI Advanced (ai-adv-*) ── */
+[data-wl-light] .ai-adv-setup-title  { color: var(--text); }
+[data-wl-light] .ai-adv-setup-sub    { color: var(--text-muted); }
+[data-wl-light] .ai-adv-cta-title    { color: var(--text); }
+[data-wl-light] .ai-adv-cta-sub      { color: var(--text-muted); }
+[data-wl-light] .ai-adv-loading      { color: var(--text-muted); }
+[data-wl-light] .ai-adv-md           { color: var(--text-muted); }
+[data-wl-light] .ai-adv-h3           { color: var(--text); border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .ai-adv-h4           { color: var(--text); }
+[data-wl-light] .ai-adv-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
+[data-wl-light] .ai-adv-key-input    { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .ai-adv-mode-btn     { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .ai-adv-key-remove   { border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
+
+/* ── AI Chat (ai-chat-*) ── */
+[data-wl-light] .ai-chat-empty       { color: var(--text-muted); }
+[data-wl-light] .ai-chat-suggestion  { background: var(--surface-1); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .ai-chat-user        { color: var(--text); }
+[data-wl-light] .ai-chat-assistant   { background: var(--surface-1); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .ai-chat-input       { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+/* ── Price Alerts (pal-*) ── */
+[data-wl-light] .pal-title        { color: var(--text); }
+[data-wl-light] .pal-form-title   { color: var(--text); }
+[data-wl-light] .pal-label        { color: var(--text-muted); }
+[data-wl-light] .pal-select       { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .pal-dollar       { color: var(--text-sub); }
+[data-wl-light] .pal-price-input  { color: var(--text); }
+[data-wl-light] .pal-section-label { color: var(--text-sub); }
+[data-wl-light] .pal-sym          { color: var(--text); }
+[data-wl-light] .pal-empty-title  { color: var(--text); }
+[data-wl-light] .pal-cond-btn     { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+
+/* ── Academy (acad-*) ── */
+[data-wl-light] .acad-title          { color: var(--text); }
+[data-wl-light] .acad-stat-val       { color: var(--text); }
+[data-wl-light] .acad-tab            { background: var(--surface-1); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .acad-question       { color: var(--text); }
+[data-wl-light] .acad-option         { background: var(--surface-1); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .acad-option:hover:not(:disabled) { background: var(--surface-2); border-color: rgba(0,0,0,0.15); color: var(--text); }
+[data-wl-light] .acad-explain-btn    { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .acad-explain-text   { color: var(--text-muted); }
+[data-wl-light] .acad-iq-guide-title { color: var(--text-sub); }
+[data-wl-light] .acad-hack-title     { color: var(--text); }
+[data-wl-light] .acad-hack-chevron   { color: var(--text-sub); }
+[data-wl-light] .acad-toast-title    { color: var(--text-sub); }
+
+/* ── Tour overlay (tour-*) ── */
+[data-wl-light] .tour-title { color: var(--text); }
+[data-wl-light] .tour-desc  { color: var(--text-muted); }
+[data-wl-light] .tour-skip  { color: var(--text-sub); }
+[data-wl-light] .tour-step-count { color: var(--text-sub); }
+
+/* ── Milestone popup (ms-*) ── */
+[data-wl-light] .ms-title    { color: var(--text); }
+[data-wl-light] .ms-sub      { color: var(--text-muted); }
+[data-wl-light] .ms-close    { color: var(--text-sub); }
+[data-wl-light] .ms-btn-skip { background: var(--surface-1); color: var(--text-muted); }
+
+/* ── News page: filter pills + modal ── */
+[data-wl-light] .news-filter-pill  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
+[data-wl-light] .news-card-time    { color: var(--text-sub); }
+[data-wl-light] .news-modal-close  { color: var(--text-sub); }
+[data-wl-light] .news-modal-share-btn { color: var(--text-sub); }
+
+/* ── Buy Sheet extras (bs-chip, bs-sector-btn, bs-ticker-*) ── */
+[data-wl-light] .bs-chip         { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .bs-chip:hover   { border-color: rgba(0,0,0,0.2); color: var(--text); }
+[data-wl-light] .bs-sector-btn   { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .bs-ticker-sym   { color: var(--text); }
+[data-wl-light] .bs-ticker-name  { color: var(--text-sub); }
+[data-wl-light] .bs-close        { color: var(--text-sub); }
+[data-wl-light] .bs-partner-label { color: var(--text-sub); }
+
+/* ── Partner exchange cards (in buy sheet / market) ── */
+[data-wl-light] .partner-ex-name { color: var(--text); }
+[data-wl-light] .partner-ex-desc { color: var(--text-muted); }
+
+/* ── Dashboard V2 elements ── */
+[data-wl-light] .dash-v2-alloc-legend .name { color: var(--text-muted); }
+[data-wl-light] .dash-v2-hero-change.muted  { color: var(--text-sub); }
+[data-wl-light] .dash-v2-tx-meta strong     { color: var(--text); }
+[data-wl-light] .dash-v2-tx-meta .muted     { color: var(--text-muted); }
+[data-wl-light] .dash-v2-holding-meta strong { color: var(--text); }
+[data-wl-light] .dash-v2-holding-meta .muted { color: var(--text-muted); }
+
+/* ── DVX extras ── */
+[data-wl-light] .dvx-quick-card strong { color: var(--text); }
+[data-wl-light] .dvx-quick-card span   { color: var(--text-sub); }
+[data-wl-light] .dvx-wallet-name       { color: var(--text); }
+[data-wl-light] .dvx-tx-meta strong    { color: var(--text); }
+[data-wl-light] .dvx-holding-meta .muted { color: var(--text-muted); }
 
 /* ── Heatmap ── */
 [data-wl-light] .heatmap-sym  { color: rgba(0,0,0,0.9); }
