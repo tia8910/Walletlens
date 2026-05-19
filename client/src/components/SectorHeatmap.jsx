@@ -22,30 +22,47 @@ function tileColor(pct) {
   return '#f87171'
 }
 
+function buildSectorResult(byId, changeKey) {
+  const result = Object.entries(SECTORS).map(([sector, ids]) => {
+    const coins = ids.map(id => byId[id]).filter(Boolean)
+    const changes = coins.map(c => c[changeKey] ?? 0)
+    const avg = changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : 0
+    const top = coins.reduce((best, c) => {
+      const v = c[changeKey] ?? 0
+      return !best || v > (best[changeKey] ?? 0) ? c : best
+    }, null)
+    return { sector, avg, top }
+  })
+  result.sort((a, b) => b.avg - a.avg)
+  return result
+}
+
 async function fetchSectors() {
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
+  // Try CoinGecko with CORS proxies (7d data)
+  const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
   const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
   for (const proxy of proxies) {
     try {
-      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(8000) })
+      const res = await fetch(proxy(cgUrl), { signal: AbortSignal.timeout(5000) })
       if (!res.ok) continue
       const data = await res.json()
       const byId = {}
       data.forEach(c => { byId[c.id] = c })
-      const result = Object.entries(SECTORS).map(([sector, ids]) => {
-        const coins = ids.map(id => byId[id]).filter(Boolean)
-        const changes = coins.map(c => c.price_change_percentage_7d_in_currency ?? c.price_change_percentage_7d ?? 0)
-        const avg = changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : 0
-        const top = coins.reduce((best, c) => {
-          const v = c.price_change_percentage_7d_in_currency ?? c.price_change_percentage_7d ?? 0
-          return !best || v > (best.price_change_percentage_7d_in_currency ?? best.price_change_percentage_7d ?? 0) ? c : best
-        }, null)
-        return { sector, avg, top }
-      })
-      result.sort((a, b) => b.avg - a.avg)
-      return result
+      return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
     } catch { /* try next proxy */ }
   }
+
+  // Fallback: CoinCap (24h data, open CORS)
+  try {
+    const res = await fetch(`https://api.coincap.io/v2/assets?ids=${ALL_IDS.join(',')}`, { signal: AbortSignal.timeout(6000) })
+    if (res.ok) {
+      const { data: assets } = await res.json()
+      const byId = {}
+      assets?.forEach(a => { byId[a.id] = { id: a.id, symbol: a.symbol, price_change_percentage_7d_in_currency: parseFloat(a.changePercent24Hr) || 0 } })
+      return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+    }
+  } catch { /* exhausted */ }
+
   return null
 }
 

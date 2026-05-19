@@ -31,23 +31,38 @@ export default function LiquidityRisk({ holdings }) {
 
   useEffect(() => {
     if (!open || cryptoHoldings.length === 0 || data) return
-    const ids = cryptoHoldings.map(h => h.coin_id || h.id).join(',')
+    const ids = cryptoHoldings.map(h => h.coin_id || h.id)
     setLoading(true); setError(null)
-    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`
-    const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
     ;(async () => {
-      let markets = null
+      let volMap = null
+
+      // Try CoinGecko with CORS proxies
+      const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&price_change_percentage=24h`
+      const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
       for (const proxy of proxies) {
         try {
-          const res = await fetch(proxy(url), { signal: AbortSignal.timeout(8000) })
+          const res = await fetch(proxy(cgUrl), { signal: AbortSignal.timeout(5000) })
           if (!res.ok) continue
-          markets = await res.json()
+          const markets = await res.json()
+          volMap = {}
+          markets.forEach(m => { volMap[m.id] = m.total_volume })
           break
         } catch { /* try next */ }
       }
-      if (!markets) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
-      const volMap = {}
-      markets.forEach(m => { volMap[m.id] = m.total_volume })
+
+      // Fallback: CoinCap (open CORS, no key needed)
+      if (!volMap) {
+        try {
+          const res = await fetch(`https://api.coincap.io/v2/assets?ids=${ids.join(',')}`, { signal: AbortSignal.timeout(6000) })
+          if (res.ok) {
+            const { data: assets } = await res.json()
+            volMap = {}
+            assets?.forEach(a => { volMap[a.id] = parseFloat(a.volumeUsd24Hr) || 0 })
+          }
+        } catch { /* exhausted */ }
+      }
+
+      if (!volMap) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
       const rows = cryptoHoldings
         .map(h => {
           const id = h.coin_id || h.id
