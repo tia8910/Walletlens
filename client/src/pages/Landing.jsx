@@ -364,6 +364,26 @@ export default function Landing() {
             title="⏱️ Buy / Sell Timing Signal"
             desc="Before you trade, WalletLens tells you whether now is a good time. It checks 24h & 7d momentum, price vs 30-day average, distance from all-time high, and how far you are from your own average cost — then gives you a clear verdict: Strong Entry, FOMO Risk, Great Exit, or Wait for Recovery."
           />
+          <FeatureCard delay={100} accent="34,197,94"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+            title="🎯 Goal-Based Portfolio Tracker"
+            desc="Set a target — e.g. '$50K by Dec 2026' — and track your progress with a live SVG ring, monthly DCA calculator, days remaining, and a probability badge (Likely / Possible / Stretch). Multiple goals supported."
+          />
+          <FeatureCard delay={110} accent="251,146,60"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>}
+            title="📊 Sector Rotation Heatmap"
+            desc="See which crypto sectors are hot or cold this week. Layer 1, Layer 2, DeFi, AI/Data, Gaming, Meme, and Exchange — each tile colour-coded by 7-day performance so you know where the money is flowing."
+          />
+          <FeatureCard delay={120} accent="248,113,113"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>}
+            title="💧 Liquidity Risk Score"
+            desc="Know before you sell. WalletLens compares your holding size against 24-hour trading volume to flag assets where a large exit could move the market against you — flagged 🟢 High, 🟡 Medium, or 🔴 Low Liquidity."
+          />
+          <FeatureCard delay={130} accent="139,92,246"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>}
+            title="📡 On-Chain Wallet Import"
+            desc="Paste any Ethereum, Bitcoin, or Solana wallet address and WalletLens auto-detects the chain, fetches your live token balances, and imports them as holdings — no exchange API key, no account needed."
+          />
         </div>
       </section>
 
