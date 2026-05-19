@@ -7,23 +7,28 @@
   --g-rgb: 52, 211, 153;
   --gd-rgb: 16, 185, 129;
   --gl: rgba(52, 211, 153, 0.12);
-  --ink: #09090e;
-  --ink2: #13141c;
+  --ink: #050a07;
+  --ink2: #0d1610;
   --ink3: rgba(52, 211, 153, 0.55);
   --mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --display: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Surface — deep charcoal, neutral undertone */
-  --bg: #0e0f14;
-  --card-bg: rgba(20, 21, 30, 0.92);
-  --bg2: rgba(20, 21, 30, 0.92);
-  --bg3: #13141c;
-  --bg4: #191a24;
+  /* Surface — deep forest green undertone */
+  --bg: #080f0c;
+  --card-bg: rgba(14, 22, 18, 0.92);
+  --bg2: rgba(14, 22, 18, 0.92);
+  --bg3: #0d1610;
+  --bg4: #122018;
   --border: rgba(52, 211, 153, 0.38);
 
   /* Text */
   --text: #ffffff;
   --text2: rgba(52, 211, 153, 0.75);
+  --text-muted: rgba(255,255,255,0.5);
+  --text-sub: rgba(255,255,255,0.3);
+  --surface-1: rgba(255,255,255,0.04);
+  --surface-2: rgba(255,255,255,0.08);
+  --surface-3: rgba(255,255,255,0.13);
 
   /* Accents */
   --accent: #34d399;
@@ -65,14 +70,14 @@
   --gd: #d4a017;
   --gl: rgba(245, 197, 66, 0.12);
   --ink3: rgba(245, 197, 66, 0.55);
-  --bg: #0e0c07;
-  --card-bg: rgba(22, 19, 8, 0.94);
-  --bg2: rgba(22, 19, 8, 0.94);
-  --bg3: #16130a;
-  --bg4: #1e1a0d;
+  --bg: #0d0a02;
+  --card-bg: rgba(20, 16, 4, 0.94);
+  --bg2: rgba(20, 16, 4, 0.94);
+  --bg3: #18130a;
+  --bg4: #221c0e;
   --border: rgba(245, 197, 66, 0.35);
-  --ink: #0a0802;
-  --ink2: #16130a;
+  --ink: #080600;
+  --ink2: #18130a;
   --text2: rgba(245, 197, 66, 0.75);
   --accent: #f5c542;
   --accent2: #d4a017;
@@ -96,14 +101,14 @@
   --gd: #8a96aa;
   --gl: rgba(192, 200, 216, 0.12);
   --ink3: rgba(192, 200, 216, 0.55);
-  --bg: #0a0b0e;
-  --card-bg: rgba(16, 17, 22, 0.94);
-  --bg2: rgba(16, 17, 22, 0.94);
-  --bg3: #10111a;
-  --bg4: #16182a;
+  --bg: #07080d;
+  --card-bg: rgba(12, 13, 20, 0.94);
+  --bg2: rgba(12, 13, 20, 0.94);
+  --bg3: #0d0f18;
+  --bg4: #141724;
   --border: rgba(192, 200, 216, 0.30);
-  --ink: #060608;
-  --ink2: #10111a;
+  --ink: #040508;
+  --ink2: #0d0f18;
   --text2: rgba(192, 200, 216, 0.70);
   --accent: #c0c8d8;
   --accent2: #8a96aa;
@@ -127,14 +132,14 @@
   --gd: #c97012;
   --gl: rgba(247, 147, 26, 0.12);
   --ink3: rgba(247, 147, 26, 0.55);
-  --bg: #0d0805;
-  --card-bg: rgba(20, 14, 6, 0.94);
-  --bg2: rgba(20, 14, 6, 0.94);
-  --bg3: #140e06;
-  --bg4: #1c1209;
+  --bg: #0e0703;
+  --card-bg: rgba(22, 12, 4, 0.94);
+  --bg2: rgba(22, 12, 4, 0.94);
+  --bg3: #1a0f05;
+  --bg4: #23160a;
   --border: rgba(247, 147, 26, 0.35);
-  --ink: #090501;
-  --ink2: #140e06;
+  --ink: #090400;
+  --ink2: #1a0f05;
   --text2: rgba(247, 147, 26, 0.75);
   --accent: #f7931a;
   --accent2: #c97012;
@@ -158,14 +163,14 @@
   --gd: #3a57d4;
   --gl: rgba(98, 126, 234, 0.12);
   --ink3: rgba(98, 126, 234, 0.55);
-  --bg: #07090f;
-  --card-bg: rgba(10, 13, 24, 0.94);
-  --bg2: rgba(10, 13, 24, 0.94);
-  --bg3: #0d1020;
-  --bg4: #121628;
+  --bg: #05070f;
+  --card-bg: rgba(9, 11, 22, 0.94);
+  --bg2: rgba(9, 11, 22, 0.94);
+  --bg3: #0b0e1e;
+  --bg4: #10152c;
   --border: rgba(98, 126, 234, 0.35);
-  --ink: #040510;
-  --ink2: #0d1020;
+  --ink: #030410;
+  --ink2: #0b0e1e;
   --text2: rgba(98, 126, 234, 0.75);
   --accent: #627eea;
   --accent2: #3a57d4;
@@ -231,6 +236,134 @@
   width: 5px; height: 5px; border-radius: 50%;
   background: var(--g);
 }
+
+.theme-strip-divider {
+  width: 1px; height: 32px; background: rgba(255,255,255,0.1);
+  margin: 0 0.15rem; flex-shrink: 0;
+}
+.theme-strip-mode-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  background: none; border: none; cursor: pointer; padding: 0.35rem 0.55rem;
+  border-radius: 14px; transition: background 0.2s;
+}
+.theme-strip-mode-btn:hover { background: rgba(255,255,255,0.06); }
+.theme-strip-mode-icon {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem;
+  background: var(--surface-2);
+  transition: transform 0.22s;
+}
+.theme-strip-mode-btn:hover .theme-strip-mode-icon { transform: scale(1.1); }
+
+/* ── Light mode overrides ────────────────────────────────────────────────── */
+[data-wl-light] {
+  --text: var(--text);
+  color-scheme: light;
+}
+
+/* Body + page background */
+[data-wl-light] body,
+[data-wl-light] .dvx  { color: var(--text); }
+
+/* Theme strip */
+[data-wl-light] .theme-strip { border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .theme-strip-divider { background: rgba(0,0,0,0.1); }
+[data-wl-light] .theme-strip-heading { color: rgba(0,0,0,0.35); }
+[data-wl-light] .theme-strip-label { color: rgba(0,0,0,0.4); }
+[data-wl-light] .theme-strip-active .theme-strip-label { color: var(--g); }
+[data-wl-light] .theme-strip-btn:hover,
+[data-wl-light] .theme-strip-mode-btn:hover { background: rgba(0,0,0,0.05); }
+[data-wl-light] .theme-strip-active { background: rgba(0,0,0,0.06) !important; }
+[data-wl-light] .theme-strip-active .theme-strip-icon { border-color: rgba(0,0,0,0.3); }
+
+/* Cards and surfaces */
+[data-wl-light] .card,
+[data-wl-light] .portfolio-card,
+[data-wl-light] .holding-row,
+[data-wl-light] .stat-card,
+[data-wl-light] .dvx-tabs,
+[data-wl-light] .wallet-list-item,
+[data-wl-light] .tx-row { background: var(--card-bg); color: var(--text); }
+
+/* Tabs */
+[data-wl-light] .dvx-tabs { border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .dvx-tab { color: rgba(0,0,0,0.45); }
+[data-wl-light] .dvx-tab-active { color: var(--g); }
+[data-wl-light] .dvx-tab-active::after { background: var(--g); }
+
+/* Inputs and selects */
+[data-wl-light] input,
+[data-wl-light] select,
+[data-wl-light] textarea {
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  border-color: rgba(0,0,0,0.15);
+}
+[data-wl-light] input::placeholder,
+[data-wl-light] textarea::placeholder { color: rgba(0,0,0,0.3); }
+[data-wl-light] input:focus,
+[data-wl-light] select:focus { border-color: var(--g); }
+
+/* Text utilities */
+[data-wl-light] .text-muted,
+[data-wl-light] .label,
+[data-wl-light] .caption { color: var(--text-muted); }
+
+/* Borders and dividers */
+[data-wl-light] hr,
+[data-wl-light] .divider { border-color: rgba(0,0,0,0.08); }
+
+/* Buttons */
+[data-wl-light] .btn-ghost,
+[data-wl-light] .btn-outline {
+  color: var(--text);
+  border-color: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.04);
+}
+[data-wl-light] .btn-ghost:hover,
+[data-wl-light] .btn-outline:hover { background: rgba(0,0,0,0.08); color: var(--text); }
+
+/* Holdings / portfolio rows */
+[data-wl-light] .holding-name,
+[data-wl-light] .holding-symbol,
+[data-wl-light] .tx-coin-name { color: var(--text); }
+[data-wl-light] .holding-meta,
+[data-wl-light] .tx-date,
+[data-wl-light] .tx-type-label { color: var(--text-muted); }
+
+/* Bottom sheet / modal */
+[data-wl-light] .bottom-sheet,
+[data-wl-light] .bs-modal {
+  background: var(--bg3);
+  color: var(--text);
+}
+[data-wl-light] .bs-handle { background: rgba(0,0,0,0.15); }
+[data-wl-light] .bs-label { color: var(--text-muted); }
+[data-wl-light] .bs-input {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.15);
+  color: var(--text);
+}
+[data-wl-light] .bs-dropdown { background: var(--bg4); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .bs-dropdown-row:hover { background: rgba(0,0,0,0.05); }
+[data-wl-light] .bs-dropdown-name { color: var(--text); }
+[data-wl-light] .bs-dropdown-sym { color: var(--text-muted); }
+
+/* Settings page */
+[data-wl-light] .settings-section { background: var(--card-bg); }
+[data-wl-light] .settings-label { color: var(--text-muted); }
+[data-wl-light] .settings-row { border-bottom-color: rgba(0,0,0,0.06); }
+
+/* Tips / info boxes */
+[data-wl-light] .tips-body { color: var(--text-muted); }
+
+/* Wallet buttons */
+[data-wl-light] .wallet-btn { color: var(--text); border-color: rgba(0,0,0,0.15); }
+
+/* Shadow: lighter on light bg */
+[data-wl-light] { --shadow: 0 2px 12px rgba(0,0,0,0.1),0 1px 4px rgba(0,0,0,0.08); }
+[data-wl-light] { --shadow-lg: 0 8px 32px rgba(0,0,0,0.14),0 4px 12px rgba(0,0,0,0.1); }
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
