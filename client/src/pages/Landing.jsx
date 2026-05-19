@@ -359,6 +359,11 @@ export default function Landing() {
             title="🎨 Theme Your App"
             desc="Pick the theme of your favourite asset — Bitcoin Orange, Ethereum Blue, Solana Purple, Gold, Silver, Emerald, and more. The whole interface changes colour to match."
           />
+          <FeatureCard delay={90} accent="34,197,94"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>}
+            title="⏱️ Buy / Sell Timing Signal"
+            desc="Before you trade, WalletLens tells you whether now is a good time. It checks 24h & 7d momentum, price vs 30-day average, distance from all-time high, and how far you are from your own average cost — then gives you a clear verdict: Strong Entry, FOMO Risk, Great Exit, or Wait for Recovery."
+          />
         </div>
       </section>
 
