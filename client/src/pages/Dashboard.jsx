@@ -18,6 +18,8 @@ import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
+import MarketMood from '../components/MarketMood'
+import CorrelationMatrix from '../components/CorrelationMatrix'
 
 // Heavy components only loaded when the user opens that tab
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
@@ -2675,6 +2677,9 @@ export default function Dashboard() {
                 )}
               </div>
 
+              {/* Market Mood — sentiment from crypto headlines */}
+              <MarketMood />
+
               {/* Stale price warning */}
               {staleAssets.length > 0 && (
                 <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
@@ -2799,6 +2804,9 @@ export default function Dashboard() {
                   </>
                 }
               </div>
+
+              {/* Correlation matrix — 30d price correlations */}
+              {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
 
               {/* Exchange partners strip below holdings */}
               <ExchangePartners compact source="holdings" />
