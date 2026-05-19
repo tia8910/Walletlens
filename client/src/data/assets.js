@@ -16,7 +16,7 @@ export const ASSET_CATEGORIES = {
   platinum: { key: 'platinum', label: 'Platinum',  icon: '💎', color: '#cbd5e1' },
   stock:    { key: 'stock',    label: 'Stocks',    icon: '📈', color: 'var(--gd)' },
   bond:     { key: 'bond',     label: 'Bonds',     icon: '🏛️', color: '#0284c7' },
-  other:    { key: 'other',    label: 'Other',     icon: '📦', color: '#a78bfa' },
+  other:    { key: 'other',    label: 'Other',     icon: '🏠🚗⌚', color: '#a78bfa' },
 }
 export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
