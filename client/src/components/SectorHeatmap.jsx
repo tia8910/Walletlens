@@ -118,7 +118,7 @@ async function fetchSectors() {
 }
 
 export default function SectorHeatmap() {
-  const [open, setOpen]     = useState(false)
+  const [open, setOpen]     = useState(true)
   const [tiles, setTiles]   = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState(null)
