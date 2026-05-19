@@ -146,14 +146,14 @@ const CoinLogo = memo(function CoinLogo({
     sym      ? `cryptoicons:${sym}` : null,
   ].filter(Boolean)
 
-  const [stageIdx, setStageIdx] = useState(image ? 0 : 1)
+  const [stageIdx, setStageIdx] = useState(0)
   const stageIdxRef = useRef(stageIdx)
   const loadedRef   = useRef(false)
   stageIdxRef.current = stageIdx
 
   useEffect(() => {
     loadedRef.current = false
-    setStageIdx(image ? 0 : 1)
+    setStageIdx(0)
   }, [image, sym, coinId])
 
   useEffect(() => {
