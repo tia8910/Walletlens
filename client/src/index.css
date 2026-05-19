@@ -6331,6 +6331,10 @@ input[type="date"] { color-scheme: dark; }
 .wl-topbar-x:hover svg { transform: rotate(-8deg) scale(1.25); }
 
 /* ── X link in drawer footer ────────────────────────────────────────────── */
+[data-wl-light] .wl-drawer-x { color: rgba(0,0,0,0.55); }
+[data-wl-light] .wl-drawer-x:hover { color: #000; }
+[data-wl-light] .wl-topbar-x { color: rgba(0,0,0,0.55); }
+[data-wl-light] .wl-topbar-x:hover { color: #000; background: rgba(0,0,0,0.06); }
 .wl-drawer-x {
   display: inline-flex; align-items: center; gap: 0.35rem;
   color: rgba(255,255,255,0.45); text-decoration: none;
