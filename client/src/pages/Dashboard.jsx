@@ -1812,9 +1812,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
-  const [goalValue, setGoalValue]             = useState(() => { try { return parseFloat(localStorage.getItem('wl_goal') || '0') || 0 } catch { return 0 } })
-  const [editingGoal, setEditingGoal]         = useState(false)
-  const [goalInput, setGoalInput]             = useState('')
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t, source = 'dashboard') => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
@@ -2615,71 +2612,8 @@ export default function Dashboard() {
                 }
               </div>
 
-              {/* Goal Tracker */}
-              <div className="glass-card dvx-goal-card">
-                <div style={CHART_HDR_STYLE}>
-                  <h3 style={{ margin:0 }}>🎯 Portfolio Goal</h3>
-                  <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
-                    onClick={() => { setGoalInput(goalValue > 0 ? goalValue.toString() : ''); setEditingGoal(true) }}>
-                    {goalValue > 0 ? 'Edit' : 'Set Goal'}
-                  </button>
-                </div>
-                {editingGoal ? (
-                  <div className="dvx-goal-edit">
-                    <input
-                      className="dvx-goal-input"
-                      type="number"
-                      placeholder="e.g. 100000"
-                      value={goalInput}
-                      onChange={e => setGoalInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const v = parseFloat(goalInput) || 0
-                          setGoalValue(v)
-                          localStorage.setItem('wl_goal', v.toString())
-                          setEditingGoal(false)
-                        }
-                        if (e.key === 'Escape') setEditingGoal(false)
-                      }}
-                      autoFocus
-                    />
-                    <button className="dvx-goal-save" onClick={() => {
-                      const v = parseFloat(goalInput) || 0
-                      setGoalValue(v)
-                      localStorage.setItem('wl_goal', v.toString())
-                      setEditingGoal(false)
-                      track('goal_set', {
-                        goal_usd: Math.round(v),
-                        current_usd: Math.round(totalValue),
-                        progress_pct: v > 0 ? Math.round((totalValue / v) * 100) : 0,
-                        gap_usd: Math.round(Math.max(0, v - totalValue)),
-                      })
-                    }}>Save</button>
-                  </div>
-                ) : goalValue > 0 ? (() => {
-                  const progress = Math.min(100, (totalValue / goalValue) * 100)
-                  const remaining = Math.max(0, goalValue - totalValue)
-                  const reached = totalValue >= goalValue
-                  return (
-                    <div className="dvx-goal-body">
-                      <div className="dvx-goal-nums">
-                        <span className="dvx-goal-current">${fmt(totalValue)}</span>
-                        <span className="muted"> / ${fmt(goalValue)}</span>
-                      </div>
-                      <div className="dvx-goal-bar-track">
-                        <div className="dvx-goal-bar-fill" style={{ width:`${progress}%`, background: reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }} />
-                      </div>
-                      <div className="dvx-goal-footer">
-                        <span style={{ color: reached ? 'var(--g)' : 'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>
-                          {reached ? '🎉 Goal reached!' : `$${fmt(remaining)} to go · ${progress.toFixed(1)}%`}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })() : (
-                  <p className="muted" style={{ fontSize:'0.82rem', margin:'0.5rem 0 0' }}>Set a target portfolio value to track your progress.</p>
-                )}
-              </div>
+              {/* Goal-Based Portfolio Tracker */}
+              <GoalTracker currentValue={totalValue} />
 
               {/* Goal-Based Portfolio Tracker */}
               <GoalTracker currentValue={totalValue} />
