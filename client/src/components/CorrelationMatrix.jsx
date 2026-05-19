@@ -118,7 +118,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
   const [matrix, setMatrix]   = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
-  const [open, setOpen]       = useState(false)
+  const [open, setOpen]       = useState(true)
 
   const cryptoHoldings = enriched
     .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:'))
