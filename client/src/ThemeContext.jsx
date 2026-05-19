@@ -283,11 +283,11 @@ function applyTheme(id, mode) {
   }
 }
 
-const ThemeContext = createContext({ theme: 'emerald', mode: 'dark', setTheme: () => {}, setMode: () => {} })
+const ThemeContext = createContext({ theme: 'emerald', mode: 'light', setTheme: () => {}, setMode: () => {} })
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
-  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'dark')
+  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'light')
 
   const setTheme = (id) => {
     setThemeState(id)
