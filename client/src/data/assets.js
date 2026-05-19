@@ -8,15 +8,15 @@ export const STOCK_PREFIX = 'stock:'     // followed by lowercase ticker
 export const FIAT_PREFIX  = 'fiat:'      // followed by lowercase ISO code
 
 export const ASSET_CATEGORIES = {
-  crypto: { key: 'crypto', label: 'Crypto', icon: '◆', color: '#6366f1' },
-  fiat:   { key: 'fiat',   label: 'Fiat',   icon: '💵', color: '#0ea5e9' },
-  gold:     { key: 'gold',     label: 'Gold',     icon: '🥇', color: '#f59e0b' },
-  silver:   { key: 'silver',   label: 'Silver',   icon: '🥈', color: '#94a3b8' },
-  copper:   { key: 'copper',   label: 'Copper',   icon: '🟤', color: '#b45309' },
-  platinum: { key: 'platinum', label: 'Platinum', icon: '⬜', color: '#cbd5e1' },
-  stock:  { key: 'stock',  label: 'Stocks', icon: '📈', color: 'var(--gd)' },
-  bond:   { key: 'bond',   label: 'Bonds',  icon: '📜', color: '#0284c7' },
-  other:  { key: 'other',  label: 'Other',  icon: '◈', color: '#a78bfa' },
+  crypto:   { key: 'crypto',   label: 'Crypto',    icon: '₿',  color: '#6366f1' },
+  fiat:     { key: 'fiat',     label: 'Fiat',      icon: '$',  color: '#0ea5e9' },
+  gold:     { key: 'gold',     label: 'Gold',      icon: '🥇', color: '#f59e0b' },
+  silver:   { key: 'silver',   label: 'Silver',    icon: '🥈', color: '#94a3b8' },
+  copper:   { key: 'copper',   label: 'Copper',    icon: '🟤', color: '#b45309' },
+  platinum: { key: 'platinum', label: 'Platinum',  icon: '💎', color: '#cbd5e1' },
+  stock:    { key: 'stock',    label: 'Stocks',    icon: '📈', color: 'var(--gd)' },
+  bond:     { key: 'bond',     label: 'Bonds',     icon: '🏛️', color: '#0284c7' },
+  other:    { key: 'other',    label: 'Other',     icon: '📦', color: '#a78bfa' },
 }
 export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 

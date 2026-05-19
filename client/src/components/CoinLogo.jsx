@@ -3,9 +3,9 @@ import { getCachedCoinImage } from '../api'
 
 // Known non-crypto asset icons rendered inline — no CDN needed
 const ASSET_ICONS = {
-  'metal:xau': { emoji: '🥇', label: 'XAU', color1: '#f59e0b', color2: '#b45309' },
+  'metal:xau': { emoji: '🪙', label: 'XAU', color1: '#f59e0b', color2: '#b45309' },
   'metal:xag': { emoji: '🥈', label: 'XAG', color1: '#94a3b8', color2: '#475569' },
-  'metal:xpt': { emoji: '⬜', label: 'XPT', color1: '#cbd5e1', color2: '#94a3b8' },
+  'metal:xpt': { emoji: '💎', label: 'XPT', color1: '#cbd5e1', color2: '#94a3b8' },
   'metal:xcu': { emoji: '🟤', label: 'XCU', color1: '#c2410c', color2: '#92400e' },
 }
 function isNonCrypto(coinId) {
