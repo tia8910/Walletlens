@@ -4,6 +4,7 @@ const NON_CRYPTO = ['stock:', 'metal:', 'fiat:', 'cash:', 'bond:', 'real:', 'oth
 
 const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares' }
 const toCapId = id => CG_TO_CAP[id] || id
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT','maker':'MKRUSDT','curve-dao-token':'CRVUSDT' }
 
 function isCrypto(id) {
   const idL = (id || '').toLowerCase()
@@ -71,7 +72,26 @@ export default function LiquidityRisk({ holdings }) {
         } catch { /* exhausted */ }
       }
 
-      if (!volMap) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
+      // Final fallback: Binance klines quoteAssetVolume (proven to work on restricted networks)
+      if (!volMap) {
+        try {
+          const settled = await Promise.allSettled(
+            ids.map(async id => {
+              const sym = BINANCE_SYM[id]
+              if (!sym) return null
+              const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=1`, { signal: AbortSignal.timeout(5000) })
+              if (!res.ok) return null
+              const klines = await res.json()
+              const vol = parseFloat(klines[0]?.[7]) || 0 // quoteAssetVolume in USDT
+              return { id, vol }
+            })
+          )
+          volMap = {}
+          settled.forEach(r => { if (r.status === 'fulfilled' && r.value) volMap[r.value.id] = r.value.vol })
+        } catch { /* exhausted */ }
+      }
+
+      if (!volMap || Object.keys(volMap).length === 0) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
       const rows = cryptoHoldings
         .map(h => {
           const id = h.coin_id || h.id

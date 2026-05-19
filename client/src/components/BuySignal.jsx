@@ -25,30 +25,21 @@ async function fetchSignalData(coinId) {
     if (cgResult) { _signalCache[coinId] = { d: cgResult, t: now }; return cgResult }
   } catch { /* all proxies failed, fall through */ }
 
-  // Fallback: Binance API (open CORS, no key needed)
+  // Fallback: Binance klines only (ticker/24hr may be blocked on some networks)
   try {
     const sym = BINANCE_SYM[coinId]
     if (!sym) return null
-    const [tickerRes, klinesRes] = await Promise.all([
-      fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`, { signal: AbortSignal.timeout(6000) }),
-      fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(6000) }),
-    ])
-    if (!tickerRes.ok) return null
-    const ticker = await tickerRes.json()
-    const price = parseFloat(ticker.lastPrice) || 0
-    const pct24h = parseFloat(ticker.priceChangePercent) || 0
-
-    let pct7d = 0, pct30d = 0
-    if (klinesRes.ok) {
-      const klines = await klinesRes.json()
-      if (klines?.length >= 7) {
-        const p7  = parseFloat(klines[klines.length - 8]?.[4]) || 0
-        const p30 = parseFloat(klines[0]?.[4]) || 0
-        if (p7  > 0) pct7d  = ((price - p7)  / p7)  * 100
-        if (p30 > 0) pct30d = ((price - p30) / p30) * 100
-      }
-    }
-
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(6000) })
+    if (!res.ok) return null
+    const klines = await res.json()
+    if (!klines?.length) return null
+    const price  = parseFloat(klines[klines.length - 1][4]) || 0
+    const prev1d = parseFloat(klines[klines.length - 2]?.[4]) || 0
+    const prev7d = parseFloat(klines[Math.max(0, klines.length - 8)]?.[4]) || 0
+    const prev30 = parseFloat(klines[0]?.[4]) || 0
+    const pct24h = prev1d > 0 ? ((price - prev1d) / prev1d) * 100 : 0
+    const pct7d  = prev7d > 0 ? ((price - prev7d) / prev7d) * 100 : 0
+    const pct30d = prev30 > 0 ? ((price - prev30) / prev30) * 100 : 0
     const d = { current_price: price, price_change_percentage_24h: pct24h, price_change_percentage_7d_in_currency: pct7d, price_change_percentage_30d_in_currency: pct30d, ath: 0 }
     _signalCache[coinId] = { d, t: now }
     return d

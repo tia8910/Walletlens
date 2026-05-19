@@ -60,25 +60,30 @@ async function fetchSectors() {
     return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
   } catch { /* all proxies failed */ }
 
-  // Fallback: Binance 24h tickers (open CORS, no key)
+  // Fallback: Binance klines per coin (ticker/24hr may be blocked; klines proven to work)
   try {
-    const syms = ALL_IDS.map(id => BINANCE_SYM[id]).filter(Boolean)
-    if (syms.length > 0) {
-      const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`, { signal: AbortSignal.timeout(6000) })
-      if (res.ok) {
-        const tickers = await res.json()
-        const bySymbol = {}
-        tickers.forEach(t => { bySymbol[t.symbol] = parseFloat(t.priceChangePercent) || 0 })
-        const byId = {}
-        ALL_IDS.forEach(id => {
-          const sym = BINANCE_SYM[id]
-          if (sym && bySymbol[sym] !== undefined) {
-            byId[id] = { id, symbol: sym.replace('USDT',''), price_change_percentage_7d_in_currency: bySymbol[sym] }
-          }
-        })
-        if (Object.keys(byId).length > 0) return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+    const settled = await Promise.allSettled(
+      ALL_IDS.map(async id => {
+        const sym = BINANCE_SYM[id]
+        if (!sym) return null
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=2`, { signal: AbortSignal.timeout(5000) })
+        if (!res.ok) return null
+        const klines = await res.json()
+        if (!klines?.length) return null
+        const prev = parseFloat(klines[0]?.[4]) || 0
+        const curr = parseFloat(klines[klines.length - 1]?.[4]) || 0
+        const pct = prev > 0 ? ((curr - prev) / prev) * 100 : 0
+        return { id, sym, pct }
+      })
+    )
+    const byId = {}
+    settled.forEach(r => {
+      if (r.status === 'fulfilled' && r.value) {
+        const { id, sym, pct } = r.value
+        byId[id] = { id, symbol: sym.replace('USDT','').replace('1000',''), price_change_percentage_7d_in_currency: pct }
       }
-    }
+    })
+    if (Object.keys(byId).length > 0) return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
   } catch { /* exhausted */ }
 
   return null
