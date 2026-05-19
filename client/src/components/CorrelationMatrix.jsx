@@ -7,10 +7,11 @@ const PROXIES = [
 ]
 
 async function batchFetchSparklines(coinIds) {
+  // Try CoinGecko sparklines via CORS proxies
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}&sparkline=true&price_change_percentage=7d&per_page=50`
   for (const proxy of PROXIES) {
     try {
-      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(10000) })
+      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(5000) })
       if (!res.ok) continue
       const data = await res.json()
       const series = {}
@@ -19,9 +20,26 @@ async function batchFetchSparklines(coinIds) {
           series[coin.id] = coin.sparkline_in_7d.price
         }
       }
-      return series
+      if (Object.keys(series).length > 0) return series
     } catch { /* try next proxy */ }
   }
+
+  // Fallback: CoinCap history (6h intervals, 7 days = 28 points)
+  try {
+    const end = Date.now()
+    const start = end - 7 * 24 * 60 * 60 * 1000
+    const series = {}
+    await Promise.all(coinIds.map(async id => {
+      try {
+        const res = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=h6&start=${start}&end=${end}`, { signal: AbortSignal.timeout(6000) })
+        if (!res.ok) return
+        const { data } = await res.json()
+        if (data?.length >= 10) series[id] = data.map(p => parseFloat(p.priceUsd))
+      } catch { /* skip this coin */ }
+    }))
+    if (Object.keys(series).length >= 2) return series
+  } catch { /* exhausted */ }
+
   return null
 }
 
