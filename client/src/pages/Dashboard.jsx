@@ -1360,13 +1360,14 @@ function ConstellationMap() {
 
       const col = getColor()
       const rgb = getRgb()
+      const isLight = document.documentElement.hasAttribute('data-wl-light')
 
-      // Twinkle stars
+      // Twinkle stars / dots
       for (const s of STARS) {
         const alpha = 0.15 + 0.5 * (0.5 + 0.5 * Math.sin(s.phase + t * s.speed * 60))
         ctx.beginPath()
         ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`
+        ctx.fillStyle = isLight ? `rgba(0,0,0,${alpha * 0.35})` : `rgba(255,255,255,${alpha})`
         ctx.fill()
       }
 
@@ -1394,7 +1395,7 @@ function ConstellationMap() {
         const r = 22 + pulse * 8
         const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, r)
         grad.addColorStop(0, `rgba(${rgb},${0.22 * pulse})`)
-        grad.addColorStop(1, 'rgba(0,0,0,0)')
+        grad.addColorStop(1, 'rgba(128,128,128,0)')
         ctx.fillStyle = grad
         ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill()
       })
@@ -2461,8 +2462,8 @@ export default function Dashboard() {
                     <XAxis hide />
                     <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip
-                      contentStyle={{ background:'#0d1f14', border:'1px solid rgba(var(--g-rgb),0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
-                      itemStyle={{ color:'white', fontWeight:700, fontSize:'0.9rem' }}
+                      contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
+                      itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
                       labelStyle={{ display:'none' }}
                       formatter={v => [`$${fmt(v)}`, '']}
                       cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
@@ -2847,14 +2848,14 @@ export default function Dashboard() {
         <div style={{
           position: 'fixed', bottom: '148px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 9001, display: 'flex', alignItems: 'center', gap: '0.75rem',
-          background: 'rgba(20,21,30,0.97)', border: '1px solid rgba(var(--g-rgb),0.3)',
+          background: 'var(--bg4)', border: '1px solid var(--border)',
           borderRadius: '50px', padding: '0.6rem 1rem 0.6rem 0.75rem',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow)',
           animation: 'slideUpFade 0.3s ease',
           whiteSpace: 'nowrap',
         }}>
           <span style={{ fontSize: '1rem' }}>📊</span>
-          <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Log your latest trade</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Log your latest trade</span>
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
             background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',
@@ -2865,7 +2866,7 @@ export default function Dashboard() {
             border: '1px solid rgba(248,113,113,0.3)',
           }}>Sell</button>
           <button onClick={() => setNudgeVisible(false)} style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
+            background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
           }}>×</button>
         </div>
       )}
