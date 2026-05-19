@@ -31,6 +31,7 @@ function playTradeSound(isBuy) {
 import CoinLogo from './CoinLogo'
 import { track } from '../analytics'
 import ExchangePartners from './ExchangePartners'
+import TradeSignal from './BuySignal'
 
 
 const IcoClose  = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -611,6 +612,16 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   ${total.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}
                 </strong>
               </div>
+            )}
+
+            {/* Trade signal — good time to buy/sell? */}
+            {asset?.id && (
+              <TradeSignal
+                coinId={asset.id}
+                currentPrice={parseFloat(price) || null}
+                userAvgCost={holdingForCoin?.total_invested && holdingForCoin?.amount ? holdingForCoin.total_invested / holdingForCoin.amount : null}
+                mode={isBuy ? 'buy' : 'sell'}
+              />
             )}
 
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0.25rem 0' }}>{msg}</p>}
