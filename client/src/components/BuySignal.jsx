@@ -6,6 +6,8 @@ const PROXIES = [
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
 ]
 const _signalCache = {}
+const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol' }
+const toCapId = id => CG_TO_CAP[id] || id
 
 async function fetchSignalData(coinId) {
   const now = Date.now()
@@ -27,9 +29,10 @@ async function fetchSignalData(coinId) {
   try {
     const end = now
     const start30 = end - 31 * 24 * 60 * 60 * 1000
+    const capId = toCapId(coinId)
     const [assetRes, histRes] = await Promise.all([
-      fetch(`https://api.coincap.io/v2/assets/${coinId}`, { signal: AbortSignal.timeout(6000) }),
-      fetch(`https://api.coincap.io/v2/assets/${coinId}/history?interval=d1&start=${start30}&end=${end}`, { signal: AbortSignal.timeout(6000) }),
+      fetch(`https://api.coincap.io/v2/assets/${capId}`, { signal: AbortSignal.timeout(6000) }),
+      fetch(`https://api.coincap.io/v2/assets/${capId}/history?interval=d1&start=${start30}&end=${end}`, { signal: AbortSignal.timeout(6000) }),
     ])
     if (!assetRes.ok) return null
     const { data: asset } = await assetRes.json()

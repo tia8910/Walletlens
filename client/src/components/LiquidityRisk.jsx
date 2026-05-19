@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 
 const NON_CRYPTO = ['stock:', 'metal:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
 
+const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares' }
+const toCapId = id => CG_TO_CAP[id] || id
+
 function isCrypto(id) {
   const idL = (id || '').toLowerCase()
   return !NON_CRYPTO.some(p => idL.startsWith(p)) &&
@@ -53,11 +56,17 @@ export default function LiquidityRisk({ holdings }) {
       // Fallback: CoinCap (open CORS, no key needed)
       if (!volMap) {
         try {
-          const res = await fetch(`https://api.coincap.io/v2/assets?ids=${ids.join(',')}`, { signal: AbortSignal.timeout(6000) })
+          const capIds = ids.map(toCapId)
+          const res = await fetch(`https://api.coincap.io/v2/assets?ids=${capIds.join(',')}`, { signal: AbortSignal.timeout(6000) })
           if (res.ok) {
             const { data: assets } = await res.json()
             volMap = {}
-            assets?.forEach(a => { volMap[a.id] = parseFloat(a.volumeUsd24Hr) || 0 })
+            // index by both CoinCap ID and original CoinGecko ID for easy lookup
+            assets?.forEach(a => {
+              volMap[a.id] = parseFloat(a.volumeUsd24Hr) || 0
+              const cgId = ids.find(id => toCapId(id) === a.id)
+              if (cgId) volMap[cgId] = volMap[a.id]
+            })
           }
         } catch { /* exhausted */ }
       }

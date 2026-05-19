@@ -12,6 +12,9 @@ const SECTORS = {
 
 const ALL_IDS = [...new Set(Object.values(SECTORS).flat())]
 
+const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares','immutable-x':'immutable-x','lido-dao':'lido-dao','render-token':'render-token','bittensor':'bittensor','curve-dao-token':'curve-dao-token','compound-governance-token':'compound','singularitynet':'singularitynet' }
+const toCapId = id => CG_TO_CAP[id] || id
+
 let _cache = null, _cacheTime = 0
 
 function tileColor(pct) {
@@ -54,11 +57,15 @@ async function fetchSectors() {
 
   // Fallback: CoinCap (24h data, open CORS)
   try {
-    const res = await fetch(`https://api.coincap.io/v2/assets?ids=${ALL_IDS.join(',')}`, { signal: AbortSignal.timeout(6000) })
+    const capIds = ALL_IDS.map(toCapId)
+    const res = await fetch(`https://api.coincap.io/v2/assets?ids=${capIds.join(',')}`, { signal: AbortSignal.timeout(6000) })
     if (res.ok) {
       const { data: assets } = await res.json()
       const byId = {}
-      assets?.forEach(a => { byId[a.id] = { id: a.id, symbol: a.symbol, price_change_percentage_7d_in_currency: parseFloat(a.changePercent24Hr) || 0 } })
+      assets?.forEach(a => {
+        const cgId = ALL_IDS.find(id => toCapId(id) === a.id) || a.id
+        byId[cgId] = { id: cgId, symbol: a.symbol, price_change_percentage_7d_in_currency: parseFloat(a.changePercent24Hr) || 0 }
+      })
       return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
     }
   } catch { /* exhausted */ }
