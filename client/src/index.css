@@ -345,10 +345,12 @@
   border-color: rgba(0,0,0,0.15);
   color: var(--text);
 }
-[data-wl-light] .bs-dropdown { background: var(--bg4); border-color: rgba(0,0,0,0.1); }
-[data-wl-light] .bs-dropdown-row:hover { background: rgba(0,0,0,0.05); }
-[data-wl-light] .bs-dropdown-name { color: var(--text); }
-[data-wl-light] .bs-dropdown-sym { color: var(--text-muted); }
+[data-wl-light] .bs-dropdown { background: var(--bg4); border-color: rgba(0,0,0,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+[data-wl-light] .bs-dropdown-item { color: var(--text); border-bottom-color: rgba(0,0,0,0.06); }
+[data-wl-light] .bs-dropdown-item:hover { background: rgba(0,0,0,0.04); }
+[data-wl-light] .bs-sym { color: var(--text-muted); }
+[data-wl-light] .bs-coin-clear { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .bs-balance-row { color: var(--text-muted); border-color: rgba(0,0,0,0.08); }
 
 /* Settings page */
 [data-wl-light] .settings-section { background: var(--card-bg); }
@@ -555,10 +557,24 @@
 [data-wl-light] .bs-header { background: var(--bg3); border-bottom-color: rgba(0,0,0,0.08); }
 [data-wl-light] .bs-footer { background: var(--bg3); border-top-color: rgba(0,0,0,0.08); }
 
-/* ── News ticker ── */
+/* ── News ticker (old class kept for compat) ── */
 [data-wl-light] .news-ticker { background: var(--bg3); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
 [data-wl-light] .ticker-item { color: var(--text-muted); }
 [data-wl-light] .ticker-sep { color: var(--text-sub); }
+
+/* ── News ticker (new component) ── */
+[data-wl-light] .news-ticker-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .news-ticker-label { border-right-color: rgba(0,0,0,0.08); }
+[data-wl-light] .news-ticker-mask::before { background: linear-gradient(to right, var(--bg), transparent); }
+[data-wl-light] .news-ticker-mask::after  { background: linear-gradient(to left,  var(--bg), transparent); }
+[data-wl-light] .news-ticker-title  { color: var(--text-muted); }
+[data-wl-light] .news-ticker-dot    { color: rgba(0,0,0,0.2); }
+[data-wl-light] .news-ticker-share  { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .news-ticker-share:hover { background: rgba(0,0,0,0.09); color: var(--text); }
+[data-wl-light] .news-show-all-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+
+/* ── Price ticker (top scrollbar) ── */
+[data-wl-light] .tick-val { color: var(--text-muted); }
 
 /* ── Drawer / nav ── */
 [data-wl-light] .wl-drawer-tagline { color: var(--text-sub); }

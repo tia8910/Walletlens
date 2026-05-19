@@ -1,4 +1,5 @@
 import { track, trackReferral } from '../analytics'
+import { useTheme } from '../ThemeContext'
 
 const CRYPTO_EXCHANGES = [
   {
@@ -34,11 +35,11 @@ const CRYPTO_EXCHANGES = [
     url: 'https://okx.com/join/85929296',
     logo: (
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
-        <rect x="4" y="4" width="13" height="13" rx="2" fill="white"/>
-        <rect x="23" y="4" width="13" height="13" rx="2" fill="white"/>
-        <rect x="13.5" y="13.5" width="13" height="13" rx="2" fill="white"/>
-        <rect x="4" y="23" width="13" height="13" rx="2" fill="white"/>
-        <rect x="23" y="23" width="13" height="13" rx="2" fill="white"/>
+        <rect x="4" y="4" width="13" height="13" rx="2" fill="currentColor"/>
+        <rect x="23" y="4" width="13" height="13" rx="2" fill="currentColor"/>
+        <rect x="13.5" y="13.5" width="13" height="13" rx="2" fill="currentColor"/>
+        <rect x="4" y="23" width="13" height="13" rx="2" fill="currentColor"/>
+        <rect x="23" y="23" width="13" height="13" rx="2" fill="currentColor"/>
       </svg>
     ),
   },
@@ -56,14 +57,14 @@ const CRYPTO_EXCHANGES = [
       <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
         {/* Bybit official icon: white "B" path + orange vertical bar (the I) + white "T" path */}
         {/* B shape */}
-        <rect x="4" y="6" width="4" height="24" rx="1.5" fill="white"/>
-        <path d="M8 6 h7 a6 6 0 0 1 0 12 h-7z" fill="white"/>
-        <path d="M8 18 h8 a6 6 0 0 1 0 12 h-8z" fill="white"/>
+        <rect x="4" y="6" width="4" height="24" rx="1.5" fill="currentColor"/>
+        <path d="M8 6 h7 a6 6 0 0 1 0 12 h-7z" fill="currentColor"/>
+        <path d="M8 18 h8 a6 6 0 0 1 0 12 h-8z" fill="currentColor"/>
         {/* Orange I bar */}
         <rect x="21" y="6" width="4" height="24" rx="1.5" fill="#F7A600"/>
         {/* T shape */}
-        <rect x="25" y="6" width="7" height="4" rx="1.5" fill="white"/>
-        <rect x="27" y="10" width="3" height="20" rx="1.5" fill="white"/>
+        <rect x="25" y="6" width="7" height="4" rx="1.5" fill="currentColor"/>
+        <rect x="27" y="10" width="3" height="20" rx="1.5" fill="currentColor"/>
       </svg>
     ),
   },
@@ -92,30 +93,43 @@ const STOCK_BROKERS = [
 // compact=true → slim strip for dashboard/sheet; compact=false → full cards
 // cryptoOnly → only show crypto exchanges; stockOnly → only show stock brokers
 export default function ExchangePartners({ compact = false, source = 'unknown', cryptoOnly = false, stockOnly = false }) {
+  const { mode } = useTheme()
+  const isLight = mode === 'light'
   const exchanges = stockOnly ? STOCK_BROKERS : cryptoOnly ? CRYPTO_EXCHANGES : [...CRYPTO_EXCHANGES, ...STOCK_BROKERS]
   if (!exchanges.length) return null
+
+  // In light mode, very pale colors (OKX #e2e8f0) need a darker fallback so logos/names are visible
+  const visibleColor = (color) => {
+    if (!isLight) return color
+    const pale = ['#e2e8f0','#f1f5f9','#f8fafc','#ffffff','#fff','white']
+    return pale.includes(color?.toLowerCase()) ? '#334155' : color
+  }
+
   if (compact) {
     return (
       <div className="ep-strip-wrap">
         <span className="ep-strip-label">🎁 Sign up &amp; earn rewards</span>
         <div className="ep-strip-row">
-          {exchanges.map(ex => (
-            <a
-              key={ex.name}
-              href={ex.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ep-strip-btn"
-              style={{ '--ex-color': ex.color, '--ex-glow': ex.glow }}
-              onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
-            >
-              <span className="ep-strip-logo">{ex.logo}</span>
-              <span className="ep-strip-info">
-                <span className="ep-strip-name" style={{ color: ex.color }}>{ex.name}</span>
-                {ex.reward && <span className="ep-strip-reward">{ex.reward}</span>}
-              </span>
-            </a>
-          ))}
+          {exchanges.map(ex => {
+            const col = visibleColor(ex.color)
+            return (
+              <a
+                key={ex.name}
+                href={ex.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ep-strip-btn"
+                style={{ '--ex-color': col, '--ex-glow': ex.glow, color: col }}
+                onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
+              >
+                <span className="ep-strip-logo">{ex.logo}</span>
+                <span className="ep-strip-info">
+                  <span className="ep-strip-name" style={{ color: col }}>{ex.name}</span>
+                  {ex.reward && <span className="ep-strip-reward">{ex.reward}</span>}
+                </span>
+              </a>
+            )
+          })}
         </div>
       </div>
     )
@@ -135,7 +149,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
             target="_blank"
             rel="noopener noreferrer"
             className="ep-card"
-            style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
+            style={{ '--ex-color': visibleColor(ex.color), '--ex-bg': ex.bg, '--ex-glow': ex.glow, color: visibleColor(ex.color) }}
             onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
           >
             <div className="ep-card-shine" />
@@ -171,7 +185,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
             target="_blank"
             rel="noopener noreferrer"
             className="ep-card ep-card-broker"
-            style={{ '--ex-color': ex.color, '--ex-bg': ex.bg, '--ex-glow': ex.glow }}
+            style={{ '--ex-color': visibleColor(ex.color), '--ex-bg': ex.bg, '--ex-glow': ex.glow, color: visibleColor(ex.color) }}
             onClick={() => { track('exchange_referral_click', { exchange: ex.name, source }); trackReferral({ exchange: ex.name, source }) }}
           >
             <div className="ep-card-shine" />
