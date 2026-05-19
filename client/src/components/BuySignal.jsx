@@ -1,23 +1,29 @@
 import { useEffect, useState } from 'react'
 
 const PROXIES = [
-  u => u,
   u => 'https://corsproxy.io/?' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://cors.eu.org/' + u,
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
 ]
 const _signalCache = {}
 const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'1000PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
+
+function _ccSym(coinId) {
+  const s = BINANCE_SYM[coinId]
+  return s ? s.replace(/USDT$/, '').replace(/^1000/, '') : null
+}
 
 async function fetchSignalData(coinId) {
   const now = Date.now()
   if (_signalCache[coinId] && now - _signalCache[coinId].t < 5 * 60 * 1000) return _signalCache[coinId].d
 
-  // Try all CoinGecko proxies in parallel (faster — 3s max instead of 15s sequential)
+  // Try all CoinGecko proxies in parallel
   const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
   try {
     const cgResult = await Promise.any(
       PROXIES.map(proxy =>
-        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(3000) })
+        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(6000) })
           .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
           .then(data => { if (!data[0]) throw new Error('empty'); return data[0] })
       )
@@ -25,11 +31,36 @@ async function fetchSignalData(coinId) {
     if (cgResult) { _signalCache[coinId] = { d: cgResult, t: now }; return cgResult }
   } catch { /* all proxies failed, fall through */ }
 
-  // Fallback: Binance klines only (ticker/24hr may be blocked on some networks)
+  // Fallback: CryptoCompare (native CORS, no key required)
+  const ccSym = _ccSym(coinId)
+  if (ccSym) {
+    try {
+      const res = await fetch(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${ccSym}&tsym=USD&limit=31`, { signal: AbortSignal.timeout(7000) })
+      if (res.ok) {
+        const json = await res.json()
+        const rows = json?.Data?.Data
+        if (Array.isArray(rows) && rows.length >= 2) {
+          const last  = rows[rows.length - 1]
+          const d1    = rows[rows.length - 2]
+          const d7    = rows[Math.max(0, rows.length - 8)]
+          const d30   = rows[0]
+          const price  = last.close
+          const pct24h = d1.close  > 0 ? ((price - d1.close)  / d1.close)  * 100 : 0
+          const pct7d  = d7.close  > 0 ? ((price - d7.close)  / d7.close)  * 100 : 0
+          const pct30d = d30.close > 0 ? ((price - d30.close) / d30.close) * 100 : 0
+          const d = { current_price: price, price_change_percentage_24h: pct24h, price_change_percentage_7d_in_currency: pct7d, price_change_percentage_30d_in_currency: pct30d, ath: 0 }
+          _signalCache[coinId] = { d, t: now }
+          return d
+        }
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Final fallback: Binance klines
   try {
     const sym = BINANCE_SYM[coinId]
     if (!sym) return null
-    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(6000) })
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const klines = await res.json()
     if (!klines?.length) return null
