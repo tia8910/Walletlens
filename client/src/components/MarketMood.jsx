@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 // Weighted keyword lists for sentiment scoring
 const BULLISH = [
@@ -194,8 +194,6 @@ export default function MarketMood() {
       if (articles.length) setMood(computeMood(articles))
     })
   }, [])
-
-  if (!articles.length) return null
 
   const info = mood ? moodLabel(mood.score) : null
 
