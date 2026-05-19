@@ -37,11 +37,11 @@ export default function LiquidityRisk({ holdings }) {
     setLoading(true)
     setError(null)
 
-    fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`)
-      .then(r => {
-        if (!r.ok) throw new Error('CoinGecko fetch failed')
-        return r.json()
-      })
+    const CG_URL = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`
+    const tryFetch = url => fetch(url, { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+
+    tryFetch(CG_URL)
+      .catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(CG_URL)))
       .then(markets => {
         const volMap = {}
         markets.forEach(m => { volMap[m.id] = m.total_volume })
@@ -123,7 +123,10 @@ export default function LiquidityRisk({ holdings }) {
             </div>
           )}
           {error && (
-            <div style={{ color: '#f87171', fontSize: '0.85rem', padding: '0.5rem 0' }}>{error}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
+              <span style={{ color: '#f87171', fontSize: '0.85rem' }}>{error}</span>
+              <button onClick={() => { setError(null); setData(null) }} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 6, padding: '0.25rem 0.6rem', cursor: 'pointer' }}>Retry</button>
+            </div>
           )}
           {data && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>

@@ -2615,9 +2615,6 @@ export default function Dashboard() {
               {/* Goal-Based Portfolio Tracker */}
               <GoalTracker currentValue={totalValue} />
 
-              {/* Goal-Based Portfolio Tracker */}
-              <GoalTracker currentValue={totalValue} />
-
               {/* Market Mood — sentiment from crypto headlines */}
               <MarketMood />
 
