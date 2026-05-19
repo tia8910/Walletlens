@@ -605,11 +605,132 @@
 
 /* ── Holdings list ── */
 [data-wl-light] .dvx-holding-meta strong { color: var(--text); }
+[data-wl-light] .dvx-holding { background: var(--surface-1); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .dvx-holding:hover { background: var(--surface-2); }
+
+/* ── Transaction list ── */
+[data-wl-light] .dvx-tx-item { background: var(--surface-1); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .dvx-tx-meta strong { color: var(--text); }
+[data-wl-light] .dvx-tx-amt { color: var(--text); }
+
+/* ── Legend ── */
+[data-wl-light] .dvx-legend-name { color: var(--text-muted); }
 
 /* ── Share / Weekly Report modal ── */
 [data-wl-light] .share-modal { background: var(--bg3); }
 [data-wl-light] .share-canvas { border-color: rgba(0,0,0,0.1); }
 [data-wl-light] .share-btn-dl { background: rgba(0,0,0,0.08); color: var(--text); }
+
+/* ── QuickStats popup ── */
+[data-wl-light] .qs-label       { color: var(--text-sub); }
+[data-wl-light] .qs-value       { color: var(--text); }
+[data-wl-light] .qs-stat        { background: var(--surface-1); }
+[data-wl-light] .qs-stat-label  { color: var(--text-sub); }
+[data-wl-light] .qs-stat-val    { color: var(--text); }
+[data-wl-light] .qs-mover       { background: var(--surface-1); }
+[data-wl-light] .qs-mover-label { color: var(--text-muted); }
+[data-wl-light] .qs-mover-coin  { color: var(--text); }
+[data-wl-light] .qs-loading     { color: var(--text-muted); }
+[data-wl-light] .qs-empty       { color: var(--text-muted); }
+[data-wl-light] .qs-close       { color: var(--text-sub); }
+[data-wl-light] .qs-close:hover { color: var(--text); background: rgba(0,0,0,0.06); }
+[data-wl-light] .qs-main-value  { border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .qs-grid        { border-bottom-color: rgba(0,0,0,0.08); }
+
+/* ── AI indicator cards ── */
+[data-wl-light] .ai-ind-label { color: var(--text-sub); }
+[data-wl-light] .ai-ind-sub   { color: var(--text-sub); }
+
+/* ── Smart Alerts tabs ── */
+[data-wl-light] .sa-alert-tab { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .sa-alert-tab:hover:not(.active) { background: rgba(0,0,0,0.08); color: var(--text); }
+
+/* ── Wallet Eval tab ── */
+[data-wl-light] .eval-cat-card { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .eval-cat-card:hover { background: var(--surface-2); }
+[data-wl-light] .eval-cat-label { color: var(--text); }
+[data-wl-light] .eval-cat-bar-wrap { background: rgba(0,0,0,0.08); }
+[data-wl-light] .eval-cat-tip { color: var(--text-muted); border-top-color: rgba(0,0,0,0.06); }
+
+/* ── LiquidityRisk step/asset descriptions ── */
+[data-wl-light] .lp-step-title { color: var(--text); }
+[data-wl-light] .lp-asset-name { color: var(--text); }
+
+/* ── Weekly button ── */
+[data-wl-light] .dvx-weekly-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+
+/* ── DVX form controls ── */
+[data-wl-light] .dvx-back { color: var(--text-muted); border-color: rgba(0,0,0,0.15); }
+[data-wl-light] .dvx-back:hover { color: var(--text); border-color: rgba(0,0,0,0.3); }
+[data-wl-light] .dvx-input { background: rgba(0,0,0,0.04); color: var(--text); border-color: rgba(0,0,0,0.15); }
+[data-wl-light] .dvx-btn { color: var(--text-muted); }
+[data-wl-light] .dvx-btn:hover { color: var(--text); }
+[data-wl-light] .dvx-btn-ghost { border-color: rgba(0,0,0,0.15); color: var(--text-muted); }
+
+/* ── Token Unlock Alerts (tua) ── */
+[data-wl-light] .tua-root { background: var(--surface-1); border-color: rgba(248,113,113,0.25); }
+[data-wl-light] .tua-header:hover { background: var(--surface-2); }
+[data-wl-light] .tua-header-title { color: var(--text); }
+[data-wl-light] .tua-header-sub { color: var(--text-muted); }
+[data-wl-light] .tua-chevron { color: var(--text-sub); }
+[data-wl-light] .tua-card-sym strong { color: var(--text); }
+[data-wl-light] .tua-card-note { color: var(--text-muted); }
+[data-wl-light] .tua-next-unlock { color: var(--text-sub); }
+[data-wl-light] .tua-show-more { border-color: rgba(0,0,0,0.12); color: var(--text-muted); }
+[data-wl-light] .tua-source-link { color: var(--text-sub); }
+[data-wl-light] .tua-source-link:hover { color: var(--text-muted); }
+
+/* ── Smart Alerts cards ── */
+[data-wl-light] .sa-card-symbol { color: var(--text); }
+[data-wl-light] .sa-card-name   { color: var(--text-muted); }
+[data-wl-light] .sa-empty       { color: var(--text-muted); }
+[data-wl-light] .sa-empty-sub   { color: var(--text-sub); }
+
+/* ── ADE (AI Analysis) panel ── */
+[data-wl-light] .ade-thinking-text  { color: var(--text-muted); }
+[data-wl-light] .ade-assets-title   { color: var(--text-sub); }
+[data-wl-light] .ade-asset-row      { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .ade-asset-sym      { color: var(--text); }
+[data-wl-light] .ade-asset-weight   { color: var(--text-sub); }
+[data-wl-light] .ade-reason         { color: var(--text-muted); }
+[data-wl-light] .ade-disclaimer     { color: var(--text-sub); }
+[data-wl-light] .ade-empty          { color: var(--text-muted); }
+[data-wl-light] .ade-conf-track     { background: rgba(0,0,0,0.08); }
+
+/* ── Heatmap ── */
+[data-wl-light] .heatmap-sym  { color: rgba(0,0,0,0.9); }
+[data-wl-light] .heatmap-chg.pos { color: rgba(0,0,0,0.85); }
+[data-wl-light] .heatmap-chg.neg { color: rgba(0,0,0,0.85); }
+[data-wl-light] .heatmap-pct  { color: rgba(0,0,0,0.6); }
+[data-wl-light] .heatmap-legend { color: var(--text-sub); border-top-color: rgba(0,0,0,0.06); }
+
+/* ── Card text (ErrorBoundary + other .card usages) ── */
+[data-wl-light] .card h3 { color: var(--text); }
+[data-wl-light] .card p { color: var(--text-muted); }
+
+/* ── Stat cards (Targets tab summary row) ── */
+[data-wl-light] .dvx-stat-label { color: var(--text-sub); }
+[data-wl-light] .dvx-stat-value { color: var(--text); }
+[data-wl-light] .dvx-stat-sub   { color: var(--text-muted); }
+[data-wl-light] .dvx-show-more  { color: var(--text-muted); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .dvx-show-more:hover { color: var(--text); border-color: rgba(0,0,0,0.25); }
+
+/* ── Data / Backup panel ── */
+[data-wl-light] .dvx-data-hint  { color: var(--text-muted); }
+[data-wl-light] .dvx-divider    { color: var(--text-sub); }
+[data-wl-light] .dvx-preview-row { color: var(--text-muted); }
+[data-wl-light] .dvx-preview-row strong { color: var(--text); }
+[data-wl-light] .dvx-code-box   { background: var(--surface-2); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .dvx-api-key-title { color: var(--text); }
+
+/* ── Target rows ── */
+[data-wl-light] .dvx-target-row { background: var(--surface-1); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .dvx-target-lbl { color: var(--text-sub); }
+[data-wl-light] .dvx-target-val { color: var(--text); }
+[data-wl-light] .dvx-target-bar-bg { background: rgba(0,0,0,0.08); }
+[data-wl-light] .dvx-target-bar-pct { color: var(--text-sub); }
+[data-wl-light] .dvx-target-mini-sym   { color: var(--text); }
+[data-wl-light] .dvx-target-mini-price { color: var(--text-muted); }
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
