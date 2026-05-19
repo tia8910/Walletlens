@@ -357,7 +357,7 @@ function PortfolioRiskSummary({ results, holdings }) {
       <div className="risk-summary-body">
         <div className="risk-summary-score-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+            <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" strokeWidth="6" />
             <circle cx="40" cy="40" r="30" fill="none" stroke={gradeColor} strokeWidth="6"
               strokeDasharray={`${(weightedScore/100)*(2*Math.PI*30)} ${2*Math.PI*30}`}
               strokeDashoffset={2*Math.PI*30*0.25} strokeLinecap="round"
@@ -413,7 +413,7 @@ function ScoreRing({ score, color }) {
   const dash = (score / 100) * circ
   return (
     <svg width="64" height="64" viewBox="0 0 64 64" className="risk-ring-svg">
-      <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
+      <circle cx="32" cy="32" r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
       <circle cx="32" cy="32" r={r} fill="none" stroke={color} strokeWidth="5"
         strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ * 0.25}
         strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.6s ease' }} />
