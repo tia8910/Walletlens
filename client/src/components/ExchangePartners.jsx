@@ -1,5 +1,4 @@
 import { track, trackReferral } from '../analytics'
-import { useTheme } from '../ThemeContext'
 
 const CRYPTO_EXCHANGES = [
   {
@@ -93,17 +92,11 @@ const STOCK_BROKERS = [
 // compact=true → slim strip for dashboard/sheet; compact=false → full cards
 // cryptoOnly → only show crypto exchanges; stockOnly → only show stock brokers
 export default function ExchangePartners({ compact = false, source = 'unknown', cryptoOnly = false, stockOnly = false }) {
-  const { mode } = useTheme()
-  const isLight = mode === 'light'
   const exchanges = stockOnly ? STOCK_BROKERS : cryptoOnly ? CRYPTO_EXCHANGES : [...CRYPTO_EXCHANGES, ...STOCK_BROKERS]
   if (!exchanges.length) return null
 
-  // In light mode, very pale colors (OKX #e2e8f0) need a darker fallback so logos/names are visible
-  const visibleColor = (color) => {
-    if (!isLight) return color
-    const pale = ['#e2e8f0','#f1f5f9','#f8fafc','#ffffff','#fff','white']
-    return pale.includes(color?.toLowerCase()) ? '#334155' : color
-  }
+  // Exchange cards always have dark backgrounds, so original brand colors are always visible
+  const visibleColor = (color) => color
 
   if (compact) {
     return (

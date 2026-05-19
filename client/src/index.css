@@ -766,6 +766,17 @@
 [data-wl-light] .alpha-empty-hint     { color: var(--text-muted); }
 [data-wl-light] .alpha-score-empty    { color: var(--text-muted); }
 
+/* ── AI Insights rows ── */
+[data-wl-light] .ai-insight { color: var(--text-muted); }
+
+/* ── Fear & Greed gauge SVG ── */
+[data-wl-light] .ai-fg-svg text { fill: rgba(0,0,0,0.5); }
+[data-wl-light] .ai-fg-svg line { stroke: rgba(0,0,0,0.6); }
+[data-wl-light] .ai-fg-svg path:first-child { stroke: rgba(0,0,0,0.08); }
+
+/* ── Portfolio Radar SVG labels ── */
+[data-wl-light] .ai-radar-svg text { fill: rgba(0,0,0,0.45); }
+
 /* ── AI Analysis indicators (ai-*) ── */
 [data-wl-light] .ai-empty          { color: var(--text-muted); }
 [data-wl-light] .ai-orb-label      { color: var(--text-sub); }
@@ -876,6 +887,27 @@
 [data-wl-light] .dvx-wallet-name       { color: var(--text); }
 [data-wl-light] .dvx-tx-meta strong    { color: var(--text); }
 [data-wl-light] .dvx-holding-meta .muted { color: var(--text-muted); }
+[data-wl-light] .dvx-breakeven-toggle  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .dvx-goal-current      { color: var(--text); }
+[data-wl-light] .dvx-goal-input        { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+/* ── ADE trigger sub ── */
+[data-wl-light] .ade-trigger-sub { color: var(--text-muted); }
+
+/* ── Transactions ── */
+[data-wl-light] .tx-notes { color: var(--text-muted); }
+
+/* ── Whale tracker tabs ── */
+[data-wl-light] .whale-tab { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+
+/* ── Blog & Docs ── */
+[data-wl-light] .blog-card-summary  { color: var(--text-muted); }
+[data-wl-light] .doc-article p,
+[data-wl-light] .doc-article ul,
+[data-wl-light] .doc-article ol     { color: var(--text-muted); }
+
+/* ── Academy guessr ── */
+[data-wl-light] .guessr-reveal-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 
 /* ── Heatmap ── */
 [data-wl-light] .heatmap-sym  { color: rgba(0,0,0,0.9); }
