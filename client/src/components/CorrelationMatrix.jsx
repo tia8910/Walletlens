@@ -6,6 +6,9 @@ const PROXIES = [
   url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
 ]
 
+const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares' }
+const toCapId = id => CG_TO_CAP[id] || id
+
 async function batchFetchSparklines(coinIds) {
   // Try CoinGecko sparklines via CORS proxies
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}&sparkline=true&price_change_percentage=7d&per_page=50`
@@ -31,7 +34,8 @@ async function batchFetchSparklines(coinIds) {
     const series = {}
     await Promise.all(coinIds.map(async id => {
       try {
-        const res = await fetch(`https://api.coincap.io/v2/assets/${id}/history?interval=h6&start=${start}&end=${end}`, { signal: AbortSignal.timeout(6000) })
+        const capId = toCapId(id)
+        const res = await fetch(`https://api.coincap.io/v2/assets/${capId}/history?interval=h6&start=${start}&end=${end}`, { signal: AbortSignal.timeout(6000) })
         if (!res.ok) return
         const { data } = await res.json()
         if (data?.length >= 10) series[id] = data.map(p => parseFloat(p.priceUsd))
