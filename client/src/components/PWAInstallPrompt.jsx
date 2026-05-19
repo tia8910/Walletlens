@@ -96,10 +96,10 @@ export default function PWAInstallPrompt() {
     }}>
       <div style={{ fontSize: '2rem', flexShrink: 0 }}>📲</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'white', marginBottom: '0.2rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.2rem' }}>
           Add WalletLens to Home Screen
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
           {instruction}
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function PWAInstallPrompt() {
           }}>Install</button>
         )}
         <button onClick={dismiss} style={{
-          background: 'transparent', color: 'rgba(255,255,255,0.4)', border: 'none',
+          background: 'transparent', color: 'var(--text-sub)', border: 'none',
           fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem',
         }}>Not now</button>
       </div>

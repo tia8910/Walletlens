@@ -767,9 +767,9 @@ export default function Academy() {
             return (
               <div key={b.id} className={`acad-badge-card ${earned ? 'acad-badge-earned' : 'acad-badge-locked'}`}>
                 <div className="acad-badge-icon" style={{ opacity: earned ? 1 : 0.3 }}>{b.icon}</div>
-                <div className="acad-badge-title" style={{ color: earned ? '#fff' : 'rgba(255,255,255,0.35)' }}>{b.title}</div>
+                <div className="acad-badge-title" style={{ color: earned ? 'var(--text)' : 'var(--text-sub)' }}>{b.title}</div>
                 <div className="acad-badge-desc muted">{b.desc}</div>
-                {b.pts > 0 && <div className="acad-badge-pts" style={{ color: earned ? '#fbbf24' : 'rgba(255,255,255,0.2)' }}>+{b.pts} IQ</div>}
+                {b.pts > 0 && <div className="acad-badge-pts" style={{ color: earned ? '#fbbf24' : 'var(--text-sub)' }}>+{b.pts} IQ</div>}
                 {earned && <div className="acad-badge-earned-label">EARNED</div>}
               </div>
             )

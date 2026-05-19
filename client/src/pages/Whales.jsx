@@ -324,7 +324,7 @@ function TrustBar({ score }) {
   const pct = (score / 10) * 100
   const color = score >= 8 ? 'var(--g)' : score >= 5 ? '#fbbf24' : '#f87171'
   return (
-    <div style={{ width: 60, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+    <div style={{ width: 60, height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden' }}>
       <div style={{ width: pct + '%', height: '100%', background: color, borderRadius: 3 }} />
     </div>
   )

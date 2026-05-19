@@ -83,7 +83,7 @@ export default function WelcomeModal() {
         {!s.final && (
           <button onClick={skip} style={{
             position: 'absolute', top: '1rem', right: '1rem',
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)',
+            background: 'none', border: 'none', color: 'var(--text-sub)',
             fontSize: '0.75rem', cursor: 'pointer',
           }}>Skip</button>
         )}
@@ -93,7 +93,7 @@ export default function WelcomeModal() {
             <div key={i} style={{
               width: i === step ? '20px' : '6px', height: '6px',
               borderRadius: '3px',
-              background: i <= step ? s.accent : 'rgba(255,255,255,0.15)',
+              background: i <= step ? s.accent : 'var(--surface-2)',
               transition: 'all 0.3s ease',
             }} />
           ))}
@@ -107,10 +107,10 @@ export default function WelcomeModal() {
           margin: '0 auto 1.25rem',
         }}>{s.icon}</div>
 
-        <div style={{ fontWeight: 700, fontSize: '1.15rem', color: 'white', marginBottom: '0.6rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.15rem', color: 'var(--text)', marginBottom: '0.6rem' }}>
           {s.title}
         </div>
-        <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+        <div style={{ fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.6, marginBottom: '1.75rem' }}>
           {s.desc}
         </div>
 

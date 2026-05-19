@@ -214,9 +214,9 @@ export default function Settings() {
       {/* ── About ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title">ℹ️ About</h3>
-        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem', fontSize:'0.85rem', color:'rgba(255,255,255,0.55)' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem', fontSize:'0.85rem', color:'var(--text-muted)' }}>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Version</span><span style={{ color:'white' }}>1.0.0</span>
+            <span>Version</span><span style={{ color:'var(--text)' }}>1.0.0</span>
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -224,7 +224,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>API keys</span><span style={{ color:'white' }}>Stored in your browser only</span>
+            <span>API keys</span><span style={{ color:'var(--text)' }}>Stored in your browser only</span>
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>

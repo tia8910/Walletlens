@@ -356,21 +356,21 @@ export default function WalletImport() {
               <div style={{ overflowX: 'auto', marginBottom: '0.75rem' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       {['Token', 'Balance', 'Est. Value'].map(h => (
-                        <th key={h} style={{ textAlign: h === 'Balance' || h === 'Est. Value' ? 'right' : 'left', padding: '0.35rem 0.5rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{h}</th>
+                        <th key={h} style={{ textAlign: h === 'Balance' || h === 'Est. Value' ? 'right' : 'left', padding: '0.35rem 0.5rem', color: 'var(--text-sub)', fontWeight: 600 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {tokens.map((tok, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                        <td style={{ padding: '0.35rem 0.5rem', color: '#e2e8f0' }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'transparent' }}>
+                        <td style={{ padding: '0.35rem 0.5rem', color: 'var(--text)' }}>
                           <strong>{tok.symbol}</strong>
-                          {tok.name !== tok.symbol && <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: '0.4rem', fontSize: '0.75rem' }}>{tok.name}</span>}
+                          {tok.name !== tok.symbol && <span style={{ color: 'var(--text-sub)', marginLeft: '0.4rem', fontSize: '0.75rem' }}>{tok.name}</span>}
                         </td>
-                        <td style={{ padding: '0.35rem 0.5rem', textAlign: 'right', color: '#94a3b8', fontFamily: 'monospace' }}>{fmtAmount(tok.amount)}</td>
-                        <td style={{ padding: '0.35rem 0.5rem', textAlign: 'right', color: tok.usdValue ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>{fmtUsd(tok.usdValue)}</td>
+                        <td style={{ padding: '0.35rem 0.5rem', textAlign: 'right', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{fmtAmount(tok.amount)}</td>
+                        <td style={{ padding: '0.35rem 0.5rem', textAlign: 'right', color: tok.usdValue ? '#4ade80' : 'var(--text-sub)' }}>{fmtUsd(tok.usdValue)}</td>
                       </tr>
                     ))}
                   </tbody>
