@@ -1846,7 +1846,7 @@ export default function Dashboard() {
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
-  const { theme, setTheme } = useTheme()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const [hidden, setHidden]               = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').hideValues === true } catch { return false }
   })
@@ -2136,6 +2136,16 @@ export default function Dashboard() {
             {theme === th.id && <span className="theme-strip-dot" />}
           </button>
         ))}
+        {/* Light / dark toggle */}
+        <div className="theme-strip-divider" />
+        <button
+          className="theme-strip-mode-btn"
+          onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
+          title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span className="theme-strip-mode-icon">{mode === 'dark' ? '☀️' : '🌙'}</span>
+          <span className="theme-strip-label">{mode === 'dark' ? 'Light' : 'Dark'}</span>
+        </button>
       </div>
 
       {/* Tab nav — 5 tabs */}

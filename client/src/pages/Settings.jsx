@@ -34,7 +34,7 @@ export { applySettings } from '../settingsUtils'
 export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
-  const { theme: colorTheme, setTheme: setColorTheme } = useTheme()
+  const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
   useEffect(() => { track('settings_view') }, [])
 
   function update(key, val) {
@@ -91,6 +91,27 @@ export default function Settings() {
                     : t.icon}
                 </span>
                 {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-divider"/>
+
+        {/* Light / Dark mode */}
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>Mode</span>
+            <span className="settings-hint">Light or dark background</span>
+          </div>
+          <div className="settings-chips">
+            {[{ id: 'dark', label: 'Dark', icon: '🌙' }, { id: 'light', label: 'Light', icon: '☀️' }].map(m => (
+              <button key={m.id}
+                className={`settings-chip ${colorMode === m.id ? 'active' : ''}`}
+                onClick={() => { setColorMode(m.id); track('mode_changed', { mode: m.id, source: 'settings' }) }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '1rem' }}>{m.icon}</span>
+                {m.label}
               </button>
             ))}
           </div>
