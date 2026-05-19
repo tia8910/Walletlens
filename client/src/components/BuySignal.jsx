@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react'
 
-// Fetch 24h/7d/30d change + current price from CoinGecko
+const PROXIES = [
+  u => u,
+  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+]
+const _signalCache = {}
+
 async function fetchSignalData(coinId) {
+  const now = Date.now()
+  if (_signalCache[coinId] && now - _signalCache[coinId].t < 5 * 60 * 1000) return _signalCache[coinId].d
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
-  const tryFetch = u => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-  try {
-    const data = await tryFetch(url).catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)))
-    return data[0] || null
-  } catch {
-    return null
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(5000) })
+      if (!res.ok) continue
+      const data = await res.json()
+      const d = data[0] || null
+      if (d) _signalCache[coinId] = { d, t: now }
+      return d
+    } catch { /* try next */ }
   }
+  return null
 }
 
 // RSI-style momentum label
