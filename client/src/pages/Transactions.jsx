@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import { track } from '../analytics'
+import WalletImport from '../components/WalletImport'
 
 // ─── Receive-leg resolver for sell proceeds ───
 // Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
@@ -966,6 +967,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           </div>
         </div>
       )}
+
+      <WalletImport />
 
       {/* Filter */}
       {wallets.length > 1 && (

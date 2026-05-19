@@ -20,11 +20,14 @@ import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
 import MarketMood from '../components/MarketMood'
 import CorrelationMatrix from '../components/CorrelationMatrix'
+import SectorHeatmap from '../components/SectorHeatmap'
+import GoalTracker from '../components/GoalTracker'
 
 // Heavy components only loaded when the user opens that tab
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
+const LiquidityRisk  = lazy(() => import('../components/LiquidityRisk'))
 const RiskBudget     = lazy(() => import('../components/RiskBudget'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
@@ -1575,7 +1578,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
         ))}
       </div>
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
-      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
+      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={(isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value }))} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
       {tool === 'budget' && <Suspense fallback={<TabFallback />}><RiskBudget enriched={isDemo ? [] : enriched} totalValue={totalValue} /></Suspense>}
       {tool === 'eval'   && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
     </div>
@@ -2678,6 +2681,9 @@ export default function Dashboard() {
                 )}
               </div>
 
+              {/* Goal-Based Portfolio Tracker */}
+              <GoalTracker currentValue={totalValue} />
+
               {/* Market Mood — sentiment from crypto headlines */}
               <MarketMood />
 
@@ -2808,6 +2814,8 @@ export default function Dashboard() {
 
               {/* Correlation matrix — 30d price correlations */}
               {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
+
+              <SectorHeatmap />
 
               {/* Exchange partners strip below holdings */}
               <ExchangePartners compact source="holdings" />
