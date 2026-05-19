@@ -9,7 +9,7 @@ import ExchangePartners from '../components/ExchangePartners'
 function fmt(n) { return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 const TABS = [
-  { key: 'crypto', label: 'Crypto', icon: '◆' },
+  { key: 'crypto', label: 'Crypto', icon: '₿' },
   { key: 'metals', label: 'Metals', icon: '🥇' },
   { key: 'stocks', label: 'Stocks', icon: '📈' },
 ]
