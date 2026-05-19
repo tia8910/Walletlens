@@ -354,6 +354,11 @@ export default function Landing() {
             title="🏆 Milestone Celebrations"
             desc="Confetti pops when your portfolio hits $1K, $10K, $100K, your first profit, or a big green day. The wins deserve to be celebrated."
           />
+          <FeatureCard delay={80} accent="247,147,26"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 20v-8.5"/><path d="M20 20H4"/></svg>}
+            title="🎨 Theme Your App"
+            desc="Pick the theme of your favourite asset — Bitcoin Orange, Ethereum Blue, Solana Purple, Gold, Silver, Emerald, and more. The whole interface changes colour to match."
+          />
         </div>
       </section>
 
