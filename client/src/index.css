@@ -5700,7 +5700,8 @@ input[type="date"] { color-scheme: dark; }
 .share-btn-dl    { background: rgba(255,255,255,0.1); color: #fff; }
 .share-btn-copy  { background: rgba(var(--g-rgb),0.15); color: #00e676; border: 1px solid rgba(var(--g-rgb),0.3); }
 .share-btn-tweet { background: #000; color: #fff; }
-.share-hint { font-size: .8rem; color: var(--muted); text-align: center; margin: 0; }
+.share-hint { font-size: .8rem; color: var(--text-muted); text-align: center; margin: 0; }
+[data-wl-light] .share-hint { color: var(--text-muted); }
 
 /* ── Eye toggle / hidden values ────────────────────────────────────────── */
 .dvx-eye-btn {
@@ -6654,6 +6655,10 @@ input[type="date"] { color-scheme: dark; }
 }
 .hack-share-btn:hover { background: #000; color: #fff; transform: scale(1.05); }
 .hack-share-btn:disabled { opacity: 0.5; cursor: default; }
+[data-wl-light] .hack-share-btn {
+  background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.7);
+}
+[data-wl-light] .hack-share-btn:hover { background: #000; color: #fff; }
 
 /* ── Wallet Evaluation ───────────────────────────────────────────────────── */
 .eval-header-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
