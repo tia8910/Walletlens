@@ -492,10 +492,23 @@
 
 /* ── Theme strip ── */
 [data-wl-light] .wl-topbar { border-bottom-color: rgba(0,0,0,0.1); }
+[data-wl-light] .theme-strip { background: var(--bg3); border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .theme-strip-heading { color: var(--text-sub); }
 [data-wl-light] .theme-strip-btn:hover { background: rgba(0,0,0,0.06); }
 [data-wl-light] .theme-strip-active { background: rgba(0,0,0,0.08) !important; }
+[data-wl-light] .theme-strip-active .theme-strip-icon { border-color: rgba(0,0,0,0.35); }
 [data-wl-light] .theme-strip-divider { background: rgba(0,0,0,0.12); }
 [data-wl-light] .theme-strip-mode-btn:hover { background: rgba(0,0,0,0.06); }
+
+/* ── Sidebar (desktop) ── */
+[data-wl-light] .sidebar { background: var(--bg3); border-right-color: rgba(0,0,0,0.1); }
+
+/* ── DynamicBackground canvas — dim on light ── */
+[data-wl-light] .dynamic-bg { opacity: 0.15; }
+
+/* ── body glow overlays — reduce on light ── */
+[data-wl-light] body::before { opacity: 0.4; }
+[data-wl-light] body::after  { opacity: 0.2; }
 
 /* ── Settings ── */
 [data-wl-light] .settings-hint { color: var(--text-sub); }
@@ -533,6 +546,30 @@
 [data-wl-light] .dvx-target-mini-sym { color: var(--text-muted); }
 [data-wl-light] .coin-note-input::placeholder { color: var(--text-sub); }
 [data-wl-light] .coin-note-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+/* ── Panels / sheets / popups ── */
+[data-wl-light] .ade-panel { background: var(--bg3); border-top-color: rgba(var(--g-rgb),0.3); }
+[data-wl-light] .qs-popup { background: var(--bg3); }
+[data-wl-light] .share-modal { background: var(--bg3); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .bs-sheet { background: var(--bg3); }
+[data-wl-light] .bs-header { background: var(--bg3); border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] .bs-footer { background: var(--bg3); border-top-color: rgba(0,0,0,0.08); }
+
+/* ── News ticker ── */
+[data-wl-light] .news-ticker { background: var(--bg3); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .ticker-item { color: var(--text-muted); }
+[data-wl-light] .ticker-sep { color: var(--text-sub); }
+
+/* ── Drawer / nav ── */
+[data-wl-light] .wl-drawer-tagline { color: var(--text-sub); }
+[data-wl-light] .wl-drawer-section-title { color: var(--text-sub); }
+[data-wl-light] .wl-nav-item.active { color: var(--g); }
+
+/* ── Glass card inside light ── */
+[data-wl-light] .glass-card h3, [data-wl-light] .glass-card h2 { color: var(--text); }
+
+/* ── wl-app explicit ── */
+[data-wl-light] .wl-app { background: var(--bg); }
 
 /* ── RiskScanner ── */
 [data-wl-light] .risk-legend-title { color: var(--text-muted); }
@@ -3953,7 +3990,7 @@ tr:last-child td { border-bottom: none; }
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: var(--bg);
   position: relative;
 }
 .wl-app-landing {
@@ -4461,7 +4498,7 @@ tr:last-child td { border-bottom: none; }
 }
 .bs-input::placeholder { color: rgba(255,255,255,0.22); }
 .bs-input[type="date"] { color-scheme: dark; }
-select.bs-input option { background: #0a1a12; }
+select.bs-input option { background: var(--bg3); }
 
 .bs-search-wrap { position: relative; }
 .bs-search-icon {
