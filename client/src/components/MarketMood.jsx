@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useTheme } from '../ThemeContext'
 
 // Weighted keyword lists for sentiment scoring
 const BULLISH = [
@@ -86,7 +87,7 @@ function moodLabel(score) {
 }
 
 // Animated arc dial
-function Dial({ score }) {
+function Dial({ score, isLight }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -104,10 +105,13 @@ function Dial({ score }) {
     const startAngle = Math.PI        // left (180°)
     const endAngle   = 2 * Math.PI    // right (360°)
 
+    const needleColor = isLight ? 'rgba(0,0,0,0.75)' : '#fff'
+    const trackColor  = isLight ? 'rgba(0,0,0,0.08)'  : 'rgba(255,255,255,0.07)'
+
     // Background arc track
     ctx.beginPath()
     ctx.arc(cx, cy, r, startAngle, endAngle)
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+    ctx.strokeStyle = trackColor
     ctx.lineWidth   = 10
     ctx.lineCap     = 'round'
     ctx.stroke()
@@ -135,7 +139,7 @@ function Dial({ score }) {
     ctx.beginPath()
     ctx.moveTo(cx, cy)
     ctx.lineTo(nx, ny)
-    ctx.strokeStyle = '#fff'
+    ctx.strokeStyle = needleColor
     ctx.lineWidth   = 2.5
     ctx.lineCap     = 'round'
     ctx.stroke()
@@ -143,9 +147,9 @@ function Dial({ score }) {
     // Centre dot
     ctx.beginPath()
     ctx.arc(cx, cy, 5, 0, Math.PI * 2)
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = needleColor
     ctx.fill()
-  }, [score])
+  }, [score, isLight])
 
   return <canvas ref={canvasRef} style={{ width: '100%', height: '90px', display: 'block' }} />
 }
@@ -184,6 +188,7 @@ async function fetchHeadlines() {
 }
 
 export default function MarketMood() {
+  const { mode } = useTheme()
   const [mood, setMood] = useState(null)
   const [fetched, setFetched] = useState(false)
 
@@ -216,7 +221,7 @@ export default function MarketMood() {
 
       {mood ? (
         <>
-          <Dial score={mood.score} />
+          <Dial score={mood.score} isLight={mode === 'light'} />
           <div style={{ textAlign: 'center', marginTop: '-0.3rem', paddingBottom: '0.3rem' }}>
             <span style={{ fontSize: '1.3rem' }}>{info.emoji}</span>
             <span style={{ fontSize: '0.92rem', fontWeight: 800, color: info.color, marginLeft: '0.4rem' }}>

@@ -891,7 +891,8 @@
 [data-wl-light] .dvx-goal-current      { color: var(--text); }
 [data-wl-light] .dvx-goal-input        { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
 
-/* ── ADE trigger sub ── */
+/* ── ADE trigger ── */
+[data-wl-light] .ade-trigger { color: var(--text); }
 [data-wl-light] .ade-trigger-sub { color: var(--text-muted); }
 
 /* ── Transactions ── */
