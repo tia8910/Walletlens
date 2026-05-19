@@ -455,16 +455,14 @@
 [data-wl-light] .dvx-hero-cta { color: var(--text); border-color: rgba(var(--g-rgb),0.35); }
 [data-wl-light] .dvx-hero-cta:hover { background: rgba(var(--g-rgb),0.15); }
 
-/* ── Exchange Partners ── */
-[data-wl-light] .ep-card-tagline { color: var(--text-muted); }
-[data-wl-light] .ep-card-divider { background: rgba(0,0,0,0.08); }
-[data-wl-light] .ep-card-fee { color: var(--text-muted); }
+/* ── Exchange Partners — keep dark even in light mode ── */
 [data-wl-light] .ep-strip-label { color: var(--text-sub); }
-[data-wl-light] .ep-strip-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
-[data-wl-light] .ep-strip-btn:hover { background: rgba(0,0,0,0.08); }
+[data-wl-light] .ep-strip-btn { background: rgba(15,15,22,0.88); border-color: rgba(255,255,255,0.1); }
+[data-wl-light] .ep-strip-btn:hover { background: rgba(25,25,38,0.95); border-color: rgba(255,255,255,0.18); }
 [data-wl-light] .ep-cards-label { color: var(--text-muted); }
-[data-wl-light] .ep-card { background: var(--surface-2); border-color: rgba(0,0,0,0.1); }
-[data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.03); }
+[data-wl-light] .ep-card { background: var(--ex-bg); border-color: rgba(255,255,255,0.08); }
+[data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.25); }
+[data-wl-light] .ep-card-divider { background: rgba(255,255,255,0.06); }
 
 /* ── Sector Heatmap (cards section) ── */
 [data-wl-light] .recharts-cartesian-axis-tick-value { fill: var(--text-muted) !important; }
@@ -697,10 +695,32 @@
 [data-wl-light] .tua-source-link:hover { color: var(--text-muted); }
 
 /* ── Smart Alerts cards ── */
-[data-wl-light] .sa-card-symbol { color: var(--text); }
-[data-wl-light] .sa-card-name   { color: var(--text-muted); }
-[data-wl-light] .sa-empty       { color: var(--text-muted); }
-[data-wl-light] .sa-empty-sub   { color: var(--text-sub); }
+[data-wl-light] .sa-title        { color: var(--text); }
+[data-wl-light] .sa-subtitle     { color: var(--text-muted); }
+[data-wl-light] .sa-last-check   { color: var(--text-sub); }
+[data-wl-light] .sa-cfg-title    { color: var(--text); }
+[data-wl-light] .sa-cfg-row      { color: var(--text-muted); }
+[data-wl-light] .sa-chip         { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text-muted); }
+[data-wl-light] .sa-chip:hover:not(.active) { background: var(--surface-2); }
+[data-wl-light] .sa-cfg-btn      { color: var(--text-sub); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .sa-cfg-btn:hover { color: var(--text); background: var(--surface-2); }
+[data-wl-light] .sa-check-btn    { border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .sa-legend-item  { color: var(--text-sub); }
+[data-wl-light] .sa-section-hd   { color: var(--text-muted); }
+[data-wl-light] .sa-clear-btn    { color: var(--text-sub); }
+[data-wl-light] .sa-clear-btn:hover { color: var(--text-muted); }
+[data-wl-light] .sa-muted        { color: var(--text-sub); }
+[data-wl-light] .sa-ago          { color: var(--text-sub); }
+[data-wl-light] .sa-card-symbol  { color: var(--text); }
+[data-wl-light] .sa-card-name    { color: var(--text-muted); }
+[data-wl-light] .sa-signal-pill  { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .sa-signal-desc  { color: var(--text-muted); }
+[data-wl-light] .sa-signal-extra { color: var(--text-sub); }
+[data-wl-light] .sa-dismiss      { color: var(--text-sub); }
+[data-wl-light] .sa-dismiss:hover { color: var(--text-muted); background: var(--surface-1); }
+[data-wl-light] .sa-toast-body   { color: var(--text-muted); }
+[data-wl-light] .sa-empty        { color: var(--text-muted); }
+[data-wl-light] .sa-empty-sub    { color: var(--text-sub); }
 
 /* ── ADE (AI Analysis) panel ── */
 [data-wl-light] .ade-thinking-text  { color: var(--text-muted); }
@@ -712,6 +732,28 @@
 [data-wl-light] .ade-disclaimer     { color: var(--text-sub); }
 [data-wl-light] .ade-empty          { color: var(--text-muted); }
 [data-wl-light] .ade-conf-track     { background: rgba(0,0,0,0.08); }
+
+/* ── Analysis tab (alpha-*) ── */
+[data-wl-light] .alpha-title          { color: var(--text); }
+[data-wl-light] .alpha-subtitle       { color: var(--text-muted); }
+[data-wl-light] .alpha-refresh-btn    { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
+[data-wl-light] .alpha-refresh-btn:hover { background: var(--surface-2); color: var(--text); }
+[data-wl-light] .alpha-score-label    { color: var(--text-sub); }
+[data-wl-light] .alpha-section-title  { color: var(--text); }
+[data-wl-light] .alpha-section-sub    { color: var(--text-muted); }
+[data-wl-light] .alpha-signal-row     { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .alpha-signal-title   { color: var(--text); }
+[data-wl-light] .alpha-signal-sub     { color: var(--text-muted); }
+[data-wl-light] .alpha-coin-card      { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .alpha-coin-sym       { color: var(--text); }
+[data-wl-light] .alpha-coin-name      { color: var(--text-muted); }
+[data-wl-light] .alpha-coin-reason    { color: var(--text-muted); }
+[data-wl-light] .alpha-coin-sub       { color: var(--text-sub); }
+[data-wl-light] .alpha-breakdown-bar-wrap { background: rgba(0,0,0,0.08); }
+[data-wl-light] .alpha-loading-row    { color: var(--text-muted); }
+[data-wl-light] .alpha-disclaimer     { color: var(--text-sub); }
+[data-wl-light] .alpha-empty-hint     { color: var(--text-muted); }
+[data-wl-light] .alpha-score-empty    { color: var(--text-muted); }
 
 /* ── Heatmap ── */
 [data-wl-light] .heatmap-sym  { color: rgba(0,0,0,0.9); }
@@ -6145,7 +6187,37 @@ input[type="date"] { color-scheme: dark; }
 .wl-drawer-x:hover { color: #fff; }
 .wl-drawer-x svg { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .wl-drawer-x:hover svg { transform: rotate(-8deg) scale(1.3); }
+
+/* ── Telegram link in drawer footer ── */
+.wl-drawer-tg {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  color: rgba(42,171,238,0.75); text-decoration: none;
+  font-size: 0.78rem; font-weight: 600;
+  transition: color 0.2s;
+}
+.wl-drawer-tg:hover { color: #2AABEE; }
+.wl-drawer-tg svg { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.wl-drawer-tg:hover svg { transform: scale(1.2); }
+
 .wl-drawer-footer { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+
+/* ── Telegram community banner (dashboard) ── */
+.tg-banner {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(42,171,238,0.1) 0%, rgba(42,171,238,0.05) 100%);
+  border: 1px solid rgba(42,171,238,0.28);
+  border-radius: 14px; padding: 0.8rem 1rem;
+  text-decoration: none; color: inherit;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+}
+.tg-banner:hover { background: linear-gradient(135deg, rgba(42,171,238,0.18) 0%, rgba(42,171,238,0.1) 100%); border-color: rgba(42,171,238,0.5); transform: translateY(-1px); }
+.tg-banner-text { flex: 1; min-width: 0; }
+.tg-banner-title { display: block; font-size: 0.88rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.tg-banner-sub   { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+.tg-banner-arrow { font-size: 1rem; color: #2AABEE; opacity: 0.75; flex-shrink: 0; }
+.tg-banner:hover .tg-banner-arrow { opacity: 1; }
+[data-wl-light] .tg-banner { background: rgba(42,171,238,0.08); border-color: rgba(42,171,238,0.25); }
+[data-wl-light] .tg-banner:hover { background: rgba(42,171,238,0.14); border-color: rgba(42,171,238,0.4); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    WalletLens Alpha
