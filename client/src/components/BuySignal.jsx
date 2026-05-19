@@ -6,23 +6,24 @@ const PROXIES = [
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
 ]
 const _signalCache = {}
-const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'1000PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
 
 async function fetchSignalData(coinId) {
   const now = Date.now()
   if (_signalCache[coinId] && now - _signalCache[coinId].t < 5 * 60 * 1000) return _signalCache[coinId].d
 
-  // Try CoinGecko via CORS proxies
+  // Try all CoinGecko proxies in parallel (faster — 3s max instead of 15s sequential)
   const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy(cgUrl), { signal: AbortSignal.timeout(5000) })
-      if (!res.ok) continue
-      const data = await res.json()
-      const d = data[0] || null
-      if (d) { _signalCache[coinId] = { d, t: now }; return d }
-    } catch { /* try next */ }
-  }
+  try {
+    const cgResult = await Promise.any(
+      PROXIES.map(proxy =>
+        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(3000) })
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+          .then(data => { if (!data[0]) throw new Error('empty'); return data[0] })
+      )
+    )
+    if (cgResult) { _signalCache[coinId] = { d: cgResult, t: now }; return cgResult }
+  } catch { /* all proxies failed, fall through */ }
 
   // Fallback: Binance API (open CORS, no key needed)
   try {
