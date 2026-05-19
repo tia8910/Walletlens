@@ -16,7 +16,7 @@ const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'a
 const toCapId = id => CG_TO_CAP[id] || id
 
 // CoinGecko ID → Binance USDT symbol
-const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','curve-dao-token':'CRVUSDT','compound-governance-token':'COMPUSDT','maker':'MKRUSDT','lido-dao':'LDOUSDT','fetch-ai':'FETUSDT','singularitynet':'AGIXUSDT','ocean-protocol':'OCEANUSDT','render-token':'RENDERUSDT','bittensor':'TAOUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','pepe':'PEPEUSDT','floki':'FLOKIUSDT','bonk':'BONKUSDT','cronos':'CROUSDT','optimism':'OPUSDT','arbitrum':'ARBUSDT','starknet':'STRKUSDT','aptos':'APTUSDT','sui':'SUIUSDT' }
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','curve-dao-token':'CRVUSDT','compound-governance-token':'COMPUSDT','maker':'MKRUSDT','lido-dao':'LDOUSDT','fetch-ai':'FETUSDT','singularitynet':'AGIXUSDT','ocean-protocol':'OCEANUSDT','render-token':'RENDERUSDT','bittensor':'TAOUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','pepe':'1000PEPEUSDT','floki':'1000FLOKIUSDT','bonk':'1000BONKUSDT','cronos':'CROUSDT','optimism':'OPUSDT','arbitrum':'ARBUSDT','starknet':'STRKUSDT','aptos':'APTUSDT','sui':'SUIUSDT' }
 
 let _cache = null, _cacheTime = 0
 
@@ -44,19 +44,21 @@ function buildSectorResult(byId, changeKey) {
 }
 
 async function fetchSectors() {
-  // Try CoinGecko with CORS proxies (7d data)
+  // Try all CoinGecko proxies in parallel (3s max)
   const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
   const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
-  for (const proxy of proxies) {
-    try {
-      const res = await fetch(proxy(cgUrl), { signal: AbortSignal.timeout(5000) })
-      if (!res.ok) continue
-      const data = await res.json()
-      const byId = {}
-      data.forEach(c => { byId[c.id] = c })
-      return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
-    } catch { /* try next proxy */ }
-  }
+  try {
+    const data = await Promise.any(
+      proxies.map(proxy =>
+        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(3000) })
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+          .then(d => { if (!d?.length) throw new Error('empty'); return d })
+      )
+    )
+    const byId = {}
+    data.forEach(c => { byId[c.id] = c })
+    return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+  } catch { /* all proxies failed */ }
 
   // Fallback: Binance 24h tickers (open CORS, no key)
   try {
