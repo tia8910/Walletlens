@@ -40,67 +40,67 @@ export default function LiquidityRisk({ holdings }) {
     ;(async () => {
       let volMap = null
 
-      // Try CoinGecko with all CORS proxies in parallel
-      const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&price_change_percentage=24h`
       const proxies = [
         u => 'https://corsproxy.io/?' + encodeURIComponent(u),
         u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
         u => 'https://cors.eu.org/' + u,
         u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
       ]
-      try {
-        const markets = await Promise.any(
-          proxies.map(proxy =>
-            fetch(proxy(cgUrl), { signal: AbortSignal.timeout(6000) })
-              .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-              .then(data => { if (!Array.isArray(data) || data.length === 0) throw new Error('empty'); return data })
-          )
-        )
-        volMap = {}
-        markets.forEach(m => { volMap[m.id] = m.total_volume })
-      } catch { /* all proxies failed */ }
 
-      // Fallback: CoinCap (open CORS, no key needed)
-      if (!volMap) {
-        try {
-          const capIds = ids.map(toCapId)
-          const res = await fetch(`https://api.coincap.io/v2/assets?ids=${capIds.join(',')}`, { signal: AbortSignal.timeout(6000) })
-          if (res.ok) {
-            const { data: assets } = await res.json()
-            volMap = {}
-            assets?.forEach(a => {
-              volMap[a.id] = parseFloat(a.volumeUsd24Hr) || 0
-              const cgId = ids.find(id => toCapId(id) === a.id)
-              if (cgId) volMap[cgId] = volMap[a.id]
-            })
-          }
-        } catch { /* exhausted */ }
+      // Build CryptoCompare symMap once for reuse
+      const symMap = {}
+      for (const id of ids) {
+        const s = BINANCE_SYM[id]
+        if (s) symMap[id] = s.replace(/USDT$/, '').replace(/^1000/, '')
       }
 
-      // Fallback: CryptoCompare (native CORS, 24h volume)
-      if (!volMap) {
-        try {
-          const symMap = {}
-          for (const id of ids) {
-            const s = BINANCE_SYM[id]
-            if (s) symMap[id] = s.replace(/USDT$/, '').replace(/^1000/, '')
-          }
-          const syms = Object.values(symMap).join(',')
-          if (syms) {
-            const res = await fetch(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms}&tsyms=USD`, { signal: AbortSignal.timeout(6000) })
-            if (res.ok) {
-              const json = await res.json()
-              if (json?.RAW) {
-                volMap = {}
-                for (const [id, sym] of Object.entries(symMap)) {
-                  const vol = json.RAW[sym]?.USD?.VOLUME24HOURTO
-                  if (typeof vol === 'number') volMap[id] = vol
-                }
-              }
-            }
-          }
-        } catch { /* exhausted */ }
+      // Race CoinGecko (4 proxies) + CoinCap + CryptoCompare simultaneously
+      const cgUrl  = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&price_change_percentage=24h`
+      const capIds = ids.map(toCapId)
+      const ccSyms = Object.values(symMap).join(',')
+
+      const parseCG = data => {
+        if (!Array.isArray(data) || data.length === 0) throw new Error('empty')
+        const m = {}; data.forEach(c => { m[c.id] = c.total_volume }); return m
       }
+      const parseCap = ({ data: assets }) => {
+        if (!assets?.length) throw new Error('empty')
+        const m = {}
+        assets.forEach(a => {
+          m[a.id] = parseFloat(a.volumeUsd24Hr) || 0
+          const cgId = ids.find(id => toCapId(id) === a.id)
+          if (cgId) m[cgId] = m[a.id]
+        })
+        return m
+      }
+      const parseCC = json => {
+        if (!json?.RAW) throw new Error('empty')
+        const m = {}
+        for (const [id, sym] of Object.entries(symMap)) {
+          const vol = json.RAW[sym]?.USD?.VOLUME24HOURTO
+          if (typeof vol === 'number') m[id] = vol
+        }
+        if (Object.keys(m).length === 0) throw new Error('empty')
+        return m
+      }
+
+      const attempts = [
+        ...proxies.map(proxy =>
+          fetch(proxy(cgUrl), { signal: AbortSignal.timeout(6000) })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+            .then(parseCG)
+        ),
+        fetch(`https://api.coincap.io/v2/assets?ids=${capIds.join(',')}`, { signal: AbortSignal.timeout(6000) })
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+          .then(parseCap),
+        ...(ccSyms ? [
+          fetch(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${ccSyms}&tsyms=USD`, { signal: AbortSignal.timeout(6000) })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+            .then(parseCC),
+        ] : []),
+      ]
+
+      try { volMap = await Promise.any(attempts) } catch { /* all batch sources failed */ }
 
       // Final fallback: Binance klines quoteAssetVolume
       if (!volMap) {
