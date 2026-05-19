@@ -22,6 +22,7 @@ import MarketMood from '../components/MarketMood'
 import CorrelationMatrix from '../components/CorrelationMatrix'
 import SectorHeatmap from '../components/SectorHeatmap'
 import GoalTracker from '../components/GoalTracker'
+import WalletImport from '../components/WalletImport'
 
 // Heavy components only loaded when the user opens that tab
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
@@ -2748,9 +2749,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Full-width below grid: Correlation Matrix + Sector Heatmap */}
+          {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
           {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
           <SectorHeatmap />
+          <WalletImport />
         </>
       )}
 
