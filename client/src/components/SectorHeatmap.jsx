@@ -39,8 +39,9 @@ export default function SectorHeatmap() {
     setLoading(true)
     setError(null)
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
-    fetch(url)
-      .then(r => r.json())
+    const tryFetch = u => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+    tryFetch(url)
+      .catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)))
       .then(data => {
         const byId = {}
         data.forEach(c => { byId[c.id] = c })

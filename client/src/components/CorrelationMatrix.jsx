@@ -2,13 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 
 // Fetch 30-day daily closes for a coin from CoinGecko (free, no key)
 async function fetch30dPrices(coinId) {
+  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=30&interval=daily`
+  const tryFetch = u => fetch(u, { signal: AbortSignal.timeout(10000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
   try {
-    const res = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=30&interval=daily`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
+    const data = await tryFetch(url).catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)))
     return (data.prices || []).map(p => p[1])
   } catch {
     return null
