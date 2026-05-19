@@ -61,22 +61,32 @@ function verdict(totalScore, mode) {
 }
 
 export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'buy' }) {
-  const [data, setData]     = useState(null)
+  const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed]   = useState(false)
+
+  const load = (id) => {
+    setData(null); setFailed(false); setLoading(true)
+    fetchSignalData(id).then(d => { setData(d); setLoading(false); if (!d) setFailed(true) })
+  }
 
   useEffect(() => {
     if (!coinId || coinId.startsWith('stock:') || coinId.startsWith('metal:') ||
         coinId.startsWith('fiat:') || coinId.startsWith('cash:')) return
-    setData(null)
-    setLoading(true)
-    fetchSignalData(coinId).then(d => { setData(d); setLoading(false) })
+    load(coinId)
   }, [coinId])
 
   if (!coinId || coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
       coinId.startsWith('cash:') || coinId.startsWith('bond:')) return null
   if (loading) return (
     <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'rgba(255,255,255,0.04)', fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.75rem' }}>
-      Analysing entry timing…
+      ⏳ Analysing entry timing…
+    </div>
+  )
+  if (failed) return (
+    <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'rgba(255,255,255,0.04)', fontSize:'0.75rem', color:'rgba(255,255,255,0.35)', marginBottom:'0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <span>⏱️ {mode === 'sell' ? 'Sell' : 'Buy'} signal unavailable</span>
+      <button onClick={() => load(coinId)} style={{ fontSize:'0.7rem', background:'rgba(255,255,255,0.08)', border:'none', color:'rgba(255,255,255,0.5)', borderRadius:6, padding:'0.2rem 0.5rem', cursor:'pointer' }}>Retry</button>
     </div>
   )
   if (!data) return null
