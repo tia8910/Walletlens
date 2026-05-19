@@ -319,6 +319,46 @@ export default function Landing() {
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><polyline points="15 3 19 3 19 7"/></svg>}
             title={t('feat16Title')} desc={t('feat16Desc')}
           />
+          <FeatureCard delay={0} accent="251,146,60"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>}
+            title="🌡️ Market Mood Dial"
+            desc="Live Fear/Greed gauge scoring dozens of crypto headlines in real-time — no API key, pure sentiment analysis. Know the crowd's emotion before you trade."
+          />
+          <FeatureCard delay={80} accent="96,165,250"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
+            title="📊 Correlation Matrix"
+            desc="30-day heatmap showing how your holdings move together. Spot hidden concentration risk — if BTC and ETH are 0.97 correlated, you are not as diversified as you think."
+          />
+          <FeatureCard delay={160} accent="248,113,113"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>}
+            title="🔓 Token Unlock Alarms"
+            desc="20 major tokens tracked for upcoming unlock cliffs. See severity, monthly unlock %, and exact date right on your holding card — no nasty surprises on unlock day."
+          />
+          <FeatureCard delay={0} accent="167,139,250"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+            title="🏷️ Asset Category Badges"
+            desc="Every holding tagged at a glance — L1, L2, DeFi, AI, RWA, Meme, GameFi, Oracle, and stock sectors like Tech, Finance, Health. Diversification visible instantly."
+          />
+          <FeatureCard delay={80} accent="52,211,153"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>}
+            title="📤 Portfolio Share Card"
+            desc="Generate a beautiful snapshot of your portfolio and share it directly to X with one tap. Hide dollar amounts and show only percentages for privacy."
+          />
+          <FeatureCard delay={160} accent="251,191,36"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>}
+            title="📅 Weekly Report"
+            desc="Auto-generated weekly summary of your portfolio performance — top movers, P&L breakdown, and what changed this week. One tap to open, always ready."
+          />
+          <FeatureCard delay={0} accent="244,114,182"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+            title="🏆 Milestone Celebrations"
+            desc="Confetti pops when your portfolio hits $1K, $10K, $100K, your first profit, or a big green day. The wins deserve to be celebrated."
+          />
+          <FeatureCard delay={80} accent="52,211,153"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>}
+            title="🔊 Trade Sound Effects"
+            desc="A satisfying cha-ching on every buy and a swoosh on every sell — Web Audio API, no downloads, just instant audio feedback that makes trading feel real."
+          />
         </div>
       </section>
 
