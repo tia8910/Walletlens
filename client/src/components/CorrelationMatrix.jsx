@@ -1,45 +1,66 @@
 import { useEffect, useState, useRef } from 'react'
 
 const PROXIES = [
-  url => url,
   url => 'https://corsproxy.io/?' + encodeURIComponent(url),
   url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  url => 'https://cors.eu.org/' + url,
+  url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
 ]
 
 const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares' }
 const toCapId = id => CG_TO_CAP[id] || id
 
-const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','chainlink':'LINKUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','fetch-ai':'FETUSDT','render-token':'RENDERUSDT','pepe':'PEPEUSDT','bonk':'BONKUSDT','floki':'FLOKIUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAHTUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT' }
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','chainlink':'LINKUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','fetch-ai':'FETUSDT','render-token':'RENDERUSDT','pepe':'PEPEUSDT','bonk':'BONKUSDT','floki':'FLOKIUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT' }
 
 async function batchFetchSparklines(coinIds) {
-  // Try CoinGecko sparklines via CORS proxies
+  // Try CoinGecko sparklines via all CORS proxies in parallel
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}&sparkline=true&price_change_percentage=7d&per_page=50`
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(5000) })
-      if (!res.ok) continue
-      const data = await res.json()
-      const series = {}
-      for (const coin of data) {
-        if (coin.sparkline_in_7d?.price?.length >= 10) {
-          series[coin.id] = coin.sparkline_in_7d.price
-        }
-      }
-      if (Object.keys(series).length > 0) return series
-    } catch { /* try next proxy */ }
-  }
+  try {
+    const series = await Promise.any(
+      PROXIES.map(proxy =>
+        fetch(proxy(url), { signal: AbortSignal.timeout(6000) })
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+          .then(data => {
+            const s = {}
+            for (const coin of data) {
+              if (coin.sparkline_in_7d?.price?.length >= 10) s[coin.id] = coin.sparkline_in_7d.price
+            }
+            if (Object.keys(s).length === 0) throw new Error('no data')
+            return s
+          })
+      )
+    )
+    if (series) return series
+  } catch { /* all proxies failed */ }
 
-  // Fallback: Binance klines (1h, 168 candles = 7 days) — open CORS, very fast
+  // Fallback: CryptoCompare histohour (native CORS, no key)
+  try {
+    const series = {}
+    await Promise.all(coinIds.map(async id => {
+      const sym = BINANCE_SYM[id]?.replace(/USDT$/, '').replace(/^1000/, '')
+      if (!sym) return
+      try {
+        const res = await fetch(`https://min-api.cryptocompare.com/data/v2/histohour?fsym=${sym}&tsym=USD&limit=168`, { signal: AbortSignal.timeout(7000) })
+        if (!res.ok) return
+        const json = await res.json()
+        const rows = json?.Data?.Data
+        if (Array.isArray(rows) && rows.length >= 10) series[id] = rows.map(k => k.close)
+      } catch { /* skip */ }
+    }))
+    if (Object.keys(series).length >= 2) return series
+  } catch { /* exhausted */ }
+
+  // Final fallback: Binance klines (1h, 168 candles = 7 days)
   try {
     const series = {}
     await Promise.all(coinIds.map(async id => {
       const sym = BINANCE_SYM[id]
       if (!sym) return
       try {
-        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=168`, { signal: AbortSignal.timeout(6000) })
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=168`, { signal: AbortSignal.timeout(8000) })
         if (!res.ok) return
         const klines = await res.json()
-        if (klines?.length >= 10) series[id] = klines.map(k => parseFloat(k[4])) // close price
+        if (klines?.length >= 10) series[id] = klines.map(k => parseFloat(k[4]))
       } catch { /* skip */ }
     }))
     if (Object.keys(series).length >= 2) return series
