@@ -6,8 +6,7 @@ const PROXIES = [
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
 ]
 const _signalCache = {}
-const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol' }
-const toCapId = id => CG_TO_CAP[id] || id
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
 
 async function fetchSignalData(coinId) {
   const now = Date.now()
@@ -25,27 +24,25 @@ async function fetchSignalData(coinId) {
     } catch { /* try next */ }
   }
 
-  // Fallback: CoinCap (open CORS, no key)
+  // Fallback: Binance API (open CORS, no key needed)
   try {
-    const end = now
-    const start30 = end - 31 * 24 * 60 * 60 * 1000
-    const capId = toCapId(coinId)
-    const [assetRes, histRes] = await Promise.all([
-      fetch(`https://api.coincap.io/v2/assets/${capId}`, { signal: AbortSignal.timeout(6000) }),
-      fetch(`https://api.coincap.io/v2/assets/${capId}/history?interval=d1&start=${start30}&end=${end}`, { signal: AbortSignal.timeout(6000) }),
+    const sym = BINANCE_SYM[coinId]
+    if (!sym) return null
+    const [tickerRes, klinesRes] = await Promise.all([
+      fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`, { signal: AbortSignal.timeout(6000) }),
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(6000) }),
     ])
-    if (!assetRes.ok) return null
-    const { data: asset } = await assetRes.json()
-    const price = parseFloat(asset.priceUsd) || 0
-    const pct24h = parseFloat(asset.changePercent24Hr) || 0
-    const ath = parseFloat(asset.maxSupply) || 0 // CoinCap doesn't have ATH, skip it
+    if (!tickerRes.ok) return null
+    const ticker = await tickerRes.json()
+    const price = parseFloat(ticker.lastPrice) || 0
+    const pct24h = parseFloat(ticker.priceChangePercent) || 0
 
     let pct7d = 0, pct30d = 0
-    if (histRes.ok) {
-      const { data: hist } = await histRes.json()
-      if (hist?.length >= 7) {
-        const p7  = parseFloat(hist[hist.length - 8]?.priceUsd) || 0
-        const p30 = parseFloat(hist[0]?.priceUsd) || 0
+    if (klinesRes.ok) {
+      const klines = await klinesRes.json()
+      if (klines?.length >= 7) {
+        const p7  = parseFloat(klines[klines.length - 8]?.[4]) || 0
+        const p30 = parseFloat(klines[0]?.[4]) || 0
         if (p7  > 0) pct7d  = ((price - p7)  / p7)  * 100
         if (p30 > 0) pct30d = ((price - p30) / p30) * 100
       }
