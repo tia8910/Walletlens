@@ -101,6 +101,7 @@ function categorizeAsset(h) {
   return 'crypto'
 }
 
+
 // Returns { label, color } category badge for a holding
 function getAssetCategoryBadge(h) {
   const id = h.coin_id || ''
