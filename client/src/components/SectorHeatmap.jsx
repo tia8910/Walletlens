@@ -43,14 +43,20 @@ function buildSectorResult(byId, changeKey) {
   return result
 }
 
+const PROXIES = [
+  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://cors.eu.org/' + u,
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+]
+
 async function fetchSectors() {
-  // Try all CoinGecko proxies in parallel (3s max)
+  // Try CoinGecko via all CORS proxies in parallel
   const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
-  const proxies = [u => u, u => 'https://corsproxy.io/?' + encodeURIComponent(u), u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)]
   try {
     const data = await Promise.any(
-      proxies.map(proxy =>
-        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(3000) })
+      PROXIES.map(proxy =>
+        fetch(proxy(cgUrl), { signal: AbortSignal.timeout(6000) })
           .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
           .then(d => { if (!d?.length) throw new Error('empty'); return d })
       )
@@ -60,13 +66,35 @@ async function fetchSectors() {
     return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
   } catch { /* all proxies failed */ }
 
-  // Fallback: Binance klines per coin (ticker/24hr may be blocked; klines proven to work)
+  // Fallback: CryptoCompare pricemultifull (native CORS, no key)
+  try {
+    const symMap = {}
+    for (const id of ALL_IDS) {
+      const s = BINANCE_SYM[id]
+      if (s) symMap[id] = s.replace(/USDT$/, '').replace(/^1000/, '')
+    }
+    const syms = [...new Set(Object.values(symMap))].join(',')
+    const res = await fetch(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms}&tsyms=USD`, { signal: AbortSignal.timeout(7000) })
+    if (res.ok) {
+      const json = await res.json()
+      if (json?.RAW) {
+        const byId = {}
+        for (const [id, ccSym] of Object.entries(symMap)) {
+          const raw = json.RAW[ccSym]?.USD
+          if (raw) byId[id] = { id, symbol: ccSym, price_change_percentage_7d_in_currency: raw.CHANGEPCT24HOUR || 0 }
+        }
+        if (Object.keys(byId).length > 0) return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+      }
+    }
+  } catch { /* exhausted */ }
+
+  // Final fallback: Binance klines — limit=8 gives real 7-day change
   try {
     const settled = await Promise.allSettled(
       ALL_IDS.map(async id => {
         const sym = BINANCE_SYM[id]
         if (!sym) return null
-        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=2`, { signal: AbortSignal.timeout(5000) })
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=8`, { signal: AbortSignal.timeout(7000) })
         if (!res.ok) return null
         const klines = await res.json()
         if (!klines?.length) return null
