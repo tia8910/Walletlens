@@ -453,6 +453,87 @@
 [data-wl-light] .dvx-hero-cta { color: var(--text); border-color: rgba(var(--g-rgb),0.35); }
 [data-wl-light] .dvx-hero-cta:hover { background: rgba(var(--g-rgb),0.15); }
 
+/* ── Exchange Partners ── */
+[data-wl-light] .ep-card-tagline { color: var(--text-muted); }
+[data-wl-light] .ep-card-divider { background: rgba(0,0,0,0.08); }
+[data-wl-light] .ep-card-fee { color: var(--text-muted); }
+[data-wl-light] .ep-strip-label { color: var(--text-sub); }
+[data-wl-light] .ep-strip-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .ep-strip-btn:hover { background: rgba(0,0,0,0.08); }
+[data-wl-light] .ep-cards-label { color: var(--text-muted); }
+[data-wl-light] .ep-card { background: var(--surface-2); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.03); }
+
+/* ── Sector Heatmap (cards section) ── */
+[data-wl-light] .recharts-cartesian-axis-tick-value { fill: var(--text-muted) !important; }
+[data-wl-light] .recharts-legend-item-text { color: var(--text-muted) !important; }
+
+/* ── Inputs / placeholders ── */
+[data-wl-light] input, [data-wl-light] select, [data-wl-light] textarea {
+  background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.18);
+}
+[data-wl-light] input::placeholder, [data-wl-light] textarea::placeholder { color: var(--text-sub); }
+[data-wl-light] select option { background: var(--bg3); }
+
+/* ── Trade Tips ── */
+[data-wl-light] .tips-cat-pill { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .tips-counter { color: var(--text-sub); }
+[data-wl-light] .tips-dismiss { color: var(--text-sub); }
+[data-wl-light] .tips-dismiss:hover { color: var(--text-muted); background: rgba(0,0,0,0.06); }
+[data-wl-light] .tips-cat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: var(--text-muted); }
+[data-wl-light] .tips-cat-btn:hover { color: var(--text); background: rgba(0,0,0,0.08); }
+[data-wl-light] .tips-card { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .tips-body { color: var(--text-muted); }
+[data-wl-light] .tips-quote-text { color: var(--text); }
+[data-wl-light] .tips-nav-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .tips-nav-btn:hover { background: rgba(0,0,0,0.1); color: var(--text); }
+[data-wl-light] .tips-dot { background: rgba(0,0,0,0.18); }
+[data-wl-light] .tips-dot:hover:not(.tips-dot-active) { background: rgba(0,0,0,0.35); }
+
+/* ── Theme strip ── */
+[data-wl-light] .wl-topbar { border-bottom-color: rgba(0,0,0,0.1); }
+[data-wl-light] .theme-strip-btn:hover { background: rgba(0,0,0,0.06); }
+[data-wl-light] .theme-strip-active { background: rgba(0,0,0,0.08) !important; }
+[data-wl-light] .theme-strip-divider { background: rgba(0,0,0,0.12); }
+[data-wl-light] .theme-strip-mode-btn:hover { background: rgba(0,0,0,0.06); }
+
+/* ── Settings ── */
+[data-wl-light] .settings-hint { color: var(--text-sub); }
+[data-wl-light] .settings-divider { background: rgba(0,0,0,0.08); }
+[data-wl-light] .settings-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .settings-chip:hover { background: rgba(0,0,0,0.08); }
+[data-wl-light] .settings-chip.active { background: rgba(var(--g-rgb),0.12); border-color: var(--g); }
+
+/* ── Bottom nav ── */
+[data-wl-light] .wl-nav { border-top-color: rgba(0,0,0,0.1); background: var(--bg3); }
+
+/* ── TradeSheet ── */
+[data-wl-light] .bs-label { color: var(--text-muted); }
+[data-wl-light] .bs-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.15); color: var(--text); }
+[data-wl-light] .bs-input::placeholder { color: var(--text-sub); }
+[data-wl-light] .bs-cat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text-muted); }
+[data-wl-light] .bs-cat-btn.active { background: rgba(var(--g-rgb),0.12); }
+[data-wl-light] .bs-hint { color: var(--text-sub); }
+[data-wl-light] .bs-step { color: var(--text-sub); }
+[data-wl-light] .bs-divider { background: rgba(0,0,0,0.08); }
+[data-wl-light] .bs-total { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+
+/* ── AI / Risk panels ── */
+[data-wl-light] .ade-step-label { color: var(--text-muted); }
+[data-wl-light] .ade-verdict-summary { color: var(--text-muted); }
+[data-wl-light] .ade-confidence { color: var(--text-sub); }
+[data-wl-light] .ade-tip { color: var(--text-muted); }
+[data-wl-light] .lp-step-desc { color: var(--text-muted); }
+[data-wl-light] .lp-asset-desc { color: var(--text-sub); }
+
+/* ── Misc components ── */
+[data-wl-light] .dvx-movers-divider { background: rgba(0,0,0,0.08); }
+[data-wl-light] .dvx-target-bar-bg { background: rgba(0,0,0,0.1); }
+[data-wl-light] .dvx-target-lbl { color: var(--text-sub); }
+[data-wl-light] .dvx-target-mini-sym { color: var(--text-muted); }
+[data-wl-light] .coin-note-input::placeholder { color: var(--text-sub); }
+[data-wl-light] .coin-note-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);

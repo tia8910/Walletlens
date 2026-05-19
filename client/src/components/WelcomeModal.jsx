@@ -83,7 +83,7 @@ export default function WelcomeModal() {
         {!s.final && (
           <button onClick={skip} style={{
             position: 'absolute', top: '1rem', right: '1rem',
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)',
+            background: 'none', border: 'none', color: 'var(--text-sub)',
             fontSize: '0.75rem', cursor: 'pointer',
           }}>Skip</button>
         )}
@@ -93,7 +93,7 @@ export default function WelcomeModal() {
             <div key={i} style={{
               width: i === step ? '20px' : '6px', height: '6px',
               borderRadius: '3px',
-              background: i <= step ? s.accent : 'rgba(255,255,255,0.15)',
+              background: i <= step ? s.accent : 'var(--surface-2)',
               transition: 'all 0.3s ease',
             }} />
           ))}

@@ -209,7 +209,7 @@ export default function MarketMood() {
         <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5 }}>
           Market Mood
         </span>
-        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginLeft: 'auto' }}>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginLeft: 'auto' }}>
           {mood ? `${mood.n} headlines` : ''}
         </span>
       </div>
@@ -222,13 +222,13 @@ export default function MarketMood() {
             <span style={{ fontSize: '0.92rem', fontWeight: 800, color: info.color, marginLeft: '0.4rem' }}>
               {info.label}
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', marginLeft: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)', marginLeft: '0.5rem' }}>
               {mood.score}/100
             </span>
           </div>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
-            fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)',
+            fontSize: '0.62rem', color: 'var(--text-sub)',
             marginTop: '0.25rem', padding: '0 0.25rem',
           }}>
             <span>😱 Fear</span>
@@ -237,7 +237,7 @@ export default function MarketMood() {
           </div>
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '1rem 0', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>
+        <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-sub)', fontSize: '0.8rem' }}>
           Analysing headlines…
         </div>
       )}

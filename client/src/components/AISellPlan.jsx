@@ -168,7 +168,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
         )}
         {open && (
           <button onClick={() => setOpen(false)} style={{
-            background:'rgba(255,255,255,0.07)', color:'rgba(255,255,255,0.5)',
+            background:'var(--surface-1)', color:'var(--text-muted)',
             border:'none', borderRadius:8, padding:'0.4rem 0.8rem',
             fontSize:'0.8rem', cursor:'pointer', flexShrink:0,
           }}>✕ Close</button>
@@ -181,7 +181,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
           <div style={{
             background:'rgba(var(--g-rgb),0.06)', border:'1px solid rgba(var(--g-rgb),0.2)',
             borderRadius:10, padding:'0.75rem 1rem', marginBottom:'1rem',
-            fontSize:'0.85rem', color:'rgba(255,255,255,0.8)', lineHeight:1.6,
+            fontSize:'0.85rem', color:'var(--text)', lineHeight:1.6,
           }}>
             📊 {plan.summary}
           </div>
@@ -197,7 +197,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
               }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.4rem' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-                    <span style={{ fontWeight:700, fontSize:'0.95rem', color:'white' }}>{row.sym}</span>
+                    <span style={{ fontWeight:700, fontSize:'0.95rem', color:'var(--text)' }}>{row.sym}</span>
                     <span style={{
                       background: URGENCY_COLOR[row.urgency] + '25',
                       color: URGENCY_COLOR[row.urgency],
@@ -212,14 +212,14 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                     <span className="muted" style={{ marginLeft:'0.4rem' }}>{row.weight.toFixed(1)}% portfolio</span>
                   </div>
                 </div>
-                <p style={{ margin:'0 0 0.5rem', fontSize:'0.82rem', color:'rgba(255,255,255,0.55)' }}>{row.reason}</p>
+                <p style={{ margin:'0 0 0.5rem', fontSize:'0.82rem', color:'var(--text-muted)' }}>{row.reason}</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.3rem' }}>
                   {row.targets.map((t, i) => (
                     <div key={i} style={{ display:'flex', alignItems:'baseline', gap:'0.5rem', fontSize:'0.8rem' }}>
                       <span style={{ color: URGENCY_COLOR[row.urgency], fontWeight:700, flexShrink:0 }}>
                         {i === 0 ? '①' : i === 1 ? '②' : '③'}
                       </span>
-                      <span style={{ color:'white', fontWeight:600 }}>{t.label}</span>
+                      <span style={{ color:'var(--text)', fontWeight:600 }}>{t.label}</span>
                       {t.price && <span className="muted">@ ${t.price > 1 ? t.price.toLocaleString() : t.price}</span>}
                       <span className="muted" style={{ marginLeft:'auto', fontSize:'0.75rem', textAlign:'right' }}>{t.note}</span>
                     </div>

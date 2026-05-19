@@ -573,7 +573,7 @@ async function checkScamAddress(input) {
       }
     }
 
-    if (info.token_name) flags.unshift({ icon: 'ℹ', text: `Token: ${info.token_name} (${info.token_symbol})`, color: 'rgba(255,255,255,0.5)' })
+    if (info.token_name) flags.unshift({ icon: 'ℹ', text: `Token: ${info.token_name} (${info.token_symbol})`, color: 'var(--text-muted)' })
 
     const score = Math.max(0, 100 - danger)
     if (danger >= 40) { verdict = 'LIKELY SCAM';    verdictColor = '#ef4444' }
@@ -653,7 +653,7 @@ function ScamCatcher() {
             {result.flags.map((f, i) => (
               <div key={i} className="risk-scam-flag">
                 <span style={{ color: f.color, fontWeight: 700, flexShrink: 0 }}>{f.icon}</span>
-                <span style={{ color: f.color === 'rgba(255,255,255,0.5)' ? f.color : undefined }}>{f.text}</span>
+                <span style={{ color: f.color === 'var(--text-muted)' ? f.color : undefined }}>{f.text}</span>
               </div>
             ))}
           </div>

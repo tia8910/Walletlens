@@ -91,10 +91,10 @@ export default function GoalTracker({ currentValue }) {
   }
 
   const inputStyle = {
-    background: 'rgba(255,255,255,0.07)',
-    border: '1px solid rgba(255,255,255,0.13)',
+    background: 'var(--surface-1)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: '#fff',
+    color: 'var(--text)',
     padding: '0.45rem 0.7rem',
     fontSize: '0.82rem',
     outline: 'none',
@@ -104,24 +104,24 @@ export default function GoalTracker({ currentValue }) {
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border)',
       borderRadius: '16px',
       padding: '1rem 1.1rem',
       marginBottom: '0.75rem',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: goals.length > 0 || showForm ? '0.9rem' : 0 }}>
-        <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'rgba(255,255,255,0.85)' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>
           🎯 Portfolio Goals
         </span>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
             style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
               borderRadius: '8px',
-              color: 'rgba(255,255,255,0.7)',
+              color: 'var(--text-muted)',
               padding: '0.3rem 0.7rem',
               fontSize: '0.78rem',
               cursor: 'pointer',
@@ -133,7 +133,7 @@ export default function GoalTracker({ currentValue }) {
       </div>
 
       {goals.length === 0 && !showForm && (
-        <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)' }}>
+        <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: 'var(--text-sub)' }}>
           Set a portfolio goal to track your progress.
         </p>
       )}
@@ -142,8 +142,8 @@ export default function GoalTracker({ currentValue }) {
         const { pct, remaining, dcaNeeded, daysLeft, probLabel, probColor } = calcGoal(goal, currentValue)
         return (
           <div key={goal.id} style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--surface-1)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             padding: '0.85rem',
             marginBottom: '0.65rem',
@@ -154,18 +154,18 @@ export default function GoalTracker({ currentValue }) {
             <ProgressRing pct={pct} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>{goal.label}</span>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{goal.label}</span>
                 <button
                   onClick={() => deleteGoal(goal.id)}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 0 0 0.5rem', flexShrink: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 0 0 0.5rem', flexShrink: 0 }}
                   title="Remove goal"
                 >×</button>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', margin: '0.2rem 0' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.2rem 0' }}>
                 ${fmt(currentValue)} of ${fmt(goal.targetAmount)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginBottom: '0.3rem' }}>
-                Need <strong style={{ color: '#fff' }}>${fmt(dcaNeeded)}/mo</strong> DCA · {daysLeft}d left
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                Need <strong style={{ color: 'var(--text)' }}>${fmt(dcaNeeded)}/mo</strong> DCA · {daysLeft}d left
               </div>
               <span style={{
                 display: 'inline-block',
@@ -186,8 +186,8 @@ export default function GoalTracker({ currentValue }) {
 
       {showForm && (
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'var(--surface-1)',
+          border: '1px solid var(--border)',
           borderRadius: '12px',
           padding: '0.85rem',
           display: 'flex',
@@ -234,10 +234,10 @@ export default function GoalTracker({ currentValue }) {
               onClick={() => { setShowForm(false); setForm({ label: '', targetAmount: '', targetDate: '' }) }}
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'var(--surface-1)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-muted)',
                 padding: '0.45rem',
                 fontSize: '0.82rem',
                 cursor: 'pointer',

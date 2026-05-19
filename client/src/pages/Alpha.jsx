@@ -73,7 +73,7 @@ function AlphaRing({ score, color }) {
       <text x="64" y="60" textAnchor="middle" dominantBaseline="central"
         fontSize="24" fontWeight="900" fill={color} fontFamily="Inter,sans-serif">{score}</text>
       <text x="64" y="80" textAnchor="middle"
-        fontSize="10" fontWeight="700" fill="rgba(255,255,255,0.4)" fontFamily="Inter,sans-serif">/ 100</text>
+        fontSize="10" fontWeight="700" fill="var(--text-muted)" fontFamily="Inter,sans-serif">/ 100</text>
     </svg>
   )
 }
