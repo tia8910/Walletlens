@@ -534,6 +534,46 @@
 [data-wl-light] .coin-note-input::placeholder { color: var(--text-sub); }
 [data-wl-light] .coin-note-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
 
+/* ── RiskScanner ── */
+[data-wl-light] .risk-legend-title { color: var(--text-muted); }
+[data-wl-light] .risk-summary-header { color: var(--text-muted); }
+[data-wl-light] .risk-sym { color: var(--text); }
+[data-wl-light] .risk-chevron { color: var(--text-sub); }
+[data-wl-light] .risk-signal-label { color: var(--text-muted); }
+[data-wl-light] .risk-rescan-btn { border-color: rgba(0,0,0,0.15); color: var(--text-muted); }
+[data-wl-light] .risk-rescan-btn:hover { color: var(--text); border-color: rgba(0,0,0,0.3); }
+[data-wl-light] .risk-rescan-all-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+[data-wl-light] .risk-rescan-all-btn:hover { background: rgba(0,0,0,0.09); color: var(--text); }
+[data-wl-light] .risk-card:hover { background: rgba(0,0,0,0.03); }
+[data-wl-light] .risk-signals { border-top-color: rgba(0,0,0,0.08); }
+[data-wl-light] .risk-summary-worst { border-top-color: rgba(0,0,0,0.08); }
+[data-wl-light] .risk-scam-desc { color: var(--text-muted); }
+[data-wl-light] .risk-scam-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.15); color: var(--text); }
+[data-wl-light] .risk-scam-input::placeholder { color: var(--text-sub); }
+[data-wl-light] .risk-scam-flag { color: var(--text-muted); }
+[data-wl-light] .risk-scam-note { color: var(--text-sub); }
+[data-wl-light] .risk-scam-result { border-top-color: rgba(0,0,0,0.08); }
+
+/* ── RiskBudget ── */
+[data-wl-light] .rb-sum-label { color: var(--text-muted); }
+[data-wl-light] .rb-sum-val { color: var(--text); }
+[data-wl-light] .rb-sym { color: var(--text); }
+[data-wl-light] .rb-alloc { color: var(--text-sub); }
+[data-wl-light] .rb-pct-label { color: var(--text-muted); }
+[data-wl-light] .rb-hint { color: var(--text-sub); }
+[data-wl-light] .rb-sum-card { background: var(--surface-1); border-color: var(--border); }
+[data-wl-light] .rb-row { background: var(--surface-1); border-color: var(--border); }
+[data-wl-light] .rb-input { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: var(--text); }
+[data-wl-light] .rb-bar-track { background: rgba(0,0,0,0.08); }
+
+/* ── Holdings list ── */
+[data-wl-light] .dvx-holding-meta strong { color: var(--text); }
+
+/* ── Share / Weekly Report modal ── */
+[data-wl-light] .share-modal { background: var(--bg3); }
+[data-wl-light] .share-canvas { border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .share-btn-dl { background: rgba(0,0,0,0.08); color: var(--text); }
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
