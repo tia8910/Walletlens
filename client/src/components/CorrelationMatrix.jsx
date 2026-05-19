@@ -9,6 +9,8 @@ const PROXIES = [
 const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares' }
 const toCapId = id => CG_TO_CAP[id] || id
 
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','chainlink':'LINKUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','fetch-ai':'FETUSDT','render-token':'RENDERUSDT','pepe':'PEPEUSDT','bonk':'BONKUSDT','floki':'FLOKIUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAHTUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT' }
+
 async function batchFetchSparklines(coinIds) {
   // Try CoinGecko sparklines via CORS proxies
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}&sparkline=true&price_change_percentage=7d&per_page=50`
@@ -27,19 +29,18 @@ async function batchFetchSparklines(coinIds) {
     } catch { /* try next proxy */ }
   }
 
-  // Fallback: CoinCap history (6h intervals, 7 days = 28 points)
+  // Fallback: Binance klines (1h, 168 candles = 7 days) — open CORS, very fast
   try {
-    const end = Date.now()
-    const start = end - 7 * 24 * 60 * 60 * 1000
     const series = {}
     await Promise.all(coinIds.map(async id => {
+      const sym = BINANCE_SYM[id]
+      if (!sym) return
       try {
-        const capId = toCapId(id)
-        const res = await fetch(`https://api.coincap.io/v2/assets/${capId}/history?interval=h6&start=${start}&end=${end}`, { signal: AbortSignal.timeout(6000) })
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=168`, { signal: AbortSignal.timeout(6000) })
         if (!res.ok) return
-        const { data } = await res.json()
-        if (data?.length >= 10) series[id] = data.map(p => parseFloat(p.priceUsd))
-      } catch { /* skip this coin */ }
+        const klines = await res.json()
+        if (klines?.length >= 10) series[id] = klines.map(k => parseFloat(k[4])) // close price
+      } catch { /* skip */ }
     }))
     if (Object.keys(series).length >= 2) return series
   } catch { /* exhausted */ }

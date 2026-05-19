@@ -15,6 +15,9 @@ const ALL_IDS = [...new Set(Object.values(SECTORS).flat())]
 const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares','immutable-x':'immutable-x','lido-dao':'lido-dao','render-token':'render-token','bittensor':'bittensor','curve-dao-token':'curve-dao-token','compound-governance-token':'compound','singularitynet':'singularitynet' }
 const toCapId = id => CG_TO_CAP[id] || id
 
+// CoinGecko ID → Binance USDT symbol
+const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','curve-dao-token':'CRVUSDT','compound-governance-token':'COMPUSDT','maker':'MKRUSDT','lido-dao':'LDOUSDT','fetch-ai':'FETUSDT','singularitynet':'AGIXUSDT','ocean-protocol':'OCEANUSDT','render-token':'RENDERUSDT','bittensor':'TAOUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT','axie-infinity':'AXSUSDT','immutable-x':'IMXUSDT','gala':'GALAUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','pepe':'PEPEUSDT','floki':'FLOKIUSDT','bonk':'BONKUSDT','cronos':'CROUSDT','optimism':'OPUSDT','arbitrum':'ARBUSDT','starknet':'STRKUSDT','aptos':'APTUSDT','sui':'SUIUSDT' }
+
 let _cache = null, _cacheTime = 0
 
 function tileColor(pct) {
@@ -55,18 +58,24 @@ async function fetchSectors() {
     } catch { /* try next proxy */ }
   }
 
-  // Fallback: CoinCap (24h data, open CORS)
+  // Fallback: Binance 24h tickers (open CORS, no key)
   try {
-    const capIds = ALL_IDS.map(toCapId)
-    const res = await fetch(`https://api.coincap.io/v2/assets?ids=${capIds.join(',')}`, { signal: AbortSignal.timeout(6000) })
-    if (res.ok) {
-      const { data: assets } = await res.json()
-      const byId = {}
-      assets?.forEach(a => {
-        const cgId = ALL_IDS.find(id => toCapId(id) === a.id) || a.id
-        byId[cgId] = { id: cgId, symbol: a.symbol, price_change_percentage_7d_in_currency: parseFloat(a.changePercent24Hr) || 0 }
-      })
-      return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+    const syms = ALL_IDS.map(id => BINANCE_SYM[id]).filter(Boolean)
+    if (syms.length > 0) {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`, { signal: AbortSignal.timeout(6000) })
+      if (res.ok) {
+        const tickers = await res.json()
+        const bySymbol = {}
+        tickers.forEach(t => { bySymbol[t.symbol] = parseFloat(t.priceChangePercent) || 0 })
+        const byId = {}
+        ALL_IDS.forEach(id => {
+          const sym = BINANCE_SYM[id]
+          if (sym && bySymbol[sym] !== undefined) {
+            byId[id] = { id, symbol: sym.replace('USDT',''), price_change_percentage_7d_in_currency: bySymbol[sym] }
+          }
+        })
+        if (Object.keys(byId).length > 0) return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+      }
     }
   } catch { /* exhausted */ }
 
