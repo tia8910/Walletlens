@@ -55,7 +55,7 @@ function WalletReader() {
     if (balUsd >= 1_000_000)  return { l: '🐳 Whale',       c: 'var(--g)' }
     if (balUsd >= 100_000)    return { l: '🦈 Shark',        c: '#fbbf24' }
     if (balUsd >= 10_000)     return { l: '🐬 Dolphin',      c: '#60a5fa' }
-    return { l: '🐟 Retail',  c: 'rgba(255,255,255,0.5)' }
+    return { l: '🐟 Retail',  c: 'var(--text-muted)' }
   }
 
   return (

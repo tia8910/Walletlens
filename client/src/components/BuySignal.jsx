@@ -186,14 +186,14 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
   if (!coinId || coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
       coinId.startsWith('cash:') || coinId.startsWith('bond:')) return null
   if (loading) return (
-    <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'rgba(255,255,255,0.04)', fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', marginBottom:'0.75rem' }}>
+    <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'var(--surface-1)', fontSize:'0.75rem', color:'var(--text-sub)', marginBottom:'0.75rem' }}>
       ⏳ Analysing entry timing…
     </div>
   )
   if (failed) return (
-    <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'rgba(255,255,255,0.04)', fontSize:'0.75rem', color:'rgba(255,255,255,0.35)', marginBottom:'0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+    <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'var(--surface-1)', fontSize:'0.75rem', color:'var(--text-sub)', marginBottom:'0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
       <span>⏱️ {mode === 'sell' ? 'Sell' : 'Buy'} signal unavailable</span>
-      <button onClick={() => load(coinId)} style={{ fontSize:'0.7rem', background:'rgba(255,255,255,0.08)', border:'none', color:'rgba(255,255,255,0.5)', borderRadius:6, padding:'0.2rem 0.5rem', cursor:'pointer' }}>Retry</button>
+      <button onClick={() => load(coinId)} style={{ fontSize:'0.7rem', background:'var(--surface-2)', border:'none', color:'var(--text-muted)', borderRadius:6, padding:'0.2rem 0.5rem', cursor:'pointer' }}>Retry</button>
     </div>
   )
   if (!data) return null
@@ -246,7 +246,7 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <span style={{ fontSize: '1.1rem' }}>{v.emoji}</span>
         <span style={{ fontWeight: 800, fontSize: '0.9rem', color: v.color }}>{v.text}</span>
-        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: 'auto' }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--text-sub)', marginLeft: 'auto' }}>
           {mode === 'sell' ? 'Good time to sell?' : 'Good time to buy?'}
         </span>
       </div>
@@ -255,7 +255,7 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{r.icon} {r.label}</span>
+            <span style={{ color: 'var(--text-muted)' }}>{r.icon} {r.label}</span>
             <span style={{ fontWeight: 700, color: r.warn ? '#fb923c' : '#86efac' }}>{r.value}</span>
           </div>
         ))}

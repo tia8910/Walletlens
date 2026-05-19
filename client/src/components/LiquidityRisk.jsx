@@ -141,8 +141,8 @@ export default function LiquidityRisk({ holdings }) {
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       overflow: 'hidden',
       marginBottom: '1rem',
@@ -158,7 +158,7 @@ export default function LiquidityRisk({ holdings }) {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: '#fff',
+          color: 'var(--text)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -186,16 +186,16 @@ export default function LiquidityRisk({ holdings }) {
       </button>
 
       {open && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '0.8rem 1.1rem 1rem' }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '0.8rem 1.1rem 1rem' }}>
           {loading && (
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1.5rem 0' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1.5rem 0' }}>
               Fetching volume data…
             </div>
           )}
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
               <span style={{ color: '#f87171', fontSize: '0.85rem' }}>{error}</span>
-              <button onClick={() => { setError(null); setData(null) }} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 6, padding: '0.25rem 0.6rem', cursor: 'pointer' }}>Retry</button>
+              <button onClick={() => { setError(null); setData(null) }} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--surface-2)', border: 'none', borderRadius: 6, padding: '0.25rem 0.6rem', cursor: 'pointer' }}>Retry</button>
             </div>
           )}
           {data && (
@@ -208,7 +208,7 @@ export default function LiquidityRisk({ holdings }) {
                 marginBottom: '0.25rem',
               }}>
                 {['Asset', 'Holding', '24h Volume', 'Market Impact'].map(h => (
-                  <span key={h} style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{h}</span>
+                  <span key={h} style={{ fontSize: '0.72rem', color: 'var(--text-sub)', fontWeight: 600 }}>{h}</span>
                 ))}
               </div>
               {data.map(row => {
@@ -220,17 +220,17 @@ export default function LiquidityRisk({ holdings }) {
                     gap: '0.5rem',
                     alignItems: 'center',
                     padding: '0.5rem 0.6rem',
-                    background: 'rgba(255,255,255,0.03)',
+                    background: 'var(--surface-1)',
                     borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border)',
                   }}>
                     <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
                       {(row.symbol || row.id).toUpperCase()}
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
                       {fmt(row.value)}
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
                       {fmt(row.vol)}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -252,7 +252,7 @@ export default function LiquidityRisk({ holdings }) {
                   </div>
                 )
               })}
-              <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', margin: '0.4rem 0 0' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-sub)', margin: '0.4rem 0 0' }}>
                 Market impact = (holding value / 24h volume) × 100. &gt;1% means selling could move the market.
               </p>
             </div>

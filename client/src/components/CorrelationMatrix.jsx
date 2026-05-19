@@ -92,7 +92,7 @@ function pearson(a, b) {
 }
 
 function corrColor(r) {
-  if (r === null) return 'rgba(255,255,255,0.04)'
+  if (r === null) return 'var(--surface-1)'
   if (r >= 0.8)  return 'rgba(248,113,113,0.55)'
   if (r >= 0.5)  return 'rgba(251,146,60,0.40)'
   if (r >= 0.2)  return 'rgba(250,204,21,0.25)'
@@ -102,11 +102,11 @@ function corrColor(r) {
 }
 
 function corrTextColor(r) {
-  if (r === null) return 'rgba(255,255,255,0.2)'
+  if (r === null) return 'var(--text-sub)'
   if (r >= 0.8)  return '#f87171'
   if (r >= 0.5)  return '#fb923c'
   if (r >= 0.2)  return '#fde68a'
-  if (r >= -0.2) return 'rgba(255,255,255,0.45)'
+  if (r >= -0.2) return 'var(--text-muted)'
   if (r >= -0.5) return '#93c5fd'
   return '#4ade80'
 }
@@ -172,7 +172,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
         <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5 }}>
           Correlation Matrix
         </span>
-        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-sub)', marginLeft: 'auto' }}>
           7-day · {cryptoHoldings.length} assets
         </span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -184,7 +184,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
       {open && (
         <div style={{ padding: '0 1rem 1rem' }}>
           {loading && (
-            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>
+            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-sub)', fontSize: '0.8rem' }}>
               Fetching price data…
             </div>
           )}
@@ -192,7 +192,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
               <span style={{ color: '#f87171', fontSize: '0.8rem' }}>{error}</span>
               <button onClick={() => { setError(null); setMatrix(null); _cache = null; compute() }}
-                style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
+                style={{ fontSize: '0.7rem', background: 'var(--surface-2)', border: 'none', color: 'var(--text-muted)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
                 Retry
               </button>
             </div>
@@ -205,7 +205,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                     <tr>
                       <td style={{ width: 44 }} />
                       {matrix.holdings.map(h => (
-                        <th key={h.coin_id} style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textAlign: 'center', padding: '0 4px 6px', width: 44 }}>
+                        <th key={h.coin_id} style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', padding: '0 4px 6px', width: 44 }}>
                           {(h.coin_symbol || h.coin_id).toUpperCase().slice(0, 5)}
                         </th>
                       ))}
@@ -214,14 +214,14 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   <tbody>
                     {matrix.holdings.map(rowH => (
                       <tr key={rowH.coin_id}>
-                        <td style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', paddingRight: '6px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                        <td style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)', paddingRight: '6px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                           {(rowH.coin_symbol || rowH.coin_id).toUpperCase().slice(0, 5)}
                         </td>
                         {matrix.holdings.map(colH => {
                           const r = matrix.mat[rowH.coin_id]?.[colH.coin_id] ?? null
                           const isDiag = rowH.coin_id === colH.coin_id
                           return (
-                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'rgba(255,255,255,0.25)' : corrTextColor(r), padding: '0 2px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'var(--text-sub)' : corrTextColor(r), padding: '0 2px', border: '1px solid var(--border)' }}>
                               {isDiag ? '—' : (r !== null ? r.toFixed(2) : '—')}
                             </td>
                           )
@@ -231,7 +231,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   </tbody>
                 </table>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)' }}>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'var(--text-sub)' }}>
                 {[
                   { color: '#f87171', label: '> 0.8  High risk' },
                   { color: '#fb923c', label: '0.5–0.8  Correlated' },

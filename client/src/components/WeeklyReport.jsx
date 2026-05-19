@@ -291,7 +291,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
         <div className="share-modal-header"><span>Weekly Report</span><button className="share-close" onClick={onClose}>✕</button></div>
         <div style={{ padding:'2rem', textAlign:'center' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem' }}>📅</div>
-          <p style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.9rem' }}>
+          <p style={{ color:'var(--text)', fontSize:'0.9rem' }}>
             Keep the app open for a few days and WalletLens will build your real portfolio history. Your first weekly report will be ready soon!
           </p>
         </div>

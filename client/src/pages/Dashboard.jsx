@@ -35,7 +35,7 @@ const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 
 function TabFallback() {
-  return <div style={{ padding:'2rem', textAlign:'center', color:'rgba(255,255,255,0.3)', fontSize:'0.85rem' }}>Loading…</div>
+  return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>Loading…</div>
 }
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -419,7 +419,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">Assets</div>
-          <div className="ai-ind-val" style={{color:'#fff'}}>{enriched.length}</div>
+          <div className="ai-ind-val" style={{color:'var(--text)'}}>{enriched.length}</div>
           <div className="ai-ind-sub">{ai.mcBreakdown.length} cap tier{ai.mcBreakdown.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
@@ -551,7 +551,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <span className="ai-entry-sym">{(h.coin_symbol || '').toUpperCase()}</span>
                 <div className="ai-entry-prices">
                   <span className="muted" style={{fontSize:'0.7rem'}}>Avg buy ${h.avgBuy > 0 ? h.avgBuy.toLocaleString(undefined,{maximumFractionDigits:4}) : '—'}</span>
-                  <span style={{fontSize:'0.7rem',color:'#fff'}}> · Now ${h.price.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                  <span style={{fontSize:'0.7rem',color:'var(--text)'}}> · Now ${h.price.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
                 </div>
               </div>
               <div className="ai-entry-bar-wrap">
@@ -737,8 +737,8 @@ const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
 const TOOLTIP_STYLE = {
-  background: 'rgba(6,14,10,0.97)', border: '1px solid rgba(var(--g-rgb),0.4)',
-  borderRadius: 10, fontSize: '0.76rem', color: '#fff',
+  background: 'var(--bg4)', border: '1px solid var(--border)',
+  borderRadius: 10, fontSize: '0.76rem', color: 'var(--text)',
 }
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
@@ -1304,7 +1304,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
       </div>
       <div className="heatmap-legend">
         <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
-        <span style={{ color:'rgba(255,255,255,0.3)' }}>Darker = bigger move</span>
+        <span style={{ color:'var(--text-sub)' }}>Darker = bigger move</span>
         <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ Gaining</span>
       </div>
     </div>
@@ -1360,13 +1360,14 @@ function ConstellationMap() {
 
       const col = getColor()
       const rgb = getRgb()
+      const isLight = document.documentElement.hasAttribute('data-wl-light')
 
-      // Twinkle stars
+      // Twinkle stars / dots
       for (const s of STARS) {
         const alpha = 0.15 + 0.5 * (0.5 + 0.5 * Math.sin(s.phase + t * s.speed * 60))
         ctx.beginPath()
         ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`
+        ctx.fillStyle = isLight ? `rgba(0,0,0,${alpha * 0.35})` : `rgba(255,255,255,${alpha})`
         ctx.fill()
       }
 
@@ -1394,7 +1395,7 @@ function ConstellationMap() {
         const r = 22 + pulse * 8
         const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, r)
         grad.addColorStop(0, `rgba(${rgb},${0.22 * pulse})`)
-        grad.addColorStop(1, 'rgba(0,0,0,0)')
+        grad.addColorStop(1, 'rgba(128,128,128,0)')
         ctx.fillStyle = grad
         ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill()
       })
@@ -1502,10 +1503,10 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
       <ConstellationMap />
 
       {/* Headline */}
-      <div style={{ fontWeight:800, fontSize:'1.25rem', color:'#fff', marginBottom:'0.5rem', lineHeight:1.3 }}>
+      <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
         Start your first trade
       </div>
-      <div style={{ fontSize:'0.875rem', color:'rgba(255,255,255,0.45)', marginBottom:'2rem', lineHeight:1.65 }}>
+      <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'2rem', lineHeight:1.65 }}>
         Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
       </div>
 
@@ -1532,7 +1533,7 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
           <button key={s.label} onClick={s.action} style={{
             display:'inline-flex', alignItems:'center', gap:'0.4rem',
             padding:'0.55rem 1.1rem', borderRadius:'50px',
-            background:'rgba(255,255,255,0.05)',
+            background:'var(--surface-1)',
             border:`1px solid ${s.color}33`,
             color:s.color, fontWeight:700, fontSize:'0.82rem', cursor:'pointer',
             transition:'background 0.15s',
@@ -1543,14 +1544,14 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
       </div>
 
       {/* Exchange strip — buy before you track */}
-      <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:14, padding:'0.85rem', textAlign:'left', marginBottom:'1rem' }}>
-        <p style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
+      <div style={{ background:'var(--surface-1)', borderRadius:14, padding:'0.85rem', textAlign:'left', marginBottom:'1rem' }}>
+        <p style={{ fontSize:'0.68rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
           🚀 Buy crypto on
         </p>
         <ExchangePartners compact source="empty_portfolio" cryptoOnly />
       </div>
 
-      <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.2)' }}>
+      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>
         Your data stays on your device — no account needed
       </div>
     </div>
@@ -1568,12 +1569,12 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
   ]
   return (
     <div>
-      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'rgba(255,255,255,0.04)', borderRadius:'12px', padding:'0.3rem' }}>
+      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'var(--surface-1)', borderRadius:'12px', padding:'0.3rem' }}>
         {subTabs.map(s => (
           <button key={s.id} onClick={() => setTool(s.id)} style={{
             flex:1, padding:'0.45rem', borderRadius:'9px', border:'none', cursor:'pointer', fontWeight:700, fontSize:'0.8rem',
             background: tool === s.id ? 'rgba(var(--g-rgb),0.18)' : 'none',
-            color: tool === s.id ? 'var(--g)' : 'rgba(255,255,255,0.5)',
+            color: tool === s.id ? 'var(--g)' : 'var(--text-muted)',
             transition:'all 0.15s',
           }}>{s.label}</button>
         ))}
@@ -1629,9 +1630,9 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
               <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
-              <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.4)', fontSize:10 }}
+              <XAxis dataKey="name" tick={{ fill:'var(--text-sub)', fontSize:10 }}
                 axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
-              <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false}
+              <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false}
                 tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
               <Bar dataKey="proceeds" radius={[6,6,0,0]}>
@@ -1641,7 +1642,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', marginTop:'0.5rem' }}>
+          <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.5rem' }}>
             <span><span style={{ color:'var(--g)' }}>■</span> Reached</span>
             <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
           </div>
@@ -1652,7 +1653,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
       {enriched.length === 0 ? (
         <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
-          <p style={{ color:'rgba(255,255,255,0.5)', marginBottom:'1rem' }}>Add holdings first to set price targets.</p>
+          <p style={{ color:'var(--text-muted)', marginBottom:'1rem' }}>Add holdings first to set price targets.</p>
           <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>Add Trade</button>
         </div>
       ) : (
@@ -1670,7 +1671,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
                   <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={36} className="dvx-holding-icon" />
                   <div>
-                    <strong style={{ color:'#fff' }}>{h.coin_symbol?.toUpperCase()}</strong>
+                    <strong style={{ color:'var(--text)' }}>{h.coin_symbol?.toUpperCase()}</strong>
                     <div className="muted" style={{ fontSize:'0.72rem' }}>
                       {currentPrice > 0 ? `$${fmt(currentPrice)}` : '—'} · {Number(h.amount).toLocaleString(undefined, { maximumFractionDigits:6 })} held
                       {h.value > 0 && ` · $${fmt(h.value)}`}
@@ -1689,21 +1690,21 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
               {isAdding && (
                 <div style={{ display:'flex', gap:'0.5rem', alignItems:'flex-end', marginBottom:'0.75rem', flexWrap:'wrap' }}>
                   <div style={{ flex:'1 1 100px' }}>
-                    <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'3px' }}>Target Price ($)</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginBottom:'3px' }}>Target Price ($)</div>
                     <input
                       type="number" placeholder="e.g. 75000" min="0" step="any"
                       value={addState.price || ''}
                       onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
-                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                      style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'var(--text)', fontSize:'0.85rem' }}
                     />
                   </div>
                   <div style={{ flex:'1 1 100px' }}>
-                    <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', marginBottom:'3px' }}>Qty to Sell (optional)</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginBottom:'3px' }}>Qty to Sell (optional)</div>
                     <input
                       type="number" placeholder={`All (${h.amount.toFixed(4)})`} min="0" step="any"
                       value={addState.qty || ''}
                       onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
-                      style={{ width:'100%', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'#fff', fontSize:'0.85rem' }}
+                      style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'var(--text)', fontSize:'0.85rem' }}
                     />
                   </div>
                   <button
@@ -1739,7 +1740,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? 'var(--text)' : '#f87171' }}>
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
@@ -1759,7 +1760,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 
               {/* Empty state per holding */}
               {plan.length === 0 && !isAdding && (
-                <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.3)', padding:'0.25rem 0 0.1rem' }}>
+                <div style={{ fontSize:'0.75rem', color:'var(--text-sub)', padding:'0.25rem 0 0.1rem' }}>
                   No targets set — tap "+ Target" to add one
                 </div>
               )}
@@ -1846,7 +1847,7 @@ export default function Dashboard() {
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
-  const { theme, setTheme } = useTheme()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const [hidden, setHidden]               = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').hideValues === true } catch { return false }
   })
@@ -2136,6 +2137,16 @@ export default function Dashboard() {
             {theme === th.id && <span className="theme-strip-dot" />}
           </button>
         ))}
+        {/* Light / dark toggle */}
+        <div className="theme-strip-divider" />
+        <button
+          className="theme-strip-mode-btn"
+          onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
+          title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span className="theme-strip-mode-icon">{mode === 'dark' ? '☀️' : '🌙'}</span>
+          <span className="theme-strip-label">{mode === 'dark' ? 'Light' : 'Dark'}</span>
+        </button>
       </div>
 
       {/* Tab nav — 5 tabs */}
@@ -2290,9 +2301,9 @@ export default function Dashboard() {
               </button>
               <button onClick={() => navigate('/transactions')} style={{
                 padding: '0.75rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.05)',
-                color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '0.82rem',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+                background: 'var(--surface-1)',
+                color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.82rem',
+                boxShadow: '0 0 0 1px var(--border)',
                 whiteSpace: 'nowrap',
               }}>
                 History
@@ -2307,7 +2318,7 @@ export default function Dashboard() {
           {enriched.some(h => categorizeAsset(h) !== 'stocks') && (
             <div>
               {totalPnL < 0 && (
-                <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
+                <p style={{ fontSize:'0.72rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
                   📉 Buy the dip on
                 </p>
               )}
@@ -2388,11 +2399,11 @@ export default function Dashboard() {
           {enriched.length > 0 && <div className="glass-card perf-card">
             {/* Header: value + change */}
             <div style={{ marginBottom:'1rem' }}>
-              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
                 Portfolio Value
               </div>
               <div style={{ display:'flex', alignItems:'flex-end', gap:'0.75rem', flexWrap:'wrap' }}>
-                <span style={{ fontSize:'1.75rem', fontWeight:800, color:'white', letterSpacing:'-0.03em', lineHeight:1 }}>
+                <span style={{ fontSize:'1.75rem', fontWeight:800, color:'var(--text)', letterSpacing:'-0.03em', lineHeight:1 }}>
                   ${fmt(perfHover != null ? perfHover : totalValue)}
                 </span>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', paddingBottom:'0.15rem' }}>
@@ -2407,7 +2418,7 @@ export default function Dashboard() {
                   <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? 'var(--g)' : '#f87171', fontWeight:600 }}>
                     {perfChange.abs >= 0 ? '+' : ''}${fmt(Math.abs(perfChange.abs))}
                   </span>
-                  <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.3)' }}>{perfTf}</span>
+                  <span style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{perfTf}</span>
                 </div>
               </div>
             </div>
@@ -2419,14 +2430,14 @@ export default function Dashboard() {
                   style={{
                     padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
                     fontSize:'0.75rem', fontWeight:700,
-                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? 'var(--g)' : '#f87171') : 'rgba(255,255,255,0.07)',
-                    color: perfTf === tf.id ? '#000' : 'rgba(255,255,255,0.5)',
+                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? 'var(--g)' : '#f87171') : 'var(--surface-2)',
+                    color: perfTf === tf.id ? '#000' : 'var(--text-muted)',
                     transition:'all 0.15s',
                   }}>
                   {tf.label}
                 </button>
               ))}
-              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g)' : 'rgba(255,255,255,0.25)', alignSelf:'center' }}>
+              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g)' : 'var(--text-sub)', alignSelf:'center' }}>
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
@@ -2451,8 +2462,8 @@ export default function Dashboard() {
                     <XAxis hide />
                     <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip
-                      contentStyle={{ background:'#0d1f14', border:'1px solid rgba(var(--g-rgb),0.25)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}
-                      itemStyle={{ color:'white', fontWeight:700, fontSize:'0.9rem' }}
+                      contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
+                      itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
                       labelStyle={{ display:'none' }}
                       formatter={v => [`$${fmt(v)}`, '']}
                       cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
@@ -2477,8 +2488,8 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
                       <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
-                      <XAxis dataKey="name" tick={{ fill:'rgba(255,255,255,0.45)', fontSize:11 }} axisLine={false} tickLine={false}/>
-                      <YAxis tick={{ fill:'rgba(255,255,255,0.38)', fontSize:10 }} axisLine={false} tickLine={false}
+                      <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
+                      <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => fmtN(v)} width={50}/>
                       <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
@@ -2548,7 +2559,7 @@ export default function Dashboard() {
                         <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
                           <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
                         </div>
-                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'rgba(255,255,255,0.45)', minWidth:'2.5rem', textAlign:'right' }}>
+                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'var(--text-muted)', minWidth:'2.5rem', textAlign:'right' }}>
                           {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
                         </span>
                       </div>
@@ -2623,7 +2634,7 @@ export default function Dashboard() {
               {staleAssets.length > 0 && (
                 <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
                   <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
-                  <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.7)', lineHeight:1.5 }}>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
                     <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
                     {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
                     Update them via Add Trade to keep your portfolio value accurate.
@@ -2659,7 +2670,7 @@ export default function Dashboard() {
                         })
                         return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => (
                           <div key={cat}>
-                            <div style={{ fontSize:'0.75rem', fontWeight:700, color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.07em', padding:'0.5rem 0 0.25rem' }}>
+                            <div style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', padding:'0.5rem 0 0.25rem' }}>
                               {CATEGORY_LABELS[cat]}
                             </div>
                             <ul className="dvx-holdings" style={{ margin:0 }}>
@@ -2837,14 +2848,14 @@ export default function Dashboard() {
         <div style={{
           position: 'fixed', bottom: '148px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 9001, display: 'flex', alignItems: 'center', gap: '0.75rem',
-          background: 'rgba(20,21,30,0.97)', border: '1px solid rgba(var(--g-rgb),0.3)',
+          background: 'var(--bg4)', border: '1px solid var(--border)',
           borderRadius: '50px', padding: '0.6rem 1rem 0.6rem 0.75rem',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow)',
           animation: 'slideUpFade 0.3s ease',
           whiteSpace: 'nowrap',
         }}>
           <span style={{ fontSize: '1rem' }}>📊</span>
-          <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Log your latest trade</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Log your latest trade</span>
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
             background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',
@@ -2855,7 +2866,7 @@ export default function Dashboard() {
             border: '1px solid rgba(248,113,113,0.3)',
           }}>Sell</button>
           <button onClick={() => setNudgeVisible(false)} style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
+            background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
           }}>×</button>
         </div>
       )}

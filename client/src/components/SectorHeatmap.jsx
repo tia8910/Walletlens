@@ -139,30 +139,30 @@ export default function SectorHeatmap() {
   const cold = tiles ? tiles.filter(t => t.avg <= -3).length : 0
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1rem', overflow: 'hidden', marginTop: '1rem' }}>
+    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '1rem', overflow: 'hidden', marginTop: '1rem' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1.1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
       >
         <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Sector Rotation Heatmap</span>
-        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
         <div style={{ padding: '0 1.1rem 1.1rem' }}>
-          {loading && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', padding: '1rem 0' }}>Loading…</div>}
+          {loading && <div style={{ color: 'var(--text-sub)', fontSize: '0.82rem', padding: '1rem 0' }}>Loading…</div>}
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
               <span style={{ color: '#f87171', fontSize: '0.82rem' }}>{error}</span>
               <button onClick={() => { setError(null); _cache = null; setOpen(false); setTimeout(() => setOpen(true), 50) }}
-                style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
+                style={{ fontSize: '0.7rem', background: 'var(--surface-2)', border: 'none', color: 'var(--text-muted)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
                 Retry
               </button>
             </div>
           )}
           {tiles && (
             <>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                 {hot > 0 && <span style={{ color: '#22c55e', marginRight: '0.75rem' }}>🔥 Hot: {hot} sector{hot > 1 ? 's' : ''}</span>}
                 {cold > 0 && <span style={{ color: '#fb923c' }}>❄️ Cold: {cold} sector{cold > 1 ? 's' : ''}</span>}
                 {hot === 0 && cold === 0 && <span>Neutral market across sectors</span>}
@@ -173,9 +173,9 @@ export default function SectorHeatmap() {
                   const sign = avg >= 0 ? '+' : ''
                   return (
                     <div key={sector} style={{ background: color + '1a', border: `1px solid ${color}44`, borderRadius: '0.6rem', padding: '0.6rem 0.7rem' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.2rem' }}>{sector}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>{sector}</div>
                       <div style={{ fontWeight: 700, fontSize: '1rem', color, lineHeight: 1 }}>{sign}{avg.toFixed(1)}%</div>
-                      {top && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>↑ {top.symbol}</div>}
+                      {top && <div style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>↑ {top.symbol}</div>}
                     </div>
                   )
                 })}

@@ -41,7 +41,7 @@ export default function RiskBudget({ enriched, totalValue }) {
   const coveredCount     = rows.filter(r => r.budgetPct !== null).length
 
   if (!enriched.length) {
-    return <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '2rem' }}>Add holdings to set risk budgets.</p>
+    return <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Add holdings to set risk budgets.</p>
   }
 
   return (
@@ -109,11 +109,11 @@ export default function RiskBudget({ enriched, totalValue }) {
                   />
                 </div>
                 <div className="rb-bar-labels">
-                  <span style={{ color: r.overexposed ? '#f87171' : 'rgba(255,255,255,0.5)' }}>
+                  <span style={{ color: r.overexposed ? '#f87171' : 'var(--text-muted)' }}>
                     {r.overexposed ? '⚠️ ' : ''}
                     Loss: {r.currentLoss < 0 ? `-$${fmt(Math.abs(r.currentLoss))}` : `+$${fmt(r.currentLoss)}`}
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>
                     Budget: ${fmt(r.maxLossUsd ?? 0)} ({r.budgetPct}%)
                   </span>
                 </div>
