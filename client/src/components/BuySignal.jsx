@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react'
 
 // Fetch 24h/7d/30d change + current price from CoinGecko
 async function fetchSignalData(coinId) {
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
+  const tryFetch = u => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
   try {
-    const res = await fetch(
-      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`,
-      { signal: AbortSignal.timeout(8000) }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
+    const data = await tryFetch(url).catch(() => tryFetch('https://corsproxy.io/?' + encodeURIComponent(url)))
     return data[0] || null
   } catch {
     return null
