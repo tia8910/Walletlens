@@ -10,18 +10,48 @@ const _signalCache = {}
 async function fetchSignalData(coinId) {
   const now = Date.now()
   if (_signalCache[coinId] && now - _signalCache[coinId].t < 5 * 60 * 1000) return _signalCache[coinId].d
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
+
+  // Try CoinGecko via CORS proxies
+  const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
   for (const proxy of PROXIES) {
     try {
-      const res = await fetch(proxy(url), { signal: AbortSignal.timeout(5000) })
+      const res = await fetch(proxy(cgUrl), { signal: AbortSignal.timeout(5000) })
       if (!res.ok) continue
       const data = await res.json()
       const d = data[0] || null
-      if (d) _signalCache[coinId] = { d, t: now }
-      return d
+      if (d) { _signalCache[coinId] = { d, t: now }; return d }
     } catch { /* try next */ }
   }
-  return null
+
+  // Fallback: CoinCap (open CORS, no key)
+  try {
+    const end = now
+    const start30 = end - 31 * 24 * 60 * 60 * 1000
+    const [assetRes, histRes] = await Promise.all([
+      fetch(`https://api.coincap.io/v2/assets/${coinId}`, { signal: AbortSignal.timeout(6000) }),
+      fetch(`https://api.coincap.io/v2/assets/${coinId}/history?interval=d1&start=${start30}&end=${end}`, { signal: AbortSignal.timeout(6000) }),
+    ])
+    if (!assetRes.ok) return null
+    const { data: asset } = await assetRes.json()
+    const price = parseFloat(asset.priceUsd) || 0
+    const pct24h = parseFloat(asset.changePercent24Hr) || 0
+    const ath = parseFloat(asset.maxSupply) || 0 // CoinCap doesn't have ATH, skip it
+
+    let pct7d = 0, pct30d = 0
+    if (histRes.ok) {
+      const { data: hist } = await histRes.json()
+      if (hist?.length >= 7) {
+        const p7  = parseFloat(hist[hist.length - 8]?.priceUsd) || 0
+        const p30 = parseFloat(hist[0]?.priceUsd) || 0
+        if (p7  > 0) pct7d  = ((price - p7)  / p7)  * 100
+        if (p30 > 0) pct30d = ((price - p30) / p30) * 100
+      }
+    }
+
+    const d = { current_price: price, price_change_percentage_24h: pct24h, price_change_percentage_7d_in_currency: pct7d, price_change_percentage_30d_in_currency: pct30d, ath: 0 }
+    _signalCache[coinId] = { d, t: now }
+    return d
+  } catch { return null }
 }
 
 // RSI-style momentum label
