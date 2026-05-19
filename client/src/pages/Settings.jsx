@@ -224,7 +224,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>API keys</span><span style={{ color:'white' }}>Stored in your browser only</span>
+            <span>API keys</span><span style={{ color:'var(--text)' }}>Stored in your browser only</span>
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>

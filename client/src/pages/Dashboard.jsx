@@ -419,7 +419,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">Assets</div>
-          <div className="ai-ind-val" style={{color:'#fff'}}>{enriched.length}</div>
+          <div className="ai-ind-val" style={{color:'var(--text)'}}>{enriched.length}</div>
           <div className="ai-ind-sub">{ai.mcBreakdown.length} cap tier{ai.mcBreakdown.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
@@ -551,7 +551,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <span className="ai-entry-sym">{(h.coin_symbol || '').toUpperCase()}</span>
                 <div className="ai-entry-prices">
                   <span className="muted" style={{fontSize:'0.7rem'}}>Avg buy ${h.avgBuy > 0 ? h.avgBuy.toLocaleString(undefined,{maximumFractionDigits:4}) : '—'}</span>
-                  <span style={{fontSize:'0.7rem',color:'#fff'}}> · Now ${h.price.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                  <span style={{fontSize:'0.7rem',color:'var(--text)'}}> · Now ${h.price.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
                 </div>
               </div>
               <div className="ai-entry-bar-wrap">
@@ -1740,7 +1740,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? '#fff' : '#f87171' }}>
+                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? 'var(--text)' : '#f87171' }}>
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
@@ -2634,7 +2634,7 @@ export default function Dashboard() {
               {staleAssets.length > 0 && (
                 <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
                   <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
-                  <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.7)', lineHeight:1.5 }}>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
                     <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
                     {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
                     Update them via Add Trade to keep your portfolio value accurate.

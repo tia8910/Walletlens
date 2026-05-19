@@ -121,10 +121,10 @@ export function BiometricLockScreen({ onUnlock }) {
     }}>
       <div style={{ fontSize: '3.5rem' }}>🔒</div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginBottom: '0.4rem' }}>
+        <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.4rem' }}>
           WalletLens is locked
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.45)' }}>
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
           Authenticate to view your portfolio
         </div>
       </div>
@@ -143,12 +143,12 @@ export function BiometricLockScreen({ onUnlock }) {
       </button>
       {failed && (
         <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-          <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-sub)', marginBottom: '0.75rem' }}>
             Passkey not available on this device
           </div>
           <button onClick={disableAndEnter} style={{
-            background: 'transparent', color: 'rgba(255,255,255,0.45)',
-            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'transparent', color: 'var(--text-muted)',
+            border: '1px solid var(--border)',
             borderRadius: '8px', padding: '0.45rem 1rem',
             fontSize: '0.82rem', cursor: 'pointer',
           }}>
@@ -175,10 +175,10 @@ export function BiometricToggle() {
       borderRadius: '12px',
     }}>
       <div>
-        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'white' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
           🔒 Face ID / Touch ID Lock
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.15rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
           {enabled ? 'App locks when you switch away' : 'Require biometrics to open WalletLens'}
         </div>
       </div>

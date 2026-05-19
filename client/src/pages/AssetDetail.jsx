@@ -303,7 +303,7 @@ export default function AssetDetail() {
             </div>
           </div>
         ) : note ? (
-          <p style={{ margin:0, color:'rgba(255,255,255,0.75)', fontSize:'0.88rem', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{note}</p>
+          <p style={{ margin:0, color:'var(--text)', fontSize:'0.88rem', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{note}</p>
         ) : (
           <p className="muted" style={{ margin:0, fontSize:'0.85rem' }}>No notes yet. Tap "Add note" to record your thesis.</p>
         )}
