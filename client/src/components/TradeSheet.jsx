@@ -54,6 +54,10 @@ const IcoSilverBar = (
   </svg>
 )
 
+const IcoOther = (
+  <span style={{ fontSize: '0.72em', letterSpacing: '-1px', lineHeight: 1 }}>🏠🚗⌚</span>
+)
+
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto',  icon: '₿',           color: '#6366f1' },
   { key: 'stock',  label: 'Stocks',  icon: '📈',           color: 'var(--gd)' },
@@ -61,7 +65,7 @@ const CATEGORIES = [
   { key: 'silver', label: 'Silver',  icon: IcoSilverBar,   color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat',    icon: '$',            color: '#0ea5e9' },
   { key: 'bond',   label: 'Bonds',   icon: '🏛️',           color: '#0284c7' },
-  { key: 'other',  label: 'Other',   icon: '📦',           color: '#a78bfa' },
+  { key: 'other',  label: 'Other',   icon: IcoOther,       color: '#a78bfa' },
 ]
 
 // ── Preset asset for each non-crypto category ─────────────────────────────
