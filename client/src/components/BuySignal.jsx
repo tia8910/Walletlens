@@ -9,6 +9,17 @@ const PROXIES = [
 const _signalCache = {}
 const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'1000PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
 
+// Kraken OHLC — CORS-enabled exchange with no auth required
+const KRAKEN_SYM = {
+  'bitcoin':'XBTUSD','ethereum':'ETHUSD','solana':'SOLUSD','ripple':'XRPUSD',
+  'cardano':'ADAUSD','avalanche-2':'AVAXUSD','dogecoin':'DOGEUSD','shiba-inu':'SHIBUSD',
+  'polkadot':'DOTUSD','chainlink':'LINKUSD','litecoin':'LTCUSD','tron':'TRXUSD',
+  'cosmos':'ATOMUSD','near':'NEARUSD','aptos':'APTUSD','arbitrum':'ARBUSD',
+  'optimism':'OPUSD','sui':'SUIUSD','uniswap':'UNIUSD','aave':'AAVEUSD',
+  'render-token':'RENDERUSD','fetch-ai':'FETUSD','lido-dao':'LDOUSD',
+  'stellar':'XLMUSD','matic-network':'MATICUSD',
+}
+
 function _ccSym(coinId) {
   const s = BINANCE_SYM[coinId]
   return s ? s.replace(/USDT$/, '').replace(/^1000/, '') : null
@@ -35,6 +46,25 @@ function _parseBinanceKlines(klines) {
   const prev1d = parseFloat(klines[klines.length - 2]?.[4]) || 0
   const prev7d = parseFloat(klines[Math.max(0, klines.length - 8)]?.[4]) || 0
   const prev30 = parseFloat(klines[0]?.[4]) || 0
+  return {
+    current_price: price,
+    price_change_percentage_24h:             prev1d > 0 ? ((price - prev1d) / prev1d) * 100 : 0,
+    price_change_percentage_7d_in_currency:  prev7d > 0 ? ((price - prev7d) / prev7d) * 100 : 0,
+    price_change_percentage_30d_in_currency: prev30 > 0 ? ((price - prev30) / prev30) * 100 : 0,
+    ath: 0,
+  }
+}
+
+function _parseKrakenOHLC(data) {
+  // Kraken result key is their internal pair name — just take the first non-'last' key
+  const key = Object.keys(data?.result || {}).find(k => k !== 'last')
+  const candles = data?.result?.[key]
+  if (!Array.isArray(candles) || candles.length < 2) throw new Error('empty')
+  // Candle format: [timestamp, open, high, low, close, vwap, volume, count]
+  const price  = parseFloat(candles[candles.length - 1][4]) || 0
+  const prev1d = parseFloat(candles[candles.length - 2]?.[4]) || 0
+  const prev7d = parseFloat(candles[Math.max(0, candles.length - 8)]?.[4]) || 0
+  const prev30 = parseFloat(candles[0]?.[4]) || 0
   return {
     current_price: price,
     price_change_percentage_24h:             prev1d > 0 ? ((price - prev1d) / prev1d) * 100 : 0,
@@ -72,6 +102,14 @@ async function fetchSignalData(coinId) {
     fetch(`https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(8000) })
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
       .then(_parseBinanceKlines)
+  )
+
+  const krakenSym = KRAKEN_SYM[coinId]
+  if (krakenSym) attempts.push(
+    fetch(`https://api.kraken.com/0/public/OHLC?pair=${krakenSym}&interval=1440`, { signal: AbortSignal.timeout(7000) })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+      .then(d => { if (d.error?.length) throw new Error(d.error[0]); return d })
+      .then(_parseKrakenOHLC)
   )
 
   try {

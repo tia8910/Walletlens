@@ -96,6 +96,16 @@ async function fetchJSON(url) {
   return null;
 }
 
+// Race all CORS proxies simultaneously — returns the first success.
+// Cuts worst-case wait from 15s (sequential) down to ~4s.
+async function fetchJSONFast(url) {
+  const sources = [
+    fetchWithTimeout(url, 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    ...CORS_PROXIES.map(w => fetchWithTimeout(w(url), 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })),
+  ]
+  try { return await Promise.any(sources) } catch { return null }
+}
+
 // ─── Asset Categories ───
 // Non-crypto assets track manually-entered prices in localStorage under
 // `crypto_tracker_manual_prices` as { [coin_id]: { usd, usd_24h_change, updated_at } }.
@@ -132,12 +142,33 @@ const TOP_BINANCE_TICKERS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','
 const TOP_BINANCE_ID = {'BTC':'bitcoin','ETH':'ethereum','BNB':'binancecoin','SOL':'solana','XRP':'ripple','ADA':'cardano','DOGE':'dogecoin','AVAX':'avalanche-2','DOT':'polkadot','LINK':'chainlink','LTC':'litecoin','BCH':'bitcoin-cash','NEAR':'near','ARB':'arbitrum','OP':'optimism','SUI':'sui'};
 setTimeout(() => {
   if (Object.keys(priceCache).length > 0) return; // already warm
+  const now = Date.now();
+  // CryptoCompare fallback — used when Binance is blocked (e.g. Egypt, Turkey)
+  const _ccPrewarm = () => {
+    const syms = Object.values(TOP_BINANCE_ID); // BTC,ETH,BNB,...
+    fetchWithTimeout(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms.join(',')}&tsyms=USD`, 5000)
+      .then(async r => {
+        if (!r?.ok) return;
+        const d = await r.json();
+        if (!d?.RAW) return;
+        for (const [sym, currencies] of Object.entries(d.RAW)) {
+          const raw = currencies?.USD;
+          if (!raw?.PRICE || raw.PRICE <= 0) continue;
+          const id = Object.entries(TOP_BINANCE_ID).find(([, s]) => s === sym)?.[0];
+          if (!id) continue;
+          if (!priceCache[id] || !priceCache[id].usd) {
+            priceCache[id] = { ...(priceCache[id] || {}), usd: raw.PRICE, usd_24h_change: raw.CHANGEPCT24HOUR || 0, symbol: sym, source: 'cryptocompare' };
+          }
+        }
+        lastPriceFetch = now;
+        _saveCache(PRICE_CACHE_KEY, priceCache);
+      }).catch(() => {});
+  };
   fetchWithTimeout('https://api.binance.com/api/v3/ticker/price', 5000).then(async r => {
-    if (!r?.ok) return;
+    if (!r?.ok) { _ccPrewarm(); return; }
     const list = await r.json();
-    if (!Array.isArray(list)) return;
+    if (!Array.isArray(list)) { _ccPrewarm(); return; }
     const wanted = new Set(TOP_BINANCE_TICKERS);
-    const now = Date.now();
     for (const row of list) {
       if (!wanted.has(row.symbol)) continue;
       const tkr = row.symbol.replace(/USDT$/, '');
@@ -149,7 +180,7 @@ setTimeout(() => {
     }
     lastPriceFetch = now;
     _saveCache(PRICE_CACHE_KEY, priceCache);
-  }).catch(() => {});
+  }).catch(() => { _ccPrewarm(); });
 }, 800);
 
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
@@ -960,11 +991,22 @@ export const api = {
           // round-trip if Binance covered everything (common case for top coins).
           const afterBinance = cryptoIds.filter(id => !priceCache[id]);
           if (afterBinance.length > 0) {
-            const data = await fetchJSON(
-              `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${afterBinance.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
-            );
-            if (Array.isArray(data) && data.length > 0) {
-              for (const c of data) {
+            // Race CoinGecko (all proxies in parallel) and CryptoCompare simultaneously.
+            // Whichever responds first fills the cache; the other fills any gaps.
+            const _txs2 = loadData('transactions');
+            const _stables = new Set(['USDT','USDC','DAI','FDUSD','TUSD','BUSD']);
+            const ccSyms = afterBinance.map(id => _symbolForId(id, _txs2)).filter(s => s && !_stables.has(s));
+            const [cgData, ccPrices] = await Promise.all([
+              fetchJSONFast(
+                `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${afterBinance.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
+              ),
+              ccSyms.length > 0
+                ? fetchWithTimeout(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${ccSyms.join(',')}&tsyms=USD`, 5000)
+                    .then(r => r.ok ? r.json() : null).catch(() => null)
+                : null,
+            ]);
+            if (Array.isArray(cgData) && cgData.length > 0) {
+              for (const c of cgData) {
                 if (!c?.id) continue;
                 priceCache[c.id] = {
                   usd: c.current_price,
@@ -979,6 +1021,22 @@ export const api = {
               lastImageFetch = now;
               _saveCache(PRICE_CACHE_KEY, priceCache);
               _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+            }
+            // Fill any gaps with CryptoCompare data
+            if (ccPrices?.RAW) {
+              for (const id of afterBinance) {
+                if (priceCache[id]) continue;
+                const sym = _symbolForId(id, _txs2);
+                if (!sym) continue;
+                const raw = ccPrices.RAW[sym]?.USD;
+                if (raw && typeof raw.PRICE === 'number' && raw.PRICE > 0) {
+                  priceCache[id] = { usd: raw.PRICE, usd_24h_change: raw.CHANGEPCT24HOUR || 0, symbol: sym, source: 'cryptocompare' };
+                }
+              }
+              if (afterBinance.some(id => priceCache[id]?.source === 'cryptocompare')) {
+                lastPriceFetch = now;
+                _saveCache(PRICE_CACHE_KEY, priceCache);
+              }
             }
           }
           // Fallback: CoinCap for any IDs still missing
@@ -1094,15 +1152,25 @@ export const api = {
 
   searchCoins: async (query) => {
     if (!query) return [];
-    const data = await fetchJSON(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
+    const data = await fetchJSONFast(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
     if (!data) return [];
-    return (data.coins || []).slice(0, 20).map(c => ({
+    const results = (data.coins || []).slice(0, 20).map(c => ({
       id: c.id,
       symbol: c.symbol,
       name: c.name,
       thumb: c.thumb,
       large: c.large,
     }));
+    // Cache image URLs immediately so CoinLogo finds them without CDN fallbacks
+    let changed = false;
+    for (const c of results) {
+      if (c.id && (c.large || c.thumb) && !coinImageCache[c.id]) {
+        coinImageCache[c.id] = c.large || c.thumb;
+        changed = true;
+      }
+    }
+    if (changed) _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+    return results;
   },
 
   // Get detailed coin data for AI analysis
