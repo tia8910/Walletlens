@@ -166,13 +166,11 @@ function ReviewTable({ rows, onChange, onRemove }) {
 }
 
 export default function SmartImport({ wallets, onImported }) {
-  const [mode, setMode] = useState('screenshot') // 'screenshot' | 'spreadsheet'
   const [rows, setRows] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
-  const [msgType, setMsgType] = useState('') // 'error' | 'ok'
+  const [msgType, setMsgType] = useState('')
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? '')
-  const [preview, setPreview] = useState(null) // { src } for screenshot
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -308,36 +306,11 @@ export default function SmartImport({ wallets, onImported }) {
 
   return (
     <div className="si-root">
-      {/* Mode tabs */}
-      <div className="si-tabs">
-        <button className={`si-tab${mode === 'screenshot'  ? ' si-tab-active' : ''}`} onClick={() => { setMode('screenshot');  setRows([]); setPreview(null); clearMsg() }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Screenshot
-        </button>
-        <button className={`si-tab${mode === 'spreadsheet' ? ' si-tab-active' : ''}`} onClick={() => { setMode('spreadsheet'); setRows([]); setPreview(null); clearMsg() }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          Spreadsheet
-        </button>
-      </div>
-
       {/* Drop zone */}
       {!rows.length && (
-        mode === 'screenshot' ? (
-          <DragZone accept="image" icon="📷"
-            label={busy ? 'Analysing with Claude AI…' : 'Drop portfolio screenshot here'}
-            onFile={handleScreenshot} disabled={busy} />
-        ) : (
-          <DragZone accept="spreadsheet" icon="📊"
-            label={busy ? 'Parsing file…' : 'Drop your Excel or CSV file here'}
-            onFile={handleSpreadsheet} disabled={busy} />
-        )
-      )}
-
-      {/* Screenshot preview thumbnail */}
-      {preview && !busy && (
-        <div className="si-img-preview">
-          <img src={preview.src} alt="uploaded screenshot" />
-        </div>
+        <DragZone accept="spreadsheet" icon="📊"
+          label={busy ? 'Parsing file…' : 'Drop your Excel or CSV file here'}
+          onFile={handleSpreadsheet} disabled={busy} />
       )}
 
       {/* Status message */}
@@ -345,8 +318,8 @@ export default function SmartImport({ wallets, onImported }) {
         <div className={`si-msg si-msg-${msgType}`}>{msg}</div>
       )}
 
-      {/* Template hint for spreadsheet */}
-      {mode === 'spreadsheet' && !rows.length && !busy && (
+      {/* Template hint */}
+      {!rows.length && !busy && (
         <p className="si-hint">
           Use column headers: <strong>Symbol, Name, Amount, Price, Date, Type</strong> (buy/sell). CSV and XLSX both supported.
         </p>

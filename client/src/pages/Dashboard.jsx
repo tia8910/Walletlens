@@ -1857,6 +1857,7 @@ export default function Dashboard() {
   })
   const [fxRates, setFxRates] = useState({})
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const [showExcelImport, setShowExcelImport] = useState(false)
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -2169,6 +2170,19 @@ export default function Dashboard() {
 
           {/* Live news ticker */}
           <NewsTicker />
+
+          {/* Excel / CSV import — above total portfolio */}
+          <div className="dvx-excel-import-bar">
+            <button className="dvx-btn dvx-btn-sm" onClick={() => setShowExcelImport(v => !v)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              {showExcelImport ? 'Close Import' : 'Import Excel / CSV'}
+            </button>
+          </div>
+          {showExcelImport && (
+            <div className="dvx-excel-import-panel glass-card">
+              <SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} />
+            </div>
+          )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">

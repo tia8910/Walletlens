@@ -7992,6 +7992,10 @@ input[type="date"] { color-scheme: dark; }
 .ms-btn-skip:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
 
 /* ── SmartImport ─────────────────────────────────────────────────────────── */
+.dvx-excel-import-bar { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
+.dvx-excel-import-panel { padding: 1rem; margin-bottom: 0.5rem; }
+.dvx-btn-sm { padding: 0.45rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+
 .si-root { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .si-tabs { display: flex; gap: 0.4rem; padding: 0.3rem; background: rgba(255,255,255,0.04); border-radius: 12px; }
