@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { track } from '../analytics'
+import { useTheme } from '../ThemeContext'
 
 const DISMISSED_KEY = 'wl_pwa_dismissed'
 
@@ -15,6 +16,8 @@ function detectPlatform() {
 }
 
 export default function PWAInstallPrompt() {
+  const { mode: themeMode } = useTheme()
+  const isLight = themeMode === 'light'
   const [prompt, setPrompt] = useState(null)   // beforeinstallprompt event
   const [show, setShow] = useState(false)
   const [platform, setPlatform] = useState(null)
@@ -82,24 +85,34 @@ export default function PWAInstallPrompt() {
   else if (isSafariDesktop) instruction = 'Click Safari menu → "Add to Dock" or bookmark with ⌘D'
   else if (isFirefox) instruction = isMobile ? 'Tap ⋮ menu → "Add to Home Screen"' : 'Bookmark with Ctrl+D for quick access'
 
+  const bg = isLight
+    ? 'linear-gradient(135deg, #ffffff 0%, #f5f9f7 100%)'
+    : 'linear-gradient(135deg, #0d2018 0%, #071410 100%)'
+  const titleColor = isLight ? 'rgba(0,0,0,0.9)' : '#ffffff'
+  const subColor   = isLight ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.65)'
+  const dismissColor = isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.4)'
+  const shadow = isLight
+    ? '0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(var(--g-rgb),0.18)'
+    : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--g-rgb),0.1)'
+
   return (
     <div style={{
       position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
       width: 'calc(100% - 2rem)', maxWidth: '420px',
-      background: 'linear-gradient(135deg, #0d2018 0%, #071410 100%)',
+      background: bg,
       border: '1px solid rgba(var(--g-rgb),0.3)',
       borderRadius: '16px', padding: '1rem 1.1rem',
       display: 'flex', alignItems: 'center', gap: '0.75rem',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--g-rgb),0.1)',
+      boxShadow: shadow,
       zIndex: 9999,
       animation: 'slideUpFade 0.35s ease',
     }}>
       <div style={{ fontSize: '2rem', flexShrink: 0 }}>📲</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.2rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: titleColor, marginBottom: '0.2rem' }}>
           Add WalletLens to Home Screen
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '0.78rem', color: subColor, lineHeight: 1.4 }}>
           {instruction}
         </div>
       </div>
@@ -112,7 +125,7 @@ export default function PWAInstallPrompt() {
           }}>Install</button>
         )}
         <button onClick={dismiss} style={{
-          background: 'transparent', color: 'var(--text-sub)', border: 'none',
+          background: 'transparent', color: dismissColor, border: 'none',
           fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem',
         }}>Not now</button>
       </div>
