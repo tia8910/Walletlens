@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import * as XLSX from 'xlsx'
 import { api } from '../api'
+import { ANTHROPIC_KEY } from '../anthropic'
 
 const KEY_STORAGE = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
@@ -185,7 +186,7 @@ export default function SmartImport({ wallets, onImported }) {
 
   // ── Screenshot handler ──────────────────────────────────────────────────
   async function handleScreenshot(file) {
-    const apiKey = localStorage.getItem(KEY_STORAGE) || import.meta.env.VITE_ANTHROPIC_KEY
+    const apiKey = localStorage.getItem(KEY_STORAGE) || ANTHROPIC_KEY
     if (!apiKey) {
       showMsg('No API key found. Please enter your Anthropic API key in the AI Advisor section first.')
       return
