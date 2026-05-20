@@ -690,6 +690,8 @@
 [data-wl-light] .dvx-input { background: rgba(0,0,0,0.04); color: var(--text); border-color: rgba(0,0,0,0.15); }
 [data-wl-light] .dvx-btn { color: var(--text-muted); }
 [data-wl-light] .dvx-btn:hover { color: var(--text); }
+[data-wl-light] .dvx-btn-primary { color: #000; }
+[data-wl-light] .dvx-btn-primary:hover { color: #000; }
 [data-wl-light] .dvx-btn-ghost { border-color: rgba(0,0,0,0.15); color: var(--text-muted); }
 
 /* ── Token Unlock Alerts (tua) ── */
