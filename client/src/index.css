@@ -5265,6 +5265,12 @@ select.bs-input option { background: var(--bg3); }
   background: linear-gradient(135deg, var(--g), var(--gd));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 0 10px rgba(var(--g-rgb),0.55));
+  animation: lp-stat-glow 3.2s ease-in-out infinite;
+}
+@keyframes lp-stat-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(var(--g-rgb),0.45)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(var(--g-rgb),0.9)); }
 }
 .lp-stat-lbl { font-size: 0.72rem; color: rgba(255,255,255,0.45); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .lp-stat-sep { width: 1px; height: 40px; background: rgba(255,255,255,0.1); }
