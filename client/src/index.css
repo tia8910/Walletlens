@@ -267,6 +267,15 @@
 [data-wl-light] {
   --text: var(--text);
   color-scheme: light;
+  /* Tone down neon green backgrounds — #00ff84 is too vivid at full opacity on white */
+  --gl: rgba(0, 255, 132, 0.06);
+  --accent-bg: rgba(0, 255, 132, 0.07);
+  --accent2-bg: rgba(0, 204, 106, 0.06);
+  --accent3-bg: rgba(0, 255, 132, 0.06);
+  --green-bg: rgba(0, 255, 132, 0.07);
+  --mesh-1: rgba(0, 255, 132, 0.03);
+  --mesh-2: rgba(0, 204, 106, 0.02);
+  --mesh-3: rgba(0, 255, 132, 0.02);
 }
 
 /* ── Landing page is ALWAYS dark — reset all CSS vars inside .lp ── */
@@ -419,7 +428,7 @@
 
 /* ── Tabs ── */
 [data-wl-light] .dvx-tabs { border-color: rgba(0,0,0,0.1); }
-[data-wl-light] .dvx-tab-active { background: rgba(var(--g-rgb),0.15) !important; }
+[data-wl-light] .dvx-tab-active { background: rgba(var(--g-rgb),0.08) !important; }
 
 /* ── All card text ── */
 [data-wl-light] .dvx-hero-label,
