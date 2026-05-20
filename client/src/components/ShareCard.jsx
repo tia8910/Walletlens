@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { track } from '../analytics'
+import { useTheme } from '../ThemeContext'
 
 function getThemeColors() {
   const style = getComputedStyle(document.documentElement)
@@ -253,7 +254,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
     if (pnlPct != null) {
       ctx.fillStyle = pnlPct >= 0 ? '#00e676' : '#ff5252'
       ctx.font = 'bold 13px system-ui, sans-serif'
-      ctx.fillText(h.pnl == null ? '••••' : fmtPct(pnlPct), cx, barY + barH + 63)
+      ctx.fillText(fmtPct(pnlPct), cx, barY + barH + 63)
     }
   })
 
@@ -273,6 +274,8 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
 }
 
 export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, perfSeries, onClose }) {
+  const { mode: themeMode } = useTheme()
+  const isLight = themeMode === 'light'
   const canvasRef = useRef(null)
   const [ready, setReady] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -362,9 +365,14 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
               onClick={toggleHide}
               style={{
                 display:'inline-flex', alignItems:'center', gap:'0.35rem',
-                padding:'0.3rem 0.7rem', borderRadius:'20px', border:'1px solid rgba(255,255,255,0.15)',
-                background: hideNumbers ? 'rgba(255,255,255,0.12)' : 'none',
-                color: hideNumbers ? '#fff' : 'rgba(255,255,255,0.45)',
+                padding:'0.3rem 0.7rem', borderRadius:'20px',
+                border: isLight ? '1px solid rgba(0,0,0,0.18)' : '1px solid rgba(255,255,255,0.15)',
+                background: hideNumbers
+                  ? (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)')
+                  : 'none',
+                color: hideNumbers
+                  ? (isLight ? 'rgba(0,0,0,0.85)' : '#fff')
+                  : (isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.45)'),
                 fontSize:'0.75rem', fontWeight:700, cursor:'pointer',
               }}
               title={hideNumbers ? 'Show numbers' : 'Hide numbers'}

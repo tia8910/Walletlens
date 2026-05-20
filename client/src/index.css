@@ -5698,6 +5698,10 @@ input[type="date"] { color-scheme: dark; }
 .share-btn-tweet { background: #000; color: #fff; }
 .share-hint { font-size: .8rem; color: var(--text-muted); text-align: center; margin: 0; }
 [data-wl-light] .share-hint { color: var(--text-muted); }
+[data-wl-light] .share-modal-header { color: rgba(0,0,0,0.85); }
+[data-wl-light] .share-close { color: rgba(0,0,0,0.5); }
+[data-wl-light] .share-btn-dl   { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.8); }
+[data-wl-light] .share-btn-copy { background: rgba(var(--g-rgb),0.12); color: var(--g); border-color: rgba(var(--g-rgb),0.3); }
 
 /* ── Eye toggle / hidden values ────────────────────────────────────────── */
 .dvx-eye-btn {
