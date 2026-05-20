@@ -89,43 +89,94 @@ function PainCard({ emoji, pain, solution, delay = 0, isRtl }) {
   )
 }
 
-// ── Mini ticker simulation ────────────────────────────────────────────────
-const TICKERS = [
-  { sym: 'BTC',  price: 81_456, chg: +2.57 },
-  { sym: 'ETH',  price: 2_835,  chg: +1.79 },
-  { sym: 'SOL',  price: 148.5,  chg: -0.43 },
-  { sym: 'XAU',  price: 3_240,  chg: +0.62 },
-  { sym: 'AAPL', price: 211.4,  chg: +0.31 },
-  { sym: 'XRP',  price: 2.18,   chg: +4.12 },
-]
+// ── Live portfolio mockup: ticking counter + drawing SVG chart ────────────
+function LiveMockup({ label, change }) {
+  const [val, setVal]      = useState(248750.42)
+  const [points, setPoints] = useState([])
+  const [drawn, setDrawn]   = useState(0)
+  const pathRef = useRef(null)
+  const [pathLen, setPathLen] = useState(420)
 
-function MockTicker() {
-  const [idx, setIdx] = useState(0)
-  const [flip, setFlip] = useState(false)
+  // Live counter ticks up/down by tiny amounts so it feels alive
   useEffect(() => {
-    const t = setInterval(() => { setFlip(true); setTimeout(() => { setIdx(i => (i + 1) % TICKERS.length); setFlip(false) }, 250) }, 1800)
-    return () => clearInterval(t)
+    const id = setInterval(() => {
+      setVal(v => Math.max(248000, v + (Math.random() - 0.35) * 14))
+    }, 900)
+    return () => clearInterval(id)
   }, [])
-  return (
-    <div className="lp-mock-ticker">
-      {TICKERS.map((t, i) => (
-        <div key={t.sym} className={`lp-tick-item ${i === idx ? 'lp-tick-active' : ''}`}>
-          <span className="lp-tick-sym">{t.sym}</span>
-          <span className="lp-tick-price">${t.price.toLocaleString()}</span>
-          <span className={`lp-tick-chg ${t.chg >= 0 ? 'up' : 'dn'}`}>{t.chg >= 0 ? '▲' : '▼'} {Math.abs(t.chg)}%</span>
-        </div>
-      ))}
-    </div>
-  )
-}
 
-function ChartBars() {
-  const bars = [40, 65, 50, 80, 55, 90, 70, 95, 60, 85, 75, 100]
+  // Generate a deterministic-ish upward-trending random walk for the chart
+  useEffect(() => {
+    const arr = []
+    let y = 78
+    for (let i = 0; i < 32; i++) {
+      y += (Math.random() - 0.62) * 7
+      y = Math.max(14, Math.min(86, y))
+      arr.push(y)
+    }
+    setPoints(arr)
+  }, [])
+
+  // Animate the line drawing itself
+  useEffect(() => {
+    if (points.length === 0) return
+    if (pathRef.current?.getTotalLength) setPathLen(pathRef.current.getTotalLength())
+    let raf
+    const t0 = performance.now()
+    const tick = (now) => {
+      const p = Math.min((now - t0) / 1800, 1)
+      setDrawn(p)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [points])
+
+  if (points.length === 0) return null
+
+  const W = 320, H = 100
+  const step = W / (points.length - 1)
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${(i * step).toFixed(2)} ${p.toFixed(2)}`).join(' ')
+  const fill = `${line} L ${W} ${H} L 0 ${H} Z`
+  const tipX = (points.length - 1) * step
+  const tipY = points[points.length - 1]
+  const whole = Math.floor(val)
+  const cents = (val - whole).toFixed(2).slice(2)
+
   return (
-    <div className="lp-chart-bars">
-      {bars.map((h, i) => (
-        <div key={i} className="lp-chart-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.12}s` }} />
-      ))}
+    <div className="lp-live-card">
+      <div className="lp-live-header">
+        <span className="lp-live-label">{label}</span>
+        <span className="lp-live-status"><span className="lp-live-dot-anim" />LIVE</span>
+      </div>
+      <div className="lp-live-value">
+        ${whole.toLocaleString()}<span className="lp-live-cents">.{cents}</span>
+      </div>
+      <div className="lp-live-change">{change}</div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="lp-live-chart">
+        <defs>
+          <linearGradient id="lp-live-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="#00e676" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#00e676" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={fill} fill="url(#lp-live-fill)" opacity={drawn} />
+        <path
+          ref={pathRef}
+          d={line}
+          fill="none"
+          stroke="#00e676"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={pathLen}
+          strokeDashoffset={pathLen * (1 - drawn)}
+          style={{ filter: 'drop-shadow(0 0 8px rgba(0,230,118,0.55))' }}
+        />
+        {drawn > 0.96 && (
+          <circle cx={tipX} cy={tipY} r="4.5" fill="#00e676" className="lp-live-tip" />
+        )}
+      </svg>
     </div>
   )
 }
@@ -160,9 +211,8 @@ export default function Landing() {
             onClick={handleLogoPulse}
             aria-label="WalletLens"
           >
+            <span className="lp-logo-halo" />
             <span className="lp-logo-ring lp-logo-ring-1" />
-            <span className="lp-logo-ring lp-logo-ring-2" />
-            <span className="lp-logo-ring lp-logo-ring-3" />
             <Logo size={88} />
           </button>
 
@@ -199,13 +249,7 @@ export default function Landing() {
         </div>
 
         <div className="lp-hero-mockup">
-          <div className="lp-mockup-card">
-            <div className="lp-mockup-label">{t('mockupLabel')}</div>
-            <div className="lp-mockup-value">$248,750<span className="lp-mockup-cents">.42</span></div>
-            <div className="lp-mockup-change up">{t('mockupChange')}</div>
-            <ChartBars />
-          </div>
-          <MockTicker />
+          <LiveMockup label={t('mockupLabel')} change={t('mockupChange')} />
         </div>
       </section>
 
