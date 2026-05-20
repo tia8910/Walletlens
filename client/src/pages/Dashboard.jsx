@@ -1566,7 +1566,6 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
     { id: 'ai',     label: 'AI Analysis' },
     { id: 'risk',   label: 'Risk Scanner' },
     { id: 'budget', label: 'Risk Budget' },
-    { id: 'eval',   label: 'Eval' },
   ]
   return (
     <div>
@@ -1583,7 +1582,6 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
       {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={(isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value }))} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
       {tool === 'budget' && <Suspense fallback={<TabFallback />}><RiskBudget enriched={isDemo ? [] : enriched} totalValue={totalValue} /></Suspense>}
-      {tool === 'eval'   && <WalletEvalTab enriched={isDemo ? [] : enriched} totalValue={totalValue} targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))} />}
     </div>
   )
 }
@@ -2349,6 +2347,15 @@ export default function Dashboard() {
               totalValue={totalValue}
               totalInvested={totalInvested}
             /></Suspense>
+          )}
+
+          {/* Wallet Evaluation — moved from Analysis tab */}
+          {enriched.length > 0 && (
+            <WalletEvalTab
+              enriched={enriched}
+              totalValue={totalValue}
+              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
+            />
           )}
 
           {/* Portfolio Heatmap */}
