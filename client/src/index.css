@@ -7955,3 +7955,158 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .si-cell-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
 [data-wl-light] .si-remove-btn { color: rgba(0,0,0,0.25); }
 [data-wl-light] .si-select { background: rgba(0,0,0,0.04); }
+
+/* ══════════════════════════════════════════════════════════
+   WELCOME MODAL v2 — Creative onboarding bottom sheet
+   ══════════════════════════════════════════════════════════ */
+@keyframes wm-float-up {
+  0%   { opacity: 0; transform: translateY(0) scale(0.7); }
+  12%  { opacity: 0.75; }
+  85%  { opacity: 0.25; }
+  100% { opacity: 0; transform: translateY(-130px) scale(0.4); }
+}
+@keyframes wm-sheet-in  { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes wm-body-in   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes wm-icon-pop  { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes wm-pill-in   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.wm-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+@media (min-height: 680px) and (min-width: 480px) {
+  .wm-overlay { align-items: center; padding: 1rem; }
+  .wm-sheet   { border-radius: 28px !important; box-shadow: 0 24px 80px rgba(0,0,0,0.7) !important; }
+}
+
+.wm-sheet {
+  width: 100%; max-width: 430px;
+  border-radius: 28px 28px 0 0;
+  overflow: hidden;
+  box-shadow: 0 -8px 48px rgba(0,0,0,0.65);
+  animation: wm-sheet-in 0.45s cubic-bezier(0.34,1.44,0.64,1);
+}
+
+.wm-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.22);
+  margin: 10px auto 0;
+}
+
+.wm-header {
+  position: relative; overflow: hidden;
+  padding: 1.25rem 1.5rem 2rem;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 210px;
+}
+
+.wm-blob {
+  position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+  width: 300px; height: 200px; border-radius: 50%;
+  filter: blur(70px); opacity: 0.55; pointer-events: none;
+}
+
+.wm-particles {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+}
+.wm-particle {
+  position: absolute; bottom: 0;
+  font-size: 1.05rem; opacity: 0; user-select: none;
+  animation: wm-float-up linear infinite;
+}
+
+.wm-icon-ring {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: rgba(255,255,255,0.09);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0.75rem 0 0.9rem;
+  position: relative; z-index: 1;
+  animation: wm-icon-pop 0.5s cubic-bezier(0.34,1.5,0.64,1);
+}
+.wm-icon { font-size: 2.1rem; }
+
+.wm-eyebrow {
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em;
+  margin-bottom: 0.3rem; position: relative; z-index: 1;
+}
+.wm-title {
+  font-size: 2rem; font-weight: 900; line-height: 1.1;
+  position: relative; z-index: 1;
+}
+.wm-title-grad {
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+.wm-body {
+  background: #0f1c14;
+  padding: 1.5rem 1.5rem 1.75rem;
+  animation: wm-body-in 0.35s ease;
+}
+
+.wm-desc {
+  font-size: 0.9rem; color: rgba(255,255,255,0.68);
+  line-height: 1.65; margin-bottom: 1.1rem;
+  text-align: center;
+}
+
+.wm-features {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  justify-content: center; margin-bottom: 1.25rem;
+}
+.wm-pill {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 0.28rem 0.7rem;
+  font-size: 0.77rem; font-weight: 600; color: rgba(255,255,255,0.82);
+  animation: wm-pill-in 0.4s ease both;
+}
+
+.wm-progress-track {
+  height: 3px; background: rgba(255,255,255,0.08);
+  border-radius: 2px; overflow: hidden; margin-bottom: 0.55rem;
+}
+.wm-progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+.wm-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 1.15rem; }
+.wm-dot {
+  width: 6px; height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.3s ease;
+}
+.wm-dot-active { width: 22px !important; }
+.wm-dot-done   { opacity: 0.55; }
+
+.wm-cta {
+  width: 100%; padding: 0.88rem;
+  border: none; border-radius: 14px;
+  font-weight: 800; font-size: 1rem; color: #000;
+  cursor: pointer; letter-spacing: 0.01em;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-bottom: 0.55rem;
+}
+.wm-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+
+.wm-skip {
+  display: block; width: 100%; text-align: center;
+  background: none; border: none;
+  color: rgba(255,255,255,0.3); font-size: 0.8rem;
+  cursor: pointer; padding: 0.25rem;
+  transition: color 0.15s;
+}
+.wm-skip:hover { color: rgba(255,255,255,0.55); }
+
+/* Light mode */
+[data-wl-light] .wm-body      { background: #ffffff; }
+[data-wl-light] .wm-desc      { color: rgba(0,0,0,0.62); }
+[data-wl-light] .wm-pill      { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.78); }
+[data-wl-light] .wm-progress-track { background: rgba(0,0,0,0.08); }
+[data-wl-light] .wm-dot       { background: rgba(0,0,0,0.14); }
+[data-wl-light] .wm-handle    { background: rgba(255,255,255,0.3); }
+[data-wl-light] .wm-skip      { color: rgba(0,0,0,0.32); }
+[data-wl-light] .wm-skip:hover { color: rgba(0,0,0,0.55); }
