@@ -185,7 +185,7 @@ export default function SmartImport({ wallets, onImported }) {
 
   // ── Screenshot handler ──────────────────────────────────────────────────
   async function handleScreenshot(file) {
-    const apiKey = localStorage.getItem(KEY_STORAGE)
+    const apiKey = localStorage.getItem(KEY_STORAGE) || import.meta.env.VITE_ANTHROPIC_KEY
     if (!apiKey) {
       showMsg('No API key found. Please enter your Anthropic API key in the AI Advisor section first.')
       return

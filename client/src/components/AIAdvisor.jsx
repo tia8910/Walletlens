@@ -165,7 +165,7 @@ const ChatBubble = memo(function ChatBubble({ role, content }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function AIAdvisor({ portfolio, prices, transactions, coinTargets, totalValue, totalInvested, totalPnL }) {
-  const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORAGE) || '')
+  const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORAGE) || import.meta.env.VITE_ANTHROPIC_KEY || '')
   const [keyInput, setKeyInput]   = useState('')
   const [showKey, setShowKey]     = useState(false)
   const [mode, setMode]           = useState('analysis') // 'analysis' | 'chat'
