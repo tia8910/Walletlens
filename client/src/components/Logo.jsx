@@ -11,8 +11,6 @@ export default function Logo({ size = 32, animated = false, className = '' }) {
       <circle cx="50" cy="50" r="47" fill="none" style={{ stroke: 'var(--g)', opacity: 0.25 }} strokeWidth="1.5" />
       {/* green lens ring */}
       <circle cx="50" cy="50" r="38" fill="none" style={{ stroke: 'var(--g)' }} strokeWidth="7" />
-      {/* dark iris circle (offset like a lens) */}
-      <circle cx="43" cy="44" r="18" style={{ fill: 'var(--bg)' }} />
       {/* inner green fill circle (pupil/light) */}
       <circle cx="50" cy="50" r="16" style={{ fill: 'var(--g)' }} />
       {/* highlight specular */}
