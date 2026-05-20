@@ -842,10 +842,19 @@
 [data-wl-light] .acad-toast-title    { color: var(--text-sub); }
 
 /* ── Tour overlay (tour-*) ── */
+[data-wl-light] .tour-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
 [data-wl-light] .tour-title { color: var(--text); }
 [data-wl-light] .tour-desc  { color: var(--text-muted); }
 [data-wl-light] .tour-skip  { color: var(--text-sub); }
+[data-wl-light] .tour-skip:hover { color: var(--text-muted); }
 [data-wl-light] .tour-step-count { color: var(--text-sub); }
+[data-wl-light] .tour-dot { background: rgba(0,0,0,0.12); }
+[data-wl-light] .tour-dot-done { background: rgba(0,0,0,0.3); }
+[data-wl-light] .tour-progress-bar { background: rgba(0,0,0,0.07); }
 
 /* ── Milestone popup (ms-*) ── */
 [data-wl-light] .ms-title    { color: var(--text); }
