@@ -841,11 +841,7 @@
 [data-wl-light] .acad-hack-chevron   { color: var(--text-sub); }
 [data-wl-light] .acad-toast-title    { color: var(--text-sub); }
 
-/* ── Tour overlay (tour-*) ── */
-[data-wl-light] .tour-title { color: var(--text); }
-[data-wl-light] .tour-desc  { color: var(--text-muted); }
-[data-wl-light] .tour-skip  { color: var(--text-sub); }
-[data-wl-light] .tour-step-count { color: var(--text-sub); }
+/* ── Tour overlay — light mode overrides now live in tour CSS block ── */
 
 /* ── Milestone popup (ms-*) ── */
 [data-wl-light] .ms-title    { color: var(--text); }
@@ -6577,42 +6573,137 @@ input[type="date"] { color-scheme: dark; }
 .guessr-result-wrong-opt { background: rgba(248,113,113,0.15); color: #f87171; text-decoration: line-through; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── Onboarding Tour ───────────────────────────────────────────────────── */
+/* ── Onboarding Tour (v2) ──────────────────────────────────────────────── */
+/* shared fade animations */
 .tour-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); padding: 0 0 env(safe-area-inset-bottom,0); }
 @media (min-height: 600px) { .tour-overlay { align-items: center; } }
-.tour-open { animation: tourFadeIn 0.25s ease; }
+.tour-open    { animation: tourFadeIn  0.25s ease; }
 .tour-closing { animation: tourFadeOut 0.28s ease forwards; }
-@keyframes tourFadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes tourFadeIn  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes tourFadeOut { from { opacity: 1 } to { opacity: 0 } }
 
-.tour-card { position: relative; background: rgba(17,17,34,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px 24px 0 0; padding: 1.5rem 1.5rem 1.75rem; width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 0.85rem; text-align: center; animation: tourSlideUp 0.3s cubic-bezier(.22,1,.36,1); }
-@media (min-height: 600px) { .tour-card { border-radius: 24px; max-width: 420px; } }
+/* ── Card step (tour-card2) ── */
+.tour-card2 {
+  position: relative; overflow: hidden;
+  width: 100%; max-width: 440px;
+  border-radius: 28px 28px 0 0;
+  background: #0d1117;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.5);
+  animation: tourSlideUp 0.32s cubic-bezier(.22,1,.36,1);
+  display: flex; flex-direction: column;
+}
+@media (min-height: 600px) { .tour-card2 { border-radius: 28px; } }
 @keyframes tourSlideUp { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 
-.tour-skip { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: rgba(255,255,255,0.35); font-size: 0.78rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; }
-.tour-skip:hover { color: rgba(255,255,255,0.6); }
+.tour-card2-header {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 2rem 1.5rem 1.5rem;
+  position: relative; min-height: 160px; justify-content: flex-end;
+}
+.tour-card2-skip {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.1); border: none; border-radius: 8px;
+  color: rgba(255,255,255,0.55); font-size: 0.75rem; font-weight: 600;
+  padding: 0.3rem 0.65rem; cursor: pointer; transition: background 0.15s;
+}
+.tour-card2-skip:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.tour-card2-icon-wrap {
+  width: 80px; height: 80px; border-radius: 24px;
+  display: flex; align-items: center; justify-content: center;
+  animation: tour-icon-float 2.8s ease-in-out infinite;
+}
+@keyframes tour-icon-float { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-6px) rotate(2deg) } }
+.tour-card2-icon { font-size: 2.8rem; }
+.tour-card2-subtitle { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.75rem; }
 
-.tour-dots { display: flex; gap: 5px; }
-.tour-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s, transform 0.2s; }
-.tour-dot-active { transform: scale(1.35); }
-.tour-dot-done { background: rgba(255,255,255,0.35); }
+.tour-card2-body {
+  background: var(--tour-body-bg, #111827);
+  padding: 1.4rem 1.5rem 1.75rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.7rem; text-align: center;
+}
+.tour-card2-title { font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1.25; }
+.tour-card2-desc  { font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.65; max-width: 330px; }
 
-.tour-progress-bar { width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-.tour-progress-fill { height: 100%; border-radius: 2px; transition: width 0.35s ease; }
+.tour-card2-dots { display: flex; gap: 5px; margin-top: 0.25rem; }
+.tour-card2-dot  { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s, transform 0.2s; }
+.tour-card2-dot.active { transform: scale(1.5); }
+.tour-card2-dot.done   { background: rgba(255,255,255,0.35); }
 
-.tour-icon { font-size: 2.6rem; width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+.tour-card2-progress { width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.tour-card2-progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
 
-.tour-title { font-size: 1.2rem; font-weight: 800; color: #fff; line-height: 1.3; }
-.tour-desc { font-size: 0.86rem; color: rgba(255,255,255,0.62); line-height: 1.65; max-width: 340px; }
+.tour-card2-cta {
+  width: 100%; padding: 0.95rem; border-radius: 16px; border: none;
+  color: #000; font-size: 0.95rem; font-weight: 800;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  margin-top: 0.2rem;
+}
+.tour-card2-cta:hover  { opacity: 0.88; }
+.tour-card2-cta:active { transform: scale(0.97); }
 
-.tour-nav-btn { border: 1px solid; border-radius: 10px; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
-.tour-nav-btn:hover { opacity: 0.8; }
+/* light mode: card body becomes white */
+[data-wl-light] .tour-card2 { background: #f0f4f8; }
+[data-wl-light] .tour-card2-body { background: #ffffff; }
+[data-wl-light] .tour-card2-title { color: #0f1a14; }
+[data-wl-light] .tour-card2-desc  { color: rgba(15,26,20,0.6); }
+[data-wl-light] .tour-card2-dot   { background: rgba(0,0,0,0.12); }
+[data-wl-light] .tour-card2-dot.done { background: rgba(0,0,0,0.3); }
+[data-wl-light] .tour-card2-progress { background: rgba(0,0,0,0.07); }
+[data-wl-light] .tour-card2-skip { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); }
+[data-wl-light] .tour-card2-skip:hover { background: rgba(0,0,0,0.12); color: #000; }
 
-.tour-step-count { font-size: 0.72rem; color: rgba(255,255,255,0.3); }
+/* ── Spotlight step ── */
+.tour-sp-root {
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: auto; cursor: pointer;
+}
+.tour-sp-hole {
+  position: fixed; border-radius: 12px; pointer-events: none;
+  animation: spotlight-pulse 2.5s ease-in-out infinite;
+}
+@keyframes spotlight-pulse {
+  0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.72), 0 0 0 2.5px var(--sp-accent,#fff), 0 0 18px 4px rgba(255,255,255,0.1); }
+  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.72), 0 0 0 3px   var(--sp-accent,#fff), 0 0 28px 8px rgba(255,255,255,0.18); }
+}
 
-.tour-cta { width: 100%; padding: 0.9rem; border-radius: 14px; border: none; color: #000; font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 0.25rem; }
-.tour-cta:hover { opacity: 0.88; }
-.tour-cta:active { transform: scale(0.97); }
+/* Tooltip card */
+.tour-tt {
+  position: fixed; z-index: 10000; pointer-events: auto; cursor: default;
+  background: #0d1117; border-radius: 18px; padding: 1.1rem 1.2rem;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
+  animation: tourFadeIn 0.2s ease;
+}
+.tour-tt-above { transform: translateY(-100%) translateY(-12px); }
+.tour-tt-below { transform: translateY(0); }
+
+.tour-tt-arrow {
+  position: absolute; width: 0; height: 0; pointer-events: none;
+  border-left: 9px solid transparent; border-right: 9px solid transparent;
+}
+.tour-tt-arrow-down { bottom: -9px; border-top: 9px solid #0d1117; }
+.tour-tt-arrow-up   { top: -9px;    border-bottom: 9px solid #0d1117; }
+
+.tour-tt-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+.tour-tt-icon  { font-size: 1.5rem; }
+.tour-tt-skip  { background: none; border: none; color: rgba(255,255,255,0.35); font-size: 0.72rem; cursor: pointer; padding: 0.2rem 0; }
+.tour-tt-skip:hover { color: rgba(255,255,255,0.6); }
+.tour-tt-title { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; }
+.tour-tt-desc  { font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.55; }
+.tour-tt-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; }
+.tour-tt-count { font-size: 0.68rem; color: rgba(255,255,255,0.3); }
+.tour-tt-cta { border: none; border-radius: 10px; padding: 0.5rem 1.1rem; font-size: 0.82rem; font-weight: 800; color: #000; cursor: pointer; transition: opacity 0.15s; }
+.tour-tt-cta:hover { opacity: 0.85; }
+
+/* light mode tooltip */
+[data-wl-light] .tour-tt { background: #fff; border-color: rgba(0,0,0,0.08); box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+[data-wl-light] .tour-tt-arrow-down { border-top-color: #fff; }
+[data-wl-light] .tour-tt-arrow-up   { border-bottom-color: #fff; }
+[data-wl-light] .tour-tt-title { color: #0f1a14; }
+[data-wl-light] .tour-tt-desc  { color: rgba(15,26,20,0.6); }
+[data-wl-light] .tour-tt-skip  { color: rgba(15,26,20,0.35); }
+[data-wl-light] .tour-tt-skip:hover { color: rgba(15,26,20,0.7); }
+[data-wl-light] .tour-tt-count { color: rgba(15,26,20,0.3); }
+
 
 /* AI Decision Engine — Claude badge + tip */
 .ade-ai-badge { font-size: 0.65rem; font-weight: 700; background: linear-gradient(135deg,#a78bfa,#60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-left: 0.5rem; letter-spacing: 0.04em; }
