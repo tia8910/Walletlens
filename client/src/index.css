@@ -5144,7 +5144,7 @@ select.bs-input option { background: var(--bg3); }
 .lp-cta-primary {
   display: flex; align-items: center; gap: 0.5rem;
   background: linear-gradient(135deg, var(--g), var(--gd));
-  color: #000; font-weight: 800; font-size: 0.95rem;
+  color: #fff; font-weight: 800; font-size: 0.95rem;
   border: none; border-radius: 14px;
   padding: 0.8rem 1.6rem;
   cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
