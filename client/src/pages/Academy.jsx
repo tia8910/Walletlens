@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
+import { useTheme } from '../ThemeContext'
 
 // ── Persistence helpers ───────────────────────────────────────────────────
 const STORE_KEY = 'wl_academy_v1'
@@ -303,6 +304,15 @@ const CAT_COLORS = {
   Portfolio: '#60a5fa', Profit: '#fbbf24', Psychology: '#f472b6',
   Research: '#38bdf8',
 }
+const CAT_COLORS_LIGHT = {
+  Entry:      '#15803d',
+  Risk:       '#dc2626',
+  Strategy:   '#6d28d9',
+  Portfolio:  '#1d4ed8',
+  Profit:     '#b45309',
+  Psychology: '#be185d',
+  Research:   '#0369a1',
+}
 
 // ── Achievements definition ───────────────────────────────────────────────
 const ACHIEVEMENTS = [
@@ -482,6 +492,8 @@ function HackCard({ hack, color }) {
 
 // ─────────────────────────────────────────────────────────────────────────
 export default function Academy() {
+  const { mode: themeMode } = useTheme()
+  const isLight = themeMode === 'light'
   const [store, setStore] = useState(loadStore)
   const [phase, setPhase]         = useState('idle')  // idle | playing | result | explanation
   const [selected, setSelected]   = useState(null)
@@ -794,7 +806,8 @@ export default function Academy() {
       {activeTab === 'hacks' && (
         <div className="acad-hacks-list">
           {HACKS.map((h, i) => {
-            const color = CAT_COLORS[h.cat] || '#a78bfa'
+            const palette = isLight ? CAT_COLORS_LIGHT : CAT_COLORS
+            const color = palette[h.cat] || (isLight ? '#15803d' : '#a78bfa')
             return (
               <HackCard key={i} hack={h} color={color} />
             )
