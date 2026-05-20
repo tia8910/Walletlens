@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTheme } from '../ThemeContext'
 
 const PROXIES = [
   u => 'https://corsproxy.io/?' + encodeURIComponent(u),
@@ -150,24 +151,33 @@ function avgCostLabel(currentPrice, userAvgCost) {
   return { label: `Near your avg cost`, score: 0, warn: false }
 }
 
-function verdict(totalScore, mode) {
+function verdict(totalScore, mode, isLight) {
+  // Light-mode swaps for low-contrast pastels
+  const greenSoft = isLight ? '#15803d' : '#86efac'
+  const neutral   = isLight ? '#475569' : '#94a3b8'
+  const orange    = isLight ? '#c2410c' : '#fb923c'
+  const redSoft   = isLight ? '#b91c1c' : '#f87171'
+  const greenBold = isLight ? '#15803d' : '#22c55e'
+  const redBold   = isLight ? '#b91c1c' : '#ef4444'
+
   if (mode === 'sell') {
-    // For sell: high score = good exit (price elevated), low = bad exit (price down)
-    if (totalScore >= 3)  return { text: 'Great Exit',       color: '#22c55e', bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
-    if (totalScore >= 1)  return { text: 'Decent Exit',      color: '#86efac', bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
-    if (totalScore === 0) return { text: 'Neutral',           color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
-    if (totalScore >= -1) return { text: 'Selling Low',      color: '#fb923c', bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
-    return                       { text: 'Wait for Recovery', color: '#f87171', bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
+    if (totalScore >= 3)  return { text: 'Great Exit',        color: greenBold, bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
+    if (totalScore >= 1)  return { text: 'Decent Exit',       color: greenSoft, bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
+    if (totalScore === 0) return { text: 'Neutral',           color: neutral,   bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
+    if (totalScore >= -1) return { text: 'Selling Low',       color: orange,    bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
+    return                       { text: 'Wait for Recovery', color: redSoft,   bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
   }
-  if (totalScore >= 3)  return { text: 'Strong Entry',   color: '#22c55e', bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
-  if (totalScore >= 1)  return { text: 'Decent Entry',   color: '#86efac', bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
-  if (totalScore === 0) return { text: 'Neutral',         color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
-  if (totalScore >= -1) return { text: 'Be Cautious',    color: '#fb923c', bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
-  if (totalScore >= -2) return { text: 'FOMO Risk',      color: '#f87171', bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
-  return                       { text: 'Don\'t Buy Now', color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   emoji: '🔴' }
+  if (totalScore >= 3)  return { text: 'Strong Entry',   color: greenBold, bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
+  if (totalScore >= 1)  return { text: 'Decent Entry',   color: greenSoft, bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
+  if (totalScore === 0) return { text: 'Neutral',        color: neutral,   bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
+  if (totalScore >= -1) return { text: 'Be Cautious',    color: orange,    bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
+  if (totalScore >= -2) return { text: 'FOMO Risk',      color: redSoft,   bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
+  return                       { text: 'Don\'t Buy Now', color: redBold,   bg: 'rgba(239,68,68,0.12)',   emoji: '🔴' }
 }
 
 export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'buy' }) {
+  const { mode: themeMode } = useTheme()
+  const isLight = themeMode === 'light'
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed]   = useState(false)
@@ -225,7 +235,13 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
   // For sell mode, invert the score: good entry signals = bad sell signals
   const rawScore = signals.reduce((s, sig) => s + (sig.score || 0), 0)
   const totalScore = mode === 'sell' ? -rawScore : rawScore
-  const v = verdict(totalScore, mode)
+  const v = verdict(totalScore, mode, isLight)
+
+  const valueGood = isLight ? '#15803d' : '#86efac'
+  const valueWarn = isLight ? '#c2410c' : '#fb923c'
+  const adviceWarnColor = isLight ? '#b91c1c' : '#fca5a5'
+  const adviceGoodColor = isLight ? '#15803d' : '#86efac'
+  const labelColor = isLight ? 'rgba(0,0,0,0.7)' : 'var(--text-muted)'
 
   const rows = [
     { icon: pct24h >= 0 ? '📈' : '📉', label: '24h move',     value: `${pct24h >= 0 ? '+' : ''}${pct24h.toFixed(1)}%`, warn: pct24h > 10 },
@@ -255,33 +271,33 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>{r.icon} {r.label}</span>
-            <span style={{ fontWeight: 700, color: r.warn ? '#fb923c' : '#86efac' }}>{r.value}</span>
+            <span style={{ color: labelColor }}>{r.icon} {r.label}</span>
+            <span style={{ fontWeight: 700, color: r.warn ? valueWarn : valueGood }}>{r.value}</span>
           </div>
         ))}
       </div>
 
       {/* Contextual advice */}
       {mode === 'buy' && totalScore <= -2 && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: '#fca5a5', lineHeight: 1.5,
+        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceWarnColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
           ⚠️ Prices may be elevated due to recent hype. Consider waiting for a dip or splitting your buy over several days.
         </div>
       )}
       {mode === 'buy' && totalScore >= 2 && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: '#86efac', lineHeight: 1.5,
+        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceGoodColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(134,239,172,0.06)', borderRadius: 8 }}>
           💡 This looks like a reasonable entry point. Still consider DCA — split across 2–3 buys.
         </div>
       )}
       {mode === 'sell' && totalScore >= 2 && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: '#86efac', lineHeight: 1.5,
+        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceGoodColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(134,239,172,0.06)', borderRadius: 8 }}>
           💡 Price looks elevated — good time to take profit. Consider selling in parts to avoid missing further upside.
         </div>
       )}
       {mode === 'sell' && totalScore <= -2 && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: '#fca5a5', lineHeight: 1.5,
+        <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceWarnColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
           ⚠️ You may be selling at a low. Unless you need the funds urgently, consider waiting for a recovery.
         </div>
