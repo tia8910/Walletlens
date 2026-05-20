@@ -156,8 +156,8 @@ function LiveMockup({ label, change }) {
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="lp-live-chart">
         <defs>
           <linearGradient id="lp-live-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#00e676" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#00e676" stopOpacity="0" />
+            <stop offset="0%"   stopColor="#00ff84" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#00ff84" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={fill} fill="url(#lp-live-fill)" opacity={drawn} />
@@ -165,16 +165,16 @@ function LiveMockup({ label, change }) {
           ref={pathRef}
           d={line}
           fill="none"
-          stroke="#00e676"
+          stroke="#00ff84"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray={pathLen}
           strokeDashoffset={pathLen * (1 - drawn)}
-          style={{ filter: 'drop-shadow(0 0 8px rgba(0,230,118,0.55))' }}
+          style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,132,0.55))' }}
         />
         {drawn > 0.96 && (
-          <circle cx={tipX} cy={tipY} r="4.5" fill="#00e676" className="lp-live-tip" />
+          <circle cx={tipX} cy={tipY} r="4.5" fill="#00ff84" className="lp-live-tip" />
         )}
       </svg>
     </div>
@@ -438,7 +438,7 @@ export default function Landing() {
         <p className="lp-section-sub">{t('aiSub')}</p>
         <div className="lp-ai-grid">
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(0,230,118,0.12)',color:'#00e676'}}>
+            <div className="lp-ai-feat-icon" style={{background:'rgba(0,255,132,0.12)',color:'#00ff84'}}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div>
