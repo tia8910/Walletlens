@@ -5223,7 +5223,11 @@ select.bs-input option { background: var(--bg3); }
 }
 .lp-stat-item {
   display: flex; flex-direction: column; align-items: center;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
+}
+@media (min-width: 769px) and (max-width: 960px) {
+  .lp-stat-sep { display: none; }
+  .lp-stat-item { flex: 1; padding: 0.75rem 0.5rem; }
 }
 .lp-stat-val {
   font-size: 2rem; font-weight: 900;
@@ -5264,7 +5268,7 @@ select.bs-input option { background: var(--bg3); }
 .lp-feat-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 @media (min-width: 600px) { .lp-feat-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) { .lp-feat-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -5354,7 +5358,7 @@ select.bs-input option { background: var(--bg3); }
 .lp-final-h2 { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 900; color: #fff; margin: 0; }
 .lp-final-sub { font-size: 0.95rem; color: rgba(255,255,255,0.5); max-width: 380px; margin: 0; line-height: 1.6; }
 .lp-final-btn { font-size: 1.05rem; padding: 1rem 2rem; }
-.lp-final-links { display: flex; align-items: center; gap: 0.5rem; color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+.lp-final-links { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; }
 .lp-link { background: none; border: none; color: rgba(var(--g-rgb),0.6); font-size: 0.8rem; cursor: pointer; font-family: inherit; font-weight: 600; }
 .lp-link:hover { color: var(--g); }
 
@@ -5423,6 +5427,35 @@ select.bs-input option { background: var(--bg3); }
 }
 /* remove old static glow divs if any remain */
 .lp-hero-glow { display: none; }
+
+/* ── Hero two-column layout on desktop ──────────────────────────────────── */
+@media (min-width: 960px) {
+  .lp-hero {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5rem;
+    padding: 5rem 4rem 4rem;
+    text-align: left;
+  }
+  .lp-hero-inner {
+    align-items: flex-start;
+    max-width: 500px;
+  }
+  .lp-hero-inner .lp-cta-row  { justify-content: flex-start; }
+  .lp-hero-inner .lp-badges   { justify-content: flex-start; }
+  .lp-hero-mockup {
+    display: flex !important;
+    margin-top: 0;
+    width: 380px;
+    flex-shrink: 0;
+    animation: lp-mockup-float 4s ease-in-out infinite;
+  }
+}
+@keyframes lp-mockup-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-14px); }
+}
 
 /* ── Bug fixes ─────────────────────────────────────────────────────────── */
 /* Transaction notes inline */
@@ -5596,7 +5629,7 @@ input[type="date"] { color-scheme: dark; }
 
 /* ── AI Showcase (Landing) ─────────────────────────────────────────────── */
 .lp-ai-showcase { background: transparent; }
-.lp-section-sub { color: var(--muted); font-size: .97rem; margin: -.5rem 0 2rem; max-width: 600px; }
+.lp-section-sub { color: var(--muted); font-size: .97rem; margin: -.5rem auto 2rem; max-width: 600px; text-align: center; }
 .lp-ai-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -5702,6 +5735,13 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .share-close { color: rgba(0,0,0,0.5); }
 [data-wl-light] .share-btn-dl   { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.8); }
 [data-wl-light] .share-btn-copy { background: rgba(var(--g-rgb),0.12); color: var(--g); border-color: rgba(var(--g-rgb),0.3); }
+
+/* Landing page — always dark canvas, force white text when in light mode */
+[data-wl-light] .lp-section-sub    { color: rgba(255,255,255,0.6) !important; }
+[data-wl-light] .lp-ai-feat-title  { color: #fff !important; }
+[data-wl-light] .lp-ai-feat-desc   { color: rgba(255,255,255,0.55) !important; }
+[data-wl-light] .lp-footer-brand   { color: rgba(255,255,255,0.5) !important; }
+[data-wl-light] .lp-footer-links a { color: rgba(255,255,255,0.5) !important; }
 
 /* ── Eye toggle / hidden values ────────────────────────────────────────── */
 .dvx-eye-btn {
@@ -6128,6 +6168,10 @@ input[type="date"] { color-scheme: dark; }
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 .lp-pain-card.lp-feat-vis { opacity: 1; transform: none; }
+.lp-pain-card:hover {
+  border-color: rgba(var(--g-rgb),0.22);
+  box-shadow: 0 6px 28px rgba(var(--g-rgb),0.07);
+}
 .lp-pain-emoji { font-size: 2rem; }
 .lp-pain-text {
   font-size: 0.92rem; line-height: 1.55; color: rgba(255,255,255,0.65);
