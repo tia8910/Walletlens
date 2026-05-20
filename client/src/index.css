@@ -1,5 +1,12 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* ── Global dark scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #000; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) #000; }
+
 :root {
   /* Brand palette — neon mint on black */
   --g: #00ff84;
