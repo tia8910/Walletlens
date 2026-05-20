@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
 export const THEMES = [
-  { id: 'emerald',  name: 'Emerald',  swatch: '#00ff84', light: '#a7f3d0', icon: '🟢' },
+  { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: '🟢' },
   { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: '🥇' },
   { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: '🥈' },
   { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿'  },
@@ -12,21 +12,21 @@ export const THEMES = [
 const PALETTE = {
   emerald: {
     dark: {
-      g: '#00ff84', gd: '#00cc6a', gRgb: '0,255,132', gdRgb: '0,204,106',
-      gl: 'rgba(0,255,132,0.10)', ink3: 'rgba(0,255,132,0.55)',
+      g: '#00ffaa', gd: '#00d68a', gRgb: '0,255,170', gdRgb: '0,214,138',
+      gl: 'rgba(0,255,170,0.10)', ink3: 'rgba(0,255,170,0.55)',
       bg: '#080f0c', cardBg: 'rgba(14,22,18,0.92)',
       bg3: '#0d1610', bg4: '#122018',
-      border: 'rgba(0,255,132,0.35)',
+      border: 'rgba(0,255,170,0.35)',
       ink: '#050a07', ink2: '#0d1610',
-      text: '#ffffff', text2: 'rgba(0,255,132,0.75)',
+      text: '#ffffff', text2: 'rgba(0,255,170,0.75)',
       textMuted: 'rgba(255,255,255,0.5)', textSub: 'rgba(255,255,255,0.3)',
       surface1: 'rgba(255,255,255,0.04)', surface2: 'rgba(255,255,255,0.08)', surface3: 'rgba(255,255,255,0.13)',
-      accent: '#00ff84', accent2: '#00cc6a', accentBg: 'rgba(0,255,132,0.09)',
-      green: '#00ff84', greenBg: 'rgba(0,255,132,0.10)',
-      hg: 'linear-gradient(135deg,#050a07 0%,#122018 50%,#00ff84 110%)',
-      hga: 'linear-gradient(135deg,#00ff84 0%,#00cc6a 100%)',
-      mesh1: 'rgba(0,255,132,0.05)', mesh2: 'rgba(0,204,106,0.03)', mesh3: 'rgba(0,255,132,0.04)',
-      glow: '0 0 0 1px rgba(0,255,132,0.25),0 0 40px rgba(0,255,132,0.15)',
+      accent: '#00ffaa', accent2: '#00d68a', accentBg: 'rgba(0,255,170,0.09)',
+      green: '#00ffaa', greenBg: 'rgba(0,255,170,0.10)',
+      hg: 'linear-gradient(135deg,#050a07 0%,#122018 50%,#00ffaa 110%)',
+      hga: 'linear-gradient(135deg,#00ffaa 0%,#00d68a 100%)',
+      mesh1: 'rgba(0,255,170,0.05)', mesh2: 'rgba(0,214,138,0.03)', mesh3: 'rgba(0,255,170,0.04)',
+      glow: '0 0 0 1px rgba(0,255,170,0.25),0 0 40px rgba(0,255,170,0.15)',
     },
     light: {
       g: '#00b85a', gd: '#008f45', gRgb: '0,184,90', gdRgb: '0,143,69',
