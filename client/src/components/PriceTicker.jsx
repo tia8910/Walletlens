@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { api } from '../api'
 
-// Top-of-page auto-scrolling live price strip — pulls top market caps
-// from CoinGecko, refreshes every 60s, animates with CSS marquee.
 const TICKER_REFRESH_MS = 60_000
 
 function fmtPrice(n) {
@@ -12,7 +10,7 @@ function fmtPrice(n) {
   return n.toLocaleString('en', { maximumFractionDigits: 4 })
 }
 
-export default function PriceTicker() {
+function PriceTicker() {
   const [items, setItems] = useState([])
 
   useEffect(() => {
@@ -89,3 +87,5 @@ export default function PriceTicker() {
     </div>
   )
 }
+
+export default memo(PriceTicker)

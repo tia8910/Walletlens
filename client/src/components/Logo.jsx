@@ -1,5 +1,7 @@
+import { memo } from 'react'
+
 // WalletLens SVG logo — matches the brand mark (green lens with iris)
-export default function Logo({ size = 32, animated = false, className = '' }) {
+function Logo({ size = 32, animated = false, className = '' }) {
   const r = size / 2
   return (
     <svg
@@ -18,3 +20,5 @@ export default function Logo({ size = 32, animated = false, className = '' }) {
     </svg>
   )
 }
+
+export default memo(Logo)

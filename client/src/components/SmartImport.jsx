@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from 'react'
-import * as XLSX from 'xlsx'
 import { api } from '../api'
 import { ANTHROPIC_KEY } from '../anthropic'
 
@@ -37,8 +36,9 @@ function fileToBase64(file) {
 function parseSpreadsheet(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx')
         const wb = XLSX.read(e.target.result, { type: 'array' })
         const ws = wb.Sheets[wb.SheetNames[0]]
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
