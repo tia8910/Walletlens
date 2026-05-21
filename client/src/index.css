@@ -5059,6 +5059,7 @@ select.bs-input option { background: var(--bg3); }
    ══════════════════════════════════════════════════════════════════════════ */
 .lp {
   min-height: 100vh;
+  background: #020f07; /* always dark — canvas is fixed/viewport-only, this fills scroll overflow */
   color: #fff;
   font-family: var(--font, 'Inter', sans-serif);
   overflow-x: hidden;
@@ -5303,7 +5304,7 @@ select.bs-input option { background: var(--bg3); }
 .lp-stats {
   display: flex; align-items: center; justify-content: center;
   flex-wrap: wrap; gap: 0;
-  background: rgba(6,20,12,0.6);
+  background: rgba(6,20,12,0.85);
   border-top: 1px solid rgba(var(--g-rgb),0.12);
   border-bottom: 1px solid rgba(var(--g-rgb),0.12);
   padding: 1.5rem 1rem;
@@ -5339,7 +5340,7 @@ select.bs-input option { background: var(--bg3); }
 }
 .lp-section-alt {
   max-width: 100%;
-  background: rgba(6,20,12,0.4);
+  background: rgba(6,20,12,0.75);
   border-top: 1px solid rgba(var(--g-rgb),0.08);
   border-bottom: 1px solid rgba(var(--g-rgb),0.08);
   padding: 5rem 1.25rem;
@@ -5459,6 +5460,7 @@ select.bs-input option { background: var(--bg3); }
 .lp-footer {
   display: flex; align-items: center; justify-content: center; gap: 0.6rem;
   padding: 1.5rem 1rem;
+  background: rgba(2,10,5,0.92);
   border-top: 1px solid rgba(255,255,255,0.06);
   font-size: 0.75rem;
   color: rgba(255,255,255,0.3);
@@ -5930,7 +5932,7 @@ input[type="date"] { color-scheme: dark; }
 .blog-cta-btn { display: inline-block; padding: .55rem 1.25rem; background: var(--g); color: #000; font-weight: 700; border-radius: 8px; text-decoration: none; font-size: .9rem; }
 
 /* Landing footer update */
-.lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+.lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: 2rem 1.25rem; background: rgba(2,10,5,0.92); }
 .lp-footer-brand { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; }
 .lp-cf-badge { height: 32px; width: auto; border-radius: 7px; opacity: 0.9; }
 .lp-footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
