@@ -194,7 +194,10 @@
   gap: 0.5rem; padding: 0.6rem 0.75rem 0.45rem;
   background: var(--bg3);
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.theme-strip::-webkit-scrollbar { display: none; }
 .theme-strip-heading {
   font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: rgba(255,255,255,0.35);
@@ -206,6 +209,7 @@
   border-radius: 14px;
   position: relative;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 .theme-strip-btn:hover { background: rgba(255,255,255,0.06); }
 .theme-strip-active { background: rgba(255,255,255,0.08) !important; }
@@ -4328,6 +4332,8 @@ tr:last-child td { border-bottom: none; }
   flex-direction: column;
   background: var(--bg);
   position: relative;
+  max-width: 100vw;
+  overflow-x: clip;
 }
 .wl-app-landing {
   overflow: hidden;
@@ -4395,6 +4401,8 @@ tr:last-child td { border-bottom: none; }
 .wl-content {
   flex: 1;
   width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
   padding-top: 100px; /* topbar height + ticker */
   padding-bottom: 4.5rem; /* bottom nav */
 }
@@ -4753,10 +4761,11 @@ tr:last-child td { border-bottom: none; }
   box-shadow: 0 -12px 60px rgba(var(--g-rgb),0.12), 0 -2px 0 rgba(var(--g-rgb),0.18);
   transform: translateY(100%);
   transition: transform 0.34s cubic-bezier(0.23,1,0.32,1);
-  max-height: 94dvh;
+  max-height: 80dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: env(safe-area-inset-bottom, 1rem);
+  display: flex; flex-direction: column;
 }
 .bs-sheet-open { transform: translateY(0); }
 @media (min-width: 640px) {
@@ -4778,12 +4787,16 @@ tr:last-child td { border-bottom: none; }
   background: rgba(var(--g-rgb),0.35);
   border-radius: 99px;
   margin: 14px auto 0;
+  flex-shrink: 0;
 }
 
 .bs-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.1rem 1.4rem 0.6rem;
   border-bottom: 1px solid rgba(var(--g-rgb),0.12);
+  position: sticky; top: 0; z-index: 2;
+  background: var(--card-bg);
+  flex-shrink: 0;
 }
 .bs-header-left { display: flex; align-items: center; gap: 0.7rem; }
 .bs-type-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
@@ -4797,7 +4810,11 @@ tr:last-child td { border-bottom: none; }
 }
 .bs-close:hover { background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.45); color: #fff; }
 
-.bs-body { padding: 0.8rem 1.4rem 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.bs-body { padding: 0.8rem 1.4rem 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 480px) {
+  .bs-body { padding: 0.75rem 1rem 1.5rem; gap: 0.85rem; }
+  .bs-label { font-size: 0.7rem; }
+}
 
 .bs-type-row { display: flex; }
 .bs-type-pill {
@@ -6330,7 +6347,8 @@ input[type="date"] { color-scheme: dark; }
 
   /* Prevent cards overflowing viewport */
   .glass-card { max-width: 100%; box-sizing: border-box; word-break: break-word; }
-  .dvx { padding: 0 0.1rem; }
+  .dvx { padding: 0 0.75rem; }
+  .theme-strip { justify-content: flex-start; }
 
   /* Risk scanner cards */
   .risk-card { padding: 0.9rem 1rem; }
