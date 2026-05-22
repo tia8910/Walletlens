@@ -1414,7 +1414,7 @@ function ConstellationMap() {
 
   return (
     <div style={{ position:'relative', width:'100%', height:260, margin:'0 auto 1.5rem' }}>
-      <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%' }} aria-hidden="true" />
+      <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none' }} aria-hidden="true" />
       {NODES.map((n, i) => (
         <div key={n.symbol} style={{
           position:'absolute',
