@@ -19,6 +19,7 @@ const Market       = lazy(() => import('./pages/Market'))
 const Whales       = lazy(() => import('./pages/Whales'))
 const Alpha        = lazy(() => import('./pages/Alpha'))
 const Academy      = lazy(() => import('./pages/Academy'))
+const Coach        = lazy(() => import('./pages/Coach'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
@@ -34,7 +35,9 @@ function IconHome()   { return <svg width="22" height="22" viewBox="0 0 24 24" f
 function IconTrades() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg> }
 function IconMarket() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg> }
 function IconWhale()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/><circle cx="7" cy="12" r="0.8" fill="currentColor"/></svg> }
-function IconAlpha()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg> }
+function IconAlpha()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg> }
+function IconAcademy() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> }
+function IconCoach()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg> }
 function IconBuy()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg> }
 function IconSell()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg> }
 function IconWallet() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8L2 7h20z"/><circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none"/></svg> }
@@ -127,14 +130,17 @@ function Drawer({ open, onClose }) {
           <div className="wl-drawer-label">Pages</div>
           <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>{t('market')}</span></button>
-          <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
+          <button className={active('/coach')} onClick={() => go('/coach')}>
+            <IconCoach /><span style={{ color: '#00c853' }}>Coach</span>
+          </button>
+          <button className={active('/academy')} onClick={() => go('/academy')}>
+            <IconAcademy /><span style={{ color: '#fbbf24' }}>Academy</span>
+          </button>
           <button className={active('/alpha')} onClick={() => go('/alpha')}>
             <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
           </button>
-          <button className={active('/academy')} onClick={() => go('/academy')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-            <span style={{ color: '#fbbf24' }}>Academy</span>
-          </button>
+          <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
+          <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
         </div>
 
         <div className="wl-drawer-section">
@@ -272,6 +278,7 @@ export default function App() {
               <Route path="/whales" element={<Whales />} />
               <Route path="/alpha" element={<Alpha />} />
               <Route path="/academy" element={<Academy />} />
+              <Route path="/coach" element={<Coach />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
@@ -292,9 +299,9 @@ export default function App() {
 
       <nav className="wl-bottom-nav">
         <NavLink to="/dashboard" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'dashboard' })}><IconHome /><span>{t('home')}</span></NavLink>
-        <NavLink to="/transactions" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'transactions' })}><IconTrades /><span>{t('trades')}</span></NavLink>
         <NavLink to="/market" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'market' })}><IconMarket /><span>{t('market')}</span></NavLink>
-        <NavLink to="/whales" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'whales' })}><IconWhale /><span>{t('whales')}</span></NavLink>
+        <NavLink to="/coach" className="wl-nav-item wl-nav-coach" onClick={() => track('bottom_nav', { to: 'coach' })}><IconCoach /><span>Coach</span></NavLink>
+        <NavLink to="/academy" className="wl-nav-item wl-nav-academy" onClick={() => track('bottom_nav', { to: 'academy' })}><IconAcademy /><span>Academy</span></NavLink>
         <NavLink to="/alpha" className="wl-nav-item wl-nav-alpha" onClick={() => track('bottom_nav', { to: 'alpha' })}><IconAlpha /><span>Alpha</span></NavLink>
       </nav>
     </div>
