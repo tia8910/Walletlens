@@ -189,6 +189,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [msg, setMsg]                   = useState('')
   const [success, setSuccess]           = useState(false)
   const [signalOpen, setSignalOpen]     = useState(false)
+  const [holdingsFilter, setHoldingsFilter] = useState('')
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -199,7 +200,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Reset form when sheet opens
   useEffect(() => {
     if (!open) return
-    setCoinSearch(''); setCoinResults([]); setMsg(''); setSuccess(false)
+    setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom('')
     setSellFor(''); setSellForCustom('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
@@ -422,7 +423,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <div className="bs-field">
               <label className="bs-label">Asset</label>
 
-              {/* Crypto: search */}
+              {/* Crypto: search (buy) or holdings list (sell) */}
               {category === 'crypto' && (
                 selectedCoin ? (
                   <div className="bs-coin-selected">
@@ -432,12 +433,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
                     </div>
                     {!prefillCoin && (
-                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch('') }}>
+                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setHoldingsFilter('') }}>
                         {IcoClose}
                       </button>
                     )}
                   </div>
-                ) : (
+                ) : isBuy ? (
                   <div className="bs-search-wrap">
                     <span className="bs-search-icon">{IcoSearch}</span>
                     <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
@@ -455,7 +456,54 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                     )}
                   </div>
-                )
+                ) : (() => {
+                  const cryptoHoldings = (holdings || []).filter(h =>
+                    !h.coin_id?.startsWith('fiat:') &&
+                    !h.coin_id?.startsWith('stock:') &&
+                    h.coin_id !== 'gold' && h.coin_id !== 'silver' &&
+                    !h.coin_id?.startsWith('bond:') &&
+                    !h.coin_id?.startsWith('other:') &&
+                    (h.amount ?? 0) > 0
+                  )
+                  const q = holdingsFilter.trim().toLowerCase()
+                  const filtered = q
+                    ? cryptoHoldings.filter(h =>
+                        h.coin_name?.toLowerCase().includes(q) ||
+                        h.coin_symbol?.toLowerCase().includes(q)
+                      )
+                    : cryptoHoldings
+                  if (!cryptoHoldings.length) return (
+                    <p className="bs-hint" style={{ margin: '0.4rem 0' }}>No crypto holdings yet. Add a buy trade first.</p>
+                  )
+                  return (
+                    <div className="bs-holdings-sel">
+                      {cryptoHoldings.length > 5 && (
+                        <div className="bs-search-wrap" style={{ marginBottom: '0.4rem' }}>
+                          <span className="bs-search-icon">{IcoSearch}</span>
+                          <input className="bs-input bs-search-input" placeholder="Filter holdings…"
+                            value={holdingsFilter} onChange={e => setHoldingsFilter(e.target.value)} />
+                        </div>
+                      )}
+                      <div className="bs-holdings-list">
+                        {filtered.map(h => (
+                          <button key={h.coin_id} className="bs-holding-row"
+                            onClick={() => setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })}>
+                            <CoinLogo image={h.coin_image || h.image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} className="bs-coin-thumb" />
+                            <div className="bs-coin-info">
+                              <strong>{h.coin_name}</strong>
+                              <span className="muted">{h.coin_symbol?.toUpperCase()}</span>
+                            </div>
+                            <div className="bs-holding-bal">
+                              <span className="bs-holding-amt">{parseFloat(h.amount?.toFixed(6))}</span>
+                              {h.value > 0 && <span className="muted" style={{ fontSize: '0.72rem' }}>${h.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                            </div>
+                          </button>
+                        ))}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                      </div>
+                    </div>
+                  )
+                })()
               )}
 
               {/* Gold / Silver: preset, no search needed */}
