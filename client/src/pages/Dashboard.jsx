@@ -2235,6 +2235,9 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
+          {/* Live news ticker — above buy/sell */}
+          <NewsTicker />
+
           {/* Quick Trade strip — always at top when portfolio exists */}
           {enriched.length > 0 && (
             <div ref={quickStripRef} style={{
@@ -2441,9 +2444,6 @@ export default function Dashboard() {
               <StatCard label={t('tradesCount')} value={transactions.length} />
             </div>
           )}
-
-          {/* Live news ticker — below stats, above grid */}
-          <NewsTicker />
 
           {/* Main grid */}
           <div className="dvx-grid">
