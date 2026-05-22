@@ -2858,28 +2858,6 @@ export default function Dashboard() {
         holdings={enriched}
       />
 
-      {/* ── Floating trade FAB ── */}
-      {!sheetOpen && (
-        <button
-          onClick={() => openSheet('buy', 'fab')}
-          title="Add a trade"
-          style={{
-            position: 'fixed', bottom: '80px', left: '16px', zIndex: 9000,
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'linear-gradient(135deg,var(--g),var(--gd))',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(var(--g-rgb),0.55), 0 0 0 0 rgba(var(--g-rgb),0.4)',
-            animation: 'fab-pulse 2.5s ease-in-out infinite',
-            color: '#000',
-          }}
-          aria-label="Add a trade"
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
-      )}
       {/* ── Nudge toast — appears after 20s idle ── */}
       {nudgeVisible && !sheetOpen && (
         <div style={{
