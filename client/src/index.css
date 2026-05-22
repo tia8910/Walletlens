@@ -4361,8 +4361,6 @@ tr:last-child td { border-bottom: none; }
 /* App shell */
 .wl-app {
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
   background: var(--bg);
   position: relative;
   max-width: 100vw;
@@ -4431,7 +4429,6 @@ tr:last-child td { border-bottom: none; }
 
 /* Main content — full width, no margin-left ever */
 .wl-content {
-  flex: 1;
   width: 100%;
   max-width: 100vw;
   padding-top: 100px; /* topbar height + ticker */
