@@ -331,7 +331,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   return (
     <>
-      <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} onClick={onClose} />
+      <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} />
       <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="bs-handle" />
 
