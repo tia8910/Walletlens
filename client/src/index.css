@@ -6673,6 +6673,12 @@ input[type="date"] { color-scheme: dark; }
 .wl-nav-alpha svg { color: #a78bfa; }
 .wl-nav-alpha span { color: #a78bfa; }
 .wl-nav-alpha.active svg, .wl-nav-alpha.active span { color: #c4b5fd; }
+.wl-nav-coach svg { color: #00c853; }
+.wl-nav-coach span { color: #00c853; }
+.wl-nav-coach.active svg, .wl-nav-coach.active span { color: #4ade80; }
+.wl-nav-academy svg { color: #fbbf24; }
+.wl-nav-academy span { color: #fbbf24; }
+.wl-nav-academy.active svg, .wl-nav-academy.active span { color: #fde68a; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    WalletLens Academy
@@ -8509,3 +8515,116 @@ input[type="date"] { color-scheme: dark; }
 /* Smart alerts */
 [data-wl-light] .sa-clear-btn  { color: rgba(0,0,0,0.4); }
 [data-wl-light] .sa-dismiss    { color: rgba(0,0,0,0.35); }
+
+/* ══════════════════════════════════════════════════════════
+   COACH PAGE — AI Portfolio Coach
+   ══════════════════════════════════════════════════════════ */
+.coach-hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(165deg, #020d05 0%, #051408 50%, #020d05 100%);
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  border-bottom: 1px solid rgba(0,200,83,0.12);
+}
+.coach-hero-glow {
+  position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+  width: 300px; height: 200px; border-radius: 50%;
+  background: rgba(0,200,83,0.12); filter: blur(60px); pointer-events: none;
+}
+.coach-hero-inner { display: flex; align-items: center; gap: 0.9rem; position: relative; }
+.coach-hero-icon {
+  width: 58px; height: 58px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,200,83,0.1);
+  border: 1.5px solid rgba(0,200,83,0.3);
+  box-shadow: 0 0 20px rgba(0,200,83,0.15);
+  display: flex; align-items: center; justify-content: center;
+  color: #00c853;
+}
+.coach-hero-title { margin: 0; font-size: 1.35rem; font-weight: 900; color: #fff; }
+.coach-hero-sub { margin: 0.15rem 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.45); }
+.coach-hero-score { position: relative; }
+.coach-score-pill {
+  display: flex; align-items: baseline; gap: 2px;
+  background: rgba(0,0,0,0.35); border: 1px solid;
+  border-radius: 12px; padding: 0.45rem 0.8rem;
+}
+.coach-score-num { font-size: 1.5rem; font-weight: 900; line-height: 1; }
+.coach-score-lbl { font-size: 0.7rem; font-weight: 600; opacity: 0.65; }
+
+.coach-tabs {
+  display: flex; gap: 0; overflow-x: auto;
+  padding: 0.75rem 1rem 0.5rem;
+  scrollbar-width: none;
+}
+.coach-tabs::-webkit-scrollbar { display: none; }
+.coach-tab {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.45rem 0.85rem; border-radius: 20px; border: none;
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5);
+  font-size: 0.78rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+  margin-right: 0.4rem; transition: all 0.18s;
+}
+.coach-tab:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+.coach-tab-active { background: rgba(0,200,83,0.15) !important; color: #00c853 !important; border: 1px solid rgba(0,200,83,0.28); }
+
+.coach-loading-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; color: rgba(255,255,255,0.45);
+  padding: 0.6rem 1rem; margin: 0.5rem 1rem;
+  background: rgba(255,255,255,0.04); border-radius: 8px;
+}
+.coach-loading-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--g); animation: pulse 1.4s ease-in-out infinite;
+}
+
+.coach-ring-wrap {
+  position: relative; width: 130px; height: 130px; flex-shrink: 0;
+}
+.coach-ring-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.coach-ring-score { font-size: 1.9rem; font-weight: 900; line-height: 1; }
+.coach-ring-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; margin-top: 0.1rem; }
+
+.coach-eval-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0.75rem 1rem; }
+.coach-eval-header-left { flex: 1; }
+.coach-eval-title { margin: 0; font-size: 1.15rem; font-weight: 900; }
+
+.coach-action-card {
+  display: flex; align-items: center; gap: 0.9rem;
+  margin-bottom: 0.7rem; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.coach-action-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.coach-action-card:active { transform: scale(0.98); }
+.coach-action-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.coach-action-body { flex: 1; min-width: 0; }
+.coach-action-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.15rem; }
+.coach-action-sub   { font-size: 0.75rem; color: rgba(255,255,255,0.42); line-height: 1.4; }
+.coach-action-arrow { font-size: 1rem; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+
+.coach-cta-btn {
+  background: linear-gradient(135deg, #00c853, #00a040);
+  color: #000; border: none; border-radius: 12px;
+  padding: 0.75rem 1.75rem; font-size: 0.9rem; font-weight: 800;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(0,200,83,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.coach-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,200,83,0.45); }
+
+/* Light mode */
+[data-wl-light] .coach-hero { background: linear-gradient(165deg, #e8f5e9 0%, #f1f8e9 50%, #e8f5e9 100%); border-color: rgba(0,150,60,0.15); }
+[data-wl-light] .coach-hero-glow { background: rgba(0,180,60,0.1); }
+[data-wl-light] .coach-hero-title { color: #0a2010; }
+[data-wl-light] .coach-hero-sub  { color: rgba(0,0,0,0.45); }
+[data-wl-light] .coach-tab        { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.5); }
+[data-wl-light] .coach-tab:hover  { background: rgba(0,0,0,0.09); color: rgba(0,0,0,0.75); }
+[data-wl-light] .coach-tab-active { background: rgba(0,180,60,0.12) !important; color: #008040 !important; border-color: rgba(0,180,60,0.3); }
+[data-wl-light] .coach-action-sub { color: rgba(0,0,0,0.42); }
+[data-wl-light] .coach-action-arrow { color: rgba(0,0,0,0.3); }
+[data-wl-light] .coach-score-pill { background: rgba(255,255,255,0.7); }

@@ -1817,13 +1817,13 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const openSheet = useCallback((t, source = 'dashboard') => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
 
-  // ── Timed nudge toast (fires after 20s if no trade sheet opened) ──────────
+  // ── Timed nudge toast (fires after 15 min if no trade logged) ──────────
   const [nudgeVisible, setNudgeVisible] = useState(false)
   useEffect(() => {
     if (sheetOpen || transactions.length > 0) { setNudgeVisible(false); return }
     const t = setTimeout(() => {
       if (!sheetOpen && transactions.length === 0) { setNudgeVisible(true); track('trade_nudge_shown') }
-    }, 20000)
+    }, 900000)
     return () => clearTimeout(t)
   }, [sheetOpen, transactions.length])
 
