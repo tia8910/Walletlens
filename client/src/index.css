@@ -8201,6 +8201,24 @@ input[type="date"] { color-scheme: dark; }
 }
 .wm-skip:hover { color: rgba(255,255,255,0.55); }
 
+/* Mobile — compact modal so it fits within the screen */
+@media (max-width: 480px) {
+  .wm-sheet   { max-height: 80dvh; overflow-y: auto; }
+  .wm-header  { min-height: 150px; padding: 0.75rem 1.25rem 1.25rem; }
+  .wm-icon-ring { width: 58px; height: 58px; margin: 0.45rem 0 0.6rem; }
+  .wm-icon    { font-size: 1.6rem; }
+  .wm-title   { font-size: 1.6rem; }
+  .wm-eyebrow { font-size: 0.58rem; margin-bottom: 0.2rem; }
+  .wm-body    { padding: 1rem 1.25rem 1.1rem; }
+  .wm-desc    { font-size: 0.82rem; margin-bottom: 0.75rem; line-height: 1.55; }
+  .wm-features { margin-bottom: 0.75rem; gap: 0.3rem; }
+  .wm-pill    { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+  .wm-progress-track { margin-bottom: 0.4rem; }
+  .wm-dots    { margin-bottom: 0.8rem; }
+  .wm-cta     { padding: 0.72rem; font-size: 0.9rem; margin-bottom: 0.35rem; }
+  .wm-skip    { font-size: 0.75rem; padding: 0.15rem; }
+}
+
 /* Light mode */
 [data-wl-light] .wm-body      { background: #ffffff; }
 [data-wl-light] .wm-desc      { color: rgba(0,0,0,0.62); }
