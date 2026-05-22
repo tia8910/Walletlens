@@ -8421,3 +8421,54 @@ input[type="date"] { color-scheme: dark; }
 /* Global placeholder text */
 [data-wl-light] input::placeholder,
 [data-wl-light] textarea::placeholder     { color: rgba(0,0,0,0.3); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive pass 3
+   Covers all remaining white-rgba text without [data-wl-light] protection
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Tips / trade-tips panel */
+[data-wl-light] .tips-counter    { color: rgba(0,0,0,0.35); }
+[data-wl-light] .tips-dismiss    { color: rgba(0,0,0,0.3); }
+
+/* AI Decision Engine — sub-labels */
+[data-wl-light] .ade-trigger-sub  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-step-label   { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-confidence   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-assets-title { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-asset-weight { color: rgba(0,0,0,0.35); }
+[data-wl-light] .ade-reason       { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-disclaimer   { color: rgba(0,0,0,0.28); }
+[data-wl-light] .ade-empty        { color: rgba(0,0,0,0.38); }
+
+/* AI Advanced settings */
+[data-wl-light] .ai-adv-key-remove { color: rgba(0,0,0,0.45); }
+[data-wl-light] .ai-adv-cta-sub   { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ai-chat-empty    { color: rgba(0,0,0,0.4); }
+
+/* Price alerts */
+[data-wl-light] .pal-label         { color: rgba(0,0,0,0.5); }
+[data-wl-light] .pal-dollar        { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-section-label { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-del-btn       { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-reset-btn     { color: rgba(0,0,0,0.45); }
+
+/* Risk scanner */
+[data-wl-light] .risk-rescan-btn  { color: rgba(0,0,0,0.45); }
+[data-wl-light] .risk-scam-desc   { color: rgba(0,0,0,0.5); }
+
+/* Alpha / signal scores */
+[data-wl-light] .alpha-score-label { color: rgba(0,0,0,0.4); }
+
+/* Academy */
+[data-wl-light] .acad-iq-guide-title { color: rgba(0,0,0,0.45); }
+
+/* Token unlock announcements */
+[data-wl-light] .tua-header-sub  { color: rgba(0,0,0,0.45); }
+[data-wl-light] .tua-chevron     { color: rgba(0,0,0,0.3); }
+[data-wl-light] .tua-show-more   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .tua-source-link { color: rgba(0,0,0,0.35); }
+
+/* Smart alerts */
+[data-wl-light] .sa-clear-btn  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .sa-dismiss    { color: rgba(0,0,0,0.35); }
