@@ -190,6 +190,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [success, setSuccess]           = useState(false)
   const [signalOpen, setSignalOpen]     = useState(false)
   const [holdingsFilter, setHoldingsFilter] = useState('')
+  const [spendPct, setSpendPct]         = useState(null)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -201,7 +202,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   useEffect(() => {
     if (!open) return
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom('')
+    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom(''); setSpendPct(null)
     setSellFor(''); setSellForCustom('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
@@ -259,6 +260,27 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const asset = resolveAssetMeta()
   const holdingForCoin = holdings?.find(h => h.coin_id === asset?.id)
   const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
+
+  // Map buyWith key → coin_id in holdings, for balance lookup
+  const BUY_WITH_COIN_IDS = {
+    USD:  `${FIAT_PREFIX}usd`,
+    USDT: 'tether',
+    USDC: 'usd-coin',
+    BTC:  'bitcoin',
+    EUR:  `${FIAT_PREFIX}eur`,
+  }
+  const buyWithHolding = (isBuy && buyWith && buyWith !== 'NONE' && buyWith !== 'CUSTOM')
+    ? holdings?.find(h => h.coin_id === BUY_WITH_COIN_IDS[buyWith])
+    : null
+  const buyWithBalanceUsd = buyWithHolding?.value ?? 0
+  const buyWithBalanceAmt = buyWithHolding?.amount ?? 0
+
+  // Recalculate amount when price arrives after a % pct is selected
+  useEffect(() => {
+    if (!spendPct || !buyWithBalanceUsd || !price || price === '…') return
+    const px = parseFloat(price)
+    if (px > 0) setAmount(String(parseFloat((buyWithBalanceUsd * spendPct / 100 / px).toFixed(8))))
+  }, [price]) // eslint-disable-line
 
   // Swipe-down to close
   function onTouchStart(e) { dragStartY.current = e.touches[0].clientY }
@@ -399,6 +421,70 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </p>
               <ExchangePartners compact source={`trade_form_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
             </div>
+
+            {/* ── Buy with (first — drives balance & % fill) ── */}
+            {isBuy && (
+              <div className="bs-field">
+                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
+                <div className="bs-leg-grid">
+                  {BUY_WITH_OPTIONS.map(o => (
+                    <button key={o.key} type="button"
+                      className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
+                      style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
+                      onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {buyWith === 'CUSTOM' && (
+                  <input className="bs-input bs-leg-custom" type="text"
+                    placeholder="e.g. SOL, DAI"
+                    value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
+                )}
+
+                {/* Balance + % quick-fill — shown when a trackable payment asset is selected */}
+                {buyWith && buyWith !== 'NONE' && buyWith !== 'CUSTOM' && (
+                  buyWithHolding ? (
+                    <div className="bs-buywith-balance">
+                      <div className="bs-balance-row">
+                        <span className="muted">Your {buyWith} balance</span>
+                        <span className="bs-buywith-bal-val">
+                          {parseFloat(buyWithBalanceAmt.toFixed(6))} {buyWith}
+                          {buyWithBalanceUsd > 0 && <span className="muted"> ≈ ${buyWithBalanceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                        </span>
+                      </div>
+                      <div className="bs-pct-row">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button key={pct} type="button"
+                            className={`bs-pct-btn ${spendPct === pct ? 'active' : ''}`}
+                            onClick={() => {
+                              setSpendPct(pct)
+                              const spendUsd = buyWithBalanceUsd * pct / 100
+                              const px = parseFloat(price)
+                              if (px > 0) setAmount(String(parseFloat((spendUsd / px).toFixed(8))))
+                            }}>
+                            {pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="bs-hint bs-buywith-warn">
+                      No {buyWith} balance found in holdings.
+                    </p>
+                  )
+                )}
+
+                {buyWith && (
+                  <p className="bs-hint">
+                    {buyWith === 'NONE'
+                      ? 'Only adds to holdings — no balance deducted.'
+                      : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* ── Category selector ── */}
             {!prefillCoin && (
@@ -612,7 +698,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                    category === 'fiat' ? 'Amount' : 'Amount'}
                 </label>
                 <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
-                  value={amount} onChange={e => setAmount(e.target.value)} />
+                  value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
               </div>
               <div className="bs-field">
                 <label className="bs-label">
@@ -642,38 +728,6 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               )}
             </div>
 
-            {/* Buy with — icon selector, mandatory */}
-            {isBuy && (
-              <div className="bs-field">
-                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
-                <div className="bs-leg-grid">
-                  {BUY_WITH_OPTIONS.map(o => (
-                    <button
-                      key={o.key}
-                      type="button"
-                      className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
-                      style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
-                      onClick={() => setBuyWith(o.key)}
-                    >
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
-                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-                {buyWith === 'CUSTOM' && (
-                  <input className="bs-input bs-leg-custom" type="text"
-                    placeholder="e.g. SOL, DAI"
-                    value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
-                )}
-                {buyWith && (
-                  <p className="bs-hint">
-                    {buyWith === 'NONE'
-                      ? 'Only adds to holdings — no balance deducted.'
-                      : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
-                  </p>
-                )}
-              </div>
-            )}
 
             {/* Sell for — icon selector, mandatory */}
             {!isBuy && (

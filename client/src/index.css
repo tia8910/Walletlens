@@ -5070,6 +5070,22 @@ select.bs-input option { background: var(--bg3); }
 [data-wl-light] .bs-leg-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); }
 [data-wl-light] .bs-leg-chip:hover { border-color: rgba(0,0,0,0.25); background: rgba(0,0,0,0.06); }
 
+/* ── Buy-with balance + % quick-fill ── */
+.bs-buywith-balance { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.45rem; }
+.bs-buywith-bal-val { font-size: 0.82rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+.bs-pct-row { display: flex; gap: 0.4rem; }
+.bs-pct-btn {
+  flex: 1; padding: 0.45rem 0; border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,0.12); background: var(--surface-1);
+  color: var(--text-muted); font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+.bs-pct-btn:hover { background: var(--surface-2); border-color: rgba(var(--g-rgb),0.4); color: var(--g); }
+.bs-pct-btn.active { background: rgba(var(--g-rgb),0.15); border-color: var(--g); color: var(--g); }
+.bs-buywith-warn { color: #f87171 !important; margin-top: 0.35rem; }
+[data-wl-light] .bs-pct-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.14); color: var(--text-muted); }
+[data-wl-light] .bs-pct-btn.active { background: rgba(var(--g-rgb),0.1); border-color: var(--g); color: var(--gd); }
+
 /* ── Sell-mode holdings selector ── */
 .bs-holdings-sel { display: flex; flex-direction: column; gap: 0; }
 .bs-holdings-list { display: flex; flex-direction: column; gap: 0.2rem; max-height: 220px; overflow-y: auto; overscroll-behavior: contain; }
