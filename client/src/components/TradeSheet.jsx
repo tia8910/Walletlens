@@ -165,7 +165,7 @@ async function buildSpendLeg(source, costUsd) {
 }
 
 // ── TradeSheet ────────────────────────────────────────────────────────────
-export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin }) {
+export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker }) {
   const [category, setCategory]         = useState('crypto')
   const [coinSearch, setCoinSearch]     = useState('')
   const [coinResults, setCoinResults]   = useState([])
@@ -210,6 +210,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (prefillCoin) {
       setSelectedCoin(prefillCoin)
       setCategory('crypto')
+    } else if (prefillCategory) {
+      setSelectedCoin(null)
+      setCategory(prefillCategory)
+      if (prefillCategory === 'stock' && prefillStockTicker) setStockTicker(prefillStockTicker)
     } else {
       setSelectedCoin(null)
       setCategory('crypto')
