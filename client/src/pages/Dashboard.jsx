@@ -2279,9 +2279,6 @@ export default function Dashboard() {
             <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)} navigate={navigate} loaded={loaded} />
           ) : null}
 
-          {/* Live news ticker */}
-          <NewsTicker />
-
           {/* Excel / CSV import — above total portfolio */}
           <div className="dvx-excel-import-bar">
             <button className="dvx-btn dvx-btn-sm" onClick={() => setShowExcelImport(v => !v)}>
@@ -2316,7 +2313,7 @@ export default function Dashboard() {
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
               {hidden ? '••••••' : (() => {
-                const usdVal = loaded ? tickerValue : 0
+                const usdVal = loaded ? (perfHover != null ? perfHover : tickerValue) : 0
                 if (displayCurrency === 'BTC') {
                   const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price
                   return btcPrice ? `₿ ${(usdVal / btcPrice).toFixed(6)}` : `$${fmt(usdVal)}`
@@ -2371,164 +2368,8 @@ export default function Dashboard() {
                 {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) ${t('allTime')}`}
               </p>
             )}
-            {!isDemo && totalValue > 0 && (
-              <button className="dvx-weekly-btn" onClick={() => { setWeeklyOpen(true); track('weekly_report_open') }} title="Weekly Report">
-                📅
-              </button>
-            )}
-            {!isDemo && totalValue > 0 && (
-              <button className="dvx-share-btn" onClick={() => { setShareOpen(true); track('share_portfolio_open') }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                {t('shareGains')}
-              </button>
-            )}
-          </div>}
-
-          {/* Stats row */}
-          {enriched.length > 0 && (
-            <div className="dvx-stats-row">
-              <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
-              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
-                color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
-                sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
-              <StatCard label={t('assets')}      value={enriched.length} />
-              <StatCard label={t('tradesCount')} value={transactions.length} />
-            </div>
-          )}
-
-          {/* Tips & quotes banner */}
-          <TradeTips />
-
-          {/* Partner exchange strip — contextual label based on P&L */}
-          {enriched.some(h => categorizeAsset(h) !== 'stocks') && (
-            <div>
-              {totalPnL < 0 && (
-                <p style={{ fontSize:'0.72rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
-                  📉 Buy the dip on
-                </p>
-              )}
-              <ExchangePartners compact source="dashboard" cryptoOnly />
-            </div>
-          )}
-          {enriched.some(h => categorizeAsset(h) === 'stocks') && (
-            <ExchangePartners compact source="dashboard_stocks" stockOnly />
-          )}
-
-          {/* Telegram community banner */}
-          <a href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" className="tg-banner" onClick={() => track('telegram_join_click', { source: 'dashboard' })}>
-            <svg viewBox="0 0 24 24" fill="#2AABEE" width="22" height="22"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
-            <div className="tg-banner-text">
-              <span className="tg-banner-title">Join the WalletLens Community</span>
-              <span className="tg-banner-sub">Tips, signals &amp; market updates on Telegram</span>
-            </div>
-            <span className="tg-banner-arrow">→</span>
-          </a>
-
-          {/* AI Decision Engine */}
-          {enriched.length > 0 && (
-            <Suspense fallback={<TabFallback />}><AIDecisionEngine
-              enriched={enriched}
-              prices={prices}
-              transactions={transactions}
-              totalValue={totalValue}
-              totalInvested={totalInvested}
-            /></Suspense>
-          )}
-
-          {/* Wallet Evaluation — moved from Analysis tab */}
-          {enriched.length > 0 && (
-            <WalletEvalTab
-              enriched={enriched}
-              totalValue={totalValue}
-              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
-            />
-          )}
-
-          {/* Portfolio Heatmap */}
-          {!isDemo && enriched.length >= 2 && !pricesFailed && (
-            <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
-          )}
-
-          {/* Top Movers */}
-          {!isDemo && enriched.length >= 2 && !pricesFailed && (
-            <div className="glass-card dvx-movers-card">
-              <h3 style={{ margin:'0 0 0.75rem' }}>📈 Today's Movers</h3>
-              <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
-                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-                    return (
-                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
-                        <div className="dvx-mover-meta">
-                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'var(--g)' }}>+{chg.toFixed(2)}%</span>
-                        </div>
-                        <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
-                          +${fmt(h.value * chg / 100)}
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
-              <div className="dvx-movers-divider" />
-              <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[a.coin_id]?.usd_24h_change ?? 0) - (prices[b.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
-                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-                    return (
-                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
-                        <div className="dvx-mover-meta">
-                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
-                        </div>
-                        <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
-                          {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
-          )}
-
-          {/* Performance chart — full width, above the grid */}
-          {enriched.length > 0 && <div className="glass-card perf-card">
-            {/* Header: value + change */}
-            <div style={{ marginBottom:'1rem' }}>
-              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.3rem' }}>
-                Portfolio Value
-              </div>
-              <div style={{ display:'flex', alignItems:'flex-end', gap:'0.75rem', flexWrap:'wrap' }}>
-                <span style={{ fontSize:'1.75rem', fontWeight:800, color:'var(--text)', letterSpacing:'-0.03em', lineHeight:1 }}>
-                  ${fmt(perfHover != null ? perfHover : totalValue)}
-                </span>
-                <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', paddingBottom:'0.15rem' }}>
-                  <span style={{
-                    fontSize:'0.85rem', fontWeight:700,
-                    color: perfChange.pct >= 0 ? 'var(--g)' : '#f87171',
-                    background: perfChange.pct >= 0 ? 'rgba(var(--g-rgb),0.12)' : 'rgba(248,113,113,0.12)',
-                    borderRadius:6, padding:'0.15rem 0.5rem',
-                  }}>
-                    {perfChange.pct >= 0 ? '▲' : '▼'} {Math.abs(perfChange.pct).toFixed(2)}%
-                  </span>
-                  <span style={{ fontSize:'0.8rem', color: perfChange.abs >= 0 ? 'var(--g)' : '#f87171', fontWeight:600 }}>
-                    {perfChange.abs >= 0 ? '+' : ''}${fmt(Math.abs(perfChange.abs))}
-                  </span>
-                  <span style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{perfTf}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeframe pills */}
-            <div style={{ display:'flex', gap:'0.3rem', marginBottom:'0.75rem' }}>
+            {/* Timeframe selector + performance chart — merged into portfolio overview card */}
+            <div style={{ display:'flex', gap:'0.3rem', margin:'0.85rem 0 0.5rem', flexWrap:'wrap' }}>
               {TIMEFRAMES.map(tf => (
                 <button key={tf.id} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
                   style={{
@@ -2545,14 +2386,12 @@ export default function Dashboard() {
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
-
-            {/* Chart */}
             {(() => {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
               return (
-                <ResponsiveContainer key={perfTf} width="100%" height={200}>
+                <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}
                     onMouseMove={s => { if (s?.activePayload?.[0]) setPerfHover(s.activePayload[0].value) }}
                     onMouseLeave={() => setPerfHover(null)}>
@@ -2578,7 +2417,33 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               )
             })()}
+            {!isDemo && totalValue > 0 && (
+              <button className="dvx-weekly-btn" onClick={() => { setWeeklyOpen(true); track('weekly_report_open') }} title="Weekly Report">
+                📅
+              </button>
+            )}
+            {!isDemo && totalValue > 0 && (
+              <button className="dvx-share-btn" onClick={() => { setShareOpen(true); track('share_portfolio_open') }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                {t('shareGains')}
+              </button>
+            )}
           </div>}
+
+          {/* Stats row */}
+          {enriched.length > 0 && (
+            <div className="dvx-stats-row">
+              <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
+              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
+                color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
+                sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
+              <StatCard label={t('assets')}      value={enriched.length} />
+              <StatCard label={t('tradesCount')} value={transactions.length} />
+            </div>
+          )}
+
+          {/* Live news ticker — below stats, above grid */}
+          <NewsTicker />
 
           {/* Main grid */}
           <div className="dvx-grid">
@@ -2746,8 +2611,10 @@ export default function Dashboard() {
             {/* Right column — order: -1 on mobile so it renders before left col */}
             <div className="dvx-col-side">
 
-              {/* ── 1st card on mobile: Holdings ── */}
-              {/* All holdings — moved to top of side col so it appears first on mobile */}
+              {/* ── 1st: Goal Tracker — keep users focused on their target ── */}
+              <GoalTracker currentValue={totalValue} />
+
+              {/* ── 2nd: Holdings ── */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
@@ -2860,9 +2727,6 @@ export default function Dashboard() {
                 }
               </div>
 
-              {/* ── 2nd card on mobile: Goal Tracker ── */}
-              <GoalTracker currentValue={totalValue} />
-
               {/* ── Allocation donut ── */}
               <div className="glass-card">
                 <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
@@ -2906,10 +2770,113 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Exchange partners strip below holdings */}
-              <ExchangePartners compact source="holdings" />
             </div>
           </div>
+
+          {/* ── Secondary content — below the fold ─────────────────────── */}
+
+          {/* Today's Movers — actionable daily insight */}
+          {!isDemo && enriched.length >= 2 && !pricesFailed && (
+            <div className="glass-card dvx-movers-card">
+              <h3 style={{ margin:'0 0 0.75rem' }}>📈 Today's Movers</h3>
+              <div className="dvx-movers-row">
+                {[...enriched]
+                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
+                  .sort((a, b) => (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0))
+                  .slice(0, 3)
+                  .map(h => {
+                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                    return (
+                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
+                        <div className="dvx-mover-meta">
+                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                          <span style={{ color:'var(--g)' }}>+{chg.toFixed(2)}%</span>
+                        </div>
+                        <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
+                          +${fmt(h.value * chg / 100)}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+              <div className="dvx-movers-divider" />
+              <div className="dvx-movers-row">
+                {[...enriched]
+                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
+                  .sort((a, b) => (prices[a.coin_id]?.usd_24h_change ?? 0) - (prices[b.coin_id]?.usd_24h_change ?? 0))
+                  .slice(0, 3)
+                  .map(h => {
+                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                    return (
+                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
+                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
+                        <div className="dvx-mover-meta">
+                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                          <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
+                        </div>
+                        <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
+                          {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* AI Decision Engine */}
+          {enriched.length > 0 && (
+            <Suspense fallback={<TabFallback />}><AIDecisionEngine
+              enriched={enriched}
+              prices={prices}
+              transactions={transactions}
+              totalValue={totalValue}
+              totalInvested={totalInvested}
+            /></Suspense>
+          )}
+
+          {/* Wallet Evaluation */}
+          {enriched.length > 0 && (
+            <WalletEvalTab
+              enriched={enriched}
+              totalValue={totalValue}
+              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
+            />
+          )}
+
+          {/* Portfolio Heatmap */}
+          {!isDemo && enriched.length >= 2 && !pricesFailed && (
+            <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
+          )}
+
+          {/* Partner exchange strip */}
+          {enriched.some(h => categorizeAsset(h) !== 'stocks') && (
+            <div>
+              {totalPnL < 0 && (
+                <p style={{ fontSize:'0.72rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
+                  📉 Buy the dip on
+                </p>
+              )}
+              <ExchangePartners compact source="dashboard" cryptoOnly />
+            </div>
+          )}
+          {enriched.some(h => categorizeAsset(h) === 'stocks') && (
+            <ExchangePartners compact source="dashboard_stocks" stockOnly />
+          )}
+
+          {/* Telegram community banner */}
+          <a href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" className="tg-banner" onClick={() => track('telegram_join_click', { source: 'dashboard' })}>
+            <svg viewBox="0 0 24 24" fill="#2AABEE" width="22" height="22"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
+            <div className="tg-banner-text">
+              <span className="tg-banner-title">Join the WalletLens Community</span>
+              <span className="tg-banner-sub">Tips, signals &amp; market updates on Telegram</span>
+            </div>
+            <span className="tg-banner-arrow">→</span>
+          </a>
+
+          {/* Tips & quotes — decorative, lowest priority */}
+          <TradeTips />
 
           {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
           {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
