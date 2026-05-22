@@ -494,8 +494,8 @@
 
 /* ── Exchange Partners — keep dark even in light mode ── */
 [data-wl-light] .ep-strip-label { color: var(--text-sub); }
-[data-wl-light] .ep-strip-btn { background: rgba(15,15,22,0.88); border-color: rgba(255,255,255,0.1); }
-[data-wl-light] .ep-strip-btn:hover { background: rgba(25,25,38,0.95); border-color: rgba(255,255,255,0.18); }
+[data-wl-light] .ep-strip-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .ep-strip-btn:hover { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.2); }
 [data-wl-light] .ep-cards-label { color: var(--text-muted); }
 [data-wl-light] .ep-card { background: var(--ex-bg); border-color: rgba(255,255,255,0.08); }
 [data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.25); }
@@ -8332,3 +8332,92 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .wm-handle    { background: rgba(255,255,255,0.3); }
 [data-wl-light] .wm-skip      { color: rgba(0,0,0,0.32); }
 [data-wl-light] .wm-skip:hover { color: rgba(0,0,0,0.55); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive white-text overrides (pass 2)
+   Covers every class that uses color:#fff or rgba(255,255,255,…) for text
+   without a prior [data-wl-light] rule.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Exchange partner cards / strip */
+[data-wl-light] .ep-card-tagline { color: rgba(0,0,0,0.45); }
+[data-wl-light] .ep-card-fee     { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ep-card-bonus   { color: rgba(0,0,0,0.55); }
+[data-wl-light] .ep-strip-name   { color: var(--text); }
+
+/* OKX near-white brand color is invisible on light bg — darken it */
+[data-wl-light] .ep-strip-btn[style*="e2e8f0"] .ep-strip-name { color: #334155; }
+
+/* Ticker row */
+[data-wl-light] .tick-name { color: var(--text); }
+
+/* Quick-stats modal */
+[data-wl-light] .qs-value       { color: var(--text); }
+[data-wl-light] .qs-label       { color: rgba(0,0,0,0.45); }
+[data-wl-light] .qs-stat-val    { color: var(--text); }
+[data-wl-light] .qs-stat-label  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .qs-mover-coin  { color: var(--text); }
+[data-wl-light] .qs-mover-label { color: rgba(0,0,0,0.45); }
+[data-wl-light] .qs-empty       { color: rgba(0,0,0,0.38); }
+[data-wl-light] .qs-close       { color: rgba(0,0,0,0.35); }
+[data-wl-light] .qs-close:hover { color: var(--text); background: rgba(0,0,0,0.06); }
+
+/* AI Decision Engine */
+[data-wl-light] .ai-section-title { color: var(--text); }
+[data-wl-light] .ai-mc-name       { color: var(--text); }
+[data-wl-light] .ai-today-sym     { color: var(--text); }
+[data-wl-light] .ai-entry-sym     { color: var(--text); }
+[data-wl-light] .ai-rebal-sym     { color: var(--text); }
+[data-wl-light] .ai-badge         { color: var(--text); }
+[data-wl-light] .ade-trigger-sub  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-confidence   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-assets-title { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-asset-weight { color: rgba(0,0,0,0.38); }
+[data-wl-light] .ade-reason       { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-disclaimer   { color: rgba(0,0,0,0.3); }
+[data-wl-light] .ade-empty        { color: rgba(0,0,0,0.38); }
+
+/* AI Advanced Settings panel */
+[data-wl-light] .ai-adv-setup-title { color: var(--text); }
+[data-wl-light] .ai-adv-cta-title   { color: var(--text); }
+[data-wl-light] .ai-adv-h3 { color: var(--text); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .ai-adv-h4 { color: var(--text); }
+[data-wl-light] .ai-adv-key-input {
+  background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12);
+  color: var(--text);
+}
+
+/* Price alerts */
+[data-wl-light] .pal-toast       { background: rgba(var(--g-rgb),0.08); border-color: rgba(var(--g-rgb),0.25); color: var(--text); }
+[data-wl-light] .pal-title       { color: var(--text); }
+[data-wl-light] .pal-form-title  { color: var(--text); }
+[data-wl-light] .pal-sym         { color: var(--text); }
+[data-wl-light] .pal-empty-title { color: var(--text); }
+[data-wl-light] .pal-select      { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .pal-price-input { color: var(--text); }
+
+/* DVX vault goals */
+[data-wl-light] .dvx-goal-input   { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .dvx-goal-current { color: var(--text); }
+
+/* Smart alerts */
+[data-wl-light] .sa-title        { color: var(--text); }
+[data-wl-light] .sa-cfg-title    { color: var(--text); }
+[data-wl-light] .sa-card-symbol  { color: var(--text); }
+[data-wl-light] .sa-cfg-btn:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+
+/* Risk budget */
+[data-wl-light] .rb-sum-val { color: var(--text); }
+[data-wl-light] .rb-sym     { color: var(--text); }
+
+/* Milestones */
+[data-wl-light] .ms-title { color: var(--text); }
+
+/* News feed */
+[data-wl-light] .news-title               { color: var(--text); }
+[data-wl-light] .news-filter-pill:hover   { color: var(--text); background: rgba(0,0,0,0.06); }
+[data-wl-light] .news-refresh-btn:hover   { color: var(--text); }
+
+/* Global placeholder text */
+[data-wl-light] input::placeholder,
+[data-wl-light] textarea::placeholder     { color: rgba(0,0,0,0.3); }
