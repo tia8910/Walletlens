@@ -1483,13 +1483,13 @@ function ConstellationMap() {
 }
 
 const QUICK_ADD_ASSETS = [
-  { label:'USDT', bg:'#26a17b', icon:'₮', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
-  { label:'USDC', bg:'#2775ca', icon:'$', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
-  { label:'BTC',  bg:'#f7931a', icon:'₿', prefill:{ category:'crypto', coin:{ id:'bitcoin',  symbol:'BTC',  name:'Bitcoin'  } } },
-  { label:'ETH',  bg:'#627eea', icon:'Ξ', prefill:{ category:'crypto', coin:{ id:'ethereum', symbol:'ETH',  name:'Ethereum' } } },
-  { label:'Gold', bg:'#b45309', icon:'Au', prefill:{ category:'gold' } },
-  { label:'NVDA', bg:'#76b900', icon:'N', prefill:{ category:'stock', stockTicker:'NVDA' } },
-  { label:'AAPL', bg:'#555',    icon:'', prefill:{ category:'stock', stockTicker:'AAPL' } },
+  { label:'USDT', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdt.svg', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
+  { label:'USDC', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdc.svg', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
+  { label:'BTC',  imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/btc.svg',  prefill:{ category:'crypto', coin:{ id:'bitcoin',  symbol:'BTC',  name:'Bitcoin'  } } },
+  { label:'ETH',  imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/eth.svg',  prefill:{ category:'crypto', coin:{ id:'ethereum', symbol:'ETH',  name:'Ethereum' } } },
+  { label:'Gold', useGoldLogo:true, prefill:{ category:'gold' } },
+  { label:'NVDA', bg:'#000', icon:'NVDA', iconColor:'#76b900', iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'NVDA' } },
+  { label:'AAPL', bg:'#1d1d1f', icon:'AAPL', iconColor:'#fff',  iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'AAPL' } },
 ]
 
 function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded }) {
@@ -1503,6 +1503,9 @@ function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded }) {
       @keyframes ep-shimmer{ 0%{background-position:200% center} 100%{background-position:-200% center} }
       @keyframes ep-bounce { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-6px) scale(1.04)} 60%{transform:translateY(-3px) scale(1.02)} }
       @keyframes ep-node-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 14px currentColor} 50%{transform:scale(1.12);box-shadow:0 0 22px currentColor} }
+      @keyframes ep-glow-pulse { 0%,100%{box-shadow:0 0 0 3px rgba(var(--g-rgb),.07),0 4px 18px rgba(0,0,0,.22)} 50%{box-shadow:0 0 0 5px rgba(var(--g-rgb),.15),0 0 28px rgba(var(--g-rgb),.22),0 4px 18px rgba(0,0,0,.22)} }
+      @keyframes ep-sweep { 0%{left:-60%} 100%{left:160%} }
+      @keyframes ep-icon-ring { 0%,100%{box-shadow:0 0 8px rgba(var(--g-rgb),.3)} 50%{box-shadow:0 0 20px rgba(var(--g-rgb),.6)} }
     `
     document.head.appendChild(s)
   }
@@ -1521,18 +1524,42 @@ function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded }) {
         Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
       </div>
 
-      {/* Primary CTA */}
+      {/* Primary CTA — creative dark command-center button */}
       <button onClick={onAddTrade} style={{
-        display:'inline-flex', alignItems:'center', gap:'0.5rem',
-        padding:'0.85rem 2rem', borderRadius:'50px', border:'none', cursor:'pointer',
-        fontSize:'0.95rem', fontWeight:800, color:'#000',
-        background:'linear-gradient(90deg,var(--g),#60a5fa,#a78bfa,var(--g))',
-        backgroundSize:'300% 100%',
-        animation:'ep-shimmer 3s linear infinite, ep-bounce 2.8s ease-in-out infinite',
-        boxShadow:'0 4px 24px rgba(var(--g-rgb),0.35)',
+        width:'100%', display:'flex', alignItems:'center', gap:'0.65rem',
+        height:'60px', padding:'0 1.2rem',
+        borderRadius:'14px',
+        border:'1.5px solid rgba(var(--g-rgb),0.4)',
+        cursor:'pointer',
+        fontSize:'1rem', fontWeight:800, color:'var(--g)',
+        background:'linear-gradient(135deg, var(--ink2,#061a0f) 0%, var(--bg4,#0d2e18) 100%)',
+        position:'relative', overflow:'hidden',
+        animation:'ep-glow-pulse 2.4s ease-in-out infinite',
         marginBottom:'1.25rem',
       }}>
-        <span style={{ fontSize:'1.1rem' }}>➕</span> Add a trade
+        {/* sweep shimmer */}
+        <span style={{
+          position:'absolute', top:0, width:'40%', height:'100%',
+          background:'linear-gradient(90deg,transparent,rgba(var(--g-rgb),.09),transparent)',
+          animation:'ep-sweep 2.6s ease-in-out infinite',
+          pointerEvents:'none',
+        }}/>
+        {/* glowing + ring icon */}
+        <span style={{
+          width:38, height:38, borderRadius:'50%', flexShrink:0,
+          border:'2px solid rgba(var(--g-rgb),0.55)',
+          background:'rgba(var(--g-rgb),0.1)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          animation:'ep-icon-ring 2.4s ease-in-out infinite',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.8" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </span>
+        <span style={{ flex:1, textAlign:'left', letterSpacing:'0.01em' }}>Add a trade</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:0.55, flexShrink:0 }}>
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
       </button>
 
       {/* Quick-add chips */}
@@ -1540,24 +1567,30 @@ function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded }) {
         Or quickly add
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
-        {QUICK_ADD_ASSETS.map(a => (
-          <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
-            display:'inline-flex', alignItems:'center', gap:'0.38rem',
-            padding:'0.42rem 0.8rem', borderRadius:'50px',
-            background:'var(--surface-1)',
-            border:'1.5px solid rgba(var(--g-rgb),0.18)',
-            color:'var(--text)', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
-            transition:'border-color 0.15s, background 0.15s',
-          }}>
-            <span style={{
-              width:20, height:20, borderRadius:'50%', background:a.bg,
-              display:'inline-flex', alignItems:'center', justifyContent:'center',
-              fontSize:'0.6rem', color:'white', fontWeight:800, flexShrink:0,
-            }}>{a.icon}</span>
-            <span style={{ color:'var(--g)', fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
-            {a.label}
-          </button>
-        ))}
+        {QUICK_ADD_ASSETS.map(a => {
+          const goldLogo = a.useGoldLogo ? THEMES.find(t => t.id === 'gold')?.logo : null
+          return (
+            <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
+              display:'inline-flex', alignItems:'center', gap:'0.38rem',
+              padding:'0.42rem 0.8rem', borderRadius:'50px',
+              background:'var(--surface-1)',
+              border:'1.5px solid rgba(var(--g-rgb),0.18)',
+              color:'var(--text)', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
+              transition:'border-color 0.15s, background 0.15s',
+            }}>
+              {a.imgSrc || goldLogo
+                ? <img src={a.imgSrc || goldLogo} alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
+                : <span style={{
+                    width:22, height:22, borderRadius:'50%', background:a.bg,
+                    display:'inline-flex', alignItems:'center', justifyContent:'center',
+                    fontSize:a.iconSize || '0.6rem', color:a.iconColor || 'white', fontWeight:800, flexShrink:0,
+                  }}>{a.icon}</span>
+              }
+              <span style={{ color:'var(--g)', fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
+              {a.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Browse market */}
