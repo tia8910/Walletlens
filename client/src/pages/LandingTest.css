@@ -636,6 +636,16 @@
 }
 .lt-asset-card:hover { transform: translateY(-7px); box-shadow: 0 16px 52px rgba(0,0,0,.1); }
 .lt-asset-emoji { font-size: 2.8rem; margin-bottom: 16px; display: block; }
+.lt-asset-icon {
+  height: 56px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lt-asset-icon > svg {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.14));
+}
 .lt-asset-card h3 {
   font-size: 1.12rem;
   font-weight: 900;
@@ -957,20 +967,34 @@
 }
 /* Logo SVG uses var(--g) — set it for the light-theme landing */
 .lt-root { --g: #10b981; }
-.lt-footer-brand p { font-size: 0.84rem; color: rgba(255,255,255,.35); }
-.lt-footer-links {
+.lt-footer-brand p { font-size: 0.84rem; color: rgba(255,255,255,.35); max-width: 240px; }
+
+.lt-footer-cols {
   display: flex;
-  gap: 28px;
-  align-items: center;
+  gap: 60px;
   flex-wrap: wrap;
 }
-.lt-footer-links a {
-  color: rgba(255,255,255,.45);
+.lt-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 130px;
+}
+.lt-footer-col-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgba(255,255,255,.85);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.lt-footer-col a {
+  color: rgba(255,255,255,.5);
   font-size: 0.88rem;
   font-weight: 500;
   transition: color 0.18s;
 }
-.lt-footer-links a:hover { color: #fff; }
+.lt-footer-col a:hover { color: #fff; }
 .lt-footer-copy {
   text-align: center;
   font-size: 0.77rem;
