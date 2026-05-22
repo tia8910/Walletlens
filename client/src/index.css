@@ -881,7 +881,8 @@
 [data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
 [data-wl-light] .news-card-time    { color: var(--text-sub); }
 [data-wl-light] .news-modal-close  { color: var(--text-sub); }
-[data-wl-light] .news-modal-share-btn { color: var(--text-sub); }
+[data-wl-light] .news-modal-share-btn { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.7); }
+[data-wl-light] .news-modal-share-btn:hover { background: rgba(0,0,0,0.13); color: #000; }
 
 /* ── Buy Sheet extras (bs-chip, bs-sector-btn, bs-ticker-*) ── */
 [data-wl-light] .bs-chip         { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
@@ -7427,17 +7428,17 @@ input[type="date"] { color-scheme: dark; }
 }
 .news-modal-share-btn {
   align-self: flex-start;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
   border-radius: 6px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.55);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem; font-weight: 600; font-family: inherit;
+  color: #fff;
   cursor: pointer;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   transition: background 0.15s, color 0.15s;
 }
-.news-modal-share-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.news-modal-share-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
 
 /* ── Partner Exchanges — Exchanges page ────────────────────────────────── */
 .partner-exchanges-section { margin-bottom: 1.25rem; }
