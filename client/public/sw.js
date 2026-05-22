@@ -3,7 +3,7 @@
 // • /assets/ (hashed JS/CSS): network-first, cache fallback
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v80'
+const SW_VERSION = 'v82'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
@@ -15,6 +15,10 @@ const PRICE_API_PATTERNS = [
   'api.coinpaprika.com',
   'assets.coincap.io',
   'lcw.nyc3.cdn.digitaloceanspaces.com',
+]
+
+// Static CDN assets (icons, images) — cached indefinitely in STATIC cache
+const STATIC_CDN_PATTERNS = [
   'cdn.jsdelivr.net/npm/cryptocurrency-icons',
 ]
 
@@ -24,7 +28,11 @@ function isPriceApi(url) {
   return PRICE_API_PATTERNS.some(p => url.hostname.includes(p) || url.href.includes(p))
 }
 
-self.addEventListener('install', () => self.skipWaiting())
+function isStaticCdn(url) {
+  return STATIC_CDN_PATTERNS.some(p => url.href.includes(p))
+}
+
+self.addEventListener('install', e => e.waitUntil(self.skipWaiting()))
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -57,6 +65,20 @@ self.addEventListener('fetch', e => {
       fetch(req)
         .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
         .catch(() => caches.match(req))
+    )
+    return
+  }
+
+  // ── Static CDN assets (e.g. coin icons): cache-first, indefinitely
+  if (isStaticCdn(url)) {
+    e.respondWith(
+      caches.open(STATIC).then(async cache => {
+        const cached = await cache.match(req)
+        if (cached) return cached
+        const fresh = await fetch(req)
+        if (fresh?.ok) cache.put(req, fresh.clone())
+        return fresh
+      })
     )
     return
   }

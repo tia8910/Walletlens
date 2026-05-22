@@ -6,14 +6,22 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    target: 'es2020',
+    chunkSizeWarningLimit: 600,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'charts':       ['recharts'],
+          'xlsx':         ['xlsx'],
         },
       },
     },
+  },
+  esbuild: {
+    drop: ['debugger'],
+    pure: ['console.log', 'console.debug', 'console.info'],
   },
   server: {
     port: 5173,
