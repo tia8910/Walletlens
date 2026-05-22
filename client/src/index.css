@@ -8345,9 +8345,6 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .ep-card-bonus   { color: rgba(0,0,0,0.55); }
 [data-wl-light] .ep-strip-name   { color: var(--text); }
 
-/* OKX near-white brand color is invisible on light bg — darken it */
-[data-wl-light] .ep-strip-btn[style*="e2e8f0"] .ep-strip-name { color: #334155; }
-
 /* Ticker row */
 [data-wl-light] .tick-name { color: var(--text); }
 
