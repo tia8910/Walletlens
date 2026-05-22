@@ -890,8 +890,7 @@
 [data-wl-light] .bs-sector-btn   { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .bs-ticker-sym   { color: var(--text); }
 [data-wl-light] .bs-ticker-name  { color: var(--text-sub); }
-[data-wl-light] .bs-close { background: #0d1a10; border-color: rgba(0,200,83,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
-[data-wl-light] .bs-close:hover { background: #122818; border-color: rgba(0,200,83,0.7); box-shadow: 0 4px 16px rgba(0,0,0,0.2), 0 0 12px rgba(0,200,83,0.2); }
+
 [data-wl-light] .bs-partner-label { color: var(--text-sub); }
 
 /* ── Partner exchange cards (in buy sheet / market) ── */
@@ -4830,19 +4829,15 @@ tr:last-child td { border-bottom: none; }
 .bs-type-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
 .bs-title { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: 0.01em; }
 .bs-close {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
-  background: #0d1a10;
-  border: 2px solid rgba(0,200,83,0.35);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  width: 44px; height: 44px; border-radius: 28%; flex-shrink: 0; cursor: pointer;
+  background: linear-gradient(160deg, #7de820 0%, #4cc400 55%, #3aaa00 100%);
+  border: none;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55);
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+  transition: filter 0.18s, transform 0.15s;
 }
 .bs-close svg { transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1); }
-.bs-close:hover {
-  background: #122818;
-  border-color: rgba(0,200,83,0.65);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 12px rgba(0,200,83,0.25);
-}
+.bs-close:hover { filter: brightness(1.1); }
 .bs-close:hover svg { transform: rotate(90deg) scale(1.1); }
 .bs-close:active { transform: scale(0.88); }
 
