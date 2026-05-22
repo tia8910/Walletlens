@@ -202,7 +202,8 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const { t } = useLanguage()
-  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
+  const isLandingTest = location.pathname === '/landingtest'
+  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || isLandingTest
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -228,9 +229,10 @@ export default function App() {
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
-        <DynamicBackground particleCount={120} linkDistance={160} />
+        {!isLandingTest && <DynamicBackground particleCount={120} linkDistance={160} />}
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/landingtest" element={<LandingTest />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
@@ -272,7 +274,6 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/landingtest" element={<LandingTest />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/market" element={<Market />} />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Logo from '../components/Logo'
 import './LandingTest.css'
 
 /* ── Data ── */
@@ -399,7 +400,7 @@ export default function LandingTest() {
         <div className="lt-container lt-footer-inner">
           <div className="lt-footer-brand">
             <div className="lt-footer-logo">
-              <div className="lt-footer-logo-mark">W</div>
+              <Logo size={28} />
               WalletLens
             </div>
             <p>Track every dollar. Everywhere.</p>
