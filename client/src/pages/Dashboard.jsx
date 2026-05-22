@@ -987,22 +987,20 @@ const TIMEFRAMES = [
   { id: '30D', label: '30D', pts: 60 },
 ]
 
-function buildPerfSeries(base, tf = '30D') {
+function buildPerfSeries(base, tf = '30D', transactions = []) {
   const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[tf] || 30
   const pts = { '4H': 48, '1D': 48, '7D': 56, '30D': 60 }[tf] || 60
   const b = Math.max(base || 10000, 1)
 
-  // For 1D/7D/30D try to use real snapshots
+  // ── Level 1: real snapshots (most accurate) ──────────────────────────────
   if (days > 0) {
     const snaps = getSnapshotsForDays(days)
     if (snaps.length >= 2) {
-      // Interpolate snapshots to pts data points
       const first = snaps[0], last = snaps[snaps.length - 1]
       const timeRange = last.ts - first.ts || 1
       return Array.from({ length: pts }, (_, i) => {
         const t = i / (pts - 1)
         const targetTs = first.ts + t * timeRange
-        // Find surrounding snapshots and interpolate
         let lo = snaps[0], hi = snaps[snaps.length - 1]
         for (let j = 0; j < snaps.length - 1; j++) {
           if (snaps[j].ts <= targetTs && snaps[j + 1].ts >= targetTs) {
@@ -1010,20 +1008,57 @@ function buildPerfSeries(base, tf = '30D') {
           }
         }
         const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
-        const v = lo.v + (hi.v - lo.v) * segT
-        return { i, v: Math.max(v, 0) }
+        return { i, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
       })
     }
   }
 
-  // Fallback: smooth uptrend with subtle noise (seeded by portfolio value)
+  // ── Level 2: reconstruct from transaction history ─────────────────────────
+  // Each transaction has a real date + price_per_unit, so we can replay
+  // the portfolio cost basis over time and scale it to the current market value.
+  const validTxs = (transactions || [])
+    .filter(tx => tx.date && (tx.amount > 0 || tx.quantity > 0) && tx.price_per_unit > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+  if (validTxs.length >= 1) {
+    const now = Date.now()
+    const windowMs = Math.max(days, 1) * 24 * 60 * 60 * 1000
+    const startTime = now - windowMs
+
+    // Total current cost basis across all transactions
+    const currentCostBasis = validTxs.reduce((s, tx) => {
+      const qty = tx.amount || tx.quantity || 0
+      const val = qty * tx.price_per_unit
+      return tx.type === 'buy' ? s + val : Math.max(s - val, 0)
+    }, 0)
+
+    // Scale factor: stretch cost-basis curve to current market value
+    const scale = currentCostBasis > 0 ? b / currentCostBasis : 1
+
+    return Array.from({ length: pts }, (_, i) => {
+      const t = i / (pts - 1)
+      const pointTime = startTime + t * (now - startTime)
+
+      const costAtPoint = validTxs
+        .filter(tx => new Date(tx.date).getTime() <= pointTime)
+        .reduce((s, tx) => {
+          const qty = tx.amount || tx.quantity || 0
+          const val = qty * tx.price_per_unit
+          return tx.type === 'buy' ? s + val : Math.max(s - val, 0)
+        }, 0)
+
+      // Final point always equals current market value exactly
+      const v = i === pts - 1 ? b : Math.max(costAtPoint * scale, 0)
+      return { i, v }
+    })
+  }
+
+  // ── Level 3: pure simulation (no real data at all) ───────────────────────
   const startRatio = { '4H': 0.97, '1D': 0.93, '7D': 0.82, '30D': 0.68 }[tf] || 0.75
   const seed = Math.round(b) % 997
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
-    // Smooth uptrend base
     const trend = startRatio * b + t * (1 - startRatio) * b
-    // Subtle deterministic noise (no wild swings)
     const noise = Math.sin((i + seed) * 0.7) * b * 0.012 + Math.sin((i + seed) * 1.9) * b * 0.006
     return { i, v: Math.max(trend + noise, b * 0.1) }
   })
@@ -2086,11 +2121,11 @@ export default function Dashboard() {
   }, [loaded])
 
   const [perfTf, setPerfTf] = useState('30D')
-  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
+  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf, transactions), [totalValue, perfTf, transactions])
   const perfHasRealData = useMemo(() => {
     const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[perfTf] || 30
-    return hasRealData(days)
-  }, [perfTf, perfSeries])
+    return hasRealData(days) || transactions.some(tx => tx.date && tx.price_per_unit > 0)
+  }, [perfTf, transactions])
   const perfChange = useMemo(() => {
     if (!perfSeries.length) return { abs: 0, pct: 0 }
     const first = perfSeries[0]?.v || 0
