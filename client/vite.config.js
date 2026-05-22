@@ -7,6 +7,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'es2020',
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 600,
     reportCompressedSize: false,
     rollupOptions: {
@@ -14,7 +15,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'charts':       ['recharts'],
-          'xlsx':         ['xlsx'],
+          // xlsx is dynamically imported inside SmartImport — Rollup emits it as a lazy chunk automatically
         },
       },
     },
