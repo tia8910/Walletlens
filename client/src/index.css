@@ -564,6 +564,7 @@
 [data-wl-light] .bs-cat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text-muted); }
 [data-wl-light] .bs-cat-btn.active { background: rgba(var(--g-rgb),0.12); }
 [data-wl-light] .bs-hint { color: var(--text-sub); }
+[data-wl-light] .bs-hint strong { color: var(--text); }
 [data-wl-light] .bs-step { color: var(--text-sub); }
 [data-wl-light] .bs-divider { background: rgba(0,0,0,0.08); }
 [data-wl-light] .bs-total { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
