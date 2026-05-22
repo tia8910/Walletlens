@@ -1560,8 +1560,8 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
 }
 
 // ── Tools Tab (AI + Risk Scanner + Wallet Eval) ──────────────────────────
-function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets }) {
-  const [tool, setTool] = useState('ai')
+function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
+  const [tool, setTool] = useState(initialTool || 'ai')
   const subTabs = [
     { id: 'ai',     label: 'AI Analysis' },
     { id: 'risk',   label: 'Risk Scanner' },
@@ -2821,6 +2821,7 @@ export default function Dashboard() {
           isDemo={isDemo}
           pricesLoading={pricesLoading}
           coinTargets={coinTargets}
+          initialTool={location.state?.tool}
         />
       )}
 
