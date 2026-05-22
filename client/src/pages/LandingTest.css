@@ -814,7 +814,7 @@
 }
 .lt-pain-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
 .lt-pain-card {
@@ -1006,30 +1006,154 @@
 }
 
 /* ─────────────────────────────────────────────
-   RESPONSIVE
+   MOBILE BASE — touch & tap improvements
 ───────────────────────────────────────────── */
-@media (max-width: 960px) {
-  .lt-hero-inner { flex-direction: column; text-align: center; gap: 48px; }
-  .lt-hero-sub { max-width: 100%; }
-  .lt-ctas { justify-content: center; }
-  .lt-checks { justify-content: center; }
-  .lt-hero-visual { width: 100%; max-width: 460px; }
-  .lt-fbadge-3 { display: none; }
-  .lt-how-inner { flex-direction: column; gap: 48px; }
-  .lt-how-left .lt-sec-head { text-align: center; }
-  .lt-ai-grid { grid-template-columns: repeat(2, 1fr); }
-  .lt-feat-grid { grid-template-columns: repeat(2, 1fr); }
-  .lt-assets-grid { grid-template-columns: repeat(2, 1fr); }
-  .lt-pain-grid { grid-template-columns: 1fr; }
-  .lt-stats-grid { grid-template-columns: repeat(2, 1fr); }
+.lt-root {
+  -webkit-tap-highlight-color: transparent;
+}
+.lt-btn-green, .lt-btn-outline, .lt-btn-cta {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 48px; /* iOS / Android touch target */
+}
+.lt-step, .lt-feat-card, .lt-asset-card, .lt-pain-card, .lt-ai-card {
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari: use dvh so hero fills visible screen below address bar */
+.lt-hero {
+  min-height: 100svh;
+}
+@supports (min-height: 100dvh) {
+  .lt-hero { min-height: 100dvh; }
+}
+
+/* iPhone safe-area (notch / home indicator) */
+.lt-footer {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.lt-scroll-hint {
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — Tablet  ≤ 960px
+───────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .lt-hero-inner   { flex-direction: column; text-align: center; gap: 40px; }
+  .lt-hero-sub     { max-width: 100%; }
+  .lt-ctas         { justify-content: center; }
+  .lt-checks       { justify-content: center; }
+  .lt-hero-visual  { width: 100%; max-width: 480px; margin: 0 auto; }
+  /* hide all floating badges at tablet and below */
+  .lt-fbadge-1, .lt-fbadge-2, .lt-fbadge-3 { display: none; }
+  .lt-how-inner    { flex-direction: column; gap: 40px; }
+  .lt-how-left .lt-sec-head { text-align: center; }
+  /* 4 pain cards → 2×2 */
+  .lt-pain-grid    { grid-template-columns: repeat(2, 1fr); }
+  .lt-feat-grid    { grid-template-columns: repeat(2, 1fr); }
+  .lt-assets-grid  { grid-template-columns: repeat(2, 1fr); }
+  .lt-ai-grid      { grid-template-columns: repeat(2, 1fr); }
+  .lt-stats-grid   { grid-template-columns: repeat(2, 1fr); }
+  .lt-footer-inner { flex-direction: column; gap: 32px; }
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — Mobile  ≤ 600px
+───────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .lt-hero { padding: 80px 0 60px; }
-  .lt-feat-grid { grid-template-columns: 1fr; }
-  .lt-assets-grid { grid-template-columns: 1fr; }
-  .lt-ai-grid { grid-template-columns: 1fr; }
-  .lt-fbadge-1, .lt-fbadge-2 { display: none; }
+  /* Container — tighter side padding */
+  .lt-container { padding: 0 16px; }
+
+  /* Hero */
+  .lt-hero      { padding: 68px 0 44px; }
+  .lt-hero-h1   { font-size: clamp(1.75rem, 8vw, 2.4rem); letter-spacing: -0.03em; }
+  .lt-hero-sub  { font-size: 0.96rem; }
+  .lt-hero-visual { max-width: 100%; }
+  .lt-mock      { padding: 18px 14px; border-radius: 18px; }
+  .lt-mock-total { font-size: 1.7rem; }
   .lt-mock-topbar-title { display: none; }
-  .lt-footer-inner { flex-direction: column; align-items: flex-start; }
+  .lt-mock-ticker { display: none; }
+
+  /* Scroll hint — hide, no room on small phones */
+  .lt-scroll-hint { display: none; }
+
+  /* Section spacing — halve the desktop padding */
+  .lt-stats      { padding: 52px 0; }
+  .lt-pain-sec   { padding: 60px 0; }
+  .lt-feat-sec   { padding: 60px 0; }
+  .lt-assets-sec { padding: 60px 0; }
+  .lt-how-sec    { padding: 60px 0; }
+  .lt-ai-sec     { padding: 64px 0; }
+  .lt-cta-sec    { padding: 72px 0; }
+  .lt-sec-head   { margin-bottom: 32px; }
+
+  /* Section heading sizes */
+  .lt-sec-h2         { font-size: clamp(1.5rem, 6vw, 1.9rem); }
+  .lt-cta-inner h2   { font-size: clamp(1.7rem, 7vw, 2.2rem); }
+  .lt-ai-inner h2    { font-size: clamp(1.6rem, 7vw, 2.1rem); }
+  .lt-ai-inner > p   { margin-bottom: 36px; font-size: 0.95rem; }
+
+  /* Grids → single column */
+  .lt-feat-grid   { grid-template-columns: 1fr; gap: 14px; }
+  .lt-assets-grid { grid-template-columns: 1fr; gap: 14px; }
+  .lt-ai-grid     { grid-template-columns: 1fr; gap: 14px; }
+  .lt-pain-grid   { grid-template-columns: 1fr; gap: 14px; }
+  .lt-stats-grid  { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* Stat numbers — a touch smaller */
+  .lt-stat-num { font-size: 2.6rem; }
+  .lt-stat     { padding: 28px 16px; }
+
+  /* Buttons — full width, easy tap */
+  .lt-ctas            { flex-direction: column; align-items: stretch; gap: 10px; }
+  .lt-btn-green,
+  .lt-btn-outline     { width: 100%; justify-content: center; padding: 16px 20px; }
+  .lt-btn-cta         { width: 100%; justify-content: center; padding: 17px 20px; font-size: 1rem; }
+  .lt-how-left a.lt-btn-green { width: auto; }
+
+  /* Trust checks — smaller gap */
+  .lt-checks  { gap: 10px; }
+  .lt-check   { font-size: 0.8rem; }
+
+  /* CTA perks — stack vertically */
+  .lt-cta-perks { flex-direction: column; gap: 10px; font-size: 0.83rem; }
+
+  /* Steps */
+  .lt-step      { padding: 16px 18px; gap: 14px; }
+  .lt-step-num  { width: 40px; height: 40px; border-radius: 11px; font-size: 0.78rem; flex-shrink: 0; }
+
+  /* Feature cards */
+  .lt-feat-card { padding: 24px 20px; }
+  .lt-feat-ico  { width: 46px; height: 46px; font-size: 1.3rem; }
+
+  /* Asset cards */
+  .lt-asset-card { padding: 28px 20px; }
+
+  /* Pain cards */
+  .lt-pain-card  { padding: 28px 22px; }
+
+  /* How-to left button — full width on tiny screens */
+  .lt-how-left { text-align: center; }
+  .lt-how-left .lt-sec-head { text-align: center; }
+
+  /* Footer */
+  .lt-footer-inner { flex-direction: column; align-items: flex-start; gap: 28px; }
+  .lt-footer-cols  { gap: 28px; }
+  .lt-footer-copy  { font-size: 0.72rem; }
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — Very small  ≤ 375px (iPhone SE, Galaxy A-series)
+───────────────────────────────────────────── */
+@media (max-width: 375px) {
+  .lt-container { padding: 0 14px; }
+  .lt-hero-h1   { font-size: 1.7rem; }
+  .lt-pill      { font-size: 0.75rem; padding: 5px 12px 5px 8px; }
+  .lt-stat-num  { font-size: 2.2rem; }
+  .lt-mock      { padding: 16px 12px; }
+  .lt-mock-total { font-size: 1.5rem; }
+  .lt-mock-price { font-size: 0.78rem; }
+  .lt-mock-chg   { font-size: 0.72rem; min-width: 44px; }
+  .lt-mock-name  { font-size: 0.78rem; }
 }
