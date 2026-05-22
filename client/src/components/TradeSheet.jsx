@@ -282,11 +282,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (px > 0) setAmount(String(parseFloat((buyWithBalanceUsd * spendPct / 100 / px).toFixed(8))))
   }, [price]) // eslint-disable-line
 
-  // Swipe-down to close
+  // Swipe-down to close — high threshold (220px) so normal scrolling never triggers it
   function onTouchStart(e) { dragStartY.current = e.touches[0].clientY }
   function onTouchEnd(e) {
     if (dragStartY.current !== null) {
-      if (e.changedTouches[0].clientY - dragStartY.current > 80) onClose()
+      if (e.changedTouches[0].clientY - dragStartY.current > 220) onClose()
       dragStartY.current = null
     }
   }
