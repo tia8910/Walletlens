@@ -185,6 +185,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [buyWithCustom, setBuyWithCustom] = useState('')
   const [sellFor, setSellFor]           = useState('REMOVE')
   const [sellForCustom, setSellForCustom] = useState('')
+  const [amtMode, setAmtMode]           = useState('qty') // 'qty' | 'usd'
+  const [usdInput, setUsdInput]         = useState('')
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
   const [success, setSuccess]           = useState(false)
@@ -203,7 +205,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!open) return
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null)
-    setSellFor('REMOVE'); setSellForCustom('')
+    setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
@@ -285,6 +287,34 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     const px = parseFloat(price)
     if (px > 0) setAmount(String(parseFloat((buyWithBalanceUsd * spendPct / 100 / px).toFixed(8))))
   }, [price]) // eslint-disable-line
+
+  // When in USD mode, re-derive quantity whenever price updates
+  useEffect(() => {
+    if (amtMode !== 'usd' || !usdInput || !price || price === '…') return
+    const px = parseFloat(price)
+    if (px > 0) setAmount(String(parseFloat((parseFloat(usdInput) / px).toFixed(8))))
+  }, [price, amtMode, usdInput])
+
+  function handleUsdInput(val) {
+    setUsdInput(val)
+    setSpendPct(null)
+    const px = parseFloat(price)
+    if (px > 0 && val) {
+      const qty = parseFloat(val) / px
+      if (isFinite(qty) && qty > 0) setAmount(String(parseFloat(qty.toFixed(8))))
+      else setAmount('')
+    } else { setAmount('') }
+  }
+
+  function switchAmtMode(mode) {
+    setAmtMode(mode)
+    if (mode === 'usd') {
+      const qty = parseFloat(amount), px = parseFloat(price)
+      setUsdInput(qty > 0 && px > 0 ? String(parseFloat((qty * px).toFixed(2))) : '')
+    } else {
+      setUsdInput('')
+    }
+  }
 
   // Swipe-to-close disabled — use the × button only
 
@@ -690,13 +720,43 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* Amount + Price */}
             <div className="bs-row-2">
               <div className="bs-field">
-                <label className="bs-label">
-                  {category === 'gold' || category === 'silver' ? 'Quantity (oz)' :
-                   category === 'stock' ? 'Shares' :
-                   category === 'fiat' ? 'Amount' : 'Amount'}
-                </label>
-                <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
-                  value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.25rem' }}>
+                  <label className="bs-label" style={{ margin:0 }}>
+                    {amtMode === 'usd' ? 'USD Value' :
+                     category === 'gold' || category === 'silver' ? 'Qty (oz)' :
+                     category === 'stock' ? 'Shares' : 'Quantity'}
+                  </label>
+                  {(category === 'crypto' || category === 'stock') && (
+                    <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid rgba(var(--g-rgb),0.22)', flexShrink:0 }}>
+                      <button type="button" onClick={() => switchAmtMode('qty')} style={{
+                        padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
+                        background: amtMode === 'qty' ? 'var(--g)' : 'transparent',
+                        color: amtMode === 'qty' ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
+                      }}>QTY</button>
+                      <button type="button" onClick={() => switchAmtMode('usd')} style={{
+                        padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
+                        background: amtMode === 'usd' ? 'var(--g)' : 'transparent',
+                        color: amtMode === 'usd' ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
+                      }}>$</button>
+                    </div>
+                  )}
+                </div>
+                {amtMode === 'usd' ? (
+                  <div style={{ position:'relative' }}>
+                    <span style={{ position:'absolute', left:'0.75rem', top:'50%', transform:'translateY(-50%)', color:'var(--text-sub)', fontWeight:700, fontSize:'0.9rem', pointerEvents:'none' }}>$</span>
+                    <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                      style={{ paddingLeft:'1.5rem' }}
+                      value={usdInput} onChange={e => handleUsdInput(e.target.value)} />
+                  </div>
+                ) : (
+                  <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                    value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
+                )}
+                {amtMode === 'usd' && amount && parseFloat(amount) > 0 && (
+                  <span style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginTop:'0.2rem' }}>
+                    ≈ {parseFloat(amount).toLocaleString(undefined, { maximumSignificantDigits:6 })} {asset?.symbol?.toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="bs-field">
                 <label className="bs-label">
