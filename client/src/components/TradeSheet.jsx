@@ -68,6 +68,26 @@ const CATEGORIES = [
   { key: 'other',  label: 'Other',   icon: IcoOther,       color: '#a78bfa' },
 ]
 
+// ── Payment leg options (Buy with / Sell for) ─────────────────────────────
+const BUY_WITH_OPTIONS = [
+  { key: 'NONE',   label: 'None',   icon: '⊘', color: '#94a3b8' },
+  { key: 'USDT',   label: 'USDT',   icon: '₮', color: '#26a17b' },
+  { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
+  { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
+  { key: 'USD',    label: 'USD',    icon: '$', color: '#22c55e' },
+  { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
+  { key: 'CUSTOM', label: 'Other',  icon: '✎', color: '#a78bfa' },
+]
+const SELL_FOR_OPTIONS = [
+  { key: 'USD',    label: 'USD',    icon: '$', color: '#22c55e' },
+  { key: 'USDT',   label: 'USDT',   icon: '₮', color: '#26a17b' },
+  { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
+  { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
+  { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
+  { key: 'CUSTOM', label: 'Other',  icon: '✎', color: '#a78bfa' },
+  { key: 'REMOVE', label: 'Remove', icon: '🗑', color: '#f87171' },
+]
+
 // ── Preset asset for each non-crypto category ─────────────────────────────
 function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
   if (cat === 'gold')   return { id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   category: 'gold',   image: '' }
@@ -161,9 +181,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [amount, setAmount]             = useState('')
   const [price, setPrice]               = useState('')
   const [date, setDate]                 = useState(new Date().toISOString().split('T')[0])
-  const [buyWith, setBuyWith]           = useState('NONE')
+  const [buyWith, setBuyWith]           = useState('')
   const [buyWithCustom, setBuyWithCustom] = useState('')
-  const [sellFor, setSellFor]           = useState('USD')
+  const [sellFor, setSellFor]           = useState('')
   const [sellForCustom, setSellForCustom] = useState('')
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
@@ -180,8 +200,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   useEffect(() => {
     if (!open) return
     setCoinSearch(''); setCoinResults([]); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom('')
-    setSellFor('USD'); setSellForCustom('')
+    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom('')
+    setSellFor(''); setSellForCustom('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
@@ -250,6 +270,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   async function submit() {
     if (!asset || !amount || !price || price === '…') { setMsg('Fill all fields.'); return }
+    if (isBuy && !buyWith) { setMsg('Choose what to buy with.'); return }
+    if (!isBuy && !sellFor) { setMsg('Choose what to sell for.'); return }
+    if (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) { setMsg('Enter the asset to buy with.'); return }
+    if (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim()) { setMsg('Enter the asset to sell for.'); return }
     setBusy(true); setMsg('')
     try {
       const wid = walletId || (wallets[0]?.id ?? '1')
@@ -570,59 +594,69 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               )}
             </div>
 
-            {/* Buy with */}
+            {/* Buy with — icon selector, mandatory */}
             {isBuy && (
               <div className="bs-field">
-                <label className="bs-label">Buy with</label>
-                <div className="bs-leg-row">
-                  <select className="bs-input" value={buyWith} onChange={e => setBuyWith(e.target.value)}>
-                    <option value="NONE">None (don't deduct)</option>
-                    <option value="USDT">USDT</option>
-                    <option value="USDC">USDC</option>
-                    <option value="BTC">BTC</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="CUSTOM">Other…</option>
-                  </select>
-                  {buyWith === 'CUSTOM' && (
-                    <input className="bs-input bs-leg-custom" type="text"
-                      placeholder="e.g. SOL, DAI"
-                      value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
-                  )}
+                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
+                <div className="bs-leg-grid">
+                  {BUY_WITH_OPTIONS.map(o => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
+                      style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
+                      onClick={() => setBuyWith(o.key)}
+                    >
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
+                    </button>
+                  ))}
                 </div>
-                <p className="bs-hint">
-                  {buyWith === 'NONE'
-                    ? 'Only adds to holdings — no balance deducted.'
-                    : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
-                </p>
+                {buyWith === 'CUSTOM' && (
+                  <input className="bs-input bs-leg-custom" type="text"
+                    placeholder="e.g. SOL, DAI"
+                    value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
+                )}
+                {buyWith && (
+                  <p className="bs-hint">
+                    {buyWith === 'NONE'
+                      ? 'Only adds to holdings — no balance deducted.'
+                      : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Sell for */}
+            {/* Sell for — icon selector, mandatory */}
             {!isBuy && (
               <div className="bs-field">
-                <label className="bs-label">Sell for</label>
-                <div className="bs-leg-row">
-                  <select className="bs-input" value={sellFor} onChange={e => setSellFor(e.target.value)}>
-                    <option value="USD">USD</option>
-                    <option value="USDT">USDT</option>
-                    <option value="USDC">USDC</option>
-                    <option value="BTC">BTC</option>
-                    <option value="EUR">EUR</option>
-                    <option value="CUSTOM">Other…</option>
-                    <option value="REMOVE">Remove (don't credit)</option>
-                  </select>
-                  {sellFor === 'CUSTOM' && (
-                    <input className="bs-input bs-leg-custom" type="text"
-                      placeholder="e.g. SOL, DAI"
-                      value={sellForCustom} onChange={e => setSellForCustom(e.target.value)} />
-                  )}
+                <label className="bs-label">Sell for <span className="bs-req">*</span></label>
+                <div className="bs-leg-grid">
+                  {SELL_FOR_OPTIONS.map(o => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      className={`bs-leg-chip ${sellFor === o.key ? 'active' : ''}`}
+                      style={sellFor === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
+                      onClick={() => setSellFor(o.key)}
+                    >
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.label}</span>
+                    </button>
+                  ))}
                 </div>
-                <p className="bs-hint">
-                  {sellFor === 'REMOVE'
-                    ? 'Deducted from holdings only — no other balance credited.'
-                    : <>Proceeds{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} credited to <strong>{sellFor === 'CUSTOM' ? (sellForCustom.trim().toUpperCase() || '…') : sellFor}</strong>.</>}
-                </p>
+                {sellFor === 'CUSTOM' && (
+                  <input className="bs-input bs-leg-custom" type="text"
+                    placeholder="e.g. SOL, DAI"
+                    value={sellForCustom} onChange={e => setSellForCustom(e.target.value)} />
+                )}
+                {sellFor && (
+                  <p className="bs-hint">
+                    {sellFor === 'REMOVE'
+                      ? 'Deducted from holdings only — no other balance credited.'
+                      : <>Proceeds{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} credited to <strong>{sellFor === 'CUSTOM' ? (sellForCustom.trim().toUpperCase() || '…') : sellFor}</strong>.</>}
+                  </p>
+                )}
               </div>
             )}
 
@@ -659,7 +693,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <button className="bs-submit"
               style={{ background: isBuy ? 'linear-gradient(135deg,var(--g),var(--gd))' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
               onClick={() => { playTradeSound(isBuy); submit() }}
-              disabled={busy || !asset || !amount || !price}>
+              disabled={busy || !asset || !amount || !price || (isBuy ? !buyWith : !sellFor) || (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) || (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim())}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
             </button>
 

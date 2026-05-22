@@ -5042,11 +5042,33 @@ select.bs-input option { background: var(--bg3); }
   text-align: center;
 }
 
-.bs-leg-row { display: flex; gap: 0.5rem; align-items: flex-start; }
-.bs-leg-row .bs-input { flex: 1; }
-.bs-leg-custom { max-width: 120px; flex: 0 0 auto !important; text-transform: uppercase; }
+.bs-leg-custom { width: 100%; margin-top: 0.5rem; text-transform: uppercase; }
 .bs-hint { font-size: 0.72rem; color: rgba(255,255,255,0.38); margin: 0.2rem 0 0; line-height: 1.45; }
 .bs-hint strong { color: rgba(255,255,255,0.72); }
+
+/* ── Payment leg icon selector (Buy with / Sell for) ── */
+.bs-req { color: #f87171; font-weight: 900; }
+.bs-leg-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;
+}
+@media (max-width: 380px) { .bs-leg-grid { grid-template-columns: repeat(3, 1fr); } }
+.bs-leg-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 0.18rem;
+  background: rgba(var(--g-rgb),0.04);
+  border: 1.5px solid rgba(var(--g-rgb),0.14);
+  border-radius: 12px;
+  padding: 0.5rem 0.25rem;
+  cursor: pointer; transition: all 0.15s;
+  font-family: inherit;
+  min-height: 56px;
+}
+.bs-leg-chip:hover { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.06); }
+.bs-leg-chip-icon { font-size: 1.2rem; line-height: 1; font-weight: 800; }
+.bs-leg-chip-label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); }
+.bs-leg-chip.active { font-weight: 800; }
+.bs-leg-chip.active .bs-leg-chip-label { font-weight: 800; }
+[data-wl-light] .bs-leg-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .bs-leg-chip:hover { border-color: rgba(0,0,0,0.25); background: rgba(0,0,0,0.06); }
 
 .bs-signal-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
 .bs-signal-toggle {
