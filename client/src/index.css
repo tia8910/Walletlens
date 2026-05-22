@@ -494,8 +494,8 @@
 
 /* ── Exchange Partners — keep dark even in light mode ── */
 [data-wl-light] .ep-strip-label { color: var(--text-sub); }
-[data-wl-light] .ep-strip-btn { background: rgba(15,15,22,0.88); border-color: rgba(255,255,255,0.1); }
-[data-wl-light] .ep-strip-btn:hover { background: rgba(25,25,38,0.95); border-color: rgba(255,255,255,0.18); }
+[data-wl-light] .ep-strip-btn { background: #0a0a10; border-color: rgba(255,255,255,0.1); }
+[data-wl-light] .ep-strip-btn:hover { background: #18181f; border-color: rgba(255,255,255,0.18); }
 [data-wl-light] .ep-cards-label { color: var(--text-muted); }
 [data-wl-light] .ep-card { background: var(--ex-bg); border-color: rgba(255,255,255,0.08); }
 [data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.25); }
@@ -564,6 +564,7 @@
 [data-wl-light] .bs-cat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text-muted); }
 [data-wl-light] .bs-cat-btn.active { background: rgba(var(--g-rgb),0.12); }
 [data-wl-light] .bs-hint { color: var(--text-sub); }
+[data-wl-light] .bs-hint strong { color: var(--text); }
 [data-wl-light] .bs-step { color: var(--text-sub); }
 [data-wl-light] .bs-divider { background: rgba(0,0,0,0.08); }
 [data-wl-light] .bs-total { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
@@ -880,7 +881,8 @@
 [data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
 [data-wl-light] .news-card-time    { color: var(--text-sub); }
 [data-wl-light] .news-modal-close  { color: var(--text-sub); }
-[data-wl-light] .news-modal-share-btn { color: var(--text-sub); }
+[data-wl-light] .news-modal-share-btn { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.7); }
+[data-wl-light] .news-modal-share-btn:hover { background: rgba(0,0,0,0.13); color: #000; }
 
 /* ── Buy Sheet extras (bs-chip, bs-sector-btn, bs-ticker-*) ── */
 [data-wl-light] .bs-chip         { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
@@ -888,7 +890,8 @@
 [data-wl-light] .bs-sector-btn   { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .bs-ticker-sym   { color: var(--text); }
 [data-wl-light] .bs-ticker-name  { color: var(--text-sub); }
-[data-wl-light] .bs-close        { color: var(--text-sub); }
+[data-wl-light] .bs-close { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.25); color: rgba(0,0,0,0.75); }
+[data-wl-light] .bs-close:hover { background: rgba(0,0,0,0.18); border-color: rgba(0,0,0,0.4); color: #000; }
 [data-wl-light] .bs-partner-label { color: var(--text-sub); }
 
 /* ── Partner exchange cards (in buy sheet / market) ── */
@@ -4827,13 +4830,13 @@ tr:last-child td { border-bottom: none; }
 .bs-type-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
 .bs-title { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: 0.01em; }
 .bs-close {
-  background: rgba(var(--g-rgb),0.08); border: 1px solid rgba(var(--g-rgb),0.2);
-  border-radius: 50%; width: 34px; height: 34px;
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.28);
+  border-radius: 50%; width: 42px; height: 42px;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.65); cursor: pointer; flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
+  color: rgba(255,255,255,0.9); cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.bs-close:hover { background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.45); color: #fff; }
+.bs-close:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); color: #fff; }
 
 .bs-body { padding: 0.8rem 1.4rem 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 @media (max-width: 480px) {
@@ -7425,17 +7428,17 @@ input[type="date"] { color-scheme: dark; }
 }
 .news-modal-share-btn {
   align-self: flex-start;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
   border-radius: 6px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.55);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem; font-weight: 600; font-family: inherit;
+  color: #fff;
   cursor: pointer;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   transition: background 0.15s, color 0.15s;
 }
-.news-modal-share-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.news-modal-share-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
 
 /* ── Partner Exchanges — Exchanges page ────────────────────────────────── */
 .partner-exchanges-section { margin-bottom: 1.25rem; }
@@ -8332,3 +8335,140 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .wm-handle    { background: rgba(255,255,255,0.3); }
 [data-wl-light] .wm-skip      { color: rgba(0,0,0,0.32); }
 [data-wl-light] .wm-skip:hover { color: rgba(0,0,0,0.55); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive white-text overrides (pass 2)
+   Covers every class that uses color:#fff or rgba(255,255,255,…) for text
+   without a prior [data-wl-light] rule.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Exchange partner cards / strip */
+[data-wl-light] .ep-card-tagline { color: rgba(0,0,0,0.45); }
+[data-wl-light] .ep-card-fee     { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ep-card-bonus   { color: rgba(0,0,0,0.55); }
+[data-wl-light] .ep-strip-name   { color: var(--text); }
+
+/* Ticker row */
+[data-wl-light] .tick-name { color: var(--text); }
+
+/* Quick-stats modal */
+[data-wl-light] .qs-value       { color: var(--text); }
+[data-wl-light] .qs-label       { color: rgba(0,0,0,0.45); }
+[data-wl-light] .qs-stat-val    { color: var(--text); }
+[data-wl-light] .qs-stat-label  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .qs-mover-coin  { color: var(--text); }
+[data-wl-light] .qs-mover-label { color: rgba(0,0,0,0.45); }
+[data-wl-light] .qs-empty       { color: rgba(0,0,0,0.38); }
+[data-wl-light] .qs-close       { color: rgba(0,0,0,0.35); }
+[data-wl-light] .qs-close:hover { color: var(--text); background: rgba(0,0,0,0.06); }
+
+/* AI Decision Engine */
+[data-wl-light] .ai-section-title { color: var(--text); }
+[data-wl-light] .ai-mc-name       { color: var(--text); }
+[data-wl-light] .ai-today-sym     { color: var(--text); }
+[data-wl-light] .ai-entry-sym     { color: var(--text); }
+[data-wl-light] .ai-rebal-sym     { color: var(--text); }
+[data-wl-light] .ai-badge         { color: var(--text); }
+[data-wl-light] .ade-trigger-sub  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-confidence   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-assets-title { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-asset-weight { color: rgba(0,0,0,0.38); }
+[data-wl-light] .ade-reason       { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-disclaimer   { color: rgba(0,0,0,0.3); }
+[data-wl-light] .ade-empty        { color: rgba(0,0,0,0.38); }
+
+/* AI Advanced Settings panel */
+[data-wl-light] .ai-adv-setup-title { color: var(--text); }
+[data-wl-light] .ai-adv-cta-title   { color: var(--text); }
+[data-wl-light] .ai-adv-h3 { color: var(--text); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .ai-adv-h4 { color: var(--text); }
+[data-wl-light] .ai-adv-key-input {
+  background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12);
+  color: var(--text);
+}
+
+/* Price alerts */
+[data-wl-light] .pal-toast       { background: rgba(var(--g-rgb),0.08); border-color: rgba(var(--g-rgb),0.25); color: var(--text); }
+[data-wl-light] .pal-title       { color: var(--text); }
+[data-wl-light] .pal-form-title  { color: var(--text); }
+[data-wl-light] .pal-sym         { color: var(--text); }
+[data-wl-light] .pal-empty-title { color: var(--text); }
+[data-wl-light] .pal-select      { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .pal-price-input { color: var(--text); }
+
+/* DVX vault goals */
+[data-wl-light] .dvx-goal-input   { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+[data-wl-light] .dvx-goal-current { color: var(--text); }
+
+/* Smart alerts */
+[data-wl-light] .sa-title        { color: var(--text); }
+[data-wl-light] .sa-cfg-title    { color: var(--text); }
+[data-wl-light] .sa-card-symbol  { color: var(--text); }
+[data-wl-light] .sa-cfg-btn:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+
+/* Risk budget */
+[data-wl-light] .rb-sum-val { color: var(--text); }
+[data-wl-light] .rb-sym     { color: var(--text); }
+
+/* Milestones */
+[data-wl-light] .ms-title { color: var(--text); }
+
+/* News feed */
+[data-wl-light] .news-title               { color: var(--text); }
+[data-wl-light] .news-filter-pill:hover   { color: var(--text); background: rgba(0,0,0,0.06); }
+[data-wl-light] .news-refresh-btn:hover   { color: var(--text); }
+
+/* Global placeholder text */
+[data-wl-light] input::placeholder,
+[data-wl-light] textarea::placeholder     { color: rgba(0,0,0,0.3); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive pass 3
+   Covers all remaining white-rgba text without [data-wl-light] protection
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Tips / trade-tips panel */
+[data-wl-light] .tips-counter    { color: rgba(0,0,0,0.35); }
+[data-wl-light] .tips-dismiss    { color: rgba(0,0,0,0.3); }
+
+/* AI Decision Engine — sub-labels */
+[data-wl-light] .ade-trigger-sub  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-step-label   { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-confidence   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-assets-title { color: rgba(0,0,0,0.4); }
+[data-wl-light] .ade-asset-weight { color: rgba(0,0,0,0.35); }
+[data-wl-light] .ade-reason       { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ade-disclaimer   { color: rgba(0,0,0,0.28); }
+[data-wl-light] .ade-empty        { color: rgba(0,0,0,0.38); }
+
+/* AI Advanced settings */
+[data-wl-light] .ai-adv-key-remove { color: rgba(0,0,0,0.45); }
+[data-wl-light] .ai-adv-cta-sub   { color: rgba(0,0,0,0.5); }
+[data-wl-light] .ai-chat-empty    { color: rgba(0,0,0,0.4); }
+
+/* Price alerts */
+[data-wl-light] .pal-label         { color: rgba(0,0,0,0.5); }
+[data-wl-light] .pal-dollar        { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-section-label { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-del-btn       { color: rgba(0,0,0,0.4); }
+[data-wl-light] .pal-reset-btn     { color: rgba(0,0,0,0.45); }
+
+/* Risk scanner */
+[data-wl-light] .risk-rescan-btn  { color: rgba(0,0,0,0.45); }
+[data-wl-light] .risk-scam-desc   { color: rgba(0,0,0,0.5); }
+
+/* Alpha / signal scores */
+[data-wl-light] .alpha-score-label { color: rgba(0,0,0,0.4); }
+
+/* Academy */
+[data-wl-light] .acad-iq-guide-title { color: rgba(0,0,0,0.45); }
+
+/* Token unlock announcements */
+[data-wl-light] .tua-header-sub  { color: rgba(0,0,0,0.45); }
+[data-wl-light] .tua-chevron     { color: rgba(0,0,0,0.3); }
+[data-wl-light] .tua-show-more   { color: rgba(0,0,0,0.4); }
+[data-wl-light] .tua-source-link { color: rgba(0,0,0,0.35); }
+
+/* Smart alerts */
+[data-wl-light] .sa-clear-btn  { color: rgba(0,0,0,0.4); }
+[data-wl-light] .sa-dismiss    { color: rgba(0,0,0,0.35); }
