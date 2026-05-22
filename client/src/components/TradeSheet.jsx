@@ -181,9 +181,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [amount, setAmount]             = useState('')
   const [price, setPrice]               = useState('')
   const [date, setDate]                 = useState(new Date().toISOString().split('T')[0])
-  const [buyWith, setBuyWith]           = useState('')
+  const [buyWith, setBuyWith]           = useState('NONE')
   const [buyWithCustom, setBuyWithCustom] = useState('')
-  const [sellFor, setSellFor]           = useState('')
+  const [sellFor, setSellFor]           = useState('REMOVE')
   const [sellForCustom, setSellForCustom] = useState('')
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
@@ -202,8 +202,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   useEffect(() => {
     if (!open) return
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom(''); setSpendPct(null)
-    setSellFor(''); setSellForCustom('')
+    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null)
+    setSellFor('REMOVE'); setSellForCustom('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
