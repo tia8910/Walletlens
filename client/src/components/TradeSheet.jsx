@@ -282,14 +282,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (px > 0) setAmount(String(parseFloat((buyWithBalanceUsd * spendPct / 100 / px).toFixed(8))))
   }, [price]) // eslint-disable-line
 
-  // Swipe-down to close — high threshold (220px) so normal scrolling never triggers it
-  function onTouchStart(e) { dragStartY.current = e.touches[0].clientY }
-  function onTouchEnd(e) {
-    if (dragStartY.current !== null) {
-      if (e.changedTouches[0].clientY - dragStartY.current > 220) onClose()
-      dragStartY.current = null
-    }
-  }
+  // Swipe-to-close disabled — use the × button only
 
   async function submit() {
     if (!asset || !amount || !price || price === '…') { setMsg('Fill all fields.'); return }
@@ -379,7 +372,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   return (
     <>
       <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} />
-      <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''}`}>
         <div className="bs-handle" />
 
         <div className="bs-header">

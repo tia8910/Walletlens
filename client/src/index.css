@@ -494,8 +494,8 @@
 
 /* ── Exchange Partners — keep dark even in light mode ── */
 [data-wl-light] .ep-strip-label { color: var(--text-sub); }
-[data-wl-light] .ep-strip-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
-[data-wl-light] .ep-strip-btn:hover { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.2); }
+[data-wl-light] .ep-strip-btn { background: #0a0a10; border-color: rgba(255,255,255,0.1); }
+[data-wl-light] .ep-strip-btn:hover { background: #18181f; border-color: rgba(255,255,255,0.18); }
 [data-wl-light] .ep-cards-label { color: var(--text-muted); }
 [data-wl-light] .ep-card { background: var(--ex-bg); border-color: rgba(255,255,255,0.08); }
 [data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.25); }
@@ -889,7 +889,8 @@
 [data-wl-light] .bs-sector-btn   { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .bs-ticker-sym   { color: var(--text); }
 [data-wl-light] .bs-ticker-name  { color: var(--text-sub); }
-[data-wl-light] .bs-close        { color: var(--text-sub); }
+[data-wl-light] .bs-close { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.25); color: rgba(0,0,0,0.75); }
+[data-wl-light] .bs-close:hover { background: rgba(0,0,0,0.18); border-color: rgba(0,0,0,0.4); color: #000; }
 [data-wl-light] .bs-partner-label { color: var(--text-sub); }
 
 /* ── Partner exchange cards (in buy sheet / market) ── */
@@ -4828,13 +4829,13 @@ tr:last-child td { border-bottom: none; }
 .bs-type-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
 .bs-title { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: 0.01em; }
 .bs-close {
-  background: rgba(var(--g-rgb),0.08); border: 1px solid rgba(var(--g-rgb),0.2);
-  border-radius: 50%; width: 34px; height: 34px;
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.28);
+  border-radius: 50%; width: 42px; height: 42px;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.65); cursor: pointer; flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
+  color: rgba(255,255,255,0.9); cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.bs-close:hover { background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.45); color: #fff; }
+.bs-close:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); color: #fff; }
 
 .bs-body { padding: 0.8rem 1.4rem 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 @media (max-width: 480px) {
