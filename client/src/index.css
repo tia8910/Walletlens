@@ -890,8 +890,8 @@
 [data-wl-light] .bs-sector-btn   { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .bs-ticker-sym   { color: var(--text); }
 [data-wl-light] .bs-ticker-name  { color: var(--text-sub); }
-[data-wl-light] .bs-close { background: #111; border-color: rgba(0,0,0,0.5); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
-[data-wl-light] .bs-close:hover { background: #000; border-color: rgba(0,0,0,0.7); color: #fff; }
+[data-wl-light] .bs-close { background: #0d1a10; border-color: rgba(0,200,83,0.4); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+[data-wl-light] .bs-close:hover { background: #122818; border-color: rgba(0,200,83,0.7); box-shadow: 0 4px 16px rgba(0,0,0,0.2), 0 0 12px rgba(0,200,83,0.2); }
 [data-wl-light] .bs-partner-label { color: var(--text-sub); }
 
 /* ── Partner exchange cards (in buy sheet / market) ── */
@@ -4830,21 +4830,20 @@ tr:last-child td { border-bottom: none; }
 .bs-type-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
 .bs-title { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: 0.01em; }
 .bs-close {
-  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; cursor: pointer;
-  background: #0d0d0d;
-  border: 2px solid rgba(255,255,255,0.18);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.55);
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+  background: #0d1a10;
+  border: 2px solid rgba(0,200,83,0.35);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.15s;
 }
 .bs-close svg { transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1); }
 .bs-close:hover {
-  background: #222;
-  border-color: rgba(255,255,255,0.25);
-  color: #fff;
+  background: #122818;
+  border-color: rgba(0,200,83,0.65);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 12px rgba(0,200,83,0.25);
 }
-.bs-close:hover svg { transform: rotate(90deg) scale(1.12); }
+.bs-close:hover svg { transform: rotate(90deg) scale(1.1); }
 .bs-close:active { transform: scale(0.88); }
 
 .bs-body { padding: 0.8rem 1.4rem 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
@@ -4927,7 +4926,7 @@ select.bs-input option { background: var(--bg3); }
 }
 .bs-coin-thumb { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
 .bs-coin-info { display: flex; flex-direction: column; flex: 1; }
-.bs-coin-info strong { font-size: 0.92rem; font-weight: 700; }
+.bs-coin-info strong { font-size: 0.92rem; font-weight: 700; color: var(--text); }
 .bs-coin-info span { font-size: 0.72rem; color: rgba(var(--g-rgb),0.7); }
 .bs-coin-clear {
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
