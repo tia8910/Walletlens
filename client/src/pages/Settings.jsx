@@ -69,12 +69,12 @@ export default function Settings() {
         <h3 className="settings-section-title">🎨 Appearance</h3>
 
         {/* Color Theme */}
-        <div className="settings-row">
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
           <div className="settings-label">
             <span>Color Theme</span>
             <span className="settings-hint">Changes accent colors across the app</span>
           </div>
-          <div className="settings-chips" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="settings-chips" style={{ flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-start' }}>
             {COLOR_THEMES.map(t => (
               <button key={t.id}
                 className={`settings-chip ${colorTheme === t.id ? 'active' : ''}`}
