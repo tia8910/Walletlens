@@ -734,6 +734,7 @@ const DEMO = {
 
 const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtN  = n => { const s = Math.abs(n) >= 1000 ? `$${(Math.abs(n)/1000).toFixed(1)}k` : `$${Math.abs(n).toFixed(0)}`; return n < 0 ? `-${s}` : s }
+const fmtAmt = n => { const v = parseFloat(n); if (!isFinite(v)) return '0'; if (v >= 100) return v.toLocaleString(undefined, { maximumFractionDigits: 2 }); if (v >= 1) return v.toLocaleString(undefined, { maximumFractionDigits: 4 }); return v.toLocaleString(undefined, { maximumSignificantDigits: 4 }) }
 const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
@@ -1879,6 +1880,14 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
   const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
+  const [txHistOpen, setTxHistOpen]       = useState(false)
+  const [isMobile, setIsMobile]           = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const handler = e => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   // ── Timed nudge toast (fires after 15 min if no trade logged) ──────────
   const [nudgeVisible, setNudgeVisible] = useState(false)
@@ -2571,6 +2580,11 @@ export default function Dashboard() {
             })()}
           </div>}
 
+          {/* Goal Tracker — pinned to top on mobile */}
+          {isMobile && enriched.length > 0 && (
+            <GoalTracker currentValue={totalValue} />
+          )}
+
           {/* Main grid */}
           <div className="dvx-grid">
             {/* Left column */}
@@ -2663,30 +2677,75 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Recent transactions */}
-              <div className="glass-card">
-                <h3>{t('recentTransactions')}</h3>
-                {recentTxs.length === 0
-                  ? <p className="muted">{t('noTransactions')}</p>
-                  : <ul className="dvx-tx-list">
-                    {recentTxs.map(tx => {
-                      const isBuy = tx.type === 'buy' || tx.type === 'deposit'
-                      return (
-                        <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                          <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
-                            {isBuy ? Ico.buy : Ico.sell}
-                          </span>
-                          <div className="dvx-tx-meta">
-                            <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
-                            <span className="muted">{tx.amount} @ ${fmt(tx.price_per_unit || 0)}</span>
-                          </div>
-                          <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                }
-              </div>
+              {/* Recent transactions — collapsible on mobile */}
+              {isMobile ? (
+                <div className="glass-card" style={{ padding: '0' }}>
+                  <button
+                    onClick={() => setTxHistOpen(v => !v)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.85rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text)', fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
+                    }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {t('recentTransactions')}
+                      {recentTxs.length > 0 && <span style={{ background: 'rgba(var(--g-rgb),0.15)', color: 'var(--g)', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '99px' }}>{recentTxs.length}</span>}
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ opacity: 0.5, transition: 'transform 0.2s', transform: txHistOpen ? 'rotate(180deg)' : 'none' }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  {txHistOpen && (
+                    <div style={{ padding: '0 0.85rem 0.85rem' }}>
+                      {recentTxs.length === 0
+                        ? <p className="muted" style={{ margin: 0 }}>{t('noTransactions')}</p>
+                        : <ul className="dvx-tx-list">
+                          {recentTxs.map(tx => {
+                            const isBuy = tx.type === 'buy' || tx.type === 'deposit'
+                            return (
+                              <li key={tx.id} className="dvx-tx-item holo-card-v2">
+                                <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
+                                  {isBuy ? Ico.buy : Ico.sell}
+                                </span>
+                                <div className="dvx-tx-meta">
+                                  <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
+                                  <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
+                                </div>
+                                <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      }
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="glass-card">
+                  <h3>{t('recentTransactions')}</h3>
+                  {recentTxs.length === 0
+                    ? <p className="muted">{t('noTransactions')}</p>
+                    : <ul className="dvx-tx-list">
+                      {recentTxs.map(tx => {
+                        const isBuy = tx.type === 'buy' || tx.type === 'deposit'
+                        return (
+                          <li key={tx.id} className="dvx-tx-item holo-card-v2">
+                            <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
+                              {isBuy ? Ico.buy : Ico.sell}
+                            </span>
+                            <div className="dvx-tx-meta">
+                              <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
+                              <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
+                            </div>
+                            <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  }
+                </div>
+              )}
             </div>
 
             {/* Right column */}
@@ -2719,8 +2778,8 @@ export default function Dashboard() {
                 }
               </div>
 
-              {/* Goal-Based Portfolio Tracker */}
-              <GoalTracker currentValue={totalValue} />
+              {/* Goal-Based Portfolio Tracker — hidden on mobile (shown above the grid) */}
+              {!isMobile && <GoalTracker currentValue={totalValue} />}
 
               {/* Market Mood — sentiment from crypto headlines */}
               <MarketMood />
