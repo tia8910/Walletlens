@@ -4123,7 +4123,7 @@ tr:last-child td { border-bottom: none; }
 .dvx {
   display: flex; flex-direction: column; gap: 1.25rem;
   padding: 0.5rem 0 5rem; color: var(--text);
-  width: 100%; overflow-x: hidden;
+  width: 100%;
 }
 
 /* Tab nav */
