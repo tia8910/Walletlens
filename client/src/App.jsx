@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
-const Landing   = lazy(() => import('./pages/Landing'))
+const Landing       = lazy(() => import('./pages/Landing'))
+const LandingTest   = lazy(() => import('./pages/LandingTest'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -271,6 +272,7 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/land-test" element={<LandingTest />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/market" element={<Market />} />
