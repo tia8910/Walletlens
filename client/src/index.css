@@ -494,8 +494,8 @@
 
 /* ── Exchange Partners — keep dark even in light mode ── */
 [data-wl-light] .ep-strip-label { color: var(--text-sub); }
-[data-wl-light] .ep-strip-btn { background: rgba(15,15,22,0.88); border-color: rgba(255,255,255,0.1); }
-[data-wl-light] .ep-strip-btn:hover { background: rgba(25,25,38,0.95); border-color: rgba(255,255,255,0.18); }
+[data-wl-light] .ep-strip-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .ep-strip-btn:hover { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.2); }
 [data-wl-light] .ep-cards-label { color: var(--text-muted); }
 [data-wl-light] .ep-card { background: var(--ex-bg); border-color: rgba(255,255,255,0.08); }
 [data-wl-light] .ep-card-bottom { background: rgba(0,0,0,0.25); }
