@@ -5784,11 +5784,12 @@ input[type="date"] { color-scheme: dark; }
   background: rgba(var(--g-rgb),0.1);
   border: 1px solid rgba(var(--g-rgb),0.3);
   border-radius: 20px;
-  color: #00ffaa;
-  font-size: .8rem; font-weight: 600;
+  color: var(--gd);
+  font-size: .8rem; font-weight: 700;
   cursor: pointer;
   transition: background .2s, border-color .2s, transform .15s;
 }
+[data-wl-light] .dvx-share-btn { color: var(--gd); }
 .dvx-share-btn:hover { background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.6); transform: translateY(-1px); }
 
 /* ── Share modal ───────────────────────────────────────────────────────── */
@@ -7813,13 +7814,6 @@ input[type="date"] { color-scheme: dark; }
 }
 .settings-toggle.on .settings-toggle-thumb {
   transform: translateX(18px);
-}
-
-/* FAB pulse animation */
-@keyframes fab-pulse {
-  0%   { box-shadow: 0 4px 20px rgba(var(--g-rgb),0.55), 0 0 0 0 rgba(var(--g-rgb),0.4); }
-  60%  { box-shadow: 0 4px 20px rgba(var(--g-rgb),0.55), 0 0 0 12px rgba(var(--g-rgb),0); }
-  100% { box-shadow: 0 4px 20px rgba(var(--g-rgb),0.55), 0 0 0 0 rgba(var(--g-rgb),0); }
 }
 
 /* ── Smart Alerts 2.0 ─────────────────────────────────────────────────── */
