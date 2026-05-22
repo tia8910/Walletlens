@@ -4234,7 +4234,7 @@ tr:last-child td { border-bottom: none; }
 }
 /* single-column layout matches mobile — no 2-col split on desktop */
 .dvx-col-main, .dvx-col-side { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; width: 100%; }
-/* On mobile, side col (Holdings → Goal → charts) renders before main col (P&L → Net Worth → Tx) */
+/* On mobile, side col (Goal → Holdings → charts) renders before main col (P&L → Net Worth → Tx) */
 @media (max-width: 639px) { .dvx-col-side { order: -1; } }
 
 /* Tx list */
