@@ -1482,7 +1482,17 @@ function ConstellationMap() {
   )
 }
 
-function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
+const QUICK_ADD_ASSETS = [
+  { label:'USDT', bg:'#26a17b', icon:'₮', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
+  { label:'USDC', bg:'#2775ca', icon:'$', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
+  { label:'BTC',  bg:'#f7931a', icon:'₿', prefill:{ category:'crypto', coin:{ id:'bitcoin',  symbol:'BTC',  name:'Bitcoin'  } } },
+  { label:'ETH',  bg:'#627eea', icon:'Ξ', prefill:{ category:'crypto', coin:{ id:'ethereum', symbol:'ETH',  name:'Ethereum' } } },
+  { label:'Gold', bg:'#b45309', icon:'Au', prefill:{ category:'gold' } },
+  { label:'NVDA', bg:'#76b900', icon:'N', prefill:{ category:'stock', stockTicker:'NVDA' } },
+  { label:'AAPL', bg:'#555',    icon:'', prefill:{ category:'stock', stockTicker:'AAPL' } },
+]
+
+function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded }) {
   if (!loaded) return null
 
   // Inject keyframes once
@@ -1525,23 +1535,42 @@ function EmptyPortfolio({ onAddTrade, navigate, loaded }) {
         <span style={{ fontSize:'1.1rem' }}>➕</span> Add a trade
       </button>
 
-      {/* Secondary actions */}
-      <div style={{ display:'flex', gap:'0.6rem', justifyContent:'center', flexWrap:'wrap', marginBottom:'1.25rem' }}>
-        {[
-          { icon:'🔍', label:'Browse market', action:() => navigate('/market'), color:'#60a5fa' },
-          { icon:'🐋', label:'Watch whales',  action:() => navigate('/whales'),  color:'#a78bfa' },
-        ].map(s => (
-          <button key={s.label} onClick={s.action} style={{
-            display:'inline-flex', alignItems:'center', gap:'0.4rem',
-            padding:'0.55rem 1.1rem', borderRadius:'50px',
+      {/* Quick-add chips */}
+      <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
+        Or quickly add
+      </div>
+      <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
+        {QUICK_ADD_ASSETS.map(a => (
+          <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
+            display:'inline-flex', alignItems:'center', gap:'0.38rem',
+            padding:'0.42rem 0.8rem', borderRadius:'50px',
             background:'var(--surface-1)',
-            border:`1px solid ${s.color}33`,
-            color:s.color, fontWeight:700, fontSize:'0.82rem', cursor:'pointer',
-            transition:'background 0.15s',
+            border:'1.5px solid rgba(var(--g-rgb),0.18)',
+            color:'var(--text)', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
+            transition:'border-color 0.15s, background 0.15s',
           }}>
-            {s.icon} {s.label}
+            <span style={{
+              width:20, height:20, borderRadius:'50%', background:a.bg,
+              display:'inline-flex', alignItems:'center', justifyContent:'center',
+              fontSize:'0.6rem', color:'white', fontWeight:800, flexShrink:0,
+            }}>{a.icon}</span>
+            <span style={{ color:'var(--g)', fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
+            {a.label}
           </button>
         ))}
+      </div>
+
+      {/* Browse market */}
+      <div style={{ display:'flex', justifyContent:'center', marginBottom:'1.25rem' }}>
+        <button onClick={() => navigate('/market')} style={{
+          display:'inline-flex', alignItems:'center', gap:'0.4rem',
+          padding:'0.55rem 1.4rem', borderRadius:'50px',
+          background:'var(--surface-1)',
+          border:'1px solid #60a5fa33',
+          color:'#60a5fa', fontWeight:700, fontSize:'0.82rem', cursor:'pointer',
+        }}>
+          🔍 Browse market
+        </button>
       </div>
 
       {/* Exchange strip — buy before you track */}
@@ -1815,7 +1844,8 @@ export default function Dashboard() {
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
-  const openSheet = useCallback((t, source = 'dashboard') => { setSheetType(t); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
+  const [sheetPrefill, setSheetPrefill]   = useState(null)
+  const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
 
   // ── Timed nudge toast (fires after 15 min if no trade logged) ──────────
   const [nudgeVisible, setNudgeVisible] = useState(false)
@@ -2165,7 +2195,7 @@ export default function Dashboard() {
         <>
           {/* Empty state for new users */}
           {!loaded || enriched.length === 0 ? (
-            <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} navigate={navigate} loaded={loaded} />
+            <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)} navigate={navigate} loaded={loaded} />
           ) : null}
 
           {/* Live news ticker */}
@@ -2857,6 +2887,9 @@ export default function Dashboard() {
         wallets={wallets}
         onDone={loadAll}
         holdings={enriched}
+        prefillCoin={sheetPrefill?.coin}
+        prefillCategory={sheetPrefill?.category}
+        prefillStockTicker={sheetPrefill?.stockTicker}
       />
 
       {/* ── Nudge toast — appears after 20s idle ── */}
