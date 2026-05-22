@@ -272,7 +272,7 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/land-test" element={<LandingTest />} />
+              <Route path="/landingtest" element={<LandingTest />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/market" element={<Market />} />
