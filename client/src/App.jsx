@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
-const Landing       = lazy(() => import('./pages/Landing'))
 const LandingTest   = lazy(() => import('./pages/LandingTest'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
@@ -202,8 +201,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const { t } = useLanguage()
-  const isLandingTest = location.pathname === '/landingtest'
-  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || isLandingTest
+  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -229,10 +227,8 @@ export default function App() {
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
-        {!isLandingTest && <DynamicBackground particleCount={120} linkDistance={160} />}
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/landingtest" element={<LandingTest />} />
+          <Route path="/" element={<LandingTest />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
@@ -273,7 +269,6 @@ export default function App() {
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
-              <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/market" element={<Market />} />
