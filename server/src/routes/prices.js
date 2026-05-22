@@ -35,6 +35,7 @@ router.get('/', async (req, res) => {
   for (const id of coinIds) {
     if (priceCache[id]) result[id] = priceCache[id];
   }
+  res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
   res.json(result);
 });
 
@@ -53,6 +54,7 @@ router.get('/search', async (req, res) => {
       name: c.name,
       thumb: c.thumb,
     }));
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(coins);
   } catch (err) {
     console.error('Search error:', err.message);
@@ -66,6 +68,7 @@ router.get('/market', async (req, res) => {
       'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h'
     );
     const data = await response.json();
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
     res.json(data);
   } catch (err) {
     console.error('Market data error:', err.message);
