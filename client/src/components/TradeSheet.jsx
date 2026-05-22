@@ -189,6 +189,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [msg, setMsg]                   = useState('')
   const [success, setSuccess]           = useState(false)
   const [signalOpen, setSignalOpen]     = useState(false)
+  const [holdingsFilter, setHoldingsFilter] = useState('')
+  const [spendPct, setSpendPct]         = useState(null)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -199,8 +201,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Reset form when sheet opens
   useEffect(() => {
     if (!open) return
-    setCoinSearch(''); setCoinResults([]); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom('')
+    setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
+    setAmount(''); setPrice(''); setBuyWith(''); setBuyWithCustom(''); setSpendPct(null)
     setSellFor(''); setSellForCustom('')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
@@ -258,6 +260,27 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const asset = resolveAssetMeta()
   const holdingForCoin = holdings?.find(h => h.coin_id === asset?.id)
   const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
+
+  // Map buyWith key → coin_id in holdings, for balance lookup
+  const BUY_WITH_COIN_IDS = {
+    USD:  `${FIAT_PREFIX}usd`,
+    USDT: 'tether',
+    USDC: 'usd-coin',
+    BTC:  'bitcoin',
+    EUR:  `${FIAT_PREFIX}eur`,
+  }
+  const buyWithHolding = (isBuy && buyWith && buyWith !== 'NONE' && buyWith !== 'CUSTOM')
+    ? holdings?.find(h => h.coin_id === BUY_WITH_COIN_IDS[buyWith])
+    : null
+  const buyWithBalanceUsd = buyWithHolding?.value ?? 0
+  const buyWithBalanceAmt = buyWithHolding?.amount ?? 0
+
+  // Recalculate amount when price arrives after a % pct is selected
+  useEffect(() => {
+    if (!spendPct || !buyWithBalanceUsd || !price || price === '…') return
+    const px = parseFloat(price)
+    if (px > 0) setAmount(String(parseFloat((buyWithBalanceUsd * spendPct / 100 / px).toFixed(8))))
+  }, [price]) // eslint-disable-line
 
   // Swipe-down to close
   function onTouchStart(e) { dragStartY.current = e.touches[0].clientY }
@@ -399,6 +422,70 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <ExchangePartners compact source={`trade_form_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
             </div>
 
+            {/* ── Buy with (first — drives balance & % fill) ── */}
+            {isBuy && (
+              <div className="bs-field">
+                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
+                <div className="bs-leg-grid">
+                  {BUY_WITH_OPTIONS.map(o => (
+                    <button key={o.key} type="button"
+                      className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
+                      style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
+                      onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {buyWith === 'CUSTOM' && (
+                  <input className="bs-input bs-leg-custom" type="text"
+                    placeholder="e.g. SOL, DAI"
+                    value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
+                )}
+
+                {/* Balance + % quick-fill — shown when a trackable payment asset is selected */}
+                {buyWith && buyWith !== 'NONE' && buyWith !== 'CUSTOM' && (
+                  buyWithHolding ? (
+                    <div className="bs-buywith-balance">
+                      <div className="bs-balance-row">
+                        <span className="muted">Your {buyWith} balance</span>
+                        <span className="bs-buywith-bal-val">
+                          {parseFloat(buyWithBalanceAmt.toFixed(6))} {buyWith}
+                          {buyWithBalanceUsd > 0 && <span className="muted"> ≈ ${buyWithBalanceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                        </span>
+                      </div>
+                      <div className="bs-pct-row">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button key={pct} type="button"
+                            className={`bs-pct-btn ${spendPct === pct ? 'active' : ''}`}
+                            onClick={() => {
+                              setSpendPct(pct)
+                              const spendUsd = buyWithBalanceUsd * pct / 100
+                              const px = parseFloat(price)
+                              if (px > 0) setAmount(String(parseFloat((spendUsd / px).toFixed(8))))
+                            }}>
+                            {pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="bs-hint bs-buywith-warn">
+                      No {buyWith} balance found in holdings.
+                    </p>
+                  )
+                )}
+
+                {buyWith && (
+                  <p className="bs-hint">
+                    {buyWith === 'NONE'
+                      ? 'Only adds to holdings — no balance deducted.'
+                      : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* ── Category selector ── */}
             {!prefillCoin && (
               <div className="bs-field">
@@ -422,7 +509,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <div className="bs-field">
               <label className="bs-label">Asset</label>
 
-              {/* Crypto: search */}
+              {/* Crypto: search (buy) or holdings list (sell) */}
               {category === 'crypto' && (
                 selectedCoin ? (
                   <div className="bs-coin-selected">
@@ -432,12 +519,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
                     </div>
                     {!prefillCoin && (
-                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch('') }}>
+                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setHoldingsFilter('') }}>
                         {IcoClose}
                       </button>
                     )}
                   </div>
-                ) : (
+                ) : isBuy ? (
                   <div className="bs-search-wrap">
                     <span className="bs-search-icon">{IcoSearch}</span>
                     <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
@@ -455,7 +542,54 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                     )}
                   </div>
-                )
+                ) : (() => {
+                  const cryptoHoldings = (holdings || []).filter(h =>
+                    !h.coin_id?.startsWith('fiat:') &&
+                    !h.coin_id?.startsWith('stock:') &&
+                    h.coin_id !== 'gold' && h.coin_id !== 'silver' &&
+                    !h.coin_id?.startsWith('bond:') &&
+                    !h.coin_id?.startsWith('other:') &&
+                    (h.amount ?? 0) > 0
+                  )
+                  const q = holdingsFilter.trim().toLowerCase()
+                  const filtered = q
+                    ? cryptoHoldings.filter(h =>
+                        h.coin_name?.toLowerCase().includes(q) ||
+                        h.coin_symbol?.toLowerCase().includes(q)
+                      )
+                    : cryptoHoldings
+                  if (!cryptoHoldings.length) return (
+                    <p className="bs-hint" style={{ margin: '0.4rem 0' }}>No crypto holdings yet. Add a buy trade first.</p>
+                  )
+                  return (
+                    <div className="bs-holdings-sel">
+                      {cryptoHoldings.length > 5 && (
+                        <div className="bs-search-wrap" style={{ marginBottom: '0.4rem' }}>
+                          <span className="bs-search-icon">{IcoSearch}</span>
+                          <input className="bs-input bs-search-input" placeholder="Filter holdings…"
+                            value={holdingsFilter} onChange={e => setHoldingsFilter(e.target.value)} />
+                        </div>
+                      )}
+                      <div className="bs-holdings-list">
+                        {filtered.map(h => (
+                          <button key={h.coin_id} className="bs-holding-row"
+                            onClick={() => setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })}>
+                            <CoinLogo image={h.coin_image || h.image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} className="bs-coin-thumb" />
+                            <div className="bs-coin-info">
+                              <strong>{h.coin_name}</strong>
+                              <span className="muted">{h.coin_symbol?.toUpperCase()}</span>
+                            </div>
+                            <div className="bs-holding-bal">
+                              <span className="bs-holding-amt">{parseFloat(h.amount?.toFixed(6))}</span>
+                              {h.value > 0 && <span className="muted" style={{ fontSize: '0.72rem' }}>${h.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                            </div>
+                          </button>
+                        ))}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                      </div>
+                    </div>
+                  )
+                })()
               )}
 
               {/* Gold / Silver: preset, no search needed */}
@@ -564,7 +698,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                    category === 'fiat' ? 'Amount' : 'Amount'}
                 </label>
                 <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
-                  value={amount} onChange={e => setAmount(e.target.value)} />
+                  value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
               </div>
               <div className="bs-field">
                 <label className="bs-label">
@@ -594,38 +728,6 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               )}
             </div>
 
-            {/* Buy with — icon selector, mandatory */}
-            {isBuy && (
-              <div className="bs-field">
-                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
-                <div className="bs-leg-grid">
-                  {BUY_WITH_OPTIONS.map(o => (
-                    <button
-                      key={o.key}
-                      type="button"
-                      className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
-                      style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
-                      onClick={() => setBuyWith(o.key)}
-                    >
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
-                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-                {buyWith === 'CUSTOM' && (
-                  <input className="bs-input bs-leg-custom" type="text"
-                    placeholder="e.g. SOL, DAI"
-                    value={buyWithCustom} onChange={e => setBuyWithCustom(e.target.value)} />
-                )}
-                {buyWith && (
-                  <p className="bs-hint">
-                    {buyWith === 'NONE'
-                      ? 'Only adds to holdings — no balance deducted.'
-                      : <>Cost{total > 0 ? ` $${total.toLocaleString(undefined,{maximumFractionDigits:2})}` : ''} deducted from <strong>{buyWith === 'CUSTOM' ? (buyWithCustom.trim().toUpperCase() || '…') : buyWith}</strong>.</>}
-                  </p>
-                )}
-              </div>
-            )}
 
             {/* Sell for — icon selector, mandatory */}
             {!isBuy && (
