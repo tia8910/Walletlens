@@ -2235,6 +2235,45 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
+          {/* Quick Trade strip — always at top when portfolio exists */}
+          {enriched.length > 0 && (
+            <div ref={quickStripRef} style={{
+              display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
+            }}>
+              <button onClick={() => openSheet('buy', 'quick_strip')} style={{
+                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.22), rgba(var(--g-rgb),0.10))',
+                color: 'var(--g)', fontWeight: 800, fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
+                boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Buy
+              </button>
+              <button onClick={() => openSheet('sell', 'quick_strip')} style={{
+                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'rgba(248,113,113,0.10)',
+                color: '#f87171', fontWeight: 800, fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
+                boxShadow: '0 0 0 1px rgba(248,113,113,0.25)',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Sell
+              </button>
+              <button onClick={() => navigate('/transactions')} style={{
+                padding: '0.75rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                background: 'var(--surface-1)',
+                color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.82rem',
+                boxShadow: '0 0 0 1px var(--border)',
+                whiteSpace: 'nowrap',
+              }}>
+                History
+              </button>
+            </div>
+          )}
+
           {/* Empty state for new users */}
           {!loaded || enriched.length === 0 ? (
             <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)} navigate={navigate} loaded={loaded} />
@@ -2354,45 +2393,6 @@ export default function Dashboard() {
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
               <StatCard label={t('assets')}      value={enriched.length} />
               <StatCard label={t('tradesCount')} value={transactions.length} />
-            </div>
-          )}
-
-          {/* Quick Trade nudge — shown for portfolio holders */}
-          {enriched.length > 0 && (
-            <div ref={quickStripRef} style={{
-              display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
-            }}>
-              <button onClick={() => openSheet('buy', 'quick_strip')} style={{
-                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.22), rgba(var(--g-rgb),0.10))',
-                color: 'var(--g)', fontWeight: 800, fontSize: '0.9rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
-                boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
-                transition: 'box-shadow 0.15s',
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Buy
-              </button>
-              <button onClick={() => openSheet('sell', 'quick_strip')} style={{
-                flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: 'rgba(248,113,113,0.10)',
-                color: '#f87171', fontWeight: 800, fontSize: '0.9rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
-                boxShadow: '0 0 0 1px rgba(248,113,113,0.25)',
-                transition: 'box-shadow 0.15s',
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Sell
-              </button>
-              <button onClick={() => navigate('/transactions')} style={{
-                padding: '0.75rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: 'var(--surface-1)',
-                color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.82rem',
-                boxShadow: '0 0 0 1px var(--border)',
-                whiteSpace: 'nowrap',
-              }}>
-                History
-              </button>
             </div>
           )}
 
@@ -2580,11 +2580,6 @@ export default function Dashboard() {
             })()}
           </div>}
 
-          {/* Goal Tracker — pinned to top on mobile */}
-          {isMobile && enriched.length > 0 && (
-            <GoalTracker currentValue={totalValue} />
-          )}
-
           {/* Main grid */}
           <div className="dvx-grid">
             {/* Left column */}
@@ -2748,55 +2743,11 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Right column */}
+            {/* Right column — order: -1 on mobile so it renders before left col */}
             <div className="dvx-col-side">
-              {/* Allocation donut */}
-              <div className="glass-card">
-                <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
-                {allocData.length === 0
-                  ? <p className="muted">{t('noHoldings')}</p>
-                  : <>
-                    <ResponsiveContainer width="100%" height={190}>
-                      <PieChart>
-                        <Pie data={allocData} dataKey="value" cx="50%" cy="50%"
-                          innerRadius="60%" outerRadius="88%" stroke="none" paddingAngle={2}>
-                          {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
-                        </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <ul className="dvx-legend">
-                      {allocData.map((d, i) => (
-                        <li key={d.name} className="dvx-legend-item">
-                          <span className="dvx-legend-dot" style={{ background: PALETTE[i % PALETTE.length] }}/>
-                          <span className="dvx-legend-name">{d.name}</span>
-                          <span className="dvx-legend-val">{d.pct.toFixed(1)}%</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                }
-              </div>
 
-              {/* Goal-Based Portfolio Tracker — hidden on mobile (shown above the grid) */}
-              {!isMobile && <GoalTracker currentValue={totalValue} />}
-
-              {/* Market Mood — sentiment from crypto headlines */}
-              <MarketMood />
-
-              {/* Stale price warning */}
-              {staleAssets.length > 0 && (
-                <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
-                  <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
-                  <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
-                    <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
-                    {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
-                    Update them via Add Trade to keep your portfolio value accurate.
-                  </div>
-                </div>
-              )}
-
-              {/* All holdings */}
+              {/* ── 1st card on mobile: Holdings ── */}
+              {/* All holdings — moved to top of side col so it appears first on mobile */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
@@ -2908,6 +2859,52 @@ export default function Dashboard() {
                   </>
                 }
               </div>
+
+              {/* ── 2nd card on mobile: Goal Tracker ── */}
+              <GoalTracker currentValue={totalValue} />
+
+              {/* ── Allocation donut ── */}
+              <div className="glass-card">
+                <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
+                {allocData.length === 0
+                  ? <p className="muted">{t('noHoldings')}</p>
+                  : <>
+                    <ResponsiveContainer width="100%" height={190}>
+                      <PieChart>
+                        <Pie data={allocData} dataKey="value" cx="50%" cy="50%"
+                          innerRadius="60%" outerRadius="88%" stroke="none" paddingAngle={2}>
+                          {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
+                        </Pie>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ul className="dvx-legend">
+                      {allocData.map((d, i) => (
+                        <li key={d.name} className="dvx-legend-item">
+                          <span className="dvx-legend-dot" style={{ background: PALETTE[i % PALETTE.length] }}/>
+                          <span className="dvx-legend-name">{d.name}</span>
+                          <span className="dvx-legend-val">{d.pct.toFixed(1)}%</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                }
+              </div>
+
+              {/* Market Mood — sentiment from crypto headlines */}
+              <MarketMood />
+
+              {/* Stale price warning */}
+              {staleAssets.length > 0 && (
+                <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
+                  <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
+                  <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
+                    <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
+                    {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
+                    Update them via Add Trade to keep your portfolio value accurate.
+                  </div>
+                </div>
+              )}
 
               {/* Exchange partners strip below holdings */}
               <ExchangePartners compact source="holdings" />
