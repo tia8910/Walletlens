@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react'
+import { ANTHROPIC_KEY } from '../anthropic'
 
 const KEY_STORAGE = 'walletlens_anthropic_key'
 const MODEL = 'claude-opus-4-7'
@@ -165,7 +166,7 @@ const ChatBubble = memo(function ChatBubble({ role, content }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function AIAdvisor({ portfolio, prices, transactions, coinTargets, totalValue, totalInvested, totalPnL }) {
-  const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORAGE) || '')
+  const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORAGE) || ANTHROPIC_KEY || '')
   const [keyInput, setKeyInput]   = useState('')
   const [showKey, setShowKey]     = useState(false)
   const [mode, setMode]           = useState('analysis') // 'analysis' | 'chat'

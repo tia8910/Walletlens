@@ -168,6 +168,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
   const [success, setSuccess]           = useState(false)
+  const [signalOpen, setSignalOpen]     = useState(false)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -635,14 +636,22 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
             )}
 
-            {/* Trade signal — good time to buy/sell? */}
+            {/* Trade signal — collapsible on mobile */}
             {asset?.id && (
-              <TradeSignal
-                coinId={asset.id}
-                currentPrice={parseFloat(price) || null}
-                userAvgCost={holdingForCoin?.total_invested && holdingForCoin?.amount ? holdingForCoin.total_invested / holdingForCoin.amount : null}
-                mode={isBuy ? 'buy' : 'sell'}
-              />
+              <div className="bs-signal-wrap">
+                <button className="bs-signal-toggle" onClick={() => setSignalOpen(v => !v)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
+                  {isBuy ? 'Entry signal' : 'Exit signal'}
+                </button>
+                {signalOpen && (
+                  <TradeSignal
+                    coinId={asset.id}
+                    currentPrice={parseFloat(price) || null}
+                    userAvgCost={holdingForCoin?.total_invested && holdingForCoin?.amount ? holdingForCoin.total_invested / holdingForCoin.amount : null}
+                    mode={isBuy ? 'buy' : 'sell'}
+                  />
+                )}
+              </div>
             )}
 
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0.25rem 0' }}>{msg}</p>}
