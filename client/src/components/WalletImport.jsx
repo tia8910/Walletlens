@@ -18,17 +18,18 @@ const GECKO = {
   WIF:'dogwifcoin', BONK:'bonk', PYTH:'pyth-network',
   CAKE:'pancakeswap-token', XVS:'venus',
   QUICK:'quick', GHST:'aavegotchi',
+  RNDR:'render-token', JTO:'jito-governance',
 }
 
 // ── Chain definitions ────────────────────────────────────────────────────────
 const EVM_CHAINS = [
-  { id:'ethereum',  label:'ETH',      color:'#627eea', native:'ETH',  nativeId:'ethereum',   blockscout:'https://eth.blockscout.com' },
-  { id:'bsc',       label:'BSC',      color:'#f0b90b', native:'BNB',  nativeId:'binancecoin',blockscout:'https://bsc.blockscout.com' },
-  { id:'polygon',   label:'POL',      color:'#8247e5', native:'POL',  nativeId:'matic-network',blockscout:'https://polygon.blockscout.com' },
-  { id:'arbitrum',  label:'ARB',      color:'#28a0f0', native:'ETH',  nativeId:'ethereum',   blockscout:'https://arbitrum.blockscout.com' },
-  { id:'optimism',  label:'OP',       color:'#ff0420', native:'ETH',  nativeId:'ethereum',   blockscout:'https://optimism.blockscout.com' },
-  { id:'base',      label:'BASE',     color:'#0052ff', native:'ETH',  nativeId:'ethereum',   blockscout:'https://base.blockscout.com' },
-  { id:'avalanche', label:'AVAX',     color:'#e84142', native:'AVAX', nativeId:'avalanche-2',blockscout:'https://avalanche.blockscout.com' },
+  { id:'ethereum',  label:'ETH',  color:'#627eea', native:'ETH',  nativeId:'ethereum',    blockscout:'https://eth.blockscout.com',      ankrChain:'eth' },
+  { id:'bsc',       label:'BSC',  color:'#f0b90b', native:'BNB',  nativeId:'binancecoin', blockscout:'https://bsc.blockscout.com',      ankrChain:'bsc' },
+  { id:'polygon',   label:'POL',  color:'#8247e5', native:'POL',  nativeId:'matic-network',blockscout:'https://polygon.blockscout.com', ankrChain:'polygon' },
+  { id:'arbitrum',  label:'ARB',  color:'#28a0f0', native:'ETH',  nativeId:'ethereum',    blockscout:'https://arbitrum.blockscout.com', ankrChain:'arbitrum' },
+  { id:'optimism',  label:'OP',   color:'#ff0420', native:'ETH',  nativeId:'ethereum',    blockscout:'https://optimism.blockscout.com', ankrChain:'optimism' },
+  { id:'base',      label:'BASE', color:'#0052ff', native:'ETH',  nativeId:'ethereum',    blockscout:'https://base.blockscout.com',     ankrChain:'base' },
+  { id:'avalanche', label:'AVAX', color:'#e84142', native:'AVAX', nativeId:'avalanche-2', blockscout:'https://avalanche.blockscout.com',ankrChain:'avalanche' },
 ]
 
 // ── Address detection ────────────────────────────────────────────────────────
@@ -61,16 +62,15 @@ function enrichWithPrices(items, prices) {
   return items
     .map(i => ({
       ...i,
-      usdValue: i.geckoId && prices[i.geckoId]?.usd ? i.amount * prices[i.geckoId].usd : null,
-      pricePerUnit: i.geckoId && prices[i.geckoId]?.usd ? prices[i.geckoId].usd : null,
+      usdValue: i.geckoId && prices[i.geckoId]?.usd ? i.amount * prices[i.geckoId].usd : (i.usdValue ?? null),
+      pricePerUnit: i.geckoId && prices[i.geckoId]?.usd ? prices[i.geckoId].usd : (i.pricePerUnit ?? null),
     }))
     .sort((a, b) => (b.usdValue || 0) - (a.usdValue || 0))
     .slice(0, 25)
 }
 
-// ── ETH fetch — Ethplorer free API (primary) + Blockscout fallback ───────────
+// ── ETH fetch — Ethplorer (primary) + Blockscout fallback ───────────────────
 async function fetchEthereum(address) {
-  // Ethplorer: free key, CORS-enabled, no rate-limit issues
   try {
     const r = await timedFetch(`https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`)
     if (r.ok) {
@@ -89,13 +89,44 @@ async function fetchEthereum(address) {
       const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
       return enrichWithPrices(items, await fetchPrices(ids))
     }
-  } catch { /* fall through to Blockscout */ }
-
-  // Blockscout fallback
+  } catch { /* fall through */ }
   return fetchBlockscout(address, 'https://eth.blockscout.com', 'ETH', 'ethereum')
 }
 
-// ── Generic Blockscout fetch (BSC, Polygon, Arbitrum, Optimism, Base, Avalanche) ─
+// ── Ankr multi-chain API — primary for non-ETH EVM chains ──────────────────
+// Free anonymous tier, no API key required, returns native + ERC-20 with USD prices
+async function fetchAnkrEvm(address, ankrChain) {
+  const r = await timedFetch('https://rpc.ankr.com/multichain', 15000, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'ankr_getAccountBalance',
+      params: { walletAddress: address, blockchain: [ankrChain], onlyWhitelisted: false }
+    }),
+  })
+  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  const data = await r.json()
+  if (data.error) throw new Error(data.error.message)
+  const items = []
+  for (const asset of data.result?.assets || []) {
+    const amount = parseFloat(asset.balance || '0')
+    if (amount <= 0.000001) continue
+    const sym = (asset.tokenSymbol || '').toUpperCase()
+    const usdValue = parseFloat(asset.balanceUsd || '0') || null
+    items.push({
+      symbol: sym,
+      name: asset.tokenName || sym,
+      amount,
+      geckoId: GECKO[sym] || null,
+      usdValue,
+      pricePerUnit: usdValue && amount ? usdValue / amount : null,
+    })
+  }
+  if (!items.length) throw new Error('No assets returned')
+  return items.sort((a, b) => (b.usdValue || 0) - (a.usdValue || 0)).slice(0, 25)
+}
+
+// ── Blockscout v2 — fallback for EVM chains ─────────────────────────────────
 async function fetchBlockscout(address, base, nativeSym, nativeGeckoId) {
   const [balRes, tokRes] = await Promise.all([
     timedFetch(`${base}/api/v2/addresses/${address}`),
@@ -122,27 +153,37 @@ async function fetchBlockscout(address, base, nativeSym, nativeGeckoId) {
   }
 
   const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
-  const prices = await fetchPrices(ids)
-  return enrichWithPrices(items, prices)
+  return enrichWithPrices(items, await fetchPrices(ids))
 }
 
-// ── Bitcoin fetch ────────────────────────────────────────────────────────────
+// ── Bitcoin — mempool.space primary, blockstream.info fallback ───────────────
 async function fetchBitcoin(address) {
-  const r = await timedFetch(`https://mempool.space/api/address/${address}`)
-  if (!r.ok) throw new Error(`HTTP ${r.status}`)
-  const data = await r.json()
-  const sats = (data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0)
-  const btc = sats / 1e8
-  if (btc <= 0.000001) return []
-  const prices = await fetchPrices(['bitcoin'])
-  return enrichWithPrices([{ symbol: 'BTC', name: 'Bitcoin', amount: btc, geckoId: 'bitcoin' }], prices)
+  const endpoints = [
+    `https://mempool.space/api/address/${address}`,
+    `https://blockstream.info/api/address/${address}`,
+  ]
+  let lastErr
+  for (const url of endpoints) {
+    try {
+      const r = await timedFetch(url, 10000)
+      if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue }
+      const data = await r.json()
+      const sats = (data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0)
+      const btc = sats / 1e8
+      if (btc <= 0.000001) return []
+      const prices = await fetchPrices(['bitcoin'])
+      return enrichWithPrices([{ symbol:'BTC', name:'Bitcoin', amount:btc, geckoId:'bitcoin' }], prices)
+    } catch (e) { lastErr = e }
+  }
+  throw lastErr || new Error('All Bitcoin APIs failed')
 }
 
-// ── Solana fetch (multiple RPC fallbacks) ────────────────────────────────────
+// ── Solana — multiple free RPC fallbacks ─────────────────────────────────────
 const SOL_RPCS = [
   'https://api.mainnet-beta.solana.com',
   'https://rpc.ankr.com/solana',
   'https://solana.public-rpc.com',
+  'https://solana-mainnet.g.alchemy.com/v2/demo',
 ]
 
 async function rpcPost(rpc, body) {
@@ -153,6 +194,22 @@ async function rpcPost(rpc, body) {
   })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   return r.json()
+}
+
+const SOL_TOKEN_SYMBOLS = {
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol:'USDC', geckoId:'usd-coin' },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol:'USDT', geckoId:'tether' },
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol:'BONK', geckoId:'bonk' },
+  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol:'JUP',  geckoId:'jupiter-exchange-solana' },
+  'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof':  { symbol:'RNDR', geckoId:'render-token' },
+  'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey': { symbol:'MNDE', geckoId:'marinade' },
+  'jtojtomepa8bdhtbhzucxstb8xczraqvkjivbzdi7se':  { symbol:'JTO',  geckoId:'jito-governance' },
+  'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm': { symbol:'WIF', geckoId:'dogwifcoin' },
+  'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3': { symbol:'PYTH', geckoId:'pyth-network' },
+  'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So':  { symbol:'mSOL', geckoId:'msol' },
+  'So11111111111111111111111111111111111111112':    { symbol:'SOL',  geckoId:'solana' },
+  'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1':  { symbol:'bSOL', geckoId:'blazestake-staked-sol' },
+  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol:'ETH',  geckoId:'ethereum' },
 }
 
 async function fetchSolana(address) {
@@ -174,33 +231,19 @@ async function fetchSolana(address) {
         items.push({ symbol:'SOL', name:'Solana', amount:solBalance, geckoId:'solana' })
       }
 
-      const TOKEN_SYMBOLS = {
-        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol:'USDC', geckoId:'usd-coin' },
-        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol:'USDT', geckoId:'tether' },
-        'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol:'BONK', geckoId:'bonk' },
-        'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': { symbol:'JUP', geckoId:'jupiter-exchange-solana' },
-        'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof': { symbol:'RNDR', geckoId:'render-token' },
-        'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey': { symbol:'MNDE', geckoId:'marinade' },
-        'jtojtomepa8bdhtbhzucxstb8xczraqvkjivbzdi7se': { symbol:'JTO', geckoId:'jito-governance' },
-        'WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk': { symbol:'WEN', geckoId:null },
-        'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm': { symbol:'WIF', geckoId:'dogwifcoin' },
-        'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3': { symbol:'PYTH', geckoId:'pyth-network' },
-      }
-
       for (const acc of splData.result?.value || []) {
         const info = acc.account?.data?.parsed?.info
         if (!info) continue
         const amount = parseFloat(info.tokenAmount?.uiAmountString || '0')
         if (amount <= 0) continue
         const mint = info.mint || ''
-        const known = TOKEN_SYMBOLS[mint]
-        const sym = known?.symbol || mint.slice(0, 5).toUpperCase()
+        const known = SOL_TOKEN_SYMBOLS[mint]
+        const sym = known?.symbol || mint.slice(0, 6).toUpperCase()
         items.push({ symbol: sym, name: sym, amount, geckoId: known?.geckoId || GECKO[sym] || null })
       }
 
       const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
-      const prices = await fetchPrices(ids)
-      return enrichWithPrices(items, prices)
+      return enrichWithPrices(items, await fetchPrices(ids))
     } catch (e) {
       lastErr = e
     }
@@ -208,34 +251,51 @@ async function fetchSolana(address) {
   throw lastErr || new Error('All Solana RPCs failed')
 }
 
-// ── Tron fetch ───────────────────────────────────────────────────────────────
+// ── Tron — TronScan primary, TronGrid fallback ───────────────────────────────
 async function fetchTron(address) {
-  const [accRes, tokRes] = await Promise.all([
-    timedFetch(`https://apilist.tronscanapi.com/api/account?address=${address}`),
-    timedFetch(`https://apilist.tronscanapi.com/api/account/tokens?address=${address}&start=0&limit=50`),
-  ])
-  if (!accRes.ok) throw new Error(`HTTP ${accRes.status}`)
-  const accData = await accRes.json()
-  const tokData = tokRes.ok ? await tokRes.json() : { data: [] }
+  // Primary: TronScan API
+  try {
+    const [accRes, tokRes] = await Promise.all([
+      timedFetch(`https://apilist.tronscanapi.com/api/account?address=${address}`),
+      timedFetch(`https://apilist.tronscanapi.com/api/account/tokens?address=${address}&start=0&limit=50`),
+    ])
+    if (accRes.ok) {
+      const accData = await accRes.json()
+      const tokData = tokRes.ok ? await tokRes.json() : { data: [] }
+      const items = []
+      const trxBalance = (accData.balance || 0) / 1e6
+      if (trxBalance > 0.01) items.push({ symbol:'TRX', name:'Tron', amount:trxBalance, geckoId:'tron' })
+      for (const tok of tokData.data || []) {
+        if (!tok.tokenAbbr || tok.quantity <= 0) continue
+        const sym = (tok.tokenAbbr || '').toUpperCase()
+        const dec = tok.tokenDecimal || 6
+        const amount = parseFloat(tok.quantity) / Math.pow(10, dec)
+        if (amount <= 0.000001) continue
+        items.push({ symbol: sym, name: tok.tokenName || sym, amount, geckoId: GECKO[sym] || null })
+      }
+      const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
+      return enrichWithPrices(items, await fetchPrices(ids))
+    }
+  } catch { /* fall through to TronGrid */ }
 
+  // Fallback: TronGrid official API
+  const r = await timedFetch(`https://api.trongrid.io/v1/accounts/${address}`, 12000)
+  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  const data = await r.json()
+  const acc = data.data?.[0]
+  if (!acc) return []
   const items = []
-  const trxBalance = (accData.balance || 0) / 1e6
-  if (trxBalance > 0.01) {
-    items.push({ symbol:'TRX', name:'Tron', amount:trxBalance, geckoId:'tron' })
-  }
-
-  for (const tok of tokData.data || []) {
-    if (!tok.tokenAbbr || tok.quantity <= 0) continue
-    const sym = (tok.tokenAbbr || '').toUpperCase()
-    const dec = tok.tokenDecimal || 6
-    const amount = parseFloat(tok.quantity) / Math.pow(10, dec)
+  const trxBalance = (acc.balance || 0) / 1e6
+  if (trxBalance > 0.01) items.push({ symbol:'TRX', name:'Tron', amount:trxBalance, geckoId:'tron' })
+  for (const tok of acc.trc20 || []) {
+    const [contractAddr, rawAmt] = Object.entries(tok)[0] || []
+    if (!contractAddr || !rawAmt) continue
+    const amount = parseFloat(rawAmt) / 1e6
     if (amount <= 0.000001) continue
-    items.push({ symbol: sym, name: tok.tokenName || sym, amount, geckoId: GECKO[sym] || null })
+    items.push({ symbol: contractAddr.slice(0, 4).toUpperCase(), name: '', amount, geckoId: null })
   }
-
   const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
-  const prices = await fetchPrices(ids)
-  return enrichWithPrices(items, prices)
+  return enrichWithPrices(items, await fetchPrices(ids))
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -254,7 +314,7 @@ function fmtUsd(n) {
 export default function WalletImport() {
   const [open, setOpen] = useState(false)
   const [address, setAddress] = useState('')
-  const [addrType, setAddrType] = useState(null)   // 'evm' | 'bitcoin' | 'solana' | 'tron'
+  const [addrType, setAddrType] = useState(null)
   const [evmChain, setEvmChain] = useState(EVM_CHAINS[0])
   const [loading, setLoading] = useState(false)
   const [tokens, setTokens] = useState(null)
@@ -280,12 +340,24 @@ export default function WalletImport() {
     setLoading(true); setError(''); setTokens(null); setImported(false)
     try {
       let result
-      if (type === 'evm') result = evmChain.id === 'ethereum'
-        ? await fetchEthereum(trimmed)
-        : await fetchBlockscout(trimmed, evmChain.blockscout, evmChain.native, evmChain.nativeId)
-      else if (type === 'bitcoin') result = await fetchBitcoin(trimmed)
-      else if (type === 'solana') result = await fetchSolana(trimmed)
-      else result = await fetchTron(trimmed)
+      if (type === 'evm') {
+        if (evmChain.id === 'ethereum') {
+          result = await fetchEthereum(trimmed)
+        } else {
+          // Ankr multi-chain API is more reliable for non-ETH EVM chains
+          try {
+            result = await fetchAnkrEvm(trimmed, evmChain.ankrChain)
+          } catch {
+            result = await fetchBlockscout(trimmed, evmChain.blockscout, evmChain.native, evmChain.nativeId)
+          }
+        }
+      } else if (type === 'bitcoin') {
+        result = await fetchBitcoin(trimmed)
+      } else if (type === 'solana') {
+        result = await fetchSolana(trimmed)
+      } else {
+        result = await fetchTron(trimmed)
+      }
 
       if (!result.length) setError('No token balances found for this address.')
       else setTokens(result)
@@ -323,7 +395,6 @@ export default function WalletImport() {
     setImported(true)
   }
 
-  // Badge shown inside address input
   const badge = addrType === 'bitcoin' ? { label:'BTC', color:'#f7931a' }
     : addrType === 'tron'    ? { label:'TRX', color:'#ff0013' }
     : addrType === 'solana'  ? { label:'SOL', color:'#9945ff' }
@@ -359,7 +430,6 @@ export default function WalletImport() {
           borderRadius: '12px', padding: '1rem', marginTop: '0.5rem',
           backdropFilter: 'blur(12px)',
         }}>
-          {/* EVM chain selector */}
           {addrType === 'evm' && (
             <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap', marginBottom:'0.6rem' }}>
               {EVM_CHAINS.map(c => (
@@ -450,7 +520,7 @@ export default function WalletImport() {
                       <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'transparent' }}>
                         <td style={{ padding:'0.35rem 0.5rem', color:'var(--text)' }}>
                           <strong>{tok.symbol}</strong>
-                          {tok.name !== tok.symbol && (
+                          {tok.name && tok.name !== tok.symbol && (
                             <span style={{ color:'var(--text-sub)', marginLeft:'0.4rem', fontSize:'0.75rem' }}>{tok.name}</span>
                           )}
                         </td>
