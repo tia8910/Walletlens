@@ -40,11 +40,18 @@ function detectType(addr) {
   return null
 }
 
+// ── Fetch with timeout ───────────────────────────────────────────────────────
+function timedFetch(url, ms = 12000, opts = {}) {
+  const ctrl = new AbortController()
+  const id = setTimeout(() => ctrl.abort(), ms)
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id))
+}
+
 // ── Price fetch ──────────────────────────────────────────────────────────────
 async function fetchPrices(ids) {
   if (!ids.length) return {}
   try {
-    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`)
+    const r = await timedFetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`)
     if (!r.ok) return {}
     return await r.json()
   } catch { return {} }
@@ -61,12 +68,38 @@ function enrichWithPrices(items, prices) {
     .slice(0, 25)
 }
 
-// ── EVM fetch (Blockscout v2) ────────────────────────────────────────────────
-async function fetchEvm(address, chain) {
-  const base = chain.blockscout
+// ── ETH fetch — Ethplorer free API (primary) + Blockscout fallback ───────────
+async function fetchEthereum(address) {
+  // Ethplorer: free key, CORS-enabled, no rate-limit issues
+  try {
+    const r = await timedFetch(`https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`)
+    if (r.ok) {
+      const data = await r.json()
+      if (data.error) throw new Error(data.error.message)
+      const items = []
+      const ethBal = data.ETH?.balance || 0
+      if (ethBal > 0.000001) items.push({ symbol:'ETH', name:'Ethereum', amount: ethBal, geckoId:'ethereum' })
+      for (const tok of data.tokens || []) {
+        const sym = (tok.tokenInfo?.symbol || '').toUpperCase()
+        const dec = parseInt(tok.tokenInfo?.decimals || '18', 10)
+        const amount = parseFloat(tok.rawBalance || '0') / Math.pow(10, dec)
+        if (amount <= 0.000001) continue
+        items.push({ symbol: sym, name: tok.tokenInfo?.name || sym, amount, geckoId: GECKO[sym] || null })
+      }
+      const ids = [...new Set(items.map(i => i.geckoId).filter(Boolean))]
+      return enrichWithPrices(items, await fetchPrices(ids))
+    }
+  } catch { /* fall through to Blockscout */ }
+
+  // Blockscout fallback
+  return fetchBlockscout(address, 'https://eth.blockscout.com', 'ETH', 'ethereum')
+}
+
+// ── Generic Blockscout fetch (BSC, Polygon, Arbitrum, Optimism, Base, Avalanche) ─
+async function fetchBlockscout(address, base, nativeSym, nativeGeckoId) {
   const [balRes, tokRes] = await Promise.all([
-    fetch(`${base}/api/v2/addresses/${address}`),
-    fetch(`${base}/api/v2/addresses/${address}/token-balances`),
+    timedFetch(`${base}/api/v2/addresses/${address}`),
+    timedFetch(`${base}/api/v2/addresses/${address}/token-balances`),
   ])
   if (!balRes.ok) throw new Error(`HTTP ${balRes.status}`)
   const balData = await balRes.json()
@@ -75,7 +108,7 @@ async function fetchEvm(address, chain) {
   const items = []
   const native = parseFloat(balData.coin_balance || '0') / 1e18
   if (native > 0.000001) {
-    items.push({ symbol: chain.native, name: chain.native, amount: native, geckoId: chain.nativeId })
+    items.push({ symbol: nativeSym, name: nativeSym, amount: native, geckoId: nativeGeckoId })
   }
 
   const tokens = Array.isArray(tokData) ? tokData : []
@@ -95,7 +128,7 @@ async function fetchEvm(address, chain) {
 
 // ── Bitcoin fetch ────────────────────────────────────────────────────────────
 async function fetchBitcoin(address) {
-  const r = await fetch(`https://mempool.space/api/address/${address}`)
+  const r = await timedFetch(`https://mempool.space/api/address/${address}`)
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   const data = await r.json()
   const sats = (data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0)
@@ -113,7 +146,7 @@ const SOL_RPCS = [
 ]
 
 async function rpcPost(rpc, body) {
-  const r = await fetch(rpc, {
+  const r = await timedFetch(rpc, 10000, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -178,8 +211,8 @@ async function fetchSolana(address) {
 // ── Tron fetch ───────────────────────────────────────────────────────────────
 async function fetchTron(address) {
   const [accRes, tokRes] = await Promise.all([
-    fetch(`https://apilist.tronscanapi.com/api/account?address=${address}`),
-    fetch(`https://apilist.tronscanapi.com/api/account/tokens?address=${address}&start=0&limit=50`),
+    timedFetch(`https://apilist.tronscanapi.com/api/account?address=${address}`),
+    timedFetch(`https://apilist.tronscanapi.com/api/account/tokens?address=${address}&start=0&limit=50`),
   ])
   if (!accRes.ok) throw new Error(`HTTP ${accRes.status}`)
   const accData = await accRes.json()
@@ -247,15 +280,18 @@ export default function WalletImport() {
     setLoading(true); setError(''); setTokens(null); setImported(false)
     try {
       let result
-      if (type === 'evm') result = await fetchEvm(trimmed, evmChain)
+      if (type === 'evm') result = evmChain.id === 'ethereum'
+        ? await fetchEthereum(trimmed)
+        : await fetchBlockscout(trimmed, evmChain.blockscout, evmChain.native, evmChain.nativeId)
       else if (type === 'bitcoin') result = await fetchBitcoin(trimmed)
       else if (type === 'solana') result = await fetchSolana(trimmed)
       else result = await fetchTron(trimmed)
 
       if (!result.length) setError('No token balances found for this address.')
       else setTokens(result)
-    } catch {
-      setError('Network error fetching balances. Please try again.')
+    } catch (e) {
+      const msg = e?.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error fetching balances. Please try again.'
+      setError(msg)
     }
     setLoading(false)
   }
