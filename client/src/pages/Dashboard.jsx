@@ -2091,16 +2091,19 @@ export default function Dashboard() {
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
 
-  // Count-up animation
+  // Count-up animation — starts from current displayed value to avoid $0 flash
+  const tickerValueRef = useRef(0)
   useEffect(() => {
     if (!loaded) return
     if (tickerStart.current === totalValue) return
     tickerStart.current = totalValue
-    const t0 = performance.now(), dur = 1400, from = 0, to = totalValue
+    const t0 = performance.now(), dur = 1400, from = tickerValueRef.current, to = totalValue
     let raf = 0
     const step = now => {
       const ease = 1 - Math.pow(1 - Math.min(1, (now - t0) / dur), 3)
-      setTickerValue(from + (to - from) * ease)
+      const next = from + (to - from) * ease
+      tickerValueRef.current = next
+      setTickerValue(next)
       if (ease < 1) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
@@ -2161,8 +2164,6 @@ export default function Dashboard() {
     const pct   = first > 0 ? (abs / first) * 100 : 0
     return { abs, pct }
   }, [perfSeries])
-  const [perfHover, setPerfHover] = useState(null) // kept for tooltip only — does not affect hero value
-
   const allocData = useMemo(() => {
     if (!enriched.length) return []
     const items = enriched
@@ -2467,9 +2468,7 @@ export default function Dashboard() {
               const gradId = up ? 'pg-up' : 'pg-dn'
               return (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
-                  <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}
-                    onMouseMove={s => { if (s?.activePayload?.[0]) setPerfHover(s.activePayload[0].value) }}
-                    onMouseLeave={() => setPerfHover(null)}>
+                  <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
                       <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35}/>
