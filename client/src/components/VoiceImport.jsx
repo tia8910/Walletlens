@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { loadData, saveData, bumpId } from '../data/storage'
+import { track } from '../analytics'
 import {
   POPULAR_TICKERS, POPULAR_FIAT,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
@@ -745,7 +746,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   }, [])
 
   const startListening = () => {
-    if (!SUPPORTED) { setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return }
+    if (!SUPPORTED) {
+      track('voice_unsupported', { lang })
+      setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
+    }
+    track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({})
 
     const rec = new SR()
@@ -865,6 +870,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     clearTimeout(listenTimerRef.current)
     try { recRef.current?.stop() } catch {}
     setListening(false)
+    track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
   }
 
   useEffect(() => () => {
@@ -919,6 +925,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       })
     }
     saveData('transactions', txs)
+    track('voice_import_saved', {
+      lang,
+      tx_count: ready.length,
+      multi_tx: ready.length > 1 ? 'yes' : 'no',
+      buy_count: ready.filter(t => t.type === 'buy').length,
+      sell_count: ready.filter(t => t.type === 'sell').length,
+      symbols: ready.map(t => t.coin.symbol?.toUpperCase()).join(','),
+    })
     onImported?.()
     setConfirmed(true)
   }
@@ -931,7 +945,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     <div style={{ marginBottom: '1rem' }}>
       {!hideTrigger && (
         <button
-          onClick={() => setOpen(o => !o)}
+          onClick={() => { setOpen(o => { const next = !o; if (next) track('voice_import_opened'); return next }) }}
           style={{
             background: open ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18))' : 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(236,72,153,0.1))',
             border: '1px solid rgba(168,85,247,0.35)',
@@ -967,14 +981,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }}>
           {/* Language toggle */}
           <div style={{ display:'flex', gap:'0.4rem', justifyContent:'center', marginBottom:'1rem' }}>
-            <button onClick={() => setLang('en')} style={{
+            <button onClick={() => { setLang('en'); track('voice_lang_toggle', { to: 'en' }) }} style={{
               padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
               cursor:'pointer', border:'1.5px solid',
               borderColor: lang === 'en' ? '#c084fc' : 'rgba(255,255,255,0.12)',
               background: lang === 'en' ? 'rgba(192,132,252,0.2)' : 'transparent',
               color: lang === 'en' ? '#e9d5ff' : 'var(--text-muted)',
             }}>🇺🇸 English</button>
-            <button onClick={() => setLang('ar')} style={{
+            <button onClick={() => { setLang('ar'); track('voice_lang_toggle', { to: 'ar' }) }} style={{
               padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
               cursor:'pointer', border:'1.5px solid',
               borderColor: lang === 'ar' ? '#c084fc' : 'rgba(255,255,255,0.12)',
