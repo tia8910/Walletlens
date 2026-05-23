@@ -156,7 +156,7 @@ const COIN_MAP = (() => {
   const STOCK_NAME_AR = {
     AAPL: ['apple','ابل','ابل كومبيوتر','تفاحه'],
     MSFT: ['microsoft','مايكروسوفت','ميكروسوفت'],
-    NVDA: ['nvidia','انفيديا','نفيديا'],
+    NVDA: ['nvidia','انفيديا','نفيديا','نيفيديا','انفيدبا','نفيدبا'],
     GOOGL:['google','alphabet','جوجل','جوغل','جوكل'],
     META: ['meta','facebook','ميتا','فيسبوك','فيس بوك'],
     AMZN: ['amazon','امازون','امزون'],
@@ -479,6 +479,16 @@ function parseVoiceCommand(text) {
       const possible = others[0]
       if (possible > amount * 10) price = possible
       else if (amount > possible * 10) { price = amount; amount = possible }
+    }
+  }
+
+  // "سهم" / "share" (singular) without an explicit count implies quantity = 1.
+  // Plural "أسهم" / "shares" with no number also reasonably defaults to 1 here
+  // since we have no better signal.
+  if (amount == null) {
+    const shareForms = [fullNormalize('سهم'), fullNormalize('اسهم'), 'share', 'shares']
+    if (shareForms.some(w => normalized.includes(' ' + w + ' '))) {
+      amount = 1
     }
   }
 
