@@ -144,9 +144,14 @@ const COIN_MAP = (() => {
   add(['pendle','بندل','بيندل'], 'pendle', 'PENDLE', 'Pendle')
   add(['jupiter','jup','جوبيتر','جوبتر'], 'jupiter-exchange-solana', 'JUP', 'Jupiter')
   add(['jito','jto','جيتو','جيتوه'], 'jito-governance-token', 'JTO', 'Jito')
-  add(['worldcoin','wld','وورلد كوين','ورلدكوين'], 'worldcoin-wld', 'WLD', 'Worldcoin')
+  add(['worldcoin','wld','world coin',
+       'w l d','w-l-d','w ld','w led','double you el dee',
+       'وورلد كوين','ورلدكوين','دبليو ال دي','دبليو ل د','دبليو لد'], 'worldcoin-wld', 'WLD', 'Worldcoin')
   add(['fetch','fet','فيتش','فتش','فتش اي اي'], 'fetch-ai', 'FET', 'Fetch.ai')
   add(['mantle','mnt','مانتل','منتل'], 'mantle', 'MNT', 'Mantle')
+  add(['nano','xrb','raiblocks','نانو'], 'nano', 'NANO', 'Nano')
+  add(['icon','icx','آيكون','ايكون'], 'icon', 'ICX', 'ICON')
+  add(['iota','miota','ايوتا','ايوطا'], 'iota', 'MIOTA', 'IOTA')
 
   // ── Stocks ─────────────────────────────────────────────────────────────────
   // Each ticker plus its full company name. Short company nicknames added
@@ -621,9 +626,9 @@ export default function VoiceImport({ hideTrigger = false }) {
     // `onend` alone is unreliable — Chrome Android / iOS often never fire it.
     // We use a `setTimeout` (created here, inside the gesture handler) as the
     // primary trigger, so the mic always opens even if TTS fails or stalls.
-    const greetingText = lang === 'ar'
-      ? 'اهلا بيك، اشتريت او بعت ايه النهارده؟'
-      : 'Hey! What did you buy or sell today?'
+    // Always speak English TTS — Arabic TTS is robotic on most Android devices
+    // and the user prefers the English voice regardless of UI language.
+    const greetingText = 'Hey! What did you buy or sell today?'
 
     let recStarted = false
     const doStart = () => {
@@ -636,11 +641,9 @@ export default function VoiceImport({ hideTrigger = false }) {
       try {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
-        utt.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
-        // Slower rate + slightly lower pitch makes TTS sound less robotic.
-        // If a neural/enhanced voice was found at mount time, use it explicitly.
-        utt.rate  = lang === 'ar' ? 0.82 : 0.95
-        utt.pitch = lang === 'ar' ? 0.90 : 1
+        utt.lang = 'en-US'
+        utt.rate  = 0.95
+        utt.pitch = 1
         if (lang === 'ar' && arVoiceRef.current) utt.voice = arVoiceRef.current
         utt.onend = doStart
         utt.onerror = doStart  // if TTS fails, mic still opens
