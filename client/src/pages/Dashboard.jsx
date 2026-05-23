@@ -24,6 +24,7 @@ import CorrelationMatrix from '../components/CorrelationMatrix'
 import SectorHeatmap from '../components/SectorHeatmap'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
+import BackupCode from '../components/BackupCode'
 import SmartImport from '../components/SmartImport'
 
 // Heavy components only loaded when the user opens that tab
@@ -1970,6 +1971,7 @@ export default function Dashboard() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [showExcelImport, setShowExcelImport] = useState(false)
   const [showVoiceImport, setShowVoiceImport] = useState(false)
+  const [showBackupCode, setShowBackupCode] = useState(false)
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -2373,32 +2375,63 @@ export default function Dashboard() {
           {(() => {
             const importsBlock = (
               <>
-                <div className="dvx-excel-import-bar" style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginTop:'0.5rem' }}>
-                  <button className="dvx-btn dvx-btn-sm" onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false) }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    {showExcelImport ? 'Close Import' : 'Import Excel / CSV'}
-                  </button>
+                <div className="dvx-excel-import-bar" style={{ display:'flex', gap:'0.4rem', marginTop:'0.5rem' }}>
                   <button
                     className="dvx-btn dvx-btn-sm"
-                    onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false) }}
+                    onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }}
                     style={{
+                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem',
+                      whiteSpace:'nowrap', minWidth:0,
+                      background: showExcelImport ? 'rgba(var(--g-rgb),0.22)' : undefined,
+                    }}
+                    title="Import from an Excel or CSV file"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                    Excel / CSV
+                  </button>
+                  <button
+                    onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }}
+                    style={{
+                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'8px',
                       background: showVoiceImport
-                        ? 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(236,72,153,0.25))'
-                        : 'linear-gradient(135deg, rgba(168,85,247,0.12), rgba(236,72,153,0.12))',
+                        ? 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))'
+                        : 'linear-gradient(135deg, rgba(168,85,247,0.13), rgba(236,72,153,0.13))',
                       border: '1px solid rgba(168,85,247,0.4)',
                       color: '#c084fc',
                     }}
-                    title="Speak your trade — supports English and Arabic with slang"
+                    title="Speak your trade — English and Arabic with slang"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
                       <line x1="8" y1="11" x2="8" y2="13"/>
                       <line x1="11" y1="9" x2="11" y2="15"/>
                       <line x1="14" y1="10" x2="14" y2="14"/>
                       <line x1="17" y1="11" x2="17" y2="13"/>
                     </svg>
-                    {showVoiceImport ? 'Close Voice' : 'Import by Voice'}
-                    <span style={{ fontSize:'0.65rem', opacity:0.75, marginLeft:'0.2rem' }}>EN/عربي</span>
+                    Voice
+                  </button>
+                  <button
+                    onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }}
+                    style={{
+                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'8px',
+                      background: showBackupCode ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.13)',
+                      border: '1px solid rgba(59,130,246,0.4)',
+                      color: '#60a5fa',
+                    }}
+                    title="Export or import your portfolio as a backup code"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                      <path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/>
+                      <path d="M9 12l-2 2 2 2"/>
+                      <path d="M15 12l2 2-2 2"/>
+                    </svg>
+                    Backup
                   </button>
                 </div>
                 {showExcelImport && (
@@ -2408,6 +2441,9 @@ export default function Dashboard() {
                 )}
                 {showVoiceImport && (
                   <VoiceImport hideTrigger />
+                )}
+                {showBackupCode && (
+                  <BackupCode hideTrigger />
                 )}
               </>
             )
