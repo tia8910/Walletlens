@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
+import { requestPortfolioNotifPermission } from '../portfolioNotify'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -47,10 +48,22 @@ export default function Settings() {
 
   const accent = settings.accent || 'green'
   const fontSize = settings.fontSize || 'md'
-  const notifPrice  = settings.notifPrice  ?? true
-  const notifNews   = settings.notifNews   ?? true
-  const notifWhale  = settings.notifWhale  ?? false
-  const notifWeekly = settings.notifWeekly ?? true
+  const notifPrice     = settings.notifPrice     ?? true
+  const notifNews      = settings.notifNews      ?? true
+  const notifWhale     = settings.notifWhale     ?? false
+  const notifWeekly    = settings.notifWeekly    ?? true
+  const notifPortfolio = settings.notifPortfolio ?? false
+
+  async function handleNotifToggle(key, val) {
+    if (val) {
+      const granted = await requestPortfolioNotifPermission().catch(() => false)
+      if (!granted) {
+        alert('Enable browser notifications for WalletLens first, then try again.')
+        return
+      }
+    }
+    update(key, val)
+  }
   const compactMode = settings.compactMode ?? false
   const hideValues  = settings.hideValues  ?? false
 
@@ -184,10 +197,11 @@ export default function Settings() {
         <h3 className="settings-section-title">🔔 Notifications</h3>
 
         {[
-          { key:'notifPrice',  label:'Price Alerts',     hint:'When your target prices are hit',        val: notifPrice },
-          { key:'notifNews',   label:'News Highlights',  hint:'Breaking crypto news for your coins',    val: notifNews },
-          { key:'notifWhale',  label:'Whale Alerts',     hint:'Large transactions on coins you hold',   val: notifWhale },
-          { key:'notifWeekly', label:'Weekly Report',    hint:'Sunday summary of your portfolio',       val: notifWeekly },
+          { key:'notifPortfolio', label:'Portfolio Moves',  hint:'Alert when your wallet is up or down ±5%', val: notifPortfolio, needsPerm: true },
+          { key:'notifPrice',     label:'Price Alerts',     hint:'When your target prices are hit',           val: notifPrice },
+          { key:'notifNews',      label:'News Highlights',  hint:'Breaking crypto news for your coins',       val: notifNews },
+          { key:'notifWhale',     label:'Whale Alerts',     hint:'Large transactions on coins you hold',      val: notifWhale },
+          { key:'notifWeekly',    label:'Weekly Report',    hint:'Sunday summary of your portfolio',          val: notifWeekly },
         ].map((item, i) => (
           <div key={item.key}>
             {i > 0 && <div className="settings-divider"/>}
@@ -197,7 +211,7 @@ export default function Settings() {
                 <span className="settings-hint">{item.hint}</span>
               </div>
               <button className={`settings-toggle ${item.val ? 'on' : ''}`}
-                onClick={() => update(item.key, !item.val)}>
+                onClick={() => item.needsPerm ? handleNotifToggle(item.key, !item.val) : update(item.key, !item.val)}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </div>
