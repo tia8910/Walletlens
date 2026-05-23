@@ -10,6 +10,10 @@ export default defineConfig({
     cssCodeSplit: true,
     chunkSizeWarningLimit: 600,
     reportCompressedSize: false,
+    // Skip modulepreload polyfill — all target browsers support native modulepreload
+    modulePreload: { polyfill: false },
+    // Inline assets smaller than 4 KB as data URIs (fewer round-trips)
+    assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
         manualChunks: {

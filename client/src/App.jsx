@@ -213,6 +213,15 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
+  // Prefetch the Dashboard chunk after landing-page idle so the first navigation is instant
+  useEffect(() => {
+    if (location.pathname !== '/') return
+    const id = requestIdleCallback
+      ? requestIdleCallback(() => import('./pages/Dashboard'), { timeout: 3000 })
+      : setTimeout(() => import('./pages/Dashboard'), 2000)
+    return () => (requestIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
+  }, [location.pathname])
+
   // Fire GA page_view on every SPA route change
   useEffect(() => {
     if (typeof window.gtag !== 'function') return

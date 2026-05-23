@@ -7,9 +7,6 @@ import {
 } from 'recharts'
 import { api } from '../api'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
-import TradeSheet from '../components/TradeSheet'
-import ShareCard from '../components/ShareCard'
-import TradeTips from '../components/TradeTips'
 import CoinLogo from '../components/CoinLogo'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { useLanguage } from '../LanguageContext'
@@ -20,14 +17,17 @@ import { checkPortfolioMove, setPortfolioBaseline } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
 import MarketMood from '../components/MarketMood'
-import CorrelationMatrix from '../components/CorrelationMatrix'
-import SectorHeatmap from '../components/SectorHeatmap'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
 import BackupCode from '../components/BackupCode'
-import SmartImport from '../components/SmartImport'
 
-// Heavy components only loaded when the user opens that tab
+// Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
+const TradeSheet     = lazy(() => import('../components/TradeSheet'))
+const ShareCard      = lazy(() => import('../components/ShareCard'))
+const TradeTips      = lazy(() => import('../components/TradeTips'))
+const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
+const SectorHeatmap  = lazy(() => import('../components/SectorHeatmap'))
+const SmartImport    = lazy(() => import('../components/SmartImport'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
@@ -2372,7 +2372,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {(() => {
+{(() => {
             const importsBlock = (
               <>
                 <div className="dvx-excel-import-bar" style={{ display:'flex', gap:'0.4rem', marginTop:'0.5rem' }}>
@@ -3018,12 +3018,22 @@ export default function Dashboard() {
             <ExchangePartners compact source="dashboard_stocks" stockOnly />
           )}
 
-          {/* Tips & quotes — decorative, lowest priority */}
-          {cardVis.trade_tips && <TradeTips />}
+          {/* Telegram community banner */}
+          <a href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" className="tg-banner" onClick={() => track('telegram_join_click', { source: 'dashboard' })}>
+            <svg viewBox="0 0 24 24" fill="#2AABEE" width="22" height="22"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
+            <div className="tg-banner-text">
+              <span className="tg-banner-title">Join the WalletLens Community</span>
+              <span className="tg-banner-sub">Tips, signals &amp; market updates on Telegram</span>
+            </div>
+            <span className="tg-banner-arrow">→</span>
+          </a>
 
-          {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
-          {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-          {cardVis.sector_heatmap && <SectorHeatmap />}
+          {/* Tips, correlation, heatmap, wallet import — below-fold, loaded lazily */}
+          <Suspense fallback={null}>
+            {cardVis.trade_tips && <TradeTips />}
+            {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
+            {cardVis.sector_heatmap && <SectorHeatmap />}
+          </Suspense>
         </>
       )}
 
@@ -3072,23 +3082,27 @@ export default function Dashboard() {
           <div className="glass-card dvx-form-card">
             <h3>Smart Import</h3>
             <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>Import holdings from a portfolio screenshot (AI-powered) or an Excel / CSV file.</p>
-            <SmartImport wallets={wallets} onImported={loadAll} />
+            <Suspense fallback={<TabFallback />}>
+              <SmartImport wallets={wallets} onImported={loadAll} />
+            </Suspense>
           </div>
         </div>
       )}
 
       {/* ══ TRADE BOTTOM SHEET ══ */}
-      <TradeSheet
-        open={sheetOpen}
-        type={sheetType}
-        onClose={() => setSheetOpen(false)}
-        wallets={wallets}
-        onDone={loadAll}
-        holdings={enriched}
-        prefillCoin={sheetPrefill?.coin}
-        prefillCategory={sheetPrefill?.category}
-        prefillStockTicker={sheetPrefill?.stockTicker}
-      />
+      <Suspense fallback={null}>
+        <TradeSheet
+          open={sheetOpen}
+          type={sheetType}
+          onClose={() => setSheetOpen(false)}
+          wallets={wallets}
+          onDone={loadAll}
+          holdings={enriched}
+          prefillCoin={sheetPrefill?.coin}
+          prefillCategory={sheetPrefill?.category}
+          prefillStockTicker={sheetPrefill?.stockTicker}
+        />
+      </Suspense>
 
       {/* ── Nudge toast — appears after 20s idle ── */}
       {nudgeVisible && !sheetOpen && (
@@ -3126,15 +3140,17 @@ export default function Dashboard() {
         /></Suspense>
       )}
       {shareOpen && (
-        <ShareCard
-          totalValue={totalValue}
-          totalPnL={totalPnL}
-          totalPnLPct={totalPnLPct}
-          topHoldings={enriched.slice(0, 4)}
-          todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
-          perfSeries={perfSeries}
-          onClose={() => setShareOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <ShareCard
+            totalValue={totalValue}
+            totalPnL={totalPnL}
+            totalPnLPct={totalPnLPct}
+            topHoldings={enriched.slice(0, 4)}
+            todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+            perfSeries={perfSeries}
+            onClose={() => setShareOpen(false)}
+          />
+        </Suspense>
       )}
       {milestone && (
         <MilestonePopup
