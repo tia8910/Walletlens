@@ -557,10 +557,9 @@ export default function VoiceImport({ hideTrigger = false }) {
     const rec = new SR()
     rec.continuous = true      // keep listening until explicitly stopped
     rec.interimResults = true
-    // Use bare 'ar' (not 'ar-SA') — lets Chrome pick whichever Arabic dialect
-    // the device supports. 'ar-SA' often fails with "network" on Android if
-    // Google's SA endpoint isn't reachable from the user's region.
-    rec.lang = lang === 'ar' ? 'ar' : 'en-US'
+    // ar-EG = Egyptian Arabic — best dialect match for the greeting text and
+    // the most widely available Arabic STT locale on Android/Chrome.
+    rec.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
@@ -618,11 +617,12 @@ export default function VoiceImport({ hideTrigger = false }) {
       try {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
-        utt.rate = 0.95
-        // Set language and let the OS pick the right voice — don't call
-        // getVoices() here because it often returns [] on first load (async)
-        // which would wrongly trigger an English fallback.
-        utt.lang = lang === 'ar' ? 'ar' : 'en-US'
+        // ar-EG requests the Egyptian Arabic TTS voice which sounds more natural
+        // than the default 'ar' (often a robotic Gulf/MSA voice).
+        // Rate 0.88 + pitch 0.95 reduce the mechanical quality common in Arabic TTS.
+        utt.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
+        utt.rate = lang === 'ar' ? 0.88 : 0.95
+        utt.pitch = lang === 'ar' ? 0.95 : 1
         utt.onend = doStart
         utt.onerror = doStart  // if TTS fails, mic still opens
         window.speechSynthesis.speak(utt)
