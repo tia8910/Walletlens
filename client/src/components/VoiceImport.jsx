@@ -763,34 +763,45 @@ export default function VoiceImport({ hideTrigger = false }) {
         setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
     }
 
-    // Persistent across `onresult` events for this recognition session.
-    // Chrome on Android sometimes emits the same finalized segment multiple
-    // times if we re-loop `e.results` from index 0 every event, which
-    // produces a duplicated transcript ("اشتريت اشتريت اشتريت…").
-    // Keep our own buffer and only consume entries from `e.resultIndex` forward.
-    let finalText = ''
-
     rec.onresult = e => {
-      let interim = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
+      // can contain the full cumulative transcript so far, not just the new
+      // word. Naively concatenating all entries produces duplicates like
+      // "II boughtI bought oneI bought one Bitcoin" or
+      // "اشتريت اشتريت 10 اشتريت 10 بيتكوين…".
+      //
+      // Strategy: walk results left→right, collapsing consecutive snapshots
+      // (where current trimmed text starts with previous trimmed text) into
+      // the latest. When a result does NOT start with the previous, treat
+      // it as a NEW utterance and append. This handles both Chrome desktop
+      // (distinct utterances) and Chrome Android (snapshot mode).
+      const segments = []
+      for (let i = 0; i < e.results.length; i++) {
         const result = e.results[i]
-        // Pick the STT hypothesis whose parse is richest (gives best accent recall)
-        const alts = []
-        for (let k = 0; k < result.length; k++) alts.push(result[k].transcript)
-        let best = alts[0] || ''
+        let best = result[0].transcript
         let bestScore = -1
-        for (const alt of alts) {
-          const candidate = finalText + (result.isFinal ? '' : interim) + alt
+        const baseline = segments.map(s => s.text).join(' ')
+        for (let k = 0; k < result.length; k++) {
+          const candidate = (baseline + ' ' + result[k].transcript).trim()
           const p = parseVoiceCommand(candidate)
           const score = p.transactions.reduce((s, t) =>
             s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 1 : 0), 0)
-          if (score > bestScore) { bestScore = score; best = alt }
+          if (score > bestScore) { bestScore = score; best = result[k].transcript }
         }
-        if (result.isFinal) finalText += best
-        else interim += best
+        const trimmed = best.trim()
+        if (!trimmed) continue
+
+        const last = segments[segments.length - 1]
+        if (last && trimmed.startsWith(last.text.trim())) {
+          // Progressive snapshot of the same utterance — replace, don't append
+          last.text = best
+          last.isFinal = result.isFinal
+        } else {
+          segments.push({ text: best, isFinal: result.isFinal })
+        }
       }
 
-      const text = finalText + interim
+      const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
       setTranscript(text)
       const p = parseVoiceCommand(text)
       const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
