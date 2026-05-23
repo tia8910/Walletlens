@@ -1969,6 +1969,33 @@ export default function Dashboard() {
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
+  const CARD_CONFIG = [
+    { id:'pnl_chart',          label:'P&L by Asset' },
+    { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
+    { id:'goal_tracker',       label:'Goal Tracker' },
+    { id:'sell_targets',       label:'Sell Targets' },
+    { id:'allocation',         label:'Allocation' },
+    { id:'net_worth_history',  label:'Net Worth History' },
+    { id:'market_mood',        label:'Market Mood' },
+    { id:'movers',             label:"Today's Movers" },
+    { id:'correlation',        label:'Correlation Matrix' },
+    { id:'sector_heatmap',     label:'Sector Heatmap' },
+    { id:'trade_tips',         label:'Trade Tips' },
+  ]
+  const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
+  const [cardVis, setCardVis] = useState(() => {
+    try { return { ...DEFAULT_VIS, ...JSON.parse(localStorage.getItem('wl_card_vis') || '{}') } }
+    catch { return DEFAULT_VIS }
+  })
+  const [showCardConfig, setShowCardConfig] = useState(false)
+  function toggleCard(id) {
+    setCardVis(v => {
+      const next = { ...v, [id]: !v[id] }
+      try { localStorage.setItem('wl_card_vis', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
   useEffect(() => {
     api.getFiatRates().then(r => setFxRates(r || {})).catch(() => {})
   }, [])
@@ -2377,6 +2404,12 @@ export default function Dashboard() {
                   <path d="M8 16H3v5"/>
                 </svg>
               </button>
+              <button className="dvx-eye-btn" title="Customize dashboard cards" onClick={() => setShowCardConfig(v => !v)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+                  <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/>
+                </svg>
+              </button>
               <button className="dvx-eye-btn" onClick={() => { setHidden(h => {
   const next = !h
   track('hide_values_toggle', { hidden: next })
@@ -2436,6 +2469,30 @@ export default function Dashboard() {
                         {f.symbol} {f.code} <span>{f.name}</span>
                       </button>
                     ))}
+                  </div>
+                </>,
+                document.body
+              )}
+              {showCardConfig && createPortal(
+                <>
+                  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:1000 }} onClick={() => setShowCardConfig(false)} />
+                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--surface, #1a1a2e)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'16px', padding:'1.5rem', zIndex:1001, width:'min(380px,92vw)', maxHeight:'80vh', overflowY:'auto' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.1rem' }}>
+                      <h3 style={{ margin:0, fontSize:'1rem' }}>Customize Dashboard</h3>
+                      <button onClick={() => setShowCardConfig(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'4px', lineHeight:1 }}>{Ico.close}</button>
+                    </div>
+                    <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', margin:'0 0 1rem', lineHeight:1.4 }}>Toggle cards on or off. Changes are saved automatically.</p>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.45rem' }}>
+                      {CARD_CONFIG.map(c => (
+                        <label key={c.id} style={{ display:'flex', alignItems:'center', gap:'0.5rem', padding:'0.5rem 0.65rem', borderRadius:'8px', background: cardVis[c.id] ? 'rgba(var(--g-rgb),0.1)' : 'rgba(255,255,255,0.04)', border:`1px solid ${cardVis[c.id] ? 'rgba(var(--g-rgb),0.3)' : 'rgba(255,255,255,0.06)'}`, cursor:'pointer', transition:'all 0.15s' }}>
+                          <input type="checkbox" checked={!!cardVis[c.id]} onChange={() => toggleCard(c.id)} style={{ accentColor:'var(--g)', width:14, height:14, flexShrink:0 }} />
+                          <span style={{ fontSize:'0.78rem', color: cardVis[c.id] ? 'var(--text)' : 'var(--text-muted)' }}>{c.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ marginTop:'1rem', width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem', cursor:'pointer' }}>
+                      Reset to defaults
+                    </button>
                   </div>
                 </>,
                 document.body
@@ -2524,7 +2581,7 @@ export default function Dashboard() {
             <div className="dvx-col-main">
 
               {/* P&L bar chart */}
-              {pnlData.length > 0 && (
+              {cardVis.pnl_chart && pnlData.length > 0 && (
                 <div className="glass-card">
                   <h3 style={{ margin:'0 0 0.75rem' }}>Profit / Loss by Asset</h3>
                   <ResponsiveContainer width="100%" height={160}>
@@ -2658,7 +2715,7 @@ export default function Dashboard() {
               </div>
 
               {/* Portfolio Heatmap */}
-              {!isDemo && enriched.length >= 2 && !pricesFailed && (
+              {cardVis.portfolio_heatmap && !isDemo && enriched.length >= 2 && !pricesFailed && (
                 <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
               )}
 
@@ -2668,11 +2725,11 @@ export default function Dashboard() {
             {/* Right column — order: -1 on mobile so it renders before left col */}
             <div className="dvx-col-side">
 
-              {/* ── 1st: Goal Tracker — keep users focused on their target ── */}
-              <GoalTracker currentValue={totalValue} />
+              {/* ── 1st: Goal Tracker ── */}
+              {cardVis.goal_tracker && <GoalTracker currentValue={totalValue} />}
 
               {/* Sell Targets */}
-              {targetsAnalysis.rows.length > 0 && (
+              {cardVis.sell_targets && targetsAnalysis.rows.length > 0 && (
                 <div className="glass-card">
                   <div style={CHART_HDR_STYLE}>
                     <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
@@ -2699,7 +2756,7 @@ export default function Dashboard() {
               )}
 
               {/* ── Allocation donut ── */}
-              <div className="glass-card">
+              {cardVis.allocation && <div className="glass-card">
                 <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
                 {allocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
@@ -2724,10 +2781,10 @@ export default function Dashboard() {
                     </ul>
                   </>
                 }
-              </div>
+              </div>}
 
               {/* Net Worth History (30-day from transactions) */}
-              {!isDemo && transactions.length > 0 && (() => {
+              {cardVis.net_worth_history && !isDemo && transactions.length > 0 && (() => {
                 const now = Date.now()
                 const days = 30
                 const points = Array.from({ length: days }, (_, i) => {
@@ -2766,7 +2823,7 @@ export default function Dashboard() {
               })()}
 
               {/* Market Mood — sentiment from crypto headlines */}
-              <MarketMood />
+              {cardVis.market_mood && <MarketMood />}
 
               {/* Stale price warning */}
               {staleAssets.length > 0 && (
@@ -2786,7 +2843,7 @@ export default function Dashboard() {
           {/* ── Secondary content — below the fold ─────────────────────── */}
 
           {/* Today's Movers — actionable daily insight */}
-          {!isDemo && enriched.length >= 2 && !pricesFailed && (
+          {cardVis.movers && !isDemo && enriched.length >= 2 && !pricesFailed && (
             <div className="glass-card dvx-movers-card">
               <h3 style={{ margin:'0 0 0.75rem' }}>📈 Today's Movers</h3>
               <div className="dvx-movers-row">
@@ -2871,11 +2928,11 @@ export default function Dashboard() {
           )}
 
           {/* Tips & quotes — decorative, lowest priority */}
-          <TradeTips />
+          {cardVis.trade_tips && <TradeTips />}
 
           {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
-          {enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-          <SectorHeatmap />
+          {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
+          {cardVis.sector_heatmap && <SectorHeatmap />}
           <WalletImport />
         </>
       )}
