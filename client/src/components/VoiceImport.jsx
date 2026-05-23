@@ -557,20 +557,29 @@ export default function VoiceImport({ hideTrigger = false }) {
     const rec = new SR()
     rec.continuous = true      // keep listening until explicitly stopped
     rec.interimResults = true
-    rec.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
+    // Use bare 'ar' (not 'ar-SA') — lets Chrome pick whichever Arabic dialect
+    // the device supports. 'ar-SA' often fails with "network" on Android if
+    // Google's SA endpoint isn't reachable from the user's region.
+    rec.lang = lang === 'ar' ? 'ar' : 'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
-    // scheduleStop auto-stops after `ms` milliseconds — call with shorter
-    // delay once a valid command is detected, longer as a safety ceiling.
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
 
-    rec.onstart = () => { setListening(true); scheduleStop(15000) }   // 15 s ceiling
+    const isArabic = lang === 'ar'
+    rec.onstart = () => { setListening(true); scheduleStop(15000) }
     rec.onend   = () => { setListening(false); clearTimer() }
     rec.onerror = e => {
       setListening(false); clearTimer()
-      if (e.error === 'not-allowed') setError('Microphone permission denied. Please allow mic access.')
-      else if (e.error === 'no-speech') setError("I didn't catch that — please try again.")
-      else setError(`Voice error: ${e.error}`)
+      if (e.error === 'not-allowed')
+        setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
+      else if (e.error === 'no-speech')
+        setError(isArabic ? 'لم أسمع شيئاً — حاول مرة أخرى' : "I didn't catch that — please try again.")
+      else if (e.error === 'network')
+        setError(isArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
+      else if (e.error === 'language-not-supported')
+        setError(isArabic ? 'اللغة العربية غير مدعومة في هذا المتصفح — جرّب Chrome' : 'Language not supported — try Chrome.')
+      else
+        setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
     }
 
     rec.onresult = e => {
@@ -609,16 +618,31 @@ export default function VoiceImport({ hideTrigger = false }) {
       try {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
-        utt.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
         utt.rate = 0.95
+        // Pick best available voice for the selected language.
+        // Many Android devices don't have Arabic TTS — fall back to any voice
+        // (browser default) rather than failing silently.
+        const voices = window.speechSynthesis.getVoices()
+        const arabicVoice = lang === 'ar'
+          ? voices.find(v => v.lang.startsWith('ar'))
+          : null
+        if (arabicVoice) {
+          utt.voice = arabicVoice
+          utt.lang = arabicVoice.lang
+        } else if (lang === 'ar') {
+          // No Arabic voice — speak English greeting instead
+          utt.text = 'Hey! What did you buy or sell today?'
+          utt.lang = 'en-US'
+        } else {
+          utt.lang = 'en-US'
+        }
         utt.onend = doStart
-        utt.onerror = doStart  // TTS error → still open mic
+        utt.onerror = doStart
         window.speechSynthesis.speak(utt)
       } catch {
-        // speechSynthesis unavailable — fall through to timeout
+        // speechSynthesis unavailable
       }
       // Safety net: mic opens after 3 s max regardless of TTS state.
-      // setTimeout created inside the click handler so gesture context is kept.
       setTimeout(doStart, 3000)
     } else {
       doStart()
