@@ -2544,82 +2544,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Net Worth History (30-day from transactions) */}
-              {!isDemo && transactions.length > 0 && (() => {
-                const now = Date.now()
-                const days = 30
-                const points = Array.from({ length: days }, (_, i) => {
-                  const cutoff = now - (days - 1 - i) * 86400000
-                  const invested = transactions
-                    .filter(tx => new Date(tx.date).getTime() <= cutoff)
-                    .reduce((s, tx) => {
-                      const val = (tx.amount || 0) * (tx.price_per_unit || 0)
-                      return tx.type === 'buy' ? s + val : s - val
-                    }, 0)
-                  return { day: i + 1, v: Math.max(0, invested) }
-                })
-                const minV = Math.min(...points.map(p => p.v))
-                const maxV = Math.max(...points.map(p => p.v))
-                if (maxV === minV) return null
-                return (
-                  <div className="glass-card">
-                    <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0 }}>💰 Net Worth History</h3>
-                      <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={points} margin={{ left:0, right:0, top:4, bottom:0 }}>
-                        <defs>
-                          <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(59,130,246,0.3)' }}/>
-                        <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} fill="url(#nwg)" dot={false}/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                )
-              })()}
-
-              {/* Targets near strike — compact overview widget */}
-              {targetsAnalysis.rows.length > 0 && (
-                <div className="glass-card">
-                  <div style={CHART_HDR_STYLE}>
-                    <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
-                    <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
-                      onClick={() => setActiveTab('targets')}>
-                      {t('viewAll')}
-                    </button>
-                  </div>
-                  <div className="dvx-targets-mini">
-                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(tgt => (
-                      <div key={tgt.id} className={`dvx-target-mini-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
-                        <span className="dvx-target-mini-sym">{tgt.coinSymbol?.toUpperCase()}</span>
-                        <span className="dvx-target-mini-price">${fmt(tgt.price)}</span>
-                        <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
-                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
-                        </div>
-                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'var(--text-muted)', minWidth:'2.5rem', textAlign:'right' }}>
-                          {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recent transactions card removed */}
-            </div>
-
-            {/* Right column — order: -1 on mobile so it renders before left col */}
-            <div className="dvx-col-side">
-
-              {/* ── 1st: Goal Tracker — keep users focused on their target ── */}
-              <GoalTracker currentValue={totalValue} />
-
-              {/* ── 2nd: Holdings ── */}
+              {/* ── Holdings (primary column) ── */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
@@ -2731,6 +2656,86 @@ export default function Dashboard() {
                   </>
                 }
               </div>
+
+              {/* Portfolio Heatmap */}
+              {!isDemo && enriched.length >= 2 && !pricesFailed && (
+                <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
+              )}
+
+              {/* Recent transactions card removed */}
+            </div>
+
+            {/* Right column — order: -1 on mobile so it renders before left col */}
+            <div className="dvx-col-side">
+
+              {/* ── 1st: Goal Tracker — keep users focused on their target ── */}
+              <GoalTracker currentValue={totalValue} />
+
+              {/* Net Worth History (30-day from transactions) */}
+              {!isDemo && transactions.length > 0 && (() => {
+                const now = Date.now()
+                const days = 30
+                const points = Array.from({ length: days }, (_, i) => {
+                  const cutoff = now - (days - 1 - i) * 86400000
+                  const invested = transactions
+                    .filter(tx => new Date(tx.date).getTime() <= cutoff)
+                    .reduce((s, tx) => {
+                      const val = (tx.amount || 0) * (tx.price_per_unit || 0)
+                      return tx.type === 'buy' ? s + val : s - val
+                    }, 0)
+                  return { day: i + 1, v: Math.max(0, invested) }
+                })
+                const minV = Math.min(...points.map(p => p.v))
+                const maxV = Math.max(...points.map(p => p.v))
+                if (maxV === minV) return null
+                return (
+                  <div className="glass-card">
+                    <div style={CHART_HDR_STYLE}>
+                      <h3 style={{ margin:0 }}>💰 Net Worth History</h3>
+                      <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={points} margin={{ left:0, right:0, top:4, bottom:0 }}>
+                        <defs>
+                          <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(59,130,246,0.3)' }}/>
+                        <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} fill="url(#nwg)" dot={false}/>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              })()}
+
+              {/* Sell Targets */}
+              {targetsAnalysis.rows.length > 0 && (
+                <div className="glass-card">
+                  <div style={CHART_HDR_STYLE}>
+                    <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
+                    <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
+                      onClick={() => setActiveTab('targets')}>
+                      {t('viewAll')}
+                    </button>
+                  </div>
+                  <div className="dvx-targets-mini">
+                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(tgt => (
+                      <div key={tgt.id} className={`dvx-target-mini-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
+                        <span className="dvx-target-mini-sym">{tgt.coinSymbol?.toUpperCase()}</span>
+                        <span className="dvx-target-mini-price">${fmt(tgt.price)}</span>
+                        <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
+                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
+                        </div>
+                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'var(--text-muted)', minWidth:'2.5rem', textAlign:'right' }}>
+                          {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* ── Allocation donut ── */}
               <div className="glass-card">
@@ -2848,11 +2853,6 @@ export default function Dashboard() {
               totalValue={totalValue}
               targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
             />
-          )}
-
-          {/* Portfolio Heatmap */}
-          {!isDemo && enriched.length >= 2 && !pricesFailed && (
-            <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
           )}
 
           {/* Partner exchange strip */}
