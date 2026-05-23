@@ -1019,21 +1019,6 @@ export default function VoiceImport({ hideTrigger = false }) {
             </p>
           </div>
 
-          {/* Live transcript */}
-          {transcript && (
-            <div style={{
-              background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)',
-              borderRadius:'12px', padding:'0.75rem 1rem', marginBottom:'0.75rem',
-            }}>
-              <p style={{ fontSize:'0.7rem', color:'#c084fc', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.3rem' }}>
-                {isAr ? 'سمعت' : 'I heard'}
-              </p>
-              <p style={{ margin:0, fontSize:'0.92rem', color:'var(--text)', fontStyle:'italic', lineHeight:1.4 }}>
-                "{transcript}"
-              </p>
-            </div>
-          )}
-
           {/* Reaction banner */}
           {reaction && parsed && (
             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
