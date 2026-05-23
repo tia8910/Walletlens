@@ -2764,6 +2764,7 @@ export default function Dashboard() {
                                       ) : (
                                         <span className="muted">
                                           {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
+                                          {breakEvenPrice > 0 && ` · avg $${fmt(breakEvenPrice)}`}
                                           {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
                                         </span>
                                       )}
