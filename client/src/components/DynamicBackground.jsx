@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 
 export default function DynamicBackground({
-  particleCount = 220,
-  linkDistance = 150,
+  particleCount = 100,
+  linkDistance = 140,
   color = null,
 }) {
   const canvasRef = useRef(null)
@@ -17,16 +17,20 @@ export default function DynamicBackground({
     let raf = 0
     let w = 0, h = 0
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const D2 = linkDistance * linkDistance
 
-    function getColor() {
-      if (color) return color
-      return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
+    // Read CSS vars once and update via MutationObserver instead of
+    // calling getComputedStyle on every animation frame (was 120 calls/sec).
+    let col = '#34d399'
+    let rgb = '52,211,153'
+    function readColors() {
+      const style = getComputedStyle(document.documentElement)
+      col = color ?? (style.getPropertyValue('--g').trim() || '#34d399')
+      rgb = style.getPropertyValue('--g-rgb').trim() || '52,211,153'
     }
-
-    function getRgb() {
-      const rgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
-      return rgb
-    }
+    readColors()
+    const mo = new MutationObserver(readColors)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
 
     function resize() {
       w = canvas.clientWidth
@@ -52,29 +56,27 @@ export default function DynamicBackground({
 
     function step() {
       ctx.clearRect(0, 0, w, h)
-      const rgb = getRgb()
-      const col = getColor()
 
-      // Sharp connecting lines
+      // Batch ALL connecting lines into one beginPath/stroke call.
+      // Previously: O(n²) individual stroke() calls ≈ 24,000/frame with 220 particles.
+      // Now: 1 stroke() call regardless of particle count.
+      ctx.strokeStyle = `rgba(${rgb}, 0.14)`
       ctx.lineWidth = 0.9
+      ctx.beginPath()
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
         for (let j = i + 1; j < particles.length; j++) {
           const b = particles[j]
           const dx = a.x - b.x, dy = a.y - b.y
-          const d2 = dx * dx + dy * dy
-          if (d2 < linkDistance * linkDistance) {
-            const alpha = 1 - Math.sqrt(d2) / linkDistance
-            ctx.strokeStyle = `rgba(${rgb}, ${alpha * 0.22})`
-            ctx.beginPath()
+          if (dx * dx + dy * dy < D2) {
             ctx.moveTo(a.x, a.y)
             ctx.lineTo(b.x, b.y)
-            ctx.stroke()
           }
         }
       }
+      ctx.stroke()
 
-      // Sharp rectangular particles with glow
+      // Particles
       ctx.fillStyle = col
       ctx.shadowBlur = 18
       ctx.shadowColor = col
@@ -92,6 +94,17 @@ export default function DynamicBackground({
       raf = requestAnimationFrame(step)
     }
 
+    // Stop the RAF loop entirely when the tab is hidden; restart when visible.
+    function handleVisibility() {
+      if (document.hidden) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      } else if (!raf) {
+        raf = requestAnimationFrame(step)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     resize()
     seed()
     step()
@@ -102,6 +115,8 @@ export default function DynamicBackground({
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
+      mo.disconnect()
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [particleCount, linkDistance, color, reduceMotion])
 

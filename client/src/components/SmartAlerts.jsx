@@ -363,12 +363,20 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
     setChecking(false)
   }, [cfg, enriched])
 
-  // Poll on mount and interval
+  // Poll on mount and interval — skip when tab is hidden to avoid
+  // unnecessary network requests, then trigger immediately on tab focus.
   useEffect(() => {
     reqPermission()
-    runCheck()
-    timerRef.current = setInterval(runCheck, POLL_MS)
-    return () => clearInterval(timerRef.current)
+    if (!document.hidden) runCheck()
+    timerRef.current = setInterval(() => {
+      if (!document.hidden) runCheck()
+    }, POLL_MS)
+    function onVis() { if (!document.hidden) runCheck() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearInterval(timerRef.current)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [runCheck])
 
   function dismiss(id) {
