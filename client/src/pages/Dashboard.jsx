@@ -1966,6 +1966,7 @@ export default function Dashboard() {
   const [fxRates, setFxRates] = useState({})
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [showExcelImport, setShowExcelImport] = useState(false)
+  const [showVoiceImport, setShowVoiceImport] = useState(false)
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -2371,17 +2372,42 @@ export default function Dashboard() {
             <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)} navigate={navigate} loaded={loaded} />
           ) : null}
 
-          {/* Excel / CSV import — above total portfolio */}
-          <div className="dvx-excel-import-bar">
-            <button className="dvx-btn dvx-btn-sm" onClick={() => setShowExcelImport(v => !v)}>
+          {/* Excel / CSV + Voice imports — above total portfolio */}
+          <div className="dvx-excel-import-bar" style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+            <button className="dvx-btn dvx-btn-sm" onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false) }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
               {showExcelImport ? 'Close Import' : 'Import Excel / CSV'}
+            </button>
+            <button
+              className="dvx-btn dvx-btn-sm"
+              onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false) }}
+              style={{
+                background: showVoiceImport
+                  ? 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(236,72,153,0.25))'
+                  : 'linear-gradient(135deg, rgba(168,85,247,0.12), rgba(236,72,153,0.12))',
+                border: '1px solid rgba(168,85,247,0.4)',
+                color: '#c084fc',
+              }}
+              title="Speak your trade — supports English and Arabic with slang"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                <line x1="8" y1="11" x2="8" y2="13"/>
+                <line x1="11" y1="9" x2="11" y2="15"/>
+                <line x1="14" y1="10" x2="14" y2="14"/>
+                <line x1="17" y1="11" x2="17" y2="13"/>
+              </svg>
+              {showVoiceImport ? 'Close Voice' : 'Import by Voice'}
+              <span style={{ fontSize:'0.65rem', opacity:0.75, marginLeft:'0.2rem' }}>EN/عربي</span>
             </button>
           </div>
           {showExcelImport && (
             <div className="dvx-excel-import-panel glass-card">
               <SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} />
             </div>
+          )}
+          {showVoiceImport && (
+            <VoiceImport hideTrigger />
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
@@ -2950,7 +2976,6 @@ export default function Dashboard() {
           {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
           {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
           {cardVis.sector_heatmap && <SectorHeatmap />}
-          <VoiceImport />
         </>
       )}
 

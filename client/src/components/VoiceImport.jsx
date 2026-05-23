@@ -191,8 +191,8 @@ const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.w
 const SUPPORTED = !!SR
 
 // ── Component ───────────────────────────────────────────────────────────────
-export default function VoiceImport() {
-  const [open, setOpen] = useState(false)
+export default function VoiceImport({ hideTrigger = false }) {
+  const [open, setOpen] = useState(hideTrigger)
   const [lang, setLang] = useState('en') // 'en' | 'ar'
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -277,31 +277,33 @@ export default function VoiceImport() {
 
   return (
     <div style={{ marginBottom: '1rem' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          background: open ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18))' : 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(236,72,153,0.1))',
-          border: '1px solid rgba(168,85,247,0.35)',
-          borderRadius: '12px', color: '#c084fc',
-          padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
-          cursor: 'pointer', display: 'flex', alignItems: 'center',
-          gap: '0.5rem', width: '100%', justifyContent: 'space-between',
-        }}
-      >
-        <span style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
+      {!hideTrigger && (
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            background: open ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18))' : 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(236,72,153,0.1))',
+            border: '1px solid rgba(168,85,247,0.35)',
+            borderRadius: '12px', color: '#c084fc',
+            padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
+            cursor: 'pointer', display: 'flex', alignItems: 'center',
+            gap: '0.5rem', width: '100%', justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            Import by Voice <span style={{ fontSize:'0.7rem', opacity:0.7 }}>· EN / عربي</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}>
+            <polyline points="6 9 12 15 18 9"/>
           </svg>
-          Import by Voice <span style={{ fontSize:'0.7rem', opacity:0.7 }}>· EN / عربي</span>
-        </span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-          style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}>
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
+        </button>
+      )}
 
       {open && (
         <div style={{
