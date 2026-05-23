@@ -144,9 +144,14 @@ const COIN_MAP = (() => {
   add(['pendle','بندل','بيندل'], 'pendle', 'PENDLE', 'Pendle')
   add(['jupiter','jup','جوبيتر','جوبتر'], 'jupiter-exchange-solana', 'JUP', 'Jupiter')
   add(['jito','jto','جيتو','جيتوه'], 'jito-governance-token', 'JTO', 'Jito')
-  add(['worldcoin','wld','وورلد كوين','ورلدكوين'], 'worldcoin-wld', 'WLD', 'Worldcoin')
+  add(['worldcoin','wld','world coin',
+       'w l d','w-l-d','w ld','w led','double you el dee',
+       'وورلد كوين','ورلدكوين','دبليو ال دي','دبليو ل د','دبليو لد'], 'worldcoin-wld', 'WLD', 'Worldcoin')
   add(['fetch','fet','فيتش','فتش','فتش اي اي'], 'fetch-ai', 'FET', 'Fetch.ai')
   add(['mantle','mnt','مانتل','منتل'], 'mantle', 'MNT', 'Mantle')
+  add(['nano','xrb','raiblocks','نانو'], 'nano', 'NANO', 'Nano')
+  add(['icon','icx','آيكون','ايكون'], 'icon', 'ICX', 'ICON')
+  add(['iota','miota','ايوتا','ايوطا'], 'iota', 'MIOTA', 'IOTA')
 
   // ── Stocks ─────────────────────────────────────────────────────────────────
   // Each ticker plus its full company name. Short company nicknames added
@@ -346,6 +351,33 @@ function parseNumber(str) {
   return null
 }
 
+// Mass-unit words → multiplier to convert into ounces (oz).
+// Metals (gold/silver/platinum) are priced per troy ounce; copper per pound.
+// When a user says "5 grams of gold", we convert 5 g → 5 / 28.3495 oz.
+// Keys are stored in fullNormalize() form so dialectal variants merge.
+const MASS_UNITS_TO_OZ = (() => {
+  const raw = {
+    gram: 1 / 28.3495, grams: 1 / 28.3495, gm: 1 / 28.3495, g: 1 / 28.3495,
+    kilo: 1000 / 28.3495, kilos: 1000 / 28.3495,
+    kg: 1000 / 28.3495, kilogram: 1000 / 28.3495, kilograms: 1000 / 28.3495,
+    oz: 1, ounce: 1, ounces: 1, 'troy ounce': 1, 'troy ounces': 1,
+    lb: 16, lbs: 16, pound: 16, pounds: 16,
+    'جرام': 1 / 28.3495, 'غرام': 1 / 28.3495, 'غم': 1 / 28.3495,
+    'كيلو': 1000 / 28.3495, 'كيلوجرام': 1000 / 28.3495, 'كيلوغرام': 1000 / 28.3495,
+    'اوقيه': 1, 'اونصه': 1, 'اونس': 1,
+    'رطل': 16,
+  }
+  return Object.fromEntries(Object.entries(raw).map(([k, v]) => [fullNormalize(k), v]))
+})()
+
+function detectMassUnit(normalized) {
+  const keys = Object.keys(MASS_UNITS_TO_OZ).sort((a, b) => b.length - a.length)
+  for (const u of keys) {
+    if (normalized.includes(' ' + u + ' ')) return u
+  }
+  return null
+}
+
 // Multiplier words handled by the unit-suffix regex, NOT digitized.
 // Otherwise "60 الف" would become "60 1000" — two separate numbers.
 // Stored as a Set of phonetically-normalized keys.
@@ -372,36 +404,130 @@ function digitizeWordNumbers(text) {
   return out.slice(1, -1)
 }
 
-// ── The brain: parse a transcript into a structured trade ──────────────────
+// ── The brain: parse a transcript into one or more structured trades ───────
+// Returns { original, transactions: [...] } — one tx per intent verb, and
+// when a single intent governs multiple coins ("bought BTC and ETH") each
+// coin becomes its own transaction.
 function parseVoiceCommand(text) {
   const original = text
-  // Normalize: lowercase, strip ! and ? (NOT . or , — those are decimal separators).
   let normalized = ' ' + text.toLowerCase().trim().replace(/[!?]/g, ' ') + ' '
-  // Run the full normalization pipeline (Arabic letter unification +
-  // phonetic collapse) so dialectal variants compare against canonical aliases.
   normalized = fullNormalize(normalized).replace(/\s+/g, ' ')
-  // Replace word-numbers with digits (one→1, half→0.5, واحد→1, نص→0.5)
   normalized = ' ' + digitizeWordNumbers(normalized.trim()) + ' '
 
-  // 1. Intent (buy / sell)
-  let type = null
-  let matchedWord = null
-  for (const kw of BUY_WORDS) {
-    const k = fullNormalize(kw)
-    if (normalized.includes(' ' + k + ' ')) { type = 'buy'; matchedWord = kw; break }
+  // Anchor 1: all intent verbs in the text
+  const intents = findIntentPositions(normalized)
+
+  // Split text by intent positions into base segments
+  let baseSegments
+  if (intents.length === 0) {
+    baseSegments = [{ text: normalized, type: null, matchedWord: null }]
+  } else {
+    baseSegments = intents.map((intent, i) => {
+      const start = intent.start
+      const end = (i + 1 < intents.length) ? intents[i + 1].start : normalized.length
+      return {
+        text: ' ' + normalized.slice(start, end).trim() + ' ',
+        type: intent.type,
+        matchedWord: intent.matchedWord,
+      }
+    })
   }
-  if (!type) {
-    for (const kw of SELL_WORDS) {
-      const k = fullNormalize(kw)
-      if (normalized.includes(' ' + k + ' ')) { type = 'sell'; matchedWord = kw; break }
+
+  // Anchor 2: each base segment may mention several coins — split further
+  const transactions = []
+  for (const seg of baseSegments) {
+    const coinPositions = findAllCoinPositions(seg.text)
+    if (coinPositions.length <= 1) {
+      transactions.push(parseOneSegment(seg.text, seg.type, seg.matchedWord))
+    } else {
+      for (let i = 0; i < coinPositions.length; i++) {
+        const subStart = coinPositions[i].start
+        const subEnd = (i + 1 < coinPositions.length) ? coinPositions[i + 1].start : seg.text.length
+        const subText = ' ' + seg.text.slice(subStart, subEnd).trim() + ' '
+        const tx = parseOneSegment(subText, seg.type, seg.matchedWord)
+        tx.coin = coinPositions[i].coin
+        tx.suggestions = null
+        transactions.push(tx)
+      }
     }
   }
 
-  // 2. Coin — three-tier match strategy:
-  //    a) exact word-boundary match against any alias (longest first)
-  //    b) substring match for Arabic aliases (≥4 chars) — STT often
-  //       attaches/detaches words
-  //    c) Levenshtein fuzzy match per token — handles novel mishears
+  return { original, transactions }
+}
+
+// Locate every non-overlapping intent verb in the normalized text.
+// Longer keys win when keys overlap (e.g. "took profits" beats "took").
+function findIntentPositions(normalized) {
+  const intents = []
+  const allKws = [
+    ...BUY_WORDS.map(w => ({ key: fullNormalize(w), type: 'buy', matchedWord: w })),
+    ...SELL_WORDS.map(w => ({ key: fullNormalize(w), type: 'sell', matchedWord: w })),
+  ].sort((a, b) => b.key.length - a.key.length)
+
+  const taken = new Array(normalized.length).fill(false)
+  for (const { key, type, matchedWord } of allKws) {
+    const needle = ' ' + key + ' '
+    let idx = 0
+    while ((idx = normalized.indexOf(needle, idx)) !== -1) {
+      const s = idx + 1
+      const e = s + key.length
+      let conflict = false
+      for (let i = s; i < e; i++) { if (taken[i]) { conflict = true; break } }
+      if (!conflict) {
+        for (let i = s; i < e; i++) taken[i] = true
+        intents.push({ start: s, end: e, type, matchedWord })
+      }
+      idx++
+    }
+  }
+  intents.sort((a, b) => a.start - b.start)
+  return intents
+}
+
+// Locate every non-overlapping coin alias mention in the normalized text.
+function findAllCoinPositions(normalized) {
+  const found = []
+  const aliases = Object.keys(COIN_MAP).sort((a, b) => b.length - a.length)
+  const taken = new Array(normalized.length).fill(false)
+  for (const alias of aliases) {
+    const needle = ' ' + alias + ' '
+    let idx = 0
+    while ((idx = normalized.indexOf(needle, idx)) !== -1) {
+      const s = idx + 1
+      const e = s + alias.length
+      let conflict = false
+      for (let i = s; i < e; i++) { if (taken[i]) { conflict = true; break } }
+      if (!conflict) {
+        for (let i = s; i < e; i++) taken[i] = true
+        found.push({ start: s, end: e, coin: COIN_MAP[alias] })
+      }
+      idx++
+    }
+  }
+  found.sort((a, b) => a.start - b.start)
+  return found
+}
+
+// Parse a single segment (already-normalized) into one transaction.
+// `forcedType` / `forcedMatchedWord` skip intent detection when the caller
+// already knows it from the surrounding split.
+function parseOneSegment(normalized, forcedType, forcedMatchedWord) {
+  let type = forcedType || null
+  let matchedWord = forcedMatchedWord || null
+  if (!type) {
+    for (const kw of BUY_WORDS) {
+      const k = fullNormalize(kw)
+      if (normalized.includes(' ' + k + ' ')) { type = 'buy'; matchedWord = kw; break }
+    }
+    if (!type) {
+      for (const kw of SELL_WORDS) {
+        const k = fullNormalize(kw)
+        if (normalized.includes(' ' + k + ' ')) { type = 'sell'; matchedWord = kw; break }
+      }
+    }
+  }
+
+  // Coin — exact / substring / fuzzy
   let coin = null
   const aliases = Object.keys(COIN_MAP).sort((a, b) => b.length - a.length)
   for (const alias of aliases) {
@@ -414,11 +540,8 @@ function parseVoiceCommand(text) {
       }
     }
   }
+  let suggestions = null
   if (!coin) {
-    // Fuzzy fallback: for each input token (≥4 chars, not pure digits),
-    // find the closest alias by edit distance. Accept if distance ≤ 1
-    // for short tokens (4-5 chars) or ≤ 2 for longer tokens.
-    // Skip tokens that are intent verbs ("sold" is 1 edit from "gold").
     const stopWords = new Set([
       ...BUY_WORDS.map(fullNormalize), ...SELL_WORDS.map(fullNormalize),
       'today','tomorrow','yesterday','share','shares','units','unit','each',
@@ -427,34 +550,40 @@ function parseVoiceCommand(text) {
     const tokens = normalized.trim().split(/\s+/)
       .filter(t => t.length >= 4 && !/^\d/.test(t) && !stopWords.has(t))
     let bestDist = Infinity, bestCoin = null
+    const nearMisses = []
     for (const tok of tokens) {
       for (const alias of aliases) {
         if (alias.length < 4) continue
-        if (Math.abs(alias.length - tok.length) > 2) continue
+        if (Math.abs(alias.length - tok.length) > 3) continue
         const d = editDistance(tok, alias)
         const maxLen = Math.max(tok.length, alias.length)
-        const threshold = maxLen <= 5 ? 1 : 2
-        if (d <= threshold && d < bestDist) {
+        const autoThresh = maxLen <= 5 ? 1 : 2
+        if (d <= autoThresh && d < bestDist) {
           bestDist = d
           bestCoin = COIN_MAP[alias]
+        } else if (d <= autoThresh + 1) {
+          nearMisses.push({ dist: d, coin: COIN_MAP[alias] })
         }
       }
     }
-    if (bestCoin) coin = bestCoin
+    if (bestCoin) {
+      coin = bestCoin
+    } else if (nearMisses.length) {
+      const byId = new Map()
+      for (const { dist, coin: c } of nearMisses) {
+        if (!byId.has(c.id) || byId.get(c.id).dist > dist) byId.set(c.id, { dist, coin: c })
+      }
+      suggestions = [...byId.values()].sort((a, b) => a.dist - b.dist).slice(0, 4).map(s => s.coin)
+    }
   }
 
-  // 3. Numbers — find all, then figure out which is amount vs price
-  // Look for explicit "at $X" / "for $X" / "بسعر X" / "ب X" patterns for price.
-  // Unit suffix uses lookahead [^a-zA-Z] so "b" inside "bitcoin" is not
-  // billion, and so Arabic units like "الف" match (\b fails after Arabic).
+  // Numbers (amount + price)
   let price = null
   const priceRegex = /(?:at|for|@|بسعر|ب)\s*\$?\s*(\d+(?:[.,]\d+)?)\s*(k|m|b|thousand|million|billion|الف|مليون|مليار|بليون)?(?=[^a-zA-Z]|$)/i
   const priceMatch = normalized.match(priceRegex)
   if (priceMatch) {
     price = parseNumber(priceMatch[1] + (priceMatch[2] || ''))
   }
-
-  // Find all numbers
   const allNumbers = []
   const numRegex = /(\d+(?:[.,]\d+)?)\s*(k|m|b|thousand|million|billion|الف|مليون|مليار|بليون)?(?=[^a-zA-Z]|$)/gi
   let nm
@@ -462,18 +591,13 @@ function parseVoiceCommand(text) {
     const parsed = parseNumber(nm[1] + (nm[2] || ''))
     if (parsed != null) allNumbers.push(parsed)
   }
-
-  // Amount = first number that isn't the price
   let amount = null
   if (allNumbers.length > 0) {
     amount = allNumbers.find(n => n !== price)
     if (amount == null && allNumbers.length === 1 && price == null) amount = allNumbers[0]
     if (amount == null && price == null) amount = allNumbers[0]
   }
-
-  // If we only got one number and no explicit price, treat it as amount
   if (amount != null && price == null && allNumbers.length >= 2) {
-    // Heuristic: larger one is price (USD), smaller is amount of coin
     const others = allNumbers.filter(n => n !== amount)
     if (others.length > 0) {
       const possible = others[0]
@@ -481,10 +605,6 @@ function parseVoiceCommand(text) {
       else if (amount > possible * 10) { price = amount; amount = possible }
     }
   }
-
-  // "سهم" / "share" (singular) without an explicit count implies quantity = 1.
-  // Plural "أسهم" / "shares" with no number also reasonably defaults to 1 here
-  // since we have no better signal.
   if (amount == null) {
     const shareForms = [fullNormalize('سهم'), fullNormalize('اسهم'), 'share', 'shares']
     if (shareForms.some(w => normalized.includes(' ' + w + ' '))) {
@@ -492,7 +612,48 @@ function parseVoiceCommand(text) {
     }
   }
 
-  return { type, coin, amount, price, original, matchedWord }
+  // Unit conversion for metals: "5 grams of gold" → 0.1764 oz; "1 kg silver" → 35.27 oz.
+  // Copper is priced per pound, so we go via oz / 16.
+  let unitNote = null
+  if (amount != null && coin) {
+    const ozCats = new Set(['gold', 'silver', 'platinum'])
+    const lbCats = new Set(['copper'])
+    if (ozCats.has(coin.category) || lbCats.has(coin.category)) {
+      const unit = detectMassUnit(normalized)
+      if (unit) {
+        const ozMul = MASS_UNITS_TO_OZ[unit]
+        const before = amount
+        amount = lbCats.has(coin.category) ? amount * (ozMul / 16) : amount * ozMul
+        unitNote = `${before} ${unit}`
+      }
+    }
+  }
+
+  return { type, coin, suggestions, amount, price, matchedWord, unitNote }
+}
+
+// Search assets by free text (used by the "edit asset" picker in each card).
+function searchAssets(query) {
+  if (!query || !query.trim()) return []
+  const q = fullNormalize(query.trim())
+  const aliases = Object.keys(COIN_MAP)
+  const matched = new Map()
+  // First pass: prefix matches (better quality)
+  for (const alias of aliases) {
+    if (alias.startsWith(q)) {
+      const c = COIN_MAP[alias]
+      if (!matched.has(c.id)) matched.set(c.id, c)
+    }
+  }
+  // Second pass: contains matches
+  for (const alias of aliases) {
+    if (matched.size >= 8) break
+    if (alias.includes(q)) {
+      const c = COIN_MAP[alias]
+      if (!matched.has(c.id)) matched.set(c.id, c)
+    }
+  }
+  return [...matched.values()].slice(0, 8)
 }
 
 // ── Fun reactions for slang detected — adds personality ────────────────────
@@ -547,6 +708,8 @@ export default function VoiceImport({ hideTrigger = false }) {
   const [reaction, setReaction] = useState(null)
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
+  // Per-transaction free-text asset search ({ [txIdx]: query })
+  const [assetQueries, setAssetQueries] = useState({})
   const recRef = useRef(null)
   const listenTimerRef = useRef(null)
   const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
@@ -571,20 +734,20 @@ export default function VoiceImport({ hideTrigger = false }) {
 
   const startListening = () => {
     if (!SUPPORTED) { setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return }
-    setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false)
+    setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({})
 
     const rec = new SR()
-    rec.continuous = true      // keep listening until explicitly stopped
+    rec.continuous = true
     rec.interimResults = true
-    // ar-EG = Egyptian Arabic — best dialect match for the greeting text and
-    // the most widely available Arabic STT locale on Android/Chrome.
+    rec.maxAlternatives = 3   // try top-3 STT hypotheses → pick best parse
     rec.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
 
     const isArabic = lang === 'ar'
-    rec.onstart = () => { setListening(true); scheduleStop(15000) }
+    // 5-minute safety ceiling — user is expected to tap the mic to stop.
+    rec.onstart = () => { setListening(true); scheduleStop(5 * 60 * 1000) }
     rec.onend   = () => { setListening(false); clearTimer() }
     rec.onerror = e => {
       setListening(false); clearTimer()
@@ -601,17 +764,35 @@ export default function VoiceImport({ hideTrigger = false }) {
     }
 
     rec.onresult = e => {
-      let text = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        text += e.results[i][0].transcript
+      // Accumulate finalized segments before this event
+      let prefix = ''
+      for (let i = 0; i < e.resultIndex; i++) prefix += e.results[i][0].transcript
+
+      // For the live segment pick the STT hypothesis that produces the richest parse
+      let bestSuffix = e.results[e.resultIndex]?.[0]?.transcript || ''
+      let bestScore = -1
+      const live = e.results[e.resultIndex]
+      if (live) {
+        for (let k = 0; k < live.length; k++) {
+          const candidate = prefix + live[k].transcript
+          const p = parseVoiceCommand(candidate)
+          const score = p.transactions.reduce((s, t) =>
+            s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 1 : 0), 0)
+          if (score > bestScore) { bestScore = score; bestSuffix = live[k].transcript }
+        }
       }
+
+      // Append any later segments (shouldn't happen but be safe)
+      let tail = ''
+      for (let i = e.resultIndex + 1; i < e.results.length; i++) tail += e.results[i][0].transcript
+
+      const text = prefix + bestSuffix + tail
       setTranscript(text)
       const p = parseVoiceCommand(text)
-      if (p.type || p.coin || p.amount) {
+      const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
+      if (anyUseful) {
         setParsed(p)
-        setReaction(getReaction(text, p))
-        // Valid command heard — stop 1.5 s after the final transcript segment
-        if (e.results[e.results.length - 1]?.isFinal) scheduleStop(1500)
+        setReaction(getReaction(text, p.transactions[0] || {}))
       }
     }
 
@@ -621,9 +802,9 @@ export default function VoiceImport({ hideTrigger = false }) {
     // `onend` alone is unreliable — Chrome Android / iOS often never fire it.
     // We use a `setTimeout` (created here, inside the gesture handler) as the
     // primary trigger, so the mic always opens even if TTS fails or stalls.
-    const greetingText = lang === 'ar'
-      ? 'اهلا بيك، اشتريت او بعت ايه النهارده؟'
-      : 'Hey! What did you buy or sell today?'
+    // Always speak English TTS — Arabic TTS is robotic on most Android devices
+    // and the user prefers the English voice regardless of UI language.
+    const greetingText = 'Hey! What did you buy or sell today?'
 
     let recStarted = false
     const doStart = () => {
@@ -636,11 +817,9 @@ export default function VoiceImport({ hideTrigger = false }) {
       try {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
-        utt.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
-        // Slower rate + slightly lower pitch makes TTS sound less robotic.
-        // If a neural/enhanced voice was found at mount time, use it explicitly.
-        utt.rate  = lang === 'ar' ? 0.82 : 0.95
-        utt.pitch = lang === 'ar' ? 0.90 : 1
+        utt.lang = 'en-US'
+        utt.rate  = 0.95
+        utt.pitch = 1
         if (lang === 'ar' && arVoiceRef.current) utt.voice = arVoiceRef.current
         utt.onend = doStart
         utt.onerror = doStart  // if TTS fails, mic still opens
@@ -667,36 +846,58 @@ export default function VoiceImport({ hideTrigger = false }) {
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
+  const updateTx = (idx, patch) => {
+    setParsed(p => {
+      if (!p) return p
+      return {
+        ...p,
+        transactions: p.transactions.map((t, i) => i === idx ? { ...t, ...patch } : t),
+      }
+    })
+  }
+
+  const removeTx = (idx) => {
+    setParsed(p => {
+      if (!p) return p
+      const next = p.transactions.filter((_, i) => i !== idx)
+      return next.length ? { ...p, transactions: next } : null
+    })
+  }
+
   const handleImport = () => {
-    if (!parsed?.coin || !parsed?.type || !parsed?.amount) return
+    const ready = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount)
+    if (!ready.length) return
     const wallets = loadData('wallets')
     const walletId = wallets[0]?.id || 1
     const txs = loadData('transactions')
     const today = new Date().toISOString().split('T')[0]
-    const pricePerUnit = parsed.price || 0
-    const totalCost = parsed.amount * pricePerUnit
-    txs.unshift({
-      id: bumpId('crypto_tracker_next_tx_id'),
-      wallet_id: parseInt(walletId),
-      type: parsed.type, category: parsed.coin.category || 'crypto',
-      coin_id: parsed.coin.id,
-      coin_symbol: parsed.coin.symbol,
-      coin_name: parsed.coin.name,
-      coin_image: '',
-      amount: parsed.amount,
-      price_per_unit: pricePerUnit,
-      total_cost: totalCost,
-      exchange: 'Voice Import',
-      notes: `"${transcript}"`,
-      date: today,
-      created_at: new Date().toISOString(),
-    })
+    for (const tx of ready) {
+      const pricePerUnit = tx.price || 0
+      const totalCost = tx.amount * pricePerUnit
+      txs.unshift({
+        id: bumpId('crypto_tracker_next_tx_id'),
+        wallet_id: parseInt(walletId),
+        type: tx.type, category: tx.coin.category || 'crypto',
+        coin_id: tx.coin.id,
+        coin_symbol: tx.coin.symbol,
+        coin_name: tx.coin.name,
+        coin_image: '',
+        amount: tx.amount,
+        price_per_unit: pricePerUnit,
+        total_cost: totalCost,
+        exchange: 'Voice Import',
+        notes: `"${transcript}"`,
+        date: today,
+        created_at: new Date().toISOString(),
+      })
+    }
     saveData('transactions', txs)
     setConfirmed(true)
   }
 
   const isAr = lang === 'ar'
-  const canImport = parsed?.coin && parsed?.type && parsed?.amount
+  const readyCount = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount).length
+  const canImport = readyCount > 0
 
   return (
     <div style={{ marginBottom: '1rem' }}>
@@ -818,53 +1019,165 @@ export default function VoiceImport({ hideTrigger = false }) {
             </div>
           )}
 
-          {/* Parsed result card */}
-          {parsed && (
-            <div style={{
-              background: canImport
-                ? 'linear-gradient(135deg, rgba(74,222,128,0.12), rgba(34,197,94,0.08))'
-                : 'rgba(245,158,11,0.08)',
-              border: `1.5px solid ${canImport ? 'rgba(74,222,128,0.35)' : 'rgba(245,158,11,0.3)'}`,
-              borderRadius:'12px', padding:'0.85rem 1rem', marginBottom:'0.75rem',
-            }}>
-              {reaction && (
-                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}>
-                  <span style={{ fontSize:'1.4rem' }}>{reaction.emoji}</span>
-                  <span style={{ fontSize:'0.82rem', color:'var(--text)', fontWeight:600 }}>{reaction.msg}</span>
-                </div>
-              )}
-              <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'0.35rem 0.85rem', fontSize:'0.82rem' }}>
-                <span style={{ color:'var(--text-muted)' }}>{isAr ? 'النوع' : 'Action'}</span>
-                <span style={{ color: parsed.type === 'buy' ? '#4ade80' : parsed.type === 'sell' ? '#f87171' : 'var(--text-muted)', fontWeight:700 }}>
-                  {parsed.type ? (parsed.type === 'buy' ? (isAr ? '🟢 شراء' : '🟢 Buy') : (isAr ? '🔴 بيع' : '🔴 Sell')) : (isAr ? '⚠️ غير محدد' : '⚠️ Not detected')}
-                </span>
-                <span style={{ color:'var(--text-muted)' }}>{isAr ? 'الأصل' : 'Asset'}</span>
-                <span style={{ color:'var(--text)', fontWeight:700 }}>
-                  {parsed.coin ? (
-                    <>
-                      {parsed.coin.symbol} · {parsed.coin.name}
-                      {parsed.coin.category && parsed.coin.category !== 'crypto' && (
-                        <span style={{
-                          marginInlineStart: '0.4rem', fontSize: '0.68rem', fontWeight: 700,
-                          padding: '0.1rem 0.45rem', borderRadius: '6px',
-                          background: 'rgba(192,132,252,0.15)', color: '#c084fc',
-                          textTransform: 'uppercase', letterSpacing: '0.05em',
-                        }}>{parsed.coin.category}</span>
-                      )}
-                    </>
-                  ) : (isAr ? '⚠️ غير محدد' : '⚠️ Not detected')}
-                </span>
-                <span style={{ color:'var(--text-muted)' }}>{isAr ? 'الكمية' : 'Amount'}</span>
-                <span style={{ color:'var(--text)', fontWeight:700, fontFamily:'monospace' }}>
-                  {parsed.amount != null ? fmtAmt(parsed.amount) : (isAr ? '⚠️ غير محدد' : '⚠️ Not detected')}
-                </span>
-                <span style={{ color:'var(--text-muted)' }}>{isAr ? 'السعر' : 'Price'}</span>
-                <span style={{ color:'var(--text)', fontFamily:'monospace' }}>
-                  {parsed.price != null ? '$' + fmtAmt(parsed.price) : (isAr ? 'لم يُذكر' : 'Not specified')}
-                </span>
-              </div>
+          {/* Reaction banner */}
+          {reaction && parsed && (
+            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
+              <span style={{ fontSize:'1.4rem' }}>{reaction.emoji}</span>
+              <span style={{ fontSize:'0.83rem', color:'var(--text)', fontWeight:600 }}>{reaction.msg}</span>
             </div>
           )}
+
+          {/* Per-transaction editable cards */}
+          {parsed && parsed.transactions.map((tx, idx) => {
+            const txReady = tx.coin && tx.type && tx.amount != null
+            const q = assetQueries[idx] || ''
+            const assetResults = searchAssets(q)
+            return (
+              <div key={idx} style={{
+                background: txReady ? 'linear-gradient(135deg,rgba(74,222,128,0.10),rgba(34,197,94,0.06))' : 'rgba(245,158,11,0.07)',
+                border: `1.5px solid ${txReady ? 'rgba(74,222,128,0.35)' : 'rgba(245,158,11,0.3)'}`,
+                borderRadius:'12px', padding:'0.85rem 1rem', marginBottom:'0.65rem',
+              }}>
+                {/* header: trade N / remove */}
+                {parsed.transactions.length > 1 && (
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.55rem' }}>
+                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#c084fc', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                      {isAr ? `صفقة ${idx + 1}` : `Trade ${idx + 1}`}
+                    </span>
+                    <button onClick={() => removeTx(idx)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:'1rem', lineHeight:1 }}>✕</button>
+                  </div>
+                )}
+
+                {/* Action toggle */}
+                <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.6rem' }}>
+                  {['buy','sell'].map(t => (
+                    <button key={t} onClick={() => updateTx(idx, { type: t })} style={{
+                      flex:1, padding:'0.35rem 0', borderRadius:'8px', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
+                      border: tx.type === t ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
+                      background: tx.type === t
+                        ? (t === 'buy' ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)')
+                        : 'transparent',
+                      color: tx.type === t
+                        ? (t === 'buy' ? '#4ade80' : '#f87171')
+                        : 'var(--text-muted)',
+                    }}>
+                      {t === 'buy' ? (isAr ? '🟢 شراء' : '🟢 Buy') : (isAr ? '🔴 بيع' : '🔴 Sell')}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Asset row */}
+                <div style={{ marginBottom:'0.55rem' }}>
+                  <span style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{isAr ? 'الأصل' : 'Asset'}</span>
+                  {tx.coin ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginTop:'0.25rem', flexWrap:'wrap' }}>
+                      <span style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--text)' }}>
+                        {tx.coin.symbol} · {tx.coin.name}
+                        {tx.coin.category && tx.coin.category !== 'crypto' && (
+                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(192,132,252,0.15)', color:'#c084fc', textTransform:'uppercase' }}>{tx.coin.category}</span>
+                        )}
+                      </span>
+                      <button onClick={() => { updateTx(idx, { coin: null, suggestions: null }); setAssetQueries(q => ({...q, [idx]: ''})) }}
+                        style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.14)', borderRadius:'6px', color:'var(--text-muted)', cursor:'pointer', padding:'0.15rem 0.5rem', fontSize:'0.72rem' }}>
+                        {isAr ? 'تغيير' : 'Change'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop:'0.3rem' }}>
+                      {/* Suggestion chips */}
+                      {tx.suggestions?.length > 0 && (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginBottom:'0.45rem' }}>
+                          <span style={{ fontSize:'0.72rem', color:'#c084fc', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
+                          {tx.suggestions.map(s => (
+                            <button key={s.id} onClick={() => updateTx(idx, { coin: s, suggestions: null })} style={{
+                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(192,132,252,0.15)', border:'1.5px solid rgba(192,132,252,0.4)',
+                              color:'#e9d5ff', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
+                            }}>
+                              {s.symbol} <span style={{ opacity:0.7, fontWeight:400 }}>{s.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {/* Free-text search */}
+                      <input
+                        type="text"
+                        value={q}
+                        onChange={e => setAssetQueries(prev => ({...prev, [idx]: e.target.value}))}
+                        placeholder={isAr ? 'ابحث عن الأصل… (مثال: bitcoin، tesla)' : 'Search asset… (e.g. bitcoin, tesla)'}
+                        style={{
+                          width:'100%', boxSizing:'border-box', padding:'0.45rem 0.7rem',
+                          borderRadius:'8px', border:'1.5px solid rgba(192,132,252,0.35)',
+                          background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                          fontSize:'0.82rem', outline:'none',
+                        }}
+                      />
+                      {assetResults.length > 0 && (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', marginTop:'0.4rem' }}>
+                          {assetResults.map(c => (
+                            <button key={c.id} onClick={() => { updateTx(idx, { coin: c, suggestions: null }); setAssetQueries(prev => ({...prev, [idx]: ''})) }} style={{
+                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(168,85,247,0.18)', border:'1.5px solid rgba(168,85,247,0.4)',
+                              color:'#e9d5ff', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
+                            }}>
+                              {c.symbol} <span style={{ opacity:0.7 }}>{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount + Price inputs */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                  <div>
+                    <label style={{ fontSize:'0.72rem', color: tx.amount == null ? '#f59e0b' : 'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:'0.2rem' }}>
+                      {tx.amount == null ? (isAr ? '⚠️ الكمية' : '⚠️ Amount') : (isAr ? 'الكمية' : 'Amount')}
+                    </label>
+                    <input
+                      type="number" min="0" step="any"
+                      value={tx.amount ?? ''}
+                      onChange={e => {
+                        const v = e.target.value === '' ? null : parseFloat(e.target.value)
+                        updateTx(idx, { amount: isNaN(v) ? null : v })
+                      }}
+                      placeholder={isAr ? 'أدخل الكمية' : 'Enter amount'}
+                      style={{
+                        width:'100%', boxSizing:'border-box', padding:'0.42rem 0.6rem',
+                        borderRadius:'8px', border: `1.5px solid ${tx.amount == null ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                        background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                        fontSize:'0.85rem', fontFamily:'monospace', outline:'none',
+                      }}
+                    />
+                    {tx.unitNote && (
+                      <span style={{ fontSize:'0.68rem', color:'#c084fc', marginTop:'0.15rem', display:'block' }}>
+                        {isAr ? `محوّل من ${tx.unitNote}` : `from ${tx.unitNote}`}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:'0.2rem' }}>
+                      {isAr ? 'السعر ($)' : 'Price ($)'}
+                    </label>
+                    <input
+                      type="number" min="0" step="any"
+                      value={tx.price ?? ''}
+                      onChange={e => {
+                        const v = e.target.value === '' ? null : parseFloat(e.target.value)
+                        updateTx(idx, { price: isNaN(v) ? null : v })
+                      }}
+                      placeholder={isAr ? 'اختياري' : 'Optional'}
+                      style={{
+                        width:'100%', boxSizing:'border-box', padding:'0.42rem 0.6rem',
+                        borderRadius:'8px', border:'1.5px solid rgba(255,255,255,0.12)',
+                        background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                        fontSize:'0.85rem', fontFamily:'monospace', outline:'none',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
 
           {error && (
             <div style={{
@@ -876,28 +1189,30 @@ export default function VoiceImport({ hideTrigger = false }) {
             </div>
           )}
 
-          {/* Confirm / imported */}
-          {parsed && canImport && (
-            confirmed ? (
-              <div style={{
-                background:'rgba(74,222,128,0.12)', border:'1px solid rgba(74,222,128,0.35)',
-                borderRadius:'10px', color:'#4ade80',
-                padding:'0.6rem 0.75rem', fontSize:'0.85rem', textAlign:'center', fontWeight:700,
-              }}>
-                ✅ {isAr ? 'تم إضافة الصفقة بنجاح!' : 'Trade added successfully!'}
-              </div>
-            ) : (
-              <button onClick={handleImport} style={{
-                width:'100%',
-                background:'linear-gradient(135deg, #4ade80, #22c55e)',
-                border:'none', borderRadius:'10px', color:'#fff',
-                padding:'0.7rem', fontWeight:800, fontSize:'0.9rem', cursor:'pointer',
-                boxShadow:'0 4px 14px rgba(34,197,94,0.4)',
-              }}>
-                ✨ {isAr ? 'إضافة الصفقة' : 'Add this trade'}
-              </button>
-            )
-          )}
+          {/* Import / confirmed */}
+          {confirmed ? (
+            <div style={{
+              background:'rgba(74,222,128,0.12)', border:'1px solid rgba(74,222,128,0.35)',
+              borderRadius:'10px', color:'#4ade80',
+              padding:'0.6rem 0.75rem', fontSize:'0.85rem', textAlign:'center', fontWeight:700,
+            }}>
+              ✅ {isAr
+                ? `تم إضافة ${readyCount} صفقة بنجاح!`
+                : `${readyCount} trade${readyCount > 1 ? 's' : ''} added!`}
+            </div>
+          ) : parsed && canImport ? (
+            <button onClick={handleImport} style={{
+              width:'100%',
+              background:'linear-gradient(135deg, #4ade80, #22c55e)',
+              border:'none', borderRadius:'10px', color:'#fff',
+              padding:'0.7rem', fontWeight:800, fontSize:'0.9rem', cursor:'pointer',
+              boxShadow:'0 4px 14px rgba(34,197,94,0.4)',
+            }}>
+              ✨ {readyCount > 1
+                ? (isAr ? `إضافة ${readyCount} صفقات` : `Add ${readyCount} trades`)
+                : (isAr ? 'إضافة الصفقة' : 'Add this trade')}
+            </button>
+          ) : null}
 
           {/* Examples */}
           {!transcript && !error && (
