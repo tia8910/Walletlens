@@ -184,11 +184,19 @@ function useVisible(threshold = 0.12) {
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    // Safety fallback: some in-app WKWebViews (X, FB, IG) don't fire the
+    // initial IntersectionObserver callback reliably, leaving everything
+    // stuck at opacity:0. Force visibility after 900ms regardless.
+    const fallback = setTimeout(() => setVis(true), 900)
+    if (typeof IntersectionObserver === 'undefined') {
+      setVis(true)
+      return () => clearTimeout(fallback)
+    }
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { setVis(true); obs.disconnect() }
     }, { threshold })
     obs.observe(el)
-    return () => obs.disconnect()
+    return () => { clearTimeout(fallback); obs.disconnect() }
   }, [threshold])
   return [ref, vis]
 }
