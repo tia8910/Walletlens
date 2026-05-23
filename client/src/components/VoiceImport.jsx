@@ -619,25 +619,12 @@ export default function VoiceImport({ hideTrigger = false }) {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
         utt.rate = 0.95
-        // Pick best available voice for the selected language.
-        // Many Android devices don't have Arabic TTS — fall back to any voice
-        // (browser default) rather than failing silently.
-        const voices = window.speechSynthesis.getVoices()
-        const arabicVoice = lang === 'ar'
-          ? voices.find(v => v.lang.startsWith('ar'))
-          : null
-        if (arabicVoice) {
-          utt.voice = arabicVoice
-          utt.lang = arabicVoice.lang
-        } else if (lang === 'ar') {
-          // No Arabic voice — speak English greeting instead
-          utt.text = 'Hey! What did you buy or sell today?'
-          utt.lang = 'en-US'
-        } else {
-          utt.lang = 'en-US'
-        }
+        // Set language and let the OS pick the right voice — don't call
+        // getVoices() here because it often returns [] on first load (async)
+        // which would wrongly trigger an English fallback.
+        utt.lang = lang === 'ar' ? 'ar' : 'en-US'
         utt.onend = doStart
-        utt.onerror = doStart
+        utt.onerror = doStart  // if TTS fails, mic still opens
         window.speechSynthesis.speak(utt)
       } catch {
         // speechSynthesis unavailable
