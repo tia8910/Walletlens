@@ -590,20 +590,38 @@ export default function VoiceImport({ hideTrigger = false }) {
 
     recRef.current = rec
 
-    // Speak a short greeting BEFORE starting the mic so the greeting
-    // doesn't feed back into the recognition transcript.
+    // Speak greeting BEFORE mic opens so it doesn't appear in the transcript.
+    // `onend` alone is unreliable — Chrome Android / iOS often never fire it.
+    // We use a `setTimeout` (created here, inside the gesture handler) as the
+    // primary trigger, so the mic always opens even if TTS fails or stalls.
     const greetingText = lang === 'ar'
       ? 'اهلا بيك، اشتريت او بعت ايه النهارده؟'
       : 'Hey! What did you buy or sell today?'
+
+    let recStarted = false
+    const doStart = () => {
+      if (recStarted) return
+      recStarted = true
+      try { rec.start() } catch {}
+    }
+
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel()
-      const utt = new SpeechSynthesisUtterance(greetingText)
-      utt.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
-      utt.rate = 0.95
-      utt.onend = () => { try { rec.start() } catch {} }
-      window.speechSynthesis.speak(utt)
+      try {
+        window.speechSynthesis.cancel()
+        const utt = new SpeechSynthesisUtterance(greetingText)
+        utt.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
+        utt.rate = 0.95
+        utt.onend = doStart
+        utt.onerror = doStart  // TTS error → still open mic
+        window.speechSynthesis.speak(utt)
+      } catch {
+        // speechSynthesis unavailable — fall through to timeout
+      }
+      // Safety net: mic opens after 3 s max regardless of TTS state.
+      // setTimeout created inside the click handler so gesture context is kept.
+      setTimeout(doStart, 3000)
     } else {
-      try { rec.start() } catch { /* already listening */ }
+      doStart()
     }
   }
 
