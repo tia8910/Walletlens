@@ -156,7 +156,7 @@ const COIN_MAP = (() => {
   const STOCK_NAME_AR = {
     AAPL: ['apple','ابل','ابل كومبيوتر','تفاحه'],
     MSFT: ['microsoft','مايكروسوفت','ميكروسوفت'],
-    NVDA: ['nvidia','انفيديا','نفيديا'],
+    NVDA: ['nvidia','انفيديا','نفيديا','نيفيديا','انفيدبا','نفيدبا'],
     GOOGL:['google','alphabet','جوجل','جوغل','جوكل'],
     META: ['meta','facebook','ميتا','فيسبوك','فيس بوك'],
     AMZN: ['amazon','امازون','امزون'],
@@ -305,7 +305,7 @@ const AR_NUMBERS_RAW = {
   'عشرة':10,'عشره':10,'عشر':10,'عشرت':10,
   'احد عشر':11,'اثنا عشر':12,'اتناشر':12,
   'عشرين':20,'ثلاثين':30,'تلاتين':30,'اربعين':40,'خمسين':50,'ستين':60,'سبعين':70,'تمانين':80,'تسعين':90,
-  'نص':0.5,'نصف':0.5,'نُص':0.5,'نوس':0.5,'ربع':0.25,'ثلث':0.333,'تلت':0.333,
+  'نص':0.5,'نصف':0.5,'نُص':0.5,'نوس':0.5,'ربع':0.25,'ثلث':0.333,
   'ميه':100,'مية':100,'مائة':100,'ماءه':100,'مايه':100,
   'الف':1000,'ألف':1000,'مليون':1000000,'مليار':1000000000,'بليون':1000000000,
 }
@@ -482,6 +482,16 @@ function parseVoiceCommand(text) {
     }
   }
 
+  // "سهم" / "share" (singular) without an explicit count implies quantity = 1.
+  // Plural "أسهم" / "shares" with no number also reasonably defaults to 1 here
+  // since we have no better signal.
+  if (amount == null) {
+    const shareForms = [fullNormalize('سهم'), fullNormalize('اسهم'), 'share', 'shares']
+    if (shareForms.some(w => normalized.includes(' ' + w + ' '))) {
+      amount = 1
+    }
+  }
+
   return { type, coin, amount, price, original, matchedWord }
 }
 
@@ -538,20 +548,26 @@ export default function VoiceImport({ hideTrigger = false }) {
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
   const recRef = useRef(null)
+  const listenTimerRef = useRef(null)
 
   const startListening = () => {
     if (!SUPPORTED) { setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return }
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false)
 
     const rec = new SR()
-    rec.continuous = false
+    rec.continuous = true      // keep listening until explicitly stopped
     rec.interimResults = true
     rec.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
 
-    rec.onstart = () => setListening(true)
-    rec.onend = () => setListening(false)
+    const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
+    // scheduleStop auto-stops after `ms` milliseconds — call with shorter
+    // delay once a valid command is detected, longer as a safety ceiling.
+    const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
+
+    rec.onstart = () => { setListening(true); scheduleStop(15000) }   // 15 s ceiling
+    rec.onend   = () => { setListening(false); clearTimer() }
     rec.onerror = e => {
-      setListening(false)
+      setListening(false); clearTimer()
       if (e.error === 'not-allowed') setError('Microphone permission denied. Please allow mic access.')
       else if (e.error === 'no-speech') setError("I didn't catch that — please try again.")
       else setError(`Voice error: ${e.error}`)
@@ -567,19 +583,41 @@ export default function VoiceImport({ hideTrigger = false }) {
       if (p.type || p.coin || p.amount) {
         setParsed(p)
         setReaction(getReaction(text, p))
+        // Valid command heard — stop 1.5 s after the final transcript segment
+        if (e.results[e.results.length - 1]?.isFinal) scheduleStop(1500)
       }
     }
 
     recRef.current = rec
-    try { rec.start() } catch { /* already listening */ }
+
+    // Speak a short greeting BEFORE starting the mic so the greeting
+    // doesn't feed back into the recognition transcript.
+    const greetingText = lang === 'ar'
+      ? 'اهلا بيك، اشتريت او بعت ايه النهارده؟'
+      : 'Hey! What did you buy or sell today?'
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      const utt = new SpeechSynthesisUtterance(greetingText)
+      utt.lang = lang === 'ar' ? 'ar-SA' : 'en-US'
+      utt.rate = 0.95
+      utt.onend = () => { try { rec.start() } catch {} }
+      window.speechSynthesis.speak(utt)
+    } else {
+      try { rec.start() } catch { /* already listening */ }
+    }
   }
 
   const stopListening = () => {
+    clearTimeout(listenTimerRef.current)
     try { recRef.current?.stop() } catch {}
     setListening(false)
   }
 
-  useEffect(() => () => { try { recRef.current?.stop() } catch {} }, [])
+  useEffect(() => () => {
+    clearTimeout(listenTimerRef.current)
+    try { recRef.current?.stop() } catch {}
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  }, [])
 
   const handleImport = () => {
     if (!parsed?.coin || !parsed?.type || !parsed?.amount) return

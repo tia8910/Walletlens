@@ -3108,7 +3108,7 @@ export default function Dashboard() {
             background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',
           }}>Buy</button>
           <button onClick={() => { setNudgeVisible(false); openSheet('sell', 'nudge_toast') }} style={{
-            padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
+            padding: '0.35rem 0.85rem', borderRadius: '50px', cursor: 'pointer',
             background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 800, fontSize: '0.8rem',
             border: '1px solid rgba(248,113,113,0.3)',
           }}>Sell</button>
