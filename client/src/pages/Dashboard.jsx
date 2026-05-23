@@ -2440,7 +2440,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showVoiceImport && (
-                  <VoiceImport hideTrigger />
+                  <VoiceImport hideTrigger onImported={loadAll} />
                 )}
                 {showBackupCode && (
                   <BackupCode hideTrigger />
