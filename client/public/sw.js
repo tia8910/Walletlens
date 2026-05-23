@@ -8,6 +8,9 @@ const SW_VERSION = 'v132'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
+// Static files to pre-cache at install time for instant first-load
+const PRECACHE_URLS = ['/news.json']
+
 // Price/market API origins we want to cache for offline fallback
 const PRICE_API_PATTERNS = [
   'api.coingecko.com',
@@ -33,7 +36,13 @@ function isStaticCdn(url) {
   return STATIC_CDN_PATTERNS.some(p => url.href.includes(p))
 }
 
-self.addEventListener('install', e => e.waitUntil(self.skipWaiting()))
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(STATIC)
+      .then(cache => Promise.all(PRECACHE_URLS.map(url => cache.add(url).catch(() => {}))))
+      .then(() => self.skipWaiting())
+  )
+})
 
 self.addEventListener('activate', e => {
   e.waitUntil(
