@@ -400,6 +400,11 @@ function digitizeWordNumbers(text) {
   for (const p of phrases) {
     const val = String(all[p])
     out = out.split(' ' + p + ' ').join(' ' + val + ' ')
+    // Arabic conjunction "و" (and) often attaches to the following number-word
+    // without a space ("وواحد" = "and one"). Split it so the number is detected.
+    if (/[؀-ۿ]/.test(p)) {
+      out = out.split(' و' + p + ' ').join(' و ' + val + ' ')
+    }
   }
   return out.slice(1, -1)
 }
@@ -440,9 +445,16 @@ function parseVoiceCommand(text) {
     if (coinPositions.length <= 1) {
       transactions.push(parseOneSegment(seg.text, seg.type, seg.matchedWord))
     } else {
+      // Split text at the midpoint between consecutive coins so the
+      // amount appearing BEFORE each coin lands inside that coin's
+      // sub-segment. Example: "buy 1 BTC and 1 ETH" → "buy 1 BTC and" + "1 ETH"
       for (let i = 0; i < coinPositions.length; i++) {
-        const subStart = coinPositions[i].start
-        const subEnd = (i + 1 < coinPositions.length) ? coinPositions[i + 1].start : seg.text.length
+        const subStart = (i === 0)
+          ? 0
+          : Math.floor((coinPositions[i - 1].end + coinPositions[i].start) / 2)
+        const subEnd = (i + 1 < coinPositions.length)
+          ? Math.floor((coinPositions[i].end + coinPositions[i + 1].start) / 2)
+          : seg.text.length
         const subText = ' ' + seg.text.slice(subStart, subEnd).trim() + ' '
         const tx = parseOneSegment(subText, seg.type, seg.matchedWord)
         tx.coin = coinPositions[i].coin
