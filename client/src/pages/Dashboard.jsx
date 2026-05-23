@@ -2019,6 +2019,18 @@ export default function Dashboard() {
     setLoaded(true)
   }
 
+  // Refresh only prices — does NOT reset portfolio/prices state so value stays visible
+  async function refreshPrices() {
+    const ids = portfolio.map(h => h.coin_id).join(',')
+    if (!ids) return
+    setPricesLoading(true)
+    try {
+      const px = await api.getPrices(ids)
+      if (px && Object.keys(px).length) setPrices(px)
+    } catch {}
+    setPricesLoading(false)
+  }
+
   useEffect(() => {
     let intervalId = null
 
@@ -2354,10 +2366,10 @@ export default function Dashboard() {
               <button className="dvx-eye-btn" title="Refresh prices" disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
-                try { await loadAll() } finally { setRefreshing(false) }
+                try { await refreshPrices() } finally { setRefreshing(false) }
               }} style={{ marginLeft: '0.1rem' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ display:'block', transition:'transform 0.6s', transform: refreshing ? 'rotate(360deg)' : 'none' }}>
+                  style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
                   <polyline points="23 4 23 10 17 10"/>
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                 </svg>
