@@ -419,10 +419,13 @@ function parseVoiceCommand(text) {
       }
     }
   }
+  let suggestions = null
   if (!coin) {
     // Fuzzy fallback: for each input token (≥4 chars, not pure digits),
     // find the closest alias by edit distance. Accept if distance ≤ 1
     // for short tokens (4-5 chars) or ≤ 2 for longer tokens.
+    // One step beyond those thresholds is collected as near-miss candidates
+    // so the user can pick the right asset from a short list.
     // Skip tokens that are intent verbs ("sold" is 1 edit from "gold").
     const stopWords = new Set([
       ...BUY_WORDS.map(fullNormalize), ...SELL_WORDS.map(fullNormalize),
@@ -432,20 +435,32 @@ function parseVoiceCommand(text) {
     const tokens = normalized.trim().split(/\s+/)
       .filter(t => t.length >= 4 && !/^\d/.test(t) && !stopWords.has(t))
     let bestDist = Infinity, bestCoin = null
+    const nearMisses = []
     for (const tok of tokens) {
       for (const alias of aliases) {
         if (alias.length < 4) continue
-        if (Math.abs(alias.length - tok.length) > 2) continue
+        if (Math.abs(alias.length - tok.length) > 3) continue
         const d = editDistance(tok, alias)
         const maxLen = Math.max(tok.length, alias.length)
-        const threshold = maxLen <= 5 ? 1 : 2
-        if (d <= threshold && d < bestDist) {
+        const autoThresh = maxLen <= 5 ? 1 : 2
+        if (d <= autoThresh && d < bestDist) {
           bestDist = d
           bestCoin = COIN_MAP[alias]
+        } else if (d <= autoThresh + 1) {
+          nearMisses.push({ dist: d, coin: COIN_MAP[alias] })
         }
       }
     }
-    if (bestCoin) coin = bestCoin
+    if (bestCoin) {
+      coin = bestCoin
+    } else if (nearMisses.length) {
+      // Deduplicate by asset id, keep best (lowest) distance, sort, take top 4.
+      const byId = new Map()
+      for (const { dist, coin: c } of nearMisses) {
+        if (!byId.has(c.id) || byId.get(c.id).dist > dist) byId.set(c.id, { dist, coin: c })
+      }
+      suggestions = [...byId.values()].sort((a, b) => a.dist - b.dist).slice(0, 4).map(s => s.coin)
+    }
   }
 
   // 3. Numbers — find all, then figure out which is amount vs price
@@ -497,7 +512,7 @@ function parseVoiceCommand(text) {
     }
   }
 
-  return { type, coin, amount, price, original, matchedWord }
+  return { type, coin, suggestions, amount, price, original, matchedWord }
 }
 
 // ── Fun reactions for slang detected — adds personality ────────────────────
@@ -612,7 +627,7 @@ export default function VoiceImport({ hideTrigger = false }) {
       }
       setTranscript(text)
       const p = parseVoiceCommand(text)
-      if (p.type || p.coin || p.amount) {
+      if (p.type || p.coin || p.amount || p.suggestions?.length) {
         setParsed(p)
         setReaction(getReaction(text, p))
         // Valid command heard — stop 1.5 s after the final transcript segment
@@ -866,6 +881,49 @@ export default function VoiceImport({ hideTrigger = false }) {
                   {parsed.price != null ? '$' + fmtAmt(parsed.price) : (isAr ? 'لم يُذكر' : 'Not specified')}
                 </span>
               </div>
+
+              {/* Asset picker — shown when near-misses found but nothing auto-accepted */}
+              {!parsed.coin && parsed.suggestions?.length > 0 && (
+                <div style={{
+                  marginTop:'0.75rem', padding:'0.65rem 0.8rem',
+                  background:'rgba(192,132,252,0.08)', borderRadius:'10px',
+                  border:'1px solid rgba(192,132,252,0.28)',
+                }}>
+                  <p style={{ margin:'0 0 0.55rem', fontSize:'0.75rem', color:'#c084fc', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                    {isAr ? '🤔 هل تقصد؟' : '🤔 Did you mean?'}
+                  </p>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'0.45rem' }}>
+                    {parsed.suggestions.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setParsed(p => ({ ...p, coin: s, suggestions: null }))}
+                        style={{
+                          padding:'0.35rem 0.75rem', borderRadius:'20px',
+                          background:'rgba(192,132,252,0.15)', border:'1.5px solid rgba(192,132,252,0.4)',
+                          color:'#e9d5ff', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
+                          display:'flex', alignItems:'center', gap:'0.35rem',
+                          transition:'background 0.15s, border-color 0.15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background='rgba(192,132,252,0.28)'; e.currentTarget.style.borderColor='rgba(192,132,252,0.7)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background='rgba(192,132,252,0.15)'; e.currentTarget.style.borderColor='rgba(192,132,252,0.4)' }}
+                      >
+                        <span style={{ fontSize:'0.7rem', opacity:0.7, fontWeight:400 }}>{s.symbol}</span>
+                        <span>{s.name}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setParsed(p => ({ ...p, suggestions: null }))}
+                      style={{
+                        padding:'0.35rem 0.75rem', borderRadius:'20px',
+                        background:'transparent', border:'1.5px solid rgba(255,255,255,0.12)',
+                        color:'var(--text-muted)', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
+                      }}
+                    >
+                      {isAr ? 'لا شيء' : 'None'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
