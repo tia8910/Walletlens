@@ -187,6 +187,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [sellForCustom, setSellForCustom] = useState('')
   const [amtMode, setAmtMode]           = useState('qty') // 'qty' | 'usd'
   const [usdInput, setUsdInput]         = useState('')
+  const [metalUnit, setMetalUnit]       = useState('oz') // 'oz' | 'g'
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
   const [success, setSuccess]           = useState(false)
@@ -205,7 +206,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!open) return
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null)
-    setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput('')
+    setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput(''); setMetalUnit('oz')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
@@ -327,8 +328,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setBusy(true); setMsg('')
     try {
       const wid = walletId || (wallets[0]?.id ?? '1')
-      const amt = parseFloat(amount)
-      const ppu = parseFloat(price)
+      const TROY_OZ = 31.1034768
+      const isMetal = category === 'gold' || category === 'silver'
+      const rawAmt = parseFloat(amount)
+      const rawPpu = parseFloat(price)
+      // Convert grams to troy oz for storage (price stored per oz)
+      const amt = isMetal && metalUnit === 'g' ? rawAmt / TROY_OZ : rawAmt
+      const ppu = isMetal && metalUnit === 'g' ? rawPpu * TROY_OZ : rawPpu
 
       await api.addTransaction({
         wallet_id: wid, type,
@@ -722,11 +728,35 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-field">
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.25rem' }}>
                   <label className="bs-label" style={{ margin:0 }}>
-                    {amtMode === 'usd' ? 'USD Value' :
-                     category === 'gold' || category === 'silver' ? 'Qty (oz)' :
-                     category === 'stock' ? 'Shares' : 'Quantity'}
+                    {(category === 'gold' || category === 'silver')
+                      ? `QTY (${metalUnit})`
+                      : amtMode === 'usd' ? 'USD Value'
+                      : category === 'stock' ? 'Shares'
+                      : 'QTY'}
                   </label>
-                  {(category === 'crypto' || category === 'stock') && (
+                  {(category === 'gold' || category === 'silver') ? (
+                    <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid rgba(var(--g-rgb),0.22)', flexShrink:0 }}>
+                      {['oz', 'g'].map(u => (
+                        <button key={u} type="button" onClick={() => {
+                          if (u === metalUnit) return
+                          const TROY_OZ = 31.1034768
+                          const px = parseFloat(price)
+                          if (u === 'g') {
+                            setAmount(v => v ? String(parseFloat((parseFloat(v) * TROY_OZ).toFixed(4))) : v)
+                            if (px > 0) setPrice(String(parseFloat((px / TROY_OZ).toFixed(4))))
+                          } else {
+                            setAmount(v => v ? String(parseFloat((parseFloat(v) / TROY_OZ).toFixed(6))) : v)
+                            if (px > 0) setPrice(String(parseFloat((px * TROY_OZ).toFixed(2))))
+                          }
+                          setMetalUnit(u)
+                        }} style={{
+                          padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
+                          background: metalUnit === u ? 'var(--g)' : 'transparent',
+                          color: metalUnit === u ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
+                        }}>{u}</button>
+                      ))}
+                    </div>
+                  ) : (
                     <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid rgba(var(--g-rgb),0.22)', flexShrink:0 }}>
                       <button type="button" onClick={() => switchAmtMode('qty')} style={{
                         padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
