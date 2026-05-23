@@ -2404,10 +2404,10 @@ export default function Dashboard() {
                   <path d="M8 16H3v5"/>
                 </svg>
               </button>
-              <button className="dvx-eye-btn" title="Customize dashboard cards" onClick={() => setShowCardConfig(v => !v)}>
+              <button className="dvx-eye-btn" title="Customize dashboard" onClick={() => setShowCardConfig(v => !v)} style={{ color: showCardConfig ? 'var(--g)' : undefined }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
-                  <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                 </svg>
               </button>
               <button className="dvx-eye-btn" onClick={() => { setHidden(h => {
@@ -2475,24 +2475,46 @@ export default function Dashboard() {
               )}
               {showCardConfig && createPortal(
                 <>
-                  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:1000 }} onClick={() => setShowCardConfig(false)} />
-                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--surface, #1a1a2e)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'16px', padding:'1.5rem', zIndex:1001, width:'min(380px,92vw)', maxHeight:'80vh', overflowY:'auto' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.1rem' }}>
-                      <h3 style={{ margin:0, fontSize:'1rem' }}>Customize Dashboard</h3>
-                      <button onClick={() => setShowCardConfig(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'4px', lineHeight:1 }}>{Ico.close}</button>
+                  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, backdropFilter:'blur(2px)' }} onClick={() => setShowCardConfig(false)} />
+                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#13131f', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', padding:'1.5rem', zIndex:1001, width:'min(400px,94vw)', maxHeight:'85vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.6)' }}>
+                    {/* Header */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.4rem' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        <h3 style={{ margin:0, fontSize:'1rem', color:'#fff' }}>Customize Dashboard</h3>
+                      </div>
+                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'#aaa', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
                     </div>
-                    <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', margin:'0 0 1rem', lineHeight:1.4 }}>Toggle cards on or off. Changes are saved automatically.</p>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.45rem' }}>
-                      {CARD_CONFIG.map(c => (
-                        <label key={c.id} style={{ display:'flex', alignItems:'center', gap:'0.5rem', padding:'0.5rem 0.65rem', borderRadius:'8px', background: cardVis[c.id] ? 'rgba(var(--g-rgb),0.1)' : 'rgba(255,255,255,0.04)', border:`1px solid ${cardVis[c.id] ? 'rgba(var(--g-rgb),0.3)' : 'rgba(255,255,255,0.06)'}`, cursor:'pointer', transition:'all 0.15s' }}>
-                          <input type="checkbox" checked={!!cardVis[c.id]} onChange={() => toggleCard(c.id)} style={{ accentColor:'var(--g)', width:14, height:14, flexShrink:0 }} />
-                          <span style={{ fontSize:'0.78rem', color: cardVis[c.id] ? 'var(--text)' : 'var(--text-muted)' }}>{c.label}</span>
-                        </label>
-                      ))}
+                    <p style={{ fontSize:'0.73rem', color:'#666', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
+
+                    {/* Card grid */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                      {CARD_CONFIG.map(c => {
+                        const on = !!cardVis[c.id]
+                        return (
+                          <label key={c.id} onClick={() => toggleCard(c.id)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', padding:'0.6rem 0.75rem', borderRadius:'10px', background: on ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)', border:`1.5px solid ${on ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.07)'}`, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                            <span style={{ fontSize:'0.78rem', fontWeight:500, color: on ? '#e2e8f0' : '#555', transition:'color 0.15s' }}>{c.label}</span>
+                            {/* Toggle pill */}
+                            <div style={{ width:34, height:18, borderRadius:9, background: on ? 'var(--g, #22c55e)' : 'rgba(255,255,255,0.12)', flexShrink:0, position:'relative', transition:'background 0.2s' }}>
+                              <div style={{ position:'absolute', top:2, left: on ? 18 : 2, width:14, height:14, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.4)' }}/>
+                            </div>
+                          </label>
+                        )
+                      })}
                     </div>
-                    <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ marginTop:'1rem', width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem', cursor:'pointer' }}>
-                      Reset to defaults
-                    </button>
+
+                    {/* Footer */}
+                    <div style={{ marginTop:'1.1rem', display:'flex', gap:'0.5rem' }}>
+                      <button onClick={() => { const all = Object.fromEntries(CARD_CONFIG.map(c => [c.id, false])); setCardVis(all); try { localStorage.setItem('wl_card_vis', JSON.stringify(all)) } catch {} }} style={{ flex:1, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'8px', color:'#f87171', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
+                        Hide all
+                      </button>
+                      <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ flex:1, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'8px', color:'#4ade80', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
+                        Show all
+                      </button>
+                    </div>
                   </div>
                 </>,
                 document.body
