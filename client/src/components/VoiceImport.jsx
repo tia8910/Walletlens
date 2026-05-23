@@ -763,30 +763,34 @@ export default function VoiceImport({ hideTrigger = false }) {
         setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
     }
 
-    rec.onresult = e => {
-      // Accumulate finalized segments before this event
-      let prefix = ''
-      for (let i = 0; i < e.resultIndex; i++) prefix += e.results[i][0].transcript
+    // Persistent across `onresult` events for this recognition session.
+    // Chrome on Android sometimes emits the same finalized segment multiple
+    // times if we re-loop `e.results` from index 0 every event, which
+    // produces a duplicated transcript ("اشتريت اشتريت اشتريت…").
+    // Keep our own buffer and only consume entries from `e.resultIndex` forward.
+    let finalText = ''
 
-      // For the live segment pick the STT hypothesis that produces the richest parse
-      let bestSuffix = e.results[e.resultIndex]?.[0]?.transcript || ''
-      let bestScore = -1
-      const live = e.results[e.resultIndex]
-      if (live) {
-        for (let k = 0; k < live.length; k++) {
-          const candidate = prefix + live[k].transcript
+    rec.onresult = e => {
+      let interim = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i]
+        // Pick the STT hypothesis whose parse is richest (gives best accent recall)
+        const alts = []
+        for (let k = 0; k < result.length; k++) alts.push(result[k].transcript)
+        let best = alts[0] || ''
+        let bestScore = -1
+        for (const alt of alts) {
+          const candidate = finalText + (result.isFinal ? '' : interim) + alt
           const p = parseVoiceCommand(candidate)
           const score = p.transactions.reduce((s, t) =>
             s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 1 : 0), 0)
-          if (score > bestScore) { bestScore = score; bestSuffix = live[k].transcript }
+          if (score > bestScore) { bestScore = score; best = alt }
         }
+        if (result.isFinal) finalText += best
+        else interim += best
       }
 
-      // Append any later segments (shouldn't happen but be safe)
-      let tail = ''
-      for (let i = e.resultIndex + 1; i < e.results.length; i++) tail += e.results[i][0].transcript
-
-      const text = prefix + bestSuffix + tail
+      const text = finalText + interim
       setTranscript(text)
       const p = parseVoiceCommand(text)
       const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
