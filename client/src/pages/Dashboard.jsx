@@ -23,7 +23,7 @@ import MarketMood from '../components/MarketMood'
 import CorrelationMatrix from '../components/CorrelationMatrix'
 import SectorHeatmap from '../components/SectorHeatmap'
 import GoalTracker from '../components/GoalTracker'
-import WalletImport from '../components/WalletImport'
+import VoiceImport from '../components/VoiceImport'
 import SmartImport from '../components/SmartImport'
 
 // Heavy components only loaded when the user opens that tab
@@ -2950,7 +2950,7 @@ export default function Dashboard() {
           {/* Full-width below grid: Correlation Matrix + Sector Heatmap + Wallet Import */}
           {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
           {cardVis.sector_heatmap && <SectorHeatmap />}
-          <WalletImport />
+          <VoiceImport />
         </>
       )}
 
