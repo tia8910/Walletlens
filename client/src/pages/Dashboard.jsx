@@ -16,6 +16,7 @@ import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
+import { checkPortfolioMove, setPortfolioBaseline } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import ExchangePartners from '../components/ExchangePartners'
 import MarketMood from '../components/MarketMood'
@@ -2095,6 +2096,20 @@ export default function Dashboard() {
   useEffect(() => {
     if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
   }, [loaded, totalValue])
+
+  // Portfolio move notifications (±5%)
+  useEffect(() => {
+    if (!loaded || totalValue <= 0) return
+    const enabled = (() => { try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').notifPortfolio ?? false } catch { return false } })()
+    if (!enabled) return
+    checkPortfolioMove(totalValue)
+  }, [loaded, totalValue])
+
+  // Set baseline on first load so the first alert is relative to app-open value
+  useEffect(() => {
+    if (loaded && totalValue > 0) setPortfolioBaseline(totalValue)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
 
   // Milestone detection
   useEffect(() => {
