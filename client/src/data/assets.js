@@ -158,7 +158,7 @@ export const TOKEN_UNLOCKS = [
 export const CRYPTO_CATEGORIES = {
   // Layer 1
   bitcoin: 'L1', ethereum: 'L1', solana: 'L1', cardano: 'L1', avalanche: 'L1',
-  'avalanche-2': 'L1', polkadot: 'L1', cosmos: 'L1', 'near-protocol': 'L1',
+  'avalanche-2': 'L1', polkadot: 'L1', cosmos: 'L1',
   algorand: 'L1', tezos: 'L1', elrond: 'L1', multiversx: 'L1', fantom: 'L1',
   aptos: 'L1', sui: 'L1', ton: 'L1', 'the-open-network': 'L1', stellar: 'L1',
   tron: 'L1', hedera: 'L1', 'hedera-hashgraph': 'L1', iota: 'L1', nano: 'L1',
@@ -172,14 +172,14 @@ export const CRYPTO_CATEGORIES = {
   'yearn-finance': 'DeFi', sushi: 'DeFi', 'sushiswap': 'DeFi',
   'pancakeswap-token': 'DeFi', '1inch': 'DeFi', balancer: 'DeFi',
   'kyber-network': 'DeFi', dydx: 'DeFi', 'gmx': 'DeFi', jupiter: 'DeFi',
-  thorchain: 'DeFi', 'lido-dao': 'DeFi', convex: 'DeFi', frax: 'DeFi',
+  thorchain: 'DeFi', 'lido-dao': 'DeFi', convex: 'DeFi',
   // AI / Data
   'fetch-ai': 'AI', 'ocean-protocol': 'AI', 'singularitynet': 'AI',
   numeraire: 'AI', 'artificial-superintelligence-alliance': 'AI',
   worldcoin: 'AI', 'near-protocol': 'AI', 'grass': 'AI', 'bittensor': 'AI',
   'render-token': 'AI', 'akash-network': 'AI', 'io-net': 'AI',
   // RWA (Real World Assets)
-  chainlink: 'RWA', 'ondo-finance': 'RWA', 'mantra-dao': 'RWA',
+  'ondo-finance': 'RWA', 'mantra-dao': 'RWA',
   polymesh: 'RWA', centrifuge: 'RWA', 'maple-finance': 'RWA',
   goldfinch: 'RWA', realtoken: 'RWA',
   // Meme
