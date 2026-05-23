@@ -711,7 +711,7 @@ const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.w
 const SUPPORTED = !!SR
 
 // ── Component ───────────────────────────────────────────────────────────────
-export default function VoiceImport({ hideTrigger = false }) {
+export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [open, setOpen] = useState(hideTrigger)
   const [lang, setLang] = useState('en') // 'en' | 'ar'
   const [listening, setListening] = useState(false)
@@ -919,6 +919,7 @@ export default function VoiceImport({ hideTrigger = false }) {
       })
     }
     saveData('transactions', txs)
+    onImported?.()
     setConfirmed(true)
   }
 
