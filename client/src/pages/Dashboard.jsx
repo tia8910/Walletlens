@@ -2161,7 +2161,7 @@ export default function Dashboard() {
     const pct   = first > 0 ? (abs / first) * 100 : 0
     return { abs, pct }
   }, [perfSeries])
-  const [perfHover, setPerfHover] = useState(null)
+  const [perfHover, setPerfHover] = useState(null) // kept for tooltip only — does not affect hero value
 
   const allocData = useMemo(() => {
     if (!enriched.length) return []
@@ -2388,7 +2388,7 @@ export default function Dashboard() {
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
               {hidden ? '••••••' : (() => {
-                const usdVal = loaded ? (perfHover != null ? perfHover : tickerValue) : 0
+                const usdVal = loaded ? tickerValue : 0
                 if (displayCurrency === 'BTC') {
                   const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price
                   return btcPrice ? `₿ ${(usdVal / btcPrice).toFixed(6)}` : `$${fmt(usdVal)}`
