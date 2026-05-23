@@ -1915,7 +1915,6 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
   const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
-  const [txHistOpen, setTxHistOpen]       = useState(false)
   const [isMobile, setIsMobile]           = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)')
@@ -2153,7 +2152,6 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const recentTxs       = useMemo(() => transactions.slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
@@ -2572,75 +2570,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Recent transactions — collapsible on mobile */}
-              {isMobile ? (
-                <div className="glass-card" style={{ padding: '0' }}>
-                  <button
-                    onClick={() => setTxHistOpen(v => !v)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.85rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text)', fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
-                    }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {t('recentTransactions')}
-                      {recentTxs.length > 0 && <span style={{ background: 'rgba(var(--g-rgb),0.15)', color: 'var(--g)', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '99px' }}>{recentTxs.length}</span>}
-                    </span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ opacity: 0.5, transition: 'transform 0.2s', transform: txHistOpen ? 'rotate(180deg)' : 'none' }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  {txHistOpen && (
-                    <div style={{ padding: '0 0.85rem 0.85rem' }}>
-                      {recentTxs.length === 0
-                        ? <p className="muted" style={{ margin: 0 }}>{t('noTransactions')}</p>
-                        : <ul className="dvx-tx-list">
-                          {recentTxs.map(tx => {
-                            const isBuy = tx.type === 'buy' || tx.type === 'deposit'
-                            return (
-                              <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                                <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
-                                  {isBuy ? Ico.buy : Ico.sell}
-                                </span>
-                                <div className="dvx-tx-meta">
-                                  <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
-                                  <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
-                                </div>
-                                <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      }
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="glass-card">
-                  <h3>{t('recentTransactions')}</h3>
-                  {recentTxs.length === 0
-                    ? <p className="muted">{t('noTransactions')}</p>
-                    : <ul className="dvx-tx-list">
-                      {recentTxs.map(tx => {
-                        const isBuy = tx.type === 'buy' || tx.type === 'deposit'
-                        return (
-                          <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                            <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
-                              {isBuy ? Ico.buy : Ico.sell}
-                            </span>
-                            <div className="dvx-tx-meta">
-                              <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
-                              <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
-                            </div>
-                            <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  }
-                </div>
-              )}
+              {/* Recent transactions card removed */}
             </div>
 
             {/* Right column — order: -1 on mobile so it renders before left col */}
