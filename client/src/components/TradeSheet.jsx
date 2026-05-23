@@ -224,6 +224,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   }, [open]) // eslint-disable-line
 
   const [priceFetchFailed, setPriceFetchFailed] = useState(false)
+  const [priceFocused, setPriceFocused] = useState(false)
 
   // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
@@ -267,6 +268,15 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const asset = resolveAssetMeta()
   const holdingForCoin = holdings?.find(h => h.coin_id === asset?.id)
   const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
+
+  // Format price with thousands commas for display when field is not focused
+  function fmtPriceDisplay(val) {
+    if (!val || val === '…') return val
+    const clean = String(val).replace(/,/g, '')
+    const parts = clean.split('.')
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return parts.join('.')
+  }
 
   // Map buyWith key → coin_id in holdings, for balance lookup
   const BUY_WITH_COIN_IDS = {
@@ -795,7 +805,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
                 <input className="bs-input" type="text" inputMode={price === '…' ? 'text' : 'decimal'} placeholder="Enter price" min="0" step="any"
-                  value={price === '…' ? '' : price} onChange={e => { setPrice(e.target.value); setPriceFetchFailed(false) }}
+                  value={price === '…' ? '' : priceFocused ? price : fmtPriceDisplay(price)}
+                  onFocus={() => setPriceFocused(true)}
+                  onBlur={() => setPriceFocused(false)}
+                  onChange={e => { setPrice(e.target.value.replace(/,/g, '')); setPriceFetchFailed(false) }}
                   disabled={price === '…'} />
               </div>
             </div>
