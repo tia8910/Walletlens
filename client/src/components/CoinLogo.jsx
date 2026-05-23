@@ -167,7 +167,7 @@ const CoinLogo = memo(function CoinLogo({
 
   const onLoad   = () => { loadedRef.current = true }
   const advance  = () => setStageIdx(s => s + 1)
-  const common   = { alt: '', width: size, height: size, className, loading: 'lazy', referrerPolicy: 'no-referrer', onLoad }
+  const common   = { alt: '', width: size, height: size, className, referrerPolicy: 'no-referrer', onLoad }
 
   const currentStage = STAGES[stageIdx]
   if (!currentStage) {
