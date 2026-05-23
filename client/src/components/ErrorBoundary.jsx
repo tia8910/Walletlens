@@ -4,7 +4,23 @@ const isChunkError = (msg = '') =>
   msg.includes('Failed to fetch dynamically imported module') ||
   msg.includes('Importing a module script failed') ||
   msg.includes('Unable to preload CSS') ||
-  msg.includes('error loading dynamically imported module')
+  msg.includes('error loading dynamically imported module') ||
+  msg.includes('Loading chunk') ||
+  msg.includes('ChunkLoadError') ||
+  msg.includes('Load failed')
+
+const RELOAD_KEY = 'wl_chunk_reload'
+const RELOAD_TTL = 30_000
+
+function clearCachesAndReload() {
+  if ('caches' in window) {
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .finally(() => window.location.reload())
+  } else {
+    window.location.reload()
+  }
+}
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -15,17 +31,6 @@ export default class ErrorBoundary extends Component {
   static getDerivedStateFromError(err) {
     const msg = err?.message || 'Unexpected error'
     const chunk = isChunkError(msg)
-    // Auto-reload immediately on stale chunk — no UI flash
-    if (chunk) {
-      // Add a flag to avoid reload loop
-      const reloadKey = 'wl_chunk_reload'
-      const last = parseInt(sessionStorage.getItem(reloadKey) || '0', 10)
-      if (Date.now() - last > 10000) {
-        sessionStorage.setItem(reloadKey, String(Date.now()))
-        window.location.reload()
-        return { hasError: false, message: '', isChunk: false }
-      }
-    }
     return { hasError: true, message: msg, isChunk: chunk }
   }
 
@@ -33,17 +38,21 @@ export default class ErrorBoundary extends Component {
     if (typeof console !== 'undefined') {
       console.error('[ErrorBoundary]', err, info?.componentStack)
     }
+    if (this.state.isChunk) {
+      const last = parseInt(sessionStorage.getItem(RELOAD_KEY) || '0', 10)
+      if (Date.now() - last > RELOAD_TTL) {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+        clearCachesAndReload()
+      }
+      // If within TTL, leave the UI visible so the user can tap Reload manually
+    }
   }
 
   reset = () => this.setState({ hasError: false, message: '', isChunk: false })
 
   hardReload = () => {
-    // Clear SW cache then reload
-    if ('caches' in window) {
-      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => window.location.reload())
-    } else {
-      window.location.reload()
-    }
+    sessionStorage.removeItem(RELOAD_KEY)
+    clearCachesAndReload()
   }
 
   render() {

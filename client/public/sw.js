@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v111'
+const SW_VERSION = 'v112'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
@@ -64,7 +64,17 @@ self.addEventListener('fetch', e => {
   if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
     e.respondWith(
       fetch(req)
-        .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
+        .then(res => {
+          if (res?.ok) {
+            caches.open(STATIC).then(c => c.put(req, res.clone()))
+          } else if (res?.status === 404) {
+            // Chunk no longer exists — new deployment. Tell all clients to reload.
+            self.clients.matchAll({ includeUncontrolled: true }).then(clients =>
+              clients.forEach(c => c.postMessage({ type: 'CHUNK_404' }))
+            )
+          }
+          return res
+        })
         .catch(() => caches.match(req))
     )
     return
