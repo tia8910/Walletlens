@@ -774,12 +774,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 {amtMode === 'usd' ? (
                   <div style={{ position:'relative' }}>
                     <span style={{ position:'absolute', left:'0.75rem', top:'50%', transform:'translateY(-50%)', color:'var(--text-sub)', fontWeight:700, fontSize:'0.9rem', pointerEvents:'none' }}>$</span>
-                    <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                    <input className="bs-input" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
                       style={{ paddingLeft:'1.5rem' }}
                       value={usdInput} onChange={e => handleUsdInput(e.target.value)} />
                   </div>
                 ) : (
-                  <input className="bs-input" type="number" placeholder="0.00" min="0" step="any"
+                  <input className="bs-input" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
                     value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
                 )}
                 {amtMode === 'usd' && amount && parseFloat(amount) > 0 && (
@@ -794,7 +794,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'var(--g)'}}>fetching…</span>}
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
-                <input className="bs-input" type={price === '…' ? 'text' : 'number'} placeholder="Enter price" min="0" step="any"
+                <input className="bs-input" type="text" inputMode={price === '…' ? 'text' : 'decimal'} placeholder="Enter price" min="0" step="any"
                   value={price === '…' ? '' : price} onChange={e => { setPrice(e.target.value); setPriceFetchFailed(false) }}
                   disabled={price === '…'} />
               </div>
