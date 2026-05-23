@@ -5929,6 +5929,21 @@ input[type="date"] { color-scheme: dark; }
   line-height: 1;
 }
 .dvx-eye-btn:hover { opacity: 1; }
+.dvx-refresh-btn {
+  background: rgba(var(--g-rgb),0.12);
+  border: 1.5px solid rgba(var(--g-rgb),0.35);
+  color: var(--g);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  transition: background .15s, opacity .15s;
+  margin-left: 2px;
+}
+.dvx-refresh-btn:hover { background: rgba(var(--g-rgb),0.22); }
+.dvx-refresh-btn:disabled { opacity: 0.5; cursor: default; }
 .dvx-hidden-val {
   filter: blur(8px);
   user-select: none;

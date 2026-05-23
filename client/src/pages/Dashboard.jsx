@@ -2364,15 +2364,17 @@ export default function Dashboard() {
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
-              <button className="dvx-eye-btn" title="Refresh prices" disabled={refreshing} onClick={async () => {
+              <button className="dvx-refresh-btn" title="Refresh prices" disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
                 try { await refreshPrices() } finally { setRefreshing(false) }
-              }} style={{ marginLeft: '0.1rem' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
-                  <polyline points="23 4 23 10 17 10"/>
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                  <path d="M21 3v5h-5"/>
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                  <path d="M8 16H3v5"/>
                 </svg>
               </button>
               <button className="dvx-eye-btn" onClick={() => { setHidden(h => {
