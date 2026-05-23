@@ -128,8 +128,14 @@ const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v2';
 function _loadCache(key) {
   try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
+const _saveCacheTimers = {}
 function _saveCache(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  // Debounce localStorage writes so multiple fills in one price cycle
+  // don't trigger repeated JSON.stringify + setItem calls.
+  clearTimeout(_saveCacheTimers[key])
+  _saveCacheTimers[key] = setTimeout(() => {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  }, 200)
 }
 let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
