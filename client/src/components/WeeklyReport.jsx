@@ -61,6 +61,7 @@ function drawReport(canvas, stats, enriched) {
   const W = 1080, H = 1080
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
+  const gRgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '0,200,83'
 
   // Background
   const bg = ctx.createLinearGradient(0, 0, W, H)
@@ -69,18 +70,18 @@ function drawReport(canvas, stats, enriched) {
 
   // Glow
   const gl = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 500)
-  gl.addColorStop(0, 'rgba(var(--g-rgb),0.08)'); gl.addColorStop(1, 'rgba(0,0,0,0)')
+  gl.addColorStop(0, `rgba(${gRgb},0.08)`); gl.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H)
 
   // Grid
-  ctx.strokeStyle = 'rgba(var(--g-rgb),0.04)'; ctx.lineWidth = 1
+  ctx.strokeStyle = `rgba(${gRgb},0.04)`; ctx.lineWidth = 1
   for (let i = 1; i < 9; i++) {
     ctx.beginPath(); ctx.moveTo(W/8*i, 0); ctx.lineTo(W/8*i, H); ctx.stroke()
     ctx.beginPath(); ctx.moveTo(0, H/8*i); ctx.lineTo(W, H/8*i); ctx.stroke()
   }
 
   // Border
-  ctx.strokeStyle = 'rgba(var(--g-rgb),0.2)'; ctx.lineWidth = 2
+  ctx.strokeStyle = `rgba(${gRgb},0.2)`; ctx.lineWidth = 2
   rr(ctx, 2, 2, W-4, H-4, 32); ctx.stroke()
 
   // Top accent bar
@@ -102,7 +103,7 @@ function drawReport(canvas, stats, enriched) {
   ctx.fillText('walletlens.cc', lx + 44, ly + 32)
 
   // WEEKLY REPORT label
-  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(var(--g-rgb),0.6)'
+  ctx.textAlign = 'right'; ctx.fillStyle = `rgba(${gRgb},0.6)`
   ctx.font = '600 14px system-ui, sans-serif'
   ctx.fillText('WEEKLY REPORT', W - 64, ly - 10)
   ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '13px system-ui, sans-serif'
@@ -232,7 +233,7 @@ function drawReport(canvas, stats, enriched) {
   })
 
   // Bottom bar
-  ctx.fillStyle = 'rgba(var(--g-rgb),0.06)'; ctx.fillRect(0, H - 72, W, 72)
+  ctx.fillStyle = `rgba(${gRgb},0.06)`; ctx.fillRect(0, H - 72, W, 72)
   ctx.textAlign = 'right'; ctx.fillStyle = '#00c853'; ctx.font = 'bold 15px system-ui, sans-serif'
   ctx.fillText('Track yours free → walletlens.cc', W - 64, H - 24)
   ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '13px system-ui, sans-serif'

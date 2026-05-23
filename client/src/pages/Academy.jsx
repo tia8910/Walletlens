@@ -349,13 +349,14 @@ function drawHackImage(hack, color) {
   const c = document.createElement('canvas')
   c.width = W; c.height = H
   const ctx = c.getContext('2d')
+  const gRgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '0,200,83'
 
   // Background
   ctx.fillStyle = '#071a0c'
   ctx.fillRect(0, 0, W, H)
 
   // Subtle grid lines
-  ctx.strokeStyle = 'rgba(var(--g-rgb),0.06)'
+  ctx.strokeStyle = `rgba(${gRgb},0.06)`
   ctx.lineWidth = 1
   for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke() }
   for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke() }

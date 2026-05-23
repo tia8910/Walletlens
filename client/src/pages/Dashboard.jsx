@@ -987,22 +987,20 @@ const TIMEFRAMES = [
   { id: '30D', label: '30D', pts: 60 },
 ]
 
-function buildPerfSeries(base, tf = '30D') {
+function buildPerfSeries(base, tf = '30D', transactions = []) {
   const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[tf] || 30
   const pts = { '4H': 48, '1D': 48, '7D': 56, '30D': 60 }[tf] || 60
   const b = Math.max(base || 10000, 1)
 
-  // For 1D/7D/30D try to use real snapshots
+  // ── Level 1: real snapshots (most accurate) ──────────────────────────────
   if (days > 0) {
     const snaps = getSnapshotsForDays(days)
     if (snaps.length >= 2) {
-      // Interpolate snapshots to pts data points
       const first = snaps[0], last = snaps[snaps.length - 1]
       const timeRange = last.ts - first.ts || 1
       return Array.from({ length: pts }, (_, i) => {
         const t = i / (pts - 1)
         const targetTs = first.ts + t * timeRange
-        // Find surrounding snapshots and interpolate
         let lo = snaps[0], hi = snaps[snaps.length - 1]
         for (let j = 0; j < snaps.length - 1; j++) {
           if (snaps[j].ts <= targetTs && snaps[j + 1].ts >= targetTs) {
@@ -1010,20 +1008,57 @@ function buildPerfSeries(base, tf = '30D') {
           }
         }
         const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
-        const v = lo.v + (hi.v - lo.v) * segT
-        return { i, v: Math.max(v, 0) }
+        return { i, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
       })
     }
   }
 
-  // Fallback: smooth uptrend with subtle noise (seeded by portfolio value)
+  // ── Level 2: reconstruct from transaction history ─────────────────────────
+  // Each transaction has a real date + price_per_unit, so we can replay
+  // the portfolio cost basis over time and scale it to the current market value.
+  const validTxs = (transactions || [])
+    .filter(tx => tx.date && (tx.amount > 0 || tx.quantity > 0) && tx.price_per_unit > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+  if (validTxs.length >= 1) {
+    const now = Date.now()
+    const windowMs = Math.max(days, 1) * 24 * 60 * 60 * 1000
+    const startTime = now - windowMs
+
+    // Total current cost basis across all transactions
+    const currentCostBasis = validTxs.reduce((s, tx) => {
+      const qty = tx.amount || tx.quantity || 0
+      const val = qty * tx.price_per_unit
+      return tx.type === 'buy' ? s + val : Math.max(s - val, 0)
+    }, 0)
+
+    // Scale factor: stretch cost-basis curve to current market value
+    const scale = currentCostBasis > 0 ? b / currentCostBasis : 1
+
+    return Array.from({ length: pts }, (_, i) => {
+      const t = i / (pts - 1)
+      const pointTime = startTime + t * (now - startTime)
+
+      const costAtPoint = validTxs
+        .filter(tx => new Date(tx.date).getTime() <= pointTime)
+        .reduce((s, tx) => {
+          const qty = tx.amount || tx.quantity || 0
+          const val = qty * tx.price_per_unit
+          return tx.type === 'buy' ? s + val : Math.max(s - val, 0)
+        }, 0)
+
+      // Final point always equals current market value exactly
+      const v = i === pts - 1 ? b : Math.max(costAtPoint * scale, 0)
+      return { i, v }
+    })
+  }
+
+  // ── Level 3: pure simulation (no real data at all) ───────────────────────
   const startRatio = { '4H': 0.97, '1D': 0.93, '7D': 0.82, '30D': 0.68 }[tf] || 0.75
   const seed = Math.round(b) % 997
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
-    // Smooth uptrend base
     const trend = startRatio * b + t * (1 - startRatio) * b
-    // Subtle deterministic noise (no wild swings)
     const noise = Math.sin((i + seed) * 0.7) * b * 0.012 + Math.sin((i + seed) * 1.9) * b * 0.006
     return { i, v: Math.max(trend + noise, b * 0.1) }
   })
@@ -1880,7 +1915,6 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
   const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
-  const [txHistOpen, setTxHistOpen]       = useState(false)
   const [isMobile, setIsMobile]           = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)')
@@ -2086,11 +2120,11 @@ export default function Dashboard() {
   }, [loaded])
 
   const [perfTf, setPerfTf] = useState('30D')
-  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf), [totalValue, perfTf])
+  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf, transactions), [totalValue, perfTf, transactions])
   const perfHasRealData = useMemo(() => {
     const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[perfTf] || 30
-    return hasRealData(days)
-  }, [perfTf, perfSeries])
+    return hasRealData(days) || transactions.some(tx => tx.date && tx.price_per_unit > 0)
+  }, [perfTf, transactions])
   const perfChange = useMemo(() => {
     if (!perfSeries.length) return { abs: 0, pct: 0 }
     const first = perfSeries[0]?.v || 0
@@ -2118,7 +2152,6 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const recentTxs       = useMemo(() => transactions.slice(0, 8), [transactions])
   const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
@@ -2537,75 +2570,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Recent transactions — collapsible on mobile */}
-              {isMobile ? (
-                <div className="glass-card" style={{ padding: '0' }}>
-                  <button
-                    onClick={() => setTxHistOpen(v => !v)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.85rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text)', fontWeight: 700, fontSize: '0.95rem', fontFamily: 'inherit',
-                    }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {t('recentTransactions')}
-                      {recentTxs.length > 0 && <span style={{ background: 'rgba(var(--g-rgb),0.15)', color: 'var(--g)', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '99px' }}>{recentTxs.length}</span>}
-                    </span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ opacity: 0.5, transition: 'transform 0.2s', transform: txHistOpen ? 'rotate(180deg)' : 'none' }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  {txHistOpen && (
-                    <div style={{ padding: '0 0.85rem 0.85rem' }}>
-                      {recentTxs.length === 0
-                        ? <p className="muted" style={{ margin: 0 }}>{t('noTransactions')}</p>
-                        : <ul className="dvx-tx-list">
-                          {recentTxs.map(tx => {
-                            const isBuy = tx.type === 'buy' || tx.type === 'deposit'
-                            return (
-                              <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                                <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
-                                  {isBuy ? Ico.buy : Ico.sell}
-                                </span>
-                                <div className="dvx-tx-meta">
-                                  <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
-                                  <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
-                                </div>
-                                <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      }
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="glass-card">
-                  <h3>{t('recentTransactions')}</h3>
-                  {recentTxs.length === 0
-                    ? <p className="muted">{t('noTransactions')}</p>
-                    : <ul className="dvx-tx-list">
-                      {recentTxs.map(tx => {
-                        const isBuy = tx.type === 'buy' || tx.type === 'deposit'
-                        return (
-                          <li key={tx.id} className="dvx-tx-item holo-card-v2">
-                            <span className="dvx-tx-icon" style={{ color: isBuy ? 'var(--g)' : '#f87171' }}>
-                              {isBuy ? Ico.buy : Ico.sell}
-                            </span>
-                            <div className="dvx-tx-meta">
-                              <strong>{isBuy ? t('bought') : t('sold')} {tx.coin_symbol?.toUpperCase()}</strong>
-                              <span className="muted">{fmtAmt(tx.amount)} @ ${fmt(tx.price_per_unit || 0)}</span>
-                            </div>
-                            <span className="dvx-tx-amt">${fmt((tx.amount || 0) * (tx.price_per_unit || 0))}</span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  }
-                </div>
-              )}
+              {/* Recent transactions card removed */}
             </div>
 
             {/* Right column — order: -1 on mobile so it renders before left col */}
