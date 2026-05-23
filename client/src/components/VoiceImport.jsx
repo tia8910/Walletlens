@@ -549,6 +549,25 @@ export default function VoiceImport({ hideTrigger = false }) {
   const [error, setError] = useState('')
   const recRef = useRef(null)
   const listenTimerRef = useRef(null)
+  const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    const pickBest = () => {
+      const voices = window.speechSynthesis.getVoices()
+      if (!voices.length) return
+      // Prefer neural / enhanced / premium voices, then EG dialect, then any Arabic
+      arVoiceRef.current =
+        voices.find(v => v.lang.startsWith('ar') &&
+          /neural|enhanced|premium|wavenet|journey/i.test(v.name)) ||
+        voices.find(v => v.lang === 'ar-EG') ||
+        voices.find(v => v.lang.startsWith('ar')) ||
+        null
+    }
+    pickBest()
+    window.speechSynthesis.addEventListener('voiceschanged', pickBest)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBest)
+  }, [])
 
   const startListening = () => {
     if (!SUPPORTED) { setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return }
@@ -617,12 +636,12 @@ export default function VoiceImport({ hideTrigger = false }) {
       try {
         window.speechSynthesis.cancel()
         const utt = new SpeechSynthesisUtterance(greetingText)
-        // ar-EG requests the Egyptian Arabic TTS voice which sounds more natural
-        // than the default 'ar' (often a robotic Gulf/MSA voice).
-        // Rate 0.88 + pitch 0.95 reduce the mechanical quality common in Arabic TTS.
         utt.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
-        utt.rate = lang === 'ar' ? 0.88 : 0.95
-        utt.pitch = lang === 'ar' ? 0.95 : 1
+        // Slower rate + slightly lower pitch makes TTS sound less robotic.
+        // If a neural/enhanced voice was found at mount time, use it explicitly.
+        utt.rate  = lang === 'ar' ? 0.82 : 0.95
+        utt.pitch = lang === 'ar' ? 0.90 : 1
+        if (lang === 'ar' && arVoiceRef.current) utt.voice = arVoiceRef.current
         utt.onend = doStart
         utt.onerror = doStart  // if TTS fails, mic still opens
         window.speechSynthesis.speak(utt)
