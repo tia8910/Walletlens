@@ -715,7 +715,8 @@ const SUPPORTED = !!SR
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [open, setOpen] = useState(hideTrigger)
-  const [lang, setLang] = useState('en') // 'en' | 'ar'
+  const lang = 'en'                     // English-only — Arabic disabled
+  const setLang = () => {}
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -759,7 +760,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     rec.continuous = true
     rec.interimResults = true
     rec.maxAlternatives = 3   // try top-3 STT hypotheses → pick best parse
-    rec.lang = useLang === 'ar' ? 'ar-EG' : 'en-US'
+    rec.lang = 'en-US'        // English-only — Arabic recognition disabled
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
@@ -973,7 +974,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setConfirmed(true)
   }
 
-  const isAr = lang === 'ar'
+  const isAr = false                    // English-only mode
   const readyCount = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount).length
   const canImport = readyCount > 0
 
@@ -983,9 +984,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         <button
           onClick={() => { setOpen(o => { const next = !o; if (next) track('voice_import_opened'); return next }) }}
           style={{
-            background: open ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18))' : 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(236,72,153,0.1))',
-            border: '1px solid rgba(168,85,247,0.35)',
-            borderRadius: '12px', color: '#c084fc',
+            background: open ? 'linear-gradient(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.18))' : 'linear-gradient(135deg, rgba(5,150,105,0.1), rgba(16,185,129,0.1))',
+            border: '1px solid rgba(5,150,105,0.35)',
+            borderRadius: '12px', color: '#34d399',
             padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
             cursor: 'pointer', display: 'flex', alignItems: 'center',
             gap: '0.5rem', width: '100%', justifyContent: 'space-between',
@@ -998,7 +999,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               <line x1="12" y1="19" x2="12" y2="23"/>
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
-            Import by Voice <span style={{ fontSize:'0.7rem', opacity:0.7 }}>· EN / عربي</span>
+            Import by Voice
           </span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
             style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}>
@@ -1009,50 +1010,12 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
       {open && (
         <div style={{
-          background: 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(236,72,153,0.06))',
-          border: '1px solid rgba(168,85,247,0.2)',
+          background: 'linear-gradient(135deg, rgba(5,150,105,0.06), rgba(16,185,129,0.06))',
+          border: '1px solid rgba(5,150,105,0.2)',
           borderRadius: '16px', padding: '1.25rem', marginTop: '0.6rem',
           backdropFilter: 'blur(12px)',
-          direction: isAr ? 'rtl' : 'ltr',
+          direction: 'ltr',
         }}>
-          {/* Language selector — segmented control (no flag emojis, render-safe on Windows) */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem', direction:'ltr' }}>
-            <div style={{
-              display:'inline-flex', background:'rgba(255,255,255,0.06)', borderRadius:'14px',
-              padding:'4px', gap:'4px', border:'1px solid rgba(168,85,247,0.25)',
-            }}>
-              {[
-                { id:'en', code:'EN', label:'English' },
-                { id:'ar', code:'AR', label:'العربية' },
-              ].map(l => {
-                const active = lang === l.id
-                return (
-                  <button key={l.id} onClick={() => changeLanguage(l.id)} style={{
-                    padding:'0.5rem 1.1rem', borderRadius:'10px', cursor:'pointer',
-                    border: active ? '1.5px solid rgba(168,85,247,0.6)' : '1.5px solid transparent',
-                    background: active
-                      ? 'linear-gradient(135deg, #a855f7, #ec4899)'
-                      : 'transparent',
-                    color: active ? '#ffffff' : 'var(--text-muted)',
-                    fontWeight: active ? 800 : 600,
-                    fontSize:'0.9rem', transition:'all 0.18s',
-                    display:'flex', alignItems:'center', gap:'0.45rem',
-                    boxShadow: active ? '0 3px 14px rgba(168,85,247,0.45)' : 'none',
-                  }}>
-                    <span style={{
-                      fontSize:'0.7rem', fontWeight:900, letterSpacing:'0.08em',
-                      padding:'2px 6px', borderRadius:'5px',
-                      background: active ? 'rgba(255,255,255,0.22)' : 'rgba(168,85,247,0.2)',
-                      color: active ? '#fff' : '#c084fc',
-                    }}>{l.code}</span>
-                    <span>{l.label}</span>
-                    {active && <span style={{ fontSize:'0.85rem' }}>✓</span>}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
           {/* Mic button — center */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.7rem', marginBottom:'1rem' }}>
             {/* Waveform bars flanking the mic when idle */}
@@ -1063,7 +1026,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   <span key={i} style={{
                     display:'inline-block', width:'4px', borderRadius:'3px',
                     height: listening ? h : '6px',
-                    background: listening ? 'linear-gradient(to top,#a855f7,#ec4899)' : 'rgba(168,85,247,0.3)',
+                    background: listening ? 'linear-gradient(to top,#047857,#10b981)' : 'rgba(5,150,105,0.3)',
                     animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
                     animationDelay: delay,
                     transition:'height 0.3s',
@@ -1076,12 +1039,12 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 <>
                   <div style={{
                     position:'absolute', inset:0, borderRadius:'50%',
-                    background:'radial-gradient(circle, rgba(192,132,252,0.5), transparent 70%)',
+                    background:'radial-gradient(circle, rgba(239,68,68,0.5), transparent 70%)',
                     animation:'vi-pulse 1.5s ease-out infinite',
                   }} />
                   <div style={{
                     position:'absolute', inset:0, borderRadius:'50%',
-                    background:'radial-gradient(circle, rgba(236,72,153,0.4), transparent 70%)',
+                    background:'radial-gradient(circle, rgba(220,38,38,0.4), transparent 70%)',
                     animation:'vi-pulse 1.5s ease-out infinite 0.5s',
                   }} />
                 </>
@@ -1093,11 +1056,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   position:'relative', width:96, height:96, borderRadius:'50%',
                   border:'none', cursor: SUPPORTED ? 'pointer' : 'not-allowed',
                   background: listening
-                    ? 'linear-gradient(135deg, #f87171, #ec4899)'
-                    : 'linear-gradient(135deg, #a855f7, #ec4899)',
+                    ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                    : 'linear-gradient(135deg, #047857, #10b981)',
                   boxShadow: listening
-                    ? '0 0 40px rgba(236,72,153,0.6), inset 0 -3px 0 rgba(0,0,0,0.2)'
-                    : '0 8px 24px rgba(168,85,247,0.4), inset 0 -3px 0 rgba(0,0,0,0.2)',
+                    ? '0 0 40px rgba(239,68,68,0.6), inset 0 -3px 0 rgba(0,0,0,0.2)'
+                    : '0 8px 24px rgba(5,150,105,0.45), inset 0 -3px 0 rgba(0,0,0,0.2)',
                   display:'flex', alignItems:'center', justifyContent:'center',
                   transition:'transform 0.15s, box-shadow 0.2s',
                   transform: listening ? 'scale(1.05)' : 'scale(1)',
@@ -1118,7 +1081,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   <span key={i} style={{
                     display:'inline-block', width:'4px', borderRadius:'3px',
                     height: listening ? h : '6px',
-                    background: listening ? 'linear-gradient(to top,#ec4899,#a855f7)' : 'rgba(236,72,153,0.3)',
+                    background: listening ? 'linear-gradient(to top,#10b981,#047857)' : 'rgba(16,185,129,0.3)',
                     animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
                     animationDelay: delay,
                     transition:'height 0.3s',
@@ -1127,23 +1090,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               </div>
             </div>
 
-            <p style={{ fontSize:'0.82rem', color: listening ? '#e9d5ff' : 'var(--text)', margin:0, textAlign:'center', fontWeight: listening ? 700 : 500 }}>
+            <p style={{ fontSize:'0.82rem', color: listening ? '#a7f3d0' : 'var(--text)', margin:0, textAlign:'center', fontWeight: listening ? 700 : 500 }}>
               {listening
                 ? (isAr ? 'أتحدث الآن…' : 'Listening… speak now')
                 : (isAr ? 'اضغط الميكروفون وقل صفقتك' : 'Tap the mic and say your trade')}
             </p>
-            {/* Active language indicator — always shows what the AI is recognizing */}
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:'0.4rem',
-              padding:'0.25rem 0.7rem', borderRadius:'10px',
-              background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)',
-              fontSize:'0.72rem', color:'#d8b4fe', fontWeight:700, direction:'ltr',
-            }}>
-              <span style={{ fontSize:'0.65rem', padding:'1px 5px', borderRadius:'4px', background:'rgba(168,85,247,0.3)', color:'#fff', letterSpacing:'0.08em' }}>
-                {lang === 'ar' ? 'AR' : 'EN'}
-              </span>
-              <span>{isAr ? 'يستمع بالعربية' : 'Listening in English'}</span>
-            </div>
             <style>{`@keyframes vi-wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }`}</style>
           </div>
 
@@ -1169,7 +1120,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {/* header: trade N / remove */}
                 {parsed.transactions.length > 1 && (
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.55rem' }}>
-                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#c084fc', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#34d399', textTransform:'uppercase', letterSpacing:'0.07em' }}>
                       {isAr ? `صفقة ${idx + 1}` : `Trade ${idx + 1}`}
                     </span>
                     <button onClick={() => removeTx(idx)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:'1rem', lineHeight:1 }}>✕</button>
@@ -1202,7 +1153,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       <span style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--text)' }}>
                         {tx.coin.symbol} · {tx.coin.name}
                         {tx.coin.category && tx.coin.category !== 'crypto' && (
-                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(192,132,252,0.15)', color:'#c084fc', textTransform:'uppercase' }}>{tx.coin.category}</span>
+                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(52,211,153,0.15)', color:'#34d399', textTransform:'uppercase' }}>{tx.coin.category}</span>
                         )}
                       </span>
                       <button onClick={() => { updateTx(idx, { coin: null, suggestions: null }); setAssetQueries(q => ({...q, [idx]: ''})) }}
@@ -1215,11 +1166,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       {/* Suggestion chips */}
                       {tx.suggestions?.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginBottom:'0.45rem' }}>
-                          <span style={{ fontSize:'0.72rem', color:'#c084fc', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
+                          <span style={{ fontSize:'0.72rem', color:'#34d399', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
                           {tx.suggestions.map(s => (
                             <button key={s.id} onClick={() => { updateTx(idx, { coin: s, suggestions: null }); fetchAndSetPrice(idx, s.id) }} style={{
-                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(192,132,252,0.15)', border:'1.5px solid rgba(192,132,252,0.4)',
-                              color:'#e9d5ff', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
+                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(52,211,153,0.15)', border:'1.5px solid rgba(52,211,153,0.4)',
+                              color:'#a7f3d0', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
                             }}>
                               {s.symbol} <span style={{ opacity:0.7, fontWeight:400 }}>{s.name}</span>
                             </button>
@@ -1234,7 +1185,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         placeholder={isAr ? 'ابحث عن الأصل… (مثال: bitcoin، tesla)' : 'Search asset… (e.g. bitcoin, tesla)'}
                         style={{
                           width:'100%', boxSizing:'border-box', padding:'0.45rem 0.7rem',
-                          borderRadius:'8px', border:'1.5px solid rgba(192,132,252,0.35)',
+                          borderRadius:'8px', border:'1.5px solid rgba(52,211,153,0.35)',
                           background:'rgba(255,255,255,0.05)', color:'var(--text)',
                           fontSize:'0.82rem', outline:'none',
                         }}
@@ -1243,8 +1194,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', marginTop:'0.4rem' }}>
                           {assetResults.map(c => (
                             <button key={c.id} onClick={() => { updateTx(idx, { coin: c, suggestions: null }); setAssetQueries(prev => ({...prev, [idx]: ''})); fetchAndSetPrice(idx, c.id) }} style={{
-                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(168,85,247,0.18)', border:'1.5px solid rgba(168,85,247,0.4)',
-                              color:'#e9d5ff', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
+                              padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(5,150,105,0.18)', border:'1.5px solid rgba(5,150,105,0.4)',
+                              color:'#a7f3d0', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
                             }}>
                               {c.symbol} <span style={{ opacity:0.7 }}>{c.name}</span>
                             </button>
@@ -1277,7 +1228,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       }}
                     />
                     {tx.unitNote && (
-                      <span style={{ fontSize:'0.68rem', color:'#c084fc', marginTop:'0.15rem', display:'block' }}>
+                      <span style={{ fontSize:'0.68rem', color:'#34d399', marginTop:'0.15rem', display:'block' }}>
                         {isAr ? `محوّل من ${tx.unitNote}` : `from ${tx.unitNote}`}
                       </span>
                     )}
