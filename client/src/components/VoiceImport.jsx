@@ -766,6 +766,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     const useLang = langOverride || lang
     track('voice_listen_start', { lang: useLang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({})
+    setListening(true)  // optimistic UI — flip to "listening" state immediately so the user sees feedback
 
     const rec = new SR()
     rec.continuous = true
@@ -852,39 +853,18 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
     recRef.current = rec
 
-    // Speak greeting BEFORE mic opens so it doesn't appear in the transcript.
-    // `onend` alone is unreliable — Chrome Android / iOS often never fire it.
-    // We use a `setTimeout` (created here, inside the gesture handler) as the
-    // primary trigger, so the mic always opens even if TTS fails or stalls.
-    // Always speak English TTS — Arabic TTS is robotic on most Android devices
-    // and the user prefers the English voice regardless of UI language.
-    const greetingText = 'Hey! What did you buy or sell today?'
-
-    let recStarted = false
-    const doStart = () => {
-      if (recStarted) return
-      recStarted = true
-      try { rec.start() } catch {}
-    }
-
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      try {
-        window.speechSynthesis.cancel()
-        const utt = new SpeechSynthesisUtterance(greetingText)
-        utt.lang = 'en-US'
-        utt.rate  = 0.95
-        utt.pitch = 1
-        if (isAr && arVoiceRef.current) utt.voice = arVoiceRef.current
-        utt.onend = doStart
-        utt.onerror = doStart  // if TTS fails, mic still opens
-        window.speechSynthesis.speak(utt)
-      } catch {
-        // speechSynthesis unavailable
-      }
-      // Safety net: mic opens after 3 s max regardless of TTS state.
-      setTimeout(doStart, 3000)
-    } else {
-      doStart()
+    // Open the mic IMMEDIATELY — no TTS greeting. The previous greeting
+    // blocked mic opening for up to 3 s waiting for speech synthesis to
+    // finish, which made the button feel completely broken on devices
+    // where TTS is slow, unavailable, or auto-play-blocked.
+    try {
+      rec.start()
+    } catch (err) {
+      setError(
+        isArabic
+          ? `تعذر بدء الميكروفون: ${err?.message || err}`
+          : `Could not start mic: ${err?.message || err}. Please reload and try again.`
+      )
     }
   }
 
