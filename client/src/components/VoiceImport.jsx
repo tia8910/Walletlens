@@ -744,9 +744,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
-  // Mutable ref that mirrors `listening` state so closures (onend, scheduleStop)
-  // always see the current value without stale-closure bugs.
+  // Mirrors `listening` state in a mutable ref so closures always see
+  // the current value without stale-closure bugs.
   const listeningRef = useRef(false)
+  // Incremented on every startListening call. Each recognizer closure
+  // captures its own sessionId; when the session changes (stop/restart),
+  // stale onend/onerror callbacks bail out immediately so they can't
+  // accidentally flip state or start a new recognizer.
+  const sessionRef = useRef(0)
   const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
 
   useEffect(() => {
@@ -781,135 +786,139 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       if (!hasTranscriptRef.current) setNoSpeechHint(true)
     }, 10000)
     listeningRef.current = true
-    setListening(true)  // optimistic UI — flip to "listening" state immediately so the user sees feedback
+    setListening(true)  // optimistic — show red button immediately, don't wait for onstart
 
-    const rec = new SR()
-    rec.continuous = true
-    rec.interimResults = true
-    // Arabic STT is less reliable; ask for more hypotheses so the parser
-    // has more strings to try matching number-words and coin names against.
-    rec.maxAlternatives = useLang.startsWith('ar') ? 5 : 3
-    rec.lang =
-      useLang === 'ar-sa' ? 'ar-SA' :
-      useLang === 'ar-eg' ? 'ar-EG' :
-      'en-US'
-
-    const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
-    // Safety ceiling — tell the ref FIRST so onend sees the stopped state.
-    const scheduleStop = (ms) => {
-      clearTimer()
-      listenTimerRef.current = setTimeout(() => {
-        listeningRef.current = false
-        setListening(false)
-        try { rec.stop() } catch {}
-      }, ms)
-    }
+    // Each call gets a unique session ID. Every closure checks this before
+    // touching state so that a stale onend from an old recognizer can never
+    // accidentally restart or flip listening state for a newer session.
+    const sessionId = ++sessionRef.current
 
     const isArabic = useLang.startsWith('ar')
-    rec.onstart = () => { listeningRef.current = true; setListening(true); scheduleStop(5 * 60 * 1000) }
+    const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
 
-    // iOS Safari stops the recognizer after each utterance (no real continuous
-    // mode). Re-start automatically whenever onend fires while the user is
-    // still in "listening" mode so the experience matches desktop Chrome.
-    rec.onend = () => {
-      clearTimer()
-      if (listeningRef.current) {
-        // Auto-stopped by the browser (iOS typical). Restart after a brief
-        // pause so the audio pipeline has time to flush.
+    // launchRec creates a FRESH SpeechRecognition instance every time.
+    // Reusing a stopped instance is unreliable on iOS and some Android
+    // WebViews — creating a new one each time avoids InvalidStateError.
+    const launchRec = () => {
+      if (!listeningRef.current || sessionRef.current !== sessionId) return
+      const rec = new SR()
+      rec.continuous = true
+      rec.interimResults = true
+      rec.maxAlternatives = useLang.startsWith('ar') ? 5 : 3
+      rec.lang =
+        useLang === 'ar-sa' ? 'ar-SA' :
+        useLang === 'ar-eg' ? 'ar-EG' :
+        'en-US'
+
+      // Safety ceiling: set listeningRef BEFORE stopping so onend bails out.
+      const scheduleStop = (ms) => {
+        clearTimer()
+        listenTimerRef.current = setTimeout(() => {
+          listeningRef.current = false; setListening(false)
+          try { rec.stop() } catch {}
+        }, ms)
+      }
+
+      rec.onstart = () => {
+        if (sessionRef.current !== sessionId) return
+        listeningRef.current = true; setListening(true)
+        scheduleStop(5 * 60 * 1000)
+      }
+
+      // onend fires when the browser auto-stops the recognizer (iOS after
+      // every utterance, desktop Chrome after no-speech timeout, etc.).
+      // If the user is still listening, spin up a fresh recognizer so the
+      // experience is seamless — no need to tap the button again.
+      rec.onend = () => {
+        clearTimer()
+        if (sessionRef.current !== sessionId) return  // stale session — ignore
+        if (listeningRef.current) {
+          setTimeout(launchRec, 150)  // brief pause for audio pipeline to flush
+        } else {
+          setListening(false)
+        }
+      }
+
+      rec.onerror = e => {
+        if (sessionRef.current !== sessionId) return
+        clearTimer()
+        if (e.error === 'no-speech' || e.error === 'aborted') {
+          // Transient — restart silently so the mic stays open without
+          // requiring another tap. 'aborted' can fire on rapid stop/start.
+          if (listeningRef.current) setTimeout(launchRec, 200)
+          return
+        }
+        // Fatal errors: stop and surface the message.
+        listeningRef.current = false; setListening(false)
+        if (e.error === 'not-allowed')
+          setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
+        else if (e.error === 'network')
+          setError(isArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
+        else if (e.error === 'language-not-supported')
+          setError(isArabic ? 'اللغة العربية غير مدعومة في هذا المتصفح — جرّب Chrome' : 'Language not supported — try Chrome.')
+        else
+          setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
+      }
+
+      // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
+      // can contain the full cumulative transcript so far. Strategy: collapse
+      // consecutive snapshots (where current starts with previous) into the
+      // latest; treat non-overlapping results as new utterances to append.
+      rec.onresult = e => {
+        if (sessionRef.current !== sessionId) return  // stale session
+        const segments = []
+        for (let i = 0; i < e.results.length; i++) {
+          const result = e.results[i]
+          let best = result[0].transcript
+          let bestScore = -1
+          const baseline = segments.map(s => s.text).join(' ')
+          for (let k = 0; k < result.length; k++) {
+            const candidate = (baseline + ' ' + result[k].transcript).trim()
+            const p = parseVoiceCommand(candidate)
+            const score = p.transactions.reduce((s, t) =>
+              s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0), 0)
+            if (score > bestScore) { bestScore = score; best = result[k].transcript }
+          }
+          const trimmed = best.trim()
+          if (!trimmed) continue
+          const last = segments[segments.length - 1]
+          if (last && trimmed.startsWith(last.text.trim())) {
+            last.text = best; last.isFinal = result.isFinal
+          } else {
+            segments.push({ text: best, isFinal: result.isFinal })
+          }
+        }
+        const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
+        if (text) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
+        setTranscript(text)
+        const p = parseVoiceCommand(text)
+        const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
+        if (anyUseful) {
+          setParsed(p)
+          setReaction(getReaction(text, p.transactions[0] || {}))
+        }
+      }
+
+      recRef.current = rec
+      try {
+        rec.start()
+      } catch (err) {
+        // start() can throw if called too soon after a stop (InvalidStateError).
+        // Retry once after a short gap before surfacing the error.
         setTimeout(() => {
-          if (listeningRef.current) {
-            try { recRef.current?.start() } catch {
+          if (listeningRef.current && sessionRef.current === sessionId) {
+            try { rec.start() } catch {
               listeningRef.current = false; setListening(false)
+              setError(isArabic
+                ? `تعذر بدء الميكروفون: ${err?.message || err}`
+                : `Could not start mic: ${err?.message || err}. Please reload and try again.`)
             }
           }
-        }, 150)
-      } else {
-        setListening(false)
+        }, 300)
       }
-    }
+    }  // end launchRec
 
-    rec.onerror = e => {
-      // On error we stop intentionally — don't auto-restart.
-      listeningRef.current = false; setListening(false); clearTimer()
-      if (e.error === 'not-allowed')
-        setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
-      else if (e.error === 'no-speech')
-        setError(isArabic ? 'لم أسمع شيئاً — حاول مرة أخرى' : "I didn't catch that — please try again.")
-      else if (e.error === 'network')
-        setError(isArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
-      else if (e.error === 'language-not-supported')
-        setError(isArabic ? 'اللغة العربية غير مدعومة في هذا المتصفح — جرّب Chrome' : 'Language not supported — try Chrome.')
-      else
-        setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
-    }
-
-    rec.onresult = e => {
-      // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
-      // can contain the full cumulative transcript so far, not just the new
-      // word. Naively concatenating all entries produces duplicates like
-      // "II boughtI bought oneI bought one Bitcoin" or
-      // "اشتريت اشتريت 10 اشتريت 10 بيتكوين…".
-      //
-      // Strategy: walk results left→right, collapsing consecutive snapshots
-      // (where current trimmed text starts with previous trimmed text) into
-      // the latest. When a result does NOT start with the previous, treat
-      // it as a NEW utterance and append. This handles both Chrome desktop
-      // (distinct utterances) and Chrome Android (snapshot mode).
-      const segments = []
-      for (let i = 0; i < e.results.length; i++) {
-        const result = e.results[i]
-        let best = result[0].transcript
-        let bestScore = -1
-        const baseline = segments.map(s => s.text).join(' ')
-        for (let k = 0; k < result.length; k++) {
-          const candidate = (baseline + ' ' + result[k].transcript).trim()
-          const p = parseVoiceCommand(candidate)
-          // Weight amount detection higher (3) since it's the most fragile
-          // signal under noisy Arabic STT — prefer the hypothesis that gives
-          // us a complete trade over one with just a coin.
-          const score = p.transactions.reduce((s, t) =>
-            s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0), 0)
-          if (score > bestScore) { bestScore = score; best = result[k].transcript }
-        }
-        const trimmed = best.trim()
-        if (!trimmed) continue
-
-        const last = segments[segments.length - 1]
-        if (last && trimmed.startsWith(last.text.trim())) {
-          // Progressive snapshot of the same utterance — replace, don't append
-          last.text = best
-          last.isFinal = result.isFinal
-        } else {
-          segments.push({ text: best, isFinal: result.isFinal })
-        }
-      }
-
-      const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
-      if (text) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
-      setTranscript(text)
-      const p = parseVoiceCommand(text)
-      const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
-      if (anyUseful) {
-        setParsed(p)
-        setReaction(getReaction(text, p.transactions[0] || {}))
-      }
-    }
-
-    recRef.current = rec
-
-    // Open the mic IMMEDIATELY — no TTS greeting. The previous greeting
-    // blocked mic opening for up to 3 s waiting for speech synthesis to
-    // finish, which made the button feel completely broken on devices
-    // where TTS is slow, unavailable, or auto-play-blocked.
-    try {
-      rec.start()
-    } catch (err) {
-      setError(
-        isArabic
-          ? `تعذر بدء الميكروفون: ${err?.message || err}`
-          : `Could not start mic: ${err?.message || err}. Please reload and try again.`
-      )
-    }
+    launchRec()
   }
 
   const stopListening = () => {
