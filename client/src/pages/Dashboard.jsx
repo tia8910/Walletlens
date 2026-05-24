@@ -2399,37 +2399,35 @@ export default function Dashboard() {
                   <button
                     onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }}
                     style={{
-                      flex:1, padding:'0.5rem 0.6rem', fontSize:'0.8rem', gap:'0.4rem', fontWeight:800,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       background: showVoiceImport
-                        ? 'linear-gradient(135deg, #047857, #10b981)'
-                        : 'linear-gradient(135deg, rgba(5,150,105,0.22), rgba(16,185,129,0.22))',
-                      border: `1.5px solid ${showVoiceImport ? 'rgba(5,150,105,0.85)' : 'rgba(5,150,105,0.5)'}`,
-                      color: showVoiceImport ? '#fff' : '#86efac',
+                        ? 'linear-gradient(135deg, #065f46, #047857)'
+                        : 'linear-gradient(135deg, #047857, #10b981)',
+                      border: `1.5px solid ${showVoiceImport ? '#065f46' : '#10b981'}`,
+                      color: '#ffffff',
                       boxShadow: showVoiceImport
-                        ? '0 0 18px rgba(5,150,105,0.55), 0 2px 8px rgba(16,185,129,0.4)'
-                        : '0 0 10px rgba(5,150,105,0.25)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(5,150,105,0.5)'
+                        : '0 4px 14px rgba(5,150,105,0.45), 0 0 10px rgba(16,185,129,0.35)',
                       animation: showVoiceImport ? 'none' : 'vi-btn-glow 2.4s ease-in-out infinite',
                     }}
-                    title="Speak your trade in English"
+                    title="Speak your trade"
                   >
                     <style>{`
                       @keyframes vi-btn-glow {
-                        0%,100% { box-shadow: 0 0 8px rgba(5,150,105,0.25); }
-                        50% { box-shadow: 0 0 18px rgba(5,150,105,0.55), 0 0 8px rgba(16,185,129,0.35); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(5,150,105,0.4), 0 0 8px rgba(16,185,129,0.3); }
+                        50%     { box-shadow: 0 4px 18px rgba(5,150,105,0.65), 0 0 16px rgba(16,185,129,0.55); }
                       }
                       @keyframes vi-bar1 { 0%,100%{height:6px} 50%{height:13px} }
                       @keyframes vi-bar2 { 0%,100%{height:10px} 50%{height:4px} }
                       @keyframes vi-bar3 { 0%,100%{height:4px} 50%{height:12px} }
                     `}</style>
-                    {/* Animated mic icon */}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                      <line x1="12" y1="19" x2="12" y2="23"/>
-                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    {/* Mic icon — filled for max visibility */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink:0 }}>
+                      <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>
+                      <path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.08A7 7 0 0 0 19 11z"/>
                     </svg>
                     <span>Voice</span>
                     {/* Sound wave bars */}
@@ -2438,7 +2436,7 @@ export default function Dashboard() {
                         <span key={i} style={{
                           display:'inline-block', width:'3px', borderRadius:'2px',
                           height: h,
-                          background: showVoiceImport ? 'rgba(255,255,255,0.9)' : '#86efac',
+                          background: 'rgba(255,255,255,0.95)',
                           animation: `${anim} 0.9s ease-in-out infinite`,
                           animationDelay: `${i * 0.15}s`,
                         }} />
