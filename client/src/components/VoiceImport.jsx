@@ -86,28 +86,54 @@ const COIN_MAP = (() => {
       if (!c[key]) c[key] = { id, symbol, name, category }
     })
   }
+  // Top coins include common Google/Apple STT phonetic mis-hearings (e.g.
+  // Solana → "selena", Ethereum → "a theorem", XRP → "ex our pee") so the
+  // parser still recognises the coin when the speech-to-text engine garbles
+  // a familiar word.
   add(['bitcoin','btc','bee tee cee','bitty','bitcorn','digital gold','the king','satoshi','sats',
+       // STT mis-hearings
+       'big coin','big point','bit corn','bit con','bit coin','bitkoin','bit kong',
        'بيتكوين','بتكوين','بيت كوين','بي تي سي','بيتكوبن','بيتكون','بتكون'], 'bitcoin', 'BTC', 'Bitcoin')
   // Ethereum: Arabic speech recognition produces many transliterations
   // (ث↔س, ي/ى, missing/extra letters). Include all observed variants.
   add(['ethereum','eth','ether','vitalik','smart contract coin',
+       // STT mis-hearings (English engines hearing the word)
+       'a theorem','e theorem','atherium','etherium','etherian','etheria','mythirium',
+       'aetherium','aether','ether room',
        'إيثيريوم','إيثر','ايثيريوم','ايثر','اي تي اتش',
        'اثيريوم','اثيريم','ايثيريم','ايثريوم','اثريوم',
        'اسيريوم','اسيريام','ايثيريام','اسيريم','ايسيريوم','ايسيريام',
        'إيثيريم','إثيريوم','إثيريم','إيسيريوم'], 'ethereum', 'ETH', 'Ethereum')
-  add(['solana','sol','salami','سولانا','سول','صولانا','صول','سولانه','صولانه'], 'solana', 'SOL', 'Solana')
-  add(['bnb','binance coin','binance','بي إن بي','بي ان بي','بينانس','بايننس','بنانس','بنب'], 'binancecoin', 'BNB', 'BNB')
-  add(['xrp','ripple','إكس آر بي','اكس ار بي','ريبل','ربيل','ريبيل','ربل'], 'ripple', 'XRP', 'XRP')
-  add(['cardano','ada','كاردانو','ايه دي ايه','كردانو','كاردنو'], 'cardano', 'ADA', 'Cardano')
-  add(['dogecoin','doge','the dog','elon coin','دوج','دوجكوين','دوجي','دوغ','دوغكوين','دوجى','دوغه'], 'dogecoin', 'DOGE', 'Dogecoin')
-  add(['shiba','shib','shiba inu','شيبا','شيب','شيبه','شيبا اينو'], 'shiba-inu', 'SHIB', 'Shiba Inu')
-  add(['pepe','pepe coin','the frog','بيبي','بيبيه','ببي','بيبى','بيبي كوين'], 'pepe', 'PEPE', 'Pepe')
-  add(['polkadot','dot','بولكادوت','دوت','بولكا دوت','بولكادت','بولكدوت'], 'polkadot', 'DOT', 'Polkadot')
-  add(['chainlink','link','تشين لينك','لينك','شين لينك','تشاينلينك','شاين لينك'], 'chainlink', 'LINK', 'Chainlink')
-  add(['avalanche','avax','أفالانش','أفاكس','افاكس','افلانش','افالانش','افلانتش','افاكش'], 'avalanche-2', 'AVAX', 'Avalanche')
-  add(['polygon','matic','pol','بوليجون','بوليغون','ماتيك','بوليكون','بوليجن','ماتك'], 'matic-network', 'POL', 'Polygon')
-  add(['tron','trx','ترون','تي آر إكس','ترونكس','ترن','ترونيكس'], 'tron', 'TRX', 'TRON')
-  add(['litecoin','ltc','لايتكوين','لايت كوين','لايتكون','لايت كون'], 'litecoin', 'LTC', 'Litecoin')
+  add(['solana','sol','salami',
+       // STT mis-hearings — "Selena" is the classic Google STT failure
+       'selena','salina','celina','celine','salonia','solania','solanas','sue lana','solar',
+       'salem','solanya','soul lana','suelena',
+       'سولانا','سول','صولانا','صول','سولانه','صولانه'], 'solana', 'SOL', 'Solana')
+  add(['bnb','binance coin','binance','b n b','bee n bee','banance','banance coin',
+       'بي إن بي','بي ان بي','بينانس','بايننس','بنانس','بنب'], 'binancecoin', 'BNB', 'BNB')
+  add(['xrp','ripple','x r p','ex our pee','ex ar p','ex r p','x ah r p','exarp','ex rp',
+       'إكس آر بي','اكس ار بي','ريبل','ربيل','ريبيل','ربل'], 'ripple', 'XRP', 'XRP')
+  add(['cardano','ada','car the no','cardamom','cardenas','car dano','card dano',
+       'كاردانو','ايه دي ايه','كردانو','كاردنو'], 'cardano', 'ADA', 'Cardano')
+  add(['dogecoin','doge','the dog','elon coin','dog coin','doggie coin','doggie',
+       'dough','dough coin','dosh','dohj',
+       'دوج','دوجكوين','دوجي','دوغ','دوغكوين','دوجى','دوغه'], 'dogecoin', 'DOGE', 'Dogecoin')
+  add(['shiba','shib','shiba inu','sheba','sheeba','sheeba inu','she bah',
+       'شيبا','شيب','شيبه','شيبا اينو'], 'shiba-inu', 'SHIB', 'Shiba Inu')
+  add(['pepe','pepe coin','the frog','peppy','pepay','pe pay',
+       'بيبي','بيبيه','ببي','بيبى','بيبي كوين'], 'pepe', 'PEPE', 'Pepe')
+  add(['polkadot','dot','polka dot','paul ka dot','paul cadot','polka',
+       'بولكادوت','دوت','بولكا دوت','بولكادت','بولكدوت'], 'polkadot', 'DOT', 'Polkadot')
+  add(['chainlink','link','chain link','jane link','chain leek','change link',
+       'تشين لينك','لينك','شين لينك','تشاينلينك','شاين لينك'], 'chainlink', 'LINK', 'Chainlink')
+  add(['avalanche','avax','ava lunch','a valance','avalon','avalanche coin','a wax','a vax',
+       'أفالانش','أفاكس','افاكس','افلانش','افالانش','افلانتش','افاكش'], 'avalanche-2', 'AVAX', 'Avalanche')
+  add(['polygon','matic','pol','poly gone','poly gun','mattic','magic','plastic','mateek',
+       'بوليجون','بوليغون','ماتيك','بوليكون','بوليجن','ماتك'], 'matic-network', 'POL', 'Polygon')
+  add(['tron','trx','throne','tron coin','t r x',
+       'ترون','تي آر إكس','ترونكس','ترن','ترونيكس'], 'tron', 'TRX', 'TRON')
+  add(['litecoin','ltc','lite coin','light coin','light kong','l t c',
+       'لايتكوين','لايت كوين','لايتكون','لايت كون'], 'litecoin', 'LTC', 'Litecoin')
   add(['bitcoin cash','bch','بيتكوين كاش','بتكوين كاش','بيت كوين كاش'], 'bitcoin-cash', 'BCH', 'Bitcoin Cash')
   add(['tether','usdt','تيذر','تيثر','يو إس دي تي','يو اس دي تي','تيدر','تذر'], 'tether', 'USDT', 'Tether')
   add(['usdc','يو إس دي سي','يو اس دي سي','يو اس دي سى'], 'usd-coin', 'USDC', 'USD Coin')
@@ -1061,6 +1087,58 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     }
   }
 
+  // Symbol → coin object map, built lazily once. Used to convert Claude's
+  // ticker output (e.g. "SOL") back into our internal COIN_MAP entry.
+  const symbolIndexRef = useRef(null)
+  const getSymbolIndex = () => {
+    if (symbolIndexRef.current) return symbolIndexRef.current
+    const idx = {}
+    for (const alias in COIN_MAP) {
+      const c = COIN_MAP[alias]
+      const key = (c.symbol || '').toUpperCase()
+      if (key && !idx[key]) idx[key] = c
+    }
+    symbolIndexRef.current = idx
+    return idx
+  }
+
+  // Ask the Claude-powered server-side parser to interpret a transcript that
+  // our local regex parser couldn't make sense of. Replaces the parsed result
+  // on success; silently falls back to the local parse on any failure.
+  const tryAiFallback = async (rawText) => {
+    if (!rawText || rawText.length < 3) return
+    try {
+      const resp = await fetch('/api/voice-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: rawText, hintLang: lang.startsWith('ar') ? 'ar' : 'en' }),
+      })
+      if (!resp.ok) return
+      const data = await resp.json()
+      const trades = Array.isArray(data?.trades) ? data.trades : []
+      if (!trades.length) return
+      const idx = getSymbolIndex()
+      const transactions = trades.map(t => {
+        const coin = idx[(t.symbol || '').toUpperCase()] || null
+        return {
+          type: t.type,
+          coin,
+          amount: typeof t.amount === 'number' ? t.amount : null,
+          price: typeof t.price === 'number' ? t.price : null,
+          matchedWord: t.type === 'buy' ? 'bought' : 'sold',
+          suggestions: coin ? null : [],
+        }
+      }).filter(t => t.coin && t.amount != null)
+      if (!transactions.length) return
+      const aiParsed = { original: rawText, transactions }
+      setParsed(aiParsed)
+      setReaction(getReaction(rawText, aiParsed.transactions[0] || {}))
+      track('voice_ai_fallback_used', { tx_count: transactions.length })
+    } catch {
+      // Network / parse error — keep the local parse result
+    }
+  }
+
   const stopListening = () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
@@ -1068,6 +1146,17 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setListening(false)
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
+
+    // If the local parser missed (no complete trade), ask Claude to interpret.
+    // A trade is "complete" when it has type + coin + amount. The longest of
+    // the two language transcripts is sent so Claude has the most context.
+    const isComplete = parsed?.transactions?.every(t => t.type && t.coin && t.amount != null) && parsed.transactions.length > 0
+    if (!isComplete) {
+      const ar = transcriptsRef.current.ar || ''
+      const en = transcriptsRef.current.en || ''
+      const best = (ar.length >= en.length ? ar : en) || transcript
+      if (best) tryAiFallback(best)
+    }
   }
 
   useEffect(() => () => {
