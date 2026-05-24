@@ -822,7 +822,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
       // Cold-start guard: on first use (Kiwi/Android), rec.start() can succeed
       // without throwing but onstart silently never fires while the STT module
-      // initialises. Detect this and retry launchRec after 1.5 s.
+      // initialises. Detect at 700 ms and force a restart via stop → onend.
       let startedOk = false
       const startTimeout = setTimeout(() => {
         if (!startedOk && listeningRef.current && sessionRef.current === sessionId) {
@@ -832,7 +832,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           // one hits InvalidStateError, killing both recognizers.
           try { rec.stop() } catch {}
         }
-      }, 1500)
+      }, 700)
 
       rec.onstart = () => {
         startedOk = true
@@ -937,14 +937,17 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
-    // Start STT immediately — MUST happen within the browser's user-gesture window
-    // (roughly 1-2 s after the tap). Delaying rec.start() for TTS to finish lets
-    // the gesture token expire; on Chrome Android / Kiwi, rec.start() then fails
-    // silently and onstart never fires. This was why the first tap never worked.
-    launchRec()
-    // Play TTS greeting 300 ms after STT starts. The short gap lets the STT audio
-    // pipeline claim the microphone first. TTS (speaker output) and STT (mic input)
-    // are separate audio channels, so they coexist once STT is established.
+    // Mimic the language-switch flow which works reliably on first tap:
+    // brief 250 ms gap between state reset and launching the recognizer.
+    // Without this gap, rec.start() can silently fail on first use across all
+    // browsers — onstart never fires and the mic stays "red but inactive".
+    // The gap gives the audio system time to settle and the engine to wake up.
+    setTimeout(() => {
+      if (!listeningRef.current || sessionRef.current !== sessionId) return
+      launchRec()
+    }, 250)
+    // Play TTS greeting AFTER STT has had time to claim the mic (550 ms total).
+    // TTS (speaker) and STT (mic) are separate audio channels and coexist.
     setTimeout(() => {
       try {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -955,7 +958,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           window.speechSynthesis.speak(utter)
         }
       } catch {}
-    }, 300)
+    }, 550)
   }
 
   const stopListening = () => {
@@ -1075,7 +1078,16 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     <div style={{ marginBottom: '1rem' }}>
       {!hideTrigger && (
         <button
-          onClick={() => { setOpen(o => { const next = !o; if (next) track('voice_import_opened'); return next }) }}
+          onClick={() => {
+            const next = !open
+            setOpen(next)
+            if (next) {
+              track('voice_import_opened')
+              // Auto-start listening + greeting in the SAME user gesture.
+              // One tap = panel opens, mic listens, AI greets. No second tap needed.
+              startListening()
+            }
+          }}
           style={{
             background: open ? 'linear-gradient(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.18))' : 'linear-gradient(135deg, rgba(5,150,105,0.1), rgba(16,185,129,0.1))',
             border: '1px solid rgba(5,150,105,0.35)',
