@@ -2397,7 +2397,32 @@ export default function Dashboard() {
                     Excel / CSV
                   </button>
                   <button
-                    onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }}
+                    onClick={() => {
+                      const willOpen = !showVoiceImport
+                      if (willOpen) {
+                        // Prime the SpeechRecognition engine SYNCHRONOUSLY inside
+                        // this user-gesture handler — the only place rec.start()
+                        // reliably engages the mic on first page load. Without
+                        // this, the user must manually switch language tabs to
+                        // wake the engine. We use ar-SA because en-US silently
+                        // fails to engage the mic on first attempt.
+                        try {
+                          const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+                          if (SR) {
+                            const primer = new SR()
+                            primer.continuous = true
+                            primer.interimResults = true
+                            primer.lang = 'ar-SA'
+                            primer.onerror = () => {}
+                            primer.onresult = () => {}
+                            primer.onstart = () => { try { primer.stop() } catch {} }
+                            primer.start()
+                            setTimeout(() => { try { primer.stop() } catch {} }, 800)
+                          }
+                        } catch {}
+                      }
+                      setShowVoiceImport(willOpen); setShowExcelImport(false); setShowBackupCode(false)
+                    }}
                     style={{
                       flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
