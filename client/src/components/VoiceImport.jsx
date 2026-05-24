@@ -937,16 +937,34 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
-    // Mimic the language-switch flow which works reliably on first tap:
-    // brief 250 ms gap between state reset and launching the recognizer.
-    // Without this gap, rec.start() can silently fail on first use across all
-    // browsers — onstart never fires and the mic stays "red but inactive".
-    // The gap gives the audio system time to settle and the engine to wake up.
-    setTimeout(() => {
-      if (!listeningRef.current || sessionRef.current !== sessionId) return
-      launchRec()
-    }, 250)
-    // Play TTS greeting AFTER STT has had time to claim the mic (550 ms total).
+    // PRIMER pattern: user's screenshots prove rec.start('en-US') silently fails
+    // to engage the mic hardware (no browser mic icon appears), but rec.start('ar-SA')
+    // DOES engage it. After switching to Arabic, every subsequent start works in
+    // any language. So we always primer-warm the engine with ar-SA — which reliably
+    // engages the mic — then launch the real recognizer in the user's chosen language
+    // on the now-warm engine. This is the missing ingredient that a simple delay
+    // couldn't fix: the audio stack needs an ar-SA start to fully activate.
+    let primer = null
+    try {
+      primer = new SR()
+      primer.continuous = false
+      primer.interimResults = false
+      primer.lang = 'ar-SA'         // ALWAYS Arabic — proven to engage the mic
+      primer.onerror = () => {}     // swallow primer errors silently
+      primer.onresult = () => {}
+      primer.onend = () => {
+        // Engine is warm — launch the real recognizer in the user's language.
+        if (listeningRef.current && sessionRef.current === sessionId) launchRec()
+      }
+      primer.start()
+      setTimeout(() => { try { primer.stop() } catch {} }, 300)
+    } catch {
+      // Primer failed to construct/start — fall back to a plain delayed launch
+      setTimeout(() => {
+        if (listeningRef.current && sessionRef.current === sessionId) launchRec()
+      }, 300)
+    }
+    // Play TTS greeting after the real recognizer has had time to claim the mic.
     // TTS (speaker) and STT (mic) are separate audio channels and coexist.
     setTimeout(() => {
       try {
@@ -958,7 +976,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           window.speechSynthesis.speak(utter)
         }
       } catch {}
-    }, 550)
+    }, 700)
   }
 
   const stopListening = () => {
