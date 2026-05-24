@@ -777,6 +777,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       track('voice_unsupported', { lang })
       setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
     }
+    // Kill any lingering recognizer BEFORE creating a new one.
+    // Calling start() while a previous instance is still shutting down
+    // causes InvalidStateError on Chrome/Kiwi which silently drops the first tap.
+    try { recRef.current?.stop() } catch {}
+    recRef.current = null
     const useLang = langOverride || lang
     track('voice_listen_start', { lang: useLang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
@@ -843,9 +848,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         if (sessionRef.current !== sessionId) return
         clearTimer()
         if (e.error === 'no-speech' || e.error === 'aborted') {
-          // Transient — restart silently so the mic stays open without
-          // requiring another tap. 'aborted' can fire on rapid stop/start.
-          if (listeningRef.current) setTimeout(launchRec, 200)
+          // Transient errors — do NOT schedule launchRec here.
+          // onend always fires immediately after onerror; let onend handle
+          // the restart exclusively to prevent two launchRec calls racing.
           return
         }
         // Fatal errors: stop and surface the message.
