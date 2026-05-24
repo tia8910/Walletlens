@@ -746,24 +746,25 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBest)
   }, [])
 
-  const startListening = () => {
+  const startListening = (langOverride) => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
       setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
     }
-    track('voice_listen_start', { lang })
+    const useLang = langOverride || lang
+    track('voice_listen_start', { lang: useLang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({})
 
     const rec = new SR()
     rec.continuous = true
     rec.interimResults = true
     rec.maxAlternatives = 3   // try top-3 STT hypotheses → pick best parse
-    rec.lang = lang === 'ar' ? 'ar-EG' : 'en-US'
+    rec.lang = useLang === 'ar' ? 'ar-EG' : 'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
 
-    const isArabic = lang === 'ar'
+    const isArabic = useLang === 'ar'
     // 5-minute safety ceiling — user is expected to tap the mic to stop.
     rec.onstart = () => { setListening(true); scheduleStop(5 * 60 * 1000) }
     rec.onend   = () => { setListening(false); clearTimer() }
@@ -872,6 +873,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     try { recRef.current?.stop() } catch {}
     setListening(false)
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
+  }
+
+  // Switch language. If the mic is already on, stop it and immediately
+  // restart with the new language so the user doesn't have to tap again.
+  const changeLanguage = (next) => {
+    if (next === lang) return
+    setLang(next)
+    track('voice_lang_toggle', { to: next })
+    if (listening) {
+      try { recRef.current?.stop() } catch {}
+      setListening(false)
+      // Small delay lets onend fire before we kick off again with the new lang
+      setTimeout(() => startListening(next), 250)
+    }
   }
 
   useEffect(() => () => {
@@ -1000,26 +1015,62 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
         }}>
-          {/* Language toggle */}
-          <div style={{ display:'flex', gap:'0.4rem', justifyContent:'center', marginBottom:'1rem' }}>
-            <button onClick={() => { setLang('en'); track('voice_lang_toggle', { to: 'en' }) }} style={{
-              padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
-              cursor:'pointer', border:'1.5px solid',
-              borderColor: lang === 'en' ? '#c084fc' : 'rgba(255,255,255,0.12)',
-              background: lang === 'en' ? 'rgba(192,132,252,0.2)' : 'transparent',
-              color: lang === 'en' ? '#e9d5ff' : 'var(--text-muted)',
-            }}>🇺🇸 English</button>
-            <button onClick={() => { setLang('ar'); track('voice_lang_toggle', { to: 'ar' }) }} style={{
-              padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
-              cursor:'pointer', border:'1.5px solid',
-              borderColor: lang === 'ar' ? '#c084fc' : 'rgba(255,255,255,0.12)',
-              background: lang === 'ar' ? 'rgba(192,132,252,0.2)' : 'transparent',
-              color: lang === 'ar' ? '#e9d5ff' : 'var(--text-muted)',
-            }}>🇸🇦 عربي</button>
+          {/* Language selector — segmented control (no flag emojis, render-safe on Windows) */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem', direction:'ltr' }}>
+            <div style={{
+              display:'inline-flex', background:'rgba(255,255,255,0.06)', borderRadius:'14px',
+              padding:'4px', gap:'4px', border:'1px solid rgba(168,85,247,0.25)',
+            }}>
+              {[
+                { id:'en', code:'EN', label:'English' },
+                { id:'ar', code:'AR', label:'العربية' },
+              ].map(l => {
+                const active = lang === l.id
+                return (
+                  <button key={l.id} onClick={() => changeLanguage(l.id)} style={{
+                    padding:'0.5rem 1.1rem', borderRadius:'10px', cursor:'pointer',
+                    border: active ? '1.5px solid rgba(168,85,247,0.6)' : '1.5px solid transparent',
+                    background: active
+                      ? 'linear-gradient(135deg, #a855f7, #ec4899)'
+                      : 'transparent',
+                    color: active ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: active ? 800 : 600,
+                    fontSize:'0.9rem', transition:'all 0.18s',
+                    display:'flex', alignItems:'center', gap:'0.45rem',
+                    boxShadow: active ? '0 3px 14px rgba(168,85,247,0.45)' : 'none',
+                  }}>
+                    <span style={{
+                      fontSize:'0.7rem', fontWeight:900, letterSpacing:'0.08em',
+                      padding:'2px 6px', borderRadius:'5px',
+                      background: active ? 'rgba(255,255,255,0.22)' : 'rgba(168,85,247,0.2)',
+                      color: active ? '#fff' : '#c084fc',
+                    }}>{l.code}</span>
+                    <span>{l.label}</span>
+                    {active && <span style={{ fontSize:'0.85rem' }}>✓</span>}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Mic button — center */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.7rem', marginBottom:'1rem' }}>
+            {/* Waveform bars flanking the mic when idle */}
+            <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
+              {/* Left bars */}
+              <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                {[['0.7s','12px'],['0.5s','18px'],['0.9s','10px']].map(([delay, h], i) => (
+                  <span key={i} style={{
+                    display:'inline-block', width:'4px', borderRadius:'3px',
+                    height: listening ? h : '6px',
+                    background: listening ? 'linear-gradient(to top,#a855f7,#ec4899)' : 'rgba(168,85,247,0.3)',
+                    animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
+                    animationDelay: delay,
+                    transition:'height 0.3s',
+                  }} />
+                ))}
+              </div>
+
             <div style={{ position:'relative', width:96, height:96 }}>
               {listening && (
                 <>
@@ -1060,11 +1111,40 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 </svg>
               </button>
             </div>
-            <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:0, textAlign:'center' }}>
+
+              {/* Right bars */}
+              <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                {[['0.8s','10px'],['0.4s','18px'],['1.1s','12px']].map(([delay, h], i) => (
+                  <span key={i} style={{
+                    display:'inline-block', width:'4px', borderRadius:'3px',
+                    height: listening ? h : '6px',
+                    background: listening ? 'linear-gradient(to top,#ec4899,#a855f7)' : 'rgba(236,72,153,0.3)',
+                    animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
+                    animationDelay: delay,
+                    transition:'height 0.3s',
+                  }} />
+                ))}
+              </div>
+            </div>
+
+            <p style={{ fontSize:'0.82rem', color: listening ? '#e9d5ff' : 'var(--text)', margin:0, textAlign:'center', fontWeight: listening ? 700 : 500 }}>
               {listening
-                ? (isAr ? '🎙️ أتحدث الآن…' : '🎙️ Listening… speak now')
+                ? (isAr ? 'أتحدث الآن…' : 'Listening… speak now')
                 : (isAr ? 'اضغط الميكروفون وقل صفقتك' : 'Tap the mic and say your trade')}
             </p>
+            {/* Active language indicator — always shows what the AI is recognizing */}
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:'0.4rem',
+              padding:'0.25rem 0.7rem', borderRadius:'10px',
+              background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)',
+              fontSize:'0.72rem', color:'#d8b4fe', fontWeight:700, direction:'ltr',
+            }}>
+              <span style={{ fontSize:'0.65rem', padding:'1px 5px', borderRadius:'4px', background:'rgba(168,85,247,0.3)', color:'#fff', letterSpacing:'0.08em' }}>
+                {lang === 'ar' ? 'AR' : 'EN'}
+              </span>
+              <span>{isAr ? 'يستمع بالعربية' : 'Listening in English'}</span>
+            </div>
+            <style>{`@keyframes vi-wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }`}</style>
           </div>
 
           {/* Reaction banner */}
