@@ -919,35 +919,19 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
-    // Play a short greeting then open the mic.
-    // Button is already red (optimistic above). The TTS also warms up the
-    // audio session on Android/Kiwi, which fixes the "first tap does nothing"
-    // issue caused by the audio pipeline not being ready on cold start.
-    // Mic opens as soon as the greeting ends, or after 2.5 s at the latest.
-    const greetingText = isArabic
-      ? 'أهلاً، ماذا اشتريت أو بعت اليوم؟'
-      : 'Hi! What did you buy or sell today?'
-
-    let launched = false
-    const launchOnce = () => {
-      if (launched) return
-      launched = true
-      launchRec()
-    }
-
+    // Play greeting in English for all languages (fire-and-forget).
+    // Do NOT wait for TTS onend — on cold start the speech-synthesis voices
+    // may not be loaded yet so onend can be delayed or never fire, which was
+    // blocking the mic for up to 2.5 s and making the first tap feel broken.
+    // Mic opens immediately in parallel with the greeting.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel()  // clear any queued speech from a previous tap
-      const utter = new SpeechSynthesisUtterance(greetingText)
-      utter.lang = useLang === 'ar-sa' ? 'ar-SA' : useLang === 'ar-eg' ? 'ar-EG' : 'en-US'
-      if (isArabic && arVoiceRef.current) utter.voice = arVoiceRef.current
+      window.speechSynthesis.cancel()
+      const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
+      utter.lang = 'en-US'
       utter.rate = 1.1
-      utter.onend = launchOnce
-      utter.onerror = launchOnce
-      setTimeout(launchOnce, 2500)  // safety: start mic even if TTS never fires onend
       window.speechSynthesis.speak(utter)
-    } else {
-      launchRec()
     }
+    launchRec()
   }
 
   const stopListening = () => {
