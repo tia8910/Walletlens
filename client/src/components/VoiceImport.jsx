@@ -300,21 +300,26 @@ const SELL_WORDS = [
 // dialectal forms (ثلاثة/تلاتة/تلاته) merge under a single canonical key.
 const AR_NUMBERS_RAW = {
   'صفر':0,
-  'واحد':1,'واحده':1,'واحدة':1,'وحده':1,'وحدة':1,'وحد':1,
-  'اثنين':2,'اثنان':2,'اتنين':2,'تنين':2,'ثنين':2,
-  'ثلاثة':3,'ثلاثه':3,'ثلاث':3,'تلاته':3,'تلاتة':3,'تلت':3,'تلاتت':3,
-  'اربعة':4,'اربعه':4,'اربع':4,'أربعة':4,
-  'خمسة':5,'خمسه':5,'خمس':5,
-  'ستة':6,'سته':6,'ست':6,
-  'سبعة':7,'سبعه':7,'سبع':7,
-  'ثمانية':8,'ثمانيه':8,'تمانيه':8,'تمانية':8,'تمن':8,
-  'تسعة':9,'تسعه':9,'تسع':9,
-  'عشرة':10,'عشره':10,'عشر':10,'عشرت':10,
-  'احد عشر':11,'اثنا عشر':12,'اتناشر':12,
+  'واحد':1,'واحده':1,'واحدة':1,'وحده':1,'وحدة':1,'وحد':1,'احد':1,'أحد':1,'واحدا':1,'وحدا':1,
+  'اثنين':2,'اثنان':2,'اتنين':2,'تنين':2,'ثنين':2,'اثنينا':2,'إثنين':2,
+  'ثلاثة':3,'ثلاثه':3,'ثلاث':3,'تلاته':3,'تلاتة':3,'تلت':3,'تلاتت':3,'تلاتت':3,'ثلاثا':3,
+  'اربعة':4,'اربعه':4,'اربع':4,'أربعة':4,'أربعه':4,'أربع':4,
+  'خمسة':5,'خمسه':5,'خمس':5,'خمسا':5,
+  'ستة':6,'سته':6,'ست':6,'ستا':6,
+  'سبعة':7,'سبعه':7,'سبع':7,'سبعا':7,
+  'ثمانية':8,'ثمانيه':8,'تمانيه':8,'تمانية':8,'تمن':8,'تمانيا':8,
+  'تسعة':9,'تسعه':9,'تسع':9,'تسعا':9,
+  'عشرة':10,'عشره':10,'عشر':10,'عشرت':10,'عشرا':10,
+  'احد عشر':11,'احدعشر':11,'حداشر':11,'حداش':11,
+  'اثنا عشر':12,'اتناشر':12,'اطناشر':12,'اتناش':12,
+  'تلتاشر':13,'تلتاش':13,'اربعتاشر':14,'خمستاشر':15,'ستاشر':16,'سبعتاشر':17,'تمنتاشر':18,'تسعتاشر':19,
   'عشرين':20,'ثلاثين':30,'تلاتين':30,'اربعين':40,'خمسين':50,'ستين':60,'سبعين':70,'تمانين':80,'تسعين':90,
-  'نص':0.5,'نصف':0.5,'نُص':0.5,'نوس':0.5,'ربع':0.25,'ثلث':0.333,
-  'ميه':100,'مية':100,'مائة':100,'ماءه':100,'مايه':100,
-  'الف':1000,'ألف':1000,'مليون':1000000,'مليار':1000000000,'بليون':1000000000,
+  'نص':0.5,'نصف':0.5,'نُص':0.5,'نوس':0.5,'نص واحد':0.5,
+  'ربع':0.25,'ربعة':0.25,'ربعه':0.25,
+  'ثلث':0.333,'تلت':0.333,
+  'ميه':100,'مية':100,'مائة':100,'ماءه':100,'مايه':100,'مايتين':200,'ميتين':200,'ميتان':200,
+  'الف':1000,'ألف':1000,'الفين':2000,'ألفين':2000,
+  'مليون':1000000,'مليونين':2000000,'مليار':1000000000,'بليون':1000000000,
 }
 // Build the canonical map by normalizing each raw key. Duplicate
 // post-normalization keys (e.g. ثلاثه + تلاته → تلاته) collapse cleanly.
@@ -399,13 +404,18 @@ function digitizeWordNumbers(text) {
   const phrases = Object.keys(all)
     .filter(p => !MULTIPLIER_WORDS.has(p))
     .sort((a, b) => b.length - a.length)
+  // Single-letter Arabic prepositions / conjunctions that frequently attach
+  // to the following number-word without a space ("وواحد"=and one,
+  // "بواحد"=with one, "لواحد"=for one, "فواحد"=so one). Strip them so the
+  // number is still detected.
+  const AR_PREFIXES = ['و', 'ب', 'ل', 'ف']
   for (const p of phrases) {
     const val = String(all[p])
     out = out.split(' ' + p + ' ').join(' ' + val + ' ')
-    // Arabic conjunction "و" (and) often attaches to the following number-word
-    // without a space ("وواحد" = "and one"). Split it so the number is detected.
     if (/[؀-ۿ]/.test(p)) {
-      out = out.split(' و' + p + ' ').join(' و ' + val + ' ')
+      for (const prefix of AR_PREFIXES) {
+        out = out.split(' ' + prefix + p + ' ').join(' ' + prefix + ' ' + val + ' ')
+      }
     }
   }
   return out.slice(1, -1)
@@ -715,8 +725,9 @@ const SUPPORTED = !!SR
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [open, setOpen] = useState(hideTrigger)
-  const lang = 'en'                     // English-only — Arabic disabled
-  const setLang = () => {}
+  // 'en' | 'ar-sa' (Saudi/MSA) | 'ar-eg' (Egyptian) — pick the closest dialect
+  // for best STT accuracy; both Arabic options share the same parser/aliases.
+  const [lang, setLang] = useState('en')
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -759,13 +770,18 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     const rec = new SR()
     rec.continuous = true
     rec.interimResults = true
-    rec.maxAlternatives = 3   // try top-3 STT hypotheses → pick best parse
-    rec.lang = 'en-US'        // English-only — Arabic recognition disabled
+    // Arabic STT is less reliable; ask for more hypotheses so the parser
+    // has more strings to try matching number-words and coin names against.
+    rec.maxAlternatives = useLang.startsWith('ar') ? 5 : 3
+    rec.lang =
+      useLang === 'ar-sa' ? 'ar-SA' :
+      useLang === 'ar-eg' ? 'ar-EG' :
+      'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
     const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
 
-    const isArabic = useLang === 'ar'
+    const isArabic = useLang.startsWith('ar')
     // 5-minute safety ceiling — user is expected to tap the mic to stop.
     rec.onstart = () => { setListening(true); scheduleStop(5 * 60 * 1000) }
     rec.onend   = () => { setListening(false); clearTimer() }
@@ -804,8 +820,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         for (let k = 0; k < result.length; k++) {
           const candidate = (baseline + ' ' + result[k].transcript).trim()
           const p = parseVoiceCommand(candidate)
+          // Weight amount detection higher (3) since it's the most fragile
+          // signal under noisy Arabic STT — prefer the hypothesis that gives
+          // us a complete trade over one with just a coin.
           const score = p.transactions.reduce((s, t) =>
-            s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 1 : 0), 0)
+            s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0), 0)
           if (score > bestScore) { bestScore = score; best = result[k].transcript }
         }
         const trimmed = best.trim()
@@ -855,7 +874,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         utt.lang = 'en-US'
         utt.rate  = 0.95
         utt.pitch = 1
-        if (lang === 'ar' && arVoiceRef.current) utt.voice = arVoiceRef.current
+        if (isAr && arVoiceRef.current) utt.voice = arVoiceRef.current
         utt.onend = doStart
         utt.onerror = doStart  // if TTS fails, mic still opens
         window.speechSynthesis.speak(utt)
@@ -974,7 +993,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setConfirmed(true)
   }
 
-  const isAr = false                    // English-only mode
+  const isAr = lang.startsWith('ar')
   const readyCount = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount).length
   const canImport = readyCount > 0
 
@@ -1014,8 +1033,46 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           border: '1px solid rgba(5,150,105,0.2)',
           borderRadius: '16px', padding: '1.25rem', marginTop: '0.6rem',
           backdropFilter: 'blur(12px)',
-          direction: 'ltr',
+          direction: isAr ? 'rtl' : 'ltr',
         }}>
+          {/* Language / dialect picker — three options for accurate STT */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem', flexWrap:'wrap', gap:'4px' }}>
+            <div style={{
+              display:'inline-flex', background:'rgba(255,255,255,0.06)', borderRadius:'14px',
+              padding:'4px', gap:'4px', border:'1px solid rgba(5,150,105,0.3)', flexWrap:'wrap',
+            }}>
+              {[
+                { id:'en',    code:'EN', label:'English',  hint:'US English' },
+                { id:'ar-sa', code:'SA', label:'العربية',  hint:'Saudi / MSA' },
+                { id:'ar-eg', code:'EG', label:'المصرية',  hint:'Egyptian' },
+              ].map(l => {
+                const active = lang === l.id
+                return (
+                  <button key={l.id} onClick={() => changeLanguage(l.id)} style={{
+                    padding:'0.45rem 0.95rem', borderRadius:'10px', cursor:'pointer',
+                    border: active ? '1.5px solid rgba(5,150,105,0.7)' : '1.5px solid transparent',
+                    background: active
+                      ? 'linear-gradient(135deg, #047857, #10b981)'
+                      : 'transparent',
+                    color: active ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: active ? 800 : 600,
+                    fontSize:'0.88rem', transition:'all 0.18s',
+                    display:'flex', alignItems:'center', gap:'0.45rem',
+                    boxShadow: active ? '0 3px 14px rgba(5,150,105,0.45)' : 'none',
+                  }} title={l.hint}>
+                    <span style={{
+                      fontSize:'0.68rem', fontWeight:900, letterSpacing:'0.08em',
+                      padding:'2px 6px', borderRadius:'5px',
+                      background: active ? 'rgba(255,255,255,0.22)' : 'rgba(5,150,105,0.2)',
+                      color: active ? '#fff' : '#34d399',
+                    }}>{l.code}</span>
+                    <span>{l.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Mic button — center */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.7rem', marginBottom:'1rem' }}>
             {/* Waveform bars flanking the mic when idle */}
