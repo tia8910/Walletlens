@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { loadData, saveData, bumpId } from '../data/storage'
 import { track } from '../analytics'
 import { api } from '../api'
+import { useLanguage } from '../LanguageContext'
 import {
   POPULAR_TICKERS, POPULAR_FIAT,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
@@ -728,9 +729,10 @@ const IS_IOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navig
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [open, setOpen] = useState(hideTrigger)
-  // 'en' | 'ar-sa' (Saudi/MSA) | 'ar-eg' (Egyptian) — pick the closest dialect
-  // for best STT accuracy; both Arabic options share the same parser/aliases.
-  const [lang, setLang] = useState('en')
+  // STT language is driven by the app's global language ('en' or 'ar').
+  // No local picker — the user toggles the app language and voice follows.
+  const { lang: appLang } = useLanguage()
+  const lang = appLang === 'ar' ? 'ar-sa' : 'en'
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -752,59 +754,17 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // stale onend/onerror callbacks bail out immediately so they can't
   // accidentally flip state or start a new recognizer.
   const sessionRef = useRef(0)
-  const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return
-    const pickBest = () => {
-      const voices = window.speechSynthesis.getVoices()
-      if (!voices.length) return
-      // Prefer neural / enhanced / premium voices, then EG dialect, then any Arabic
-      arVoiceRef.current =
-        voices.find(v => v.lang.startsWith('ar') &&
-          /neural|enhanced|premium|wavenet|journey/i.test(v.name)) ||
-        voices.find(v => v.lang === 'ar-EG') ||
-        voices.find(v => v.lang.startsWith('ar')) ||
-        null
-    }
-    pickBest()
-    window.speechSynthesis.addEventListener('voiceschanged', pickBest)
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBest)
-  }, [])
-
-  // Mount-time SR engine warm-up. For Dashboard (hideTrigger=true) the parent
-  // mounts this component in response to its own button click — a fresh user
-  // gesture. We immediately start+stop a sacrificial ar-SA recognizer to wake
-  // the audio stack so the user's subsequent mic tap finds a warm engine.
-  // Without this, en-US starts silently fail to engage the mic on first use.
-  useEffect(() => {
-    if (!hideTrigger || !SUPPORTED) return
-    try {
-      const primer = new SR()
-      primer.continuous = true
-      primer.interimResults = true
-      primer.lang = 'ar-SA'    // Only ar-SA reliably engages mic on cold start
-      primer.onerror = () => {}
-      primer.onresult = () => {}
-      primer.onstart = () => { try { primer.stop() } catch {} }
-      try { primer.start() } catch {}
-      // Safety stop in case onstart never fires
-      setTimeout(() => { try { primer.stop() } catch {} }, 800)
-    } catch {}
-  }, [])
-
-  const startListening = (langOverride) => {
+  const startListening = () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
       setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
     }
     // Kill any lingering recognizer BEFORE creating a new one.
-    // Calling start() while a previous instance is still shutting down
-    // causes InvalidStateError on Chrome/Kiwi which silently drops the first tap.
     try { recRef.current?.stop() } catch {}
     recRef.current = null
-    const useLang = langOverride || lang
-    track('voice_listen_start', { lang: useLang })
+
+    track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
     hasTranscriptRef.current = false
     clearTimeout(noSpeechTimerRef.current)
@@ -812,27 +772,23 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       if (!hasTranscriptRef.current) setNoSpeechHint(true)
     }, 10000)
     listeningRef.current = true
-    setListening(true)  // button goes red immediately — don't wait for TTS or onstart
+    setListening(true)
 
     const sessionId = ++sessionRef.current
-    const isArabic = useLang.startsWith('ar')
+    const isArabic = lang.startsWith('ar')
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
 
-    // launchRec creates a FRESH SpeechRecognition instance every time.
-    // Reusing a stopped instance is unreliable on iOS and some Android
-    // WebViews — creating a new one each time avoids InvalidStateError.
+    // launchRec creates a FRESH SpeechRecognition instance every time so
+    // iOS — which ends the recognizer after every utterance — can auto-restart
+    // by simply calling launchRec again from onend.
     const launchRec = () => {
       if (!listeningRef.current || sessionRef.current !== sessionId) return
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
-      rec.maxAlternatives = useLang.startsWith('ar') ? 5 : 3
-      rec.lang =
-        useLang === 'ar-sa' ? 'ar-SA' :
-        useLang === 'ar-eg' ? 'ar-EG' :
-        'en-US'
+      rec.maxAlternatives = isArabic ? 5 : 3
+      rec.lang = isArabic ? 'ar-SA' : 'en-US'
 
-      // Safety ceiling: set listeningRef BEFORE stopping so onend bails out.
       const scheduleStop = (ms) => {
         clearTimer()
         listenTimerRef.current = setTimeout(() => {
@@ -841,54 +797,26 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }, ms)
       }
 
-      // Cold-start guard: on first use (Kiwi/Android), rec.start() can succeed
-      // without throwing but onstart silently never fires while the STT module
-      // initialises. Detect at 700 ms and force a restart via stop → onend.
-      let startedOk = false
-      const startTimeout = setTimeout(() => {
-        if (!startedOk && listeningRef.current && sessionRef.current === sessionId) {
-          // Just stop — onend will schedule the restart via launchRec at 150 ms.
-          // Do NOT call launchRec here directly: onend fires ~immediately after
-          // rec.stop(), so two back-to-back launchRec calls race and the second
-          // one hits InvalidStateError, killing both recognizers.
-          try { rec.stop() } catch {}
-        }
-      }, 700)
-
       rec.onstart = () => {
-        startedOk = true
-        clearTimeout(startTimeout)
         if (sessionRef.current !== sessionId) return
         listeningRef.current = true; setListening(true)
         scheduleStop(5 * 60 * 1000)
       }
 
-      // onend fires when the browser auto-stops the recognizer (iOS after
-      // every utterance, desktop Chrome after no-speech timeout, etc.).
-      // If the user is still listening, spin up a fresh recognizer so the
-      // experience is seamless — no need to tap the button again.
       rec.onend = () => {
-        clearTimeout(startTimeout)
         clearTimer()
-        if (sessionRef.current !== sessionId) return  // stale session — ignore
+        if (sessionRef.current !== sessionId) return
         if (listeningRef.current) {
-          setTimeout(launchRec, 150)  // brief pause for audio pipeline to flush
+          setTimeout(launchRec, 150)
         } else {
           setListening(false)
         }
       }
 
       rec.onerror = e => {
-        clearTimeout(startTimeout)
         if (sessionRef.current !== sessionId) return
         clearTimer()
-        if (e.error === 'no-speech' || e.error === 'aborted') {
-          // Transient errors — do NOT schedule launchRec here.
-          // onend always fires immediately after onerror; let onend handle
-          // the restart exclusively to prevent two launchRec calls racing.
-          return
-        }
-        // Fatal errors: stop and surface the message.
+        if (e.error === 'no-speech' || e.error === 'aborted') return
         listeningRef.current = false; setListening(false)
         if (e.error === 'not-allowed')
           setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
@@ -901,11 +829,10 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
 
       // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
-      // can contain the full cumulative transcript so far. Strategy: collapse
-      // consecutive snapshots (where current starts with previous) into the
-      // latest; treat non-overlapping results as new utterances to append.
+      // can contain the full cumulative transcript so far. Collapse consecutive
+      // snapshots into the latest; treat non-overlapping results as new utterances.
       rec.onresult = e => {
-        if (sessionRef.current !== sessionId) return  // stale session
+        if (sessionRef.current !== sessionId) return
         const segments = []
         for (let i = 0; i < e.results.length; i++) {
           const result = e.results[i]
@@ -943,83 +870,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       try {
         rec.start()
       } catch (err) {
-        // start() can throw if called too soon after a stop (InvalidStateError).
-        // Retry once after a short gap before surfacing the error.
-        setTimeout(() => {
-          if (listeningRef.current && sessionRef.current === sessionId) {
-            try { rec.start() } catch {
-              listeningRef.current = false; setListening(false)
-              setError(isArabic
-                ? `تعذر بدء الميكروفون: ${err?.message || err}`
-                : `Could not start mic: ${err?.message || err}. Please reload and try again.`)
-            }
-          }
-        }, 300)
+        listeningRef.current = false; setListening(false)
+        setError(isArabic
+          ? `تعذر بدء الميكروفون: ${err?.message || err}`
+          : `Could not start mic: ${err?.message || err}. Please reload and try again.`)
       }
-    }  // end launchRec
-
-    // TTS greeting — called synchronously within the user-gesture handler so
-    // iOS honours it (iOS blocks speechSynthesis.speak inside setTimeout).
-    // The mic starts ~200 ms later (after primer.onend), by which time the
-    // greeting is still playing but the recognizer is already active.
-    try {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel()
-        const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
-        utter.lang = 'en-US'
-        utter.rate = 1.1
-        window.speechSynthesis.speak(utter)
-      }
-    } catch {}
-
-    // PRIMER pattern: user's screenshots prove rec.start('en-US') silently fails
-    // to engage the mic hardware (no browser mic icon appears), but rec.start('ar-SA')
-    // DOES engage it. After switching to Arabic, every subsequent start works in
-    // any language. So we always primer-warm the engine with ar-SA — which reliably
-    // engages the mic — then launch the real recognizer in the user's chosen language
-    // on the now-warm engine. This is the missing ingredient that a simple delay
-    // couldn't fix: the audio stack needs an ar-SA start to fully activate.
-    let launchRecCalled = false
-    const guardedLaunchRec = () => {
-      launchRecCalled = true
-      launchRec()
     }
-    // Belt-and-suspenders: if primer callbacks never fire (rare browser bug),
-    // ensure the real recognizer still starts within 1.2 s of the button tap.
-    const primerFallbackTimer = setTimeout(() => {
-      if (!launchRecCalled && listeningRef.current && sessionRef.current === sessionId) {
-        launchRecCalled = true
-        launchRec()
-      }
-    }, 1200)
 
-    let primer = null
-    try {
-      primer = new SR()
-      primer.continuous = true       // MATCH real-rec config — required to engage mic visibly
-      primer.interimResults = true
-      primer.lang = 'ar-SA'          // ALWAYS Arabic — proven to engage the mic
-      primer.onerror = () => {}
-      primer.onresult = () => {}
-      primer.onstart = () => {
-        // Engine confirmed warm — stop the primer immediately so the real rec can claim the mic
-        try { primer.stop() } catch {}
-      }
-      primer.onend = () => {
-        clearTimeout(primerFallbackTimer)
-        // Engine is warm — launch the real recognizer in the user's language.
-        if (listeningRef.current && sessionRef.current === sessionId) guardedLaunchRec()
-      }
-      primer.start()
-      // Safety stop in case onstart never fires (then onend still triggers launchRec)
-      setTimeout(() => { try { primer.stop() } catch {} }, 600)
-    } catch {
-      clearTimeout(primerFallbackTimer)
-      // Primer failed to construct/start — fall back to a plain delayed launch
-      setTimeout(() => {
-        if (listeningRef.current && sessionRef.current === sessionId) guardedLaunchRec()
-      }, 300)
-    }
+    launchRec()
   }
 
   const stopListening = () => {
@@ -1029,21 +887,6 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setListening(false)
     try { recRef.current?.stop() } catch {}
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
-  }
-
-  // Switch language. If the mic is already on, stop it and immediately
-  // restart with the new language so the user doesn't have to tap again.
-  const changeLanguage = (next) => {
-    if (next === lang) return
-    setLang(next)
-    track('voice_lang_toggle', { to: next })
-    if (listening) {
-      listeningRef.current = false  // prevent onend from restarting the old language
-      try { recRef.current?.stop() } catch {}
-      setListening(false)
-      // Small delay lets onend fire before we kick off again with the new lang
-      setTimeout(() => startListening(next), 250)
-    }
   }
 
   useEffect(() => () => {
@@ -1182,42 +1025,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
         }}>
-          {/* Language / dialect picker — three options for accurate STT */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem', flexWrap:'wrap', gap:'4px' }}>
-            <div style={{
-              display:'inline-flex', background:'rgba(255,255,255,0.06)', borderRadius:'14px',
-              padding:'4px', gap:'4px', border:'1px solid rgba(5,150,105,0.3)', flexWrap:'wrap',
-            }}>
-              {[
-                { id:'en',    code:'EN', label:'English',  hint:'US English' },
-                { id:'ar-sa', code:'SA', label:'العربية',  hint:'Saudi / MSA' },
-                { id:'ar-eg', code:'EG', label:'المصرية',  hint:'Egyptian' },
-              ].map(l => {
-                const active = lang === l.id
-                return (
-                  <button key={l.id} onClick={() => changeLanguage(l.id)} style={{
-                    padding:'0.45rem 0.95rem', borderRadius:'10px', cursor:'pointer',
-                    border: active ? '1.5px solid rgba(5,150,105,0.7)' : '1.5px solid transparent',
-                    background: active
-                      ? 'linear-gradient(135deg, #047857, #10b981)'
-                      : 'transparent',
-                    color: active ? '#ffffff' : 'var(--text-muted)',
-                    fontWeight: active ? 800 : 600,
-                    fontSize:'0.88rem', transition:'all 0.18s',
-                    display:'flex', alignItems:'center', gap:'0.45rem',
-                    boxShadow: active ? '0 3px 14px rgba(5,150,105,0.45)' : 'none',
-                  }} title={l.hint}>
-                    <span style={{
-                      fontSize:'0.68rem', fontWeight:900, letterSpacing:'0.08em',
-                      padding:'2px 6px', borderRadius:'5px',
-                      background: active ? 'rgba(255,255,255,0.22)' : 'rgba(5,150,105,0.2)',
-                      color: active ? '#fff' : '#34d399',
-                    }}>{l.code}</span>
-                    <span>{l.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+          {/* Language hint — STT follows the app's global language (EN or AR) */}
+          <div style={{
+            textAlign: 'center', marginBottom: '1rem',
+            fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+          }}>
+            {isAr
+              ? 'يمكنك التحدث بالعربية أو الإنجليزية'
+              : 'You can speak in English or Arabic'}
           </div>
 
           {/* Mic button — center */}
