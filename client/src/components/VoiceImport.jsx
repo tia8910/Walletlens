@@ -826,8 +826,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       let startedOk = false
       const startTimeout = setTimeout(() => {
         if (!startedOk && listeningRef.current && sessionRef.current === sessionId) {
+          // Just stop — onend will schedule the restart via launchRec at 150 ms.
+          // Do NOT call launchRec here directly: onend fires ~immediately after
+          // rec.stop(), so two back-to-back launchRec calls race and the second
+          // one hits InvalidStateError, killing both recognizers.
           try { rec.stop() } catch {}
-          setTimeout(launchRec, 200)
         }
       }, 1500)
 
@@ -934,21 +937,29 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
-    // Play greeting in English for all languages (fire-and-forget).
-    // Do NOT wait for TTS onend — on cold start the speech-synthesis voices
-    // may not be loaded yet so onend can be delayed or never fire, which was
-    // blocking the mic for up to 2.5 s and making the first tap feel broken.
-    // Mic opens immediately in parallel with the greeting.
+    // TTS greeting (English for all languages), then start STT.
+    // TTS and STT compete for the same audio focus; starting both simultaneously
+    // causes STT to steal audio from TTS so the greeting is silently cancelled.
+    // Solution: play the greeting first, then launch the recognizer in onend.
+    // A 2.5 s safety timer guarantees launchRec fires even if onend never fires
+    // (e.g. voices not loaded yet, or speechSynthesis broken on this device).
+    // launchOnce ensures the safety timer and onend never both call launchRec.
+    let launched = false
+    const launchOnce = () => { if (launched) return; launched = true; launchRec() }
     try {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel()
         const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
         utter.lang = 'en-US'
         utter.rate = 1.1
+        utter.onend = launchOnce
+        utter.onerror = launchOnce
+        setTimeout(launchOnce, 2500)  // safety: fire even if onend never comes
         window.speechSynthesis.speak(utter)
+      } else {
+        launchRec()
       }
-    } catch {}  // TTS errors must never block mic start
-    launchRec()
+    } catch { launchRec() }  // TTS errors must never block mic start
   }
 
   const stopListening = () => {
