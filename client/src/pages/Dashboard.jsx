@@ -2404,21 +2404,21 @@ export default function Dashboard() {
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       background: showVoiceImport
-                        ? 'linear-gradient(135deg, #a855f7, #ec4899)'
-                        : 'linear-gradient(135deg, rgba(168,85,247,0.22), rgba(236,72,153,0.22))',
-                      border: `1.5px solid ${showVoiceImport ? 'rgba(168,85,247,0.8)' : 'rgba(168,85,247,0.5)'}`,
-                      color: showVoiceImport ? '#fff' : '#d8b4fe',
+                        ? 'linear-gradient(135deg, #047857, #10b981)'
+                        : 'linear-gradient(135deg, rgba(5,150,105,0.22), rgba(16,185,129,0.22))',
+                      border: `1.5px solid ${showVoiceImport ? 'rgba(5,150,105,0.85)' : 'rgba(5,150,105,0.5)'}`,
+                      color: showVoiceImport ? '#fff' : '#86efac',
                       boxShadow: showVoiceImport
-                        ? '0 0 18px rgba(168,85,247,0.55), 0 2px 8px rgba(236,72,153,0.4)'
-                        : '0 0 10px rgba(168,85,247,0.25)',
+                        ? '0 0 18px rgba(5,150,105,0.55), 0 2px 8px rgba(16,185,129,0.4)'
+                        : '0 0 10px rgba(5,150,105,0.25)',
                       animation: showVoiceImport ? 'none' : 'vi-btn-glow 2.4s ease-in-out infinite',
                     }}
-                    title="Speak your trade — English and Arabic with slang"
+                    title="Speak your trade in English"
                   >
                     <style>{`
                       @keyframes vi-btn-glow {
-                        0%,100% { box-shadow: 0 0 8px rgba(168,85,247,0.25); }
-                        50% { box-shadow: 0 0 18px rgba(168,85,247,0.55), 0 0 8px rgba(236,72,153,0.35); }
+                        0%,100% { box-shadow: 0 0 8px rgba(5,150,105,0.25); }
+                        50% { box-shadow: 0 0 18px rgba(5,150,105,0.55), 0 0 8px rgba(16,185,129,0.35); }
                       }
                       @keyframes vi-bar1 { 0%,100%{height:6px} 50%{height:13px} }
                       @keyframes vi-bar2 { 0%,100%{height:10px} 50%{height:4px} }
@@ -2438,7 +2438,7 @@ export default function Dashboard() {
                         <span key={i} style={{
                           display:'inline-block', width:'3px', borderRadius:'2px',
                           height: h,
-                          background: showVoiceImport ? 'rgba(255,255,255,0.9)' : '#d8b4fe',
+                          background: showVoiceImport ? 'rgba(255,255,255,0.9)' : '#86efac',
                           animation: `${anim} 0.9s ease-in-out infinite`,
                           animationDelay: `${i * 0.15}s`,
                         }} />
