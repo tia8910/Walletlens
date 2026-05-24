@@ -280,42 +280,133 @@ const COIN_MAP = (() => {
 })()
 
 // ── Intent vocabulary — verbs and slang for buy/sell ───────────────────────
-// Arabic entries cover MSA + Gulf (Saudi/Emirati) + Levantine + Egyptian
-// dialects + common chat-slang. All entries pass through fullNormalize() so
-// dialectal letter variants (ث↔ت, ذ↔د, etc.) collapse to a single key.
+// Arabic entries cover MSA + Gulf (Saudi/Emirati/Kuwaiti/Qatari) + Levantine
+// (Syrian/Lebanese/Jordanian/Palestinian) + Egyptian + Maghrebi (Moroccan/
+// Algerian/Tunisian) + Iraqi + chat-slang (latinised forms typed by users).
+// All entries pass through fullNormalize() so dialectal letter variants
+// (ث↔ت, ذ↔د, ق↔ك, etc.) collapse to a single canonical key.
 const BUY_WORDS = [
-  'buy','bought','buying','get','got','getting','grab','grabbed','snag','snagged',
-  'scoop','scooped','scoop up','load up','loaded','loaded up','stack','stacked','stacking',
-  'ape','aped','aped into','yolo','yoloed','long','longed','went long','picked up',
-  'cop','copped','dca','dollar cost average','accumulate','accumulated','accumulating',
-  'purchase','purchased','add','added','bagged','holding','hodl','hodled',
-  // Arabic — past/present/imperative + dialect variants
-  'اشتريت','اشتري','اشترى','شريت','شري','شريته','اشتري لي',
-  'أخذت','اخذت','خذت','خد','خذ','ماخد','ماخذ',
-  'جبت','جبتها','جايب','جاب',
-  'دخلت','داخل','دخل','دخلني',
-  'جمعت','جامع','جمع','كومت','كوم','كومت عليها',
-  'كسبت','كاسب','كسب',
-  'استثمرت','استثمار','مستثمر',
-  'حطيت','حط','حطيتها','نزلت','نزلتها','نزل',
-  'ضيفت','اضفت','أضفت','زود','زودت',
-  // Common chat slang
-  'باي','بايت','هلدنج','هودل','هودلت','اخدت','بشتري','هشتري'
+  // ── English: formal + crypto/trader slang + chat shorthand ──
+  'buy','bought','buying','buys','buy in','bought in','buying in',
+  'get','got','getting','gets',
+  'grab','grabbed','grabbing','snag','snagged','snagging',
+  'scoop','scooped','scooping','scoop up','scooped up',
+  'load up','loaded','loaded up','loading up','load',
+  'stack','stacked','stacking','stack sats','stacked sats','stacking sats',
+  'ape','aped','aped in','aped into','aping','aping in',
+  'yolo','yoloed','yolo into','yolo\'d',
+  'long','longed','longing','went long','going long',
+  'pick up','picked up','picking up','picked',
+  'cop','copped','copping',
+  'dca','dca\'d','dca into','dca-ed','dollar cost average','dollar-cost-averaged','dollar cost averaged',
+  'accumulate','accumulated','accumulating','accumulation',
+  'purchase','purchased','purchasing','purchases',
+  'add','added','adding','adds','add to','added to',
+  'bag','bagged','bagging','bag up',
+  'hodl','hodled','hodling','hold','held','holding',
+  'fomo','fomoed','fomo\'d','fomo into','fomoing',
+  'snipe','sniped','sniping',
+  'nabbed','nabbing','nab',
+  'jumped in','jumping in','jump in','dive in','dove in','diving in',
+  'hop in','hopped in','hopping in','hopped on',
+  'entered','enter','entering','entry',
+  'market buy','market-bought','limit buy','swing','swung','swinging',
+  'in for','i\'m in','went in','going in',
+  'rebought','re-bought','re bought','reentered','re-entered',
+  'bull','bullish','went bull','went bullish',
+  // ── Arabic: MSA — past / present / imperative ──
+  'اشتريت','اشتري','اشترى','اشتروا','نشتري','يشتري','تشتري',
+  'شريت','شري','شريته','شريتها','شرينا','اشري',
+  'قمت بشراء','قام بشراء','قاموا بشراء','اقوم بشراء','شراء',
+  // ── Gulf (Saudi / Emirati / Kuwaiti / Qatari / Bahraini / Omani) ──
+  'أخذت','اخذت','أخذ','اخذ','ياخذ','ياخد','خذت','خد','خذ','ماخد','ماخذ',
+  'جبت','جبتها','جبته','جايب','جاب','جابها','يجيب','نجيب',
+  'حطيت','حط','حطيتها','حطيت فيها','حطيت عليها','اللي حطيت','نحط','يحط',
+  'دخلت','داخل','دخل','دخلني','دخلت فيها','نزلت فيها',
+  'كومت','كوم','كومت عليها','كومت منها','يكوم','مكوم',
+  // ── Levantine (Syrian / Lebanese / Jordanian / Palestinian) ──
+  'جمعت','جامع','جمع','يجمع','بجمع','جمعنا','اجمع',
+  'كسبت','كاسب','كسب','بكسب','كسبنا',
+  'استثمرت','استثمار','مستثمر','يستثمر','استثمرنا','بستثمر','هاستثمر',
+  'ضيفت','اضفت','أضفت','زود','زودت','نضيف','بضيف',
+  'نزلت','نزلتها','نزل','بنزل','هانزل',
+  'لقفت','لقف','تلقفت','بلقف',
+  // ── Egyptian — colloquial + slang ──
+  'بشتري','هشتري','هاشتري','بحطها','حطها','هحطها',
+  'فتت','هاوش','اخدت','هاخد','بخد','بشيل','شلت',
+  'دخلت بيها','دخلت بفلوس','صرفت على',
+  'باي','بايت','بايد','بايز',
+  // ── Maghrebi (Moroccan / Algerian / Tunisian) ──
+  'شريت بزاف','شريتها','نشري','نشريو','شراو','شراه','شراها',
+  'دزت','دزينا','دز','دزها',
+  // ── Iraqi ──
+  'كميت','كمي','كميتها','اكمي','كمينا',
+  'سويت شراء','اسوي شراء','سوينا شراء',
+  // ── Chat-slang (latinised — written by Arabic speakers in English chars) ──
+  'eshtarayt','eshtaraitu','eshtreet','eshtryt','ishtaret',
+  'sharet','shareit','sharaytu','sharet','shereet',
+  'akhadt','akhthet','jbet','jibt','jibtha',
+  'hatet','7atet','7attet','daakhal','dakhalt',
+  'bashtri','hashtri','hashteri',
+  'hodol','hawdal','hodled','bagged it',
+  'hodl','hodla'
 ]
 
 const SELL_WORDS = [
-  'sell','sold','selling','dump','dumped','dumping','exit','exited','exiting',
-  'cash out','cashed out','take profits','took profits','tp','tp\'d','offload','offloaded',
-  'unload','unloaded','short','shorted','went short','rug','rugged','close','closed',
-  'liquidate','liquidated','flipped','flip',
-  // Arabic — past/present/imperative + dialect variants
-  'بعت','بعتها','بيعت','بيع','ابيع','بايع','بعنا',
-  'صفيت','صفيتها','صفي','تصفية',
-  'خرجت','خروج','اخرج','اخرجت','خرج',
-  'كسرت','كسر','كسرتها',
-  'فلت','فل','فلتها',
-  'سحبت','سحب','اسحب','سحبتها',
-  'بشيع','هبيع','هبيعها','بعت بربح','اخدت ربح','ربحت'
+  // ── English: formal + crypto/trader slang + chat shorthand ──
+  'sell','sold','selling','sells','sell off','sold off','selling off',
+  'dump','dumped','dumping','dumps','dump on','dumped on',
+  'exit','exited','exiting','exit out','exited out',
+  'cash out','cashed out','cashing out','cash-out',
+  'take profits','took profits','taking profits','take profit','took profit','tp','tp\'d','tp-ed','tped',
+  'offload','offloaded','offloading','offload some',
+  'unload','unloaded','unloading',
+  'short','shorted','shorting','went short','going short',
+  'rug','rugged','rugging','got rugged',
+  'close','closed','closing','close out','closed out',
+  'liquidate','liquidated','liquidating','got liquidated',
+  'flip','flipped','flipping','flip for profit',
+  'ditch','ditched','ditching',
+  'drop','dropped','dropping','drop the bag',
+  'get out','got out','getting out','gtfo','rugged out',
+  'bail','bailed','bailing','bail out','bailed out',
+  'jump out','jumped out','jumping out','hopped out',
+  'scale out','scaled out','scaling out','sold half','sold some','sold part','sold all',
+  'market sell','market-sold','limit sell','stop loss','stop-loss','sl','sl\'d',
+  'puked','puking','puke','panic sold','panic-sold','panic sold out',
+  'paper hand','paper-handed','paper handed','paper hands','paper-handed it',
+  'realised','realized','realised gains','realized gains','took the win','took the loss',
+  'rebalanced','rebalanced out','trimmed','trimming','trim','trimmed position',
+  'bear','bearish','went bear','went bearish',
+  // ── Arabic: MSA — past / present / imperative ──
+  'بعت','بعتها','بعته','بعنا','بيعت','بيع','ابيع','بايع','نبيع','يبيع','تبيع',
+  'قمت ببيع','قام ببيع','قاموا ببيع','اقوم ببيع','بيع',
+  // ── Gulf (Saudi / Emirati / Kuwaiti / Qatari) ──
+  'صفيت','صفيتها','صفي','تصفية','نصفي','يصفي',
+  'سحبت','سحب','اسحب','سحبتها','سحبت ربح','سحبت فلوس','نسحب','بسحب',
+  'فلت','فل','فلتها','فلت بالفلوس','فلت بالربح','نفل','يفل',
+  'كسرت','كسر','كسرتها','كسرت الحظ','نكسر','بكسر',
+  'خرجت','خروج','اخرج','اخرجت','خرج','خرجت بربح','خرجت بخسارة',
+  // ── Levantine (Syrian / Lebanese / Jordanian / Palestinian) ──
+  'بعت بربح','اخدت ربح','ربحت','ربح','حصلت ربح','جنيت','جني',
+  'تخلصت','اتخلصت','اتخلص','تخلص','نتخلص',
+  'طرحت','طرح','اطرح','نطرح','بطرح',
+  'رميت','رمى','ارمي','نرمي','بترمي',
+  'صرفت','صرف','اصرف','نصرف','بصرف',
+  // ── Egyptian — colloquial + slang ──
+  'بشيع','هبيع','هبيعها','هبيعه','بيعتها','بعتها بربح','بعتها بخسارة',
+  'هطلعها','طلعتها','طلعت','نزلت السوق',
+  'هخرج','هخرج بربح','هخرج بخسارة','هاطلع','طلعت كاش',
+  'صفيتها كاش','صفيت السوق','سيلت','سيل',
+  // ── Maghrebi (Moroccan / Algerian / Tunisian) ──
+  'بعتها بزاف','بعنا','نبيعو','بيع بزاف','تبيعهم',
+  'فك','فكيت','فكينا','نفك',
+  // ── Iraqi ──
+  'سويت بيع','اسوي بيع','سوينا بيع','بعتها بفلوس',
+  // ── Chat-slang (latinised) ──
+  'be3t','baat','beit','beitha','baeat','baea',
+  'safet','saffet','sa7abt','sahabt','7arajt','kharajt',
+  'tp\'ed','tped','dumped it','rugged it','sold it','flipped it'
 ]
 
 // ── Word numbers — both languages, fractions included.
@@ -354,9 +445,20 @@ const AR_NUMBERS = Object.fromEntries(
 const EN_NUMBERS = {
   'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,
   'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,
-  'thirteen':13,'fourteen':14,'fifteen':15,'twenty':20,'thirty':30,'fifty':50,'hundred':100,
-  'thousand':1000,'million':1000000,'billion':1000000000,
-  'half':0.5,'quarter':0.25,
+  'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,
+  'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,
+  'hundred':100,'thousand':1000,'million':1000000,'billion':1000000000,'trillion':1000000000000,
+  // Slang multipliers used as standalone words
+  'grand':1000,'grands':1000,'k':1000,'mil':1000000,'mils':1000000,
+  'bil':1000000000,'bils':1000000000,'ticket':1000,'rack':1000,'racks':1000,
+  // Fractions
+  'half':0.5,'halves':0.5,'a half':0.5,'one half':0.5,
+  'quarter':0.25,'quarters':0.25,'a quarter':0.25,'one quarter':0.25,
+  'third':0.333,'thirds':0.333,'a third':0.333,'one third':0.333,
+  'eighth':0.125,'an eighth':0.125,'one eighth':0.125,
+  // Crypto-specific
+  'sat':0.00000001,'sats':0.00000001,'satoshi':0.00000001,'satoshis':0.00000001,
+  'gwei':0.000000001,
 }
 
 function parseNumber(str) {
@@ -365,19 +467,23 @@ function parseNumber(str) {
   // Plain number with optional unit suffix. Unit must not be followed by
   // a Latin letter (so "b" in "bitcoin" is not picked up as billion).
   // We use a lookahead instead of \b because \b doesn't apply after Arabic chars.
-  const m = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(k|m|b|thousand|million|billion|الف|مليون|مليار|بليون)?(?=[^a-zA-Z]|$)/i)
+  // Slang multipliers covered: k, m, b, g, grand, mil, bil, rack, racks,
+  // ticket, stack (English) and الف, مليون, مليار, بليون, ميه, مية (Arabic).
+  const m = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(k|m|b|g|grand|grands|mil|mils|bil|bils|rack|racks|ticket|tickets|stack|stacks|thousand|million|billion|trillion|الف|مليون|مليار|بليون|ميه|مية|مائه|مائة)?(?=[^a-zA-Z]|$)/i)
   if (m) {
     let n = parseFloat(m[1].replace(',', '.'))
     const unit = (m[2] || '').toLowerCase()
-    if (['k','thousand','الف'].includes(unit)) n *= 1000
-    else if (['m','million','مليون'].includes(unit)) n *= 1000000
-    else if (['b','billion','بليون','مليار'].includes(unit)) n *= 1000000000
+    if (['k','grand','grands','g','rack','racks','ticket','tickets','stack','stacks','thousand','الف'].includes(unit)) n *= 1000
+    else if (['m','mil','mils','million','مليون'].includes(unit)) n *= 1000000
+    else if (['b','bil','bils','billion','بليون','مليار'].includes(unit)) n *= 1000000000
+    else if (['trillion'].includes(unit)) n *= 1000000000000
+    else if (['ميه','مية','مائه','مائة'].includes(unit)) n *= 100
     return n
   }
   // Word numbers (single token) — try both raw and phonetically-normalized form
   const norm = fullNormalize(trimmed)
   if (AR_NUMBERS[norm] != null) return AR_NUMBERS[norm]
-  if (EN_NUMBERS[trimmed] != null) return EN_NUMBERS[trimmed]
+  if (EN_NUMBERS[trimmed.toLowerCase()] != null) return EN_NUMBERS[trimmed.toLowerCase()]
   return null
 }
 
@@ -412,8 +518,11 @@ function detectMassUnit(normalized) {
 // Otherwise "60 الف" would become "60 1000" — two separate numbers.
 // Stored as a Set of phonetically-normalized keys.
 const MULTIPLIER_WORDS = new Set([
-  'hundred','thousand','million','billion',
+  'hundred','thousand','million','billion','trillion',
+  'grand','grands','mil','mils','bil','bils',
+  'rack','racks','ticket','tickets','stack','stacks',
   fullNormalize('ميه'), fullNormalize('ماءه'), fullNormalize('مية'),
+  fullNormalize('مائه'), fullNormalize('مائة'),
   fullNormalize('الف'), fullNormalize('مليون'), fullNormalize('مليار'),
   fullNormalize('بليون'),
 ])
