@@ -721,6 +721,9 @@ const EXAMPLES_AR = [
 // ── Web Speech API support check ───────────────────────────────────────────
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
 const SUPPORTED = !!SR
+// iOS Safari supports webkitSpeechRecognition but stops after each utterance
+// (no true continuous mode). We detect iOS to auto-restart on onend.
+const IS_IOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
 
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported }) {
@@ -741,6 +744,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
+  // Mutable ref that mirrors `listening` state so closures (onend, scheduleStop)
+  // always see the current value without stale-closure bugs.
+  const listeningRef = useRef(false)
   const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
 
   useEffect(() => {
@@ -774,6 +780,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     noSpeechTimerRef.current = setTimeout(() => {
       if (!hasTranscriptRef.current) setNoSpeechHint(true)
     }, 10000)
+    listeningRef.current = true
     setListening(true)  // optimistic UI — flip to "listening" state immediately so the user sees feedback
 
     const rec = new SR()
@@ -788,14 +795,42 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       'en-US'
 
     const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
-    const scheduleStop = (ms) => { clearTimer(); listenTimerRef.current = setTimeout(() => { try { rec.stop() } catch {} }, ms) }
+    // Safety ceiling — tell the ref FIRST so onend sees the stopped state.
+    const scheduleStop = (ms) => {
+      clearTimer()
+      listenTimerRef.current = setTimeout(() => {
+        listeningRef.current = false
+        setListening(false)
+        try { rec.stop() } catch {}
+      }, ms)
+    }
 
     const isArabic = useLang.startsWith('ar')
-    // 5-minute safety ceiling — user is expected to tap the mic to stop.
-    rec.onstart = () => { setListening(true); scheduleStop(5 * 60 * 1000) }
-    rec.onend   = () => { setListening(false); clearTimer() }
+    rec.onstart = () => { listeningRef.current = true; setListening(true); scheduleStop(5 * 60 * 1000) }
+
+    // iOS Safari stops the recognizer after each utterance (no real continuous
+    // mode). Re-start automatically whenever onend fires while the user is
+    // still in "listening" mode so the experience matches desktop Chrome.
+    rec.onend = () => {
+      clearTimer()
+      if (listeningRef.current) {
+        // Auto-stopped by the browser (iOS typical). Restart after a brief
+        // pause so the audio pipeline has time to flush.
+        setTimeout(() => {
+          if (listeningRef.current) {
+            try { recRef.current?.start() } catch {
+              listeningRef.current = false; setListening(false)
+            }
+          }
+        }, 150)
+      } else {
+        setListening(false)
+      }
+    }
+
     rec.onerror = e => {
-      setListening(false); clearTimer()
+      // On error we stop intentionally — don't auto-restart.
+      listeningRef.current = false; setListening(false); clearTimer()
       if (e.error === 'not-allowed')
         setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
       else if (e.error === 'no-speech')
@@ -880,8 +915,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const stopListening = () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
-    try { recRef.current?.stop() } catch {}
+    listeningRef.current = false  // must be false BEFORE rec.stop() so onend doesn't restart
     setListening(false)
+    try { recRef.current?.stop() } catch {}
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
   }
 
@@ -892,6 +928,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setLang(next)
     track('voice_lang_toggle', { to: next })
     if (listening) {
+      listeningRef.current = false  // prevent onend from restarting the old language
       try { recRef.current?.stop() } catch {}
       setListening(false)
       // Small delay lets onend fire before we kick off again with the new lang
@@ -1389,7 +1426,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
           {!SUPPORTED && (
             <p style={{ fontSize:'0.75rem', color:'#f59e0b', margin:'0.75rem 0 0', textAlign:'center' }}>
-              ⚠️ {isAr ? 'المتصفح لا يدعم التعرف على الصوت' : 'Your browser does not support voice recognition. Try Chrome, Edge, or Safari.'}
+              ⚠️ {IS_IOS
+                ? (isAr ? 'افتح التطبيق في Safari على iOS 14.5 أو أحدث لدعم الصوت' : 'Open in Safari (iOS 14.5+) to use voice import.')
+                : (isAr ? 'المتصفح لا يدعم التعرف على الصوت' : 'Your browser does not support voice recognition. Try Chrome, Edge, or Safari.')}
             </p>
           )}
         </div>
