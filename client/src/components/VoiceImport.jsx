@@ -1298,27 +1298,41 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               : 'You can speak in English or Arabic'}
           </div>
 
-          {/* Active STT model pills */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'0.4rem', marginBottom:'1rem', flexWrap:'wrap' }}>
-            {[
-              { label: IS_IOS ? 'AR' : '🇸🇦 Gulf AR', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
-              ...(!IS_IOS ? [{ label: '🇪🇬 Egyptian AR', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' }] : []),
-              { label: IS_IOS ? 'EN' : '🇺🇸 EN', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)' },
-            ].map(m => (
-              <span key={m.label} style={{
-                fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.55rem',
-                borderRadius: 20, border: `1px solid ${m.border}`,
-                background: m.bg, color: m.color,
-                display: 'flex', alignItems: 'center', gap: '0.3rem',
-              }}>
-                <span style={{
-                  width: 6, height: 6, borderRadius: '50%', background: m.color,
-                  animation: listening ? 'vi-wave 1s ease-in-out infinite' : 'none',
-                  flexShrink: 0,
-                }} />
-                {m.label}
-              </span>
-            ))}
+          {/* Active STT model indicator */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.45rem', marginBottom:'1rem' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.68rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+              {/* brain / AI icon */}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.84A2.5 2.5 0 0 1 9.5 2"/>
+                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.84A2.5 2.5 0 0 0 14.5 2"/>
+              </svg>
+              {isAr ? 'نماذج التعرف على الصوت' : 'Speech Models'}
+            </div>
+            <div style={{ display:'flex', justifyContent:'center', gap:'0.4rem', flexWrap:'wrap' }}>
+              {[
+                { flag:'🇸🇦', label:'Gulf Arabic',    code:'ar-SA', color:'#f59e0b', bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.3)' },
+                ...(!IS_IOS ? [
+                  { flag:'🇪🇬', label:'Egyptian Arabic', code:'ar-EG', color:'#fb923c', bg:'rgba(251,146,60,0.12)', border:'rgba(251,146,60,0.3)' },
+                ] : []),
+                { flag:'🇺🇸', label:'English',         code:'en-US', color:'#60a5fa', bg:'rgba(96,165,250,0.12)', border:'rgba(96,165,250,0.3)' },
+              ].map(m => (
+                <span key={m.code} style={{
+                  fontSize:'0.72rem', fontWeight:700, padding:'0.25rem 0.65rem',
+                  borderRadius:20, border:`1px solid ${m.border}`,
+                  background: m.bg, color: m.color,
+                  display:'flex', alignItems:'center', gap:'0.35rem',
+                }}>
+                  <span style={{ fontSize:'0.9rem', lineHeight:1 }}>{m.flag}</span>
+                  {m.label}
+                  <span style={{
+                    width:6, height:6, borderRadius:'50%', background:m.color,
+                    display:'inline-block', flexShrink:0,
+                    boxShadow: listening ? `0 0 6px ${m.color}` : 'none',
+                    animation: listening ? 'vi-wave 1s ease-in-out infinite' : 'none',
+                  }} />
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Mic button — center */}
