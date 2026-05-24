@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 
@@ -153,6 +154,7 @@ export default function Coach() {
     { id: 'engine',  label: 'Decision Engine', icon: '⚡' },
     { id: 'eval',    label: 'Wallet Score',    icon: '🔍' },
     { id: 'actions', label: 'AI Analysis',     icon: '🤖' },
+    { id: 'alpha',   label: 'Alpha',           icon: 'α' },
   ]
 
   return (
@@ -287,6 +289,13 @@ export default function Coach() {
         </div>
       )}
 
+      {/* ── Alpha Signals ── */}
+      {activeSection === 'alpha' && (
+        <div style={{ padding: '0 0 1.5rem' }}>
+          <Alpha />
+        </div>
+      )}
+
       {/* ── AI Analysis ── */}
       {activeSection === 'actions' && (
         <div style={{ padding: '1rem' }}>
@@ -334,7 +343,7 @@ export default function Coach() {
             <span className="coach-action-arrow">→</span>
           </div>
 
-          <div className="glass-card coach-action-card" onClick={() => { navigate('/alpha'); track('coach_action', { action: 'alpha' }) }}>
+          <div className="glass-card coach-action-card" onClick={() => { setActiveSection('alpha'); track('coach_action', { action: 'alpha' }) }}>
             <div className="coach-action-icon" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg>
             </div>

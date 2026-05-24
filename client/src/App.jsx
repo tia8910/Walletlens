@@ -136,8 +136,8 @@ function Drawer({ open, onClose }) {
           <button className={active('/academy')} onClick={() => go('/academy')}>
             <IconAcademy /><span style={{ color: '#fbbf24' }}>Academy</span>
           </button>
-          <button className={active('/alpha')} onClick={() => go('/alpha')}>
-            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
+          <button className={active('/coach')} onClick={() => { go('/coach'); }} style={{ opacity: location.pathname === '/coach' ? 1 : undefined }}>
+            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha <span style={{ fontSize:'0.65rem', opacity:0.6 }}>(in Coach)</span></span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
@@ -314,7 +314,7 @@ export default function App() {
         <NavLink to="/market" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'market' })}><IconMarket /><span>{t('market')}</span></NavLink>
         <NavLink to="/coach" className="wl-nav-item wl-nav-coach" onClick={() => track('bottom_nav', { to: 'coach' })}><IconCoach /><span>Coach</span></NavLink>
         <NavLink to="/academy" className="wl-nav-item wl-nav-academy" onClick={() => track('bottom_nav', { to: 'academy' })}><IconAcademy /><span>Academy</span></NavLink>
-        <NavLink to="/alpha" className="wl-nav-item wl-nav-alpha" onClick={() => track('bottom_nav', { to: 'alpha' })}><IconAlpha /><span>Alpha</span></NavLink>
+        <NavLink to="/transactions" className="wl-nav-item wl-nav-trades" onClick={() => track('bottom_nav', { to: 'transactions' })}><IconTrades /><span>{t('trades')}</span></NavLink>
       </nav>
     </div>
   )
