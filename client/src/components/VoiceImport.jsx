@@ -1290,12 +1290,35 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }}>
           {/* Language hint — STT follows the app's global language (EN or AR) */}
           <div style={{
-            textAlign: 'center', marginBottom: '1rem',
+            textAlign: 'center', marginBottom: '0.6rem',
             fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
           }}>
             {isAr
               ? 'يمكنك التحدث بالعربية أو الإنجليزية'
               : 'You can speak in English or Arabic'}
+          </div>
+
+          {/* Active STT model pills */}
+          <div style={{ display:'flex', justifyContent:'center', gap:'0.4rem', marginBottom:'1rem', flexWrap:'wrap' }}>
+            {[
+              { label: IS_IOS ? 'AR' : '🇸🇦 Gulf AR', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
+              ...(!IS_IOS ? [{ label: '🇪🇬 Egyptian AR', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' }] : []),
+              { label: IS_IOS ? 'EN' : '🇺🇸 EN', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)' },
+            ].map(m => (
+              <span key={m.label} style={{
+                fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.55rem',
+                borderRadius: 20, border: `1px solid ${m.border}`,
+                background: m.bg, color: m.color,
+                display: 'flex', alignItems: 'center', gap: '0.3rem',
+              }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%', background: m.color,
+                  animation: listening ? 'vi-wave 1s ease-in-out infinite' : 'none',
+                  flexShrink: 0,
+                }} />
+                {m.label}
+              </span>
+            ))}
           </div>
 
           {/* Mic button — center */}
