@@ -280,20 +280,42 @@ const COIN_MAP = (() => {
 })()
 
 // ── Intent vocabulary — verbs and slang for buy/sell ───────────────────────
+// Arabic entries cover MSA + Gulf (Saudi/Emirati) + Levantine + Egyptian
+// dialects + common chat-slang. All entries pass through fullNormalize() so
+// dialectal letter variants (ث↔ت, ذ↔د, etc.) collapse to a single key.
 const BUY_WORDS = [
   'buy','bought','buying','get','got','getting','grab','grabbed','snag','snagged',
   'scoop','scooped','scoop up','load up','loaded','loaded up','stack','stacked','stacking',
   'ape','aped','aped into','yolo','yoloed','long','longed','went long','picked up',
   'cop','copped','dca','dollar cost average','accumulate','accumulated','accumulating',
-  'purchase','purchased','add','added',
-  'اشتريت','شريت','اشتري','شري','أخذت','اخذت','جبت','دخلت','جمعت','كومت','كسبت','استثمرت'
+  'purchase','purchased','add','added','bagged','holding','hodl','hodled',
+  // Arabic — past/present/imperative + dialect variants
+  'اشتريت','اشتري','اشترى','شريت','شري','شريته','اشتري لي',
+  'أخذت','اخذت','خذت','خد','خذ','ماخد','ماخذ',
+  'جبت','جبتها','جايب','جاب',
+  'دخلت','داخل','دخل','دخلني',
+  'جمعت','جامع','جمع','كومت','كوم','كومت عليها',
+  'كسبت','كاسب','كسب',
+  'استثمرت','استثمار','مستثمر',
+  'حطيت','حط','حطيتها','نزلت','نزلتها','نزل',
+  'ضيفت','اضفت','أضفت','زود','زودت',
+  // Common chat slang
+  'باي','بايت','هلدنج','هودل','هودلت','اخدت','بشتري','هشتري'
 ]
 
 const SELL_WORDS = [
   'sell','sold','selling','dump','dumped','dumping','exit','exited','exiting',
   'cash out','cashed out','take profits','took profits','tp','tp\'d','offload','offloaded',
   'unload','unloaded','short','shorted','went short','rug','rugged','close','closed',
-  'بعت','بيعت','بيع','صفيت','خرجت','خروج','اخرج'
+  'liquidate','liquidated','flipped','flip',
+  // Arabic — past/present/imperative + dialect variants
+  'بعت','بعتها','بيعت','بيع','ابيع','بايع','بعنا',
+  'صفيت','صفيتها','صفي','تصفية',
+  'خرجت','خروج','اخرج','اخرجت','خرج',
+  'كسرت','كسر','كسرتها',
+  'فلت','فل','فلتها',
+  'سحبت','سحب','اسحب','سحبتها',
+  'بشيع','هبيع','هبيعها','بعت بربح','اخدت ربح','ربحت'
 ]
 
 // ── Word numbers — both languages, fractions included.
@@ -742,27 +764,62 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // Per-transaction free-text asset search ({ [txIdx]: query })
   const [assetQueries, setAssetQueries] = useState({})
   const [noSpeechHint, setNoSpeechHint] = useState(false)
-  const recRef = useRef(null)
+  // BILINGUAL: we run TWO recognizers in parallel — one for Arabic (ar-SA,
+  // covering MSA + Gulf + Levantine + Egyptian dialects) and one for English.
+  // Whichever produces a higher-confidence parse wins on screen. This means
+  // the user can speak in either language regardless of which one the app UI
+  // is set to. On iOS (which only allows one mic recognizer at a time) we
+  // automatically degrade to a single recognizer matching the app's UI lang.
+  const recsRef = useRef([])
+  const transcriptsRef = useRef({ ar: '', en: '' })
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
-  // Mirrors `listening` state in a mutable ref so closures always see
-  // the current value without stale-closure bugs.
   const listeningRef = useRef(false)
   // Incremented on every startListening call. Each recognizer closure
-  // captures its own sessionId; when the session changes (stop/restart),
-  // stale onend/onerror callbacks bail out immediately so they can't
-  // accidentally flip state or start a new recognizer.
+  // captures its own sessionId; stale callbacks bail out immediately.
   const sessionRef = useRef(0)
+
+  // Score a parsed command — higher means we're more confident the transcript
+  // captured a real trade. Used to compare en-US vs ar-SA transcripts.
+  const scoreParsed = (parsed) =>
+    parsed.transactions.reduce((s, t) =>
+      s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0) + (t.suggestions?.length ? 1 : 0), 0)
+
+  // Collapse Chrome-Android progressive snapshots into a single transcript.
+  const buildBestTranscript = (results) => {
+    const segments = []
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      let best = result[0].transcript
+      let bestScore = -1
+      const baseline = segments.map(s => s.text).join(' ')
+      for (let k = 0; k < result.length; k++) {
+        const candidate = (baseline + ' ' + result[k].transcript).trim()
+        const score = scoreParsed(parseVoiceCommand(candidate))
+        if (score > bestScore) { bestScore = score; best = result[k].transcript }
+      }
+      const trimmed = best.trim()
+      if (!trimmed) continue
+      const last = segments[segments.length - 1]
+      if (last && trimmed.startsWith(last.text.trim())) {
+        last.text = best; last.isFinal = result.isFinal
+      } else {
+        segments.push({ text: best, isFinal: result.isFinal })
+      }
+    }
+    return segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
+  }
 
   const startListening = () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
       setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
     }
-    // Kill any lingering recognizer BEFORE creating a new one.
-    try { recRef.current?.stop() } catch {}
-    recRef.current = null
+    // Stop any lingering recognizers from the previous session.
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
+    recsRef.current = []
+    transcriptsRef.current = { ar: '', en: '' }
 
     track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
@@ -775,124 +832,139 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setListening(true)
 
     const sessionId = ++sessionRef.current
-    const isArabic = lang.startsWith('ar')
-    const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
+    const isAppArabic = lang.startsWith('ar')
 
-    // launchRec creates a FRESH SpeechRecognition instance every time so
-    // iOS — which ends the recognizer after every utterance — can auto-restart
-    // by simply calling launchRec again from onend.
-    const launchRec = () => {
-      if (!listeningRef.current || sessionRef.current !== sessionId) return
+    // 5-minute safety ceiling — stops ALL recognizers.
+    clearTimeout(listenTimerRef.current)
+    listenTimerRef.current = setTimeout(() => {
+      listeningRef.current = false
+      setListening(false)
+      recsRef.current.forEach(r => { try { r.stop() } catch {} })
+    }, 5 * 60 * 1000)
+
+    // iOS only allows one recognizer per mic — degrade to the app's UI language.
+    // Everyone else gets the bilingual treatment.
+    const langCodes = IS_IOS
+      ? [isAppArabic ? 'ar-SA' : 'en-US']
+      : ['ar-SA', 'en-US']
+
+    const createRec = (langCode) => {
+      const isArabic = langCode.startsWith('ar')
+      const langKey = isArabic ? 'ar' : 'en'
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
       rec.maxAlternatives = isArabic ? 5 : 3
-      rec.lang = isArabic ? 'ar-SA' : 'en-US'
-
-      const scheduleStop = (ms) => {
-        clearTimer()
-        listenTimerRef.current = setTimeout(() => {
-          listeningRef.current = false; setListening(false)
-          try { rec.stop() } catch {}
-        }, ms)
-      }
+      rec.lang = langCode
 
       rec.onstart = () => {
         if (sessionRef.current !== sessionId) return
         listeningRef.current = true; setListening(true)
-        scheduleStop(5 * 60 * 1000)
       }
 
       rec.onend = () => {
-        clearTimer()
         if (sessionRef.current !== sessionId) return
+        // Auto-restart THIS recognizer (not the other one) — iOS / desktop
+        // Chrome both end after silence and we want a seamless session.
         if (listeningRef.current) {
-          setTimeout(launchRec, 150)
-        } else {
+          setTimeout(() => {
+            if (listeningRef.current && sessionRef.current === sessionId) {
+              try { rec.start() } catch {}
+            }
+          }, 150)
+        } else if (recsRef.current.every(r => r === rec || r.__ended)) {
           setListening(false)
         }
+        rec.__ended = true
       }
 
       rec.onerror = e => {
         if (sessionRef.current !== sessionId) return
-        clearTimer()
+        // Transient — let onend handle restart.
         if (e.error === 'no-speech' || e.error === 'aborted') return
+        // This language isn't installed in the browser — just give up on it
+        // silently; the other recognizer can still carry the session.
+        if (e.error === 'language-not-supported') return
+        // Permission denied / network / other fatal: shut everything down.
         listeningRef.current = false; setListening(false)
         if (e.error === 'not-allowed')
-          setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
+          setError(isAppArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
         else if (e.error === 'network')
-          setError(isArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
-        else if (e.error === 'language-not-supported')
-          setError(isArabic ? 'اللغة العربية غير مدعومة في هذا المتصفح — جرّب Chrome' : 'Language not supported — try Chrome.')
+          setError(isAppArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
         else
-          setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
+          setError(isAppArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
+        recsRef.current.forEach(r => { try { r.stop() } catch {} })
       }
 
-      // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
-      // can contain the full cumulative transcript so far. Collapse consecutive
-      // snapshots into the latest; treat non-overlapping results as new utterances.
       rec.onresult = e => {
         if (sessionRef.current !== sessionId) return
-        const segments = []
-        for (let i = 0; i < e.results.length; i++) {
-          const result = e.results[i]
-          let best = result[0].transcript
-          let bestScore = -1
-          const baseline = segments.map(s => s.text).join(' ')
-          for (let k = 0; k < result.length; k++) {
-            const candidate = (baseline + ' ' + result[k].transcript).trim()
-            const p = parseVoiceCommand(candidate)
-            const score = p.transactions.reduce((s, t) =>
-              s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0), 0)
-            if (score > bestScore) { bestScore = score; best = result[k].transcript }
-          }
-          const trimmed = best.trim()
-          if (!trimmed) continue
-          const last = segments[segments.length - 1]
-          if (last && trimmed.startsWith(last.text.trim())) {
-            last.text = best; last.isFinal = result.isFinal
-          } else {
-            segments.push({ text: best, isFinal: result.isFinal })
-          }
+        const text = buildBestTranscript(e.results)
+        transcriptsRef.current[langKey] = text
+
+        // Cross-language winner pick: parse BOTH transcripts and use whichever
+        // scores higher. A tie (often both 0 early in the session) falls back
+        // to the longer transcript so the user sees feedback even before any
+        // intent has been recognised.
+        const ar = transcriptsRef.current.ar || ''
+        const en = transcriptsRef.current.en || ''
+        const arParsed = ar ? parseVoiceCommand(ar) : { transactions: [] }
+        const enParsed = en ? parseVoiceCommand(en) : { transactions: [] }
+        const arScore = scoreParsed(arParsed)
+        const enScore = scoreParsed(enParsed)
+
+        let winnerText, winnerParsed
+        if (arScore > enScore) { winnerText = ar; winnerParsed = arParsed }
+        else if (enScore > arScore) { winnerText = en; winnerParsed = enParsed }
+        else { // tie — prefer the longer one
+          if (ar.length >= en.length) { winnerText = ar; winnerParsed = arParsed }
+          else { winnerText = en; winnerParsed = enParsed }
         }
-        const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
-        if (text) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
-        setTranscript(text)
-        const p = parseVoiceCommand(text)
-        const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
+
+        if (winnerText) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
+        setTranscript(winnerText)
+        const anyUseful = winnerParsed.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
         if (anyUseful) {
-          setParsed(p)
-          setReaction(getReaction(text, p.transactions[0] || {}))
+          setParsed(winnerParsed)
+          setReaction(getReaction(winnerText, winnerParsed.transactions[0] || {}))
         }
       }
 
-      recRef.current = rec
+      return rec
+    }
+
+    for (const code of langCodes) {
       try {
+        const rec = createRec(code)
         rec.start()
-      } catch (err) {
-        listeningRef.current = false; setListening(false)
-        setError(isArabic
-          ? `تعذر بدء الميكروفون: ${err?.message || err}`
-          : `Could not start mic: ${err?.message || err}. Please reload and try again.`)
+        recsRef.current.push(rec)
+      } catch {
+        // This recognizer couldn't claim the mic (e.g. iOS / mobile WebView
+        // limit of 1 recognizer). Skip and continue with the others.
       }
     }
 
-    launchRec()
+    if (recsRef.current.length === 0) {
+      listeningRef.current = false
+      setListening(false)
+      setError(isAppArabic
+        ? 'تعذر بدء الميكروفون — أعد تحميل الصفحة وحاول مرة أخرى'
+        : 'Could not start mic. Please reload and try again.')
+    }
   }
 
   const stopListening = () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
-    listeningRef.current = false  // must be false BEFORE rec.stop() so onend doesn't restart
+    listeningRef.current = false  // must be false BEFORE stop() so onend doesn't restart
     setListening(false)
-    try { recRef.current?.stop() } catch {}
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
   }
 
   useEffect(() => () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
-    try { recRef.current?.stop() } catch {}
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
