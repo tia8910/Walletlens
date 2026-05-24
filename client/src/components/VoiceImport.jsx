@@ -280,20 +280,133 @@ const COIN_MAP = (() => {
 })()
 
 // ── Intent vocabulary — verbs and slang for buy/sell ───────────────────────
+// Arabic entries cover MSA + Gulf (Saudi/Emirati/Kuwaiti/Qatari) + Levantine
+// (Syrian/Lebanese/Jordanian/Palestinian) + Egyptian + Maghrebi (Moroccan/
+// Algerian/Tunisian) + Iraqi + chat-slang (latinised forms typed by users).
+// All entries pass through fullNormalize() so dialectal letter variants
+// (ث↔ت, ذ↔د, ق↔ك, etc.) collapse to a single canonical key.
 const BUY_WORDS = [
-  'buy','bought','buying','get','got','getting','grab','grabbed','snag','snagged',
-  'scoop','scooped','scoop up','load up','loaded','loaded up','stack','stacked','stacking',
-  'ape','aped','aped into','yolo','yoloed','long','longed','went long','picked up',
-  'cop','copped','dca','dollar cost average','accumulate','accumulated','accumulating',
-  'purchase','purchased','add','added',
-  'اشتريت','شريت','اشتري','شري','أخذت','اخذت','جبت','دخلت','جمعت','كومت','كسبت','استثمرت'
+  // ── English: formal + crypto/trader slang + chat shorthand ──
+  'buy','bought','buying','buys','buy in','bought in','buying in',
+  'get','got','getting','gets',
+  'grab','grabbed','grabbing','snag','snagged','snagging',
+  'scoop','scooped','scooping','scoop up','scooped up',
+  'load up','loaded','loaded up','loading up','load',
+  'stack','stacked','stacking','stack sats','stacked sats','stacking sats',
+  'ape','aped','aped in','aped into','aping','aping in',
+  'yolo','yoloed','yolo into','yolo\'d',
+  'long','longed','longing','went long','going long',
+  'pick up','picked up','picking up','picked',
+  'cop','copped','copping',
+  'dca','dca\'d','dca into','dca-ed','dollar cost average','dollar-cost-averaged','dollar cost averaged',
+  'accumulate','accumulated','accumulating','accumulation',
+  'purchase','purchased','purchasing','purchases',
+  'add','added','adding','adds','add to','added to',
+  'bag','bagged','bagging','bag up',
+  'hodl','hodled','hodling','hold','held','holding',
+  'fomo','fomoed','fomo\'d','fomo into','fomoing',
+  'snipe','sniped','sniping',
+  'nabbed','nabbing','nab',
+  'jumped in','jumping in','jump in','dive in','dove in','diving in',
+  'hop in','hopped in','hopping in','hopped on',
+  'entered','enter','entering','entry',
+  'market buy','market-bought','limit buy','swing','swung','swinging',
+  'in for','i\'m in','went in','going in',
+  'rebought','re-bought','re bought','reentered','re-entered',
+  'bull','bullish','went bull','went bullish',
+  // ── Arabic: MSA — past / present / imperative ──
+  'اشتريت','اشتري','اشترى','اشتروا','نشتري','يشتري','تشتري',
+  'شريت','شري','شريته','شريتها','شرينا','اشري',
+  'قمت بشراء','قام بشراء','قاموا بشراء','اقوم بشراء','شراء',
+  // ── Gulf (Saudi / Emirati / Kuwaiti / Qatari / Bahraini / Omani) ──
+  'أخذت','اخذت','أخذ','اخذ','ياخذ','ياخد','خذت','خد','خذ','ماخد','ماخذ',
+  'جبت','جبتها','جبته','جايب','جاب','جابها','يجيب','نجيب',
+  'حطيت','حط','حطيتها','حطيت فيها','حطيت عليها','اللي حطيت','نحط','يحط',
+  'دخلت','داخل','دخل','دخلني','دخلت فيها','نزلت فيها',
+  'كومت','كوم','كومت عليها','كومت منها','يكوم','مكوم',
+  // ── Levantine (Syrian / Lebanese / Jordanian / Palestinian) ──
+  'جمعت','جامع','جمع','يجمع','بجمع','جمعنا','اجمع',
+  'كسبت','كاسب','كسب','بكسب','كسبنا',
+  'استثمرت','استثمار','مستثمر','يستثمر','استثمرنا','بستثمر','هاستثمر',
+  'ضيفت','اضفت','أضفت','زود','زودت','نضيف','بضيف',
+  'نزلت','نزلتها','نزل','بنزل','هانزل',
+  'لقفت','لقف','تلقفت','بلقف',
+  // ── Egyptian — colloquial + slang ──
+  'بشتري','هشتري','هاشتري','بحطها','حطها','هحطها',
+  'فتت','هاوش','اخدت','هاخد','بخد','بشيل','شلت',
+  'دخلت بيها','دخلت بفلوس','صرفت على',
+  'باي','بايت','بايد','بايز',
+  // ── Maghrebi (Moroccan / Algerian / Tunisian) ──
+  'شريت بزاف','شريتها','نشري','نشريو','شراو','شراه','شراها',
+  'دزت','دزينا','دز','دزها',
+  // ── Iraqi ──
+  'كميت','كمي','كميتها','اكمي','كمينا',
+  'سويت شراء','اسوي شراء','سوينا شراء',
+  // ── Chat-slang (latinised — written by Arabic speakers in English chars) ──
+  'eshtarayt','eshtaraitu','eshtreet','eshtryt','ishtaret',
+  'sharet','shareit','sharaytu','sharet','shereet',
+  'akhadt','akhthet','jbet','jibt','jibtha',
+  'hatet','7atet','7attet','daakhal','dakhalt',
+  'bashtri','hashtri','hashteri',
+  'hodol','hawdal','hodled','bagged it',
+  'hodl','hodla'
 ]
 
 const SELL_WORDS = [
-  'sell','sold','selling','dump','dumped','dumping','exit','exited','exiting',
-  'cash out','cashed out','take profits','took profits','tp','tp\'d','offload','offloaded',
-  'unload','unloaded','short','shorted','went short','rug','rugged','close','closed',
-  'بعت','بيعت','بيع','صفيت','خرجت','خروج','اخرج'
+  // ── English: formal + crypto/trader slang + chat shorthand ──
+  'sell','sold','selling','sells','sell off','sold off','selling off',
+  'dump','dumped','dumping','dumps','dump on','dumped on',
+  'exit','exited','exiting','exit out','exited out',
+  'cash out','cashed out','cashing out','cash-out',
+  'take profits','took profits','taking profits','take profit','took profit','tp','tp\'d','tp-ed','tped',
+  'offload','offloaded','offloading','offload some',
+  'unload','unloaded','unloading',
+  'short','shorted','shorting','went short','going short',
+  'rug','rugged','rugging','got rugged',
+  'close','closed','closing','close out','closed out',
+  'liquidate','liquidated','liquidating','got liquidated',
+  'flip','flipped','flipping','flip for profit',
+  'ditch','ditched','ditching',
+  'drop','dropped','dropping','drop the bag',
+  'get out','got out','getting out','gtfo','rugged out',
+  'bail','bailed','bailing','bail out','bailed out',
+  'jump out','jumped out','jumping out','hopped out',
+  'scale out','scaled out','scaling out','sold half','sold some','sold part','sold all',
+  'market sell','market-sold','limit sell','stop loss','stop-loss','sl','sl\'d',
+  'puked','puking','puke','panic sold','panic-sold','panic sold out',
+  'paper hand','paper-handed','paper handed','paper hands','paper-handed it',
+  'realised','realized','realised gains','realized gains','took the win','took the loss',
+  'rebalanced','rebalanced out','trimmed','trimming','trim','trimmed position',
+  'bear','bearish','went bear','went bearish',
+  // ── Arabic: MSA — past / present / imperative ──
+  'بعت','بعتها','بعته','بعنا','بيعت','بيع','ابيع','بايع','نبيع','يبيع','تبيع',
+  'قمت ببيع','قام ببيع','قاموا ببيع','اقوم ببيع','بيع',
+  // ── Gulf (Saudi / Emirati / Kuwaiti / Qatari) ──
+  'صفيت','صفيتها','صفي','تصفية','نصفي','يصفي',
+  'سحبت','سحب','اسحب','سحبتها','سحبت ربح','سحبت فلوس','نسحب','بسحب',
+  'فلت','فل','فلتها','فلت بالفلوس','فلت بالربح','نفل','يفل',
+  'كسرت','كسر','كسرتها','كسرت الحظ','نكسر','بكسر',
+  'خرجت','خروج','اخرج','اخرجت','خرج','خرجت بربح','خرجت بخسارة',
+  // ── Levantine (Syrian / Lebanese / Jordanian / Palestinian) ──
+  'بعت بربح','اخدت ربح','ربحت','ربح','حصلت ربح','جنيت','جني',
+  'تخلصت','اتخلصت','اتخلص','تخلص','نتخلص',
+  'طرحت','طرح','اطرح','نطرح','بطرح',
+  'رميت','رمى','ارمي','نرمي','بترمي',
+  'صرفت','صرف','اصرف','نصرف','بصرف',
+  // ── Egyptian — colloquial + slang ──
+  'بشيع','هبيع','هبيعها','هبيعه','بيعتها','بعتها بربح','بعتها بخسارة',
+  'هطلعها','طلعتها','طلعت','نزلت السوق',
+  'هخرج','هخرج بربح','هخرج بخسارة','هاطلع','طلعت كاش',
+  'صفيتها كاش','صفيت السوق','سيلت','سيل',
+  // ── Maghrebi (Moroccan / Algerian / Tunisian) ──
+  'بعتها بزاف','بعنا','نبيعو','بيع بزاف','تبيعهم',
+  'فك','فكيت','فكينا','نفك',
+  // ── Iraqi ──
+  'سويت بيع','اسوي بيع','سوينا بيع','بعتها بفلوس',
+  // ── Chat-slang (latinised) ──
+  'be3t','baat','beit','beitha','baeat','baea',
+  'safet','saffet','sa7abt','sahabt','7arajt','kharajt',
+  'tp\'ed','tped','dumped it','rugged it','sold it','flipped it'
 ]
 
 // ── Word numbers — both languages, fractions included.
@@ -332,9 +445,20 @@ const AR_NUMBERS = Object.fromEntries(
 const EN_NUMBERS = {
   'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,
   'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,
-  'thirteen':13,'fourteen':14,'fifteen':15,'twenty':20,'thirty':30,'fifty':50,'hundred':100,
-  'thousand':1000,'million':1000000,'billion':1000000000,
-  'half':0.5,'quarter':0.25,
+  'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,
+  'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,
+  'hundred':100,'thousand':1000,'million':1000000,'billion':1000000000,'trillion':1000000000000,
+  // Slang multipliers used as standalone words
+  'grand':1000,'grands':1000,'k':1000,'mil':1000000,'mils':1000000,
+  'bil':1000000000,'bils':1000000000,'ticket':1000,'rack':1000,'racks':1000,
+  // Fractions
+  'half':0.5,'halves':0.5,'a half':0.5,'one half':0.5,
+  'quarter':0.25,'quarters':0.25,'a quarter':0.25,'one quarter':0.25,
+  'third':0.333,'thirds':0.333,'a third':0.333,'one third':0.333,
+  'eighth':0.125,'an eighth':0.125,'one eighth':0.125,
+  // Crypto-specific
+  'sat':0.00000001,'sats':0.00000001,'satoshi':0.00000001,'satoshis':0.00000001,
+  'gwei':0.000000001,
 }
 
 function parseNumber(str) {
@@ -343,19 +467,23 @@ function parseNumber(str) {
   // Plain number with optional unit suffix. Unit must not be followed by
   // a Latin letter (so "b" in "bitcoin" is not picked up as billion).
   // We use a lookahead instead of \b because \b doesn't apply after Arabic chars.
-  const m = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(k|m|b|thousand|million|billion|الف|مليون|مليار|بليون)?(?=[^a-zA-Z]|$)/i)
+  // Slang multipliers covered: k, m, b, g, grand, mil, bil, rack, racks,
+  // ticket, stack (English) and الف, مليون, مليار, بليون, ميه, مية (Arabic).
+  const m = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(k|m|b|g|grand|grands|mil|mils|bil|bils|rack|racks|ticket|tickets|stack|stacks|thousand|million|billion|trillion|الف|مليون|مليار|بليون|ميه|مية|مائه|مائة)?(?=[^a-zA-Z]|$)/i)
   if (m) {
     let n = parseFloat(m[1].replace(',', '.'))
     const unit = (m[2] || '').toLowerCase()
-    if (['k','thousand','الف'].includes(unit)) n *= 1000
-    else if (['m','million','مليون'].includes(unit)) n *= 1000000
-    else if (['b','billion','بليون','مليار'].includes(unit)) n *= 1000000000
+    if (['k','grand','grands','g','rack','racks','ticket','tickets','stack','stacks','thousand','الف'].includes(unit)) n *= 1000
+    else if (['m','mil','mils','million','مليون'].includes(unit)) n *= 1000000
+    else if (['b','bil','bils','billion','بليون','مليار'].includes(unit)) n *= 1000000000
+    else if (['trillion'].includes(unit)) n *= 1000000000000
+    else if (['ميه','مية','مائه','مائة'].includes(unit)) n *= 100
     return n
   }
   // Word numbers (single token) — try both raw and phonetically-normalized form
   const norm = fullNormalize(trimmed)
   if (AR_NUMBERS[norm] != null) return AR_NUMBERS[norm]
-  if (EN_NUMBERS[trimmed] != null) return EN_NUMBERS[trimmed]
+  if (EN_NUMBERS[trimmed.toLowerCase()] != null) return EN_NUMBERS[trimmed.toLowerCase()]
   return null
 }
 
@@ -390,8 +518,11 @@ function detectMassUnit(normalized) {
 // Otherwise "60 الف" would become "60 1000" — two separate numbers.
 // Stored as a Set of phonetically-normalized keys.
 const MULTIPLIER_WORDS = new Set([
-  'hundred','thousand','million','billion',
+  'hundred','thousand','million','billion','trillion',
+  'grand','grands','mil','mils','bil','bils',
+  'rack','racks','ticket','tickets','stack','stacks',
   fullNormalize('ميه'), fullNormalize('ماءه'), fullNormalize('مية'),
+  fullNormalize('مائه'), fullNormalize('مائة'),
   fullNormalize('الف'), fullNormalize('مليون'), fullNormalize('مليار'),
   fullNormalize('بليون'),
 ])
@@ -742,27 +873,62 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // Per-transaction free-text asset search ({ [txIdx]: query })
   const [assetQueries, setAssetQueries] = useState({})
   const [noSpeechHint, setNoSpeechHint] = useState(false)
-  const recRef = useRef(null)
+  // BILINGUAL: we run TWO recognizers in parallel — one for Arabic (ar-SA,
+  // covering MSA + Gulf + Levantine + Egyptian dialects) and one for English.
+  // Whichever produces a higher-confidence parse wins on screen. This means
+  // the user can speak in either language regardless of which one the app UI
+  // is set to. On iOS (which only allows one mic recognizer at a time) we
+  // automatically degrade to a single recognizer matching the app's UI lang.
+  const recsRef = useRef([])
+  const transcriptsRef = useRef({ ar: '', en: '' })
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
-  // Mirrors `listening` state in a mutable ref so closures always see
-  // the current value without stale-closure bugs.
   const listeningRef = useRef(false)
   // Incremented on every startListening call. Each recognizer closure
-  // captures its own sessionId; when the session changes (stop/restart),
-  // stale onend/onerror callbacks bail out immediately so they can't
-  // accidentally flip state or start a new recognizer.
+  // captures its own sessionId; stale callbacks bail out immediately.
   const sessionRef = useRef(0)
+
+  // Score a parsed command — higher means we're more confident the transcript
+  // captured a real trade. Used to compare en-US vs ar-SA transcripts.
+  const scoreParsed = (parsed) =>
+    parsed.transactions.reduce((s, t) =>
+      s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0) + (t.suggestions?.length ? 1 : 0), 0)
+
+  // Collapse Chrome-Android progressive snapshots into a single transcript.
+  const buildBestTranscript = (results) => {
+    const segments = []
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      let best = result[0].transcript
+      let bestScore = -1
+      const baseline = segments.map(s => s.text).join(' ')
+      for (let k = 0; k < result.length; k++) {
+        const candidate = (baseline + ' ' + result[k].transcript).trim()
+        const score = scoreParsed(parseVoiceCommand(candidate))
+        if (score > bestScore) { bestScore = score; best = result[k].transcript }
+      }
+      const trimmed = best.trim()
+      if (!trimmed) continue
+      const last = segments[segments.length - 1]
+      if (last && trimmed.startsWith(last.text.trim())) {
+        last.text = best; last.isFinal = result.isFinal
+      } else {
+        segments.push({ text: best, isFinal: result.isFinal })
+      }
+    }
+    return segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
+  }
 
   const startListening = () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
       setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
     }
-    // Kill any lingering recognizer BEFORE creating a new one.
-    try { recRef.current?.stop() } catch {}
-    recRef.current = null
+    // Stop any lingering recognizers from the previous session.
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
+    recsRef.current = []
+    transcriptsRef.current = { ar: '', en: '' }
 
     track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
@@ -775,124 +941,139 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setListening(true)
 
     const sessionId = ++sessionRef.current
-    const isArabic = lang.startsWith('ar')
-    const clearTimer = () => { clearTimeout(listenTimerRef.current); listenTimerRef.current = null }
+    const isAppArabic = lang.startsWith('ar')
 
-    // launchRec creates a FRESH SpeechRecognition instance every time so
-    // iOS — which ends the recognizer after every utterance — can auto-restart
-    // by simply calling launchRec again from onend.
-    const launchRec = () => {
-      if (!listeningRef.current || sessionRef.current !== sessionId) return
+    // 5-minute safety ceiling — stops ALL recognizers.
+    clearTimeout(listenTimerRef.current)
+    listenTimerRef.current = setTimeout(() => {
+      listeningRef.current = false
+      setListening(false)
+      recsRef.current.forEach(r => { try { r.stop() } catch {} })
+    }, 5 * 60 * 1000)
+
+    // iOS only allows one recognizer per mic — degrade to the app's UI language.
+    // Everyone else gets the bilingual treatment.
+    const langCodes = IS_IOS
+      ? [isAppArabic ? 'ar-SA' : 'en-US']
+      : ['ar-SA', 'en-US']
+
+    const createRec = (langCode) => {
+      const isArabic = langCode.startsWith('ar')
+      const langKey = isArabic ? 'ar' : 'en'
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
       rec.maxAlternatives = isArabic ? 5 : 3
-      rec.lang = isArabic ? 'ar-SA' : 'en-US'
-
-      const scheduleStop = (ms) => {
-        clearTimer()
-        listenTimerRef.current = setTimeout(() => {
-          listeningRef.current = false; setListening(false)
-          try { rec.stop() } catch {}
-        }, ms)
-      }
+      rec.lang = langCode
 
       rec.onstart = () => {
         if (sessionRef.current !== sessionId) return
         listeningRef.current = true; setListening(true)
-        scheduleStop(5 * 60 * 1000)
       }
 
       rec.onend = () => {
-        clearTimer()
         if (sessionRef.current !== sessionId) return
+        // Auto-restart THIS recognizer (not the other one) — iOS / desktop
+        // Chrome both end after silence and we want a seamless session.
         if (listeningRef.current) {
-          setTimeout(launchRec, 150)
-        } else {
+          setTimeout(() => {
+            if (listeningRef.current && sessionRef.current === sessionId) {
+              try { rec.start() } catch {}
+            }
+          }, 150)
+        } else if (recsRef.current.every(r => r === rec || r.__ended)) {
           setListening(false)
         }
+        rec.__ended = true
       }
 
       rec.onerror = e => {
         if (sessionRef.current !== sessionId) return
-        clearTimer()
+        // Transient — let onend handle restart.
         if (e.error === 'no-speech' || e.error === 'aborted') return
+        // This language isn't installed in the browser — just give up on it
+        // silently; the other recognizer can still carry the session.
+        if (e.error === 'language-not-supported') return
+        // Permission denied / network / other fatal: shut everything down.
         listeningRef.current = false; setListening(false)
         if (e.error === 'not-allowed')
-          setError(isArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
+          setError(isAppArabic ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى' : 'Microphone permission denied. Please allow mic access.')
         else if (e.error === 'network')
-          setError(isArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
-        else if (e.error === 'language-not-supported')
-          setError(isArabic ? 'اللغة العربية غير مدعومة في هذا المتصفح — جرّب Chrome' : 'Language not supported — try Chrome.')
+          setError(isAppArabic ? 'تعذر الاتصال بخدمة التعرف على الصوت — تحقق من الإنترنت وأعد المحاولة' : 'Could not reach speech service — check your connection and try again.')
         else
-          setError(isArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
+          setError(isAppArabic ? `خطأ في التعرف على الصوت: ${e.error}` : `Voice error: ${e.error}`)
+        recsRef.current.forEach(r => { try { r.stop() } catch {} })
       }
 
-      // Chrome on Android emits PROGRESSIVE SNAPSHOTS — each new result entry
-      // can contain the full cumulative transcript so far. Collapse consecutive
-      // snapshots into the latest; treat non-overlapping results as new utterances.
       rec.onresult = e => {
         if (sessionRef.current !== sessionId) return
-        const segments = []
-        for (let i = 0; i < e.results.length; i++) {
-          const result = e.results[i]
-          let best = result[0].transcript
-          let bestScore = -1
-          const baseline = segments.map(s => s.text).join(' ')
-          for (let k = 0; k < result.length; k++) {
-            const candidate = (baseline + ' ' + result[k].transcript).trim()
-            const p = parseVoiceCommand(candidate)
-            const score = p.transactions.reduce((s, t) =>
-              s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0), 0)
-            if (score > bestScore) { bestScore = score; best = result[k].transcript }
-          }
-          const trimmed = best.trim()
-          if (!trimmed) continue
-          const last = segments[segments.length - 1]
-          if (last && trimmed.startsWith(last.text.trim())) {
-            last.text = best; last.isFinal = result.isFinal
-          } else {
-            segments.push({ text: best, isFinal: result.isFinal })
-          }
+        const text = buildBestTranscript(e.results)
+        transcriptsRef.current[langKey] = text
+
+        // Cross-language winner pick: parse BOTH transcripts and use whichever
+        // scores higher. A tie (often both 0 early in the session) falls back
+        // to the longer transcript so the user sees feedback even before any
+        // intent has been recognised.
+        const ar = transcriptsRef.current.ar || ''
+        const en = transcriptsRef.current.en || ''
+        const arParsed = ar ? parseVoiceCommand(ar) : { transactions: [] }
+        const enParsed = en ? parseVoiceCommand(en) : { transactions: [] }
+        const arScore = scoreParsed(arParsed)
+        const enScore = scoreParsed(enParsed)
+
+        let winnerText, winnerParsed
+        if (arScore > enScore) { winnerText = ar; winnerParsed = arParsed }
+        else if (enScore > arScore) { winnerText = en; winnerParsed = enParsed }
+        else { // tie — prefer the longer one
+          if (ar.length >= en.length) { winnerText = ar; winnerParsed = arParsed }
+          else { winnerText = en; winnerParsed = enParsed }
         }
-        const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
-        if (text) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
-        setTranscript(text)
-        const p = parseVoiceCommand(text)
-        const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
+
+        if (winnerText) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
+        setTranscript(winnerText)
+        const anyUseful = winnerParsed.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
         if (anyUseful) {
-          setParsed(p)
-          setReaction(getReaction(text, p.transactions[0] || {}))
+          setParsed(winnerParsed)
+          setReaction(getReaction(winnerText, winnerParsed.transactions[0] || {}))
         }
       }
 
-      recRef.current = rec
+      return rec
+    }
+
+    for (const code of langCodes) {
       try {
+        const rec = createRec(code)
         rec.start()
-      } catch (err) {
-        listeningRef.current = false; setListening(false)
-        setError(isArabic
-          ? `تعذر بدء الميكروفون: ${err?.message || err}`
-          : `Could not start mic: ${err?.message || err}. Please reload and try again.`)
+        recsRef.current.push(rec)
+      } catch {
+        // This recognizer couldn't claim the mic (e.g. iOS / mobile WebView
+        // limit of 1 recognizer). Skip and continue with the others.
       }
     }
 
-    launchRec()
+    if (recsRef.current.length === 0) {
+      listeningRef.current = false
+      setListening(false)
+      setError(isAppArabic
+        ? 'تعذر بدء الميكروفون — أعد تحميل الصفحة وحاول مرة أخرى'
+        : 'Could not start mic. Please reload and try again.')
+    }
   }
 
   const stopListening = () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
-    listeningRef.current = false  // must be false BEFORE rec.stop() so onend doesn't restart
+    listeningRef.current = false  // must be false BEFORE stop() so onend doesn't restart
     setListening(false)
-    try { recRef.current?.stop() } catch {}
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
   }
 
   useEffect(() => () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
-    try { recRef.current?.stop() } catch {}
+    recsRef.current.forEach(r => { try { r.stop() } catch {} })
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
