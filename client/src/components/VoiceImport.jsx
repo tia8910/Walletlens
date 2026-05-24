@@ -906,7 +906,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // is set to. On iOS (which only allows one mic recognizer at a time) we
   // automatically degrade to a single recognizer matching the app's UI lang.
   const recsRef = useRef([])
-  const transcriptsRef = useRef({ ar: '', en: '' })
+  // Keyed by BCP-47 langCode (e.g. 'ar-SA', 'ar-EG', 'en-US').
+  // Multiple Arabic recognizers compete; the best parse wins.
+  const transcriptsRef = useRef({})
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
@@ -954,7 +956,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // Stop any lingering recognizers from the previous session.
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     recsRef.current = []
-    transcriptsRef.current = { ar: '', en: '' }
+    transcriptsRef.current = {}
 
     track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
@@ -978,14 +980,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     }, 5 * 60 * 1000)
 
     // iOS only allows one recognizer per mic — degrade to the app's UI language.
-    // Everyone else gets the bilingual treatment.
+    // Non-iOS runs THREE recognizers in parallel: Saudi Arabic (Gulf + MSA),
+    // Egyptian Arabic (most widely spoken dialect), and English. The best parse wins.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : ['ar-SA', 'en-US']
+      : ['ar-SA', 'ar-EG', 'en-US']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
-      const langKey = isArabic ? 'ar' : 'en'
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
@@ -1034,25 +1036,19 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       rec.onresult = e => {
         if (sessionRef.current !== sessionId) return
         const text = buildBestTranscript(e.results)
-        transcriptsRef.current[langKey] = text
+        transcriptsRef.current[langCode] = text
 
-        // Cross-language winner pick: parse BOTH transcripts and use whichever
-        // scores higher. A tie (often both 0 early in the session) falls back
-        // to the longer transcript so the user sees feedback even before any
-        // intent has been recognised.
-        const ar = transcriptsRef.current.ar || ''
-        const en = transcriptsRef.current.en || ''
-        const arParsed = ar ? parseVoiceCommand(ar) : { transactions: [] }
-        const enParsed = en ? parseVoiceCommand(en) : { transactions: [] }
-        const arScore = scoreParsed(arParsed)
-        const enScore = scoreParsed(enParsed)
-
-        let winnerText, winnerParsed
-        if (arScore > enScore) { winnerText = ar; winnerParsed = arParsed }
-        else if (enScore > arScore) { winnerText = en; winnerParsed = enParsed }
-        else { // tie — prefer the longer one
-          if (ar.length >= en.length) { winnerText = ar; winnerParsed = arParsed }
-          else { winnerText = en; winnerParsed = enParsed }
+        // Multi-channel winner pick: parse every stored transcript and take
+        // the one with the highest parse score. Ties break on transcript length
+        // so the user sees live feedback even before any intent is recognised.
+        let winnerText = '', winnerParsed = { transactions: [] }, winnerScore = -1
+        for (const [, t] of Object.entries(transcriptsRef.current)) {
+          if (!t) continue
+          const p = parseVoiceCommand(t)
+          const s = scoreParsed(p)
+          if (s > winnerScore || (s === winnerScore && t.length > winnerText.length)) {
+            winnerText = t; winnerParsed = p; winnerScore = s
+          }
         }
 
         if (winnerText) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
@@ -1148,13 +1144,10 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
 
     // If the local parser missed (no complete trade), ask Claude to interpret.
-    // A trade is "complete" when it has type + coin + amount. The longest of
-    // the two language transcripts is sent so Claude has the most context.
+    // Send the longest transcript across all language channels for best coverage.
     const isComplete = parsed?.transactions?.every(t => t.type && t.coin && t.amount != null) && parsed.transactions.length > 0
     if (!isComplete) {
-      const ar = transcriptsRef.current.ar || ''
-      const en = transcriptsRef.current.en || ''
-      const best = (ar.length >= en.length ? ar : en) || transcript
+      const best = Object.values(transcriptsRef.current).reduce((a, b) => b.length > a.length ? b : a, '') || transcript
       if (best) tryAiFallback(best)
     }
   }
