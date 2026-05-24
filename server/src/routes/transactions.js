@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import db from '../database.js';
 
 const router = Router();
@@ -48,6 +49,12 @@ router.get('/portfolio', (req, res) => {
   }
 
   const portfolio = Object.values(holdings).filter(h => h.amount > 0.00000001);
+
+  // ETag: lets clients skip parsing an unchanged portfolio on repeated polls
+  const etag = `"${crypto.createHash('md5').update(JSON.stringify(portfolio)).digest('hex').slice(0, 12)}"`;
+  res.set('ETag', etag);
+  res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
   res.json(portfolio);
 });
 

@@ -1906,6 +1906,7 @@ export default function Dashboard() {
   const location = useLocation()
   const { t } = useLanguage()
   const [portfolio, setPortfolio]         = useState([])
+  const portfolioRef = useRef([])
   const [prices, setPrices]               = useState({})
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
@@ -2035,6 +2036,7 @@ export default function Dashboard() {
     const [p, txs, ws, ct] = await Promise.all([
       api.getPortfolio(), api.getTransactions(), api.getWallets(), api.getCoinTargets(),
     ])
+    portfolioRef.current = p
     setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
     if (p.length) {
       setPricesLoading(true)
@@ -2052,9 +2054,10 @@ export default function Dashboard() {
     setLoaded(true)
   }
 
-  // Refresh only prices — does NOT reset portfolio/prices state so value stays visible
+  // Refresh only prices — does NOT reset portfolio/prices state so value stays visible.
+  // Reads from portfolioRef (not portfolio state) so setInterval never has a stale closure.
   async function refreshPrices() {
-    const ids = portfolio.map(h => h.coin_id).join(',')
+    const ids = portfolioRef.current.map(h => h.coin_id).join(',')
     if (!ids) return
     setPricesLoading(true)
     try {
@@ -2065,16 +2068,20 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    let intervalId = null
+    // Two polling tiers:
+    //   • priceInterval (60s) — only refreshes prices, lightweight
+    //   • dataInterval  (5min) — full reload (portfolio, txs, wallets, prices)
+    let priceInterval = null
+    let dataInterval  = null
 
     function startPolling() {
-      if (intervalId) return
-      intervalId = setInterval(loadAll, 60_000)
+      if (!priceInterval) priceInterval = setInterval(refreshPrices, 60_000)
+      if (!dataInterval)  dataInterval  = setInterval(loadAll, 5 * 60_000)
     }
 
     function stopPolling() {
-      clearInterval(intervalId)
-      intervalId = null
+      clearInterval(priceInterval); priceInterval = null
+      clearInterval(dataInterval);  dataInterval  = null
     }
 
     function handleVisibility() {

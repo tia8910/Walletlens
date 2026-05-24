@@ -6,7 +6,8 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
-    target: 'es2020',
+    // esnext: no transpilation overhead for modern browsers; terser handles minification
+    target: 'esnext',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 600,
     reportCompressedSize: false,
@@ -16,17 +17,32 @@ export default defineConfig({
     assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'charts':       ['recharts'],
-          // xlsx is dynamically imported inside SmartImport — Rollup emits it as a lazy chunk automatically
+        // Granular vendor splitting: each chunk is individually cacheable.
+        // react-vendor changes rarely; recharts chart only; pages split by route.
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id.includes('node_modules/react-router-dom') || id.includes('node_modules/react-router/')) {
+            return 'react-vendor'
+          }
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-') || id.includes('node_modules/victory-vendor') || id.includes('node_modules/d3shape') || id.includes('node_modules/d3array')) {
+            return 'charts'
+          }
+          if (id.includes('node_modules/xlsx')) {
+            return 'xlsx'
+          }
         },
+      },
+      // Suppress false-positive circular-dependency warnings from recharts internals
+      onwarn(warning, warn) {
+        if (warning.code === 'CIRCULAR_DEPENDENCY') return
+        warn(warning)
       },
     },
   },
   esbuild: {
     drop: ['debugger'],
     pure: ['console.log', 'console.debug', 'console.info'],
+    // Mangle private class members for smaller output
+    legalComments: 'none',
   },
   server: {
     port: 5173,

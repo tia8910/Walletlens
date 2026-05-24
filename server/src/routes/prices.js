@@ -1,11 +1,35 @@
 import { Router } from 'express';
 import fetch from 'node-fetch';
+import crypto from 'crypto';
 
 const router = Router();
 
 let priceCache = {};
 let lastFetch = 0;
 const CACHE_DURATION = 60_000; // 1 minute
+
+// In-flight deduplication: if a CoinGecko fetch is already running, attach
+// to that promise instead of firing a second identical upstream request.
+let pendingFetch = null;
+
+async function refreshPrices(ids) {
+  if (pendingFetch) return pendingFetch;
+  pendingFetch = fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+  )
+    .then(async (response) => {
+      const data = await response.json();
+      priceCache = { ...priceCache, ...data };
+      lastFetch = Date.now();
+      return data;
+    })
+    .catch((err) => {
+      console.error('Price fetch error:', err.message);
+      return null;
+    })
+    .finally(() => { pendingFetch = null; });
+  return pendingFetch;
+}
 
 router.get('/', async (req, res) => {
   const { ids } = req.query;
@@ -16,18 +40,9 @@ router.get('/', async (req, res) => {
   const needsFresh = now - lastFetch > CACHE_DURATION || coinIds.some(id => !priceCache[id]);
 
   if (needsFresh) {
-    try {
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
-      );
-      const data = await response.json();
-      priceCache = { ...priceCache, ...data };
-      lastFetch = now;
-    } catch (err) {
-      console.error('Price fetch error:', err.message);
-      if (Object.keys(priceCache).length === 0) {
-        return res.status(503).json({ error: 'Price service unavailable' });
-      }
+    const fetched = await refreshPrices(ids);
+    if (!fetched && Object.keys(priceCache).length === 0) {
+      return res.status(503).json({ error: 'Price service unavailable' });
     }
   }
 
@@ -35,6 +50,12 @@ router.get('/', async (req, res) => {
   for (const id of coinIds) {
     if (priceCache[id]) result[id] = priceCache[id];
   }
+
+  // ETag for conditional requests — clients skip parsing if data unchanged
+  const etag = `"${crypto.createHash('md5').update(JSON.stringify(result)).digest('hex').slice(0, 12)}"`
+  res.set('ETag', etag);
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
+
   res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
   res.json(result);
 });

@@ -859,8 +859,14 @@ export const api = {
   //   metal:xau/xag → gold-api.com (live spot metal price, with CoinGecko fallback)
   //   <crypto id> → CoinGecko simple/price
   //   everything else → manual price cache (localStorage)
-  getPrices: async (ids) => {
+  getPrices: (() => {
+    // In-flight cache: if the same id-set is already being fetched, return the
+    // same promise instead of firing a second identical fan-out.
+    const _inFlight = new Map();
+    return async (ids) => {
     if (!ids) return {};
+    const key = ids;
+    if (_inFlight.has(key)) return _inFlight.get(key);
     const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
 
@@ -1114,9 +1120,11 @@ export const api = {
       if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
     }
 
-    await Promise.all(tasks);
-    return result;
-  },
+    const promise = Promise.all(tasks).then(() => { _inFlight.delete(key); return result; });
+    _inFlight.set(key, promise);
+    return promise;
+  };
+  })(),
 
   // Fetch coin images from market data (more reliable than search thumb)
   getCoinImages: async (ids) => {
@@ -1464,13 +1472,21 @@ export const api = {
         toFetch.push(id);
       }
     }
-    for (const id of toFetch) {
-      try {
-        const s = await api.getCoinSmartSignals(id, days);
-        out[id] = s;
-        cache[id] = { t: now, v: s };
-      } catch { out[id] = null; }
-      await new Promise(r => setTimeout(r, 120));
+    // Fetch up to 3 coins concurrently — enough to saturate CoinGecko's free
+    // tier without triggering rate-limits. Sequential 120ms delays would take
+    // 10s+ for a 50-coin portfolio; this cuts it to under 2s.
+    const CONCURRENCY = 3;
+    for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
+      const batch = toFetch.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async id => {
+        try {
+          const s = await api.getCoinSmartSignals(id, days);
+          out[id] = s;
+          cache[id] = { t: now, v: s };
+        } catch { out[id] = null; }
+      }));
+      // Brief pause between batches to stay within CoinGecko's 10–30 req/min free limit
+      if (i + CONCURRENCY < toFetch.length) await new Promise(r => setTimeout(r, 350));
     }
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
     return out;

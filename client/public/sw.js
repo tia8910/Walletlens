@@ -19,6 +19,14 @@ const PRICE_API_PATTERNS = [
   'api.coinpaprika.com',
   'assets.coincap.io',
   'lcw.nyc3.cdn.digitaloceanspaces.com',
+  // Metals & FX
+  'api.gold-api.com',
+  'open.er-api.com',
+  'api.frankfurter.app',
+  // Stock price sources
+  'stooq.com',
+  'min-api.cryptocompare.com',
+  'blockchain.info',
 ]
 
 // Static CDN assets (icons, images) — cached indefinitely in STATIC cache

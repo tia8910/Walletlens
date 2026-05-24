@@ -1,5 +1,16 @@
 import { useEffect, useRef } from 'react'
 
+// Detect low-power devices (mobile or < 4 logical CPUs) so we can throttle
+// the O(n²) particle simulation before it affects frame rate.
+function getParticleCount(requested) {
+  if (typeof window === 'undefined') return requested
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 0
+  const mobile = window.matchMedia?.('(max-width: 768px)').matches
+  const lowPower = navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4
+  if (mobile || lowPower) return Math.min(requested, 40)
+  return requested
+}
+
 export default function DynamicBackground({
   particleCount = 100,
   linkDistance = 140,
@@ -8,6 +19,7 @@ export default function DynamicBackground({
   const canvasRef = useRef(null)
   const reduceMotion = typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const effectiveCount = getParticleCount(particleCount)
 
   useEffect(() => {
     if (reduceMotion) return
@@ -40,7 +52,7 @@ export default function DynamicBackground({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
-    const particles = Array.from({ length: particleCount }, () => ({
+    const particles = Array.from({ length: effectiveCount }, () => ({
       x: 0, y: 0, vx: 0, vy: 0, size: 0,
     }))
 
@@ -118,7 +130,7 @@ export default function DynamicBackground({
       mo.disconnect()
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [particleCount, linkDistance, color, reduceMotion])
+  }, [effectiveCount, linkDistance, color, reduceMotion])
 
   return <canvas ref={canvasRef} className="dynamic-bg" aria-hidden="true" />
 }
