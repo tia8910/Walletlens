@@ -18,3 +18,7 @@ User-agent: anthropic-ai
 Allow: /
 
 Sitemap: https://walletlens.cc/sitemap.xml
+
+# LLM/AI guide — see https://llmstxt.org
+# WalletLens overview for AI models / answer engines:
+# https://walletlens.cc/llms.txt
