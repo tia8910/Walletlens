@@ -314,7 +314,6 @@ export default function App() {
         <NavLink to="/market" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'market' })}><IconMarket /><span>{t('market')}</span></NavLink>
         <NavLink to="/coach" className="wl-nav-item wl-nav-coach" onClick={() => track('bottom_nav', { to: 'coach' })}><IconCoach /><span>Coach</span></NavLink>
         <NavLink to="/academy" className="wl-nav-item wl-nav-academy" onClick={() => track('bottom_nav', { to: 'academy' })}><IconAcademy /><span>Academy</span></NavLink>
-        <NavLink to="/transactions" className="wl-nav-item wl-nav-trades" onClick={() => track('bottom_nav', { to: 'transactions' })}><IconTrades /><span>{t('trades')}</span></NavLink>
       </nav>
     </div>
   )

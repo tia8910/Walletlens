@@ -6764,11 +6764,6 @@ input[type="date"] { color-scheme: dark; }
 .wl-nav-academy svg { color: #fbbf24; }
 .wl-nav-academy span { color: #fbbf24; }
 .wl-nav-academy.active svg, .wl-nav-academy.active span { color: #fde68a; }
-/* Trades nav tab */
-.wl-nav-trades svg { color: #60a5fa; }
-.wl-nav-trades span { color: #60a5fa; }
-.wl-nav-trades.active svg, .wl-nav-trades.active span { color: #93c5fd; }
-
 /* ── Mobile screen fit — ensure content fits any phone screen ── */
 .wl-app { overflow-x: hidden; }
 .wl-content { overflow-x: hidden; }
