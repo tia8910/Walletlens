@@ -958,6 +958,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
+    // TTS greeting — called synchronously within the user-gesture handler so
+    // iOS honours it (iOS blocks speechSynthesis.speak inside setTimeout).
+    // The mic starts ~200 ms later (after primer.onend), by which time the
+    // greeting is still playing but the recognizer is already active.
+    try {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+        const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
+        utter.lang = 'en-US'
+        utter.rate = 1.1
+        window.speechSynthesis.speak(utter)
+      }
+    } catch {}
+
     // PRIMER pattern: user's screenshots prove rec.start('en-US') silently fails
     // to engage the mic hardware (no browser mic icon appears), but rec.start('ar-SA')
     // DOES engage it. After switching to Arabic, every subsequent start works in
@@ -965,6 +979,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // engages the mic — then launch the real recognizer in the user's chosen language
     // on the now-warm engine. This is the missing ingredient that a simple delay
     // couldn't fix: the audio stack needs an ar-SA start to fully activate.
+    let launchRecCalled = false
+    const guardedLaunchRec = () => {
+      launchRecCalled = true
+      launchRec()
+    }
+    // Belt-and-suspenders: if primer callbacks never fire (rare browser bug),
+    // ensure the real recognizer still starts within 1.2 s of the button tap.
+    const primerFallbackTimer = setTimeout(() => {
+      if (!launchRecCalled && listeningRef.current && sessionRef.current === sessionId) {
+        launchRecCalled = true
+        launchRec()
+      }
+    }, 1200)
+
     let primer = null
     try {
       primer = new SR()
@@ -978,31 +1006,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         try { primer.stop() } catch {}
       }
       primer.onend = () => {
+        clearTimeout(primerFallbackTimer)
         // Engine is warm — launch the real recognizer in the user's language.
-        if (listeningRef.current && sessionRef.current === sessionId) launchRec()
+        if (listeningRef.current && sessionRef.current === sessionId) guardedLaunchRec()
       }
       primer.start()
       // Safety stop in case onstart never fires (then onend still triggers launchRec)
       setTimeout(() => { try { primer.stop() } catch {} }, 600)
     } catch {
+      clearTimeout(primerFallbackTimer)
       // Primer failed to construct/start — fall back to a plain delayed launch
       setTimeout(() => {
-        if (listeningRef.current && sessionRef.current === sessionId) launchRec()
+        if (listeningRef.current && sessionRef.current === sessionId) guardedLaunchRec()
       }, 300)
     }
-    // Play TTS greeting after the real recognizer has had time to claim the mic.
-    // TTS (speaker) and STT (mic) are separate audio channels and coexist.
-    setTimeout(() => {
-      try {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-          window.speechSynthesis.cancel()
-          const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
-          utter.lang = 'en-US'
-          utter.rate = 1.1
-          window.speechSynthesis.speak(utter)
-        }
-      } catch {}
-    }, 700)
   }
 
   const stopListening = () => {
