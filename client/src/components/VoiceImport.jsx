@@ -736,8 +736,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [error, setError] = useState('')
   // Per-transaction free-text asset search ({ [txIdx]: query })
   const [assetQueries, setAssetQueries] = useState({})
+  const [noSpeechHint, setNoSpeechHint] = useState(false)
   const recRef = useRef(null)
   const listenTimerRef = useRef(null)
+  const noSpeechTimerRef = useRef(null)
+  const hasTranscriptRef = useRef(false)
   const arVoiceRef = useRef(null)  // best Arabic voice, loaded async at mount
 
   useEffect(() => {
@@ -765,7 +768,12 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     }
     const useLang = langOverride || lang
     track('voice_listen_start', { lang: useLang })
-    setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({})
+    setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
+    hasTranscriptRef.current = false
+    clearTimeout(noSpeechTimerRef.current)
+    noSpeechTimerRef.current = setTimeout(() => {
+      if (!hasTranscriptRef.current) setNoSpeechHint(true)
+    }, 10000)
     setListening(true)  // optimistic UI — flip to "listening" state immediately so the user sees feedback
 
     const rec = new SR()
@@ -842,6 +850,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
 
       const text = segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
+      if (text) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
       setTranscript(text)
       const p = parseVoiceCommand(text)
       const anyUseful = p.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
@@ -870,6 +879,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
   const stopListening = () => {
     clearTimeout(listenTimerRef.current)
+    clearTimeout(noSpeechTimerRef.current)
     try { recRef.current?.stop() } catch {}
     setListening(false)
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
@@ -891,6 +901,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
   useEffect(() => () => {
     clearTimeout(listenTimerRef.current)
+    clearTimeout(noSpeechTimerRef.current)
     try { recRef.current?.stop() } catch {}
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
@@ -1134,6 +1145,31 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             </p>
             <style>{`@keyframes vi-wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }`}</style>
           </div>
+
+          {/* What was heard — always show the raw transcript so the user knows STT worked */}
+          {transcript ? (
+            <div style={{ marginBottom:'0.8rem', padding:'0.6rem 0.9rem', borderRadius:'10px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)' }}>
+              <span style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'var(--text-muted)', marginBottom:'0.3rem', display:'block' }}>
+                {isAr ? '🎙️ سمعت' : '🎙️ Heard'}
+              </span>
+              <p style={{ margin:0, fontSize:'0.86rem', color:'var(--text)', lineHeight:1.45, fontStyle:'italic' }}>"{transcript}"</p>
+              {!parsed && (
+                <p style={{ margin:'0.45rem 0 0', fontSize:'0.78rem', color:'#f59e0b', fontWeight:600 }}>
+                  {isAr
+                    ? 'لم أتعرف على صفقة — جرّب أحد الأمثلة أدناه'
+                    : "Couldn't find a trade in that — try one of the examples below"}
+                </p>
+              )}
+            </div>
+          ) : noSpeechHint && (
+            <div style={{ marginBottom:'0.8rem', padding:'0.55rem 0.9rem', borderRadius:'10px', background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)' }}>
+              <p style={{ margin:0, fontSize:'0.82rem', color:'#f59e0b', fontWeight:600 }}>
+                {isAr
+                  ? '⚠️ لم أسمع شيئاً — تحدث بوضوح، أو تحقق من إذن الميكروفون والإنترنت'
+                  : '⚠️ Not hearing you — speak clearly, or check mic permission and internet connection'}
+              </p>
+            </div>
+          )}
 
           {/* Reaction banner */}
           {reaction && parsed && (
