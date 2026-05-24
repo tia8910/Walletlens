@@ -937,29 +937,25 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }  // end launchRec
 
-    // TTS greeting (English for all languages), then start STT.
-    // TTS and STT compete for the same audio focus; starting both simultaneously
-    // causes STT to steal audio from TTS so the greeting is silently cancelled.
-    // Solution: play the greeting first, then launch the recognizer in onend.
-    // A 2.5 s safety timer guarantees launchRec fires even if onend never fires
-    // (e.g. voices not loaded yet, or speechSynthesis broken on this device).
-    // launchOnce ensures the safety timer and onend never both call launchRec.
-    let launched = false
-    const launchOnce = () => { if (launched) return; launched = true; launchRec() }
-    try {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel()
-        const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
-        utter.lang = 'en-US'
-        utter.rate = 1.1
-        utter.onend = launchOnce
-        utter.onerror = launchOnce
-        setTimeout(launchOnce, 2500)  // safety: fire even if onend never comes
-        window.speechSynthesis.speak(utter)
-      } else {
-        launchRec()
-      }
-    } catch { launchRec() }  // TTS errors must never block mic start
+    // Start STT immediately — MUST happen within the browser's user-gesture window
+    // (roughly 1-2 s after the tap). Delaying rec.start() for TTS to finish lets
+    // the gesture token expire; on Chrome Android / Kiwi, rec.start() then fails
+    // silently and onstart never fires. This was why the first tap never worked.
+    launchRec()
+    // Play TTS greeting 300 ms after STT starts. The short gap lets the STT audio
+    // pipeline claim the microphone first. TTS (speaker output) and STT (mic input)
+    // are separate audio channels, so they coexist once STT is established.
+    setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          window.speechSynthesis.cancel()
+          const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
+          utter.lang = 'en-US'
+          utter.rate = 1.1
+          window.speechSynthesis.speak(utter)
+        }
+      } catch {}
+    }, 300)
   }
 
   const stopListening = () => {
