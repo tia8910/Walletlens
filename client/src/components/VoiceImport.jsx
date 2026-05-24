@@ -820,7 +820,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }, ms)
       }
 
+      // Cold-start guard: on first use (Kiwi/Android), rec.start() can succeed
+      // without throwing but onstart silently never fires while the STT module
+      // initialises. Detect this and retry launchRec after 1.5 s.
+      let startedOk = false
+      const startTimeout = setTimeout(() => {
+        if (!startedOk && listeningRef.current && sessionRef.current === sessionId) {
+          try { rec.stop() } catch {}
+          setTimeout(launchRec, 200)
+        }
+      }, 1500)
+
       rec.onstart = () => {
+        startedOk = true
+        clearTimeout(startTimeout)
         if (sessionRef.current !== sessionId) return
         listeningRef.current = true; setListening(true)
         scheduleStop(5 * 60 * 1000)
@@ -831,6 +844,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       // If the user is still listening, spin up a fresh recognizer so the
       // experience is seamless — no need to tap the button again.
       rec.onend = () => {
+        clearTimeout(startTimeout)
         clearTimer()
         if (sessionRef.current !== sessionId) return  // stale session — ignore
         if (listeningRef.current) {
@@ -841,6 +855,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
 
       rec.onerror = e => {
+        clearTimeout(startTimeout)
         if (sessionRef.current !== sessionId) return
         clearTimer()
         if (e.error === 'no-speech' || e.error === 'aborted') {
@@ -924,13 +939,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // may not be loaded yet so onend can be delayed or never fire, which was
     // blocking the mic for up to 2.5 s and making the first tap feel broken.
     // Mic opens immediately in parallel with the greeting.
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel()
-      const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
-      utter.lang = 'en-US'
-      utter.rate = 1.1
-      window.speechSynthesis.speak(utter)
-    }
+    try {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+        const utter = new SpeechSynthesisUtterance('Hi! What did you buy or sell today?')
+        utter.lang = 'en-US'
+        utter.rate = 1.1
+        window.speechSynthesis.speak(utter)
+      }
+    } catch {}  // TTS errors must never block mic start
     launchRec()
   }
 
