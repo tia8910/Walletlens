@@ -772,6 +772,27 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', pickBest)
   }, [])
 
+  // Mount-time SR engine warm-up. For Dashboard (hideTrigger=true) the parent
+  // mounts this component in response to its own button click — a fresh user
+  // gesture. We immediately start+stop a sacrificial ar-SA recognizer to wake
+  // the audio stack so the user's subsequent mic tap finds a warm engine.
+  // Without this, en-US starts silently fail to engage the mic on first use.
+  useEffect(() => {
+    if (!hideTrigger || !SUPPORTED) return
+    try {
+      const primer = new SR()
+      primer.continuous = true
+      primer.interimResults = true
+      primer.lang = 'ar-SA'    // Only ar-SA reliably engages mic on cold start
+      primer.onerror = () => {}
+      primer.onresult = () => {}
+      primer.onstart = () => { try { primer.stop() } catch {} }
+      try { primer.start() } catch {}
+      // Safety stop in case onstart never fires
+      setTimeout(() => { try { primer.stop() } catch {} }, 800)
+    } catch {}
+  }, [])
+
   const startListening = (langOverride) => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
@@ -947,17 +968,22 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     let primer = null
     try {
       primer = new SR()
-      primer.continuous = false
-      primer.interimResults = false
-      primer.lang = 'ar-SA'         // ALWAYS Arabic — proven to engage the mic
-      primer.onerror = () => {}     // swallow primer errors silently
+      primer.continuous = true       // MATCH real-rec config — required to engage mic visibly
+      primer.interimResults = true
+      primer.lang = 'ar-SA'          // ALWAYS Arabic — proven to engage the mic
+      primer.onerror = () => {}
       primer.onresult = () => {}
+      primer.onstart = () => {
+        // Engine confirmed warm — stop the primer immediately so the real rec can claim the mic
+        try { primer.stop() } catch {}
+      }
       primer.onend = () => {
         // Engine is warm — launch the real recognizer in the user's language.
         if (listeningRef.current && sessionRef.current === sessionId) launchRec()
       }
       primer.start()
-      setTimeout(() => { try { primer.stop() } catch {} }, 300)
+      // Safety stop in case onstart never fires (then onend still triggers launchRec)
+      setTimeout(() => { try { primer.stop() } catch {} }, 600)
     } catch {
       // Primer failed to construct/start — fall back to a plain delayed launch
       setTimeout(() => {
