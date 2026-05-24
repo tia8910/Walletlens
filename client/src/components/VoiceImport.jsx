@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { loadData, saveData, bumpId } from '../data/storage'
 import { track } from '../analytics'
+import { api } from '../api'
 import {
   POPULAR_TICKERS, POPULAR_FIAT,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
@@ -879,6 +880,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
 
+  const fetchAndSetPrice = async (idx, coinId) => {
+    try {
+      const prices = await api.getPrices(coinId)
+      const p = prices[coinId]
+      const usd = p?.usd ?? p?.price ?? null
+      if (usd) updateTx(idx, { price: parseFloat(usd.toFixed(usd >= 1 ? 2 : 8)) })
+    } catch {}
+  }
+
   const updateTx = (idx, patch) => {
     setParsed(p => {
       if (!p) return p
@@ -896,6 +906,17 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       return next.length ? { ...p, transactions: next } : null
     })
   }
+
+  // Auto-fetch live price for any tx with a detected coin but no price yet
+  const coinKey = (parsed?.transactions || []).map(t => t.coin?.id ?? '').join(',')
+  useEffect(() => {
+    if (!parsed?.transactions) return
+    parsed.transactions.forEach((tx, idx) => {
+      if (tx.coin && (tx.price == null || tx.price === 0)) {
+        fetchAndSetPrice(idx, tx.coin.id)
+      }
+    })
+  }, [coinKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImport = () => {
     const ready = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount)
@@ -1116,7 +1137,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginBottom:'0.45rem' }}>
                           <span style={{ fontSize:'0.72rem', color:'#c084fc', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
                           {tx.suggestions.map(s => (
-                            <button key={s.id} onClick={() => updateTx(idx, { coin: s, suggestions: null })} style={{
+                            <button key={s.id} onClick={() => { updateTx(idx, { coin: s, suggestions: null }); fetchAndSetPrice(idx, s.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(192,132,252,0.15)', border:'1.5px solid rgba(192,132,252,0.4)',
                               color:'#e9d5ff', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
                             }}>
@@ -1141,7 +1162,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       {assetResults.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', marginTop:'0.4rem' }}>
                           {assetResults.map(c => (
-                            <button key={c.id} onClick={() => { updateTx(idx, { coin: c, suggestions: null }); setAssetQueries(prev => ({...prev, [idx]: ''})) }} style={{
+                            <button key={c.id} onClick={() => { updateTx(idx, { coin: c, suggestions: null }); setAssetQueries(prev => ({...prev, [idx]: ''})); fetchAndSetPrice(idx, c.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(168,85,247,0.18)', border:'1.5px solid rgba(168,85,247,0.4)',
                               color:'#e9d5ff', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
                             }}>
@@ -1184,6 +1205,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   <div>
                     <label style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:'0.2rem' }}>
                       {isAr ? 'السعر ($)' : 'Price ($)'}
+                      {tx.price > 0 && <span style={{ fontSize:'0.65rem', fontWeight:400, color:'#a3e635', marginInlineStart:'0.3rem' }}>{isAr ? '· السوق' : '· market'}</span>}
                     </label>
                     <input
                       type="number" min="0" step="any"
@@ -1192,7 +1214,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         const v = e.target.value === '' ? null : parseFloat(e.target.value)
                         updateTx(idx, { price: isNaN(v) ? null : v })
                       }}
-                      placeholder={isAr ? 'اختياري' : 'Optional'}
+                      placeholder={isAr ? 'جارٍ الجلب…' : 'Fetching…'}
                       style={{
                         width:'100%', boxSizing:'border-box', padding:'0.42rem 0.6rem',
                         borderRadius:'8px', border:'1.5px solid rgba(255,255,255,0.12)',
