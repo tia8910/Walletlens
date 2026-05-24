@@ -886,10 +886,10 @@ const IS_IOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navig
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [open, setOpen] = useState(hideTrigger)
-  // STT language is driven by the app's global language ('en' or 'ar').
-  // No local picker — the user toggles the app language and voice follows.
   const { lang: appLang } = useLanguage()
   const lang = appLang === 'ar' ? 'ar-sa' : 'en'
+  // User-selectable STT language: 'ar' runs ar-SA + ar-EG, 'en' runs en-US only
+  const [voiceLang, setVoiceLang] = useState('ar')
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -969,7 +969,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setListening(true)
 
     const sessionId = ++sessionRef.current
-    const isAppArabic = lang.startsWith('ar')
+    const isAppArabic = voiceLang === 'ar'
 
     // 5-minute safety ceiling — stops ALL recognizers.
     clearTimeout(listenTimerRef.current)
@@ -979,12 +979,12 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       recsRef.current.forEach(r => { try { r.stop() } catch {} })
     }, 5 * 60 * 1000)
 
-    // iOS only allows one recognizer per mic — degrade to the app's UI language.
-    // Non-iOS runs THREE recognizers in parallel: Saudi Arabic (Gulf + MSA),
-    // Egyptian Arabic (most widely spoken dialect), and English. The best parse wins.
+    // Use only the recognizers for the selected language.
+    // Arabic: ar-SA (Gulf/MSA) + ar-EG (Egyptian) in parallel on non-iOS.
+    // English: en-US only.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : ['ar-SA', 'ar-EG', 'en-US']
+      : isAppArabic ? ['ar-SA', 'ar-EG'] : ['en-US']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
@@ -1288,51 +1288,48 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
         }}>
-          {/* Language hint — STT follows the app's global language (EN or AR) */}
+          {/* Language hint */}
           <div style={{
             textAlign: 'center', marginBottom: '0.6rem',
             fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
           }}>
-            {isAr
-              ? 'يمكنك التحدث بالعربية أو الإنجليزية'
-              : 'You can speak in English or Arabic'}
+            {isAr ? 'اختر لغتك ثم تحدث' : 'Choose your language then speak'}
           </div>
 
-          {/* Active STT model indicator */}
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.45rem', marginBottom:'1rem' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.68rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>
-              {/* brain / AI icon */}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.84A2.5 2.5 0 0 1 9.5 2"/>
-                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.84A2.5 2.5 0 0 0 14.5 2"/>
-              </svg>
-              {isAr ? 'نماذج التعرف على الصوت' : 'Speech Models'}
-            </div>
-            <div style={{ display:'flex', justifyContent:'center', gap:'0.4rem', flexWrap:'wrap' }}>
-              {[
-                { flag:'🇸🇦', label:'Gulf Arabic',    code:'ar-SA', color:'#f59e0b', bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.3)' },
-                ...(!IS_IOS ? [
-                  { flag:'🇪🇬', label:'Egyptian Arabic', code:'ar-EG', color:'#fb923c', bg:'rgba(251,146,60,0.12)', border:'rgba(251,146,60,0.3)' },
-                ] : []),
-                { flag:'🇺🇸', label:'English',         code:'en-US', color:'#60a5fa', bg:'rgba(96,165,250,0.12)', border:'rgba(96,165,250,0.3)' },
-              ].map(m => (
-                <span key={m.code} style={{
-                  fontSize:'0.72rem', fontWeight:700, padding:'0.25rem 0.65rem',
-                  borderRadius:20, border:`1px solid ${m.border}`,
-                  background: m.bg, color: m.color,
-                  display:'flex', alignItems:'center', gap:'0.35rem',
-                }}>
-                  <span style={{ fontSize:'0.9rem', lineHeight:1 }}>{m.flag}</span>
+          {/* Language selector — pick Arabic or English before speaking */}
+          <div style={{ display:'flex', justifyContent:'center', gap:'0.6rem', marginBottom:'1rem' }}>
+            {[
+              { value:'ar', flags:'🇸🇦🇪🇬', label: isAr ? 'عربي' : 'Arabic', color:'#f59e0b', bg:'rgba(245,158,11,0.14)', border:'rgba(245,158,11,0.45)' },
+              { value:'en', flags:'🇺🇸',     label: isAr ? 'إنجليزي' : 'English', color:'#60a5fa', bg:'rgba(96,165,250,0.14)', border:'rgba(96,165,250,0.45)' },
+            ].map(m => {
+              const active = voiceLang === m.value
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => { if (!listening) setVoiceLang(m.value) }}
+                  style={{
+                    fontSize:'0.82rem', fontWeight:700, padding:'0.4rem 1.1rem',
+                    borderRadius:24, cursor: listening ? 'not-allowed' : 'pointer',
+                    border: `2px solid ${active ? m.color : 'rgba(255,255,255,0.1)'}`,
+                    background: active ? m.bg : 'transparent',
+                    color: active ? m.color : 'var(--text-muted)',
+                    display:'flex', alignItems:'center', gap:'0.4rem',
+                    transition:'all 0.18s', opacity: listening && !active ? 0.4 : 1,
+                  }}
+                >
+                  <span style={{ fontSize:'1rem', lineHeight:1 }}>{m.flags}</span>
                   {m.label}
-                  <span style={{
-                    width:6, height:6, borderRadius:'50%', background:m.color,
-                    display:'inline-block', flexShrink:0,
-                    boxShadow: listening ? `0 0 6px ${m.color}` : 'none',
-                    animation: listening ? 'vi-wave 1s ease-in-out infinite' : 'none',
-                  }} />
-                </span>
-              ))}
-            </div>
+                  {active && (
+                    <span style={{
+                      width:7, height:7, borderRadius:'50%', background:m.color,
+                      display:'inline-block', flexShrink:0,
+                      boxShadow: listening ? `0 0 8px ${m.color}` : 'none',
+                      animation: listening ? 'vi-wave 1s ease-in-out infinite' : 'none',
+                    }} />
+                  )}
+                </button>
+              )
+            })}
           </div>
 
           {/* Mic button — center */}
