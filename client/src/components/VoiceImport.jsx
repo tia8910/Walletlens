@@ -1000,26 +1000,54 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
         }}>
-          {/* Language toggle */}
-          <div style={{ display:'flex', gap:'0.4rem', justifyContent:'center', marginBottom:'1rem' }}>
-            <button onClick={() => { setLang('en'); track('voice_lang_toggle', { to: 'en' }) }} style={{
-              padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
-              cursor:'pointer', border:'1.5px solid',
-              borderColor: lang === 'en' ? '#c084fc' : 'rgba(255,255,255,0.12)',
-              background: lang === 'en' ? 'rgba(192,132,252,0.2)' : 'transparent',
-              color: lang === 'en' ? '#e9d5ff' : 'var(--text-muted)',
-            }}>🇺🇸 English</button>
-            <button onClick={() => { setLang('ar'); track('voice_lang_toggle', { to: 'ar' }) }} style={{
-              padding:'0.3rem 0.85rem', borderRadius:'18px', fontSize:'0.78rem', fontWeight:700,
-              cursor:'pointer', border:'1.5px solid',
-              borderColor: lang === 'ar' ? '#c084fc' : 'rgba(255,255,255,0.12)',
-              background: lang === 'ar' ? 'rgba(192,132,252,0.2)' : 'transparent',
-              color: lang === 'ar' ? '#e9d5ff' : 'var(--text-muted)',
-            }}>🇸🇦 عربي</button>
+          {/* Language selector — segmented control */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem' }}>
+            <div style={{
+              display:'inline-flex', background:'rgba(255,255,255,0.06)', borderRadius:'14px',
+              padding:'4px', gap:'4px', border:'1px solid rgba(168,85,247,0.2)',
+            }}>
+              {[
+                { id:'en', flag:'🇺🇸', label:'English', sub:'EN' },
+                { id:'ar', flag:'🇸🇦', label:'العربية', sub:'AR' },
+              ].map(l => (
+                <button key={l.id} onClick={() => { setLang(l.id); track('voice_lang_toggle', { to: l.id }) }} style={{
+                  padding:'0.45rem 1.2rem', borderRadius:'10px', cursor:'pointer',
+                  border: lang === l.id ? '1.5px solid rgba(168,85,247,0.5)' : '1.5px solid transparent',
+                  background: lang === l.id
+                    ? 'linear-gradient(135deg, rgba(168,85,247,0.35), rgba(236,72,153,0.25))'
+                    : 'transparent',
+                  color: lang === l.id ? '#f3e8ff' : 'var(--text-muted)',
+                  fontWeight: lang === l.id ? 800 : 500,
+                  fontSize:'0.88rem', transition:'all 0.18s',
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:'1px',
+                  boxShadow: lang === l.id ? '0 2px 10px rgba(168,85,247,0.3)' : 'none',
+                }}>
+                  <span style={{ fontSize:'1.3rem', lineHeight:1 }}>{l.flag}</span>
+                  <span style={{ fontSize:'0.78rem', letterSpacing:'0.02em' }}>{l.label}</span>
+                  {lang === l.id && <span style={{ fontSize:'0.6rem', color:'#c084fc', letterSpacing:'0.08em' }}>{l.sub} ✓</span>}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Mic button — center */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.7rem', marginBottom:'1rem' }}>
+            {/* Waveform bars flanking the mic when idle */}
+            <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
+              {/* Left bars */}
+              <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                {[['0.7s','12px'],['0.5s','18px'],['0.9s','10px']].map(([delay, h], i) => (
+                  <span key={i} style={{
+                    display:'inline-block', width:'4px', borderRadius:'3px',
+                    height: listening ? h : '6px',
+                    background: listening ? 'linear-gradient(to top,#a855f7,#ec4899)' : 'rgba(168,85,247,0.3)',
+                    animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
+                    animationDelay: delay,
+                    transition:'height 0.3s',
+                  }} />
+                ))}
+              </div>
+
             <div style={{ position:'relative', width:96, height:96 }}>
               {listening && (
                 <>
@@ -1060,11 +1088,28 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 </svg>
               </button>
             </div>
-            <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:0, textAlign:'center' }}>
+
+              {/* Right bars */}
+              <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                {[['0.8s','10px'],['0.4s','18px'],['1.1s','12px']].map(([delay, h], i) => (
+                  <span key={i} style={{
+                    display:'inline-block', width:'4px', borderRadius:'3px',
+                    height: listening ? h : '6px',
+                    background: listening ? 'linear-gradient(to top,#ec4899,#a855f7)' : 'rgba(236,72,153,0.3)',
+                    animation: listening ? `vi-wave ${0.6 + i*0.15}s ease-in-out infinite` : 'none',
+                    animationDelay: delay,
+                    transition:'height 0.3s',
+                  }} />
+                ))}
+              </div>
+            </div>
+
+            <p style={{ fontSize:'0.82rem', color: listening ? '#e9d5ff' : 'var(--text-muted)', margin:0, textAlign:'center', fontWeight: listening ? 600 : 400 }}>
               {listening
                 ? (isAr ? '🎙️ أتحدث الآن…' : '🎙️ Listening… speak now')
                 : (isAr ? 'اضغط الميكروفون وقل صفقتك' : 'Tap the mic and say your trade')}
             </p>
+            <style>{`@keyframes vi-wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }`}</style>
           </div>
 
           {/* Reaction banner */}
