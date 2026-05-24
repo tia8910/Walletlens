@@ -2,10 +2,11 @@
   "name": "WalletLens",
   "short_name": "WalletLens",
   "description": "Track crypto, gold, silver, US stocks, and bonds in one place.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#071a0c",
   "theme_color": "#071a0c",
   "icons": [
