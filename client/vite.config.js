@@ -10,11 +10,12 @@ export default defineConfig({
     target: 'esnext',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 600,
-    reportCompressedSize: false,
+    reportCompressedSize: true,
     // Skip modulepreload polyfill — all target browsers support native modulepreload
     modulePreload: { polyfill: false },
     // Inline assets smaller than 4 KB as data URIs (fewer round-trips)
     assetsInlineLimit: 4096,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         // Granular vendor splitting: each chunk is individually cacheable.
