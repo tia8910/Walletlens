@@ -8,6 +8,7 @@ import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import QuickStatsPopup from './components/QuickStatsPopup'
 import { useLanguage } from './LanguageContext'
+import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import WelcomeModal from './components/WelcomeModal'
@@ -108,6 +109,7 @@ function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
@@ -169,6 +171,35 @@ function Drawer({ open, onClose }) {
           <button className="wl-drawer-item wl-drawer-sell" onClick={() => go('/transactions', { openAdd: true, type: 'sell' })}><IconSell /><span>{t('sell')}</span></button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'wallets' })}><IconWallet /><span>{t('wallets')}</span></button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'data' })}><IconData /><span>{t('importExport')}</span></button>
+        </div>
+
+        <div className="wl-drawer-section">
+          <div className="wl-drawer-label">Preferences</div>
+          <div className="wl-drawer-theme-grid">
+            {THEMES.map(th => (
+              <button
+                key={th.id}
+                className={`wl-drawer-swatch-btn${theme === th.id ? ' wl-drawer-swatch-active' : ''}`}
+                onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
+                title={th.name}
+              >
+                <span className="wl-drawer-swatch" style={{
+                  background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+                  boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
+                }}>
+                  {th.logo ? <img src={th.logo} alt={th.name} style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
+                </span>
+                <span className="wl-drawer-swatch-label">{th.name}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            className="wl-drawer-mode-toggle"
+            onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
+          >
+            <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
+            <span>{mode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
         </div>
 
         <div className="wl-drawer-section">

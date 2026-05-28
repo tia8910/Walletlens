@@ -605,7 +605,29 @@ export default function Landing() {
       {/* ══ FINAL CTA ══════════════════════════════════════════════════ */}
       <section className="lp-final">
         <div className="lp-final-glow" />
-        <Logo size={64} animated />
+        <div className="lp-final-brand-lockup">
+          <Logo size={64} animated className="lp-brand-logo" />
+          <div className="lp-final-brand-text">
+            <div className="lp-final-brand-name">WalletLens</div>
+            <div className="lp-final-brand-tag">{t('brandTag')}</div>
+            <div className="lp-brand-actions" style={{ marginTop:'0.4rem' }}>
+              <span className={`lp-brand-action${actionIdx === 0 ? ' lp-brand-action-active' : ''}`}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                {lang === 'ar' ? 'تتبع' : 'TRACK'}
+              </span>
+              <span className="lp-brand-sep">|</span>
+              <span className={`lp-brand-action${actionIdx === 1 ? ' lp-brand-action-active' : ''}`}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 7V2a5 5 0 0 1 5 5H7z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" fillOpacity="0.25"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4"/></svg>
+                {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+              </span>
+              <span className="lp-brand-sep">|</span>
+              <span className={`lp-brand-action${actionIdx === 2 ? ' lp-brand-action-active' : ''}`}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 10l3.5-4 2.5 2.5L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 4h2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                {lang === 'ar' ? 'نمو' : 'GROW'}
+              </span>
+            </div>
+          </div>
+        </div>
         <h2 className="lp-final-h2">
           {t('finalH2a')}<br />{t('finalH2b')}
         </h2>
