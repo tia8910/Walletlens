@@ -4470,7 +4470,23 @@ tr:last-child td { border-bottom: none; }
   gap: 0.55rem;
   flex: 1;
 }
-.wl-topbar-brand strong { color: var(--text); font-size: 1.05rem; font-weight: 900; letter-spacing: -0.02em; font-family: var(--brand-font); }
+.wl-topbar-brand-text { display: flex; flex-direction: column; gap: 0.05rem; }
+.wl-topbar-brand-name {
+  color: var(--text); font-size: 1.1rem; font-weight: 900;
+  letter-spacing: -0.02em; font-family: var(--brand-font); line-height: 1;
+}
+.wl-topbar-brand-actions {
+  display: flex; align-items: center; gap: 0.22rem;
+}
+.wl-topbar-brand-action {
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.22); transition: color 0.35s;
+}
+.wl-topbar-brand-action.active { color: var(--g); }
+.wl-topbar-brand-sep { font-size: 0.55rem; color: rgba(255,255,255,0.12); }
+[data-wl-light] .wl-topbar-brand-action { color: rgba(0,0,0,0.2); }
+[data-wl-light] .wl-topbar-brand-action.active { color: var(--g); }
+[data-wl-light] .wl-topbar-brand-sep { color: rgba(0,0,0,0.15); }
 .wl-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 .wl-live-badge {
   display: flex;
