@@ -271,6 +271,23 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const holdingForCoin = holdings?.find(h => h.coin_id === asset?.id)
   const total = amount && price ? parseFloat(amount) * parseFloat(price) : 0
 
+  // When selling crypto and the user holds exactly one coin, auto-select it so
+  // the "Available to sell" balance + % quick-fill appears immediately
+  // (no extra tap needed to reach the percentage buttons).
+  useEffect(() => {
+    if (isBuy || selectedCoin || prefillCoin || category !== 'crypto') return
+    const sellable = (holdings || []).filter(h =>
+      (h.amount ?? 0) > 0 &&
+      !h.coin_id?.startsWith('fiat:') && !h.coin_id?.startsWith('stock:') &&
+      h.coin_id !== 'gold' && h.coin_id !== 'silver' &&
+      !h.coin_id?.startsWith('bond:') && !h.coin_id?.startsWith('other:')
+    )
+    if (sellable.length === 1) {
+      const h = sellable[0]
+      setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })
+    }
+  }, [isBuy, category, selectedCoin, prefillCoin, holdings])
+
   // Format price with thousands commas for display when field is not focused
   function fmtPriceDisplay(val) {
     if (!val || val === '…') return val
