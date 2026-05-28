@@ -4701,31 +4701,73 @@ tr:last-child td { border-bottom: none; }
 [data-wl-light] .wl-drawer-swatch-label { color: var(--text-sub); }
 [data-wl-light] .wl-drawer-mode-toggle { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 
+/* ── Category summary cards row ── */
+.dvx-cat-summary-row {
+  display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+.dvx-cat-summary-row::-webkit-scrollbar { display: none; }
+.dvx-cat-summary-card {
+  flex: 0 0 auto; min-width: 130px; padding: 0.75rem 0.9rem !important;
+  display: flex; flex-direction: column; gap: 0.2rem;
+}
+.dvx-cat-summary-label { font-size: 0.72rem; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
+.dvx-cat-summary-value { font-size: 1rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.dvx-cat-summary-pct { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.dvx-cat-summary-pnl { font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dvx-cat-summary-pnl.pos { color: var(--g); }
+.dvx-cat-summary-pnl.neg { color: #f87171; }
+.dvx-cat-summary-pnlpct { font-weight: 500; }
+.dvx-cat-summary-bar-track { margin-top: 0.3rem; height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.dvx-cat-summary-bar-fill { height: 100%; background: var(--g); border-radius: 2px; transition: width 0.6s ease; min-width: 2px; }
+[data-wl-light] .dvx-cat-summary-bar-track { background: rgba(0,0,0,0.1); }
+
+/* ── Holdings category group header ── */
+.dvx-cat-group-hdr {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem;
+  padding: 0.6rem 0 0.3rem; border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 0.25rem;
+}
+.dvx-cat-group-hdr:first-child { border-top: none; margin-top: 0; padding-top: 0.25rem; }
+.dvx-cat-group-name { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.07em; }
+.dvx-cat-group-stats { display: flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.dvx-cat-group-sep { color: var(--text-muted); opacity: 0.5; }
+[data-wl-light] .dvx-cat-group-hdr { border-top-color: rgba(0,0,0,0.07); }
+
 /* ── Portfolio category breakdown ── */
 .dvx-cat-breakdown { padding: 1rem 1.15rem !important; }
-.dvx-cat-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.dvx-cat-list { display: flex; flex-direction: column; gap: 0.65rem; }
 .dvx-cat-row {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto;
   gap: 0.2rem 0.75rem;
-  align-items: center;
+  align-items: start;
 }
 .dvx-cat-info { display: flex; justify-content: space-between; align-items: center; }
 .dvx-cat-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
 .dvx-cat-pct { font-size: 0.75rem; font-weight: 700; color: var(--g); font-variant-numeric: tabular-nums; }
 .dvx-cat-bar-track {
-  grid-column: 1; height: 5px; background: rgba(255,255,255,0.07);
-  border-radius: 3px; overflow: hidden;
+  grid-column: 1; height: 8px; background: rgba(255,255,255,0.07);
+  border-radius: 4px; overflow: hidden;
 }
 [data-wl-light] .dvx-cat-bar-track { background: rgba(0,0,0,0.1); }
 [data-wl-light] .dvx-cat-label { color: var(--text); }
 [data-wl-light] .dvx-cat-value { color: var(--text); }
-.dvx-cat-bar-fill { height: 100%; background: var(--g); border-radius: 3px; transition: width 0.6s ease; min-width: 2px; }
-.dvx-cat-value {
-  grid-column: 2; grid-row: 1 / 3; font-size: 0.82rem; font-weight: 700;
-  color: var(--text); font-variant-numeric: tabular-nums; text-align: right;
+.dvx-cat-bar-fill {
+  height: 100%; background: var(--g); border-radius: 4px;
+  transition: width 0.6s ease; min-width: 2px;
+  box-shadow: 0 0 8px rgba(var(--g-rgb), 0.45);
 }
+.dvx-cat-right {
+  grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 0.15rem;
+}
+.dvx-cat-value { font-size: 0.82rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
+.dvx-cat-pnl { font-size: 0.7rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.dvx-cat-pnl.pos { color: var(--g); }
+.dvx-cat-pnl.neg { color: #f87171; }
+.dvx-cat-invested { font-size: 0.65rem; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Landing final CTA brand lockup ── */
 .lp-final-brand-lockup {
