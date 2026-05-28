@@ -204,6 +204,7 @@ export default function Landing() {
   const { t, lang, setLang, isRtl } = useLanguage()
   const [accentIdx, setAccentIdx] = useState(0)
   const [accentIn, setAccentIn] = useState(true)
+  const [actionIdx, setActionIdx] = useState(0)
 
   useEffect(() => {
     track('landing_view')
@@ -223,6 +224,11 @@ export default function Landing() {
     return () => clearInterval(id)
   }, [lang])
 
+  useEffect(() => {
+    const id = setInterval(() => setActionIdx(i => (i + 1) % 3), 1800)
+    return () => clearInterval(id)
+  }, [])
+
   return (
     <div className="lp">
       <LandingBackground />
@@ -230,8 +236,30 @@ export default function Landing() {
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
       <section className="lp-hero" ref={heroRef}>
         <div className="lp-hero-inner">
-          <div className="lp-brand-name">WalletLens</div>
-          <div className="lp-brand-tag">{t('brandTag')}</div>
+          {/* ── Brand lockup: logo + name + tagline + TRACK|ANALYZE|GROW ── */}
+          <div className="lp-brand-lockup">
+            <Logo size={80} animated className="lp-brand-logo" />
+            <div className="lp-brand-text">
+              <div className="lp-brand-title">WalletLens</div>
+              <div className="lp-brand-tagline">{t('brandTag')}</div>
+              <div className="lp-brand-actions">
+                <span className={`lp-brand-action${actionIdx === 0 ? ' lp-brand-action-active' : ''}`}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                  {lang === 'ar' ? 'تتبع' : 'TRACK'}
+                </span>
+                <span className="lp-brand-sep">|</span>
+                <span className={`lp-brand-action${actionIdx === 1 ? ' lp-brand-action-active' : ''}`}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 7V2a5 5 0 0 1 5 5H7z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" fillOpacity="0.25"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4"/></svg>
+                  {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+                </span>
+                <span className="lp-brand-sep">|</span>
+                <span className={`lp-brand-action${actionIdx === 2 ? ' lp-brand-action-active' : ''}`}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10l3.5-4 2.5 2.5L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 4h2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  {lang === 'ar' ? 'نمو' : 'GROW'}
+                </span>
+              </div>
+            </div>
+          </div>
 
           <h1 className="lp-hero-h1">
             {t('heroH1a')}<br />

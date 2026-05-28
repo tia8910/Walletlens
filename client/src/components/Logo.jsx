@@ -1,45 +1,40 @@
 import { memo, useId } from 'react'
 
+// Matches the brand guide: thick gradient ring, green bars, dot upper-right, handle lower-left
 function Logo({ size = 32, animated = false, className = '' }) {
   const uid = useId().replace(/:/g, '')
-  const gradId = `lg-${uid}`
-  const glowId = `lg-glow-${uid}`
+  const gId = `lg-g-${uid}`
 
   return (
     <svg
-      width={size} height={size} viewBox="0 0 40 40"
+      width={size} height={size} viewBox="0 0 64 64"
       className={`wl-logo${animated ? ' wl-logo-animated' : ''}${className ? ' ' + className : ''}`}
       aria-label="WalletLens"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        {/* Dark green gradient fill for the lens circle */}
-        <radialGradient id={gradId} cx="38%" cy="32%" r="68%" gradientUnits="objectBoundingBox">
-          <stop offset="0%"   stopColor="#1db954" stopOpacity="0.95" />
-          <stop offset="45%"  stopColor="#0f7a36" />
-          <stop offset="100%" stopColor="#052912" />
-        </radialGradient>
-        {/* Subtle glow filter for animated state */}
-        <filter id={glowId} x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        <linearGradient id={gId} x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#4ade80" />
+          <stop offset="50%"  stopColor="#16a34a" />
+          <stop offset="100%" stopColor="#14532d" />
+        </linearGradient>
       </defs>
 
-      {/* Filled lens circle with gradient */}
-      <circle cx="17" cy="17" r="14.5" fill={`url(#${gradId})`} />
-      {/* Subtle inner ring highlight */}
-      <circle cx="17" cy="17" r="14.5" stroke="rgba(255,255,255,0.12)" strokeWidth="1" fill="none" />
+      {/* Main ring — thick gradient stroke, no fill */}
+      <circle cx="27" cy="25" r="19" stroke={`url(#${gId})`} strokeWidth="5.5" fill="none" />
 
-      {/* Ascending white bars (chart inside lens) */}
-      <rect className="wl-logo-bar wl-logo-bar-1" x="9.5"  y="19"   width="4" height="5.5" rx="1" fill="white" opacity="0.75" />
-      <rect className="wl-logo-bar wl-logo-bar-2" x="15"   y="14.5" width="4" height="10"  rx="1" fill="white" opacity="0.88" />
-      <rect className="wl-logo-bar wl-logo-bar-3" x="20.5" y="10.5" width="4" height="14"  rx="1" fill="white" />
+      {/* Small dot at upper-right of ring (focus point) */}
+      <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80" />
 
-      {/* Handle — bold rounded stroke, bottom-right */}
-      <line x1="28.2" y1="28.2" x2="37" y2="37"
-        stroke="#16a34a" strokeWidth="3.8" strokeLinecap="round" />
+      {/* Ascending green bars — same bottom baseline */}
+      <rect className="wl-logo-bar wl-logo-bar-1" x="14.5" y="26.5" width="5"   height="7.5"  rx="1.2" fill={`url(#${gId})`} />
+      <rect className="wl-logo-bar wl-logo-bar-2" x="21.5" y="21"   width="5"   height="13"   rx="1.2" fill={`url(#${gId})`} />
+      <rect className="wl-logo-bar wl-logo-bar-3" x="28.5" y="15.5" width="5"   height="18.5" rx="1.2" fill={`url(#${gId})`} />
+
+      {/* Handle — lower-left, bold rounded */}
+      <line x1="13.5" y1="39" x2="4" y2="55"
+        stroke={`url(#${gId})`} strokeWidth="5.5" strokeLinecap="round" />
     </svg>
   )
 }
