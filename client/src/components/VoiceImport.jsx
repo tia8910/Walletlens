@@ -837,6 +837,36 @@ function searchAssets(query) {
   return [...matched.values()].slice(0, 8)
 }
 
+// ── Payment-leg options (Buy with / Sell for) — mirrors the trade window ───
+const BUY_WITH_OPTS  = ['NONE', 'USDT', 'USDC', 'USD', 'BTC', 'EUR']
+const SELL_FOR_OPTS  = ['USD', 'USDT', 'USDC', 'BTC', 'EUR', 'REMOVE']
+const LEG_LABEL = { NONE: 'None', REMOVE: 'Remove', USDT: 'USDT', USDC: 'USDC', USD: 'USD', BTC: 'BTC', EUR: 'EUR' }
+
+// Build the spend/receive leg for a chosen payment currency, same as the
+// trade window: a buy "spends" the leg asset (records a sell), a sell
+// "receives" the leg asset (records a buy). Returns null for NONE/REMOVE.
+async function buildVoiceLeg(legKey, isBuy, costUsd) {
+  const k = (legKey || '').toUpperCase()
+  if (!k || k === 'NONE' || k === 'REMOVE' || !costUsd) return null
+  const type = isBuy ? 'sell' : 'buy'
+  if (k === 'USD')  return { type, coin_id: `${FIAT_PREFIX}usd`, symbol: 'USD',  name: 'US Dollar', category: 'fiat',   amount: costUsd, pricePerUnit: 1 }
+  if (k === 'USDT') return { type, coin_id: 'tether',            symbol: 'USDT', name: 'Tether',    category: 'crypto', amount: costUsd, pricePerUnit: 1 }
+  if (k === 'USDC') return { type, coin_id: 'usd-coin',          symbol: 'USDC', name: 'USD Coin',  category: 'crypto', amount: costUsd, pricePerUnit: 1 }
+  if (k === 'BTC') {
+    try {
+      const px = await api.getPrices('bitcoin'); const usd = px?.bitcoin?.usd || 0
+      if (usd) return { type, coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: costUsd / usd, pricePerUnit: usd }
+    } catch {}
+    return null
+  }
+  if (k === 'EUR') {
+    let eurUsd = 1.08
+    try { const r = await api.getPrices(`${FIAT_PREFIX}eur`); eurUsd = r?.[`${FIAT_PREFIX}eur`]?.usd || 1.08 } catch {}
+    return { type, coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: costUsd / eurUsd, pricePerUnit: eurUsd }
+  }
+  return null
+}
+
 // ── Fun reactions for slang detected — adds personality ────────────────────
 function getReaction(text, parsed) {
   const t = text.toLowerCase()
@@ -1196,11 +1226,20 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     })
   }, [coinKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleImport = () => {
+  // Append a blank order card so the user can manually build multiple orders.
+  const addBlankTx = () => {
+    setConfirmed(false)
+    setParsed(p => {
+      const base = p || { original: transcript || '', transactions: [] }
+      return { ...base, transactions: [...base.transactions, { type: 'buy', coin: null, amount: null, price: null, suggestions: null, leg: 'NONE' }] }
+    })
+  }
+
+  const handleImport = async () => {
     const ready = (parsed?.transactions || []).filter(t => t.coin && t.type && t.amount)
     if (!ready.length) return
     const wallets = loadData('wallets')
-    const walletId = wallets[0]?.id || 1
+    const walletId = parseInt(wallets[0]?.id || 1)
     const txs = loadData('transactions')
     const today = new Date().toISOString().split('T')[0]
     for (const tx of ready) {
@@ -1208,7 +1247,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       const totalCost = tx.amount * pricePerUnit
       txs.unshift({
         id: bumpId('crypto_tracker_next_tx_id'),
-        wallet_id: parseInt(walletId),
+        wallet_id: walletId,
         type: tx.type, category: tx.coin.category || 'crypto',
         coin_id: tx.coin.id,
         coin_symbol: tx.coin.symbol,
@@ -1222,6 +1261,23 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         date: today,
         created_at: new Date().toISOString(),
       })
+      // Buy with / Sell for payment leg (same model as the trade window)
+      const legKey = tx.leg ?? (tx.type === 'buy' ? 'NONE' : 'REMOVE')
+      const leg = await buildVoiceLeg(legKey, tx.type === 'buy', totalCost)
+      if (leg) {
+        txs.unshift({
+          id: bumpId('crypto_tracker_next_tx_id'),
+          wallet_id: walletId,
+          type: leg.type, category: leg.category,
+          coin_id: leg.coin_id, coin_symbol: leg.symbol, coin_name: leg.name, coin_image: '',
+          amount: leg.amount, price_per_unit: leg.pricePerUnit,
+          total_cost: leg.amount * leg.pricePerUnit,
+          exchange: 'Voice Import',
+          notes: tx.type === 'buy' ? `Spent on buying ${tx.coin.symbol}` : `Proceeds from selling ${tx.coin.symbol}`,
+          date: today,
+          created_at: new Date().toISOString(),
+        })
+      }
     }
     saveData('transactions', txs)
     track('voice_import_saved', {
@@ -1456,7 +1512,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {/* Action toggle */}
                 <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.6rem' }}>
                   {['buy','sell'].map(t => (
-                    <button key={t} onClick={() => updateTx(idx, { type: t })} style={{
+                    <button key={t} onClick={() => updateTx(idx, { type: t, leg: t === 'buy' ? 'NONE' : 'REMOVE' })} style={{
                       flex:1, padding:'0.35rem 0', borderRadius:'8px', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
                       border: tx.type === t ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
                       background: tx.type === t
@@ -1581,9 +1637,52 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                     />
                   </div>
                 </div>
+
+                {/* Buy with / Sell for — payment leg selector (mirrors trade window) */}
+                {(() => {
+                  const isBuyLeg = tx.type !== 'sell'
+                  const opts = isBuyLeg ? BUY_WITH_OPTS : SELL_FOR_OPTS
+                  const current = tx.leg ?? (isBuyLeg ? 'NONE' : 'REMOVE')
+                  return (
+                    <div style={{ marginTop:'0.6rem' }}>
+                      <span style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                        {isBuyLeg ? (isAr ? 'الدفع بـ' : 'Buy with') : (isAr ? 'البيع مقابل' : 'Sell for')}
+                      </span>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', marginTop:'0.3rem' }}>
+                        {opts.map(o => {
+                          const active = current === o
+                          return (
+                            <button key={o} onClick={() => updateTx(idx, { leg: o })} style={{
+                              padding:'0.3rem 0.7rem', borderRadius:'16px', cursor:'pointer',
+                              fontSize:'0.76rem', fontWeight:700, fontFamily:'inherit',
+                              border: `1.5px solid ${active ? 'rgba(52,211,153,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                              background: active ? 'rgba(52,211,153,0.16)' : 'transparent',
+                              color: active ? '#34d399' : 'var(--text-muted)',
+                              transition:'all 0.15s',
+                            }}>
+                              {LEG_LABEL[o] || o}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}
+
+          {/* Add another order manually */}
+          {(parsed || transcript) && !confirmed && (
+            <button onClick={addBlankTx} style={{
+              width:'100%', marginBottom:'0.65rem',
+              background:'transparent', border:'1.5px dashed rgba(52,211,153,0.4)',
+              borderRadius:'10px', color:'#34d399', padding:'0.6rem',
+              fontWeight:700, fontSize:'0.83rem', cursor:'pointer',
+            }}>
+              ＋ {isAr ? 'إضافة صفقة أخرى' : 'Add another order'}
+            </button>
+          )}
 
           {error && (
             <div style={{
