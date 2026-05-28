@@ -4980,6 +4980,16 @@ tr:last-child td { border-bottom: none; }
 .dvx-tgt-form { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 0.75rem; }
 .dvx-tgt-form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .dvx-tgt-form-lbl { font-size: 0.7rem; color: var(--text-sub); margin-bottom: 0.35rem; }
+.dvx-tgt-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.5rem; }
+.dvx-tgt-mode-btn {
+  padding: 0.45rem; border-radius: 9px; cursor: pointer;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted); font-size: 0.78rem; font-weight: 600;
+  font-family: inherit; transition: all 0.15s;
+}
+.dvx-tgt-mode-btn.active { background: rgba(var(--g-rgb),0.12); border-color: var(--g); color: var(--g); }
+[data-wl-light] .dvx-tgt-mode-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .dvx-tgt-mode-btn.active { background: rgba(var(--g-rgb),0.1); border-color: var(--g); color: var(--gd); }
 .dvx-tgt-pct-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
 .dvx-tgt-pct-btn {
   padding: 0.5rem; border-radius: 10px; cursor: pointer;
