@@ -1693,14 +1693,13 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   // Stablecoins (cash) are pegged ~$1 — no sell target makes sense, exclude them.
   const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash')
 
-  async function saveTarget(coinId, priceVal, pctVal, amount) {
+  async function saveTarget(coinId, priceVal, qtyVal) {
     const p = parseFloat(priceVal)
-    const pct = parseFloat(pctVal)
+    const q = parseFloat(qtyVal)
     if (!p || p <= 0) return
-    // Convert the chosen percentage of holdings into a quantity (null = 100% / all)
-    const q = pct && pct > 0 && pct < 100 ? amount * pct / 100 : null
+    if (!q || q <= 0) return
     await api.addCoinTarget(coinId, { price: p, quantity: q })
-    track('goal_set', { coin_id: coinId, target_price: p, sell_pct: pct || 100 })
+    track('goal_set', { coin_id: coinId, target_price: p, qty: q })
     setAdding(prev => { const n = { ...prev }; delete n[coinId]; return n })
     onTargetsChange()
   }
@@ -1784,6 +1783,17 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
           const currentPrice = h.price
           const isAdding = !!adding[h.coin_id]
           const addState = adding[h.coin_id] || {}
+          // How much of the holding is already committed to existing targets,
+          // and what's left to allocate to a new target.
+          const plannedQty = plan.reduce((s, t) => s + (t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)), 0)
+          const available  = Math.max(0, h.amount - plannedQty)
+          const plannedPct = h.amount > 0 ? Math.min(100, (plannedQty / h.amount) * 100) : 0
+          // New-target quantity from the chosen mode (% of available, or typed qty)
+          const addMode = addState.mode || 'pct'
+          const addQty  = addMode === 'pct'
+            ? available * (Number(addState.pct ?? 100)) / 100
+            : Math.max(0, Math.min(parseFloat(addState.qty) || 0, available))
+          const remainingAfter = Math.max(0, available - addQty)
 
           return (
             <div key={h.coin_id} className="glass-card dvx-target-card">
@@ -1798,12 +1808,18 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       {currentPrice > 0 ? `$${fmt(currentPrice)}` : '—'} · {Number(h.amount).toLocaleString(undefined, { maximumFractionDigits:6 })} held
                       {h.value > 0 && ` · $${fmt(h.value)}`}
                     </div>
+                    {plannedQty > 0 && (
+                      <div style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginTop:'0.1rem' }}>
+                        {plannedPct.toFixed(0)}% planned · {parseFloat(available.toFixed(6))} {h.coin_symbol?.toUpperCase()} left
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button
                   className="dvx-btn dvx-btn-primary"
                   style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
-                  onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', pct:100 } })}>
+                  disabled={!isAdding && available <= 0}
+                  onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', mode:'pct', pct:100 } })}>
                   {isAdding ? 'Cancel' : '+ Target'}
                 </button>
               </div>
@@ -1823,25 +1839,54 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     </div>
                   </div>
                   <div>
-                    <div className="dvx-tgt-form-lbl">% of holdings to sell at this target</div>
-                    <div className="dvx-tgt-pct-row">
-                      {[25, 50, 75, 100].map(p => (
-                        <button key={p} type="button"
-                          className={`dvx-tgt-pct-btn ${Number(addState.pct) === p ? 'active' : ''}`}
-                          onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], pct: p } }))}>
-                          {p}%
-                        </button>
-                      ))}
+                    <div className="dvx-tgt-form-lbl">How much to sell at this target</div>
+                    {/* Mode toggle: percentage or exact quantity */}
+                    <div className="dvx-tgt-mode-row">
+                      <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'pct' ? 'active' : ''}`}
+                        onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'pct', pct: prev[h.coin_id]?.pct ?? 100 } }))}>
+                        Percentage
+                      </button>
+                      <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'qty' ? 'active' : ''}`}
+                        onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'qty' } }))}>
+                        Quantity
+                      </button>
                     </div>
+                    {addMode === 'pct' ? (
+                      <div className="dvx-tgt-pct-row">
+                        {[25, 50, 75, 100].map(p => (
+                          <button key={p} type="button"
+                            className={`dvx-tgt-pct-btn ${Number(addState.pct ?? 100) === p ? 'active' : ''}`}
+                            onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], pct: p } }))}>
+                            {p}%
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', gap:'0.4rem', alignItems:'center' }}>
+                        <input
+                          type="number" min="0" step="any"
+                          placeholder={`0 – ${parseFloat(available.toFixed(6))}`}
+                          value={addState.qty || ''}
+                          onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
+                          style={{ flex:1, background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
+                        />
+                        <button type="button" className="dvx-tgt-pct-btn"
+                          onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: String(parseFloat(available.toFixed(8))) } }))}>
+                          MAX
+                        </button>
+                      </div>
+                    )}
                     <div className="dvx-tgt-form-hint">
-                      ≈ {(h.amount * (Number(addState.pct) || 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 6 })} {h.coin_symbol?.toUpperCase()}
-                      {addState.price && parseFloat(addState.price) > 0 && ` · $${fmt(h.amount * (Number(addState.pct) || 100) / 100 * parseFloat(addState.price))} proceeds`}
+                      Sell {parseFloat(addQty.toFixed(6))} {h.coin_symbol?.toUpperCase()}
+                      {addState.price && parseFloat(addState.price) > 0 && ` · $${fmt(addQty * parseFloat(addState.price))} proceeds`}
+                      {' · '}<strong style={{ color:'var(--text)' }}>{parseFloat(remainingAfter.toFixed(6))} {h.coin_symbol?.toUpperCase()} left</strong>
                     </div>
                   </div>
                   <button
                     className="dvx-btn dvx-btn-primary dvx-tgt-save"
                     style={{ borderRadius:8 }}
-                    onClick={() => saveTarget(h.coin_id, addState.price, addState.pct, h.amount)}>
+                    disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0}
+                    onClick={() => saveTarget(h.coin_id, addState.price, addQty)}>
                     Save Target
                   </button>
                 </div>
