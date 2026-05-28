@@ -2223,17 +2223,42 @@ export default function Dashboard() {
 
   const catBreakdown = useMemo(() => {
     if (!enriched.length) return []
+    const totals = {}; const investeds = {}; const pnls = {}
+    enriched.forEach(h => {
+      const cat = categorizeAsset(h)
+      totals[cat] = (totals[cat] || 0) + (h.value > 0 ? h.value : h.total_invested)
+      if (cat !== 'cash') {
+        investeds[cat] = (investeds[cat] || 0) + h.total_invested
+        pnls[cat] = (pnls[cat] || 0) + (h.pnl || 0)
+      }
+    })
+    return CATEGORY_ORDER.filter(cat => totals[cat] > 0).map(cat => {
+      const invested = investeds[cat] || 0
+      const pnl = pnls[cat] || 0
+      const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
+      return {
+        cat, label: CATEGORY_LABELS[cat],
+        value: totals[cat],
+        pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
+        invested, pnl, pnlPct,
+      }
+    })
+  }, [enriched, totalValue])
+
+  const catAllocData = useMemo(() => {
+    if (!enriched.length) return []
     const totals = {}
     enriched.forEach(h => {
       const cat = categorizeAsset(h)
       totals[cat] = (totals[cat] || 0) + (h.value > 0 ? h.value : h.total_invested)
     })
+    const total = Object.values(totals).reduce((s, v) => s + v, 0)
     return CATEGORY_ORDER.filter(cat => totals[cat] > 0).map(cat => ({
-      cat, label: CATEGORY_LABELS[cat],
+      name: CATEGORY_LABELS[cat], cat,
       value: totals[cat],
-      pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
+      pct: total > 0 ? (totals[cat] / total) * 100 : 0,
     }))
-  }, [enriched, totalValue])
+  }, [enriched])
 
   const pnlData = useMemo(() => {
     if (pricesFailed || !enriched.some(h => h.pnl !== 0)) return []
@@ -2684,12 +2709,34 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Category summary cards row */}
+          {catBreakdown.length > 0 && (
+            <div className="dvx-cat-summary-row">
+              {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
+                <div key={cat} className="dvx-cat-summary-card glass-card">
+                  <div className="dvx-cat-summary-label">{label}</div>
+                  <div className="dvx-cat-summary-value">{hidden ? '••••' : `$${fmt(value)}`}</div>
+                  <div className="dvx-cat-summary-pct">{pct.toFixed(1)}%</div>
+                  {cat !== 'cash' && pnl !== 0 && !pricesFailed && (
+                    <div className={`dvx-cat-summary-pnl${pnl >= 0 ? ' pos' : ' neg'}`}>
+                      {pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(pnl))}`}
+                      <span className="dvx-cat-summary-pnlpct"> ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)</span>
+                    </div>
+                  )}
+                  <div className="dvx-cat-summary-bar-track">
+                    <div className="dvx-cat-summary-bar-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Portfolio breakdown by asset category */}
           {catBreakdown.length > 0 && (
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
               <div className="dvx-cat-list">
-                {catBreakdown.map(({ cat, label, value, pct }) => (
+                {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested }) => (
                   <div key={cat} className="dvx-cat-row">
                     <div className="dvx-cat-info">
                       <span className="dvx-cat-label">{label}</span>
@@ -2698,7 +2745,17 @@ export default function Dashboard() {
                     <div className="dvx-cat-bar-track">
                       <div className="dvx-cat-bar-fill" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="dvx-cat-value">{hidden ? '••••' : `$${fmt(value)}`}</span>
+                    <div className="dvx-cat-right">
+                      <span className="dvx-cat-value">{hidden ? '••••' : `$${fmt(value)}`}</span>
+                      {cat !== 'cash' && pnl !== 0 && !pricesFailed && (
+                        <span className={`dvx-cat-pnl${pnl >= 0 ? ' pos' : ' neg'}`}>
+                          {pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(pnl))}`} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
+                        </span>
+                      )}
+                      {cat !== 'cash' && invested > 0 && (
+                        <span className="dvx-cat-invested">inv: {hidden ? '••••' : `$${fmt(invested)}`}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2757,10 +2814,27 @@ export default function Dashboard() {
                           if (!grouped[cat]) grouped[cat] = []
                           grouped[cat].push(h)
                         })
-                        return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => (
+                        return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
+                          const ci = catBreakdown.find(c => c.cat === cat)
+                          return (
                           <div key={cat}>
-                            <div style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', padding:'0.5rem 0 0.25rem' }}>
-                              {CATEGORY_LABELS[cat]}
+                            <div className="dvx-cat-group-hdr">
+                              <span className="dvx-cat-group-name">{CATEGORY_LABELS[cat]}</span>
+                              {ci && (
+                                <span className="dvx-cat-group-stats">
+                                  <span>{hidden ? '••••' : `$${fmt(ci.value)}`}</span>
+                                  <span className="dvx-cat-group-sep">·</span>
+                                  <span>{ci.pct.toFixed(1)}%</span>
+                                  {cat !== 'cash' && ci.pnl !== 0 && !pricesFailed && (
+                                    <>
+                                      <span className="dvx-cat-group-sep">·</span>
+                                      <span style={{ color: ci.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
+                                        {ci.pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(ci.pnl))}`} ({ci.pnlPct >= 0 ? '+' : ''}{ci.pnlPct.toFixed(1)}%)
+                                      </span>
+                                    </>
+                                  )}
+                                </span>
+                              )}
                             </div>
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
@@ -2835,7 +2909,7 @@ export default function Dashboard() {
                               })}
                             </ul>
                           </div>
-                        ))
+                        )})
                       })()}
                     </div>
                     {enriched.length > 6 && (
@@ -2888,23 +2962,23 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── Allocation donut ── */}
+              {/* ── Allocation donut (by category) ── */}
               {cardVis.allocation && <div className="glass-card">
-                <h3>{pricesFailed ? t('allocationInvested') : t('allocation')}</h3>
-                {allocData.length === 0
+                <h3>{pricesFailed ? t('allocationInvested') : 'Net Worth by Category'}</h3>
+                {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
-                        <Pie data={allocData} dataKey="value" cx="50%" cy="50%"
+                        <Pie data={catAllocData} dataKey="value" cx="50%" cy="50%"
                           innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
-                          {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
+                          {catAllocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
                         <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="dvx-legend">
-                      {allocData.map((d, i) => (
+                      {catAllocData.map((d, i) => (
                         <li key={d.name} className="dvx-legend-item">
                           <span className="dvx-legend-dot" style={{ background: PALETTE[i % PALETTE.length] }}/>
                           <span className="dvx-legend-name">{d.name}</span>
