@@ -2679,7 +2679,7 @@ export default function Dashboard() {
           )}
 
           {/* Portfolio breakdown by asset category */}
-          {catBreakdown.length > 1 && (
+          {catBreakdown.length > 0 && (
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
               <div className="dvx-cat-list">
