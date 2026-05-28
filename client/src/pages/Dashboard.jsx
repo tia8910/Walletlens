@@ -2124,8 +2124,14 @@ export default function Dashboard() {
     }
 
     const tv  = hasPrices ? raw.reduce((s, h) => s + h.value, 0) : raw.reduce((s, h) => s + h.total_invested, 0)
-    const ti  = raw.reduce((s, h) => s + h.total_invested, 0)
-    const pnl = hasPrices ? tv - ti : 0
+    // Exclude stablecoins/cash from invested & P&L — they don't generate returns
+    const nonStables = raw.filter(h => categorizeAsset(h) !== 'cash')
+    const ti  = nonStables.length > 0
+      ? nonStables.reduce((s, h) => s + h.total_invested, 0)
+      : raw.reduce((s, h) => s + h.total_invested, 0)
+    const pnl = hasPrices && nonStables.length > 0
+      ? nonStables.reduce((s, h) => s + h.pnl, 0)
+      : 0
     return {
       enriched: raw, totalValue: tv, totalInvested: ti,
       totalPnL: pnl, totalPnLPct: hasPrices && ti > 0 ? (pnl / ti) * 100 : 0,
@@ -2570,7 +2576,7 @@ export default function Dashboard() {
                           <circle cx="12" cy="12" r="3"/>
                           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                         </svg>
-                        <h3 style={{ margin:0, fontSize:'1rem', color:'#fff' }}>Customize Dashboard</h3>
+                        <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>Customize Dashboard</h3>
                       </div>
                       <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'#aaa', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
                     </div>
@@ -2759,7 +2765,8 @@ export default function Dashboard() {
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
-                                const hasPnl        = h.pnl !== 0 && !pricesFailed
+                                const isStable      = categorizeAsset(h) === 'cash'
+                                const hasPnl        = h.pnl !== 0 && !pricesFailed && !isStable
                                 const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
                                 const beDistance     = h.price > 0 && breakEvenPrice > 0
                                   ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
@@ -2772,7 +2779,8 @@ export default function Dashboard() {
                                     <div className="dvx-holding-meta">
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
                                         <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                                        {(() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
+                                        {isStable && <span className="dvx-stable-badge">STABLE</span>}
+                                        {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                         {(() => {
                                           const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id)
                                           if (!u) return null
@@ -2798,8 +2806,8 @@ export default function Dashboard() {
                                       ) : (
                                         <span className="muted">
                                           {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
-                                          {breakEvenPrice > 0 && ` · avg $${fmt(breakEvenPrice)}`}
-                                          {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} units
+                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg $${fmt(breakEvenPrice)}`}
+                                          {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}
                                         </span>
                                       )}
                                       {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
