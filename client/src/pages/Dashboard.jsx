@@ -2215,6 +2215,20 @@ export default function Dashboard() {
     return items.map(d => ({ ...d, pct: total > 0 ? (d.value / total) * 100 : 0 }))
   }, [enriched])
 
+  const catBreakdown = useMemo(() => {
+    if (!enriched.length) return []
+    const totals = {}
+    enriched.forEach(h => {
+      const cat = categorizeAsset(h)
+      totals[cat] = (totals[cat] || 0) + (h.value > 0 ? h.value : h.total_invested)
+    })
+    return CATEGORY_ORDER.filter(cat => totals[cat] > 0).map(cat => ({
+      cat, label: CATEGORY_LABELS[cat],
+      value: totals[cat],
+      pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
+    }))
+  }, [enriched, totalValue])
+
   const pnlData = useMemo(() => {
     if (pricesFailed || !enriched.some(h => h.pnl !== 0)) return []
     return enriched.slice(0, 8).map(h => ({
@@ -2290,41 +2304,6 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
-      {/* ── Theme strip — top of page ── */}
-      <div className="theme-strip">
-        <span className="theme-strip-heading">🎨 Theme</span>
-        {THEMES.map(th => (
-          <button
-            key={th.id}
-            className={`theme-strip-btn ${theme === th.id ? 'theme-strip-active' : ''}`}
-            onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
-            title={th.name}
-          >
-            <span className="theme-strip-icon" style={{
-              background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
-              boxShadow: theme === th.id ? `0 0 14px ${th.swatch}88` : 'none',
-              overflow: 'hidden', padding: th.logo ? 0 : undefined,
-            }}>
-              {th.logo
-                ? <img src={th.logo} alt={th.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                : th.icon}
-            </span>
-            <span className="theme-strip-label">{th.name}</span>
-            {theme === th.id && <span className="theme-strip-dot" />}
-          </button>
-        ))}
-        {/* Light / dark toggle */}
-        <div className="theme-strip-divider" />
-        <button
-          className="theme-strip-mode-btn"
-          onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
-          title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          <span className="theme-strip-mode-icon">{mode === 'dark' ? '☀️' : '🌙'}</span>
-          <span className="theme-strip-label">{mode === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
-      </div>
-
       {/* Tab nav — 5 tabs */}
       <div className="dvx-tabs">
         {tabs.map(tab => (
@@ -2696,6 +2675,27 @@ export default function Dashboard() {
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
               <StatCard label={t('assets')}      value={enriched.length} />
               <StatCard label={t('tradesCount')} value={transactions.length} />
+            </div>
+          )}
+
+          {/* Portfolio breakdown by asset category */}
+          {catBreakdown.length > 1 && (
+            <div className="glass-card dvx-cat-breakdown">
+              <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
+              <div className="dvx-cat-list">
+                {catBreakdown.map(({ cat, label, value, pct }) => (
+                  <div key={cat} className="dvx-cat-row">
+                    <div className="dvx-cat-info">
+                      <span className="dvx-cat-label">{label}</span>
+                      <span className="dvx-cat-pct">{pct.toFixed(1)}%</span>
+                    </div>
+                    <div className="dvx-cat-bar-track">
+                      <div className="dvx-cat-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="dvx-cat-value">{hidden ? '••••' : `$${fmt(value)}`}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
