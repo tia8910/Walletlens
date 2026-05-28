@@ -252,7 +252,13 @@ export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
-  const { t } = useLanguage()
+  const [headerActionIdx, setHeaderActionIdx] = useState(0)
+  const { t, lang } = useLanguage()
+
+  useEffect(() => {
+    const id = setInterval(() => setHeaderActionIdx(i => (i + 1) % 3), 1800)
+    return () => clearInterval(id)
+  }, [])
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
 
@@ -311,8 +317,23 @@ export default function App() {
             <IconMenu />
           </button>
           <div className="wl-topbar-brand">
-            <Logo size={28} animated />
-            <strong>WalletLens</strong>
+            <Logo size={36} animated />
+            <div className="wl-topbar-brand-text">
+              <strong className="wl-topbar-brand-name">WalletLens</strong>
+              <div className="wl-topbar-brand-actions">
+                <span className={`wl-topbar-brand-action${headerActionIdx === 0 ? ' active' : ''}`}>
+                  {lang === 'ar' ? 'تتبع' : 'TRACK'}
+                </span>
+                <span className="wl-topbar-brand-sep">|</span>
+                <span className={`wl-topbar-brand-action${headerActionIdx === 1 ? ' active' : ''}`}>
+                  {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+                </span>
+                <span className="wl-topbar-brand-sep">|</span>
+                <span className={`wl-topbar-brand-action${headerActionIdx === 2 ? ' active' : ''}`}>
+                  {lang === 'ar' ? 'نمو' : 'GROW'}
+                </span>
+              </div>
+            </div>
           </div>
           <div className="wl-topbar-right">
             <PWATopbarButton />
