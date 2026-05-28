@@ -60,7 +60,6 @@ export const POPULAR_TICKERS = [
   { ticker: 'ADBE',  name: 'Adobe',               sector: 'Tech' },
   { ticker: 'NOW',   name: 'ServiceNow',          sector: 'Tech' },
   { ticker: 'PLTR',  name: 'Palantir',            sector: 'Tech' },
-  { ticker: 'NET',   name: 'Cloudflare',          sector: 'Tech' },
   { ticker: 'SNOW',  name: 'Snowflake',           sector: 'Tech' },
   // ── Finance ──
   { ticker: 'BRK.B', name: 'Berkshire Hathaway',  sector: 'Finance' },

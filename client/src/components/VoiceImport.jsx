@@ -205,7 +205,6 @@ const COIN_MAP = (() => {
     ADBE: ['adobe','ادوبي','ادوب'],
     NOW:  ['servicenow','سيرفس ناو'],
     PLTR: ['palantir','بالانتير','بالنتير'],
-    NET:  ['cloudflare','كلاودفلير','كلاود فلير'],
     SNOW: ['snowflake','سنوفليك'],
     JPM:  ['jpmorgan','jpmorgan chase','جي بي مورجان'],
     V:    ['visa','فيزا','ڤيزا'],

@@ -1,5 +1,5 @@
 /**
- * Cloudflare Pages Function — /api/voice-parse
+ * Serverless function — /api/voice-parse
  *
  * Multilingual voice-trade interpreter. Takes a raw speech-to-text transcript
  * (any language — Arabic dialects, English, mixed) and returns one or more

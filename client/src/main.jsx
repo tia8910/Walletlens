@@ -60,7 +60,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 // Register the service worker after first paint. Skipped on the
 // /Walletlens/ subpath since GitHub Pages doesn't serve it from there
-// reliably and Cloudflare/walletlens.live is the primary install target.
+// reliably and walletlens.live is the primary install target.
 if ('serviceWorker' in navigator && basename === '/') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {})
