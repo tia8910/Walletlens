@@ -4947,7 +4947,52 @@ tr:last-child td { border-bottom: none; }
 .dvx-tx-icon { display: flex; align-items: center; flex-shrink: 0; }
 
 /* ── Sell Targets Tab ── */
-.dvx-targets-page { display: flex; flex-direction: column; gap: 1.25rem; }
+.dvx-targets-page { display: flex; flex-direction: column; gap: 1.25rem; padding-top: 0.25rem; }
+
+/* Sell targets table — Asset × Target 1, 2, 3… */
+.dvx-tgt-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dvx-tgt-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 100%; }
+.dvx-tgt-table th {
+  text-align: left; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-sub);
+  padding: 0 0.7rem 0.55rem; white-space: nowrap;
+}
+.dvx-tgt-th-asset { position: sticky; left: 0; background: var(--card-bg); z-index: 1; }
+.dvx-tgt-table td {
+  padding: 0.6rem 0.7rem; border-top: 1px solid rgba(255,255,255,0.06);
+  vertical-align: top; white-space: nowrap;
+}
+[data-wl-light] .dvx-tgt-table td { border-top-color: rgba(0,0,0,0.07); }
+.dvx-tgt-td-asset {
+  position: sticky; left: 0; background: var(--card-bg); z-index: 1;
+  display: flex; flex-direction: column; gap: 0.1rem;
+}
+.dvx-tgt-td-asset strong { color: var(--text); font-weight: 700; }
+.dvx-tgt-now { font-size: 0.68rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.dvx-tgt-table td span { display: block; }
+.dvx-tgt-price { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.dvx-tgt-meta { font-size: 0.66rem; color: var(--text-muted); margin-top: 0.1rem; }
+.dvx-tgt-cell-reached .dvx-tgt-price { color: var(--g); }
+.dvx-tgt-cell-reached .dvx-tgt-meta { color: var(--g); }
+.dvx-tgt-empty { color: var(--text-sub); opacity: 0.4; }
+
+/* Add-target form with % selector */
+.dvx-tgt-form { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 0.75rem; }
+.dvx-tgt-form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.dvx-tgt-form-lbl { font-size: 0.7rem; color: var(--text-sub); margin-bottom: 0.35rem; }
+.dvx-tgt-pct-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+.dvx-tgt-pct-btn {
+  padding: 0.5rem; border-radius: 10px; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted); font-size: 0.85rem; font-weight: 700;
+  font-family: inherit; transition: all 0.15s;
+}
+.dvx-tgt-pct-btn:hover { border-color: rgba(var(--g-rgb),0.4); color: var(--text); }
+.dvx-tgt-pct-btn.active { background: rgba(var(--g-rgb),0.15); border-color: var(--g); color: var(--g); }
+[data-wl-light] .dvx-tgt-pct-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); }
+[data-wl-light] .dvx-tgt-pct-btn.active { background: rgba(var(--g-rgb),0.1); border-color: var(--g); color: var(--gd); }
+.dvx-tgt-form-hint { font-size: 0.7rem; color: var(--text-sub); margin-top: 0.45rem; font-variant-numeric: tabular-nums; }
+.dvx-tgt-save { width: 100%; padding: 0.6rem 1rem; }
 
 .dvx-target-card { display: flex; flex-direction: column; gap: 0.75rem; }
 

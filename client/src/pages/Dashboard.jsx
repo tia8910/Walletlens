@@ -306,12 +306,16 @@ function computeAI(enriched, prices, transactions, totalValue) {
   })
 
   // ── Rebalance planner (equal-weight target) ────────────────────────────────
+  // Stablecoins are dry powder, not part of the equal-weight target — exclude them.
   const targetWeight = 1 / n
-  const rebalance = enriched.map((h, i) => {
-    const currentW = weights[i]
-    const diff     = (targetWeight - currentW) * 100
-    const diffVal  = (targetWeight - currentW) * totalValue
-    return { ...h, currentW: currentW * 100, targetW: targetWeight * 100, diff, diffVal }
+  const rebalanceAssets = enriched.filter(h => categorizeAsset(h) !== 'cash')
+  const rebalanceValue  = rebalanceAssets.reduce((s, h) => s + h.value, 0)
+  const rebTargetWeight = rebalanceAssets.length ? 1 / rebalanceAssets.length : 0
+  const rebalance = rebalanceAssets.map(h => {
+    const currentW = rebalanceValue > 0 ? h.value / rebalanceValue : 0
+    const diff     = (rebTargetWeight - currentW) * 100
+    const diffVal  = (rebTargetWeight - currentW) * rebalanceValue
+    return { ...h, currentW: currentW * 100, targetW: rebTargetWeight * 100, diff, diffVal }
   })
 
   // ── Today P&L (24h) ───────────────────────────────────────────────────────
@@ -1684,14 +1688,19 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
 // ── Targets Tab ──────────────────────────────────────────────────────────
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const navigate = useNavigate()
-  const [adding, setAdding] = useState({}) // coinId → { price, qty }
+  const [adding, setAdding] = useState({}) // coinId → { price, pct }
 
-  async function saveTarget(coinId, priceVal, qtyVal) {
+  // Stablecoins (cash) are pegged ~$1 — no sell target makes sense, exclude them.
+  const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash')
+
+  async function saveTarget(coinId, priceVal, pctVal, amount) {
     const p = parseFloat(priceVal)
-    const q = qtyVal ? parseFloat(qtyVal) : null
+    const pct = parseFloat(pctVal)
     if (!p || p <= 0) return
+    // Convert the chosen percentage of holdings into a quantity (null = 100% / all)
+    const q = pct && pct > 0 && pct < 100 ? amount * pct / 100 : null
     await api.addCoinTarget(coinId, { price: p, quantity: q })
-    track('goal_set', { coin_id: coinId, target_price: p })
+    track('goal_set', { coin_id: coinId, target_price: p, sell_pct: pct || 100 })
     setAdding(prev => { const n = { ...prev }; delete n[coinId]; return n })
     onTargetsChange()
   }
@@ -1717,41 +1726,60 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
         <StatCard label="Assets Planned" value={rows.length} />
       </div>
 
-      {/* Proceeds chart */}
-      {chartData.length > 0 && (
-        <div className="glass-card">
-          <h3 style={{ margin:'0 0 0.75rem' }}>Projected Proceeds by Target</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ left:0, right:0, top:4, bottom:24 }}>
-              <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
-              <XAxis dataKey="name" tick={{ fill:'var(--text-sub)', fontSize:10 }}
-                axisLine={false} tickLine={false} angle={-30} textAnchor="end"/>
-              <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false}
-                tickLine={false} tickFormatter={v => `$${v>=1000?(v/1000).toFixed(0)+'k':v}`} width={50}/>
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Proceeds']}/>
-              <Bar dataKey="proceeds" radius={[6,6,0,0]}>
-                {chartData.map((d, i) => (
-                  <Cell key={i} fill={d.reached ? 'var(--g)' : '#3b82f6'} fillOpacity={d.reached ? 1 : 0.7}/>
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display:'flex', gap:'1rem', fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.5rem' }}>
-            <span><span style={{ color:'var(--g)' }}>■</span> Reached</span>
-            <span><span style={{ color:'#3b82f6' }}>■</span> Pending</span>
+      {/* Sell targets table — asset × Target 1, 2, 3… */}
+      {rows.length > 0 && (() => {
+        const maxTargets = rows.reduce((m, r) => Math.max(m, r.targets.length), 0)
+        return (
+          <div className="glass-card">
+            <h3 style={{ margin:'0 0 0.85rem' }}>Sell Targets Plan</h3>
+            <div className="dvx-tgt-table-wrap">
+              <table className="dvx-tgt-table">
+                <thead>
+                  <tr>
+                    <th className="dvx-tgt-th-asset">Asset</th>
+                    {Array.from({ length: maxTargets }, (_, i) => (
+                      <th key={i}>Target {i + 1}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(r => (
+                    <tr key={r.coinId}>
+                      <td className="dvx-tgt-td-asset">
+                        <strong>{r.coinSymbol?.toUpperCase()}</strong>
+                        <span className="dvx-tgt-now">{r.currentPrice > 0 ? `$${fmt(r.currentPrice)}` : '—'}</span>
+                      </td>
+                      {Array.from({ length: maxTargets }, (_, i) => {
+                        const t = r.targets[i]
+                        if (!t) return <td key={i} className="dvx-tgt-empty">—</td>
+                        const sellPct = r.amount > 0 ? (t.sellQty / r.amount) * 100 : 0
+                        return (
+                          <td key={i} className={t.reached ? 'dvx-tgt-cell-reached' : ''}>
+                            <span className="dvx-tgt-price">${fmt(t.price)}</span>
+                            <span className="dvx-tgt-meta">
+                              {t.reached ? '✓ reached' : `sell ${sellPct.toFixed(0)}%`}
+                            </span>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
-      {/* All holdings — show target state + add form for each */}
-      {enriched.length === 0 ? (
+      {/* All holdings — show target state + add form for each (stablecoins excluded — no sell target) */}
+      {targetable.length === 0 ? (
         <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
           <p style={{ color:'var(--text-muted)', marginBottom:'1rem' }}>Add holdings first to set price targets.</p>
           <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>Add Trade</button>
         </div>
       ) : (
-        enriched.map(h => {
+        targetable.map(h => {
           const plan = coinTargets[h.coin_id]?.targets || []
           const currentPrice = h.price
           const isAdding = !!adding[h.coin_id]
@@ -1775,37 +1803,46 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                 <button
                   className="dvx-btn dvx-btn-primary"
                   style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
-                  onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', qty:'' } })}>
+                  onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', pct:100 } })}>
                   {isAdding ? 'Cancel' : '+ Target'}
                 </button>
               </div>
 
               {/* Inline add-target form */}
               {isAdding && (
-                <div style={{ display:'flex', gap:'0.5rem', alignItems:'flex-end', marginBottom:'0.75rem', flexWrap:'wrap' }}>
-                  <div style={{ flex:'1 1 100px' }}>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginBottom:'3px' }}>Target Price ($)</div>
-                    <input
-                      type="number" placeholder="e.g. 75000" min="0" step="any"
-                      value={addState.price || ''}
-                      onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
-                      style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'var(--text)', fontSize:'0.85rem' }}
-                    />
+                <div className="dvx-tgt-form">
+                  <div className="dvx-tgt-form-row">
+                    <div style={{ flex:'1 1 120px' }}>
+                      <div className="dvx-tgt-form-lbl">Target Price ($)</div>
+                      <input
+                        type="number" placeholder="e.g. 75000" min="0" step="any"
+                        value={addState.price || ''}
+                        onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
+                        style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
+                      />
+                    </div>
                   </div>
-                  <div style={{ flex:'1 1 100px' }}>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginBottom:'3px' }}>Qty to Sell (optional)</div>
-                    <input
-                      type="number" placeholder={`All (${h.amount.toFixed(4)})`} min="0" step="any"
-                      value={addState.qty || ''}
-                      onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
-                      style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.45rem 0.6rem', color:'var(--text)', fontSize:'0.85rem' }}
-                    />
+                  <div>
+                    <div className="dvx-tgt-form-lbl">% of holdings to sell at this target</div>
+                    <div className="dvx-tgt-pct-row">
+                      {[25, 50, 75, 100].map(p => (
+                        <button key={p} type="button"
+                          className={`dvx-tgt-pct-btn ${Number(addState.pct) === p ? 'active' : ''}`}
+                          onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], pct: p } }))}>
+                          {p}%
+                        </button>
+                      ))}
+                    </div>
+                    <div className="dvx-tgt-form-hint">
+                      ≈ {(h.amount * (Number(addState.pct) || 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 6 })} {h.coin_symbol?.toUpperCase()}
+                      {addState.price && parseFloat(addState.price) > 0 && ` · $${fmt(h.amount * (Number(addState.pct) || 100) / 100 * parseFloat(addState.price))} proceeds`}
+                    </div>
                   </div>
                   <button
-                    className="dvx-btn dvx-btn-primary"
-                    style={{ padding:'0.45rem 1rem', borderRadius:8, whiteSpace:'nowrap' }}
-                    onClick={() => saveTarget(h.coin_id, addState.price, addState.qty)}>
-                    Save
+                    className="dvx-btn dvx-btn-primary dvx-tgt-save"
+                    style={{ borderRadius:8 }}
+                    onClick={() => saveTarget(h.coin_id, addState.price, addState.pct, h.amount)}>
+                    Save Target
                   </button>
                 </div>
               )}
@@ -2280,6 +2317,7 @@ export default function Dashboard() {
     let totalReached = 0
 
     for (const h of enriched) {
+      if (categorizeAsset(h) === 'cash') continue // stablecoins have no sell targets
       const plan = coinTargets[h.coin_id]?.targets || []
       if (!plan.length) continue
       const currentPrice = h.price
@@ -2324,6 +2362,9 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
+      {/* Live news ticker — above the tab navigation so it's always visible */}
+      <NewsTicker />
+
       {/* Tab nav — 5 tabs */}
       <div className="dvx-tabs">
         {tabs.map(tab => (
@@ -2338,9 +2379,6 @@ export default function Dashboard() {
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
         <>
-          {/* Live news ticker — above buy/sell */}
-          <NewsTicker />
-
           {/* Quick Trade strip — always at top when portfolio exists */}
           {enriched.length > 0 && (
             <div ref={quickStripRef} style={{
@@ -3112,15 +3150,6 @@ export default function Dashboard() {
             />
           )}
 
-          {/* Telegram community banner */}
-          <a href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" className="tg-banner" onClick={() => track('telegram_join_click', { source: 'dashboard' })}>
-            <svg viewBox="0 0 24 24" fill="#2AABEE" width="22" height="22"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
-            <div className="tg-banner-text">
-              <span className="tg-banner-title">Join the WalletLens Community</span>
-              <span className="tg-banner-sub">Tips, signals &amp; market updates on Telegram</span>
-            </div>
-            <span className="tg-banner-arrow">→</span>
-          </a>
 
           {/* Correlation, heatmap — below-fold, loaded lazily */}
           <Suspense fallback={null}>
