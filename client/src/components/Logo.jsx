@@ -1,23 +1,45 @@
-import { memo } from 'react'
+import { memo, useId } from 'react'
 
 function Logo({ size = 32, animated = false, className = '' }) {
+  const uid = useId().replace(/:/g, '')
+  const gradId = `lg-${uid}`
+  const glowId = `lg-glow-${uid}`
+
   return (
     <svg
-      width={size} height={size} viewBox="0 0 32 32"
+      width={size} height={size} viewBox="0 0 40 40"
       className={`wl-logo${animated ? ' wl-logo-animated' : ''}${className ? ' ' + className : ''}`}
       aria-label="WalletLens"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Magnifying glass circle */}
-      <circle cx="13" cy="13" r="9.5" stroke="var(--g)" strokeWidth="2.2" />
-      {/* Bar chart bars inside lens — ascending left to right */}
-      <rect x="7.8"  y="14"   width="2.6" height="3.8" rx="0.6" fill="var(--g)" opacity="0.65" />
-      <rect x="11.7" y="11.5" width="2.6" height="6.3" rx="0.6" fill="var(--g)" opacity="0.82" />
-      <rect x="15.6" y="9"    width="2.6" height="8.8" rx="0.6" fill="var(--g)" />
-      {/* Handle */}
-      <line x1="19.7" y1="19.7" x2="27" y2="27"
-        stroke="var(--g)" strokeWidth="2.6" strokeLinecap="round" />
+      <defs>
+        {/* Dark green gradient fill for the lens circle */}
+        <radialGradient id={gradId} cx="38%" cy="32%" r="68%" gradientUnits="objectBoundingBox">
+          <stop offset="0%"   stopColor="#1db954" stopOpacity="0.95" />
+          <stop offset="45%"  stopColor="#0f7a36" />
+          <stop offset="100%" stopColor="#052912" />
+        </radialGradient>
+        {/* Subtle glow filter for animated state */}
+        <filter id={glowId} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      {/* Filled lens circle with gradient */}
+      <circle cx="17" cy="17" r="14.5" fill={`url(#${gradId})`} />
+      {/* Subtle inner ring highlight */}
+      <circle cx="17" cy="17" r="14.5" stroke="rgba(255,255,255,0.12)" strokeWidth="1" fill="none" />
+
+      {/* Ascending white bars (chart inside lens) */}
+      <rect className="wl-logo-bar wl-logo-bar-1" x="9.5"  y="19"   width="4" height="5.5" rx="1" fill="white" opacity="0.75" />
+      <rect className="wl-logo-bar wl-logo-bar-2" x="15"   y="14.5" width="4" height="10"  rx="1" fill="white" opacity="0.88" />
+      <rect className="wl-logo-bar wl-logo-bar-3" x="20.5" y="10.5" width="4" height="14"  rx="1" fill="white" />
+
+      {/* Handle — bold rounded stroke, bottom-right */}
+      <line x1="28.2" y1="28.2" x2="37" y2="37"
+        stroke="#16a34a" strokeWidth="3.8" strokeLinecap="round" />
     </svg>
   )
 }
