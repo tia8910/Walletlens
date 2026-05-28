@@ -15,7 +15,6 @@ import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
-import ExchangePartners from '../components/ExchangePartners'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
@@ -24,7 +23,6 @@ import BackupCode from '../components/BackupCode'
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
 const TradeSheet     = lazy(() => import('../components/TradeSheet'))
 const ShareCard      = lazy(() => import('../components/ShareCard'))
-const TradeTips      = lazy(() => import('../components/TradeTips'))
 const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
 const SectorHeatmap  = lazy(() => import('../components/SectorHeatmap'))
 const SmartImport    = lazy(() => import('../components/SmartImport'))
@@ -1649,14 +1647,6 @@ function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded, importsSlot 
         </button>
       </div>
 
-      {/* Exchange strip — buy before you track */}
-      <div style={{ background:'var(--surface-1)', borderRadius:14, padding:'0.85rem', textAlign:'left', marginBottom:'1rem' }}>
-        <p style={{ fontSize:'0.68rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
-          🚀 Buy crypto on
-        </p>
-        <ExchangePartners compact source="empty_portfolio" cryptoOnly />
-      </div>
-
       <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>
         Your data stays on your device — no account needed
       </div>
@@ -1989,7 +1979,6 @@ export default function Dashboard() {
     { id:'movers',             label:"Today's Movers" },
     { id:'correlation',        label:'Correlation Matrix' },
     { id:'sector_heatmap',     label:'Sector Heatmap' },
-    { id:'trade_tips',         label:'Trade Tips' },
   ]
   const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
   const [cardVis, setCardVis] = useState(() => {
@@ -3123,21 +3112,6 @@ export default function Dashboard() {
             />
           )}
 
-          {/* Partner exchange strip */}
-          {enriched.some(h => categorizeAsset(h) !== 'stocks') && (
-            <div>
-              {totalPnL < 0 && (
-                <p style={{ fontSize:'0.72rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.4rem' }}>
-                  📉 Buy the dip on
-                </p>
-              )}
-              <ExchangePartners compact source="dashboard" cryptoOnly />
-            </div>
-          )}
-          {enriched.some(h => categorizeAsset(h) === 'stocks') && (
-            <ExchangePartners compact source="dashboard_stocks" stockOnly />
-          )}
-
           {/* Telegram community banner */}
           <a href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" className="tg-banner" onClick={() => track('telegram_join_click', { source: 'dashboard' })}>
             <svg viewBox="0 0 24 24" fill="#2AABEE" width="22" height="22"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
@@ -3148,9 +3122,8 @@ export default function Dashboard() {
             <span className="tg-banner-arrow">→</span>
           </a>
 
-          {/* Tips, correlation, heatmap, wallet import — below-fold, loaded lazily */}
+          {/* Correlation, heatmap — below-fold, loaded lazily */}
           <Suspense fallback={null}>
-            {cardVis.trade_tips && <TradeTips />}
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
             {cardVis.sector_heatmap && <SectorHeatmap />}
           </Suspense>

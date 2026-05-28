@@ -30,7 +30,6 @@ function playTradeSound(isBuy) {
 }
 import CoinLogo from './CoinLogo'
 import { track } from '../analytics'
-import ExchangePartners from './ExchangePartners'
 import TradeSignal from './BuySignal'
 
 
@@ -194,18 +193,21 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [signalOpen, setSignalOpen]     = useState(false)
   const [holdingsFilter, setHoldingsFilter] = useState('')
   const [spendPct, setSpendPct]         = useState(null)
+  const [sellPct, setSellPct]           = useState(null)
+  const [mode, setMode]                 = useState(type)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
-  const isBuy  = type === 'buy'
+  const isBuy  = mode === 'buy'
   const accent = isBuy ? 'var(--g)' : '#f87171'
   const catInfo = CATEGORIES.find(c => c.key === category) || CATEGORIES[0]
 
   // Reset form when sheet opens
   useEffect(() => {
     if (!open) return
+    setMode(type)
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null)
+    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null); setSellPct(null)
     setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput(''); setMetalUnit('oz')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
@@ -442,28 +444,22 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0.75rem' }}>
               {isBuy ? 'Bought' : 'Sold'} {amount} {asset?.symbol}
             </p>
-            <div style={{ background:'var(--surface-1)', borderRadius:14, padding:'0.85rem', width:'100%', textAlign:'left', marginTop:'0.25rem' }}>
-              <p style={{ fontSize:'0.72rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.6rem' }}>
-                {isBuy ? '⚡ Execute this trade on' : '📤 Sell on exchange'}
-              </p>
-              <ExchangePartners compact source={`trade_success_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
-            </div>
           </div>
         ) : (
           <>
           <div className="bs-body">
-            <div className="bs-type-row">
-              <div className="bs-type-pill" style={{ background: isBuy ? 'rgba(var(--g-rgb),0.12)' : 'rgba(248,113,113,0.12)', color: accent, borderColor: accent + '55' }}>
-                {isBuy ? 'Buy Order' : 'Sell Order'}
-              </div>
-            </div>
-
-            {/* ── Get it on exchange (before form) ── */}
-            <div style={{ background:'var(--surface-1)', borderRadius:12, padding:'0.7rem 0.85rem', marginBottom:'0.5rem' }}>
-              <p style={{ fontSize:'0.68rem', color:'var(--text-sub)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
-                {isBuy ? "Don't have it yet? Buy on" : 'Sell on exchange'}
-              </p>
-              <ExchangePartners compact source={`trade_form_${type}`} cryptoOnly={category !== 'stock'} stockOnly={category === 'stock'} />
+            {/* ── Binance-style Buy / Sell tab toggle ── */}
+            <div className="bs-mode-tabs">
+              <button type="button"
+                className={`bs-mode-tab ${isBuy ? 'active buy' : ''}`}
+                onClick={() => { if (isBuy) return; track('trade_mode_switch', { to: 'buy' }); setMode('buy'); setAmount(''); setUsdInput(''); setSpendPct(null); setSellPct(null); setBuyWith('NONE'); setMsg('') }}>
+                Buy
+              </button>
+              <button type="button"
+                className={`bs-mode-tab ${!isBuy ? 'active sell' : ''}`}
+                onClick={() => { if (!isBuy) return; track('trade_mode_switch', { to: 'sell' }); setMode('sell'); setAmount(''); setUsdInput(''); setSpendPct(null); setSellPct(null); setSellFor('REMOVE'); setMsg('') }}>
+                Sell
+              </button>
             </div>
 
             {/* ── Buy with (first — drives balance & % fill) ── */}
@@ -722,14 +718,32 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               )}
             </div>
 
-            {/* Available balance for sells */}
+            {/* Available balance + % quick-fill for sells (mirrors Buy) */}
             {!isBuy && holdingForCoin && (
-              <div className="bs-balance-row">
-                <span className="muted">Available</span>
-                <button className="bs-balance-max" onClick={() => setAmount(String(holdingForCoin.amount))}>
-                  {holdingForCoin.amount} {holdingForCoin.coin_symbol?.toUpperCase()}
-                  <span className="bs-max-tag">MAX</span>
-                </button>
+              <div className="bs-field">
+                <div className="bs-buywith-balance">
+                  <div className="bs-balance-row">
+                    <span className="muted">Available to sell</span>
+                    <button className="bs-balance-max" onClick={() => { setSellPct(100); setAmount(String(holdingForCoin.amount)) }}>
+                      {parseFloat(Number(holdingForCoin.amount).toFixed(8))} {holdingForCoin.coin_symbol?.toUpperCase()}
+                      {holdingForCoin.value > 0 && <span className="muted"> ≈ ${Number(holdingForCoin.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                      <span className="bs-max-tag">MAX</span>
+                    </button>
+                  </div>
+                  <div className="bs-pct-row">
+                    {[25, 50, 75, 100].map(pct => (
+                      <button key={pct} type="button"
+                        className={`bs-pct-btn ${sellPct === pct ? 'active' : ''}`}
+                        onClick={() => {
+                          setSellPct(pct)
+                          const qty = Number(holdingForCoin.amount) * pct / 100
+                          setAmount(String(parseFloat(qty.toFixed(8))))
+                        }}>
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -790,7 +804,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   </div>
                 ) : (
                   <input className="bs-input" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
-                    value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null) }} />
+                    value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null); setSellPct(null) }} />
                 )}
                 {amtMode === 'usd' && amount && parseFloat(amount) > 0 && (
                   <span style={{ fontSize:'0.7rem', color:'var(--text-sub)', marginTop:'0.2rem' }}>
@@ -896,7 +910,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           <div className="bs-footer">
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0 0 0.5rem' }}>{msg}</p>}
             <button className="bs-submit"
-              style={{ background: isBuy ? 'linear-gradient(135deg,var(--g),var(--gd))' : 'linear-gradient(135deg,#f87171,#ef4444)', color: isBuy ? '#000' : '#fff' }}
+              style={{ background: isBuy ? 'var(--g)' : '#f87171', color: isBuy ? '#000' : '#fff' }}
               onClick={() => { playTradeSound(isBuy); submit() }}
               disabled={busy || !asset || !amount || !price || (isBuy ? !buyWith : !sellFor) || (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) || (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim())}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
