@@ -18,7 +18,7 @@ export const translations = {
     importExport: 'Import / Export',
 
     // ── Landing — hero ───────────────────────────────────────────────────────
-    brandTag: 'YOUR FINANCIAL RESCUE TOOL',
+    brandTag: 'SEE YOUR WEALTH CLEARLY',
     heroH1a: 'You deserve to know',
     heroH1b: 'exactly where you stand.',
     heroSub: 'Most investors are flying blind — guessing their P&L, missing rug pulls, holding underwater positions without a plan. WalletLens gives you the clarity, protection, and intelligence to take back control. Free. Private. No account needed.',
@@ -256,7 +256,7 @@ export const translations = {
     importExport: 'استيراد / تصدير',
 
     // ── Landing — hero ───────────────────────────────────────────────────────
-    brandTag: 'أداتك للإنقاذ المالي',
+    brandTag: 'اعرف ثروتك بوضوح',
     heroH1a: 'تستحق أن تعرف',
     heroH1b: 'أين تقف بالضبط.',
     heroSub: 'معظم المستثمرين يطيرون في الظلام — يخمّنون أرباحهم، ويفوّتون عمليات الاحتيال، ويمسكون بمراكز خاسرة بلا خطة. WalletLens يمنحك الوضوح والحماية والذكاء لاستعادة السيطرة. مجاناً. خاصاً. بلا حساب.',

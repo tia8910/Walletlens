@@ -5292,6 +5292,12 @@ select.bs-input option { background: var(--bg3); }
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+.lp-h1-accent-dynamic {
+  display: inline-block;
+  transition: opacity 0.32s ease, transform 0.32s ease;
+}
+.lp-h1-accent-in  { opacity: 1; transform: translateY(0); }
+.lp-h1-accent-out { opacity: 0; transform: translateY(8px); }
 .lp-hero-sub {
   font-size: 1rem;
   color: rgba(255,255,255,0.6);

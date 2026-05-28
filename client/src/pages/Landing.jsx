@@ -181,16 +181,47 @@ function LiveMockup({ label, change }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+const ACCENT_PHRASES = {
+  en: [
+    'exactly where you stand.',
+    'your real P&L in seconds.',
+    'what to buy, hold, or sell.',
+    'your true net worth.',
+    'every risk before it hits.',
+  ],
+  ar: [
+    'أين تقف بالضبط.',
+    'أرباحك الحقيقية بثوانٍ.',
+    'ماذا تشتري أو تبيع.',
+    'ثروتك الحقيقية.',
+    'كل خطر قبل أن يضربك.',
+  ],
+}
+
 export default function Landing() {
   const navigate = useNavigate()
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
+  const [accentIdx, setAccentIdx] = useState(0)
+  const [accentIn, setAccentIn] = useState(true)
 
   useEffect(() => {
     track('landing_view')
     const ref = new URLSearchParams(window.location.search).get('ref')
     if (ref) track('referral_visit', { ref_source: ref })
   }, [])
+
+  useEffect(() => {
+    const phrases = ACCENT_PHRASES[lang] || ACCENT_PHRASES.en
+    const id = setInterval(() => {
+      setAccentIn(false)
+      setTimeout(() => {
+        setAccentIdx(i => (i + 1) % phrases.length)
+        setAccentIn(true)
+      }, 350)
+    }, 2800)
+    return () => clearInterval(id)
+  }, [lang])
 
   return (
     <div className="lp">
@@ -204,7 +235,9 @@ export default function Landing() {
 
           <h1 className="lp-hero-h1">
             {t('heroH1a')}<br />
-            <span className="lp-h1-accent">{t('heroH1b')}</span>
+            <span className={`lp-h1-accent lp-h1-accent-dynamic${accentIn ? ' lp-h1-accent-in' : ' lp-h1-accent-out'}`}>
+              {(ACCENT_PHRASES[lang] || ACCENT_PHRASES.en)[accentIdx]}
+            </span>
           </h1>
 
           <p className="lp-hero-sub">{t('heroSub')}</p>
