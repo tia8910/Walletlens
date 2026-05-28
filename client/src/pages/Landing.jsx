@@ -184,7 +184,6 @@ function LiveMockup({ label, change }) {
 // ─────────────────────────────────────────────────────────────────────────
 export default function Landing() {
   const navigate = useNavigate()
-  const [logoAnim, setLogoAnim] = useState(false)
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
 
@@ -194,11 +193,6 @@ export default function Landing() {
     if (ref) track('referral_visit', { ref_source: ref })
   }, [])
 
-  function handleLogoPulse() {
-    setLogoAnim(true)
-    setTimeout(() => setLogoAnim(false), 600)
-  }
-
   return (
     <div className="lp">
       <LandingBackground />
@@ -206,15 +200,6 @@ export default function Landing() {
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
       <section className="lp-hero" ref={heroRef}>
         <div className="lp-hero-inner">
-          <button
-            className={`lp-logo-orb ${logoAnim ? 'lp-logo-pop' : ''}`}
-            onClick={handleLogoPulse}
-            aria-label="WalletLens"
-          >
-            <span className="lp-logo-halo" />
-            <Logo size={88} />
-          </button>
-
           <div className="lp-brand-name">WalletLens</div>
           <div className="lp-brand-tag">{t('brandTag')}</div>
 

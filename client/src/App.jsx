@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
-const LandingTest   = lazy(() => import('./pages/LandingTest'))
+const Landing       = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -237,7 +237,7 @@ export default function App() {
     return (
       <div className="wl-app wl-app-landing">
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
-          <Route path="/" element={<LandingTest />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
