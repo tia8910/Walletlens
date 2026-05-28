@@ -1688,7 +1688,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
 // ── Targets Tab ──────────────────────────────────────────────────────────
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const navigate = useNavigate()
-  const [adding, setAdding] = useState({}) // coinId → { price, pct }
+  const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
 
   // Stablecoins (cash) are pegged ~$1 — no sell target makes sense, exclude them.
   const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash')
@@ -1820,6 +1820,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
                   disabled={!isAdding && available <= 0}
                   onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', mode:'pct', pct:100 } })}>
+
                   {isAdding ? 'Cancel' : '+ Target'}
                 </button>
               </div>
