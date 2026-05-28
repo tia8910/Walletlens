@@ -117,7 +117,7 @@ function Drawer({ open, onClose }) {
       <aside className={`wl-drawer ${open ? 'wl-drawer-open' : ''}`}>
         <div className="wl-drawer-head">
           <div className="wl-drawer-brand">
-            <Logo size={30} />
+            <Logo size={30} animated />
             <div>
               <div className="wl-drawer-name">WalletLens</div>
               <div className="wl-drawer-tag">{t('footerTagline')}</div>
@@ -259,7 +259,7 @@ export default function App() {
             <IconMenu />
           </button>
           <div className="wl-topbar-brand">
-            <Logo size={28} />
+            <Logo size={28} animated />
             <strong>WalletLens</strong>
           </div>
           <div className="wl-topbar-right">

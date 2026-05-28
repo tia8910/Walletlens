@@ -5182,10 +5182,28 @@ select.bs-input option { background: var(--bg3); }
    WalletLens Logo SVG
    ══════════════════════════════════════════════════════════════════════════ */
 .wl-logo { display: block; flex-shrink: 0; }
-.wl-logo-animated { animation: logo-pulse 3s ease-in-out infinite; }
-@keyframes logo-pulse {
-  0%,100% { filter: drop-shadow(0 0 6px rgba(var(--g-rgb),0.5)); }
-  50%      { filter: drop-shadow(0 0 18px rgba(var(--g-rgb),0.9)); }
+
+/* ── Animated logo: bars grow sequentially, subtle glow pulse ── */
+.wl-logo-animated {
+  animation: logo-glow-pulse 3.2s ease-in-out infinite;
+}
+@keyframes logo-glow-pulse {
+  0%,100% { filter: drop-shadow(0 0 3px rgba(var(--g-rgb),0.3)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(var(--g-rgb),0.55)); }
+}
+.wl-logo-animated .wl-logo-bar {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+.wl-logo-animated .wl-logo-bar-1 { animation: logo-bar-grow 2.6s ease-in-out infinite 0s; }
+.wl-logo-animated .wl-logo-bar-2 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.26s; }
+.wl-logo-animated .wl-logo-bar-3 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.52s; }
+@keyframes logo-bar-grow {
+  0%     { transform: scaleY(0.15); opacity: 0.25; }
+  30%    { transform: scaleY(1);    opacity: 1; }
+  60%    { transform: scaleY(1);    opacity: 1; }
+  80%    { transform: scaleY(0.15); opacity: 0.25; }
+  100%   { transform: scaleY(0.15); opacity: 0.25; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
