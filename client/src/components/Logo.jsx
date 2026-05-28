@@ -1,22 +1,23 @@
 import { memo } from 'react'
 
-// WalletLens SVG logo — matches the brand mark (green lens with iris)
 function Logo({ size = 32, animated = false, className = '' }) {
-  const r = size / 2
   return (
     <svg
-      width={size} height={size} viewBox="0 0 100 100"
-      className={`wl-logo ${animated ? 'wl-logo-animated' : ''} ${className}`}
+      width={size} height={size} viewBox="0 0 32 32"
+      className={`wl-logo${animated ? ' wl-logo-animated' : ''}${className ? ' ' + className : ''}`}
       aria-label="WalletLens"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
     >
-      {/* outer thin ring */}
-      <circle cx="50" cy="50" r="47" fill="none" style={{ stroke: 'var(--g)', opacity: 0.25 }} strokeWidth="1.5" />
-      {/* green lens ring */}
-      <circle cx="50" cy="50" r="38" fill="none" style={{ stroke: 'var(--g)' }} strokeWidth="7" />
-      {/* inner green fill circle (pupil/light) */}
-      <circle cx="50" cy="50" r="16" style={{ fill: 'var(--g)' }} />
-      {/* highlight specular */}
-      <circle cx="42" cy="42" r="5" fill="rgba(255,255,255,0.35)" />
+      {/* Magnifying glass circle */}
+      <circle cx="13" cy="13" r="9.5" stroke="var(--g)" strokeWidth="2.2" />
+      {/* Bar chart bars inside lens — ascending left to right */}
+      <rect x="7.8"  y="14"   width="2.6" height="3.8" rx="0.6" fill="var(--g)" opacity="0.65" />
+      <rect x="11.7" y="11.5" width="2.6" height="6.3" rx="0.6" fill="var(--g)" opacity="0.82" />
+      <rect x="15.6" y="9"    width="2.6" height="8.8" rx="0.6" fill="var(--g)" />
+      {/* Handle */}
+      <line x1="19.7" y1="19.7" x2="27" y2="27"
+        stroke="var(--g)" strokeWidth="2.6" strokeLinecap="round" />
     </svg>
   )
 }
