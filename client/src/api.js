@@ -3,9 +3,9 @@
 // re-exported here so existing imports from '../api' keep working
 // unchanged. New code should prefer importing directly from data/*.
 
-// Cloudflare Worker proxy URL — set this after deploying workers/stock-price/index.js
+// Stock price proxy URL — set this after deploying workers/stock-price/index.js
 // Leave empty ('') to skip and fall through to other sources.
-const STOCK_WORKER_URL = ''  // set to 'https://stock-price.walletlens.workers.dev' after deploying
+const STOCK_WORKER_URL = ''  // set to your deployed proxy URL after deploying
 
 // ── Static stock price cache (served from same origin, no CORS) ──────────
 // Populated every 30 min by GitHub Actions workflow (update-stock-prices.yml)
@@ -378,7 +378,7 @@ async function fetchStockLive(coinId) {
     return p;
   }
 
-  // ── 1. Cloudflare Worker (our own CORS-safe proxy, most reliable on mobile) ──
+  // ── 1. Stock price proxy (our own CORS-safe proxy, most reliable on mobile) ──
   if (STOCK_WORKER_URL) {
     try {
       const res = await fetchWithTimeout(`${STOCK_WORKER_URL}?symbol=${encodeURIComponent(tickerUp)}`, 7000);

@@ -1,5 +1,5 @@
 /**
- * Cloudflare Pages Function — /api/stocks
+ * Serverless function — /api/stocks
  * Server-side stock price proxy: fetches from Yahoo Finance with no CORS issues.
  * Supports ?symbols=AAPL,MSFT,NVDA (comma-separated).
  */

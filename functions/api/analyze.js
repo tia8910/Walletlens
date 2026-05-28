@@ -1,7 +1,7 @@
 /**
- * Cloudflare Pages Function — /api/analyze
+ * Serverless function — /api/analyze
  * Calls Claude to analyse a user's crypto portfolio and return
- * actionable advice. The ANTHROPIC_API_KEY is a Cloudflare env secret
+ * actionable advice. The ANTHROPIC_API_KEY is an env secret
  * set once by the site owner — end users never see or enter it.
  */
 

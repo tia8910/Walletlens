@@ -1,9 +1,7 @@
 /**
- * Cloudflare Worker — stock price proxy
- * Deploy at: https://dash.cloudflare.com → Workers & Pages → Create Worker
- * URL: stock-price.YOUR-SUBDOMAIN.workers.dev
+ * Edge worker — stock price proxy
  *
- * After deploying, set WORKER_URL in client/src/api.js to your worker URL.
+ * After deploying, set STOCK_WORKER_URL in client/src/api.js to your worker URL.
  */
 
 const CORS = {
