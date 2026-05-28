@@ -110,7 +110,7 @@
 
   <!-- URL badge -->
   <rect x="200" y="220" width="180" height="32" rx="16" fill="#34d39918" stroke="#34d399" stroke-width="1" opacity="0.6"/>
-  <text x="290" y="241" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14" fill="#34d399" text-anchor="middle" font-weight="600">walletlens.cc</text>
+  <text x="290" y="241" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14" fill="#34d399" text-anchor="middle" font-weight="600">walletlens.live</text>
 
   <!-- Headline -->
   <text x="80" y="310" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="46" fill="white" letter-spacing="-1">Stop Guessing.</text>

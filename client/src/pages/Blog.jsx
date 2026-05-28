@@ -33,7 +33,7 @@ This is exactly how WalletLens works.
 
 ## Setting Up Your Portfolio in WalletLens
 
-1. **Open [walletlens.cc](https://walletlens.cc)** in any modern browser. No installation, no account.
+1. **Open [walletlens.live](https://walletlens.live)** in any modern browser. No installation, no account.
 
 2. **Create a wallet** on the Dashboard. Name it after your exchange or storage type — e.g. "Binance", "Ledger", "MetaMask".
 

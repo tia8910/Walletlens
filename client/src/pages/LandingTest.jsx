@@ -135,7 +135,7 @@ const ASSETS = [
 ]
 
 const STEPS = [
-  { num: '01', title: 'Open the app',     desc: 'No sign-up. No download. Just open walletlens.cc in your browser and you\'re in.' },
+  { num: '01', title: 'Open the app',     desc: 'No sign-up. No download. Just open walletlens.live in your browser and you\'re in.' },
   { num: '02', title: 'Create a wallet',  desc: 'Add a wallet name (e.g. "Ledger", "Binance") to group your trades.' },
   { num: '03', title: 'Record trades',    desc: 'Tap Buy or Sell. Search the asset, enter amount and price. Balances update instantly.' },
   { num: '04', title: 'Scan for risks',   desc: 'Every crypto you hold is auto-scored for rug-pull risk via GoPlus on-chain data. Use Scam Catcher to check any contract.' },
@@ -537,7 +537,7 @@ export default function LandingTest() {
             </div>
           </div>
         </div>
-        <div className="lt-footer-copy">© {new Date().getFullYear()} WalletLens — Free forever · walletlens.cc</div>
+        <div className="lt-footer-copy">© {new Date().getFullYear()} WalletLens — Free forever · walletlens.live</div>
       </footer>
 
     </div>

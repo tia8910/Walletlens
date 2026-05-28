@@ -36,7 +36,7 @@ jobs:
       - name: Prepare publish dir (root layout)
         run: |
           touch client/dist/.nojekyll
-          echo "walletlens.cc" > client/dist/CNAME
+          echo "walletlens.live" > client/dist/CNAME
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
