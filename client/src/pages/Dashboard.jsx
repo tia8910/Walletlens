@@ -741,8 +741,9 @@ const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
 const TOOLTIP_STYLE = {
-  background: 'var(--bg4)', border: '1px solid var(--border)',
-  borderRadius: 10, fontSize: '0.76rem', color: 'var(--text)',
+  background: 'rgba(12,18,22,0.97)', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10, fontSize: '0.74rem', color: 'rgba(255,255,255,0.88)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
 }
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
@@ -1304,11 +1305,12 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
     .map(h => {
       const chg = prices[h.coin_id]?.usd_24h_change ?? 0
       const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
-      const intensity = Math.min(Math.abs(chg) / 20, 1)
-      const gRgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
-      const color = chg >= 0
-        ? `rgba(${gRgb},${0.15 + intensity * 0.65})`
-        : `rgba(248,113,113,${0.15 + intensity * 0.65})`
+      const intensity = Math.min(Math.abs(chg) / 15, 1)
+      const color = chg > 0
+        ? intensity < 0.35 ? `rgba(74,222,128,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(34,197,94,${0.42 + intensity * 0.35})` : `rgba(22,163,74,${0.6 + intensity * 0.3})`
+        : chg < 0
+          ? intensity < 0.35 ? `rgba(248,113,113,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(239,68,68,${0.42 + intensity * 0.35})` : `rgba(220,38,38,${0.6 + intensity * 0.3})`
+          : 'rgba(255,255,255,0.06)'
       return { ...h, chg, sizePct, color }
     })
     .sort((a, b) => b.sizePct - a.sizePct)
@@ -2884,10 +2886,10 @@ export default function Dashboard() {
                 {allocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
-                    <ResponsiveContainer width="100%" height={190}>
+                    <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie data={allocData} dataKey="value" cx="50%" cy="50%"
-                          innerRadius="60%" outerRadius="88%" stroke="none" paddingAngle={2}>
+                          innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
                           {allocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
                         <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
@@ -2929,16 +2931,20 @@ export default function Dashboard() {
                       <h3 style={{ margin:0 }}>💰 Net Worth History</h3>
                       <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
                     </div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <AreaChart data={points} margin={{ left:0, right:0, top:4, bottom:0 }}>
+                    <ResponsiveContainer width="100%" height={175}>
+                      <AreaChart data={points} margin={{ left:0, right:8, top:10, bottom:0 }}>
                         <defs>
                           <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                            <stop offset="0%" stopColor="var(--g)" stopOpacity={0.22}/>
+                            <stop offset="75%" stopColor="var(--g)" stopOpacity={0.04}/>
+                            <stop offset="100%" stopColor="var(--g)" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(59,130,246,0.3)' }}/>
-                        <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} fill="url(#nwg)" dot={false}/>
+                        <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="2 6"/>
+                        <YAxis tick={{ fill:'rgba(255,255,255,0.3)', fontSize:9 }} axisLine={false} tickLine={false}
+                          tickFormatter={v => `$${fmtN(v)}`} width={42}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
+                        <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>

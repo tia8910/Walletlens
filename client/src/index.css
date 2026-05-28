@@ -1070,8 +1070,8 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   animation: ll-zoom-ring 2s ease-in-out infinite;
 }
 @keyframes ll-zoom-ring {
-  0%,100% { transform: scale(1); box-shadow: 0 0 18px rgba(var(--g-rgb),0.5); }
-  50% { transform: scale(1.18); box-shadow: 0 0 48px rgba(var(--g-rgb),0.9); }
+  0%,100% { transform: scale(1); box-shadow: 0 0 8px rgba(var(--g-rgb),0.08); }
+  50% { transform: scale(1.18); box-shadow: 0 0 14px rgba(var(--g-rgb),0.12); }
 }
 @keyframes ll-zoom-mid  { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(0.65); opacity: 0.9; } }
 @keyframes ll-zoom-core { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
@@ -3337,15 +3337,15 @@ tr:last-child td { border-bottom: none; }
 @keyframes lens-glow {
   0%, 100% {
     box-shadow:
-      0 0 0 1px rgba(var(--g-rgb),0.35),
-      0 0 30px rgba(var(--g-rgb),0.35),
-      0 0 70px rgba(var(--g-rgb),0.18);
+      0 0 0 1px rgba(var(--g-rgb),0.06),
+      0 0 12px rgba(var(--g-rgb),0.06),
+      0 0 12px rgba(var(--g-rgb),0.06);
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(var(--g-rgb),0.6),
-      0 0 60px rgba(var(--g-rgb),0.6),
-      0 0 140px rgba(var(--g-rgb),0.3);
+      0 0 0 1px rgba(var(--g-rgb),0.06),
+      0 0 12px rgba(var(--g-rgb),0.06),
+      0 0 12px rgba(var(--g-rgb),0.06);
   }
 }
 .lens-glow { animation: lens-glow 2.4s ease-in-out infinite; }
@@ -3565,8 +3565,8 @@ tr:last-child td { border-bottom: none; }
 .floating-lens.burst { transform: scale(1.7); transition: transform 0.18s ease; }
 
 @keyframes lens-pulse-strong {
-  0%, 100% { box-shadow: 0 0 70px rgba(var(--g-rgb),0.7); }
-  50%      { box-shadow: 0 0 180px rgba(var(--g-rgb),0.9); }
+  0%, 100% { box-shadow: 0 0 12px rgba(var(--g-rgb),0.06); }
+  50%      { box-shadow: 0 0 12px rgba(var(--g-rgb),0.06); }
 }
 .lens-pulse { animation: lens-pulse-strong 2.3s ease-in-out infinite; }
 
@@ -3755,19 +3755,19 @@ tr:last-child td { border-bottom: none; }
 /* ═══ Portfolio Heatmap ═══ */
 .heatmap-card { padding: 1rem 1rem 0.75rem; }
 .heatmap-grid {
-  display: flex; flex-wrap: wrap; gap: 4px;
+  display: flex; flex-wrap: wrap; gap: 5px;
   align-items: flex-start;
 }
 .heatmap-cell {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 8px; cursor: default;
+  border-radius: 10px; cursor: default;
   transition: transform 0.15s ease, filter 0.15s ease;
-  flex-shrink: 0; overflow: hidden; padding: 4px;
-  gap: 2px;
+  flex-shrink: 0; overflow: hidden; padding: 5px;
+  gap: 3px;
 }
 .heatmap-cell:hover { transform: scale(1.06); filter: brightness(1.2); z-index: 2; }
 .heatmap-img { border-radius: 50%; object-fit: cover; }
-.heatmap-sym { font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.95); text-align: center; }
+.heatmap-sym { font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.95); text-align: center; letter-spacing: 0.02em; }
 .heatmap-chg { font-size: 0.65rem; font-weight: 700; text-align: center; }
 .heatmap-chg.pos { color: rgba(255,255,255,0.9); }
 .heatmap-chg.neg { color: rgba(255,255,255,0.9); }
@@ -4303,10 +4303,10 @@ tr:last-child td { border-bottom: none; }
 .dvx-tx-amt { font-weight: 800; color: #fff; font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; }
 
 /* Legend */
-.dvx-legend { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
-.dvx-legend-item { display: flex; align-items: center; gap: 0.55rem; font-size: 0.82rem; }
+.dvx-legend { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.42rem; }
+.dvx-legend-item { display: flex; align-items: center; gap: 0.55rem; font-size: 0.79rem; }
 .dvx-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.dvx-legend-name { flex: 1; color: rgba(255,255,255,0.8); font-weight: 600; }
+.dvx-legend-name { flex: 1; color: rgba(255,255,255,0.72); font-weight: 600; }
 .dvx-legend-val { color: var(--g); font-weight: 700; font-size: 0.78rem; font-family: var(--mono); }
 
 /* Holdings */
@@ -4338,6 +4338,8 @@ tr:last-child td { border-bottom: none; }
 }
 .dvx-holding-meta .muted { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dvx-holding-val { font-weight: 800; color: rgba(255,255,255,0.9); font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; font-family: var(--mono); }
+.dvx-holding-name { font-size: 0.86rem; font-weight: 700; color: rgba(255,255,255,0.88); }
+.dvx-holding-ticker { font-size: 0.71rem; font-weight: 600; color: rgba(255,255,255,0.38); letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* Form pages */
 .dvx-form-page { display: flex; flex-direction: column; gap: 1rem; }
