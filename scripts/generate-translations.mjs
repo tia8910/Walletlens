@@ -75,7 +75,7 @@ Rules:
 - Keep the key names exactly as-is (left of the colon)
 - Translate only the value (right of the colon)
 - Preserve any emoji characters (✦ etc.) at the start of values
-- Keep proper nouns like "WalletLens", "GitHub", "API", "walletlens.cc" untranslated
+- Keep proper nouns like "WalletLens", "GitHub", "API", "walletlens.live" untranslated
 - Keep abbreviations like "P&L", "AI" untranslated
 - Keep \\n in strings that contain newlines (do not translate \\n)
 - Return ONLY a valid JSON object with translated key-value pairs, no markdown fences

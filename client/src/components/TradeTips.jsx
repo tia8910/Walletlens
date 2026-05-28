@@ -151,7 +151,7 @@ function buildShareCanvas(tip) {
   ctx.fillText('WalletLens', 80, size - 68)
   ctx.fillStyle = 'rgba(255,255,255,0.45)'
   ctx.font = '400 26px system-ui, sans-serif'
-  ctx.fillText('walletlens.cc  ·  zoom in your wealth', 80, size - 28)
+  ctx.fillText('walletlens.live  ·  zoom in your wealth', 80, size - 28)
 
   return canvas
 }

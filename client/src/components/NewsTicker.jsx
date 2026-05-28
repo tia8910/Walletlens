@@ -141,7 +141,7 @@ export default function NewsTicker() {
                 <button
                   className="news-modal-share-btn"
                   onClick={() => {
-                    const text = encodeURIComponent(`${item.title} — via walletlens.cc`)
+                    const text = encodeURIComponent(`${item.title} — via walletlens.live`)
                     const url  = encodeURIComponent(item.link)
                     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener')
                     track('news_modal_share', { source: item.source })
@@ -187,7 +187,7 @@ export default function NewsTicker() {
                 title="Share on X"
                 onClick={e => {
                   e.stopPropagation()
-                  const text = encodeURIComponent(`${item.title} — via walletlens.cc`)
+                  const text = encodeURIComponent(`${item.title} — via walletlens.live`)
                   const url  = encodeURIComponent(item.link)
                   window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener')
                   track('news_ticker_share', { source: item.source, title: item.title?.slice(0, 60) })

@@ -53,7 +53,7 @@
 
   <!-- Brand name -->
   <text x="132" y="62" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="-0.5">WalletLens</text>
-  <text x="134" y="88" font-size="16" fill="#00c853" opacity="0.8">walletlens.cc</text>
+  <text x="134" y="88" font-size="16" fill="#00c853" opacity="0.8">walletlens.live</text>
 
   <!-- Tagline -->
   <text x="132" y="112" font-size="13" fill="rgba(255,255,255,0.4)" letter-spacing="0.08em">YOUR CRYPTO PORTFOLIO — FULLY IN FOCUS</text>
@@ -165,7 +165,7 @@
   <!-- Bottom bar -->
   <rect x="0" y="598" width="1200" height="32" fill="rgba(0,200,83,0.06)"/>
   <text x="44" y="619" font-size="12" fill="rgba(255,255,255,0.35)">Free Forever  •  Zero Account  •  100% On-Device</text>
-  <text x="1156" y="619" font-size="13" font-weight="700" fill="#00c853" text-anchor="end">walletlens.cc</text>
+  <text x="1156" y="619" font-size="13" font-weight="700" fill="#00c853" text-anchor="end">walletlens.live</text>
 
   <!-- Bottom accent line -->
   <rect x="0" y="627" width="1200" height="3" fill="url(#accentLine)"/>

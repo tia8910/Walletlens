@@ -381,7 +381,7 @@ function drawHackImage(hack, color) {
   ctx.fillText('WalletLens', 122, 65)
   ctx.fillStyle = 'rgba(255,255,255,0.45)'
   ctx.font = '18px system-ui, sans-serif'
-  ctx.fillText('walletlens.cc', 124, 90)
+  ctx.fillText('walletlens.live', 124, 90)
 
   // Category pill
   ctx.fillStyle = color + '33'
@@ -422,7 +422,7 @@ function drawHackImage(hack, color) {
   ctx.fillRect(0, H - 60, W, 60)
   ctx.fillStyle = 'rgba(255,255,255,0.35)'
   ctx.font = '18px system-ui, sans-serif'
-  ctx.fillText('💡 Investment Hack  •  walletlens.cc/academy', 68, H - 22)
+  ctx.fillText('💡 Investment Hack  •  walletlens.live/academy', 68, H - 22)
 
   return c.toDataURL('image/png')
 }
@@ -430,7 +430,7 @@ function drawHackImage(hack, color) {
 async function shareHackToX(hack, color) {
   const dataUrl = drawHackImage(hack, color)
   const text = `${hack.icon} ${hack.title}\n\n${hack.body.slice(0, 160)}…\n\n#WalletLens #Crypto #InvestmentTips`
-  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.cc')}`
+  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.live')}`
 
   // Try Web Share API first (mobile)
   if (navigator.canShare) {

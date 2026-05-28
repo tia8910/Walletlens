@@ -100,7 +100,7 @@ function drawReport(canvas, stats, enriched) {
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px system-ui, sans-serif'
   ctx.textAlign = 'left'; ctx.fillText('WalletLens', lx + 44, ly + 10)
   ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '15px system-ui, sans-serif'
-  ctx.fillText('walletlens.cc', lx + 44, ly + 32)
+  ctx.fillText('walletlens.live', lx + 44, ly + 32)
 
   // WEEKLY REPORT label
   ctx.textAlign = 'right'; ctx.fillStyle = `rgba(${gRgb},0.6)`
@@ -235,7 +235,7 @@ function drawReport(canvas, stats, enriched) {
   // Bottom bar
   ctx.fillStyle = `rgba(${gRgb},0.06)`; ctx.fillRect(0, H - 72, W, 72)
   ctx.textAlign = 'right'; ctx.fillStyle = '#00c853'; ctx.font = 'bold 15px system-ui, sans-serif'
-  ctx.fillText('Track yours free → walletlens.cc', W - 64, H - 24)
+  ctx.fillText('Track yours free → walletlens.live', W - 64, H - 24)
   ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '13px system-ui, sans-serif'
   ctx.fillText('#WalletLens  #CryptoPortfolio  #WeeklyReport', 64, H - 24)
 }
@@ -267,7 +267,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
     track('weekly_report_share_x')
     const up = stats?.weekChange >= 0
     const text = encodeURIComponent(
-      `My crypto portfolio week: ${up ? '📈' : '📉'} ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with @walletlenss — free, private, no account.\n\nwalletlens.cc #WalletLens`
+      `My crypto portfolio week: ${up ? '📈' : '📉'} ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with @walletlenss — free, private, no account.\n\nwalletlens.live #WalletLens`
     )
     try {
       if (navigator.canShare) {

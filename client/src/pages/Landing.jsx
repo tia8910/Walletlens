@@ -556,7 +556,7 @@ export default function Landing() {
         </button>
         <button className="lp-share-x-btn" onClick={async () => {
           track('landing_share_brand_x')
-          const text = encodeURIComponent('🔍 Discovered WalletLens — free crypto portfolio tracker, no account, 100% private.\n\nRisk scanner, AI advisor, whale signals, and more.\n\nwalletlens.cc @walletlenss')
+          const text = encodeURIComponent('🔍 Discovered WalletLens — free crypto portfolio tracker, no account, 100% private.\n\nRisk scanner, AI advisor, whale signals, and more.\n\nwalletlens.live @walletlenss')
           if (navigator.canShare) {
             try {
               const res = await fetch('/brand-features.svg')

@@ -145,7 +145,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillText('WalletLens', lx + 40, ly + 9)
   ctx.fillStyle = 'rgba(255,255,255,0.4)'
   ctx.font = '14px system-ui, sans-serif'
-  ctx.fillText('walletlens.cc', lx + 40, ly + 28)
+  ctx.fillText('walletlens.live', lx + 40, ly + 28)
 
   // ── Tagline (top right) ──────────────────────────────────────────────────
   ctx.fillStyle = accent + '99'
@@ -265,7 +265,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.textAlign = 'right'
   ctx.fillStyle = accent
   ctx.font = 'bold 14px system-ui, sans-serif'
-  ctx.fillText('Track yours free → walletlens.cc', W - 48, H - 20)
+  ctx.fillText('Track yours free → walletlens.live', W - 48, H - 20)
 
   ctx.textAlign = 'left'
   ctx.fillStyle = 'rgba(255,255,255,0.22)'
@@ -324,7 +324,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   const tweetText = () => {
     const pnlSign = totalPnLPct >= 0 ? '+' : ''
     return encodeURIComponent(
-      `My crypto portfolio is ${pnlSign}${fmtPct(totalPnLPct)} all-time 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.cc/?ref=share`
+      `My crypto portfolio is ${pnlSign}${fmtPct(totalPnLPct)} all-time 📈\n\nTracked with @walletlenss — free, no account, 100% private.\n\nwalletlens.live/?ref=share`
     )
   }
 
