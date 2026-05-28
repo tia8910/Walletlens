@@ -108,8 +108,13 @@ function PWATopbarButton() {
 function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
+  const [actionIdx, setActionIdx] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setActionIdx(i => (i + 1) % 3), 1800)
+    return () => clearInterval(id)
+  }, [])
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
@@ -119,10 +124,26 @@ function Drawer({ open, onClose }) {
       <aside className={`wl-drawer ${open ? 'wl-drawer-open' : ''}`}>
         <div className="wl-drawer-head">
           <div className="wl-drawer-brand">
-            <Logo size={30} animated />
-            <div>
+            <Logo size={44} animated />
+            <div className="wl-drawer-brand-text">
               <div className="wl-drawer-name">WalletLens</div>
-              <div className="wl-drawer-tag">{t('footerTagline')}</div>
+              <div className="wl-drawer-tag">{t('brandTag')}</div>
+              <div className="wl-drawer-brand-actions">
+                <span className={`wl-drawer-brand-action${actionIdx === 0 ? ' active' : ''}`}>
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                  {lang === 'ar' ? 'تتبع' : 'TRACK'}
+                </span>
+                <span className="wl-drawer-brand-sep">|</span>
+                <span className={`wl-drawer-brand-action${actionIdx === 1 ? ' active' : ''}`}>
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 7V2a5 5 0 0 1 5 5H7z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" fillOpacity="0.25"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4"/></svg>
+                  {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+                </span>
+                <span className="wl-drawer-brand-sep">|</span>
+                <span className={`wl-drawer-brand-action${actionIdx === 2 ? ' active' : ''}`}>
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 10l3.5-4 2.5 2.5L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 4h2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  {lang === 'ar' ? 'نمو' : 'GROW'}
+                </span>
+              </div>
             </div>
           </div>
           <button className="wl-drawer-close" onClick={onClose}><IconClose /></button>
