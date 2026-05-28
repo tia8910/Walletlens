@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import ExchangePartners from '../components/ExchangePartners'
 
 export default function Exchanges() {
   const [exchanges, setExchanges] = useState([])
@@ -46,9 +45,6 @@ export default function Exchanges() {
           {showForm ? 'Cancel' : '+ Connect Exchange'}
         </button>
       </div>
-
-      {/* ── Partner Exchanges ── */}
-      <ExchangePartners source="exchanges" />
 
       <p className="muted">Connect your exchange accounts to sync balances and import transactions. API keys are stored locally.</p>
 

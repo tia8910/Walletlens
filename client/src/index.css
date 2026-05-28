@@ -2894,9 +2894,9 @@ tr:last-child td { border-bottom: none; }
 @media (max-width: 1280px) {
   .ai-score-cards { grid-template-columns: repeat(2, 1fr); }
   .sidebar { display: none !important; }
-  .content { margin-left: 0 !important; padding: 0 0.9rem 5.5rem; max-width: 100% !important; }
+  .content { margin-left: 0 !important; padding: 0 0.9rem 2rem; max-width: 100% !important; }
 
-  .floating-lens { bottom: 5.5rem; right: 1rem; width: 60px; height: 60px; font-size: 1.7rem; border-width: 3px; }
+  .floating-lens { bottom: 1.25rem; right: 1rem; width: 60px; height: 60px; font-size: 1.7rem; border-width: 3px; }
 
   .topbar {
     display: block; position: sticky; top: 0; z-index: 80;
@@ -4059,7 +4059,7 @@ tr:last-child td { border-bottom: none; }
 /* ═══ Mobile content override ═══ */
 .content-mobile {
   margin-left: 0 !important;
-  padding: 0 0.9rem 5.5rem !important;
+  padding: 0 0.9rem 2rem !important;
   max-width: 100% !important;
 }
 
@@ -5087,6 +5087,26 @@ tr:last-child td { border-bottom: none; }
   text-transform: uppercase;
 }
 
+/* ── Binance-style Buy/Sell segmented tabs ── */
+.bs-mode-tabs {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.3rem; padding: 0.3rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; margin-bottom: 0.25rem;
+}
+.bs-mode-tab {
+  border: none; cursor: pointer;
+  padding: 0.6rem; border-radius: 10px;
+  font-size: 0.95rem; font-weight: 700; letter-spacing: 0.01em;
+  background: transparent; color: var(--text-sub);
+  transition: background 0.18s, color 0.18s;
+}
+.bs-mode-tab:hover { color: var(--text-muted); }
+.bs-mode-tab.active.buy  { background: var(--g);  color: #000; }
+.bs-mode-tab.active.sell { background: #f87171; color: #fff; }
+[data-wl-light] .bs-mode-tabs { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+
 .bs-field { display: flex; flex-direction: column; gap: 0.4rem; }
 .bs-label {
   font-size: 0.68rem; font-weight: 800; color: rgba(var(--g-rgb),0.7);
@@ -5205,14 +5225,14 @@ select.bs-input option { background: var(--bg3); }
 [data-wl-light] .bs-footer { background: var(--bg3); border-top-color: rgba(0,0,0,0.08); }
 .bs-submit {
   width: 100%; padding: 1rem;
-  border: none; border-radius: 16px;
-  font-size: 1.05rem; font-weight: 900; letter-spacing: 0.04em;
-  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-  box-shadow: 0 4px 24px rgba(var(--g-rgb),0.35);
+  border: none; border-radius: 14px;
+  font-size: 1.02rem; font-weight: 700; letter-spacing: 0.02em;
+  cursor: pointer; transition: filter 0.15s, opacity 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
 }
-.bs-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(var(--g-rgb),0.45); }
-.bs-submit:active { transform: scale(0.98); }
-.bs-submit:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; }
+.bs-submit:hover { filter: brightness(1.06); }
+.bs-submit:active { transform: scale(0.99); }
+.bs-submit:disabled { opacity: 0.38; cursor: not-allowed; box-shadow: none; }
 
 .bs-cat-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem;

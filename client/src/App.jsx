@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
-import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
@@ -381,13 +381,6 @@ export default function App() {
 
       <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
       {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
-
-      <nav className="wl-bottom-nav">
-        <NavLink to="/dashboard" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'dashboard' })}><IconHome /><span>{t('home')}</span></NavLink>
-        <NavLink to="/market" className="wl-nav-item" onClick={() => track('bottom_nav', { to: 'market' })}><IconMarket /><span>{t('market')}</span></NavLink>
-        <NavLink to="/coach" className="wl-nav-item wl-nav-coach" onClick={() => track('bottom_nav', { to: 'coach' })}><IconCoach /><span>Coach</span></NavLink>
-        <NavLink to="/academy" className="wl-nav-item wl-nav-academy" onClick={() => track('bottom_nav', { to: 'academy' })}><IconAcademy /><span>Academy</span></NavLink>
-      </nav>
     </div>
   )
 }
