@@ -184,7 +184,6 @@ function LiveMockup({ label, change }) {
 // ─────────────────────────────────────────────────────────────────────────
 export default function Landing() {
   const navigate = useNavigate()
-  const [logoAnim, setLogoAnim] = useState(false)
   const heroRef = useRef(null)
   const { t, lang, setLang, isRtl } = useLanguage()
 
@@ -193,11 +192,6 @@ export default function Landing() {
     const ref = new URLSearchParams(window.location.search).get('ref')
     if (ref) track('referral_visit', { ref_source: ref })
   }, [])
-
-  function handleLogoPulse() {
-    setLogoAnim(true)
-    setTimeout(() => setLogoAnim(false), 600)
-  }
 
   return (
     <div className="lp">
