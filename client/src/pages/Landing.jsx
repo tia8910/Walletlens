@@ -206,15 +206,6 @@ export default function Landing() {
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
       <section className="lp-hero" ref={heroRef}>
         <div className="lp-hero-inner">
-          <button
-            className={`lp-logo-orb ${logoAnim ? 'lp-logo-pop' : ''}`}
-            onClick={handleLogoPulse}
-            aria-label="WalletLens"
-          >
-            <span className="lp-logo-halo" />
-            <Logo size={88} />
-          </button>
-
           <div className="lp-brand-name">WalletLens</div>
           <div className="lp-brand-tag">{t('brandTag')}</div>
 
