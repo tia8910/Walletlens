@@ -8,6 +8,7 @@ import {
 import { api } from '../api'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
+import Logo from '../components/Logo'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
@@ -1534,7 +1535,7 @@ const QUICK_ADD_ASSETS = [
   { label:'AAPL', bg:'#1d1d1f', icon:'AAPL', iconColor:'#fff',  iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'AAPL' } },
 ]
 
-function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded, importsSlot }) {
+function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   if (!loaded) return null
 
   // Inject keyframes once
@@ -1564,6 +1565,49 @@ function EmptyPortfolio({ onAddTrade, onQuickAdd, navigate, loaded, importsSlot 
       </div>
       <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'2rem', lineHeight:1.65 }}>
         Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
+      </div>
+
+      {/* 4 import action buttons — 2×2 grid */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
+        marginBottom: '1.25rem',
+      }}>
+        <button onClick={onAddTrade} style={{
+          display: 'flex', alignItems: 'center', gap: '0.45rem',
+          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
+          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
+          color: 'var(--g)', fontWeight: 700, fontSize: '0.82rem',
+          transition: 'background 0.15s',
+        }}>
+          <span style={{ fontSize: '1rem' }}>➕</span> Add trade
+        </button>
+        <button onClick={() => onImportAction('backup')} style={{
+          display: 'flex', alignItems: 'center', gap: '0.45rem',
+          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
+          background: 'rgba(96,165,250,0.1)', border: '1.5px solid rgba(96,165,250,0.3)',
+          color: '#60a5fa', fontWeight: 700, fontSize: '0.82rem',
+          transition: 'background 0.15s',
+        }}>
+          <span style={{ fontSize: '1rem' }}>📁</span> Import backup
+        </button>
+        <button onClick={() => onImportAction('voice')} style={{
+          display: 'flex', alignItems: 'center', gap: '0.45rem',
+          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
+          background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.3)',
+          color: '#10b981', fontWeight: 700, fontSize: '0.82rem',
+          transition: 'background 0.15s',
+        }}>
+          <span style={{ fontSize: '1rem' }}>🎙️</span> Voice import
+        </button>
+        <button onClick={() => onImportAction('excel')} style={{
+          display: 'flex', alignItems: 'center', gap: '0.45rem',
+          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
+          background: 'rgba(167,139,250,0.1)', border: '1.5px solid rgba(167,139,250,0.3)',
+          color: '#a78bfa', fontWeight: 700, fontSize: '0.82rem',
+          transition: 'background 0.15s',
+        }}>
+          <span style={{ fontSize: '1rem' }}>📊</span> Import Excel
+        </button>
       </div>
 
       {/* Primary CTA — creative dark command-center button */}
@@ -2097,6 +2141,14 @@ export default function Dashboard() {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
   }, [location.state?.tab])
 
+  // Open wallet creation panel when navigated here from landing "Create wallet"
+  useEffect(() => {
+    if (location.state?.openAddWallet) {
+      setActiveTab('manage')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Track dashboard tab switches as virtual page views in GA
   useEffect(() => {
     if (typeof window.gtag !== 'function') return
@@ -2571,7 +2623,18 @@ export default function Dashboard() {
             return (
               <>
                 {isEmpty
-                  ? <EmptyPortfolio onAddTrade={() => openSheet('buy', 'empty_state')} onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)} navigate={navigate} loaded={loaded} importsSlot={importsBlock} />
+                  ? <EmptyPortfolio
+                      onAddTrade={() => openSheet('buy', 'empty_state')}
+                      onImportAction={action => {
+                        if (action === 'voice')  { setShowVoiceImport(true);  setShowExcelImport(false); setShowBackupCode(false) }
+                        if (action === 'excel')  { setShowExcelImport(true);  setShowVoiceImport(false); setShowBackupCode(false) }
+                        if (action === 'backup') { setShowBackupCode(true);   setShowExcelImport(false); setShowVoiceImport(false) }
+                      }}
+                      onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)}
+                      navigate={navigate}
+                      loaded={loaded}
+                      importsSlot={importsBlock}
+                    />
                   : importsBlock}
               </>
             )

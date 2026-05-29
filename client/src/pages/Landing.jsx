@@ -269,17 +269,25 @@ export default function Landing() {
 
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
+          <p className="lp-privacy-caption">Your data never leaves your device.</p>
+
           <div className="lp-cta-row">
             <button className="lp-cta-primary" onClick={() => { track('landing_cta_net_worth'); navigate('/dashboard') }}>
               Track your net worth
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
-            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_wallet'); navigate('/dashboard') }}>
+            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_wallet'); navigate('/dashboard', { state: { openAddWallet: true } }) }}>
               Create wallet
             </button>
             <button className="lp-cta-ghost" onClick={() => { track('landing_cta_evaluate'); navigate('/dashboard', { state: { tab: 'ai' } }) }}>
               Evaluate your portfolio
             </button>
+          </div>
+
+          <div className="lp-trust-strip">
+            <span className="lp-trust-pill">🔒 No wallet connection</span>
+            <span className="lp-trust-pill">🖥️ No server — 100% local</span>
+            <span className="lp-trust-pill">🎙️ Import by voice</span>
           </div>
 
           <div className="lp-badges">
