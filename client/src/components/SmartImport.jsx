@@ -1,9 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { api } from '../api'
-import { ANTHROPIC_KEY } from '../anthropic'
-
-const KEY_STORAGE = 'walletlens_anthropic_key'
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
+import { parseScreenshotWithClaude } from '../visionAi'
+import { track } from '../analytics'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -48,46 +46,6 @@ function parseSpreadsheet(file) {
     reader.onerror = reject
     reader.readAsArrayBuffer(file)
   })
-}
-
-async function callClaudeVision(apiKey, base64, mediaType) {
-  const res = await fetch(ANTHROPIC_API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: `Extract all crypto/stock holdings visible in this portfolio screenshot.
-Return ONLY a valid JSON array, no explanation, no markdown fences. Each item must have:
-- symbol (string, e.g. "BTC")
-- name (string, e.g. "Bitcoin")
-- amount (number, the quantity held)
-- price (number, price per unit in USD; use 0 if not visible)
-- type ("buy" or "hold")
-Example: [{"symbol":"BTC","name":"Bitcoin","amount":0.5,"price":65000,"type":"buy"}]` },
-        ],
-      }],
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `API error ${res.status}`)
-  }
-  const data = await res.json()
-  const text = data.content?.[0]?.text || ''
-  // Extract JSON array from the response
-  const match = text.match(/\[[\s\S]*\]/)
-  if (!match) throw new Error('No JSON array found in response')
-  return JSON.parse(match[0])
 }
 
 function DragZone({ accept, label, icon, onFile, disabled }) {
@@ -165,12 +123,14 @@ function ReviewTable({ rows, onChange, onRemove }) {
   )
 }
 
-export default function SmartImport({ wallets, onImported }) {
+export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
   const [rows, setRows] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('')
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? '')
+  const [mode, setMode] = useState(defaultMode === 'screenshot' ? 'screenshot' : 'excel')
+  const [preview, setPreview] = useState(null)
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -182,24 +142,20 @@ export default function SmartImport({ wallets, onImported }) {
   }
   function removeRow(i) { setRows(prev => prev.filter((_, idx) => idx !== i)) }
 
-  // ── Screenshot handler ──────────────────────────────────────────────────
+  // ── Screenshot handler (Claude vision via owner-hosted endpoint) ──────────
   async function handleScreenshot(file) {
-    const apiKey = localStorage.getItem(KEY_STORAGE) || ANTHROPIC_KEY
-    if (!apiKey) {
-      showMsg('No API key found. Please enter your Anthropic API key in the AI Advisor section first.')
-      return
-    }
     clearMsg()
     setBusy(true)
     setRows([])
     const src = URL.createObjectURL(file)
     setPreview({ src })
+    track('screenshot_import_start')
     try {
       const base64 = await fileToBase64(file)
       const mediaType = file.type || 'image/png'
-      const extracted = await callClaudeVision(apiKey, base64, mediaType)
+      const extracted = await parseScreenshotWithClaude(base64, mediaType)
       if (!Array.isArray(extracted) || !extracted.length) {
-        showMsg('No holdings detected. Try a clearer screenshot.')
+        showMsg('No holdings detected. Try a clearer, tighter screenshot of the holdings/trades.')
         return
       }
       setRows(extracted.map(r => ({
@@ -210,9 +166,10 @@ export default function SmartImport({ wallets, onImported }) {
         type:   r.type === 'sell' ? 'sell' : 'buy',
         date:   r.date || today,
       })))
+      track('screenshot_import_detected', { count: extracted.length })
       showMsg(`Detected ${extracted.length} holding(s) — review and edit below.`, 'ok')
     } catch (e) {
-      showMsg('Claude Vision error: ' + e.message)
+      showMsg(e.message || 'Could not read that screenshot. Try again or use Excel/CSV.')
     } finally {
       setBusy(false)
     }
@@ -306,11 +263,39 @@ export default function SmartImport({ wallets, onImported }) {
 
   return (
     <div className="si-root">
-      {/* Drop zone */}
+      {/* Mode toggle: Screenshot (AI) vs Excel / CSV */}
       {!rows.length && (
+        <div className="si-tabs">
+          <button
+            className={`si-tab${mode === 'screenshot' ? ' si-tab-active' : ''}`}
+            onClick={() => { setMode('screenshot'); clearMsg(); setPreview(null) }}
+            disabled={busy}
+          >📸 Screenshot</button>
+          <button
+            className={`si-tab${mode === 'excel' ? ' si-tab-active' : ''}`}
+            onClick={() => { setMode('excel'); clearMsg(); setPreview(null) }}
+            disabled={busy}
+          >📊 Excel / CSV</button>
+        </div>
+      )}
+
+      {/* Drop zone */}
+      {!rows.length && mode === 'screenshot' && (
+        <DragZone accept="image" icon="📸"
+          label={busy ? 'Reading screenshot…' : 'Drop or tap to upload a screenshot'}
+          onFile={handleScreenshot} disabled={busy} />
+      )}
+      {!rows.length && mode === 'excel' && (
         <DragZone accept="spreadsheet" icon="📊"
           label={busy ? 'Parsing file…' : 'Drop your Excel or CSV file here'}
           onFile={handleSpreadsheet} disabled={busy} />
+      )}
+
+      {/* Screenshot preview */}
+      {preview?.src && (
+        <div className="si-img-preview">
+          <img src={preview.src} alt="screenshot preview" />
+        </div>
       )}
 
       {/* Status message */}
@@ -319,9 +304,14 @@ export default function SmartImport({ wallets, onImported }) {
       )}
 
       {/* Template hint */}
-      {!rows.length && !busy && (
+      {!rows.length && !busy && mode === 'excel' && (
         <p className="si-hint">
           Use column headers: <strong>Symbol, Name, Amount, Price, Date, Type</strong> (buy/sell). CSV and XLSX both supported.
+        </p>
+      )}
+      {!rows.length && !busy && mode === 'screenshot' && (
+        <p className="si-hint">
+          Upload a screenshot of your exchange/wallet holdings or trade history — AI reads it and fills in the trades for you to review.
         </p>
       )}
 

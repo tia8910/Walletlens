@@ -23,6 +23,7 @@
 - **Magic Indicator**: a single direction (Strong Buy → Distribute) per crypto holding, merging five signals — technical analysis, on-chain flow & supply, volume confirmation, whale accumulation, and fundamentals (market-cap rank, FDV/MC dilution, distance from all-time high) — with a confidence score and an optional AI verdict.
 - **AI voice import**: Speak your trades ("I bought 1 Bitcoin and 1 Ethereum") in English or Arabic — AI parses multiple trades from one sentence and logs each as a separate order. Also works as a typed natural-language box on any device.
 - **Multi-wallet**: Track several wallets and view net worth per wallet or combined across all.
+- **Screenshot import**: Upload a screenshot of your exchange/wallet holdings or trade history and AI (Claude vision) reads it into reviewable trades.
 - **Excel/CSV import**: Bulk-import your transaction history from any exchange.
 - **Whale tracker**: Live feed of large on-chain Bitcoin transactions.
 - **Smart alerts**: Price alerts that fire as PWA push notifications.
