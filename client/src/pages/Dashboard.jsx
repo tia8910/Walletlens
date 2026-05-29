@@ -1507,10 +1507,10 @@ function FeatureSlideshow() {
         <span style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--text-sub)', minWidth:38, textAlign:'right' }}>
           {String(idx + 1).padStart(2,'0')}<span style={{ opacity:0.5 }}> / {FEATURE_SLIDES.length}</span>
         </span>
-        <div style={{ display:'flex', justifyContent:'center', gap:'0.3rem', flexWrap:'wrap', maxWidth:240 }}>
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:'0.18rem', flexWrap:'nowrap' }}>
           {FEATURE_SLIDES.map((_, i) => (
             <button key={i} aria-label={`Slide ${i + 1}`} onClick={() => goTo(i, i > idx ? 1 : -1)} style={{
-              width: i === idx ? 16 : 6, height:6, borderRadius:3,
+              width: i === idx ? 14 : 5, height:5, borderRadius:3, flexShrink:0,
               border:'none', cursor:'pointer', padding:0,
               background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.2)',
               boxShadow: i === idx ? `0 0 8px ${slide.color}` : 'none',
