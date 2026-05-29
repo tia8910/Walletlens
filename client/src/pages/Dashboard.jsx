@@ -2400,7 +2400,7 @@ export default function Dashboard() {
   const prevPnLRef                        = useRef(null)
   // Import-method chooser shown after creating a wallet
   const [importChooser, setImportChooser] = useState(false)
-  const [importMode, setImportMode]       = useState('menu') // 'menu' | 'voice' | 'excel' | 'backup'
+  const [importMode, setImportMode]       = useState('menu') // 'menu' | 'voice' | 'screenshot' | 'excel' | 'backup'
   // Onboarding tutorial progress flags
   const [onboardDismissed, setOnboardDismissed] = useState(() => { try { return localStorage.getItem('wl_onboard_dismissed') === '1' } catch { return false } })
   const [aiSeen, setAiSeen]               = useState(() => { try { return localStorage.getItem('wl_onboard_ai_seen') === '1' } catch { return false } })
@@ -3726,6 +3726,7 @@ export default function Dashboard() {
                   {[
                     { icon:'✍️', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
                     { icon:'🎙️', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
+                    { icon:'📸', label:'Screenshot', desc:'AI reads it', color:'244,114,182', fn:() => setImportMode('screenshot') },
                     { icon:'📊', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
                     { icon:'📁', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
                   ].map(o => (
@@ -3749,6 +3750,7 @@ export default function Dashboard() {
                   background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontWeight:700, fontSize:'0.8rem',
                 }}>‹ Back</button>
                 {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
+                {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'backup' && <BackupCode hideTrigger />}
               </>

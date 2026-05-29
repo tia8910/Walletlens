@@ -131,6 +131,62 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers })
   }
 
+  // ── Screenshot import (mode: "vision") ────────────────────────────────────
+  // Accepts a base64 image of a portfolio / trade history / order confirmation
+  // and extracts holdings via Claude vision. Returns { ok, holdings: [...] }.
+  if (body?.mode === "vision") {
+    const image = (body.image || "").toString()
+    const mediaType = (body.mediaType || "image/png").toString()
+    if (!image) {
+      return new Response(JSON.stringify({ error: "no_image" }), { status: 400, headers })
+    }
+    const prompt = `You are a precise data-extraction engine for a crypto/stock/metals portfolio app. The user uploaded a screenshot — it may be an exchange/wallet portfolio, a holdings list, a trade/order history, or a single order confirmation.
+
+Extract EVERY asset position or trade you can read. Return STRICT JSON ONLY — a single JSON array, no markdown, no commentary. Each item:
+{ "symbol": "BTC", "name": "Bitcoin", "amount": <number of units>, "price": <number, unit price in USD or 0 if not shown>, "type": "buy" | "sell" }
+
+Rules:
+- "amount" is the QUANTITY of units (coins/shares/oz), never the fiat value. If only a fiat value and a price are shown, divide to get units.
+- If a row shows a holding/balance with no explicit buy/sell, use "buy".
+- Use the ticker for "symbol" (BTC, ETH, SOL, AAPL, TSLA, XAU, …) in uppercase.
+- Ignore totals, fiat cash balances, ads, and UI chrome. Only real asset positions/trades.
+- If nothing can be read, return [].`
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1500,
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
+              { type: "text", text: prompt },
+            ],
+          }],
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (vision):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const text = data.content?.[0]?.text || ""
+      const match = text.match(/\[[\s\S]*\]/)
+      const holdings = match ? JSON.parse(match[0]) : []
+      return new Response(JSON.stringify({ ok: true, holdings }), { headers })
+    } catch (e) {
+      console.error("vision error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
   // ── Magic Indicator AI verdict (mode: "analyze") ──────────────────────────
   if (body?.mode === "analyze") {
     try {
