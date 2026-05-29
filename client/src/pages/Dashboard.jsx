@@ -1529,11 +1529,11 @@ function FeatureSlideshow() {
 // ── Onboarding tutorial — animated vertical timeline that tracks REAL
 // progress (wallet created, first trade, holdings, AI viewed). Shown on the
 // Manage tab until all four steps are done or the user skips. ──────────────
-function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onOpenAI, onDismiss }) {
+function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onViewDashboard, onOpenAI, onDismiss }) {
   const steps = [
     { key:'wallet', icon:'👛', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
     { key:'trade',  icon:'🎙️', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
-    { key:'track',  icon:'📊', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:null },
+    { key:'track',  icon:'📊', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
     { key:'ai',     icon:'🤖', label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
   ]
   const total = steps.length
@@ -3639,6 +3639,7 @@ export default function Dashboard() {
                 if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.querySelector('input')?.focus(), 350) }
               }}
               onAddTrade={() => openSheet('buy', 'onboarding')}
+              onViewDashboard={() => setActiveTab('overview')}
               onOpenAI={() => setActiveTab('tools')}
               onDismiss={dismissOnboard}
             />
@@ -3673,7 +3674,13 @@ export default function Dashboard() {
           type={sheetType}
           onClose={() => setSheetOpen(false)}
           wallets={wallets}
-          onDone={loadAll}
+          onDone={() => {
+            const wasFirstTrade = transactions.length === 0
+            loadAll()
+            // First trade ever → jump to Overview so they watch their net
+            // worth populate, linking the onboarding flow end-to-end.
+            if (wasFirstTrade) setTimeout(() => setActiveTab('overview'), 200)
+          }}
           holdings={enriched}
           prefillCoin={sheetPrefill?.coin}
           prefillCategory={sheetPrefill?.category}
