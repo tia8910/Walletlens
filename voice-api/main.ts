@@ -28,15 +28,20 @@ function corsHeaders(origin: string | null): HeadersInit {
   }
 }
 
-function buildPrompt(transcript: string, hintLang: string): string {
-  return `You are a voice-trade interpreter for a crypto/stock/metals portfolio app.
+function buildPrompt(transcript: string, hintLang: string, alternatives: string[]): string {
+  // When several speech-to-text engines disagree, listing every candidate
+  // lets the model triangulate the true utterance — the single biggest
+  // accuracy win for garbled or accented speech.
+  const altBlock = alternatives.length > 1
+    ? `\nThe speech-to-text engines produced these CANDIDATE transcripts of the SAME spoken sentence. They may disagree, drop words, or mis-hear coins — reconcile them into the single true intent (a coin appearing in any candidate is strong evidence it was said):\n${alternatives.map((a, i) => `  ${i + 1}. "${a}"`).join("\n")}\n\nPrimary (best-guess) transcript: "${transcript}"\n`
+    : `\nTranscript: "${transcript}"\n`
 
-The user spoke into their microphone (or typed) and this is the raw transcript. The speech engine may mis-hear words, mix languages, or transcribe Arabic phonetically as English (e.g. "اشتري واحد بيتكوين" → "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd".
+  return `You are a world-class voice-trade interpreter for a crypto/stock/metals portfolio app. Accuracy is critical — a wrong coin or amount records a wrong trade.
+
+The user spoke into their microphone (or typed) this. The speech engine may mis-hear words, mix languages, or transcribe Arabic phonetically as English (e.g. "اشتري واحد بيتكوين" → "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd".
 
 Transcript hint language: ${hintLang}
-
-Transcript: "${transcript}"
-
+${altBlock}
 Extract EVERY trade. Return STRICT JSON ONLY — no markdown, no commentary:
 
 {
@@ -82,7 +87,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
   }
 
-  let body: { transcript?: string; hintLang?: string }
+  let body: { transcript?: string; hintLang?: string; alternatives?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -94,6 +99,15 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "no_transcript" }), { status: 400, headers })
   }
   const hintLang = body.hintLang === "ar" ? "ar" : "en"
+  // Optional candidate transcripts from the other recognizers, de-duped.
+  const alternatives = Array.isArray(body.alternatives)
+    ? Array.from(new Set(
+        (body.alternatives as unknown[])
+          .map((a) => (a || "").toString().trim().slice(0, 500))
+          .filter((a) => a.length > 0),
+      )).slice(0, 8)
+    : []
+  if (!alternatives.includes(transcript)) alternatives.unshift(transcript)
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -104,9 +118,9 @@ Deno.serve(async (req: Request) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 700,
-        messages: [{ role: "user", content: buildPrompt(transcript, hintLang) }],
+        model: "claude-sonnet-4-6",
+        max_tokens: 900,
+        messages: [{ role: "user", content: buildPrompt(transcript, hintLang, alternatives) }],
       }),
     })
 

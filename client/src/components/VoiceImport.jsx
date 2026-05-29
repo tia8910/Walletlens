@@ -1137,11 +1137,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // and slang in Arabic + English — e.g. "I bought 1 Bitcoin and 1 Ethereum"
   // becomes two orders. Replaces the parsed result on success; silently keeps
   // the local parse on any failure.
-  const tryAiFallback = async (rawText, localComplete = 0) => {
+  const tryAiFallback = async (rawText, localComplete = 0, alternatives = []) => {
     if (!rawText || rawText.length < 3) return
     setAiThinking(true)
     try {
-      const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en')
+      const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en', alternatives)
       if (!trades.length) return
       // Don't let a weaker AI result overwrite a richer local multi-parse.
       if (trades.length < localComplete) return
@@ -1193,9 +1193,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // Claude is authoritative for multi-trade + dialects; if it returns
     // nothing (no key / offline) we keep whatever the local parser found.
     // Send the longest transcript across all language channels for coverage.
-    const best = Object.values(transcriptsRef.current).reduce((a, b) => b.length > a.length ? b : a, '') || transcript
+    const candidates = Object.values(transcriptsRef.current).filter(Boolean)
+    const best = candidates.reduce((a, b) => b.length > a.length ? b : a, '') || transcript
     const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
-    if (best && best.trim().length >= 3) tryAiFallback(best, localComplete)
+    // Pass EVERY recognizer's transcript so Claude can triangulate the true
+    // utterance — far more accurate than a single best-guess for accented or
+    // garbled speech.
+    if (best && best.trim().length >= 3) tryAiFallback(best, localComplete, candidates)
   }
 
   useEffect(() => () => {
