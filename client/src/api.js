@@ -45,6 +45,7 @@ import {
   runSchemaMigrations,
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings, aggregatePortfolio } from './data/portfolio';
+import { analyzeTechnicals } from './technicals';
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -1486,6 +1487,58 @@ export const api = {
         } catch { out[id] = null; }
       }));
       // Brief pause between batches to stay within CoinGecko's 10–30 req/min free limit
+      if (i + CONCURRENCY < toFetch.length) await new Promise(r => setTimeout(r, 350));
+    }
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return out;
+  },
+
+  // Bulk technical analysis (RSI, MACD, Bollinger, trend, support/resistance)
+  // per crypto holding, computed from ~`days` of daily closes. Non-crypto IDs
+  // are skipped (no reliable OHLC feed). 1h localStorage cache.
+  getBulkTechnicals: async (coinIds, days = 180) => {
+    const out = {};
+    if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
+    const isNonCrypto = (id) =>
+      !id ||
+      id === GOLD_ID || id === SILVER_ID || id === COPPER_ID || id === PLATINUM_ID ||
+      id.startsWith(STOCK_PREFIX) || id.startsWith(FIAT_PREFIX) ||
+      id.startsWith('bond:') || id.startsWith('other:') ||
+      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:');
+
+    const CACHE_KEY = 'crypto_tracker_ta_cache_v1';
+    const TTL_MS = 60 * 60 * 1000;
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
+    const now = Date.now();
+    const toFetch = [];
+    for (const id of coinIds) {
+      if (isNonCrypto(id)) { out[id] = null; continue; }
+      const hit = cache[id];
+      if (hit && now - hit.t < TTL_MS) { out[id] = hit.v; continue; }
+      toFetch.push(id);
+    }
+    const CONCURRENCY = 3;
+    for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
+      const batch = toFetch.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async id => {
+        try {
+          const data = await fetchJSON(
+            `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
+          );
+          const prices = Array.isArray(data?.prices) ? data.prices : [];
+          if (prices.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
+          // Collapse to one close per calendar day for stable daily indicators.
+          const daily = {};
+          for (const [ts, p] of prices) daily[new Date(ts).toISOString().slice(0, 10)] = p;
+          const closes = Object.entries(daily)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, p]) => p);
+          const ta = analyzeTechnicals(closes, closes[closes.length - 1]);
+          out[id] = ta;
+          cache[id] = { t: now, v: ta };
+        } catch { out[id] = null; }
+      }));
       if (i + CONCURRENCY < toFetch.length) await new Promise(r => setTimeout(r, 350));
     }
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}

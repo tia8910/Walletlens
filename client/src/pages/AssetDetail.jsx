@@ -34,6 +34,7 @@ export default function AssetDetail() {
   const [tInputPrice, setTInputPrice] = useState('')
   const [tInputQty, setTInputQty] = useState('')
   const [signals, setSignals] = useState(null)
+  const [ta, setTa] = useState(null)
   const [wallets, setWallets] = useState([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetType, setSheetType] = useState('buy')
@@ -51,6 +52,11 @@ export default function AssetDetail() {
     setSignals(null)
     if (!coinId || isNonCryptoId(coinId)) return
     api.getCoinSmartSignals(coinId, 30).then(setSignals).catch(() => {})
+  }, [coinId])
+  useEffect(() => {
+    setTa(null)
+    if (!coinId || isNonCryptoId(coinId)) return
+    api.getBulkTechnicals([coinId]).then(res => setTa(res?.[coinId] || null)).catch(() => {})
   }, [coinId])
 
   async function loadData() {
@@ -273,6 +279,9 @@ export default function AssetDetail() {
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
 
+      {/* Technical analysis */}
+      {ta && <TechnicalsCard ta={ta} />}
+
       {/* Private coin notes */}
       <div className="glass-card coin-note-card">
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.5rem' }}>
@@ -486,6 +495,114 @@ function WhalePanel({ s, symbol }) {
           barPct={Math.min(100, s.volatility * 50)}
           color="#4d7a59"
         />
+      </div>
+    </div>
+  )
+}
+
+function TechnicalsCard({ ta }) {
+  const lvl = (p) => (p == null ? '—' : '$' + (p >= 1 ? Math.round(p).toLocaleString() : +(+p).toPrecision(4)))
+  const trendMeta = {
+    uptrend:   { label: 'Uptrend',   color: 'var(--gd)' },
+    downtrend: { label: 'Downtrend', color: '#ef4444' },
+    sideways:  { label: 'Sideways',  color: '#f59e0b' },
+  }[ta.trend] || { label: 'Sideways', color: '#f59e0b' }
+
+  // Overall posture from the composite score.
+  const score = ta.score
+  const postureLabel =
+    score >= 40 ? 'Bullish' :
+    score >= 10 ? 'Mildly Bullish' :
+    score >= -10 ? 'Neutral' :
+    score >= -40 ? 'Mildly Bearish' :
+    'Bearish'
+  const postureColor =
+    score >= 40 ? 'var(--gd)' :
+    score >= 10 ? '#22c55e' :
+    score >= -10 ? '#94a3b8' :
+    score >= -40 ? '#f59e0b' :
+    '#ef4444'
+
+  const rsi = ta.rsi
+  const rsiColor = ta.rsiState === 'overbought' ? '#ef4444' : ta.rsiState === 'oversold' ? 'var(--gd)' : '#94a3b8'
+  const macdColor = ta.macd ? (ta.macd.hist > 0 ? 'var(--gd)' : '#ef4444') : '#94a3b8'
+  const bbPct = ta.bb ? Math.round(ta.bb.pctB * 100) : null
+
+  return (
+    <div className="whale-panel">
+      <div className="whale-panel-head">
+        <h3>📐 Technical Analysis</h3>
+        <span className="whale-panel-window">{ta.samples}d daily</span>
+      </div>
+
+      <div className="whale-score-row">
+        <div className="whale-score-circle" style={{ borderColor: postureColor, color: postureColor }}>
+          <div className="whale-score-num">{score > 0 ? '+' : ''}{score}</div>
+          <div className="whale-score-lbl">TA Score</div>
+        </div>
+        <div className="whale-score-info">
+          <div className="whale-score-tag" style={{ background: postureColor + '22', color: postureColor }}>
+            {postureLabel} · <span style={{ color: trendMeta.color }}>{trendMeta.label}</span>
+          </div>
+          <p className="whale-score-desc">
+            Blends RSI, MACD, Bollinger position and trend. +100 = strong/constructive,
+            -100 = stretched/distribution. Drives the Smart Sell Plan targets.
+          </p>
+        </div>
+      </div>
+
+      <div className="whale-indicators">
+        {rsi != null && (
+          <Indicator
+            label="RSI (14)"
+            value={`${rsi.toFixed(0)}${ta.rsiState !== 'neutral' ? ' · ' + ta.rsiState : ''}`}
+            help="Relative Strength. >70 overbought, <30 oversold."
+            barPct={Math.max(0, Math.min(100, rsi))}
+            color={rsiColor}
+          />
+        )}
+        {ta.macd && (
+          <Indicator
+            label="MACD"
+            value={`${ta.macd.hist > 0 ? '+' : ''}${ta.macd.hist.toPrecision(3)}${ta.macd.cross ? ' · ' + ta.macd.cross : ''}`}
+            help="12/26/9. Histogram positive = bullish momentum; a cross flags a turn."
+            barPct={Math.max(0, Math.min(100, 50 + (ta.macd.hist / (Math.abs(ta.macd.line) || 1)) * 50))}
+            color={macdColor}
+          />
+        )}
+        {bbPct != null && (
+          <Indicator
+            label="Bollinger %B"
+            value={`${bbPct}%`}
+            help="Position within the 20/2 bands. >100% above upper band, <0% below lower."
+            barPct={Math.max(0, Math.min(100, bbPct))}
+            color={bbPct > 100 ? '#ef4444' : bbPct < 0 ? 'var(--gd)' : '#00c853'}
+          />
+        )}
+        {ta.atrPct != null && (
+          <Indicator
+            label="ATR (volatility)"
+            value={`${(ta.atrPct * 100).toFixed(1)}%`}
+            help="Average daily move as a % of price. Higher = wider stops needed."
+            barPct={Math.min(100, ta.atrPct * 1000)}
+            color="#4d7a59"
+          />
+        )}
+      </div>
+
+      <div className="ta-levels">
+        <div className="ta-levels-col">
+          <div className="ta-levels-h" style={{ color: '#ef4444' }}>Resistance</div>
+          {(ta.resistances || []).length
+            ? ta.resistances.map((p, i) => <div key={i} className="ta-level">R{i + 1} · {lvl(p)}</div>)
+            : <div className="ta-level muted">None nearby</div>}
+        </div>
+        <div className="ta-levels-col">
+          <div className="ta-levels-h" style={{ color: 'var(--gd)' }}>Support</div>
+          {(ta.supports || []).length
+            ? ta.supports.map((p, i) => <div key={i} className="ta-level">S{i + 1} · {lvl(p)}</div>)
+            : <div className="ta-level muted">None nearby</div>}
+        </div>
       </div>
     </div>
   )
