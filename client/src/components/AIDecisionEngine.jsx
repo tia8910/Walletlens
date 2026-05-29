@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { track } from '../analytics'
+import { isStablecoin } from '../stablecoins'
 
 /* ─── local rule engine (fallback when API not available) ─────────────── */
 function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
   if (!enriched?.length) return null
 
-  const weights = enriched.map(h => totalValue > 0 ? h.value / totalValue : 0)
-  const n = enriched.length
+  const investable = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
+  const investValue = investable.reduce((s, h) => s + h.value, 0) || 1
+  const weights = investable.map(h => h.value / investValue)
+  const n = investable.length
 
-  const momentum = enriched.reduce((s, h, i) => {
+  const momentum = investable.reduce((s, h, i) => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
     return s + chg * weights[i]
   }, 0)
@@ -18,7 +21,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
   const tradeRatio = buyCount + sellCount > 0 ? buyCount / (buyCount + sellCount) : 0.5
   const sentiment = tradeRatio > 0.65 ? 'accumulating' : tradeRatio < 0.35 ? 'distributing' : 'balanced'
 
-  const assetActions = enriched.map((h, i) => {
+  const assetActions = investable.map((h, i) => {
     const w = weights[i] * 100
     const pnlPct = h.pnlPct || 0
     const chg24h = prices[h.coin_id]?.usd_24h_change ?? 0
@@ -87,8 +90,10 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
 
 /* ─── AI API call ─────────────────────────────────────────────────────── */
 async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, transactions) {
-  const momentum = enriched.reduce((s, h) => {
-    const w = totalValue > 0 ? h.value / totalValue : 0
+  const investable = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
+  const investValue = investable.reduce((s, h) => s + h.value, 0) || 1
+  const momentum = investable.reduce((s, h) => {
+    const w = h.value / investValue
     return s + (prices[h.coin_id]?.usd_24h_change ?? 0) * w
   }, 0)
 
@@ -97,9 +102,9 @@ async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, tran
   const tradeRatio = buyCount + sellCount > 0 ? buyCount / (buyCount + sellCount) : 0.5
   const sentiment = tradeRatio > 0.65 ? 'accumulating' : tradeRatio < 0.35 ? 'distributing' : 'balanced'
 
-  const holdings = enriched.map(h => ({
+  const holdings = investable.map(h => ({
     sym: h.coin_symbol?.toUpperCase() || h.coin_id,
-    w: totalValue > 0 ? (h.value / totalValue) * 100 : 0,
+    w: (h.value / investValue) * 100,
     value: h.value,
     pnlPct: h.pnlPct || 0,
     chg24h: prices[h.coin_id]?.usd_24h_change ?? 0,

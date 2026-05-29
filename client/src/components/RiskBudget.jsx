@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import CoinLogo from './CoinLogo'
+import { isStablecoin } from '../stablecoins'
 
 const STORAGE_KEY = 'wl_risk_budgets'
 
@@ -24,7 +25,7 @@ export default function RiskBudget({ enriched, totalValue }) {
     saveBudgets(next)
   }
 
-  const rows = useMemo(() => enriched.map(h => {
+  const rows = useMemo(() => enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol)).map(h => {
     const allocPct    = totalValue > 0 ? (h.value / totalValue) * 100 : 0
     const budgetPct   = budgets[h.coin_id] ?? null
     const maxLossUsd  = budgetPct !== null ? (budgetPct / 100) * totalValue : null

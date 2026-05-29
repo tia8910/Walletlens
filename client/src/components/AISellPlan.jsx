@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { track, trackAI } from '../analytics'
 import { api } from '../api'
 import { buildTASellPlan } from '../technicals'
+import { isStablecoin } from '../stablecoins'
 
 // Fallback rule-based plan (P&L + concentration + 24h momentum) — used when no
 // technical analysis is available for the holding (non-crypto, or too little
@@ -83,14 +84,15 @@ function ruleBasedPlan(h, price, value, pnlPct, weight, chg24) {
 // action and reasoning come from real technical analysis (RSI, MACD, Bollinger,
 // trend, support/resistance). Otherwise it falls back to the P&L rule engine.
 function generateSellPlan(enriched, prices, technicals = {}) {
-  if (!enriched.length) return null
+  const investable = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
+  if (!investable.length) return null
 
-  const totalValue = enriched.reduce((s, h) => {
+  const totalValue = investable.reduce((s, h) => {
     const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
     return s + h.amount * price
   }, 0)
 
-  const rows = enriched.map(h => {
+  const rows = investable.map(h => {
     const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
     const value   = h.amount * price
     const sym     = h.coin_symbol?.toUpperCase()
@@ -132,9 +134,8 @@ function generateSellPlan(enriched, prices, technicals = {}) {
   })
 
   // Overall summary
-  const totalPnlPct = enriched.reduce((s, h) => s + h.total_invested, 0) > 0
-    ? ((totalValue - enriched.reduce((s, h) => s + h.total_invested, 0)) / enriched.reduce((s, h) => s + h.total_invested, 0)) * 100
-    : 0
+  const totalInvested = investable.reduce((s, h) => s + h.total_invested, 0)
+  const totalPnlPct = totalInvested > 0 ? ((totalValue - totalInvested) / totalInvested) * 100 : 0
 
   let summary
   if (totalPnlPct > 50) summary = `Portfolio is up ${totalPnlPct.toFixed(1)}% overall. Consider locking in profits on your biggest winners while keeping strategic core positions.`
