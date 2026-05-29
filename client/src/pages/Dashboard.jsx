@@ -2348,6 +2348,9 @@ export default function Dashboard() {
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
+  // Portfolio wallet filter ('all' = every wallet combined).
+  const [selectedWalletId, setSelectedWalletId] = useState('all')
+  const selectedWalletRef = useRef('all')
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
@@ -2482,8 +2485,10 @@ export default function Dashboard() {
   }, [activeTab])
 
   async function loadAll() {
+    const sel = selectedWalletRef.current
     const [p, txs, ws, ct] = await Promise.all([
-      api.getPortfolio(), api.getTransactions(), api.getWallets(), api.getCoinTargets(),
+      api.getPortfolio(sel && sel !== 'all' ? sel : undefined),
+      api.getTransactions(), api.getWallets(), api.getCoinTargets(),
     ])
     portfolioRef.current = p
     setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
@@ -2502,6 +2507,13 @@ export default function Dashboard() {
     }
     setLoaded(true)
   }
+
+  // Reload the portfolio when the wallet filter changes.
+  useEffect(() => {
+    selectedWalletRef.current = selectedWalletId
+    if (loaded) loadAll()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWalletId])
 
   // Refresh only prices — does NOT reset portfolio/prices state so value stays visible.
   // Reads from portfolioRef (not portfolio state) so setInterval never has a stale closure.
@@ -3010,6 +3022,23 @@ export default function Dashboard() {
                 return rate ? `${fiat?.symbol || displayCurrency} ${fmt(usdVal * rate)}` : `$${fmt(usdVal)}`
               })()}
             </h2>
+            {wallets.length > 1 && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginBottom:'0.6rem' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+                <select
+                  value={selectedWalletId}
+                  onChange={e => setSelectedWalletId(e.target.value)}
+                  style={{
+                    background:'var(--surface-1)', color:'var(--text)', fontWeight:700, fontSize:'0.82rem',
+                    border:'1px solid rgba(var(--g-rgb),0.25)', borderRadius:'9px', padding:'0.3rem 0.6rem',
+                    cursor:'pointer', maxWidth:200,
+                  }}
+                >
+                  <option value="all">All wallets</option>
+                  {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="dvx-currency-switcher">
               {[...POPULAR_FIAT.slice(0, 3).map(f => f.code), 'BTC'].map(code => (
                 <button
