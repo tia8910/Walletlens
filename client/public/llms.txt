@@ -18,7 +18,9 @@
 - **Unified portfolio dashboard**: See all your assets — crypto, stocks, gold, fiat — in one place with live prices.
 - **AI Coach**: Built-in AI assistant analyses your portfolio, flags risk concentration, and answers questions about your holdings.
 - **Alpha signals**: AI-generated trade ideas based on market data, whale activity, and on-chain signals.
-- **Multi-target sell plans**: Set multiple price targets (e.g. sell 25% at $80k, 50% at $100k) and the app tracks each leg.
+- **Multi-target sell plans**: Set multiple price targets (e.g. sell 25% at $80k, 50% at $100k) and the app tracks each leg. Targets are generated from real technical analysis — support/resistance, RSI, MACD, Bollinger Bands and trend.
+- **Technical analysis**: Per-holding RSI, MACD, Bollinger Bands, moving averages, ATR, trend and support/resistance computed from daily candles.
+- **Magic Indicator**: a single direction (Strong Buy → Distribute) per crypto holding, merging five signals — technical analysis, on-chain flow & supply, volume confirmation, whale accumulation, and fundamentals (market-cap rank, FDV/MC dilution, distance from all-time high) — with a confidence score and an optional AI verdict.
 - **AI voice import**: Speak your trades ("I bought 1 Bitcoin and 1 Ethereum") in English or Arabic — AI parses multiple trades from one sentence and logs each as a separate order. Also works as a typed natural-language box on any device.
 - **Multi-wallet**: Track several wallets and view net worth per wallet or combined across all.
 - **Excel/CSV import**: Bulk-import your transaction history from any exchange.
@@ -40,6 +42,7 @@
 - [Dashboard](https://walletlens.live/dashboard): Main portfolio overview (the app itself — requires no account).
 - [Market](https://walletlens.live/market): Live market data across crypto, stocks, metals, FX.
 - [Coach](https://walletlens.live/coach): AI Coach, Alpha signals, risk analysis.
+- [Analysis](https://walletlens.live/technicals): Technical & on-chain analysis with the Magic Indicator direction per crypto holding.
 - [Academy](https://walletlens.live/academy): Investing & crypto education content.
 - [About](https://walletlens.live/about): About the project, mission, contact.
 - [Privacy](https://walletlens.live/privacy): Privacy policy (TL;DR: all data is local; nothing is collected).

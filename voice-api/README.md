@@ -1,8 +1,18 @@
-# WalletLens Voice-Parse API
+# WalletLens Voice-Parse + Analysis API
 
-A tiny serverless endpoint that powers smart voice/typed trade import for the
-WalletLens static site. It calls Claude to turn a spoken/typed sentence
-("I bought 1 Bitcoin and 1 Ethereum") into structured trades.
+A tiny serverless endpoint that powers two Claude-backed features for the
+WalletLens static site:
+
+1. **Voice/typed trade import** — turns a sentence ("I bought 1 Bitcoin and 1
+   Ethereum") into structured trades. `POST { transcript, hintLang, alternatives }`
+2. **Magic Indicator AI Verdict** — synthesises the pre-computed technical /
+   on-chain / volume / whale / fundamental pillars into a natural-language
+   direction. `POST { mode: "analyze", asset, magic, pillars, stats }`
+
+> ⚠️ If you already deployed this for voice, **redeploy** (or push) to pick up
+> the `analyze` mode — older deployments only handle voice and the AI Verdict
+> button will gracefully show "unavailable" until then. Voice keeps working
+> regardless.
 
 The site itself is static (GitHub Pages) and **cannot** hold a secret key, so
 this one function lives separately. Your Anthropic key stays here as an env
