@@ -1381,6 +1381,8 @@ const FEATURE_SLIDES = [
   { tag:'FREE',          icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
 ]
 
+const FS_SLIDE_MS = 4500
+
 function FeatureSlideshow() {
   const [idx, setIdx]         = useState(0)
   const [dir, setDir]         = useState(1)
@@ -1399,7 +1401,7 @@ function FeatureSlideshow() {
     if (paused) return
     const id = setInterval(() => {
       setDir(1); setIdx(i => (i + 1) % FEATURE_SLIDES.length); setAnimKey(k => k + 1)
-    }, 4000)
+    }, FS_SLIDE_MS)
     return () => clearInterval(id)
   }, [paused])
 
@@ -1416,52 +1418,106 @@ function FeatureSlideshow() {
       }}
     >
       <style>{`
-        @keyframes fs-right{from{transform:translateX(36px);opacity:0}to{transform:translateX(0);opacity:1}}
-        @keyframes fs-left {from{transform:translateX(-36px);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes fs-in-right{from{transform:translateX(46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+        @keyframes fs-in-left {from{transform:translateX(-46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+        @keyframes fs-aurora{0%{transform:translate(-12%,-8%) rotate(0deg)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-8%) rotate(360deg)}}
+        @keyframes fs-orb{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.06)}}
+        @keyframes fs-icon-pop{0%{transform:scale(0.4) rotate(-12deg);opacity:0}60%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+        @keyframes fs-tag-shine{0%{background-position:-150% 0}100%{background-position:250% 0}}
+        @keyframes fs-bar{from{width:0}to{width:100%}}
+        @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @media (prefers-reduced-motion: reduce){
+          .fs-aurora,.fs-orb,.fs-icon,.fs-bar{animation:none!important}
+        }
       `}</style>
-      <div style={{ position:'relative', padding:'0 22px' }}>
-        <button onClick={prev} style={{
-          position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
-          width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
-          cursor:'pointer', background:'var(--surface-1)', color:'var(--text-muted)',
-          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', lineHeight:1,
+      <div style={{ position:'relative', padding:'0 20px' }}>
+        <button onClick={prev} aria-label="Previous" style={{
+          position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:3,
+          width:30, height:30, borderRadius:'50%', border:`1px solid ${slide.color}40`,
+          cursor:'pointer', background:'var(--surface-1)', color:slide.color,
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', lineHeight:1,
+          boxShadow:`0 0 12px ${slide.color}22`, transition:'all 0.3s',
         }}>‹</button>
 
         <div key={animKey} style={{
-          borderRadius:16, border:`1.5px solid ${slide.color}30`,
-          background:`linear-gradient(135deg,${slide.color}0e,${slide.color}05)`,
-          padding:'1.3rem 1rem', minHeight:156,
+          position:'relative', borderRadius:18,
+          border:`1.5px solid ${slide.color}38`,
+          background:`linear-gradient(160deg,${slide.color}14,${slide.color}06 55%, transparent)`,
+          padding:'1.4rem 1.1rem 1.15rem', minHeight:172,
           display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
           textAlign:'center', overflow:'hidden',
-          animation:`${dir > 0 ? 'fs-right' : 'fs-left'} 0.3s ease both`,
+          boxShadow:`0 8px 30px ${slide.color}1a, inset 0 1px 0 ${slide.color}22`,
+          animation:`${dir > 0 ? 'fs-in-right' : 'fs-in-left'} 0.4s cubic-bezier(0.22,1,0.36,1) both`,
         }}>
+          {/* Animated aurora blob background */}
+          <div className="fs-aurora" aria-hidden="true" style={{
+            position:'absolute', top:'-40%', left:'-20%', width:'140%', height:'180%',
+            background:`radial-gradient(closest-side, ${slide.color}30, transparent 70%)`,
+            filter:'blur(26px)', opacity:0.8, pointerEvents:'none',
+            animation:'fs-aurora 14s linear infinite',
+          }} />
+          {/* Glowing orb behind icon */}
+          <div style={{ position:'relative', marginBottom:'0.55rem' }}>
+            <div className="fs-orb" aria-hidden="true" style={{
+              position:'absolute', inset:'-14px', borderRadius:'50%',
+              background:`radial-gradient(circle, ${slide.color}55, transparent 68%)`,
+              filter:'blur(8px)', animation:'fs-orb 3.2s ease-in-out infinite',
+            }} />
+            <div className="fs-icon" style={{
+              position:'relative', fontSize:'2.2rem', lineHeight:1,
+              animation:'fs-icon-pop 0.55s cubic-bezier(0.34,1.56,0.64,1) both',
+              filter:`drop-shadow(0 3px 8px ${slide.color}66)`,
+            }}>{slide.icon}</div>
+          </div>
+
+          {/* Tag with shimmer sweep */}
           <span style={{
-            fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase',
-            color:slide.color, background:`${slide.color}18`, borderRadius:4,
-            padding:'0.18rem 0.45rem', marginBottom:'0.6rem', display:'inline-block',
+            position:'relative', fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.12em',
+            textTransform:'uppercase', color:slide.color, borderRadius:5,
+            padding:'0.2rem 0.55rem', marginBottom:'0.55rem', display:'inline-block',
+            border:`1px solid ${slide.color}40`, overflow:'hidden',
+            background:`linear-gradient(100deg, ${slide.color}14 30%, ${slide.color}40 50%, ${slide.color}14 70%)`,
+            backgroundSize:'250% 100%', animation:'fs-tag-shine 2.6s linear infinite',
           }}>{slide.tag}</span>
-          <div style={{ fontSize:'2rem', marginBottom:'0.45rem' }}>{slide.icon}</div>
-          <div style={{ fontWeight:800, fontSize:'0.92rem', color:'var(--text)', marginBottom:'0.35rem', lineHeight:1.3 }}>{slide.title}</div>
-          <div style={{ fontSize:'0.76rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:280 }}>{slide.desc}</div>
+
+          <div style={{ fontWeight:800, fontSize:'0.98rem', color:'var(--text)', marginBottom:'0.4rem', lineHeight:1.3, animation:'fs-rise 0.5s 0.05s ease both' }}>{slide.title}</div>
+          <div style={{ fontSize:'0.77rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:290, animation:'fs-rise 0.5s 0.12s ease both' }}>{slide.desc}</div>
+
+          {/* Auto-advance progress bar */}
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:`${slide.color}18` }}>
+            <div className="fs-bar" key={`bar-${animKey}-${paused}`} style={{
+              height:'100%', background:slide.color, borderRadius:'0 2px 2px 0',
+              boxShadow:`0 0 8px ${slide.color}`,
+              animation: paused ? 'none' : `fs-bar ${FS_SLIDE_MS}ms linear both`,
+            }} />
+          </div>
         </div>
 
-        <button onClick={next} style={{
-          position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
-          width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
-          cursor:'pointer', background:'var(--surface-1)', color:'var(--text-muted)',
-          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', lineHeight:1,
+        <button onClick={next} aria-label="Next" style={{
+          position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', zIndex:3,
+          width:30, height:30, borderRadius:'50%', border:`1px solid ${slide.color}40`,
+          cursor:'pointer', background:'var(--surface-1)', color:slide.color,
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', lineHeight:1,
+          boxShadow:`0 0 12px ${slide.color}22`, transition:'all 0.3s',
         }}>›</button>
       </div>
 
-      <div style={{ display:'flex', justifyContent:'center', gap:'0.32rem', marginTop:'0.65rem', flexWrap:'wrap' }}>
-        {FEATURE_SLIDES.map((_, i) => (
-          <button key={i} onClick={() => goTo(i, i > idx ? 1 : -1)} style={{
-            width: i === idx ? 18 : 6, height:6, borderRadius:3,
-            border:'none', cursor:'pointer', padding:0,
-            background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.18)',
-            transition:'all 0.3s',
-          }} />
-        ))}
+      {/* Counter + dot nav */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop:'0.7rem' }}>
+        <span style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--text-sub)', minWidth:38, textAlign:'right' }}>
+          {String(idx + 1).padStart(2,'0')}<span style={{ opacity:0.5 }}> / {FEATURE_SLIDES.length}</span>
+        </span>
+        <div style={{ display:'flex', justifyContent:'center', gap:'0.3rem', flexWrap:'wrap', maxWidth:240 }}>
+          {FEATURE_SLIDES.map((_, i) => (
+            <button key={i} aria-label={`Slide ${i + 1}`} onClick={() => goTo(i, i > idx ? 1 : -1)} style={{
+              width: i === idx ? 16 : 6, height:6, borderRadius:3,
+              border:'none', cursor:'pointer', padding:0,
+              background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.2)',
+              boxShadow: i === idx ? `0 0 8px ${slide.color}` : 'none',
+              transition:'all 0.3s',
+            }} />
+          ))}
+        </div>
       </div>
     </div>
   )
