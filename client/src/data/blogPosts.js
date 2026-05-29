@@ -325,4 +325,461 @@ WalletLens does not currently generate tax reports, but tracking every trade acc
 Profit targets don't remove all the difficulty of selling — you'll still feel the sting if an asset runs past your final target. But they ensure that no matter what happens, you come away with something. In crypto, where 80–90% drawdowns are routine, "coming away with something" beats holding to zero every time.
     `
   },
+  {
+    slug: 'dollar-cost-averaging-crypto-guide',
+    title: 'Dollar-Cost Averaging in Crypto: A Complete Beginner’s Guide',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Dollar-cost averaging removes the impossible task of timing the market by spreading your buys over time. Here is how DCA works, when it beats lump-sum investing, and how to track it accurately.',
+    content: `
+Trying to buy the exact bottom of a crypto cycle is a losing game. Even professional traders rarely catch the low, and the emotional toll of watching a "perfectly timed" buy fall another 30% pushes most people to give up entirely. Dollar-cost averaging (DCA) solves this by removing the timing decision altogether.
+
+DCA means investing a fixed amount of money at regular intervals — say $200 every two weeks — regardless of the price. Some buys land high, some land low, and over time your average entry price smooths out the volatility.
+
+## Why Dollar-Cost Averaging Works
+
+The core advantage of DCA is psychological as much as mathematical. It converts one terrifying decision ("should I buy now?") into a routine you never have to think about.
+
+**It removes emotion.** You are not trying to predict the top or bottom. You buy on schedule whether the market is euphoric or in despair.
+
+**It reduces timing risk.** A single lump-sum buy exposes your entire capital to one price. If that price turns out to be a local top, you are underwater immediately. Spreading purchases means no single bad entry dominates your cost basis.
+
+**It builds discipline.** Regular, automatic investing is the single most reliable wealth-building habit. DCA enforces it.
+
+## DCA vs Lump-Sum Investing
+
+There is a common misconception that DCA always beats lump-sum investing. It does not. Historically, because markets trend upward over long periods, lump-sum investing wins roughly two-thirds of the time — putting all your money to work earlier captures more of the long-term uptrend.
+
+So why DCA? Two reasons:
+
+**Most people do not have a lump sum.** They have a salary. DCA matches how income actually arrives.
+
+**Risk-adjusted comfort matters more than theoretical optimality.** A strategy you can stick with through a 70% drawdown beats a "better" strategy you abandon in a panic. In crypto, where drawdowns are extreme, the smoother emotional ride of DCA keeps people invested.
+
+## How to Set Up a DCA Plan
+
+1. **Choose your interval.** Weekly, bi-weekly, or monthly all work. More frequent intervals smooth volatility slightly more but add friction. Bi-weekly (matching many pay cycles) is a sensible default.
+
+2. **Choose your amount.** Pick a number you can sustain through a bear market without stress. Consistency beats size.
+
+3. **Choose your assets.** Most DCA strategies focus on high-conviction, large-cap assets — Bitcoin and Ethereum — rather than speculative altcoins, because you are committing to buy through downturns without re-evaluating each time.
+
+4. **Automate or calendar it.** Either set a recurring exchange buy, or put a recurring reminder in your calendar.
+
+5. **Record every purchase.** This is where most people fail — see below.
+
+## Tracking DCA Accurately
+
+The hidden challenge with DCA is record-keeping. If you buy Bitcoin every two weeks for two years, that is 52 separate purchases at 52 different prices. To know your true average cost — and therefore your real profit or loss — you need every one of those trades logged.
+
+This is exactly what manual portfolio tracking handles well. In WalletLens you add each buy as its own transaction with the price and date you paid. The app then computes your blended average cost across all purchases, your total invested, and your live profit and loss. You see at a glance whether your DCA campaign is in the green and what your real break-even price is.
+
+Because the data lives only in your browser, there is no account to create and no exchange API key to expose — you simply log each buy as you make it.
+
+## A Worked Example
+
+Suppose you DCA $100 into Bitcoin once a month for five months:
+
+| Month | Buy Amount | BTC Price | BTC Acquired |
+|-------|-----------|-----------|--------------|
+| 1 | $100 | $100,000 | 0.00100 |
+| 2 | $100 | $80,000 | 0.00125 |
+| 3 | $100 | $60,000 | 0.00167 |
+| 4 | $100 | $75,000 | 0.00133 |
+| 5 | $100 | $90,000 | 0.00111 |
+
+You invested $500 total and acquired about 0.00636 BTC. Your average cost is roughly $78,600 per BTC — noticeably below the simple average of the five prices ($81,000), because DCA automatically buys more when prices are low. At a current price of $90,000, you are in profit despite having bought at $100,000 in month one.
+
+## When to Stop DCA
+
+DCA is an accumulation strategy. At some point you shift from accumulating to managing and eventually to taking profit. Common transition points:
+
+**You hit your target allocation.** If crypto was meant to be 30% of your net worth and DCA has grown it to 50%, stop adding and consider rebalancing.
+
+**Your time horizon shortens.** As you approach a goal (a house deposit, retirement), reducing volatility matters more than accumulating more.
+
+**Valuations stretch to euphoria.** Some investors pause DCA when sentiment hits extreme greed and resume during fear.
+
+## Common Mistakes
+
+- **Stopping during bear markets.** This defeats the entire purpose — the cheap buys in a downturn are what lower your average cost.
+- **DCAing into low-quality assets.** Committing to buy a speculative microcap through a crash often means averaging down into a project that never recovers.
+- **Not tracking purchases.** Without records you have no idea of your real cost basis, making it impossible to plan profit-taking.
+
+## Conclusion
+
+Dollar-cost averaging will not make you rich overnight, and it will not perfectly optimize every dollar. What it does is keep you invested, remove paralysing timing decisions, and build the discipline that actually compounds wealth over years. Pair it with accurate trade tracking so you always know your true average cost, and it becomes one of the most reliable strategies available to an ordinary investor.
+    `
+  },
+  {
+    slug: 'crypto-cost-basis-and-pnl-explained',
+    title: 'How to Calculate Your Crypto Cost Basis and Profit/Loss',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Your cost basis determines your real profit, your break-even price, and your tax bill. Here is how average cost works, how it differs from FIFO, and how to track it without a spreadsheet.',
+    content: `
+Most people can tell you what their crypto is worth today. Far fewer can tell you what they actually paid for it. That second number — your cost basis — is the one that matters. It determines your real profit or loss, your break-even price, and in most countries your tax bill when you sell.
+
+This guide explains how cost basis works, the difference between accounting methods, and how to keep it accurate as you trade.
+
+## What Is Cost Basis?
+
+Cost basis is the total amount you paid to acquire an asset, including the price and any fees. If you buy 1 ETH for $3,000 plus a $10 fee, your cost basis for that ETH is $3,010.
+
+Your profit or loss on a sale is simply:
+
+**Proceeds minus Cost Basis equals Realized Gain or Loss**
+
+Sell that ETH for $4,000 and your realized gain is $4,000 − $3,010 = $990.
+
+The complication arrives when you buy the same asset multiple times at different prices — which is exactly what happens with dollar-cost averaging or any active accumulation.
+
+## Average Cost Basis
+
+The simplest and most intuitive method is average cost. You add up everything you spent on an asset and divide by the total quantity you hold.
+
+Suppose you make three Bitcoin purchases:
+
+| Buy | Quantity | Price | Cost |
+|-----|----------|-------|------|
+| 1 | 0.10 BTC | $60,000 | $6,000 |
+| 2 | 0.05 BTC | $90,000 | $4,500 |
+| 3 | 0.10 BTC | $70,000 | $7,000 |
+
+Total: 0.25 BTC for $17,500. Your average cost basis is $17,500 ÷ 0.25 = **$70,000 per BTC**. That is your break-even price — above it you are in profit, below it you are at a loss.
+
+Average cost is the method most portfolio trackers use because it gives a single, clear break-even number for each asset. WalletLens calculates this automatically: as you log each buy, it maintains your blended average cost, total invested, and live unrealized P&L.
+
+## FIFO and Other Tax Methods
+
+For tax purposes, many jurisdictions require or allow specific lot-matching methods that differ from simple average cost:
+
+**FIFO (First In, First Out).** When you sell, you are deemed to sell your oldest coins first. In a rising market this tends to produce larger taxable gains because your oldest coins usually have the lowest cost.
+
+**LIFO (Last In, First Out).** You sell your newest coins first. This can reduce gains in a rising market but is not permitted everywhere.
+
+**HIFO (Highest In, First Out).** You sell your most expensive coins first, minimizing taxable gains. Popular for tax optimization where allowed.
+
+These methods only matter when you sell part of a position. If you sell everything, they all produce the same result. Always check the rules in your country, and consult a tax professional — this article is educational, not tax advice.
+
+## Realized vs Unrealized P&L
+
+A crucial distinction:
+
+**Unrealized P&L** is your paper gain or loss on assets you still hold. It moves with the market every second and has no tax consequence.
+
+**Realized P&L** is locked in when you actually sell. This is what most tax systems care about.
+
+A portfolio can show a large unrealized gain while you owe nothing in tax, because you have not sold. Understanding which is which prevents both overconfidence and surprise tax bills.
+
+## Why Stablecoins Should Be Excluded
+
+A subtle but important point: stablecoins like USDT and USDC are pegged to roughly $1. They do not generate investment returns, so including them in your profit-and-loss calculation distorts the picture. If you hold $5,000 in USDC, that is not a position with a gain or loss — it is essentially cash waiting to be deployed.
+
+Good trackers separate stablecoins from your invested assets. WalletLens treats stablecoins as cash for P&L purposes, so your reported profit reflects only the assets actually exposed to the market.
+
+## Fees, Airdrops, and Transfers
+
+Real-world tracking has edge cases:
+
+**Trading fees** add to your cost basis on a buy and reduce your proceeds on a sell. Over hundreds of trades, ignoring fees materially overstates your gains.
+
+**Transfers between your own wallets** are not taxable events and do not change your cost basis — only the location of the coins.
+
+**Airdrops and rewards** are typically treated as income at their value when received, which then becomes their cost basis for a future sale.
+
+## Keeping It Accurate
+
+The only way to know your cost basis is to record every transaction as it happens. Reconstructing two years of trades from exchange statements after the fact is painful and error-prone.
+
+A simple discipline: every time you buy or sell, log the asset, quantity, price, and date immediately. In WalletLens this takes a few seconds per trade and the app handles all the math — average cost, break-even, realized and unrealized P&L, and a per-asset breakdown. Export your full history any time for tax season.
+
+## Conclusion
+
+Cost basis is the foundation of understanding your portfolio. Without it, "how much am I up?" is unanswerable. Track every trade, understand the difference between average cost and tax lot methods, separate stablecoins from invested assets, and you will always know your true break-even and real profit — not just today's market value.
+    `
+  },
+  {
+    slug: 'stablecoins-explained-usdt-usdc',
+    title: 'Stablecoins Explained: USDT, USDC, and Why They Are Dry Powder',
+    date: 'May 2026',
+    readTime: '5 min read',
+    summary: 'Stablecoins are the backbone of crypto trading, but they behave nothing like Bitcoin. Here is what backs them, the risks to watch, and why your tracker should treat them as cash rather than profit.',
+    content: `
+Stablecoins are the quiet infrastructure of crypto. They account for a huge share of trading volume, yet they are designed to do the opposite of every other crypto asset: stay still. Understanding what they are — and what they are not — is essential to reading your portfolio correctly.
+
+## What Is a Stablecoin?
+
+A stablecoin is a cryptocurrency designed to hold a steady value, almost always pegged to $1. The two dominant stablecoins are **USDT (Tether)** and **USDC (USD Coin)**. Others include DAI, FRAX, and TUSD.
+
+Their purpose is to give traders a dollar-equivalent that lives on the blockchain — fast to move, available 24/7, and usable across exchanges and DeFi without converting back to a bank account.
+
+## How Stablecoins Stay Pegged
+
+Not all stablecoins maintain their peg the same way:
+
+**Fiat-backed (USDT, USDC).** Each token is supposedly backed by one real dollar (or equivalent assets like short-term treasuries) held in reserve. You trust the issuer to hold genuine reserves and honour redemptions. USDC, issued by Circle, publishes regular attestations; Tether has historically faced more scrutiny over its reserves.
+
+**Crypto-collateralised (DAI).** Backed by a surplus of other crypto assets locked in smart contracts. If the collateral falls in value, the system liquidates positions to maintain the peg.
+
+**Algorithmic.** These attempt to hold the peg through supply-and-demand mechanisms with little or no collateral. The catastrophic collapse of TerraUSD (UST) in 2022, which erased tens of billions of dollars, showed how fragile pure algorithmic designs can be. Treat algorithmic stablecoins with extreme caution.
+
+## Why Stablecoins Are "Dry Powder," Not Profit
+
+Here is the key insight for portfolio tracking: a stablecoin is not an investment with upside. It is cash that happens to live on-chain.
+
+If you hold $10,000 in USDC, you do not have a position that can gain or lose value with the market — you have $10,000 ready to deploy. Counting it in your profit-and-loss calculation makes no sense; its "return" is essentially zero by design.
+
+This is why a well-built tracker separates stablecoins from your invested assets. WalletLens classifies stablecoins as a Cash & Stables category and excludes them from your invested total and P&L, while still counting them in your overall net worth. The result: your reported profit reflects only the assets actually exposed to the market, and your stablecoin balance shows as the dry powder it is.
+
+## The Strategic Role of Stablecoins
+
+Holding some stablecoins is a deliberate strategy, not idle money:
+
+**Buying the dip.** When the market crashes, the people who profit are those with cash ready. Stablecoins let you buy without first selling something at a loss or waiting days for a bank transfer.
+
+**Reducing volatility.** Rotating a portion of profits into stablecoins during euphoric markets locks in gains and lowers your portfolio's overall risk.
+
+**Earning yield.** Stablecoins can earn interest in various venues, though every yield source carries its own risk — higher advertised returns usually mean higher risk.
+
+A common guideline is to keep 5–15% of a crypto portfolio in stablecoins as a reserve. Too little and you cannot act on opportunities; too much and you may be over-hedged and missing upside.
+
+## The Risks You Should Know
+
+Stablecoins are not risk-free:
+
+**De-peg risk.** Even major stablecoins can briefly trade below $1 during stress. USDC slipped to around $0.88 for a weekend in March 2023 when some of its reserves were caught in a bank failure, before fully recovering.
+
+**Issuer and reserve risk.** A fiat-backed stablecoin is only as good as the reserves behind it and the issuer's willingness to redeem.
+
+**Regulatory risk.** Stablecoins sit squarely in regulators' sights worldwide. Rules can change how they operate or who can hold them.
+
+**Smart-contract risk.** For decentralised stablecoins, a bug in the underlying contracts can threaten the peg.
+
+## Practical Takeaways
+
+- Treat stablecoins as the cash portion of your portfolio, not as an investment with returns.
+- Prefer well-established, transparently-backed stablecoins over exotic high-yield ones.
+- Keep a deliberate reserve so you can buy opportunities without selling at a loss.
+- Use a tracker that separates stables from invested assets so your P&L is honest.
+
+## Conclusion
+
+Stablecoins make crypto usable, but they are a fundamentally different instrument from the assets they help you buy. Think of them as dollars with superpowers — fast, global, programmable cash — and account for them as the dry powder they are. Your portfolio's real performance becomes far clearer once stablecoins are in their own bucket.
+    `
+  },
+  {
+    slug: 'gold-vs-bitcoin-store-of-value',
+    title: 'Gold vs Bitcoin: Comparing Two Stores of Value',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Bitcoin is often called "digital gold," but the two assets differ in supply, volatility, and history. Here is an even-handed comparison to help you decide how each fits a diversified portfolio.',
+    content: `
+For 5,000 years, gold has been humanity's default store of value. In just over 15 years, Bitcoin has emerged as a digital challenger, earning the nickname "digital gold." Are they competitors, complements, or fundamentally different assets? This comparison looks at both on the metrics that matter.
+
+## Scarcity and Supply
+
+**Gold** is scarce but not fixed. Roughly 2–3% more gold is mined each year, slowly expanding the total supply. No one knows exactly how much gold remains underground, and a major new discovery or advance in mining could increase supply.
+
+**Bitcoin** has a mathematically fixed supply: 21 million coins, ever. The issuance rate halves roughly every four years (the "halving") until the last coin is mined around 2140. This makes Bitcoin's scarcity verifiable and absolute in a way gold's cannot be.
+
+Advantage: Bitcoin for provable scarcity; gold for a multi-millennium track record of holding value.
+
+## Portability and Divisibility
+
+Moving $10 million in gold means physically transporting roughly 100 kilograms of metal, with all the security and logistics that implies. Moving $10 million in Bitcoin means broadcasting a transaction that settles globally in minutes for a small fee.
+
+Bitcoin is also far more divisible. Each coin splits into 100 million units (satoshis), making micro-payments trivial. Gold can be divided too, but not by an individual at home with any precision.
+
+Advantage: Bitcoin, decisively, on portability and divisibility.
+
+## Volatility
+
+This is gold's clearest win. Gold's price moves, but over years, not minutes. Annual volatility is modest. Bitcoin, by contrast, routinely swings 5–10% in a day and has experienced multiple 70–80% drawdowns in its history.
+
+That volatility cuts both ways: it has produced spectacular returns and devastating losses. For an investor who needs stability and predictability, gold is the calmer asset. For one seeking asymmetric upside and able to tolerate large swings, Bitcoin's volatility is the price of admission.
+
+Advantage: gold for stability; Bitcoin for upside potential.
+
+## Track Record and Trust
+
+Gold has been money across every major civilisation. Its value does not depend on any government, company, or technology continuing to function. That deep history is itself a form of safety.
+
+Bitcoin has survived 15+ years, multiple "death" predictions, exchange collapses, and bear markets — but it is young. We do not yet know how it behaves across a full range of economic regimes, and it depends on continued network security and adoption.
+
+Advantage: gold for proven longevity; Bitcoin for a promising but unproven future.
+
+## Yield, Utility, and Custody
+
+Neither asset produces cash flow — no dividends, no interest (unless lent out, which adds risk). Both are pure stores of value whose return comes only from price appreciation.
+
+**Custody** differs sharply. Holding gold means a safe, a vault, or trusting a custodian. Holding Bitcoin means managing private keys — powerful (no one can confiscate or freeze self-custodied Bitcoin) but unforgiving (lose your keys and the coins are gone forever).
+
+## How They Fit a Portfolio
+
+The most common mistake is treating this as an either/or choice. Many investors hold both, because they serve overlapping but distinct roles:
+
+- **Gold** anchors the stable, low-volatility portion of a portfolio and has a long history of holding value during currency debasement and crises.
+- **Bitcoin** provides higher-risk, higher-potential-return exposure to a still-maturing monetary asset with provable scarcity.
+
+A simple framework many investors use:
+
+| Profile | Gold | Bitcoin |
+|---------|------|---------|
+| Conservative | 15–25% | 2–5% |
+| Balanced | 10–15% | 5–10% |
+| Aggressive | 5–10% | 15–30% |
+
+These are illustrative starting points, not recommendations — your allocation depends on your age, goals, and risk tolerance.
+
+## Tracking Both in One Place
+
+If you hold gold, silver, and Bitcoin, you face a practical problem: most trackers cover only one asset class. You end up checking a metals dealer's site for gold and a crypto app for Bitcoin, never seeing your combined picture.
+
+WalletLens was built specifically to track crypto and precious metals (and stocks, bonds, and fiat) side by side in one net-worth dashboard with live prices. You can see exactly what share of your wealth sits in each store of value and whether you have drifted away from your target balance between them.
+
+## Conclusion
+
+Gold and Bitcoin are not really rivals — they are two answers to the same question: where do you store value outside the traditional financial system? Gold offers millennia of stability; Bitcoin offers provable scarcity, portability, and asymmetric upside at the cost of volatility and youth. For many investors, the smartest position is not choosing one, but holding a deliberate mix of both and tracking them together.
+    `
+  },
+  {
+    slug: 'crypto-market-cycles-and-bitcoin-halving',
+    title: 'Understanding Crypto Market Cycles and the Bitcoin Halving',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Crypto moves in dramatic boom-and-bust cycles that rhyme with the Bitcoin halving. Knowing the four phases of a cycle can keep you from buying euphoria and selling despair.',
+    content: `
+Crypto markets do not move in straight lines. They move in cycles — long, emotional waves of accumulation, euphoria, collapse, and recovery. Recognising which phase the market is in will not let you predict the future, but it can stop you from making the classic mistakes: buying at the top because everyone else is, and selling at the bottom because you cannot take the pain.
+
+## The Four Phases of a Market Cycle
+
+Every speculative market, from tulips to tech stocks to crypto, tends to move through four recognisable phases.
+
+**1. Accumulation.** After a crash, prices stabilise at low levels. Sentiment is dead; the headlines have moved on. Patient, informed investors quietly accumulate. This is statistically the best time to buy and the hardest emotionally, because everything feels hopeless.
+
+**2. Markup.** Prices begin a sustained climb. Early buyers are rewarded, media coverage returns, and confidence rebuilds. This is the longest and most profitable phase for those already positioned.
+
+**3. Distribution / Euphoria.** Prices peak. New participants flood in, terrified of missing out. Taxi drivers and group chats give coin tips. Valuations detach from any fundamental anchor. Smart money quietly sells into the enthusiasm. This is the most dangerous time to buy and the best time to take profit.
+
+**4. Markdown.** The bubble deflates. Prices fall sharply, often 70–90% from the top. Latecomers who bought the euphoria are underwater and capitulate, selling at the worst possible moment — which sets up the next accumulation phase.
+
+## The Bitcoin Halving
+
+Crypto cycles have historically rhymed with the **Bitcoin halving**, a built-in event that occurs roughly every four years (every 210,000 blocks). At each halving, the reward miners receive for adding a block is cut in half, reducing the rate at which new Bitcoin enters circulation.
+
+The halvings so far:
+
+| Halving | Year | Block Reward After |
+|---------|------|--------------------|
+| First | 2012 | 25 BTC |
+| Second | 2016 | 12.5 BTC |
+| Third | 2020 | 6.25 BTC |
+| Fourth | 2024 | 3.125 BTC |
+
+The theory is straightforward supply and demand: if new supply is cut while demand holds or grows, upward price pressure follows. Historically, major bull markets have tended to begin in the 12–18 months after a halving, with the peak often arriving the following year, and a bear market after that.
+
+## A Word of Caution on Cycles
+
+It is tempting to treat the four-year cycle as a clock you can set your watch by. It is not. A few warnings:
+
+**Past performance is not destiny.** Three or four cycles is a tiny sample. As the asset class matures and institutional money grows, the pattern may stretch, soften, or break.
+
+**Other forces dominate too.** Macro conditions — interest rates, liquidity, regulation, and global risk appetite — increasingly drive crypto alongside the halving narrative.
+
+**Timing the exact top and bottom is impossible.** Use cycle awareness for broad positioning, not precise market timing.
+
+## How to Use Cycle Awareness
+
+You cannot control the cycle, but you can control your behaviour within it:
+
+**Accumulate during fear.** When sentiment is at extreme fear and prices are far below recent highs, that is historically when accumulation pays — ideally through dollar-cost averaging so you are not trying to call the exact bottom.
+
+**Take profit into euphoria.** Define price targets in advance and sell portions of your position as the market climbs into greed. A multi-target sell plan ensures you capture gains regardless of where the top actually lands.
+
+**Watch sentiment as a contrarian signal.** Tools like the Fear & Greed Index help you gauge where the crowd is. Extreme greed is a caution flag; extreme fear is often opportunity.
+
+WalletLens supports this discipline directly: a personalised Fear & Greed gauge reads your own portfolio's momentum and P&L, and the Sell Targets feature lets you pre-plan exactly how much of each holding to sell at each price level, so the cycle's euphoria does not catch you without a plan.
+
+## Conclusion
+
+Markets are cyclical because human emotion is cyclical — greed and fear repeat regardless of the asset. You will never perfectly time the top or bottom, and you should not try. But by understanding the four phases, respecting the rough rhythm of the halving without treating it as gospel, and pre-committing to accumulate in fear and take profit in greed, you put the cycle to work for you instead of becoming its latest victim.
+    `
+  },
+  {
+    slug: 'position-sizing-risk-management-crypto',
+    title: 'Position Sizing and Risk Management for Volatile Assets',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out your portfolio.',
+    content: `
+The fastest way to fail as an investor is not picking the wrong asset — it is sizing the right idea so large that one bad outcome ends your game. In volatile markets like crypto, where 80% drawdowns are routine, risk management is not optional. It is the difference between a temporary setback and a permanent loss.
+
+## Why Position Sizing Matters More Than Picks
+
+Imagine two investors. Both find a coin that eventually goes to zero. The first put 5% of their portfolio in it; they lose 5% and move on. The second put 60% in it; they are devastated and may never recover.
+
+Same pick, completely different outcomes — because of size. Position sizing determines how much any single decision can hurt you. Get it right and you can be wrong often and still thrive. Get it wrong and being right most of the time will not save you.
+
+## The Core Principle: Survive First
+
+Professional traders obsess over a simple idea: never risk so much on one position that a loss takes you out of the game. A common rule is to risk only a small, fixed percentage of your portfolio on any single high-risk bet.
+
+The math is unforgiving on the way down. A 50% loss requires a 100% gain just to break even. A 90% loss requires a 900% gain. Avoiding catastrophic losses matters far more than chasing the last bit of upside.
+
+| Loss | Gain Needed to Recover |
+|------|------------------------|
+| 10% | 11% |
+| 25% | 33% |
+| 50% | 100% |
+| 75% | 300% |
+| 90% | 900% |
+
+## A Practical Position-Sizing Framework
+
+**Tier your assets by risk.** Not every holding deserves the same size. A simple structure:
+
+- **Core (large-cap, high conviction):** Bitcoin, Ethereum. These can be your largest positions.
+- **Satellite (established alts):** smaller, individually capped positions in projects you understand.
+- **Speculative (small/microcap):** tiny positions only, sized so total loss is survivable.
+
+**Cap any single speculative position.** Many investors limit any one high-risk coin to 1–5% of the portfolio. If it 10x's, great; if it goes to zero, it is a flesh wound, not a fatal blow.
+
+**Cap total speculative exposure.** Beyond individual limits, cap the entire speculative bucket — say, no more than 15–20% of the portfolio across all microcaps combined.
+
+## Concentration: The Silent Killer
+
+The single biggest risk most retail portfolios carry is concentration — too much in one asset. It usually happens by accident: a winner grows until it dominates everything. A coin you sized at 10% can become 50% of your portfolio after a strong run, quietly doubling your exposure to its next crash.
+
+A useful gut-check: if any single asset is more than half your portfolio, you are making one concentrated bet, not running a portfolio. WalletLens surfaces this directly — its portfolio health analysis flags excessive concentration and shows your allocation by asset and category, so you can see when a winner has grown into a risk.
+
+## Rebalancing to Control Risk
+
+Rebalancing is how you enforce your risk limits over time. As assets move, your allocation drifts from your plan. Rebalancing means periodically trimming what has grown too large and topping up what has shrunk, returning to your target weights.
+
+This does two things: it mechanically forces you to sell high and buy low, and it keeps any single position from silently ballooning into a concentration risk. Running it quarterly, or after any major market move, is a sensible cadence. The WalletLens rebalance planner calculates exactly how much to buy or sell of each asset to return to your target balance.
+
+## Plan Your Exits Before You Need Them
+
+Risk management is not only about entry size — it is about having a plan to get out. Decide in advance:
+
+**Where you take profit.** Set price targets and the percentage of the position to sell at each, so euphoria does not leave you holding through the top and all the way back down.
+
+**What would change your mind.** For each position, know what evidence would make you exit at a loss. Pre-deciding removes the paralysis of doing it in the moment.
+
+A multi-target sell plan, with each tier and the projected proceeds laid out ahead of time, turns exits from an emotional scramble into a checklist.
+
+## Emotional Risk Management
+
+The best framework fails if you abandon it under stress. A few habits help:
+
+- **Position so you can sleep.** If a holding's swings keep you up at night, it is too big regardless of what a spreadsheet says.
+- **Use a sentiment check.** Before a panic sell or a FOMO buy, look at an objective gauge like Fear & Greed to force a moment of reflection.
+- **Write down your plan.** A plan on paper is harder to abandon than one in your head.
+
+## Conclusion
+
+You cannot control whether any individual bet works out. You can control how much it can hurt you. Size positions so no single loss is fatal, cap concentration, rebalance to enforce your limits, and plan exits before you need them. Do that consistently and you give yourself the one thing that compounds returns over a lifetime: survival.
+    `
+  },
 ]
