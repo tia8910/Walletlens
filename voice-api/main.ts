@@ -1,0 +1,129 @@
+// WalletLens voice-parse API — Deno Deploy edition.
+//
+// A single-file serverless endpoint that turns a raw speech-to-text (or typed)
+// transcript into one or more structured trades using Claude. The Anthropic
+// key lives ONLY here as the `ANTHROPIC_API_KEY` env secret — it is never sent
+// to the browser, so it can't be stolen from the public static site.
+//
+// Deploy: see voice-api/README.md (Deno Deploy, free).
+//
+// Request:  POST { transcript: string, hintLang?: 'en'|'ar' }
+// Response: { ok: true, trades: [ { type, symbol, name?, amount, price? } ] }
+
+const ALLOWED_ORIGINS = new Set([
+  "https://walletlens.live",
+  "https://www.walletlens.live",
+  "http://localhost:5173",
+  "http://localhost:4173",
+])
+
+function corsHeaders(origin: string | null): HeadersInit {
+  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://walletlens.live"
+  return {
+    "Access-Control-Allow-Origin": allow,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
+    "Content-Type": "application/json",
+  }
+}
+
+function buildPrompt(transcript: string, hintLang: string): string {
+  return `You are a voice-trade interpreter for a crypto/stock/metals portfolio app.
+
+The user spoke into their microphone (or typed) and this is the raw transcript. The speech engine may mis-hear words, mix languages, or transcribe Arabic phonetically as English (e.g. "اشتري واحد بيتكوين" → "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd".
+
+Transcript hint language: ${hintLang}
+
+Transcript: "${transcript}"
+
+Extract EVERY trade. Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "trades": [
+    { "type": "buy" | "sell", "symbol": "BTC", "name": "Bitcoin", "amount": <number>, "price": <number or null> }
+  ]
+}
+
+Rules:
+- MULTIPLE trades in one sentence → one object PER asset. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two. One intent verb governs every coin listed after it — apply to each.
+- A shared amount before a list applies to each unless a per-coin amount is given: "2 Solana and 3 Cardano" → [SOL×2, ADA×3]; "5 of Bitcoin and Ethereum" → [BTC×5, ETH×5].
+- Arabic "و" (and) separates assets: "بيتكوين وايثيريوم" = two assets.
+- Too garbled to extract any trade → { "trades": [] }.
+- Arabic intent verbs: اشتري/شريت/جبت/أخذت/حطيت/كومت/جمعت/استثمرت = BUY; بعت/بيع/صفيت/سحبت/خرجت/جنيت = SELL.
+- Amount slang: "5K"/"5 grand" = 5000; "2 mil" = 2,000,000; "half"/"نص" = 0.5; "quarter"/"ربع" = 0.25; الف=1000, مليون=1,000,000.
+- Coin mis-hearings: Selena/Salina = Solana; "a theorem"/"etherium" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "ripple" = XRP.
+- Stocks: Apple=AAPL, Tesla=TSLA, Microsoft=MSFT, NVIDIA=NVDA, Google=GOOGL, Amazon=AMZN, Meta=META, Palantir=PLTR, Coinbase=COIN, Robinhood=HOOD.
+- Metals: gold=XAU, silver=XAG, platinum=XPT, copper=HG.
+- A coin with no clear buy/sell intent → skip it, don't invent one.`
+}
+
+// deno-lint-ignore no-explicit-any
+function filterTrades(arr: any): any[] {
+  return Array.isArray(arr)
+    ? arr.filter((t) =>
+      t && (t.type === "buy" || t.type === "sell") && t.symbol &&
+      typeof t.amount === "number" && t.amount > 0
+    )
+    : []
+}
+
+Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin")
+  const headers = corsHeaders(origin)
+
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers })
+  }
+
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY")
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
+  }
+
+  let body: { transcript?: string; hintLang?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers })
+  }
+
+  const transcript = (body.transcript || "").toString().trim().slice(0, 500)
+  if (!transcript) {
+    return new Response(JSON.stringify({ error: "no_transcript" }), { status: 400, headers })
+  }
+  const hintLang = body.hintLang === "ar" ? "ar" : "en"
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 700,
+        messages: [{ role: "user", content: buildPrompt(transcript, hintLang) }],
+      }),
+    })
+
+    if (!resp.ok) {
+      const err = await resp.text()
+      console.error("Claude API error:", resp.status, err)
+      return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+    }
+
+    const data = await resp.json()
+    const text = data.content?.[0]?.text || ""
+    const match = text.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error("no JSON in response")
+    const trades = filterTrades(JSON.parse(match[0]).trades)
+    return new Response(JSON.stringify({ ok: true, trades }), { headers })
+  } catch (e) {
+    console.error("voice-parse error:", e)
+    return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+  }
+})
