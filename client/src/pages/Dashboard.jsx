@@ -2398,6 +2398,9 @@ export default function Dashboard() {
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
+  // Import-method chooser shown after creating a wallet
+  const [importChooser, setImportChooser] = useState(false)
+  const [importMode, setImportMode]       = useState('menu') // 'menu' | 'voice' | 'excel' | 'backup'
   // Onboarding tutorial progress flags
   const [onboardDismissed, setOnboardDismissed] = useState(() => { try { return localStorage.getItem('wl_onboard_dismissed') === '1' } catch { return false } })
   const [aiSeen, setAiSeen]               = useState(() => { try { return localStorage.getItem('wl_onboard_ai_seen') === '1' } catch { return false } })
@@ -3676,10 +3679,10 @@ export default function Dashboard() {
 
           <div className="glass-card dvx-form-card" id="wl-wallet-create">
             <h3>{t('walletsTitle')(wallets.length)}</h3>
-            <WalletPanel wallets={wallets} onRefresh={loadAll} onCreated={(wasFirst) => {
-              // After creating a wallet (esp. the first), jump straight to
-              // logging the first trade — only when none exist yet.
-              if (transactions.length === 0) setTimeout(() => openSheet('buy', wasFirst ? 'wallet_created_first' : 'wallet_created'), 350)
+            <WalletPanel wallets={wallets} onRefresh={loadAll} onCreated={() => {
+              // After creating a wallet, let the user choose HOW to add holdings
+              // (manual / voice / Excel / backup) — only when none exist yet.
+              if (transactions.length === 0) setTimeout(() => { setImportMode('menu'); setImportChooser(true) }, 300)
             }} />
           </div>
           <div className="glass-card dvx-form-card">
@@ -3694,6 +3697,65 @@ export default function Dashboard() {
             </Suspense>
           </div>
         </div>
+      )}
+
+      {/* ══ IMPORT-METHOD CHOOSER (after creating a wallet) ══ */}
+      {importChooser && createPortal(
+        <div onClick={() => setImportChooser(false)} style={{
+          position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,0.6)',
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem',
+        }}>
+          <div onClick={e => e.stopPropagation()} className="glass-card" style={{
+            width:'min(440px,96vw)', maxHeight:'88vh', overflowY:'auto',
+            borderRadius:'20px', padding:'1.4rem 1.25rem', position:'relative',
+          }}>
+            <button onClick={() => setImportChooser(false)} aria-label="Close" style={{
+              position:'absolute', top:12, right:12, width:30, height:30, borderRadius:'50%',
+              border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-1)', color:'var(--text-muted)',
+              cursor:'pointer', fontSize:'1.1rem', lineHeight:1,
+            }}>×</button>
+
+            {importMode === 'menu' ? (
+              <>
+                <div style={{ textAlign:'center', marginBottom:'1.1rem' }}>
+                  <div style={{ display:'flex', justifyContent:'center', marginBottom:'0.6rem' }}><Logo size={40} animated /></div>
+                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>Wallet created 🎉</div>
+                  <div style={{ fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem' }}>How would you like to add your holdings?</div>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
+                  {[
+                    { icon:'✍️', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
+                    { icon:'🎙️', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
+                    { icon:'📊', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
+                    { icon:'📁', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
+                  ].map(o => (
+                    <button key={o.label} onClick={o.fn} style={{
+                      display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'0.2rem',
+                      padding:'0.85rem 0.9rem', borderRadius:'14px', cursor:'pointer', textAlign:'left',
+                      background:`rgba(${o.color},0.1)`, border:`1.5px solid rgba(${o.color},0.3)`,
+                      color:`rgb(${o.color})`,
+                    }}>
+                      <span style={{ fontSize:'1.4rem' }}>{o.icon}</span>
+                      <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)' }}>{o.label}</span>
+                      <span style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{o.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setImportMode('menu')} style={{
+                  display:'inline-flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.9rem',
+                  background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontWeight:700, fontSize:'0.8rem',
+                }}>‹ Back</button>
+                {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
+                {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
+                {importMode === 'backup' && <BackupCode hideTrigger />}
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* ══ TRADE BOTTOM SHEET ══ */}
