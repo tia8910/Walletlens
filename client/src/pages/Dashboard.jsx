@@ -1356,6 +1356,52 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 }
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
+function FeatureSlideshow() {
+  const SLIDES = [
+    { icon:'📊', color:'#34d399', title:'Track Your Net Worth', desc:'All assets in one dashboard — crypto, stocks, metals & cash. Live prices, P&L, and allocation at a glance.' },
+    { icon:'🤖', color:'#818cf8', title:'AI Portfolio Analysis', desc:'Get a portfolio health score, diversification grade, and personalised recommendations powered by AI.' },
+    { icon:'⚠️', color:'#f59e0b', title:'Risk Scanner', desc:'Spot concentration risk, volatility exposure, and liquidity issues before they hurt your returns.' },
+    { icon:'🎙️', color:'#10b981', title:'Voice Trade Import', desc:'Just say "I bought 0.5 BTC at 60K" and WalletLens logs it instantly. English and Arabic supported.' },
+    { icon:'🎯', color:'#f87171', title:'Price Targets & Alerts', desc:'Set exit targets for every holding and get notified the moment prices hit your levels.' },
+    { icon:'🔒', color:'#60a5fa', title:'100% Private — No Server', desc:'Your data never leaves your device. No account, no cloud, no tracking. Ever.' },
+  ]
+  const [idx, setIdx] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setVisible(false)
+      setTimeout(() => { setIdx(i => (i + 1) % SLIDES.length); setVisible(true) }, 280)
+    }, 3200)
+    return () => clearInterval(id)
+  }, [])
+
+  const slide = SLIDES[idx]
+  return (
+    <div style={{ margin: '0 auto 1.25rem', width: '100%' }}>
+      <div style={{
+        borderRadius: 16, border: `1.5px solid ${slide.color}28`,
+        background: `linear-gradient(135deg,${slide.color}0a,${slide.color}04)`,
+        padding: '1.4rem 1.1rem', minHeight: 130,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', transition: 'opacity 0.28s', opacity: visible ? 1 : 0,
+      }}>
+        <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>{slide.icon}</div>
+        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: slide.color, marginBottom: '0.35rem' }}>{slide.title}</div>
+        <div style={{ fontSize: '0.77rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{slide.desc}</div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.6rem' }}>
+        {SLIDES.map((s, i) => (
+          <button key={i} onClick={() => { setVisible(false); setTimeout(() => { setIdx(i); setVisible(true) }, 180) }} style={{
+            width: i === idx ? 18 : 6, height: 6, borderRadius: 3, border: 'none', cursor: 'pointer', padding: 0,
+            background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.18)', transition: 'all 0.3s',
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ConstellationMap() {
   const canvasRef = useRef(null)
   const NODES = [
@@ -1556,8 +1602,8 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
   return (
     <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
 
-      {/* Constellation star map */}
-      <ConstellationMap />
+      {/* Feature slideshow */}
+      <FeatureSlideshow />
 
       {/* Headline */}
       <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
@@ -3257,7 +3303,35 @@ export default function Dashboard() {
       )}
 
       {/* ══ ANALYSIS (AI + Risk + Eval) ══ */}
-      {activeTab === 'tools' && (
+      {activeTab === 'tools' && enriched.length === 0 && (
+        <div className="glass-card" style={{ textAlign:'center', padding:'1.5rem 1.25rem 1.25rem', marginBottom:'1rem' }}>
+          <FeatureSlideshow />
+          <div style={{ fontWeight:800, fontSize:'1rem', color:'var(--text)', marginBottom:'0.3rem' }}>
+            Add holdings to unlock AI analysis
+          </div>
+          <div style={{ fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:'1.25rem' }}>
+            Import your portfolio in seconds — no account needed
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
+            <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g)', fontWeight:700, fontSize:'0.82rem' }}>
+              <span style={{ fontSize:'1rem' }}>➕</span> Add trade
+            </button>
+            <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
+              <span style={{ fontSize:'1rem' }}>📁</span> Import backup
+            </button>
+            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'#10b981', fontWeight:700, fontSize:'0.82rem' }}>
+              <span style={{ fontSize:'1rem' }}>🎙️</span> Voice import
+            </button>
+            <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(167,139,250,0.1)', border:'1.5px solid rgba(167,139,250,0.3)', color:'#a78bfa', fontWeight:700, fontSize:'0.82rem' }}>
+              <span style={{ fontSize:'1rem' }}>📊</span> Import Excel
+            </button>
+          </div>
+          {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
+          {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
+          {showBackupCode && <BackupCode hideTrigger />}
+        </div>
+      )}
+      {activeTab === 'tools' && enriched.length > 0 && (
         <ToolsTab
           enriched={enriched}
           prices={prices}
