@@ -1071,13 +1071,14 @@ function buildPerfSeries(base, tf = '30D', transactions = []) {
 }
 
 // ── Wallet panel ─────────────────────────────────────────────────────────
-function WalletPanel({ wallets, onRefresh }) {
+function WalletPanel({ wallets, onRefresh, onCreated }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function add() {
     if (!name.trim()) return
     setBusy(true)
+    const wasFirst = (wallets?.length || 0) === 0
     try {
       await api.createWallet({ name: name.trim() })
       track('wallet_created', {
@@ -1085,6 +1086,8 @@ function WalletPanel({ wallets, onRefresh }) {
         wallet_count: (wallets?.length || 0) + 1,
       })
       setName(''); onRefresh()
+      // Guide the user straight into logging their first trade.
+      onCreated?.(wasFirst)
     }
     finally { setBusy(false) }
   }
@@ -3643,7 +3646,11 @@ export default function Dashboard() {
 
           <div className="glass-card dvx-form-card" id="wl-wallet-create">
             <h3>{t('walletsTitle')(wallets.length)}</h3>
-            <WalletPanel wallets={wallets} onRefresh={loadAll} />
+            <WalletPanel wallets={wallets} onRefresh={loadAll} onCreated={(wasFirst) => {
+              // After creating a wallet (esp. the first), jump straight to
+              // logging the first trade — only when none exist yet.
+              if (transactions.length === 0) setTimeout(() => openSheet('buy', wasFirst ? 'wallet_created_first' : 'wallet_created'), 350)
+            }} />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
