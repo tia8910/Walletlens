@@ -922,6 +922,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const [voiceLang, setVoiceLang] = useState('ar')
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
+  const [typedText, setTypedText] = useState('')
   const [parsed, setParsed] = useState(null)
   const [reaction, setReaction] = useState(null)
   const [confirmed, setConfirmed] = useState(false)
@@ -1136,12 +1137,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // and slang in Arabic + English — e.g. "I bought 1 Bitcoin and 1 Ethereum"
   // becomes two orders. Replaces the parsed result on success; silently keeps
   // the local parse on any failure.
-  const tryAiFallback = async (rawText) => {
+  const tryAiFallback = async (rawText, localComplete = 0) => {
     if (!rawText || rawText.length < 3) return
     setAiThinking(true)
     try {
       const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en')
       if (!trades.length) return
+      // Don't let a weaker AI result overwrite a richer local multi-parse.
+      if (trades.length < localComplete) return
       const idx = getSymbolIndex()
       const transactions = trades.map(t => {
         const coin = idx[(t.symbol || '').toUpperCase()] || null
@@ -1183,13 +1186,16 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
 
-    // If the local parser missed (no complete trade), ask Claude to interpret.
-    // Send the longest transcript across all language channels for best coverage.
-    const isComplete = parsed?.transactions?.every(t => t.type && t.coin && t.amount != null) && parsed.transactions.length > 0
-    if (!isComplete) {
-      const best = Object.values(transcriptsRef.current).reduce((a, b) => b.length > a.length ? b : a, '') || transcript
-      if (best) tryAiFallback(best)
-    }
+    // Always ask Claude to interpret the finalized transcript. The local
+    // regex parser frequently catches only the FIRST coin in a multi-trade
+    // sentence ("1 Bitcoin and 1 Ethereum" → just BTC) and reports it as
+    // "complete", so relying on incompleteness alone silently drops trades.
+    // Claude is authoritative for multi-trade + dialects; if it returns
+    // nothing (no key / offline) we keep whatever the local parser found.
+    // Send the longest transcript across all language channels for coverage.
+    const best = Object.values(transcriptsRef.current).reduce((a, b) => b.length > a.length ? b : a, '') || transcript
+    const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
+    if (best && best.trim().length >= 3) tryAiFallback(best, localComplete)
   }
 
   useEffect(() => () => {
@@ -1478,6 +1484,46 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 : (isAr ? 'اضغط الميكروفون وقل صفقتك' : 'Tap the mic and say your trade')}
             </p>
             <style>{`@keyframes vi-wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }`}</style>
+          </div>
+
+          {/* Universal type-a-trade box — works on EVERY OS/browser, even ones
+              without speech recognition (Firefox, in-app/WebView browsers).
+              Runs through the same Claude parser, so multi-trade works here too. */}
+          <div style={{ marginBottom:'0.9rem' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', margin:'0 0 0.4rem', color:'var(--text-sub)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+              <span style={{ flex:1, height:1, background:'rgba(var(--g-rgb),0.15)' }} />
+              {isAr ? 'أو اكتب صفقتك' : 'or type your trade'}
+              <span style={{ flex:1, height:1, background:'rgba(var(--g-rgb),0.15)' }} />
+            </div>
+            <div style={{ display:'flex', gap:'0.45rem' }}>
+              <input
+                type="text"
+                value={typedText}
+                onChange={e => setTypedText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && typedText.trim().length >= 3 && !aiThinking) { tryAiFallback(typedText.trim(), 0); } }}
+                placeholder={isAr ? 'مثال: اشتريت واحد بيتكوين وواحد ايثيريوم' : 'e.g. I bought 1 Bitcoin and 1 Ethereum'}
+                dir={isAr ? 'rtl' : 'ltr'}
+                style={{
+                  flex:1, minWidth:0, padding:'0.6rem 0.8rem', borderRadius:'10px',
+                  border:'1.5px solid rgba(var(--g-rgb),0.25)', background:'var(--surface-1)',
+                  color:'var(--text)', fontSize:'0.84rem', outline:'none',
+                }}
+              />
+              <button
+                onClick={() => { if (typedText.trim().length >= 3 && !aiThinking) tryAiFallback(typedText.trim(), 0) }}
+                disabled={typedText.trim().length < 3 || aiThinking}
+                style={{
+                  flexShrink:0, padding:'0 1rem', borderRadius:'10px', border:'none',
+                  cursor: (typedText.trim().length < 3 || aiThinking) ? 'not-allowed' : 'pointer',
+                  fontWeight:800, fontSize:'0.84rem', color:'#fff',
+                  background: (typedText.trim().length < 3 || aiThinking)
+                    ? 'rgba(var(--g-rgb),0.3)'
+                    : 'linear-gradient(135deg,#047857,#10b981)',
+                }}
+              >
+                {isAr ? 'تحليل' : 'Parse'}
+              </button>
+            </div>
           </div>
 
           {/* No-speech hint */}
