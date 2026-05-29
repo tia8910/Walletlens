@@ -2868,9 +2868,9 @@ export default function Dashboard() {
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       background: showExcelImport
-                        ? 'linear-gradient(135deg, #3b0764, #5b21b6)'
-                        : 'linear-gradient(135deg, #5b21b6, #7c3aed)',
-                      border: `1.5px solid ${showExcelImport ? '#5b21b6' : '#7c3aed'}`,
+                        ? 'linear-gradient(135deg, rgba(124,58,237,0.5), rgba(124,58,237,0.95))'
+                        : 'linear-gradient(135deg, rgba(124,58,237,0.65), rgba(124,58,237,1))',
+                      border: `1.5px solid rgba(124,58,237,${showExcelImport ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showExcelImport
                         ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(109,40,217,0.5)'
@@ -2945,9 +2945,9 @@ export default function Dashboard() {
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       background: showScreenshot
-                        ? 'linear-gradient(135deg, #831843, #be185d)'
-                        : 'linear-gradient(135deg, #9d174d, #ec4899)',
-                      border: `1.5px solid ${showScreenshot ? '#be185d' : '#ec4899'}`,
+                        ? 'linear-gradient(135deg, rgba(236,72,153,0.5), rgba(236,72,153,0.95))'
+                        : 'linear-gradient(135deg, rgba(236,72,153,0.65), rgba(236,72,153,1))',
+                      border: `1.5px solid rgba(236,72,153,${showScreenshot ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showScreenshot
                         ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(236,72,153,0.5)'
@@ -2973,9 +2973,9 @@ export default function Dashboard() {
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       background: showBackupCode
-                        ? 'linear-gradient(135deg, #1e3a8a, #1d4ed8)'
-                        : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
-                      border: `1.5px solid ${showBackupCode ? '#1d4ed8' : '#3b82f6'}`,
+                        ? 'linear-gradient(135deg, rgba(59,130,246,0.5), rgba(59,130,246,0.95))'
+                        : 'linear-gradient(135deg, rgba(59,130,246,0.65), rgba(59,130,246,1))',
+                      border: `1.5px solid rgba(59,130,246,${showBackupCode ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showBackupCode
                         ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(59,130,246,0.5)'
