@@ -2862,6 +2862,19 @@ tr:last-child td { border-bottom: none; }
 }
 .wp-ind-bar-fill { height: 100%; transition: width 0.4s ease; }
 
+/* ─── Technical analysis support/resistance levels ─── */
+.ta-levels {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;
+  margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border);
+}
+.ta-levels-col { display: flex; flex-direction: column; gap: 0.3rem; }
+.ta-levels-h {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; margin-bottom: 0.1rem;
+}
+.ta-level { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.ta-level.muted { color: var(--text2); font-weight: 500; }
+
 /* ─── Sell Quantity Picker ─── */
 .sell-picker {
   background: var(--bg3); border-radius: 12px; padding: 0.75rem;

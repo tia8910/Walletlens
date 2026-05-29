@@ -1,47 +1,14 @@
 import { useState, useMemo } from 'react'
 import { track, trackAI } from '../analytics'
+import { api } from '../api'
+import { buildTASellPlan } from '../technicals'
 
-function generateSellPlan(enriched, prices) {
-  if (!enriched.length) return null
-
-  const totalValue = enriched.reduce((s, h) => {
-    const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
-    return s + h.amount * price
-  }, 0)
-
-  const rows = enriched.map(h => {
-    const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
-    const value   = h.amount * price
-    const sym     = h.coin_symbol?.toUpperCase()
-
-    // Non-crypto assets without live price: show as "manually tracked"
-    const id = (h.coin_id || '').toLowerCase()
-    const symL = (h.coin_symbol || '').toLowerCase()
-    const isNonCryptoAsset =
-      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') ||
-      id.startsWith('cash:')  || id.startsWith('fiat:')  ||
-      id.includes('appartment') || id.includes('apartment') ||
-      ['xau','xag','xpt','xpd'].includes(symL)
-
-    if (isNonCryptoAsset && price === 0) {
-      const investedVal = h.total_invested || 0
-      return {
-        sym, pnlPct: 0, weight: totalValue > 0 ? (investedVal / totalValue) * 100 : 0,
-        value: investedVal, price: 0,
-        action: 'MANUALLY TRACKED', urgency: 'low',
-        reason: `${sym} is a non-crypto asset without live price feed. Value reflects your recorded cost basis.`,
-        targets: [{ label: 'Update price manually', price: null, note: 'Edit your holding to set current market value' }],
-      }
-    }
-
-    const pnlPct  = h.total_invested > 0 ? ((value - h.total_invested) / h.total_invested) * 100 : 0
-    const weight  = totalValue > 0 ? (value / totalValue) * 100 : 0
-    const chg24   = prices[h.coin_id]?.usd_24h_change ?? 0
-
-    // Rule-based action
-    let action, targets, reason, urgency
-
-    if (pnlPct >= 200) {
+// Fallback rule-based plan (P&L + concentration + 24h momentum) — used when no
+// technical analysis is available for the holding (non-crypto, or too little
+// price history). Returns { action, urgency, targets, reason }.
+function ruleBasedPlan(h, price, value, pnlPct, weight, chg24) {
+  let action, targets, reason, urgency
+  if (pnlPct >= 200) {
       action  = 'TAKE PROFIT'
       urgency = 'high'
       targets = [
@@ -109,7 +76,56 @@ function generateSellPlan(enriched, prices) {
       reason = `Position is healthy. Let it run with clear targets.`
     }
 
-    return { sym, pnlPct, weight, value, price, action, targets, reason, urgency }
+    return { action, targets, reason, urgency }
+}
+
+// Build the full sell plan. When `technicals[coin_id]` is present the targets,
+// action and reasoning come from real technical analysis (RSI, MACD, Bollinger,
+// trend, support/resistance). Otherwise it falls back to the P&L rule engine.
+function generateSellPlan(enriched, prices, technicals = {}) {
+  if (!enriched.length) return null
+
+  const totalValue = enriched.reduce((s, h) => {
+    const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
+    return s + h.amount * price
+  }, 0)
+
+  const rows = enriched.map(h => {
+    const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
+    const value   = h.amount * price
+    const sym     = h.coin_symbol?.toUpperCase()
+
+    // Non-crypto assets without live price: show as "manually tracked"
+    const id = (h.coin_id || '').toLowerCase()
+    const symL = (h.coin_symbol || '').toLowerCase()
+    const isNonCryptoAsset =
+      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') ||
+      id.startsWith('cash:')  || id.startsWith('fiat:')  ||
+      id.includes('appartment') || id.includes('apartment') ||
+      ['xau','xag','xpt','xpd'].includes(symL)
+
+    if (isNonCryptoAsset && price === 0) {
+      const investedVal = h.total_invested || 0
+      return {
+        sym, pnlPct: 0, weight: totalValue > 0 ? (investedVal / totalValue) * 100 : 0,
+        value: investedVal, price: 0,
+        action: 'MANUALLY TRACKED', urgency: 'low', ta: null,
+        reason: `${sym} is a non-crypto asset without live price feed. Value reflects your recorded cost basis.`,
+        targets: [{ label: 'Update price manually', price: null, note: 'Edit your holding to set current market value' }],
+      }
+    }
+
+    const pnlPct  = h.total_invested > 0 ? ((value - h.total_invested) / h.total_invested) * 100 : 0
+    const weight  = totalValue > 0 ? (value / totalValue) * 100 : 0
+    const chg24   = prices[h.coin_id]?.usd_24h_change ?? 0
+    const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0
+
+    const ta = technicals[h.coin_id] || null
+    const plan = (ta && price > 0)
+      ? buildTASellPlan(ta, { currentPrice: price, avgCost, pnlPct, weight })
+      : ruleBasedPlan(h, price, value, pnlPct, weight, chg24)
+
+    return { sym, pnlPct, weight, value, price, ta, ...plan }
   }).sort((a, b) => {
     const order = { 'high': 0, 'medium': 1, 'low': 2, 'manually tracked': 3 }
     return order[a.urgency] - order[b.urgency]
@@ -132,19 +148,64 @@ function generateSellPlan(enriched, prices) {
 const URGENCY_COLOR = { high: '#f87171', medium: '#fbbf24', low: 'var(--g)', 'manually tracked': '#a78bfa' }
 const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: 'rgba(var(--g-rgb),0.08)', 'manually tracked': '#a78bfa15' }
 
+const fmtLvl = (p) => (p == null ? '—' : '$' + (p >= 1 ? Math.round(p).toLocaleString() : +(+p).toPrecision(4)))
+const TREND_META = {
+  uptrend:   { label: '↗ Uptrend',   color: 'var(--g)' },
+  downtrend: { label: '↘ Downtrend', color: '#f87171' },
+  sideways:  { label: '→ Sideways',  color: '#fbbf24' },
+}
+
+// Compact read-out of the technical posture behind each holding's plan.
+function TAStrip({ ta }) {
+  const trend = TREND_META[ta.trend] || TREND_META.sideways
+  const rsiColor = ta.rsiState === 'overbought' ? '#f87171' : ta.rsiState === 'oversold' ? 'var(--g)' : 'var(--text-muted)'
+  const macdColor = ta.macd ? (ta.macd.hist > 0 ? 'var(--g)' : '#f87171') : 'var(--text-muted)'
+  const chip = (children, color) => (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:'0.25rem',
+      background:'var(--surface-1)', border:`1px solid ${color}30`, color,
+      borderRadius:6, padding:'0.12rem 0.45rem', fontSize:'0.7rem', fontWeight:600,
+      whiteSpace:'nowrap',
+    }}>{children}</span>
+  )
+  return (
+    <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', margin:'0 0 0.5rem' }}>
+      {chip(trend.label, trend.color)}
+      {ta.rsi != null && chip(<>RSI {ta.rsi.toFixed(0)}{ta.rsiState !== 'neutral' ? ` · ${ta.rsiState}` : ''}</>, rsiColor)}
+      {ta.macd && chip(`MACD ${ta.macd.hist > 0 ? '+' : ''}${ta.macd.cross ? ta.macd.cross : (ta.macd.hist > 0 ? 'bull' : 'bear')}`, macdColor)}
+      {ta.nearestSupport != null && chip(`S ${fmtLvl(ta.nearestSupport)}`, 'var(--g)')}
+      {ta.nearestResistance != null && chip(`R ${fmtLvl(ta.nearestResistance)}`, '#f87171')}
+    </div>
+  )
+}
+
 export default function AISellPlan({ enriched = [], prices = {} }) {
   const [open, setOpen] = useState(false)
+  const [technicals, setTechnicals] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const plan = useMemo(
-    () => open ? generateSellPlan(enriched, prices) : null,
-    [open, enriched, prices]
+    () => open ? generateSellPlan(enriched, prices, technicals) : null,
+    [open, enriched, prices, technicals]
   )
 
-  function generate() {
-    if (!enriched.length) return
+  async function generate() {
+    if (!enriched.length || loading) return
     track('ai_sell_plan_generate')
     trackAI({ action: 'sell_plan_generate', assetCount: enriched.length, planGenerated: true })
-    setOpen(true)
+    setLoading(true)
+    try {
+      const ids = enriched.map(h => h.coin_id).filter(Boolean)
+      const ta = await api.getBulkTechnicals(ids)
+      setTechnicals(ta || {})
+      const withTA = Object.values(ta || {}).filter(Boolean).length
+      trackAI({ action: 'sell_plan_technicals', assetCount: ids.length, taCovered: withTA })
+    } catch {
+      setTechnicals({})
+    } finally {
+      setLoading(false)
+      setOpen(true)
+    }
   }
 
   if (!enriched.length) return null
@@ -155,16 +216,16 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
         <div>
           <h3 style={{ margin:0, fontSize:'1rem' }}>🎯 Smart Sell Plan</h3>
           <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>
-            Rule-based exit strategy for every holding — no API key needed.
+            Technical-analysis exit strategy — targets from real support/resistance, RSI, MACD &amp; trend. No API key needed.
           </p>
         </div>
         {!open && (
-          <button onClick={generate} style={{
+          <button onClick={generate} disabled={loading} style={{
             background:'var(--g)', color:'#000', border:'none',
             borderRadius:10, padding:'0.5rem 1.1rem',
-            fontWeight:700, fontSize:'0.85rem', cursor:'pointer',
-            flexShrink:0,
-          }}>✨ Generate</button>
+            fontWeight:700, fontSize:'0.85rem', cursor: loading ? 'wait' : 'pointer',
+            flexShrink:0, opacity: loading ? 0.7 : 1,
+          }}>{loading ? '⏳ Analyzing…' : '✨ Generate'}</button>
         )}
         {open && (
           <button onClick={() => setOpen(false)} style={{
@@ -212,12 +273,13 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                     <span className="muted" style={{ marginLeft:'0.4rem' }}>{row.weight.toFixed(1)}% portfolio</span>
                   </div>
                 </div>
+                {row.ta && <TAStrip ta={row.ta} />}
                 <p style={{ margin:'0 0 0.5rem', fontSize:'0.82rem', color:'var(--text-muted)' }}>{row.reason}</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.3rem' }}>
                   {row.targets.map((t, i) => (
                     <div key={i} style={{ display:'flex', alignItems:'baseline', gap:'0.5rem', fontSize:'0.8rem' }}>
                       <span style={{ color: URGENCY_COLOR[row.urgency], fontWeight:700, flexShrink:0 }}>
-                        {i === 0 ? '①' : i === 1 ? '②' : '③'}
+                        {['①','②','③','④','⑤'][i] || '•'}
                       </span>
                       <span style={{ color:'var(--text)', fontWeight:600 }}>{t.label}</span>
                       {t.price && <span className="muted">@ ${t.price > 1 ? t.price.toLocaleString() : t.price}</span>}
