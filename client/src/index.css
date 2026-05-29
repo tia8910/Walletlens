@@ -4891,7 +4891,7 @@ tr:last-child td { border-bottom: none; }
 /* ── Dashboard extra classes ── */
 .dvx-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 @media (max-width: 600px) { .dvx-stats-row { grid-template-columns: repeat(2, 1fr); } }
@@ -6234,7 +6234,7 @@ input[type="date"] { color-scheme: dark; }
 @media (min-width: 480px) { .ai-indicators { grid-template-columns: repeat(4, 1fr); } }
 .ai-ind-card { padding: 0.85rem 0.75rem; text-align: center; }
 .ai-ind-label { font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
-.ai-ind-val { font-size: 1.15rem; font-weight: 900; line-height: 1.1; }
+.ai-ind-val { font-size: clamp(0.72rem, 3.2vw, 1.15rem); font-weight: 900; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ai-ind-sub { font-size: 0.65rem; color: rgba(255,255,255,0.35); margin-top: 0.2rem; font-family: var(--mono,monospace); }
 
 /* ── Market cap ── */
