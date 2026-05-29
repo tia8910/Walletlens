@@ -19,7 +19,8 @@
 - **AI Coach**: Built-in AI assistant analyses your portfolio, flags risk concentration, and answers questions about your holdings.
 - **Alpha signals**: AI-generated trade ideas based on market data, whale activity, and on-chain signals.
 - **Multi-target sell plans**: Set multiple price targets (e.g. sell 25% at $80k, 50% at $100k) and the app tracks each leg.
-- **Voice import**: Speak your trade ("I bought 0.5 Bitcoin at 60k") in English or Arabic — the app parses it automatically.
+- **AI voice import**: Speak your trades ("I bought 1 Bitcoin and 1 Ethereum") in English or Arabic — AI parses multiple trades from one sentence and logs each as a separate order. Also works as a typed natural-language box on any device.
+- **Multi-wallet**: Track several wallets and view net worth per wallet or combined across all.
 - **Excel/CSV import**: Bulk-import your transaction history from any exchange.
 - **Whale tracker**: Live feed of large on-chain Bitcoin transactions.
 - **Smart alerts**: Price alerts that fire as PWA push notifications.

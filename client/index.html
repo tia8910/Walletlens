@@ -109,22 +109,33 @@
       "url": "https://walletlens.live/",
       "alternateName": "WalletLens — All-Asset Portfolio Tracker",
       "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Portfolio Tracker",
       "operatingSystem": "Web, iOS, Android (PWA)",
       "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.svg",
+      "keywords": "free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker, net worth tracker",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
       },
       "featureList": [
-        "Track crypto, US stocks, gold, silver, fiat & FX in one place",
-        "AI portfolio analysis: health score, Sharpe ratio, max drawdown, stress test",
-        "Multi-target sell plans with progress bars",
-        "Live whale tracking and market movers",
-        "100% free, no account required",
-        "Local-first — your data never leaves your device",
-        "Backup as a single shareable code (gzip-compressed)",
-        "Installable as a PWA"
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up, no ads",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
       ],
       "softwareVersion": "1.0",
       "privacyPolicy": "https://walletlens.live/privacy",
@@ -141,6 +152,26 @@
         "url": "https://walletlens.live/",
         "logo": "https://walletlens.live/icon-512.svg"
       }
+    }
+    </script>
+
+    <!-- Structured data — HowTo. Answer engines (AI Overviews, Perplexity,
+         ChatGPT) surface step-by-step guides; this teaches them exactly how
+         to onboard a user and reinforces the no-account, free positioning. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to track your whole portfolio free with WalletLens",
+      "description": "Track crypto, stocks, gold, and cash in one private dashboard — no account, no sign-up, free forever.",
+      "totalTime": "PT2M",
+      "tool": [{ "@type": "HowToTool", "name": "Any modern web browser (no app install required)" }],
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Open WalletLens", "text": "Go to walletlens.live — no account, email, or wallet connection needed.", "url": "https://walletlens.live/" },
+        { "@type": "HowToStep", "position": 2, "name": "Create a wallet", "text": "Name your first portfolio wallet. A wallet is created automatically when you log a trade if you skip this.", "url": "https://walletlens.live/dashboard" },
+        { "@type": "HowToStep", "position": 3, "name": "Add your holdings", "text": "Type a trade, speak it by voice (English or Arabic), or import from Excel/CSV. Multiple trades in one sentence are supported." },
+        { "@type": "HowToStep", "position": 4, "name": "Track and analyze", "text": "See your live net worth across crypto, stocks, metals and cash, then open AI Analysis for a health score, risk scan, and sell-plan suggestions." }
+      ]
     }
     </script>
 
