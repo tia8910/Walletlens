@@ -254,7 +254,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
   if (!apiKey) {
     return (
       <div className="ai-adv-setup glass-card">
-        <div className="ai-adv-setup-icon">🤖</div>
+        <div className="ai-adv-setup-icon">✦</div>
         <h3 className="ai-adv-setup-title">AI Portfolio Advisor</h3>
         <p className="ai-adv-setup-sub">
           Powered by Claude — enter your Anthropic API key to get a CFA-level analysis of your portfolio.<br/>
@@ -310,7 +310,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
         <div className="ai-adv-analysis-pane">
           {!analysis && !analyzing && (
             <div className="ai-adv-cta glass-card">
-              <div className="ai-adv-cta-icon">🧠</div>
+              <div className="ai-adv-cta-icon">◈</div>
               <h3 className="ai-adv-cta-title">Portfolio Deep Dive</h3>
               <p className="ai-adv-cta-sub muted">
                 Claude analyzes your actual holdings, cost basis, P&L, and sell targets to give you
