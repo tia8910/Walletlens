@@ -43,13 +43,15 @@
   <!-- Top accent line -->
   <rect x="0" y="0" width="1200" height="3" fill="url(#accentLine)"/>
 
-  <!-- ── LOGO ── -->
-  <!-- Outer ring -->
-  <circle cx="72" cy="72" r="44" fill="none" stroke="#00c853" stroke-width="7"/>
-  <!-- Middle ring -->
-  <circle cx="72" cy="72" r="26" fill="none" stroke="#00c853" stroke-width="5" opacity="0.55"/>
-  <!-- Inner dot -->
-  <circle cx="72" cy="72" r="13" fill="#00c853"/>
+  <!-- ── LOGO (matches app: ring + ascending bars + focus dot + handle) ── -->
+  <g fill="none" transform="translate(72 72) scale(1.42) translate(-25 -30.5)">
+    <circle cx="27" cy="25" r="19" stroke="#00c853" stroke-width="5.5"/>
+    <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/>
+    <rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="#00c853"/>
+    <rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="#00c853"/>
+    <rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="#00c853"/>
+    <line x1="13.5" y1="39" x2="4" y2="55" stroke="#00c853" stroke-width="5.5" stroke-linecap="round"/>
+  </g>
 
   <!-- Brand name -->
   <text x="132" y="62" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="-0.5">WalletLens</text>
