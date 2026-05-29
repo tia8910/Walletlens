@@ -2378,8 +2378,14 @@ function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
   // Target ~20 candles regardless of series density
   const bucketSize = Math.max(1, Math.floor(perfSeries.length / 20))
 
-  const rawCandles = buildOHLC(perfSeries, bucketSize)
-  if (rawCandles.length < 3) return null
+  let rawCandles = buildOHLC(perfSeries, bucketSize)
+
+  // Always show at least one green candle even for new users
+  if (rawCandles.length === 0) {
+    const v = perfSeries.length ? perfSeries[perfSeries.length - 1].v : 1000
+    rawCandles = [{ i: 0, open: v * 0.992, close: v, high: v * 1.008, low: v * 0.986 }]
+  }
+
   const candles = linearRegression(rawCandles)
 
   // Domain with padding
@@ -3346,9 +3352,7 @@ export default function Dashboard() {
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
               // Use candlestick chart when there are enough data points; fall back to area chart.
-              const candleEl = perfSeries.length >= 3
-                ? <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
-                : null
+              const candleEl = <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
               return candleEl || (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
