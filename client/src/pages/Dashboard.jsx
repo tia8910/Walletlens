@@ -1739,10 +1739,13 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     {Array.from({ length: maxTargets }, (_, i) => (
                       <th key={i}>Target {i + 1}</th>
                     ))}
+                    <th className="dvx-tgt-th-total">Total Projected</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(r => (
+                  {rows.map(r => {
+                    const totalProjected = r.targets.reduce((s, t) => s + t.proceeds, 0)
+                    return (
                     <tr key={r.coinId}>
                       <td className="dvx-tgt-td-asset">
                         <strong>{r.coinSymbol?.toUpperCase()}</strong>
@@ -1761,8 +1764,9 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                           </td>
                         )
                       })}
+                      <td className="dvx-tgt-td-total">${fmt(totalProjected)}</td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
@@ -2055,7 +2059,6 @@ export default function Dashboard() {
     { id:'pnl_chart',          label:'P&L by Asset' },
     { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
     { id:'goal_tracker',       label:'Goal Tracker' },
-    { id:'sell_targets',       label:'Sell Targets' },
     { id:'allocation',         label:'Allocation' },
     { id:'net_worth_history',  label:'Net Worth History' },
     { id:'market_mood',        label:'Market Mood' },
@@ -3007,33 +3010,6 @@ export default function Dashboard() {
 
               {/* ── 1st: Goal Tracker ── */}
               {cardVis.goal_tracker && <GoalTracker currentValue={totalValue} />}
-
-              {/* Sell Targets */}
-              {cardVis.sell_targets && targetsAnalysis.rows.length > 0 && (
-                <div className="glass-card">
-                  <div style={CHART_HDR_STYLE}>
-                    <h3 style={{ margin:0 }}>{t('sellTargets')}</h3>
-                    <button className="dvx-show-more" style={{ width:'auto', margin:0, padding:'0.3rem 0.75rem', fontSize:'0.72rem' }}
-                      onClick={() => setActiveTab('targets')}>
-                      {t('viewAll')}
-                    </button>
-                  </div>
-                  <div className="dvx-targets-mini">
-                    {targetsAnalysis.rows.flatMap(r => r.targets).slice(0, 5).map(tgt => (
-                      <div key={tgt.id} className={`dvx-target-mini-row ${tgt.reached ? 'dvx-target-reached' : ''}`}>
-                        <span className="dvx-target-mini-sym">{tgt.coinSymbol?.toUpperCase()}</span>
-                        <span className="dvx-target-mini-price">${fmt(tgt.price)}</span>
-                        <div className="dvx-target-bar-bg" style={{ flex:1, margin:'0 0.5rem' }}>
-                          <div className="dvx-target-bar-fill" style={{ width:`${tgt.progress}%`, background: tgt.reached ? 'var(--g)' : 'linear-gradient(90deg,#3b82f6,var(--g))' }}/>
-                        </div>
-                        <span style={{ fontSize:'0.7rem', color: tgt.reached ? 'var(--g)' : 'var(--text-muted)', minWidth:'2.5rem', textAlign:'right' }}>
-                          {tgt.reached ? '✓' : `${tgt.progress.toFixed(0)}%`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* ── Allocation donut (by category) ── */}
               {cardVis.allocation && <div className="glass-card">
