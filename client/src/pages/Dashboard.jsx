@@ -2861,27 +2861,60 @@ export default function Dashboard() {
               <>
                 <div className="dvx-excel-import-bar" style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginTop:'0.5rem' }}>
                   <button
-                    className="dvx-btn dvx-btn-sm"
                     onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) }}
-                    style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem',
-                      whiteSpace:'nowrap', minWidth:0,
-                      background: showExcelImport ? 'rgba(var(--g-rgb),0.22)' : undefined,
-                    }}
-                    title="Import from an Excel or CSV file"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    Excel / CSV
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false)
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
                     style={{
                       flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
                       borderRadius:'10px', position:'relative', overflow:'hidden',
+                      transition: 'transform 0.18s ease, filter 0.18s ease',
+                      background: showExcelImport
+                        ? 'linear-gradient(135deg, rgba(124,58,237,0.5), rgba(124,58,237,0.95))'
+                        : 'linear-gradient(135deg, rgba(124,58,237,0.65), rgba(124,58,237,1))',
+                      border: `1.5px solid rgba(124,58,237,${showExcelImport ? '0.6' : '0.9'})`,
+                      color: '#ffffff',
+                      boxShadow: showExcelImport
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(109,40,217,0.5)'
+                        : '0 4px 14px rgba(91,33,182,0.45), 0 0 10px rgba(124,58,237,0.35)',
+                      animation: showExcelImport ? 'none' : 'xl-btn-glow 2.4s ease-in-out infinite',
+                    }}
+                    title="Import from an Excel or CSV file"
+                  >
+                    <style>{`
+                      @keyframes xl-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(91,33,182,0.4), 0 0 8px rgba(124,58,237,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(91,33,182,0.7), 0 0 18px rgba(124,58,237,0.6); }
+                      }
+                      @keyframes import-shimmer {
+                        0%,55%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
+                        60%     { opacity:1; }
+                        80%     { transform: translateX(230%) skewX(-15deg); opacity:0; }
+                        100%    { transform: translateX(230%) skewX(-15deg); opacity:0; }
+                      }
+                    `}</style>
+                    <span aria-hidden style={{
+                      position:'absolute', inset:0, pointerEvents:'none',
+                      background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
+                      animation:'import-shimmer 3.5s ease-in-out infinite',
+                      animationDelay:'0s',
+                    }} />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, position:'relative' }}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                    <span style={{ position:'relative' }}>Excel / CSV</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false)
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
+                    style={{
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
+                      whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showVoiceImport
                         ? 'linear-gradient(135deg, #065f46, #047857)'
                         : 'linear-gradient(135deg, #047857, #10b981)',
@@ -2897,20 +2930,24 @@ export default function Dashboard() {
                     <style>{`
                       @keyframes vi-btn-glow {
                         0%,100% { box-shadow: 0 4px 12px rgba(5,150,105,0.4), 0 0 8px rgba(16,185,129,0.3); }
-                        50%     { box-shadow: 0 4px 18px rgba(5,150,105,0.65), 0 0 16px rgba(16,185,129,0.55); }
+                        50%     { box-shadow: 0 4px 20px rgba(5,150,105,0.7), 0 0 18px rgba(16,185,129,0.6); }
                       }
                       @keyframes vi-bar1 { 0%,100%{height:6px} 50%{height:13px} }
                       @keyframes vi-bar2 { 0%,100%{height:10px} 50%{height:4px} }
                       @keyframes vi-bar3 { 0%,100%{height:4px} 50%{height:12px} }
                     `}</style>
-                    {/* Mic icon — filled for max visibility */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink:0 }}>
+                    <span aria-hidden style={{
+                      position:'absolute', inset:0, pointerEvents:'none',
+                      background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
+                      animation:'import-shimmer 3.5s ease-in-out infinite',
+                      animationDelay:'0.87s',
+                    }} />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink:0, position:'relative' }}>
                       <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>
                       <path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.08A7 7 0 0 0 19 11z"/>
                     </svg>
-                    <span>Voice</span>
-                    {/* Sound wave bars */}
-                    <span style={{ display:'inline-flex', alignItems:'center', gap:'2px', marginInlineStart:'4px' }}>
+                    <span style={{ position:'relative' }}>Voice</span>
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:'2px', marginInlineStart:'4px', position:'relative' }}>
                       {[['vi-bar1','6px'],['vi-bar2','10px'],['vi-bar3','4px']].map(([anim, h], i) => (
                         <span key={i} style={{
                           display:'inline-block', width:'3px', borderRadius:'2px',
@@ -2924,39 +2961,81 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
                     style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
-                      borderRadius:'8px',
-                      background: showScreenshot ? 'rgba(244,114,182,0.3)' : 'rgba(244,114,182,0.13)',
-                      border: '1px solid rgba(244,114,182,0.4)',
-                      color: '#f472b6',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      transition: 'transform 0.18s ease, filter 0.18s ease',
+                      background: showScreenshot
+                        ? 'linear-gradient(135deg, rgba(236,72,153,0.5), rgba(236,72,153,0.95))'
+                        : 'linear-gradient(135deg, rgba(236,72,153,0.65), rgba(236,72,153,1))',
+                      border: `1.5px solid rgba(236,72,153,${showScreenshot ? '0.6' : '0.9'})`,
+                      color: '#ffffff',
+                      boxShadow: showScreenshot
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(236,72,153,0.5)'
+                        : '0 4px 14px rgba(157,23,77,0.45), 0 0 10px rgba(236,72,153,0.35)',
+                      animation: showScreenshot ? 'none' : 'ss-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import holdings from a screenshot — AI reads it"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Screenshot
+                    <style>{`
+                      @keyframes ss-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(157,23,77,0.4), 0 0 8px rgba(236,72,153,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(157,23,77,0.7), 0 0 18px rgba(236,72,153,0.6); }
+                      }
+                    `}</style>
+                    <span aria-hidden style={{
+                      position:'absolute', inset:0, pointerEvents:'none',
+                      background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
+                      animation:'import-shimmer 3.5s ease-in-out infinite',
+                      animationDelay:'1.74s',
+                    }} />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, position:'relative' }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span style={{ position:'relative' }}>Screenshot</span>
                   </button>
                   <button
                     onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
                     style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
-                      borderRadius:'8px',
-                      background: showBackupCode ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.13)',
-                      border: '1px solid rgba(59,130,246,0.4)',
-                      color: '#60a5fa',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      transition: 'transform 0.18s ease, filter 0.18s ease',
+                      background: showBackupCode
+                        ? 'linear-gradient(135deg, rgba(59,130,246,0.5), rgba(59,130,246,0.95))'
+                        : 'linear-gradient(135deg, rgba(59,130,246,0.65), rgba(59,130,246,1))',
+                      border: `1.5px solid rgba(59,130,246,${showBackupCode ? '0.6' : '0.9'})`,
+                      color: '#ffffff',
+                      boxShadow: showBackupCode
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(59,130,246,0.5)'
+                        : '0 4px 14px rgba(29,78,216,0.45), 0 0 10px rgba(59,130,246,0.35)',
+                      animation: showBackupCode ? 'none' : 'bk-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Export or import your portfolio as a backup code"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                    <style>{`
+                      @keyframes bk-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(29,78,216,0.4), 0 0 8px rgba(59,130,246,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(29,78,216,0.7), 0 0 18px rgba(59,130,246,0.6); }
+                      }
+                    `}</style>
+                    <span aria-hidden style={{
+                      position:'absolute', inset:0, pointerEvents:'none',
+                      background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
+                      animation:'import-shimmer 3.5s ease-in-out infinite',
+                      animationDelay:'2.61s',
+                    }} />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, position:'relative' }}>
                       <path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/>
                       <path d="M9 12l-2 2 2 2"/>
                       <path d="M15 12l2 2-2 2"/>
                     </svg>
-                    Backup
+                    <span style={{ position:'relative' }}>Backup</span>
                   </button>
                 </div>
                 {showExcelImport && (
