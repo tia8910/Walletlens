@@ -6,14 +6,44 @@ import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
-import QuickStatsPopup from './components/QuickStatsPopup'
+// Non-critical shell components — lazy-loaded after the app shell renders
+const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
+const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
+const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
-import PWAInstallPrompt from './components/PWAInstallPrompt'
-import WelcomeModal from './components/WelcomeModal'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
+
+// Module-level cycling state shared between App topbar and Drawer.
+// A single setInterval drives both so we avoid two redundant timers.
+let _cycleListeners = []
+let _cycleIdx = 0
+let _cycleTimer = null
+function _startCycle() {
+  if (_cycleTimer !== null) return
+  _cycleTimer = setInterval(() => {
+    _cycleIdx = (_cycleIdx + 1) % 3
+    _cycleListeners.forEach(fn => fn(_cycleIdx))
+  }, 1800)
+}
+function _stopCycle() {
+  clearInterval(_cycleTimer)
+  _cycleTimer = null
+}
+function useCycleIdx() {
+  const [idx, setIdx] = useState(_cycleIdx)
+  useEffect(() => {
+    _cycleListeners.push(setIdx)
+    _startCycle()
+    return () => {
+      _cycleListeners = _cycleListeners.filter(fn => fn !== setIdx)
+      if (_cycleListeners.length === 0) _stopCycle()
+    }
+  }, [])
+  return idx
+}
 
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Market       = lazy(() => import('./pages/Market'))
@@ -110,11 +140,7 @@ function Drawer({ open, onClose }) {
   const location = useLocation()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
-  const [actionIdx, setActionIdx] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setActionIdx(i => (i + 1) % 3), 1800)
-    return () => clearInterval(id)
-  }, [])
+  const actionIdx = useCycleIdx()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
@@ -252,13 +278,8 @@ export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
-  const [headerActionIdx, setHeaderActionIdx] = useState(0)
+  const headerActionIdx = useCycleIdx()
   const { t, lang } = useLanguage()
-
-  useEffect(() => {
-    const id = setInterval(() => setHeaderActionIdx(i => (i + 1) % 3), 1800)
-    return () => clearInterval(id)
-  }, [])
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
 
@@ -376,11 +397,11 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      <WelcomeModal />
-      <PWAInstallPrompt />
+      <Suspense fallback={null}><WelcomeModal /></Suspense>
+      <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
 
       <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
-      {quickStatsOpen && <QuickStatsPopup onClose={() => setQuickStatsOpen(false)} />}
+      {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>
   )
 }
