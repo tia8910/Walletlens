@@ -1408,7 +1408,6 @@ function FeatureSlideshow() {
         @keyframes fs-left {from{transform:translateX(-36px);opacity:0}to{transform:translateX(0);opacity:1}}
       `}</style>
       <div style={{ position:'relative', padding:'0 22px' }}>
-        {/* Prev arrow */}
         <button onClick={prev} style={{
           position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
           width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
@@ -1416,7 +1415,6 @@ function FeatureSlideshow() {
           display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', lineHeight:1,
         }}>‹</button>
 
-        {/* Slide */}
         <div key={animKey} style={{
           borderRadius:16, border:`1.5px solid ${slide.color}30`,
           background:`linear-gradient(135deg,${slide.color}0e,${slide.color}05)`,
@@ -1435,7 +1433,6 @@ function FeatureSlideshow() {
           <div style={{ fontSize:'0.76rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:280 }}>{slide.desc}</div>
         </div>
 
-        {/* Next arrow */}
         <button onClick={next} style={{
           position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
           width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
@@ -1444,7 +1441,6 @@ function FeatureSlideshow() {
         }}>›</button>
       </div>
 
-      {/* Dot nav */}
       <div style={{ display:'flex', justifyContent:'center', gap:'0.32rem', marginTop:'0.65rem', flexWrap:'wrap' }}>
         {FEATURE_SLIDES.map((_, i) => (
           <button key={i} onClick={() => goTo(i, i > idx ? 1 : -1)} style={{
