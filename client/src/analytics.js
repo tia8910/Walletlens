@@ -11,6 +11,61 @@ export function track(eventName, params = {}) {
   })
 }
 
+// ── Auto-track EVERY user action ───────────────────────────────────────────
+// Delegated listeners fire a GA event on every click and every selection /
+// toggle across the whole app — so no interaction goes unmeasured, on top of
+// the named events above. Text-input *values* are intentionally never read,
+// to avoid logging anything sensitive the user types.
+function safeClassName(el) {
+  return typeof el.className === 'string' ? el.className : ''
+}
+function actionLabel(el) {
+  const dt   = el.getAttribute?.('data-track')
+  const aria = el.getAttribute?.('aria-label')
+  const title= el.getAttribute?.('title')
+  let txt = (dt || aria || title || el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ')
+  if (!txt && el.tagName === 'A') txt = el.getAttribute('href') || ''
+  return txt.slice(0, 80)
+}
+function elementId(el) {
+  return (el.getAttribute?.('data-track-id') || el.id || safeClassName(el) || el.tagName).toString().slice(0, 100)
+}
+
+export function initAutoTrack() {
+  if (typeof document === 'undefined' || window.__wlAutoTrack) return
+  window.__wlAutoTrack = true
+
+  const CLICK_SEL = 'button, a, [role="button"], [role="tab"], [data-track], summary, label'
+  document.addEventListener('click', (e) => {
+    try {
+      const el = e.target?.closest?.(CLICK_SEL)
+      if (!el) return
+      track('ui_click', {
+        element: elementId(el),
+        label: actionLabel(el),
+        tag: el.tagName.toLowerCase(),
+        ...(el.tagName === 'A' ? { href: (el.getAttribute('href') || '').slice(0, 120) } : {}),
+      })
+    } catch {}
+  }, { capture: true, passive: true })
+
+  // Selections & toggles (NOT free-text inputs — values are never captured there).
+  document.addEventListener('change', (e) => {
+    try {
+      const el = e.target
+      if (!el?.matches?.('select, input[type="checkbox"], input[type="radio"], input[type="range"]')) return
+      const value = el.type === 'checkbox'
+        ? (el.checked ? 'on' : 'off')
+        : String(el.value ?? '').slice(0, 80)
+      track('ui_change', {
+        element: (el.name || el.id || safeClassName(el) || el.tagName).toString().slice(0, 100),
+        value,
+        tag: el.tagName.toLowerCase(),
+      })
+    } catch {}
+  }, { capture: true, passive: true })
+}
+
 // ── Portfolio-level tracking ──────────────────────────────────────────────────
 
 // Call once after holdings are loaded to record portfolio snapshot

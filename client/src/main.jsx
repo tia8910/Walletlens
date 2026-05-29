@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
+import { initAutoTrack } from './analytics'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -45,6 +46,9 @@ if ('serviceWorker' in navigator) {
 }
 
 const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' : '/'
+
+// Auto-track every click / selection across the app in GA.
+initAutoTrack()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
