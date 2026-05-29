@@ -5707,6 +5707,37 @@ select.bs-input option { background: var(--bg3); }
 }
 .lp-cta-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
 
+/* ── Privacy caption (between hero-sub and CTA row) ───────────────────── */
+.lp-privacy-caption {
+  font-size: 0.72rem; font-weight: 500;
+  color: rgba(255,255,255,0.38);
+  text-align: center;
+  margin: 0 0 0.65rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── Trust strip (pill chips after CTA row, before badges) ─────────────── */
+.lp-trust-strip {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.85rem;
+}
+.lp-trust-pill {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.72rem; font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 99px;
+  padding: 0.3rem 0.75rem;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, border-color 0.15s;
+}
+.lp-trust-pill:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+}
+
 .lp-badges {
   display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
   margin-top: 0.5rem;

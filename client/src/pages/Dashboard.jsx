@@ -3278,6 +3278,48 @@ export default function Dashboard() {
       {/* ══ MANAGE (Wallets + Backup) ══ */}
       {activeTab === 'manage' && (
         <div className="dvx-form-page">
+
+          {/* ── Onboarding card — shown until user has at least one wallet ── */}
+          {wallets.length === 0 && (
+            <div className="glass-card dvx-form-card" style={{ textAlign: 'center', padding: '2rem 1.5rem 1.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.85rem' }}>
+                <Logo size={48} animated />
+              </div>
+              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '0.35rem' }}>
+                Welcome to WalletLens
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1.4rem', lineHeight: 1.6 }}>
+                Get started in 4 quick steps
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', textAlign: 'left' }}>
+                {[
+                  { n: '1', label: 'Create wallet', desc: 'Name your first portfolio wallet below' },
+                  { n: '2', label: 'Add your first trade', desc: 'Type it, speak it, or import from Excel' },
+                  { n: '3', label: 'Track your net worth', desc: 'Live prices, P&L, and allocation charts' },
+                  { n: '4', label: 'Get AI insights', desc: 'Risk scanner, smart alerts & AI advisor' },
+                ].map(step => (
+                  <div key={step.n} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                    padding: '0.6rem 0.75rem', borderRadius: '10px',
+                    background: 'rgba(var(--g-rgb),0.05)',
+                    border: '1px solid rgba(var(--g-rgb),0.12)',
+                  }}>
+                    <span style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: 'rgba(var(--g-rgb),0.18)', border: '1.5px solid rgba(var(--g-rgb),0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: '0.75rem', color: 'var(--g)',
+                    }}>{step.n}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.3 }}>{step.label}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem', lineHeight: 1.4 }}>{step.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="glass-card dvx-form-card">
             <h3>{t('walletsTitle')(wallets.length)}</h3>
             <WalletPanel wallets={wallets} onRefresh={loadAll} />
