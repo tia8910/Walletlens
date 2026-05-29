@@ -2861,15 +2861,30 @@ export default function Dashboard() {
               <>
                 <div className="dvx-excel-import-bar" style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginTop:'0.5rem' }}>
                   <button
-                    className="dvx-btn dvx-btn-sm"
                     onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) }}
                     style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem',
-                      whiteSpace:'nowrap', minWidth:0,
-                      background: showExcelImport ? 'rgba(var(--g-rgb),0.22)' : undefined,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
+                      whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      background: showExcelImport
+                        ? 'linear-gradient(135deg, #3b0764, #5b21b6)'
+                        : 'linear-gradient(135deg, #5b21b6, #7c3aed)',
+                      border: `1.5px solid ${showExcelImport ? '#5b21b6' : '#7c3aed'}`,
+                      color: '#ffffff',
+                      boxShadow: showExcelImport
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(109,40,217,0.5)'
+                        : '0 4px 14px rgba(91,33,182,0.45), 0 0 10px rgba(124,58,237,0.35)',
+                      animation: showExcelImport ? 'none' : 'xl-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import from an Excel or CSV file"
                   >
+                    <style>{`
+                      @keyframes xl-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(91,33,182,0.4), 0 0 8px rgba(124,58,237,0.3); }
+                        50%     { box-shadow: 0 4px 18px rgba(91,33,182,0.65), 0 0 16px rgba(124,58,237,0.55); }
+                      }
+                    `}</style>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                     Excel / CSV
                   </button>
@@ -2925,32 +2940,56 @@ export default function Dashboard() {
                   <button
                     onClick={() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }}
                     style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
-                      borderRadius:'8px',
-                      background: showScreenshot ? 'rgba(244,114,182,0.3)' : 'rgba(244,114,182,0.13)',
-                      border: '1px solid rgba(244,114,182,0.4)',
-                      color: '#f472b6',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      background: showScreenshot
+                        ? 'linear-gradient(135deg, #831843, #be185d)'
+                        : 'linear-gradient(135deg, #9d174d, #ec4899)',
+                      border: `1.5px solid ${showScreenshot ? '#be185d' : '#ec4899'}`,
+                      color: '#ffffff',
+                      boxShadow: showScreenshot
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(236,72,153,0.5)'
+                        : '0 4px 14px rgba(157,23,77,0.45), 0 0 10px rgba(236,72,153,0.35)',
+                      animation: showScreenshot ? 'none' : 'ss-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import holdings from a screenshot — AI reads it"
                   >
+                    <style>{`
+                      @keyframes ss-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(157,23,77,0.4), 0 0 8px rgba(236,72,153,0.3); }
+                        50%     { box-shadow: 0 4px 18px rgba(157,23,77,0.65), 0 0 16px rgba(236,72,153,0.55); }
+                      }
+                    `}</style>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     Screenshot
                   </button>
                   <button
                     onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) }}
                     style={{
-                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
                       display:'inline-flex', alignItems:'center', justifyContent:'center',
-                      borderRadius:'8px',
-                      background: showBackupCode ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.13)',
-                      border: '1px solid rgba(59,130,246,0.4)',
-                      color: '#60a5fa',
+                      borderRadius:'10px', position:'relative', overflow:'hidden',
+                      background: showBackupCode
+                        ? 'linear-gradient(135deg, #1e3a8a, #1d4ed8)'
+                        : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                      border: `1.5px solid ${showBackupCode ? '#1d4ed8' : '#3b82f6'}`,
+                      color: '#ffffff',
+                      boxShadow: showBackupCode
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(59,130,246,0.5)'
+                        : '0 4px 14px rgba(29,78,216,0.45), 0 0 10px rgba(59,130,246,0.35)',
+                      animation: showBackupCode ? 'none' : 'bk-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Export or import your portfolio as a backup code"
                   >
+                    <style>{`
+                      @keyframes bk-btn-glow {
+                        0%,100% { box-shadow: 0 4px 12px rgba(29,78,216,0.4), 0 0 8px rgba(59,130,246,0.3); }
+                        50%     { box-shadow: 0 4px 18px rgba(29,78,216,0.65), 0 0 16px rgba(59,130,246,0.55); }
+                      }
+                    `}</style>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                       <path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/>
                       <path d="M9 12l-2 2 2 2"/>
