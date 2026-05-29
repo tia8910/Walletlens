@@ -160,7 +160,7 @@ function Drawer({ open, onClose }) {
             <IconAcademy /><span style={{ color: '#fbbf24' }}>Academy</span>
           </button>
           <button className={active('/coach')} onClick={() => { go('/coach'); }} style={{ opacity: location.pathname === '/coach' ? 1 : undefined }}>
-            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha <span style={{ fontSize:'0.65rem', opacity:0.6 }}>(in Coach)</span></span>
+            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
