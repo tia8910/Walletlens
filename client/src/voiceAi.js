@@ -14,6 +14,19 @@ const KEY_STORAGE  = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
 
+// The owner-hosted voice-parse endpoint (Deno Deploy / Vercel) that holds the
+// ANTHROPIC_API_KEY secret. The site is static (GitHub Pages) so it can't host
+// this itself. Defaults to the Deno Deploy project name from voice-api/README;
+// override at runtime without rebuilding via localStorage 'wl_voice_api'.
+const DEFAULT_VOICE_API = 'https://walletlens-voice-parse.deno.dev/'
+function voiceEndpoint() {
+  try {
+    const o = localStorage.getItem('wl_voice_api')
+    if (o && o.trim()) return o.trim()
+  } catch {}
+  return DEFAULT_VOICE_API
+}
+
 // User-supplied key from the in-app settings (preferred), else the build
 // constant. Returns null when neither is configured.
 export function getAnthropicKey() {
@@ -83,9 +96,9 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en') {
   if (!text) return []
   const lang = hintLang === 'ar' ? 'ar' : 'en'
 
-  // 1) Server endpoint with the owner's secret key (works for everyone).
+  // 1) Owner-hosted endpoint with the secret key (works for everyone).
   try {
-    const resp = await fetch('/api/voice-parse', {
+    const resp = await fetch(voiceEndpoint(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transcript: text, hintLang: lang }),
