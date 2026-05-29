@@ -1380,6 +1380,7 @@ const FEATURE_SLIDES = [
   { tag:'ACADEMY',       icon:'🎓', color:'#34d399', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
   { tag:'INVESTMENT HACKS',icon:'💡',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
   { tag:'VOICE',         icon:'🎙️', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
+  { tag:'SCREENSHOT',    icon:'📸', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
   { tag:'PRIVACY',       icon:'🔒', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
   { tag:'FREE',          icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
 ]
@@ -2419,6 +2420,7 @@ export default function Dashboard() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [showExcelImport, setShowExcelImport] = useState(false)
   const [showVoiceImport, setShowVoiceImport] = useState(false)
+  const [showScreenshot, setShowScreenshot] = useState(false)
   const [showBackupCode, setShowBackupCode] = useState(false)
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
@@ -2857,10 +2859,10 @@ export default function Dashboard() {
 {(() => {
             const importsBlock = (
               <>
-                <div className="dvx-excel-import-bar" style={{ display:'flex', gap:'0.4rem', marginTop:'0.5rem' }}>
+                <div className="dvx-excel-import-bar" style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginTop:'0.5rem' }}>
                   <button
                     className="dvx-btn dvx-btn-sm"
-                    onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }}
+                    onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) }}
                     style={{
                       flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem',
                       whiteSpace:'nowrap', minWidth:0,
@@ -2873,7 +2875,7 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => {
-                      setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false)
+                      setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false)
                     }}
                     style={{
                       flex:1, padding:'0.55rem 0.7rem', fontSize:'0.85rem', gap:'0.45rem', fontWeight:800,
@@ -2921,7 +2923,23 @@ export default function Dashboard() {
                     </span>
                   </button>
                   <button
-                    onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }}
+                    onClick={() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }}
+                    style={{
+                      flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
+                      whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'8px',
+                      background: showScreenshot ? 'rgba(244,114,182,0.3)' : 'rgba(244,114,182,0.13)',
+                      border: '1px solid rgba(244,114,182,0.4)',
+                      color: '#f472b6',
+                    }}
+                    title="Import holdings from a screenshot — AI reads it"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Screenshot
+                  </button>
+                  <button
+                    onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) }}
                     style={{
                       flex:1, padding:'0.45rem 0.4rem', fontSize:'0.78rem', gap:'0.3rem', fontWeight:700,
                       whiteSpace:'nowrap', minWidth:0, cursor:'pointer',
@@ -2949,6 +2967,11 @@ export default function Dashboard() {
                 {showVoiceImport && (
                   <VoiceImport hideTrigger onImported={loadAll} />
                 )}
+                {showScreenshot && (
+                  <div className="dvx-excel-import-panel glass-card">
+                    <SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setShowScreenshot(false) }} />
+                  </div>
+                )}
                 {showBackupCode && (
                   <BackupCode hideTrigger />
                 )}
@@ -2961,9 +2984,10 @@ export default function Dashboard() {
                   ? <EmptyPortfolio
                       onAddTrade={() => openSheet('buy', 'empty_state')}
                       onImportAction={action => {
-                        if (action === 'voice')  { setShowVoiceImport(true);  setShowExcelImport(false); setShowBackupCode(false) }
-                        if (action === 'excel')  { setShowExcelImport(true);  setShowVoiceImport(false); setShowBackupCode(false) }
-                        if (action === 'backup') { setShowBackupCode(true);   setShowExcelImport(false); setShowVoiceImport(false) }
+                        if (action === 'voice')      { setShowVoiceImport(true);  setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) }
+                        if (action === 'excel')      { setShowExcelImport(true);  setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) }
+                        if (action === 'screenshot') { setShowScreenshot(true);   setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }
+                        if (action === 'backup')     { setShowBackupCode(true);   setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) }
                       }}
                       onQuickAdd={prefill => openSheet('buy', 'quick_add', prefill)}
                       navigate={navigate}
