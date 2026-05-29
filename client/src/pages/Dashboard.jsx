@@ -1523,6 +1523,150 @@ function FeatureSlideshow() {
   )
 }
 
+// ── Onboarding tutorial — animated vertical timeline that tracks REAL
+// progress (wallet created, first trade, holdings, AI viewed). Shown on the
+// Manage tab until all four steps are done or the user skips. ──────────────
+function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onOpenAI, onDismiss }) {
+  const steps = [
+    { key:'wallet', icon:'👛', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
+    { key:'trade',  icon:'🎙️', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
+    { key:'track',  icon:'📊', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:null },
+    { key:'ai',     icon:'🤖', label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
+  ]
+  const total = steps.length
+  const doneCount = steps.filter(s => s.done).length
+  const currentIdx = steps.findIndex(s => !s.done) // -1 when all done
+  const allDone = currentIdx === -1
+  const pct = Math.round((doneCount / total) * 100)
+
+  return (
+    <div className="glass-card dvx-form-card" style={{ position:'relative', overflow:'hidden', padding:'1.6rem 1.25rem 1.4rem' }}>
+      <style>{`
+        @keyframes ob-aurora{0%{transform:translate(-12%,-10%) rotate(0)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-10%) rotate(360deg)}}
+        @keyframes ob-logo-pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+        @keyframes ob-orb{0%,100%{transform:scale(1);opacity:0.75}50%{transform:scale(1.12);opacity:1}}
+        @keyframes ob-row{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes ob-check{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+        @keyframes ob-bar{from{width:0}}
+        @media (prefers-reduced-motion: reduce){.ob-anim{animation:none!important}}
+      `}</style>
+
+      {/* Aurora glow background */}
+      <div className="ob-anim" aria-hidden="true" style={{
+        position:'absolute', top:'-50%', left:'-25%', width:'150%', height:'150%',
+        background:'radial-gradient(closest-side, rgba(var(--g-rgb),0.22), transparent 70%)',
+        filter:'blur(30px)', pointerEvents:'none', animation:'ob-aurora 16s linear infinite',
+      }} />
+
+      {/* Hero */}
+      <div style={{ position:'relative', textAlign:'center', marginBottom:'1.3rem' }}>
+        <div style={{ position:'relative', display:'inline-flex', justifyContent:'center', marginBottom:'0.7rem' }}>
+          <div className="ob-anim" aria-hidden="true" style={{
+            position:'absolute', inset:'-16px', borderRadius:'50%',
+            background:'radial-gradient(circle, rgba(var(--g-rgb),0.5), transparent 68%)',
+            filter:'blur(10px)', animation:'ob-orb 3.4s ease-in-out infinite',
+          }} />
+          <div className="ob-anim" style={{ position:'relative', animation:'ob-logo-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+            <Logo size={56} animated />
+          </div>
+        </div>
+        <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.25rem' }}>
+          {allDone ? "You're all set! 🎉" : 'Welcome to WalletLens'}
+        </div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color:'var(--g)', marginBottom:'0.9rem' }}>
+          <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>ANALYZE</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
+        </div>
+        {/* Progress bar + counter */}
+        <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', maxWidth:300, margin:'0 auto' }}>
+          <div style={{ flex:1, height:7, borderRadius:4, background:'rgba(var(--g-rgb),0.14)', overflow:'hidden' }}>
+            <div className="ob-anim" style={{
+              height:'100%', width:`${pct}%`, borderRadius:4,
+              background:'linear-gradient(90deg, var(--g), #10b981)',
+              boxShadow:'0 0 10px rgba(var(--g-rgb),0.6)',
+              transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)', animation:'ob-bar 0.8s ease both',
+            }} />
+          </div>
+          <span style={{ fontSize:'0.72rem', fontWeight:800, color:'var(--text-sub)', whiteSpace:'nowrap' }}>{doneCount} / {total}</span>
+        </div>
+      </div>
+
+      {/* Vertical timeline */}
+      <div style={{ position:'relative' }}>
+        {steps.map((s, i) => {
+          const isCurrent = i === currentIdx
+          const isLast = i === total - 1
+          const nodeColor = s.done ? 'var(--g)' : isCurrent ? 'var(--g)' : 'rgba(var(--g-rgb),0.3)'
+          return (
+            <div key={s.key} className="ob-anim" style={{
+              position:'relative', display:'flex', gap:'0.85rem', paddingBottom: isLast ? 0 : '0.95rem',
+              animation:`ob-row 0.45s ${(i * 0.09).toFixed(2)}s ease both`,
+            }}>
+              {/* Connector line */}
+              {!isLast && (
+                <span aria-hidden="true" style={{
+                  position:'absolute', left:15, top:32, bottom:6, width:2, borderRadius:2,
+                  background: s.done ? 'var(--g)' : 'rgba(var(--g-rgb),0.18)',
+                  boxShadow: s.done ? '0 0 8px rgba(var(--g-rgb),0.5)' : 'none',
+                  transition:'background 0.4s',
+                }} />
+              )}
+              {/* Node */}
+              <span style={{
+                position:'relative', zIndex:1, flexShrink:0, width:32, height:32, borderRadius:'50%',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:'0.85rem', fontWeight:800,
+                background: s.done ? 'var(--g)' : isCurrent ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.06)',
+                color: s.done ? '#03130c' : nodeColor,
+                border:`1.5px solid ${s.done ? 'var(--g)' : isCurrent ? 'var(--g)' : 'rgba(var(--g-rgb),0.25)'}`,
+                boxShadow: isCurrent && !s.done ? '0 0 0 4px rgba(var(--g-rgb),0.12), 0 0 14px rgba(var(--g-rgb),0.3)' : 'none',
+              }}>
+                {s.done
+                  ? <svg className="ob-anim" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation:'ob-check 0.4s ease both' }}><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span style={{ fontSize:'1rem' }}>{s.icon}</span>}
+              </span>
+              {/* Content */}
+              <div style={{
+                flex:1, padding:'0.55rem 0.8rem', borderRadius:'12px',
+                background: isCurrent ? 'rgba(var(--g-rgb),0.08)' : 'rgba(var(--g-rgb),0.03)',
+                border:`1px solid ${isCurrent ? 'rgba(var(--g-rgb),0.3)' : 'rgba(var(--g-rgb),0.1)'}`,
+                opacity: s.done ? 0.7 : 1, transition:'all 0.3s',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                  <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', textDecoration: s.done ? 'line-through' : 'none', textDecorationColor:'rgba(var(--g-rgb),0.5)' }}>{s.label}</span>
+                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color:'var(--g)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Done</span>}
+                </div>
+                <div style={{ fontSize:'0.74rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.45 }}>{s.desc}</div>
+                {isCurrent && s.cta && (
+                  <button onClick={s.cta.fn} style={{
+                    marginTop:'0.6rem', display:'inline-flex', alignItems:'center', gap:'0.4rem',
+                    padding:'0.45rem 0.9rem', borderRadius:'9px', border:'none', cursor:'pointer',
+                    fontWeight:800, fontSize:'0.8rem', color:'#fff',
+                    background:'linear-gradient(135deg, #047857, #10b981)',
+                    boxShadow:'0 4px 14px rgba(5,150,105,0.4)',
+                  }}>
+                    {s.cta.label}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'1.1rem', paddingTop:'0.85rem', borderTop:'1px solid rgba(var(--g-rgb),0.1)' }}>
+        <span style={{ fontSize:'0.68rem', color:'var(--text-sub)', display:'inline-flex', alignItems:'center', gap:'0.3rem' }}>
+          🔒 Your data stays on your device
+        </span>
+        <button onClick={onDismiss} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.74rem', fontWeight:700, color:'var(--text-muted)' }}>
+          {allDone ? 'Dismiss' : 'Skip tour'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ConstellationMap() {
   const canvasRef = useRef(null)
   const NODES = [
@@ -2248,6 +2392,10 @@ export default function Dashboard() {
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
+  // Onboarding tutorial progress flags
+  const [onboardDismissed, setOnboardDismissed] = useState(() => { try { return localStorage.getItem('wl_onboard_dismissed') === '1' } catch { return false } })
+  const [aiSeen, setAiSeen]               = useState(() => { try { return localStorage.getItem('wl_onboard_ai_seen') === '1' } catch { return false } })
+  const dismissOnboard = () => { setOnboardDismissed(true); try { localStorage.setItem('wl_onboard_dismissed', '1') } catch {} }
   const { theme, mode, setTheme, setMode } = useTheme()
   const [hidden, setHidden]               = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').hideValues === true } catch { return false }
@@ -2326,6 +2474,8 @@ export default function Dashboard() {
     track('dashboard_tab_switch', { tab: activeTab })
     if (activeTab === 'tools')  track('tools_tab_view')
     if (activeTab === 'alerts') track('alerts_tab_view')
+    // Mark the onboarding "Get AI insights" step complete once visited.
+    if (activeTab === 'tools' && !aiSeen) { setAiSeen(true); try { localStorage.setItem('wl_onboard_ai_seen', '1') } catch {} }
   }, [activeTab])
 
   async function loadAll() {
@@ -3474,48 +3624,24 @@ export default function Dashboard() {
       {activeTab === 'manage' && (
         <div className="dvx-form-page">
 
-          {/* ── Onboarding card — shown until user has at least one wallet ── */}
-          {wallets.length === 0 && (
-            <div className="glass-card dvx-form-card" style={{ textAlign: 'center', padding: '2rem 1.5rem 1.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.85rem' }}>
-                <Logo size={48} animated />
-              </div>
-              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '0.35rem' }}>
-                Welcome to WalletLens
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1.4rem', lineHeight: 1.6 }}>
-                Get started in 4 quick steps
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', textAlign: 'left' }}>
-                {[
-                  { n: '1', label: 'Create wallet', desc: 'Name your first portfolio wallet below' },
-                  { n: '2', label: 'Add your first trade', desc: 'Type it, speak it, or import from Excel' },
-                  { n: '3', label: 'Track your net worth', desc: 'Live prices, P&L, and allocation charts' },
-                  { n: '4', label: 'Get AI insights', desc: 'Risk scanner, smart alerts & AI advisor' },
-                ].map(step => (
-                  <div key={step.n} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-                    padding: '0.6rem 0.75rem', borderRadius: '10px',
-                    background: 'rgba(var(--g-rgb),0.05)',
-                    border: '1px solid rgba(var(--g-rgb),0.12)',
-                  }}>
-                    <span style={{
-                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                      background: 'rgba(var(--g-rgb),0.18)', border: '1.5px solid rgba(var(--g-rgb),0.4)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 800, fontSize: '0.75rem', color: 'var(--g)',
-                    }}>{step.n}</span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.3 }}>{step.label}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem', lineHeight: 1.4 }}>{step.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* ── Onboarding tutorial — animated, tracks real progress ── */}
+          {!onboardDismissed && !(wallets.length > 0 && transactions.length > 0 && enriched.length > 0 && aiSeen) && (
+            <OnboardingTutorial
+              wallets={wallets}
+              transactions={transactions}
+              enriched={enriched}
+              aiSeen={aiSeen}
+              onCreateWallet={() => {
+                const el = document.getElementById('wl-wallet-create')
+                if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.querySelector('input')?.focus(), 350) }
+              }}
+              onAddTrade={() => openSheet('buy', 'onboarding')}
+              onOpenAI={() => setActiveTab('tools')}
+              onDismiss={dismissOnboard}
+            />
           )}
 
-          <div className="glass-card dvx-form-card">
+          <div className="glass-card dvx-form-card" id="wl-wallet-create">
             <h3>{t('walletsTitle')(wallets.length)}</h3>
             <WalletPanel wallets={wallets} onRefresh={loadAll} />
           </div>
