@@ -261,32 +261,17 @@ function applyTheme(id, mode) {
     el.id = 'wl-theme-vars'
     document.head.appendChild(el)
   }
+  // Single write: the <style> tag covers all CSS vars; no redundant setProperty loop.
   el.textContent = buildCSS(p)
+  document.body.style.cssText = `background:${p.bg};color:${p.text};transition:background 0.35s,color 0.35s`
   const r = document.documentElement
-  const vars = {
-    '--g': p.g, '--gd': p.gd, '--g-rgb': p.gRgb, '--gd-rgb': p.gdRgb,
-    '--gl': p.gl, '--ink3': p.ink3,
-    '--bg': p.bg, '--card-bg': p.cardBg, '--bg2': p.cardBg, '--bg3': p.bg3, '--bg4': p.bg4,
-    '--border': p.border, '--ink': p.ink, '--ink2': p.ink2,
-    '--text': p.text, '--text2': p.text2,
-    '--text-muted': p.textMuted, '--text-sub': p.textSub,
-    '--surface-1': p.surface1, '--surface-2': p.surface2, '--surface-3': p.surface3,
-    '--accent': p.accent, '--accent2': p.accent2, '--accent3': p.accent,
-    '--accent-bg': p.accentBg, '--green': p.green, '--green-bg': p.greenBg,
-    '--shadow-glow': p.glow,
-    '--header-gradient': p.hg, '--header-gradient-alt': p.hga,
-    '--mesh-1': p.mesh1, '--mesh-2': p.mesh2, '--mesh-3': p.mesh3,
-  }
-  for (const [k, v] of Object.entries(vars)) r.style.setProperty(k, v)
-  document.body.style.background = p.bg
-  document.body.style.color = p.text
-  document.body.style.transition = 'background 0.35s,color 0.35s'
-  // Toggle light-mode attribute for CSS overrides
   if (mode === 'light') {
     r.setAttribute('data-wl-light', 'true')
   } else {
     r.removeAttribute('data-wl-light')
   }
+  // Notify consumers (e.g. canvas animations) that the palette has changed.
+  document.dispatchEvent(new CustomEvent('wl-theme'))
 }
 
 const ThemeContext = createContext({ theme: 'emerald', mode: 'light', setTheme: () => {}, setMode: () => {} })

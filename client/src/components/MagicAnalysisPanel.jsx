@@ -5,6 +5,7 @@ import { track, trackAI } from '../analytics'
 import CoinLogo from './CoinLogo'
 import { computeMagic, aggregateMagic } from '../magicIndicator'
 import { getAiVerdict } from '../magicAi'
+import { isStablecoin } from '../stablecoins'
 
 const PILLAR_INFO = {
   technical:   'RSI, MACD, Bollinger Bands and trend from daily candles.',
@@ -14,7 +15,14 @@ const PILLAR_INFO = {
   volume:      'Whether volume is confirming the current price move.',
 }
 
-const isCryptoId = (id) => id && !/^(metal:|stock:|fiat:|bond:|other:|cash:|real:)/.test(id)
+// Crypto holdings only — exclude other asset classes AND stablecoins
+// (stablecoins are cash, so technical/on-chain analysis is meaningless).
+const isAnalyzable = (h) => {
+  const id = h.coin_id
+  if (!id || /^(metal:|stock:|fiat:|bond:|other:|cash:|real:)/.test(id)) return false
+  if (isStablecoin(id, h.coin_symbol)) return false
+  return true
+}
 
 const money = (n) => {
   if (n == null || !isFinite(n)) return '—'
@@ -200,7 +208,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
   const [analyzing, setAnalyzing] = useState(false)
 
   const cryptoIds = useMemo(
-    () => enriched.map(h => h.coin_id).filter(isCryptoId),
+    () => enriched.filter(isAnalyzable).map(h => h.coin_id),
     [enriched]
   )
   const idsKey = cryptoIds.join(',')
@@ -226,7 +234,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
   const { cryptoItems, nonCryptoCount, compass } = useMemo(() => {
     const tv = totalValue || enriched.reduce((s, h) => s + (h.value || 0), 0)
     const cryptoItems = enriched
-      .filter(h => isCryptoId(h.coin_id))
+      .filter(isAnalyzable)
       .map(h => {
         const magic = computeMagic({
           ta: ta[h.coin_id] || null,
@@ -246,7 +254,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       .filter(it => it.magic)
       .sort((a, b) => b.value - a.value)
     const compass = aggregateMagic(cryptoItems.map(it => ({ value: it.value, magic: it.magic })))
-    const nonCryptoCount = enriched.filter(h => !isCryptoId(h.coin_id)).length
+    const nonCryptoCount = enriched.filter(h => !isAnalyzable(h)).length
     return { cryptoItems, nonCryptoCount, compass }
   }, [enriched, totalValue, ta, signals, fundamentals])
 
@@ -287,7 +295,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       {nonCryptoCount > 0 && (
         <div className="glass-card" style={{ marginTop: '1rem', padding: '0.9rem 1.1rem' }}>
           <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
-            ℹ️ {nonCryptoCount} non-crypto holding{nonCryptoCount === 1 ? '' : 's'} not shown — technical & on-chain analysis needs crypto market data.
+            ℹ️ {nonCryptoCount} holding{nonCryptoCount === 1 ? '' : 's'} not shown — stablecoins and non-crypto assets (cash, metals, stocks) are excluded from technical & on-chain analysis.
           </p>
         </div>
       )}

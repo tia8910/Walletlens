@@ -41,8 +41,10 @@ export default function DynamicBackground({
       rgb = style.getPropertyValue('--g-rgb').trim() || '52,211,153'
     }
     readColors()
-    const mo = new MutationObserver(readColors)
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
+    // Listen for palette changes dispatched by ThemeContext.applyTheme().
+    // MutationObserver on class/data-theme never fired because ThemeContext
+    // toggles data-wl-light and writes inline styles — not those attributes.
+    document.addEventListener('wl-theme', readColors)
 
     function resize() {
       w = canvas.clientWidth
@@ -127,7 +129,7 @@ export default function DynamicBackground({
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
-      mo.disconnect()
+      document.removeEventListener('wl-theme', readColors)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [effectiveCount, linkDistance, color, reduceMotion])

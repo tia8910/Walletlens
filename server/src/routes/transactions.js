@@ -5,14 +5,35 @@ import db from '../database.js';
 const router = Router();
 
 router.get('/', (req, res) => {
-  const { wallet_id } = req.query;
+  const { wallet_id, page, limit } = req.query;
+
+  // Pagination: default to no limit for backward compat; opt-in via ?page=1&limit=50
+  if (page !== undefined || limit !== undefined) {
+    const pageSize = Math.min(500, Math.max(1, parseInt(limit) || 50));
+    const offset   = (Math.max(1, parseInt(page) || 1) - 1) * pageSize;
+
+    let total, transactions;
+    if (wallet_id) {
+      total        = db.prepare('SELECT COUNT(*) as cnt FROM transactions WHERE wallet_id = ?').get(wallet_id).cnt;
+      transactions = db.prepare('SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC LIMIT ? OFFSET ?').all(wallet_id, pageSize, offset);
+    } else {
+      total        = db.prepare('SELECT COUNT(*) as cnt FROM transactions').get().cnt;
+      transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC LIMIT ? OFFSET ?').all(pageSize, offset);
+    }
+    res.set('X-Total-Count', String(total));
+    res.set('X-Page', String(Math.max(1, parseInt(page) || 1)));
+    res.set('X-Page-Size', String(pageSize));
+    return res.json(transactions);
+  }
+
+  // Legacy: return all (unchanged behaviour for existing clients)
   let transactions;
   if (wallet_id) {
     transactions = db.prepare(
-      'SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC'
+      'SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC'
     ).all(wallet_id);
   } else {
-    transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC').all();
+    transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC').all();
   }
   res.json(transactions);
 });

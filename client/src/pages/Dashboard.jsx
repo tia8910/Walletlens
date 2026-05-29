@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
+  ComposedChart, Line,
 } from 'recharts'
 import { api } from '../api'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
@@ -1925,45 +1926,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         </button>
       </div>
 
-      {/* Primary CTA — creative dark command-center button */}
-      <button onClick={onAddTrade} style={{
-        width:'100%', display:'flex', alignItems:'center', gap:'0.65rem',
-        height:'60px', padding:'0 1.2rem',
-        borderRadius:'14px',
-        border:'1.5px solid rgba(var(--g-rgb),0.4)',
-        cursor:'pointer',
-        fontSize:'1rem', fontWeight:800, color:'var(--g)',
-        background:'linear-gradient(135deg, var(--ink2,#061a0f) 0%, var(--bg4,#0d2e18) 100%)',
-        position:'relative', overflow:'hidden',
-        animation:'ep-glow-pulse 2.4s ease-in-out infinite',
-        marginBottom:'1.25rem',
-      }}>
-        {/* sweep shimmer */}
-        <span style={{
-          position:'absolute', top:0, width:'40%', height:'100%',
-          background:'linear-gradient(90deg,transparent,rgba(var(--g-rgb),.09),transparent)',
-          animation:'ep-sweep 2.6s ease-in-out infinite',
-          pointerEvents:'none',
-        }}/>
-        {/* glowing + ring icon */}
-        <span style={{
-          width:38, height:38, borderRadius:'50%', flexShrink:0,
-          border:'2px solid rgba(var(--g-rgb),0.55)',
-          background:'rgba(var(--g-rgb),0.1)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          animation:'ep-icon-ring 2.4s ease-in-out infinite',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.8" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </span>
-        <span style={{ flex:1, textAlign:'left', letterSpacing:'0.01em' }}>Add a trade</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:0.55, flexShrink:0 }}>
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-
-      {/* Import buttons (Excel / Voice) — rendered just below Add a trade */}
+      {/* Import buttons (Excel / Voice) */}
       {importsSlot}
 
       {/* Quick-add chips */}
@@ -2339,6 +2302,133 @@ function AlertsSection({ enriched, prices, isDemo }) {
   )
 }
 
+// ── Candlestick chart helper ─────────────────────────────────────────────────
+// Buckets `perfSeries` (array of { i, v }) into OHLC candles, then renders a
+// ComposedChart with custom SVG candle shapes + a linear-regression trend line.
+// Falls back to null if there are fewer than 3 input points (caller shows AreaChart).
+
+function buildOHLC(series, bucketSize) {
+  const candles = []
+  for (let start = 0; start < series.length; start += bucketSize) {
+    const bucket = series.slice(start, start + bucketSize)
+    if (bucket.length === 0) continue
+    const values = bucket.map(p => p.v)
+    candles.push({
+      i: bucket[Math.floor(bucket.length / 2)].i,
+      open:  values[0],
+      close: values[values.length - 1],
+      high:  Math.max(...values),
+      low:   Math.min(...values),
+    })
+  }
+  return candles
+}
+
+function linearRegression(candles) {
+  const n = candles.length
+  if (n < 2) return candles.map(c => ({ ...c, trend: c.close }))
+  const xs = candles.map((_, i) => i)
+  const ys = candles.map(c => c.close)
+  const meanX = xs.reduce((a, b) => a + b, 0) / n
+  const meanY = ys.reduce((a, b) => a + b, 0) / n
+  const num = xs.reduce((s, x, i) => s + (x - meanX) * (ys[i] - meanY), 0)
+  const den = xs.reduce((s, x) => s + (x - meanX) ** 2, 0)
+  const slope = den === 0 ? 0 : num / den
+  const intercept = meanY - slope * meanX
+  return candles.map((c, i) => ({ ...c, trend: intercept + slope * i }))
+}
+
+// Custom candle shape rendered via Recharts customized bar
+function CandleShape(props) {
+  const { x, width, payload, background, domain } = props
+  if (!payload || !background || !domain) return null
+  const { open, close, high, low } = payload
+
+  // Map a data value → pixel y using the chart's background rect + domain
+  const chartTop    = background.y
+  const chartHeight = background.height
+  const [domMin, domMax] = domain
+  const range = domMax - domMin || 1
+  const toY = v => chartTop + chartHeight * (1 - (v - domMin) / range)
+
+  const yOpen   = toY(open)
+  const yClose  = toY(close)
+  const yHigh   = toY(high)
+  const yLow    = toY(low)
+  const bullish = close >= open
+  const color   = bullish ? '#22c55e' : '#f87171'
+  const bodyTop = Math.min(yOpen, yClose)
+  const bodyH   = Math.max(Math.abs(yClose - yOpen), 1.5)
+  const midX    = x + width / 2
+
+  return (
+    <g>
+      <line x1={midX} y1={yHigh} x2={midX} y2={yLow} stroke={color} strokeWidth={1.5} opacity={0.85} />
+      <rect
+        x={x + width * 0.15} y={bodyTop}
+        width={width * 0.7} height={bodyH}
+        fill={color} fillOpacity={bullish ? 0.85 : 0.75}
+        stroke={color} strokeWidth={1} rx={1}
+      />
+    </g>
+  )
+}
+
+function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
+  // Target ~20 candles regardless of series density
+  const bucketSize = Math.max(1, Math.floor(perfSeries.length / 20))
+
+  let rawCandles = buildOHLC(perfSeries, bucketSize)
+
+  // Always show at least one green candle even for new users
+  if (rawCandles.length === 0) {
+    const v = perfSeries.length ? perfSeries[perfSeries.length - 1].v : 1000
+    rawCandles = [{ i: 0, open: v * 0.992, close: v, high: v * 1.008, low: v * 0.986 }]
+  }
+
+  const candles = linearRegression(rawCandles)
+
+  // Domain with padding
+  const allValues = candles.flatMap(c => [c.high, c.low, c.trend])
+  const minV = Math.min(...allValues)
+  const maxV = Math.max(...allValues)
+  const pad  = (maxV - minV) * 0.05 || 1
+  const domain = [minV - pad, maxV + pad]
+
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <ComposedChart data={candles} margin={{ left:0, right:0, top:8, bottom:0 }}>
+        <XAxis hide dataKey="i" type="number" domain={['dataMin', 'dataMax']} />
+        <YAxis hide domain={domain} />
+        <Tooltip
+          cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null
+            const c = payload[0]?.payload; if (!c) return null
+            const bull = c.close >= c.open
+            const clr = bull ? '#22c55e' : '#f87171'
+            const f = v => v != null ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : ''
+            return (
+              <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.45rem 0.75rem', boxShadow:'var(--shadow)', fontSize:'0.8rem' }}>
+                <div style={{ color:clr, fontWeight:800 }}>O {f(c.open)} · C {f(c.close)}</div>
+                <div style={{ color:'var(--text-muted)', marginTop:2 }}>H {f(c.high)} · L {f(c.low)}</div>
+              </div>
+            )
+          }}
+        />
+        <Bar dataKey="high" shape={<CandleShape domain={domain} />} isAnimationActive={false} />
+        <Line
+          type="linear" dataKey="trend"
+          stroke={strokeColor} strokeWidth={1.5}
+          strokeDasharray="5 3"
+          dot={false} activeDot={false}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -2496,7 +2586,16 @@ export default function Dashboard() {
       api.getTransactions(), api.getWallets(), api.getCoinTargets(),
     ])
     portfolioRef.current = p
-    setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
+    // Auto-create a default wallet for brand-new users so they never see
+    // "Please select a wallet first." on their very first visit.
+    if (ws.length === 0) {
+      await api.createWallet({ name: 'My Wallet' })
+      const freshWs = await api.getWallets()
+      setWallets(freshWs)
+    } else {
+      setWallets(ws)
+    }
+    setPortfolio(p); setTransactions(txs); setCoinTargets(ct || {})
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
@@ -2871,21 +2970,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showExcelImport
-                        ? 'linear-gradient(135deg, rgba(124,58,237,0.5), rgba(124,58,237,0.95))'
-                        : 'linear-gradient(135deg, rgba(124,58,237,0.65), rgba(124,58,237,1))',
-                      border: `1.5px solid rgba(124,58,237,${showExcelImport ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(6,95,70,0.95))'
+                        : 'linear-gradient(135deg, rgba(6,95,70,0.65), rgba(6,95,70,1))',
+                      border: `1.5px solid rgba(6,95,70,${showExcelImport ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showExcelImport
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(109,40,217,0.5)'
-                        : '0 4px 14px rgba(91,33,182,0.45), 0 0 10px rgba(124,58,237,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(6,95,70,0.55)'
+                        : '0 4px 14px rgba(6,95,70,0.5), 0 0 10px rgba(6,95,70,0.35)',
                       animation: showExcelImport ? 'none' : 'xl-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import from an Excel or CSV file"
                   >
                     <style>{`
                       @keyframes xl-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(91,33,182,0.4), 0 0 8px rgba(124,58,237,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(91,33,182,0.7), 0 0 18px rgba(124,58,237,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(6,95,70,0.4), 0 0 8px rgba(6,95,70,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(6,95,70,0.7), 0 0 18px rgba(6,95,70,0.6); }
                       }
                       @keyframes import-shimmer {
                         0%,55%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
@@ -2916,21 +3015,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showVoiceImport
-                        ? 'linear-gradient(135deg, #065f46, #047857)'
-                        : 'linear-gradient(135deg, #047857, #10b981)',
-                      border: `1.5px solid ${showVoiceImport ? '#065f46' : '#10b981'}`,
+                        ? 'linear-gradient(135deg, rgba(4,120,87,0.5), rgba(4,120,87,0.95))'
+                        : 'linear-gradient(135deg, rgba(4,120,87,0.65), rgba(4,120,87,1))',
+                      border: `1.5px solid rgba(4,120,87,${showVoiceImport ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showVoiceImport
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(5,150,105,0.5)'
-                        : '0 4px 14px rgba(5,150,105,0.45), 0 0 10px rgba(16,185,129,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(4,120,87,0.55)'
+                        : '0 4px 14px rgba(4,120,87,0.5), 0 0 10px rgba(4,120,87,0.35)',
                       animation: showVoiceImport ? 'none' : 'vi-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Speak your trade"
                   >
                     <style>{`
                       @keyframes vi-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(5,150,105,0.4), 0 0 8px rgba(16,185,129,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(5,150,105,0.7), 0 0 18px rgba(16,185,129,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(4,120,87,0.4), 0 0 8px rgba(4,120,87,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(4,120,87,0.7), 0 0 18px rgba(4,120,87,0.6); }
                       }
                       @keyframes vi-bar1 { 0%,100%{height:6px} 50%{height:13px} }
                       @keyframes vi-bar2 { 0%,100%{height:10px} 50%{height:4px} }
@@ -2970,21 +3069,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showScreenshot
-                        ? 'linear-gradient(135deg, rgba(236,72,153,0.5), rgba(236,72,153,0.95))'
-                        : 'linear-gradient(135deg, rgba(236,72,153,0.65), rgba(236,72,153,1))',
-                      border: `1.5px solid rgba(236,72,153,${showScreenshot ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(16,185,129,0.95))'
+                        : 'linear-gradient(135deg, rgba(16,185,129,0.65), rgba(16,185,129,1))',
+                      border: `1.5px solid rgba(16,185,129,${showScreenshot ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showScreenshot
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(236,72,153,0.5)'
-                        : '0 4px 14px rgba(157,23,77,0.45), 0 0 10px rgba(236,72,153,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(16,185,129,0.55)'
+                        : '0 4px 14px rgba(16,185,129,0.5), 0 0 10px rgba(16,185,129,0.35)',
                       animation: showScreenshot ? 'none' : 'ss-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import holdings from a screenshot — AI reads it"
                   >
                     <style>{`
                       @keyframes ss-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(157,23,77,0.4), 0 0 8px rgba(236,72,153,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(157,23,77,0.7), 0 0 18px rgba(236,72,153,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(16,185,129,0.4), 0 0 8px rgba(16,185,129,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(16,185,129,0.7), 0 0 18px rgba(16,185,129,0.6); }
                       }
                     `}</style>
                     <span aria-hidden style={{
@@ -3007,21 +3106,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showBackupCode
-                        ? 'linear-gradient(135deg, rgba(59,130,246,0.5), rgba(59,130,246,0.95))'
-                        : 'linear-gradient(135deg, rgba(59,130,246,0.65), rgba(59,130,246,1))',
-                      border: `1.5px solid rgba(59,130,246,${showBackupCode ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(13,148,136,0.95))'
+                        : 'linear-gradient(135deg, rgba(13,148,136,0.65), rgba(13,148,136,1))',
+                      border: `1.5px solid rgba(13,148,136,${showBackupCode ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showBackupCode
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(59,130,246,0.5)'
-                        : '0 4px 14px rgba(29,78,216,0.45), 0 0 10px rgba(59,130,246,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(13,148,136,0.55)'
+                        : '0 4px 14px rgba(13,148,136,0.5), 0 0 10px rgba(13,148,136,0.35)',
                       animation: showBackupCode ? 'none' : 'bk-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Export or import your portfolio as a backup code"
                   >
                     <style>{`
                       @keyframes bk-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(29,78,216,0.4), 0 0 8px rgba(59,130,246,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(29,78,216,0.7), 0 0 18px rgba(59,130,246,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(13,148,136,0.4), 0 0 8px rgba(13,148,136,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(13,148,136,0.7), 0 0 18px rgba(13,148,136,0.6); }
                       }
                     `}</style>
                     <span aria-hidden style={{
@@ -3258,7 +3357,9 @@ export default function Dashboard() {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
-              return (
+              // Use candlestick chart when there are enough data points; fall back to area chart.
+              const candleEl = <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
+              return candleEl || (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
@@ -3526,9 +3627,6 @@ export default function Dashboard() {
             {/* Right column — order: -1 on mobile so it renders before left col */}
             <div className="dvx-col-side">
 
-              {/* ── 1st: Goal Tracker ── */}
-              {cardVis.goal_tracker && <GoalTracker currentValue={totalValue} />}
-
               {/* ── Allocation donut (by category) ── */}
               {cardVis.allocation && <div className="glass-card">
                 <h3>{pricesFailed ? t('allocationInvested') : 'Net Worth by Category'}</h3>
@@ -3557,8 +3655,8 @@ export default function Dashboard() {
                 }
               </div>}
 
-              {/* Net Worth History (30-day from transactions) */}
-              {cardVis.net_worth_history && !isDemo && transactions.length > 0 && (() => {
+              {/* Net Worth History — removed */}
+              {false && !isDemo && transactions.length > 0 && (() => {
                 const now = Date.now()
                 const days = 30
                 const points = Array.from({ length: days }, (_, i) => {

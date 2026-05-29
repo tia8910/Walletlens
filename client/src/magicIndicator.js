@@ -16,6 +16,8 @@
 
 const clamp = (v, lo = -100, hi = 100) => Math.max(lo, Math.min(hi, v))
 const round = (v) => Math.round(v)
+// Pillar scores are displayed directly, so they must be whole integers.
+const cr = (v) => Math.round(clamp(v))
 
 // ── Pillar 1: Technical ──────────────────────────────────────────────────
 export function pillarTechnical(ta) {
@@ -26,7 +28,7 @@ export function pillarTechnical(ta) {
   if (ta.macd?.cross) bits.push(`MACD ${ta.macd.cross}`)
   return {
     available: true,
-    score: clamp(ta.score),
+    score: cr(ta.score),
     note: bits.join(' · ') || 'price structure',
   }
 }
@@ -43,7 +45,7 @@ export function pillarVolume(signals) {
   if (vp < 1) score *= 0.4
   return {
     available: true,
-    score: clamp(score),
+    score: cr(score),
     note: `${vp.toFixed(2)}× avg volume, ${dir >= 0 ? 'confirming up' : 'on weakness'}`,
   }
 }
@@ -58,7 +60,7 @@ export function pillarWhales(signals) {
     w >= -20 ? 'neutral flow' :
     w >= -50 ? 'mild distribution' :
     'strong distribution'
-  return { available: true, score: clamp(w), note: label }
+  return { available: true, score: cr(w), note: label }
 }
 
 // ── Pillar 4: On-chain (flow + supply/turnover proxies) ──────────────────
@@ -99,7 +101,7 @@ export function pillarOnchain(signals, fundamental) {
   if (!parts.length) return { available: false }
   const wsum = parts.reduce((s, p) => s + p.w, 0)
   const score = parts.reduce((s, p) => s + p.v * p.w, 0) / wsum
-  return { available: true, score: clamp(score), note: notes.join(' · ') }
+  return { available: true, score: cr(score), note: notes.join(' · ') }
 }
 
 // ── Pillar 5: Fundamental ────────────────────────────────────────────────
@@ -139,7 +141,7 @@ export function pillarFundamental(fundamental) {
     s += clamp(Math.tanh(fundamental.change30d / 60) * 20, -20, 20)
   }
 
-  return { available: true, score: clamp(s), note: notes.join(' · ') || 'market fundamentals' }
+  return { available: true, score: cr(s), note: notes.join(' · ') || 'market fundamentals' }
 }
 
 // Direction label / colour / emoji for a composite score.
