@@ -2871,21 +2871,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showExcelImport
-                        ? 'linear-gradient(135deg, rgba(124,58,237,0.5), rgba(124,58,237,0.95))'
-                        : 'linear-gradient(135deg, rgba(124,58,237,0.65), rgba(124,58,237,1))',
-                      border: `1.5px solid rgba(124,58,237,${showExcelImport ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(6,95,70,0.95))'
+                        : 'linear-gradient(135deg, rgba(6,95,70,0.65), rgba(6,95,70,1))',
+                      border: `1.5px solid rgba(6,95,70,${showExcelImport ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showExcelImport
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(109,40,217,0.5)'
-                        : '0 4px 14px rgba(91,33,182,0.45), 0 0 10px rgba(124,58,237,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(6,95,70,0.55)'
+                        : '0 4px 14px rgba(6,95,70,0.5), 0 0 10px rgba(6,95,70,0.35)',
                       animation: showExcelImport ? 'none' : 'xl-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import from an Excel or CSV file"
                   >
                     <style>{`
                       @keyframes xl-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(91,33,182,0.4), 0 0 8px rgba(124,58,237,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(91,33,182,0.7), 0 0 18px rgba(124,58,237,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(6,95,70,0.4), 0 0 8px rgba(6,95,70,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(6,95,70,0.7), 0 0 18px rgba(6,95,70,0.6); }
                       }
                       @keyframes import-shimmer {
                         0%,55%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
@@ -2916,21 +2916,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showVoiceImport
-                        ? 'linear-gradient(135deg, #065f46, #047857)'
-                        : 'linear-gradient(135deg, #047857, #10b981)',
-                      border: `1.5px solid ${showVoiceImport ? '#065f46' : '#10b981'}`,
+                        ? 'linear-gradient(135deg, rgba(4,120,87,0.5), rgba(4,120,87,0.95))'
+                        : 'linear-gradient(135deg, rgba(4,120,87,0.65), rgba(4,120,87,1))',
+                      border: `1.5px solid rgba(4,120,87,${showVoiceImport ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showVoiceImport
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(5,150,105,0.5)'
-                        : '0 4px 14px rgba(5,150,105,0.45), 0 0 10px rgba(16,185,129,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(4,120,87,0.55)'
+                        : '0 4px 14px rgba(4,120,87,0.5), 0 0 10px rgba(4,120,87,0.35)',
                       animation: showVoiceImport ? 'none' : 'vi-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Speak your trade"
                   >
                     <style>{`
                       @keyframes vi-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(5,150,105,0.4), 0 0 8px rgba(16,185,129,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(5,150,105,0.7), 0 0 18px rgba(16,185,129,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(4,120,87,0.4), 0 0 8px rgba(4,120,87,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(4,120,87,0.7), 0 0 18px rgba(4,120,87,0.6); }
                       }
                       @keyframes vi-bar1 { 0%,100%{height:6px} 50%{height:13px} }
                       @keyframes vi-bar2 { 0%,100%{height:10px} 50%{height:4px} }
@@ -2970,21 +2970,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showScreenshot
-                        ? 'linear-gradient(135deg, rgba(236,72,153,0.5), rgba(236,72,153,0.95))'
-                        : 'linear-gradient(135deg, rgba(236,72,153,0.65), rgba(236,72,153,1))',
-                      border: `1.5px solid rgba(236,72,153,${showScreenshot ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(16,185,129,0.95))'
+                        : 'linear-gradient(135deg, rgba(16,185,129,0.65), rgba(16,185,129,1))',
+                      border: `1.5px solid rgba(16,185,129,${showScreenshot ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showScreenshot
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(236,72,153,0.5)'
-                        : '0 4px 14px rgba(157,23,77,0.45), 0 0 10px rgba(236,72,153,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(16,185,129,0.55)'
+                        : '0 4px 14px rgba(16,185,129,0.5), 0 0 10px rgba(16,185,129,0.35)',
                       animation: showScreenshot ? 'none' : 'ss-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Import holdings from a screenshot — AI reads it"
                   >
                     <style>{`
                       @keyframes ss-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(157,23,77,0.4), 0 0 8px rgba(236,72,153,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(157,23,77,0.7), 0 0 18px rgba(236,72,153,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(16,185,129,0.4), 0 0 8px rgba(16,185,129,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(16,185,129,0.7), 0 0 18px rgba(16,185,129,0.6); }
                       }
                     `}</style>
                     <span aria-hidden style={{
@@ -3007,21 +3007,21 @@ export default function Dashboard() {
                       borderRadius:'10px', position:'relative', overflow:'hidden',
                       transition: 'transform 0.18s ease, filter 0.18s ease',
                       background: showBackupCode
-                        ? 'linear-gradient(135deg, rgba(59,130,246,0.5), rgba(59,130,246,0.95))'
-                        : 'linear-gradient(135deg, rgba(59,130,246,0.65), rgba(59,130,246,1))',
-                      border: `1.5px solid rgba(59,130,246,${showBackupCode ? '0.6' : '0.9'})`,
+                        ? 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(13,148,136,0.95))'
+                        : 'linear-gradient(135deg, rgba(13,148,136,0.65), rgba(13,148,136,1))',
+                      border: `1.5px solid rgba(13,148,136,${showBackupCode ? '0.6' : '0.9'})`,
                       color: '#ffffff',
                       boxShadow: showBackupCode
-                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(59,130,246,0.5)'
-                        : '0 4px 14px rgba(29,78,216,0.45), 0 0 10px rgba(59,130,246,0.35)',
+                        ? 'inset 0 2px 6px rgba(0,0,0,0.25), 0 0 14px rgba(13,148,136,0.55)'
+                        : '0 4px 14px rgba(13,148,136,0.5), 0 0 10px rgba(13,148,136,0.35)',
                       animation: showBackupCode ? 'none' : 'bk-btn-glow 2.4s ease-in-out infinite',
                     }}
                     title="Export or import your portfolio as a backup code"
                   >
                     <style>{`
                       @keyframes bk-btn-glow {
-                        0%,100% { box-shadow: 0 4px 12px rgba(29,78,216,0.4), 0 0 8px rgba(59,130,246,0.3); }
-                        50%     { box-shadow: 0 4px 20px rgba(29,78,216,0.7), 0 0 18px rgba(59,130,246,0.6); }
+                        0%,100% { box-shadow: 0 4px 12px rgba(13,148,136,0.4), 0 0 8px rgba(13,148,136,0.3); }
+                        50%     { box-shadow: 0 4px 20px rgba(13,148,136,0.7), 0 0 18px rgba(13,148,136,0.6); }
                       }
                     `}</style>
                     <span aria-hidden style={{
