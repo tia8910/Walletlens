@@ -53,8 +53,15 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
       gtag('js', new Date());
-      gtag('config', 'G-69L5NCXNGB');
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
     <!-- X (Twitter) Pixel -->

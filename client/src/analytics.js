@@ -40,9 +40,10 @@ export function initAutoTrack() {
     try {
       const el = e.target?.closest?.(CLICK_SEL)
       if (!el) return
-      track('ui_click', {
+      const name = actionLabel(el)
+      track('button_click', {
+        button_name: name || elementId(el),
         element: elementId(el),
-        label: actionLabel(el),
         tag: el.tagName.toLowerCase(),
         ...(el.tagName === 'A' ? { href: (el.getAttribute('href') || '').slice(0, 120) } : {}),
       })
@@ -126,6 +127,16 @@ export function trackSearch({ query, resultsCount, source }) {
     search_term: query,
     results_count: resultsCount,
     search_source: source || 'market',
+  })
+}
+
+// Track wallet creation
+export function trackWalletCreated({ walletName, isFirst } = {}) {
+  if (typeof window.gtag !== 'function') return
+  gtag('event', 'wallet_created', {
+    page: window.location.pathname,
+    wallet_name: walletName || 'unnamed',
+    is_first_wallet: isFirst ? 'yes' : 'no',
   })
 }
 

@@ -2582,6 +2582,7 @@ export default function Dashboard() {
     // "Please select a wallet first." on their very first visit.
     if (ws.length === 0) {
       await api.createWallet({ name: 'My Wallet' })
+      track('wallet_created', { wallet_name: 'My Wallet', wallet_count: 1, auto: true })
       const freshWs = await api.getWallets()
       setWallets(freshWs)
     } else {
