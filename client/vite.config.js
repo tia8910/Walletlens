@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  // Absolute base — the app is served from the domain root. Relative './'
+  // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
+  // on the prerendered content pages.
+  base: '/',
   build: {
     outDir: 'dist',
     // esnext: no transpilation overhead for modern browsers; terser handles minification

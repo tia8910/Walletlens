@@ -1,0 +1,177 @@
+// Build-time prerender — runs after `vite build`.
+//
+// WalletLens is a client-side SPA, so the raw HTML for every route is the same
+// near-empty #root shell. Search crawlers and ad-network reviewers (e.g. Google
+// AdSense) that don't fully execute JS therefore see "no content" → the site
+// gets flagged as thin / low-value.
+//
+// This script injects REAL static HTML (full article text, homepage copy,
+// titles, meta, canonical, JSON-LD) into per-route index.html files so crawlers
+// get the actual content. React still mounts normally and replaces #root on
+// load, so users get the full interactive app.
+
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { POSTS } from '../src/data/blogPosts.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const DIST = resolve(__dirname, '..', 'dist')
+const ORIGIN = 'https://walletlens.live'
+
+const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
+
+// ── helpers ────────────────────────────────────────────────────────────────
+const esc = (s = '') => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+
+// Inline markdown: **bold** and [text](url)
+function inline(text) {
+  let out = esc(text)
+  out = out.replace(/\*\*([^*]+)\*\*/g, (_, b) => `<strong>${b}</strong>`)
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, u) => `<a href="${esc(u)}">${t}</a>`)
+  return out
+}
+
+// Convert the post markdown subset (## h2, **bold** lines, - lists, | tables)
+// into an HTML string — mirrors renderMarkdown() in Blog.jsx.
+function mdToHtml(text) {
+  const lines = text.trim().split('\n')
+  const out = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (line.startsWith('## ')) {
+      out.push(`<h2>${inline(line.slice(3))}</h2>`)
+    } else if (line.startsWith('- ')) {
+      const items = []
+      while (i < lines.length && lines[i].startsWith('- ')) { items.push(`<li>${inline(lines[i].slice(2))}</li>`); i++ }
+      out.push(`<ul>${items.join('')}</ul>`); continue
+    } else if (line.startsWith('| ')) {
+      const rows = []
+      while (i < lines.length && lines[i].startsWith('| ')) {
+        if (!lines[i].includes('---')) rows.push(lines[i].split('|').filter(c => c.trim()).map(c => c.trim()))
+        i++
+      }
+      if (rows.length) {
+        const head = `<tr>${rows[0].map(c => `<th>${inline(c)}</th>`).join('')}</tr>`
+        const body = rows.slice(1).map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')
+        out.push(`<table class="blog-table"><thead>${head}</thead><tbody>${body}</tbody></table>`)
+      }
+      continue
+    } else if (line.trim() !== '') {
+      out.push(`<p>${inline(line)}</p>`)
+    }
+    i++
+  }
+  return out.join('\n')
+}
+
+// Build a page from the template: swap title/description/canonical/OG/Twitter
+// and inject the static content as the first child of #root (React wipes it on
+// mount, so it's purely for crawlers / no-JS fetches).
+function buildPage({ path, title, description, bodyHtml, jsonLd }) {
+  const url = ORIGIN + path
+  let html = template
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+  html = html.replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(description)}$2`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${esc(url)}$2`)
+  html = html.replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
+  html = html.replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${esc(url)}$2`)
+  html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
+  html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
+  if (jsonLd) {
+    html = html.replace('</head>', `  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n  </head>`)
+  }
+  // Hidden-but-crawlable content block, injected as first child of #root.
+  // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
+  // DOM) paints over this for real users, while crawlers/no-JS fetches still
+  // read the full text. React wipes #root (and this block) on mount.
+  const seo = `<div id="prerender-content" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${bodyHtml}</div>`
+  html = html.replace('<div id="root">', `<div id="root">${seo}`)
+  return html
+}
+
+function write(routePath, html) {
+  const dir = routePath === '/' ? DIST : resolve(DIST, routePath.replace(/^\//, ''))
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(resolve(dir, 'index.html'), html, 'utf8')
+  console.log('prerendered', routePath)
+}
+
+// ── Homepage ─────────────────────────────────────────────────────────────────
+const homeBody = `
+<h1>WalletLens — Free All-Asset Portfolio Tracker</h1>
+<p>WalletLens is a free, private, browser-based portfolio tracker for <strong>crypto, US stocks, gold, silver, bonds, fiat and FX</strong> — all in one dashboard. No account, no subscription, and your data stays on your device.</p>
+<h2>What you can do with WalletLens</h2>
+<ul>
+<li><strong>Track every asset class</strong> in a single net-worth dashboard with live prices.</li>
+<li><strong>See your P&amp;L</strong> in dollars and percentage, broken down by asset and category.</li>
+<li><strong>AI portfolio analysis</strong> — health score, personalised Fear &amp; Greed gauge, stress tests, entry quality, and a rebalance planner, all computed on your device.</li>
+<li><strong>Multi-target sell plans</strong> — set price targets and the percentage of each holding to sell, with live progress bars.</li>
+<li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
+<li><strong>Private by design</strong> — manual entry with local-first storage; no exchange API keys required.</li>
+</ul>
+<h2>Guides &amp; articles</h2>
+<ul>
+${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.summary)}</li>`).join('\n')}
+</ul>
+<p><a href="/dashboard">Open the WalletLens dashboard</a> · <a href="/blog">Read the blog</a> · <a href="/about">About</a></p>
+`
+write('/', buildPage({
+  path: '/',
+  title: 'WalletLens — Free All-Asset Portfolio Tracker | Crypto, Stocks, Gold, FX',
+  description: 'Track every asset in one lens — crypto, US stocks, gold, silver, fiat & FX. 100% free, no account, AI insights, multi-target sell plans. Your data stays on your device.',
+  bodyHtml: homeBody,
+}))
+
+// ── Blog index ───────────────────────────────────────────────────────────────
+const blogBody = `
+<h1>WalletLens Blog</h1>
+<p>Guides and insights on portfolio tracking, crypto investing, and market analysis.</p>
+${POSTS.map(p => `
+<article>
+  <h2><a href="/blog/${p.slug}">${esc(p.title)}</a></h2>
+  <p><em>${esc(p.date)} · ${esc(p.readTime)}</em></p>
+  <p>${esc(p.summary)}</p>
+</article>`).join('\n')}
+`
+write('/blog', buildPage({
+  path: '/blog',
+  title: 'Blog — Portfolio Tracking, Crypto Investing & Market Analysis | WalletLens',
+  description: 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.',
+  bodyHtml: blogBody,
+}))
+
+// ── Individual posts ─────────────────────────────────────────────────────────
+for (const p of POSTS) {
+  const articleHtml = `
+<article>
+  <p><em>${esc(p.date)} · ${esc(p.readTime)}</em></p>
+  <h1>${esc(p.title)}</h1>
+  <p>${esc(p.summary)}</p>
+  ${mdToHtml(p.content)}
+  <p><a href="/dashboard">Start tracking your portfolio for free with WalletLens →</a></p>
+  <p><a href="/blog">← All articles</a></p>
+</article>`
+  write('/blog/' + p.slug, buildPage({
+    path: '/blog/' + p.slug,
+    title: `${p.title} | WalletLens`,
+    description: p.summary,
+    bodyHtml: articleHtml,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: p.title,
+      description: p.summary,
+      author: { '@type': 'Organization', name: 'WalletLens' },
+      publisher: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
+      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
+      url: `${ORIGIN}/blog/${p.slug}`,
+    },
+  }))
+}
+
+console.log(`\nPrerendered ${POSTS.length + 2} content pages into dist/.`)
