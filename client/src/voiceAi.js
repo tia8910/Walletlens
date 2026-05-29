@@ -12,7 +12,8 @@ import { ANTHROPIC_KEY } from './anthropic'
 
 const KEY_STORAGE  = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-haiku-4-5-20251001'
+// Sonnet for maximum accuracy on garbled / accented / multi-trade speech.
+const MODEL = 'claude-sonnet-4-6'
 
 // The owner-hosted voice-parse endpoint (Deno Deploy / Vercel) that holds the
 // ANTHROPIC_API_KEY secret. The site is static (GitHub Pages) so it can't host
@@ -42,15 +43,16 @@ export function hasAnthropicKey() {
   return !!getAnthropicKey()
 }
 
-function buildPrompt(transcript, hintLang) {
-  return `You are a voice-trade interpreter for a crypto/stock/metals portfolio app.
+function buildPrompt(transcript, hintLang, alternatives = []) {
+  const altBlock = alternatives.length > 1
+    ? `\nThe speech-to-text engines produced these CANDIDATE transcripts of the SAME spoken sentence. They may disagree, drop words, or mis-hear coins — reconcile them into the single true intent (a coin appearing in any candidate is strong evidence it was said):\n${alternatives.map((a, i) => `  ${i + 1}. "${a}"`).join('\n')}\n\nPrimary (best-guess) transcript: "${transcript}"\n`
+    : `\nTranscript: "${transcript}"\n`
+  return `You are a world-class voice-trade interpreter for a crypto/stock/metals portfolio app. Accuracy is critical — a wrong coin or amount records a wrong trade.
 
-The user spoke into their microphone and the speech-to-text engine produced this raw transcript. The engine may have mis-heard words, mixed languages, or transcribed Arabic speech phonetically as English (e.g. "اشتري واحد بيتكوين" might become "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English crypto-trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd", "rugged".
+The user spoke into their microphone and the speech-to-text engine produced this. The engine may have mis-heard words, mixed languages, or transcribed Arabic speech phonetically as English (e.g. "اشتري واحد بيتكوين" might become "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English crypto-trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd", "rugged".
 
 Transcript hint language: ${hintLang}
-
-Transcript: "${transcript}"
-
+${altBlock}
 Extract EVERY trade the user described. Return STRICT JSON ONLY — no markdown fences, no commentary outside the JSON. Use this shape:
 
 {
@@ -91,17 +93,25 @@ function filterTrades(arr) {
 // with no key of their own and the key is never exposed to the browser.
 // Falls back to a direct in-browser call only if the server is unreachable
 // or not configured AND a local key happens to be present (dev convenience).
-export async function parseTradesWithClaude(transcript, hintLang = 'en') {
+export async function parseTradesWithClaude(transcript, hintLang = 'en', alternatives = []) {
   const text = (transcript || '').toString().trim().slice(0, 500)
   if (!text) return []
   const lang = hintLang === 'ar' ? 'ar' : 'en'
+  // De-dupe candidate transcripts (from the parallel recognizers) and keep the
+  // primary one first; these let Claude triangulate what was really said.
+  const alts = Array.from(new Set([
+    text,
+    ...(Array.isArray(alternatives) ? alternatives : [])
+      .map(a => (a || '').toString().trim().slice(0, 500))
+      .filter(Boolean),
+  ])).slice(0, 8)
 
   // 1) Owner-hosted endpoint with the secret key (works for everyone).
   try {
     const resp = await fetch(voiceEndpoint(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript: text, hintLang: lang }),
+      body: JSON.stringify({ transcript: text, hintLang: lang, alternatives: alts }),
     })
     if (resp.ok) {
       const data = await resp.json()
@@ -127,8 +137,8 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en') {
         },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 700,
-          messages: [{ role: 'user', content: buildPrompt(text, lang) }],
+          max_tokens: 900,
+          messages: [{ role: 'user', content: buildPrompt(text, lang, alts) }],
         }),
       })
       if (res.ok) {
