@@ -284,25 +284,6 @@ function computeAI(enriched, prices, transactions, totalValue) {
     fearGreed >= 45 ? 'var(--g)' :
     fearGreed >= 25 ? '#3b82f6' : '#8b5cf6'
 
-  // ── Stress test scenarios (asset-class-aware) ─────────────────────────────
-  // Apply per-asset volatility multipliers so gold/real estate aren't hit -60%
-  const VOLATILITY = { crypto: 1, metals: 0.35, stocks: 0.5, realestate: 0.2, cash: 0.02 }
-  function stressPortfolio(pct) {
-    return enriched.reduce((sum, h) => {
-      const mult = VOLATILITY[categorizeAsset(h)] ?? 1
-      const adjustedPct = pct * mult
-      const newVal = h.value * (1 + adjustedPct / 100)
-      return sum + newVal
-    }, 0)
-  }
-  const stressScenarios = [
-    { label: 'Mild Dip',   pct: -10, color: '#f59e0b', icon: '📉' },
-    { label: 'Correction', pct: -30, color: '#f87171', icon: '🩸' },
-    { label: 'Bear Market',pct: -60, color: '#8b5cf6', icon: '🐻' },
-    { label: 'Bull +50%',  pct: +50, color: 'var(--g)', icon: '🚀' },
-    { label: 'Moon +200%', pct: +200,color: '#ffd700', icon: '🌕' },
-  ].map(s => ({ ...s, stressedVal: stressPortfolio(s.pct) }))
-
   // ── Entry quality per asset ────────────────────────────────────────────────
   const entryQuality = investments.map(h => {
     const avgBuy = h.total_invested > 0 && h.amount > 0 ? h.total_invested / h.amount : 0
@@ -338,7 +319,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
     mcBreakdown, insights,
     sentiment, sentimentColor, buyCount, sellCount,
     fearGreed, fgLabel, fgColor,
-    stressScenarios, entryQuality, rebalance, todayPnL,
+    entryQuality, rebalance, todayPnL,
     weights, targetWeight,
   }
 }
@@ -521,30 +502,6 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                 <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? 'var(--g)' : '#f87171' }}>
                   {dayPnL >= 0 ? '+' : ''}${Math.abs(dayPnL).toFixed(0)}
                 </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── Stress Test ── */}
-      <div className="glass-card ai-stress-card">
-        <h4 className="ai-section-title">{t('stressTest')}</h4>
-        <div className="ai-stress-grid">
-          {ai.stressScenarios.map(s => {
-            const newVal = s.stressedVal ?? totalValue * (1 + s.pct / 100)
-            const diff   = newVal - totalValue
-            return (
-              <div key={s.label} className="ai-stress-item" style={{ borderColor: s.color + '33' }}>
-                <div className="ai-stress-icon">{s.icon}</div>
-                <div className="ai-stress-label">{s.label}</div>
-                <div className="ai-stress-pct" style={{ color: s.color }}>
-                  {s.pct > 0 ? '+' : ''}{s.pct}%
-                </div>
-                <div className="ai-stress-val">${newVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                <div className="ai-stress-diff" style={{ color: s.color }}>
-                  {diff > 0 ? '+' : ''}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
               </div>
             )
           })}
