@@ -4891,7 +4891,7 @@ tr:last-child td { border-bottom: none; }
 /* ── Dashboard extra classes ── */
 .dvx-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 @media (max-width: 600px) { .dvx-stats-row { grid-template-columns: repeat(2, 1fr); } }

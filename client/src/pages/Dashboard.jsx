@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
-  ComposedChart, Line,
 } from 'recharts'
 import { api } from '../api'
 import { isStablecoin } from '../stablecoins'
@@ -2294,133 +2293,6 @@ function AlertsSection({ enriched, prices, isDemo }) {
   )
 }
 
-// ── Candlestick chart helper ─────────────────────────────────────────────────
-// Buckets `perfSeries` (array of { i, v }) into OHLC candles, then renders a
-// ComposedChart with custom SVG candle shapes + a linear-regression trend line.
-// Falls back to null if there are fewer than 3 input points (caller shows AreaChart).
-
-function buildOHLC(series, bucketSize) {
-  const candles = []
-  for (let start = 0; start < series.length; start += bucketSize) {
-    const bucket = series.slice(start, start + bucketSize)
-    if (bucket.length === 0) continue
-    const values = bucket.map(p => p.v)
-    candles.push({
-      i: bucket[Math.floor(bucket.length / 2)].i,
-      open:  values[0],
-      close: values[values.length - 1],
-      high:  Math.max(...values),
-      low:   Math.min(...values),
-    })
-  }
-  return candles
-}
-
-function linearRegression(candles) {
-  const n = candles.length
-  if (n < 2) return candles.map(c => ({ ...c, trend: c.close }))
-  const xs = candles.map((_, i) => i)
-  const ys = candles.map(c => c.close)
-  const meanX = xs.reduce((a, b) => a + b, 0) / n
-  const meanY = ys.reduce((a, b) => a + b, 0) / n
-  const num = xs.reduce((s, x, i) => s + (x - meanX) * (ys[i] - meanY), 0)
-  const den = xs.reduce((s, x) => s + (x - meanX) ** 2, 0)
-  const slope = den === 0 ? 0 : num / den
-  const intercept = meanY - slope * meanX
-  return candles.map((c, i) => ({ ...c, trend: intercept + slope * i }))
-}
-
-// Custom candle shape rendered via Recharts customized bar
-function CandleShape(props) {
-  const { x, width, payload, background, domain } = props
-  if (!payload || !background || !domain) return null
-  const { open, close, high, low } = payload
-
-  // Map a data value → pixel y using the chart's background rect + domain
-  const chartTop    = background.y
-  const chartHeight = background.height
-  const [domMin, domMax] = domain
-  const range = domMax - domMin || 1
-  const toY = v => chartTop + chartHeight * (1 - (v - domMin) / range)
-
-  const yOpen   = toY(open)
-  const yClose  = toY(close)
-  const yHigh   = toY(high)
-  const yLow    = toY(low)
-  const bullish = close >= open
-  const color   = bullish ? '#22c55e' : '#f87171'
-  const bodyTop = Math.min(yOpen, yClose)
-  const bodyH   = Math.max(Math.abs(yClose - yOpen), 1.5)
-  const midX    = x + width / 2
-
-  return (
-    <g>
-      <line x1={midX} y1={yHigh} x2={midX} y2={yLow} stroke={color} strokeWidth={1.5} opacity={0.85} />
-      <rect
-        x={x + width * 0.15} y={bodyTop}
-        width={width * 0.7} height={bodyH}
-        fill={color} fillOpacity={bullish ? 0.85 : 0.75}
-        stroke={color} strokeWidth={1} rx={1}
-      />
-    </g>
-  )
-}
-
-function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
-  // Target ~20 candles regardless of series density
-  const bucketSize = Math.max(1, Math.floor(perfSeries.length / 20))
-
-  let rawCandles = buildOHLC(perfSeries, bucketSize)
-
-  // Always show at least one green candle even for new users
-  if (rawCandles.length === 0) {
-    const v = perfSeries.length ? perfSeries[perfSeries.length - 1].v : 1000
-    rawCandles = [{ i: 0, open: v * 0.992, close: v, high: v * 1.008, low: v * 0.986 }]
-  }
-
-  const candles = linearRegression(rawCandles)
-
-  // Domain with padding
-  const allValues = candles.flatMap(c => [c.high, c.low, c.trend])
-  const minV = Math.min(...allValues)
-  const maxV = Math.max(...allValues)
-  const pad  = (maxV - minV) * 0.05 || 1
-  const domain = [minV - pad, maxV + pad]
-
-  return (
-    <ResponsiveContainer width="100%" height={180}>
-      <ComposedChart data={candles} margin={{ left:0, right:0, top:8, bottom:0 }}>
-        <XAxis hide dataKey="i" type="number" domain={['dataMin', 'dataMax']} />
-        <YAxis hide domain={domain} />
-        <Tooltip
-          cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
-          content={({ active, payload }) => {
-            if (!active || !payload?.length) return null
-            const c = payload[0]?.payload; if (!c) return null
-            const bull = c.close >= c.open
-            const clr = bull ? '#22c55e' : '#f87171'
-            const f = v => v != null ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : ''
-            return (
-              <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.45rem 0.75rem', boxShadow:'var(--shadow)', fontSize:'0.8rem' }}>
-                <div style={{ color:clr, fontWeight:800 }}>O {f(c.open)} · C {f(c.close)}</div>
-                <div style={{ color:'var(--text-muted)', marginTop:2 }}>H {f(c.high)} · L {f(c.low)}</div>
-              </div>
-            )
-          }}
-        />
-        <Bar dataKey="high" shape={<CandleShape domain={domain} />} isAnimationActive={false} />
-        <Line
-          type="linear" dataKey="trend"
-          stroke={strokeColor} strokeWidth={1.5}
-          strokeDasharray="5 3"
-          dot={false} activeDot={false}
-          isAnimationActive={false}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
-  )
-}
-
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -3353,19 +3225,19 @@ export default function Dashboard() {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
-              // Use candlestick chart when there are enough data points; fall back to area chart.
-              const candleEl = <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
-              return candleEl || (
+              // Clean line chart driven directly by the real perfSeries values
+              // (snapshots → transaction replay → simulation), so the curve is accurate.
+              return (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
                       <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35}/>
-                        <stop offset="85%" stopColor={strokeColor} stopOpacity={0.03}/>
+                        <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22}/>
+                        <stop offset="85%" stopColor={strokeColor} stopOpacity={0.02}/>
                         <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <XAxis hide />
+                    <XAxis hide dataKey="i" />
                     <YAxis hide domain={['auto', 'auto']} />
                     <Tooltip
                       contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
@@ -3374,8 +3246,9 @@ export default function Dashboard() {
                       formatter={v => [`$${fmt(v)}`, '']}
                       cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
                     />
-                    <Area type="monotoneX" dataKey="v" stroke={strokeColor} strokeWidth={2}
-                      fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}/>
+                    <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
+                      fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
+                      isAnimationActive={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
               )
@@ -3395,8 +3268,6 @@ export default function Dashboard() {
               <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
                 color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
-              <StatCard label={t('assets')}      value={enriched.length} />
-              <StatCard label={t('tradesCount')} value={transactions.length} />
             </div>
           )}
 
