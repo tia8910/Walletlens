@@ -1545,6 +1545,76 @@ export const api = {
     return out;
   },
 
+  // Bulk fundamental/on-chain-proxy data per crypto holding from CoinGecko's
+  // /coins/markets (one batched call). Gives market-cap rank, FDV, supply
+  // figures, ATH distance and multi-window price change — the inputs for the
+  // fundamental + on-chain pillars of the Magic Indicator. 1h cache.
+  getBulkFundamentals: async (coinIds) => {
+    const out = {};
+    if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
+    const isNonCrypto = (id) =>
+      !id ||
+      id === GOLD_ID || id === SILVER_ID || id === COPPER_ID || id === PLATINUM_ID ||
+      id.startsWith(STOCK_PREFIX) || id.startsWith(FIAT_PREFIX) ||
+      id.startsWith('bond:') || id.startsWith('other:') ||
+      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:');
+
+    const CACHE_KEY = 'crypto_tracker_fundamentals_cache_v1';
+    const TTL_MS = 60 * 60 * 1000;
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
+    const now = Date.now();
+    const cryptoIds = [];
+    for (const id of coinIds) {
+      if (isNonCrypto(id)) { out[id] = null; continue; }
+      const hit = cache[id];
+      if (hit && now - hit.t < TTL_MS) { out[id] = hit.v; continue; }
+      cryptoIds.push(id);
+    }
+    if (cryptoIds.length === 0) return out;
+
+    const map = (m) => ({
+      currentPrice: m.current_price ?? null,
+      marketCap: m.market_cap ?? 0,
+      marketCapRank: m.market_cap_rank ?? null,
+      fdv: m.fully_diluted_valuation ?? null,
+      totalVolume: m.total_volume ?? 0,
+      circulatingSupply: m.circulating_supply ?? null,
+      totalSupply: m.total_supply ?? null,
+      maxSupply: m.max_supply ?? null,
+      ath: m.ath ?? null,
+      athChangePct: m.ath_change_percentage ?? null,
+      atlChangePct: m.atl_change_percentage ?? null,
+      change24h: m.price_change_percentage_24h_in_currency ?? m.price_change_percentage_24h ?? null,
+      change7d: m.price_change_percentage_7d_in_currency ?? null,
+      change30d: m.price_change_percentage_30d_in_currency ?? null,
+    });
+
+    try {
+      // CoinGecko allows a comma-separated ids filter; chunk to stay well under URL limits.
+      const CHUNK = 100;
+      for (let i = 0; i < cryptoIds.length; i += CHUNK) {
+        const slice = cryptoIds.slice(i, i + CHUNK);
+        const ids = encodeURIComponent(slice.join(','));
+        const data = await fetchJSON(
+          `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=${slice.length}&page=1&sparkline=false&price_change_percentage=24h%2C7d%2C30d`
+        );
+        if (Array.isArray(data)) {
+          for (const m of data) {
+            if (!m?.id) continue;
+            out[m.id] = map(m);
+            cache[m.id] = { t: now, v: out[m.id] };
+          }
+        }
+        if (i + CHUNK < cryptoIds.length) await new Promise(r => setTimeout(r, 350));
+      }
+    } catch { /* leave missing ids as undefined */ }
+    // Any id we couldn't resolve falls back to its (possibly stale) cache or null.
+    for (const id of cryptoIds) if (!(id in out)) out[id] = cache[id]?.v ?? null;
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return out;
+  },
+
   // Exchanges
   getExchanges: async () => loadData('exchanges'),
 

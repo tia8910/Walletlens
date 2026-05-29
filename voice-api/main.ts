@@ -73,6 +73,42 @@ function filterTrades(arr: any): any[] {
     : []
 }
 
+// ── Magic Indicator AI verdict ────────────────────────────────────────────
+// Synthesises the already-computed numeric pillars (technical, on-chain,
+// volume, whales, fundamental) into a concise natural-language direction.
+// The LLM does NOT fetch live data — it reasons over the supplied numbers plus
+// its own knowledge of the asset's fundamentals/tokenomics.
+// deno-lint-ignore no-explicit-any
+function buildAnalyzePrompt(p: any): string {
+  const pillars = Array.isArray(p?.pillars)
+    ? p.pillars.map((x: any) => `  - ${x.label}: ${x.score} (${x.note})`).join("\n")
+    : "  (none)"
+  const stats = p?.stats && typeof p.stats === "object"
+    ? Object.entries(p.stats).map(([k, v]) => `  - ${k}: ${v}`).join("\n")
+    : "  (none)"
+  return `You are a seasoned crypto markets analyst. A quantitative engine has scored ${p?.asset?.name || p?.asset?.symbol || "an asset"} (${p?.asset?.symbol || "?"}) across five pillars, each from -100 (bearish) to +100 (bullish).
+
+Composite Magic score: ${p?.magic?.score} → "${p?.magic?.direction}" (confidence ${p?.magic?.confidence}%).
+
+Pillar scores:
+${pillars}
+
+Key stats:
+${stats}
+
+Using these numbers AND your knowledge of this asset's fundamentals, tokenomics and typical market behaviour, give a crisp portfolio-holder verdict. Be specific and avoid generic hedging. Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "direction": "Strong Buy" | "Accumulate" | "Neutral" | "Reduce" | "Distribute",
+  "oneLiner": "<=18 word punchy thesis",
+  "bull": ["<short bull point>", "<short bull point>"],
+  "bear": ["<short bear/risk point>", "<short bear/risk point>"],
+  "action": "<one concrete next step for a holder, <=20 words>"
+}
+
+Keep bull/bear to 2-3 items each. Ground every point in the pillars/stats or well-known facts about the asset. This is analysis, not financial advice.`
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
   const headers = corsHeaders(origin)
@@ -87,11 +123,45 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
   }
 
-  let body: { transcript?: string; hintLang?: string; alternatives?: unknown }
+  // deno-lint-ignore no-explicit-any
+  let body: any
   try {
     body = await req.json()
   } catch {
     return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers })
+  }
+
+  // ── Magic Indicator AI verdict (mode: "analyze") ──────────────────────────
+  if (body?.mode === "analyze") {
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 700,
+          messages: [{ role: "user", content: buildAnalyzePrompt(body) }],
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (analyze):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const text = data.content?.[0]?.text || ""
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error("no JSON in response")
+      const verdict = JSON.parse(match[0])
+      return new Response(JSON.stringify({ ok: true, verdict }), { headers })
+    } catch (e) {
+      console.error("analyze error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
   }
 
   const transcript = (body.transcript || "").toString().trim().slice(0, 500)
