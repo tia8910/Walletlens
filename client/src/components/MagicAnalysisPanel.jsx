@@ -119,8 +119,8 @@ function AiVerdict({ item }) {
     else setState('error')
   }
 
-  if (state === 'idle') return <button className="magic-ai-btn" onClick={run}>🤖 AI Verdict</button>
-  if (state === 'loading') return <div className="magic-ai-loading">🤖 Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
+  if (state === 'idle') return <button className="magic-ai-btn" onClick={run}>✦ AI Verdict</button>
+  if (state === 'loading') return <div className="magic-ai-loading">✦ Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
   if (state === 'error') {
     return (
       <div className="magic-ai-err">
@@ -131,7 +131,7 @@ function AiVerdict({ item }) {
   }
   return (
     <div className="magic-ai-card">
-      <div className="magic-ai-head">🤖 AI Verdict{verdict.direction ? <span className="magic-ai-dir">{verdict.direction}</span> : null}</div>
+      <div className="magic-ai-head">✦ AI Verdict{verdict.direction ? <span className="magic-ai-dir">{verdict.direction}</span> : null}</div>
       {verdict.oneLiner && <p className="magic-ai-line">{verdict.oneLiner}</p>}
       <div className="magic-ai-cols">
         {verdict.bull?.length > 0 && (
@@ -218,15 +218,20 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
     let alive = true
     setAnalyzing(true)
     track('magic_analysis_view', { assets: cryptoIds.length })
-    Promise.all([
-      api.getBulkTechnicals(cryptoIds).catch(() => ({})),
-      api.getBulkSmartSignals(cryptoIds).catch(() => ({})),
-      api.getBulkFundamentals(cryptoIds).catch(() => ({})),
-    ]).then(([t, s, f]) => {
+    // TA + Fundamentals in parallel (Fundamentals is a single bulk call).
+    // Signals runs AFTER to avoid simultaneous CoinGecko bursts that trigger 429s.
+    ;(async () => {
+      const [t, f] = await Promise.all([
+        api.getBulkTechnicals(cryptoIds).catch(() => ({})),
+        api.getBulkFundamentals(cryptoIds).catch(() => ({})),
+      ])
       if (!alive) return
-      setTa(t || {}); setSignals(s || {}); setFundamentals(f || {})
+      setTa(t || {}); setFundamentals(f || {})
+      const s = await api.getBulkSmartSignals(cryptoIds).catch(() => ({}))
+      if (!alive) return
+      setSignals(s || {})
       setAnalyzing(false)
-    })
+    })()
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey])

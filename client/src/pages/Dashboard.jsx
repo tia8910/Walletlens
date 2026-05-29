@@ -63,12 +63,12 @@ const Ico = {
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
 const MC_TIERS = [
-  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: 'var(--g)', emoji: '🐋' },
-  { id: 'large',      label: 'Large Cap',        min: 10e9,   color: '#3b82f6', emoji: '🔵' },
-  { id: 'mid',        label: 'Mid Cap',          min: 1e9,    color: '#f59e0b', emoji: '🟡' },
-  { id: 'small',      label: 'Small Cap',        min: 100e6,  color: '#f87171', emoji: '🔴' },
-  { id: 'micro',      label: 'Micro Cap',        min: 0,      color: '#8b5cf6', emoji: '💜' },
-  { id: 'non-crypto', label: 'Non-Crypto Assets', min: -1,    color: '#a78bfa', emoji: '🏦' },
+  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: 'var(--g)', emoji: '◈' },
+  { id: 'large',      label: 'Large Cap',        min: 10e9,   color: '#3b82f6', emoji: '◆' },
+  { id: 'mid',        label: 'Mid Cap',          min: 1e9,    color: '#f59e0b', emoji: '◇' },
+  { id: 'small',      label: 'Small Cap',        min: 100e6,  color: '#f87171', emoji: '▸' },
+  { id: 'micro',      label: 'Micro Cap',        min: 0,      color: '#8b5cf6', emoji: '▪' },
+  { id: 'non-crypto', label: 'Non-Crypto Assets', min: -1,    color: '#a78bfa', emoji: '⊞' },
 ]
 
 // Known mega/large-cap IDs to classify without needing live market cap data
@@ -357,7 +357,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
   if (!ai) return (
     <div className="ai-empty glass-card">
-      <div className="ai-empty-icon">🤖</div>
+      <div className="ai-empty-icon">✦</div>
       <p>{t('addHoldingsAI')}</p>
     </div>
   )
@@ -456,7 +456,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
       {/* AI Insights */}
       <div className="glass-card ai-insights-card">
-        <h4 className="ai-section-title">🤖 {t('aiInsights')}</h4>
+        <h4 className="ai-section-title">✦ {t('aiInsights')}</h4>
         <div className="ai-insights-list">
           {ai.insights.map((ins, i) => (
             <div key={i} className={`ai-insight ai-insight-${ins.type}`}>
@@ -577,38 +577,6 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
       </div>
 
-      {/* ── Rebalance Planner ── */}
-      <div className="glass-card ai-rebal-card">
-        <h4 className="ai-section-title">{t('rebalancePlanner')}</h4>
-        <p className="ai-entry-sub muted">Equal-weight target vs current allocation</p>
-        <div className="ai-rebal-list">
-          {ai.rebalance.map(h => (
-            <div key={h.coin_id} className="ai-rebal-row">
-              <span className="ai-rebal-sym">{(h.coin_symbol || '').toUpperCase()}</span>
-              <div className="ai-rebal-bars">
-                <div className="ai-rebal-bar-row">
-                  <span className="ai-rebal-bar-lbl">Now</span>
-                  <div className="ai-rebal-bar-track">
-                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.currentW, 100)}%`, background: '#3b82f6' }} />
-                  </div>
-                  <span className="ai-rebal-bar-val">{h.currentW.toFixed(1)}%</span>
-                </div>
-                <div className="ai-rebal-bar-row">
-                  <span className="ai-rebal-bar-lbl">Target</span>
-                  <div className="ai-rebal-bar-track">
-                    <div className="ai-rebal-bar-fill" style={{ width: `${Math.min(h.targetW, 100)}%`, background: 'var(--g)' }} />
-                  </div>
-                  <span className="ai-rebal-bar-val">{h.targetW.toFixed(1)}%</span>
-                </div>
-              </div>
-              <div className={`ai-rebal-action ${h.diff > 0 ? 'buy' : 'sell'}`}>
-                {h.diff > 0 ? '↑ Buy' : '↓ Sell'}
-                <span>${Math.abs(h.diffVal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
       <Suspense fallback={<TabFallback />}><AISellPlan enriched={enriched} prices={prices} /></Suspense>
     </div>
   )
@@ -1366,7 +1334,7 @@ const FEATURE_SLIDES = [
   { tag:'STOCKS & ETFs', icon:'📈', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
   { tag:'METALS',        icon:'🟡', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
   { tag:'CASH',          icon:'💵', color:'#22c55e', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
-  { tag:'AI ADVISOR',    icon:'🤖', color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
+  { tag:'AI ADVISOR',    icon:'✦',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
   { tag:'RISK SCANNER',  icon:'⚠️', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
   { tag:'RISK BUDGET',   icon:'📐', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
   { tag:'SET TARGETS',   icon:'🎯', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
@@ -1536,7 +1504,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
     { key:'wallet', icon:'👛', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
     { key:'trade',  icon:'🎙️', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
     { key:'track',  icon:'📊', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
-    { key:'ai',     icon:'🤖', label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
+    { key:'ai',     icon:'✦',  label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
   ]
   const total = steps.length
   const doneCount = steps.filter(s => s.done).length
