@@ -7,6 +7,7 @@ import {
   ComposedChart, Line,
 } from 'recharts'
 import { api } from '../api'
+import { isStablecoin } from '../stablecoins'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
@@ -134,9 +135,13 @@ const CATEGORY_LABELS = {
 function computeAI(enriched, prices, transactions, totalValue) {
   if (!enriched.length || !totalValue || !isFinite(totalValue)) return null
 
+  const investments = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
+  const investValue = investments.reduce((s, h) => s + h.value, 0) || 1
+  if (!investments.length) return null
+
   // Weights (0-1 each)
-  const weights = enriched.map(h => h.value / totalValue)
-  const n = enriched.length
+  const weights = investments.map(h => h.value / investValue)
+  const n = investments.length
 
   // 1. Concentration (Herfindahl-Hirschman Index, 0=perfect, 1=single asset)
   const hhi = weights.reduce((s, w) => s + w * w, 0)
@@ -147,27 +152,27 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const assetScore = n >= 12 ? 85 : n >= 7 ? 100 : n >= 4 ? 85 : n >= 2 ? 65 : 30
 
   // 3. Momentum — weighted 24h change
-  const momentum = enriched.reduce((s, h, i) => {
+  const momentum = investments.reduce((s, h, i) => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
     return s + chg * weights[i]
   }, 0)
   const momentumScore = Math.min(100, Math.max(0, 50 + momentum * 3))
 
   // 4. P&L health
-  const pnlScore = enriched.reduce((s, h, i) => s + (h.pnl >= 0 ? 20 : -10) * weights[i], 0)
+  const pnlScore = investments.reduce((s, h, i) => s + (h.pnl >= 0 ? 20 : -10) * weights[i], 0)
   const pnlHealth = Math.min(100, Math.max(0, 50 + pnlScore))
 
   // 5. Market cap tier diversity (reward spreading across tiers)
-  const tierSet = new Set(enriched.map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
+  const tierSet = new Set(investments.map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
   const tierScore = Math.min(100, tierSet.size * 28)
 
   // 6. Crypto category diversity (L1, DeFi, AI, RWA, etc.)
-  const cryptoHoldings = enriched.filter(h => categorizeAsset(h) === 'crypto')
+  const cryptoHoldings = investments.filter(h => categorizeAsset(h) === 'crypto')
   const cryptoCatSet = new Set(cryptoHoldings.map(h => getCryptoCategory(h.coin_id)).filter(Boolean))
   const cryptoCatScore = cryptoHoldings.length === 0 ? 50 : Math.min(100, cryptoCatSet.size * 22)
 
   // 7. Stock sector diversity
-  const stockHoldings = enriched.filter(h => categorizeAsset(h) === 'stocks')
+  const stockHoldings = investments.filter(h => categorizeAsset(h) === 'stocks')
   const stockSectorSet = new Set(stockHoldings.map(h => getStockSector(h.coin_id)).filter(Boolean))
   const stockSectorScore = stockHoldings.length === 0 ? 50 : Math.min(100, stockSectorSet.size * 30)
 
@@ -190,14 +195,14 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
   // Market cap breakdown
   const mcBreakdown = MC_TIERS.map(tier => {
-    const assets = enriched.filter(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id === tier.id)
+    const assets = investments.filter(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id === tier.id)
     const value  = assets.reduce((s, h) => s + h.value, 0)
     return { ...tier, assets, value, pct: totalValue > 0 ? (value / totalValue) * 100 : 0 }
   }).filter(t => t.assets.length > 0)
 
   // Smart AI insights
   const insights = []
-  const topAsset = enriched[0]
+  const topAsset = investments[0]
   const topWeight = weights[0] * 100
 
   if (topWeight > 60) insights.push({ type: 'warn', text: `${topAsset.coin_symbol.toUpperCase()} dominates ${topWeight.toFixed(0)}% of your portfolio — high concentration risk.` })
@@ -206,18 +211,18 @@ function computeAI(enriched, prices, transactions, totalValue) {
   if (n < 3) insights.push({ type: 'warn', text: `Only ${n} asset${n > 1 ? 's' : ''} detected — consider spreading into more positions to reduce risk.` })
   else if (n >= 8) insights.push({ type: 'good', text: `${n} assets tracked — solid diversification across your portfolio.` })
 
-  const inProfit = enriched.filter(h => h.pnl > 0)
-  const inLoss   = enriched.filter(h => h.pnl < 0)
+  const inProfit = investments.filter(h => h.pnl > 0)
+  const inLoss   = investments.filter(h => h.pnl < 0)
   if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: `All ${inProfit.length} positions are in profit 🚀` })
   else if (inProfit.length > 0) insights.push({ type: 'info', text: `${inProfit.length} of ${n} positions in profit, ${inLoss.length} in loss.` })
 
   if (momentum > 3) insights.push({ type: 'good', text: `Strong bullish momentum: weighted 24h gain of +${momentum.toFixed(2)}% across holdings.` })
   else if (momentum < -3) insights.push({ type: 'warn', text: `Bearish pressure: weighted 24h loss of ${momentum.toFixed(2)}% across holdings.` })
 
-  const hasMetals = enriched.some(h => categorizeAsset(h) === 'metals')
-  const hasStocks = enriched.some(h => categorizeAsset(h) === 'stocks')
-  const hasRealEstate = enriched.some(h => categorizeAsset(h) === 'realestate')
-  const hasCrypto = enriched.some(h => categorizeAsset(h) === 'crypto')
+  const hasMetals = investments.some(h => categorizeAsset(h) === 'metals')
+  const hasStocks = investments.some(h => categorizeAsset(h) === 'stocks')
+  const hasRealEstate = investments.some(h => categorizeAsset(h) === 'realestate')
+  const hasCrypto = investments.some(h => categorizeAsset(h) === 'crypto')
   const nonCryptoCount = [hasMetals, hasStocks, hasRealEstate].filter(Boolean).length
 
   if (hasCrypto && nonCryptoCount >= 2) {
@@ -229,7 +234,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
     insights.push({ type: 'info', text: 'Portfolio is 100% crypto — adding gold/silver or stocks could hedge volatility.' })
   }
 
-  const cryptoTierSet = new Set(enriched.filter(h => categorizeAsset(h) === 'crypto').map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
+  const cryptoTierSet = new Set(investments.filter(h => categorizeAsset(h) === 'crypto').map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
   if (cryptoTierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${cryptoTierSet.size} crypto market-cap tiers — balanced risk profile.` })
   else if (hasCrypto && !cryptoTierSet.has('mid') && !cryptoTierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap crypto — mid/small-cap exposure could boost upside.' })
 
@@ -300,7 +305,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   ].map(s => ({ ...s, stressedVal: stressPortfolio(s.pct) }))
 
   // ── Entry quality per asset ────────────────────────────────────────────────
-  const entryQuality = enriched.map(h => {
+  const entryQuality = investments.map(h => {
     const avgBuy = h.total_invested > 0 && h.amount > 0 ? h.total_invested / h.amount : 0
     const priceDiff = avgBuy > 0 ? ((h.price - avgBuy) / avgBuy) * 100 : 0
     const score = Math.min(100, Math.max(0, 50 + priceDiff * 2))
@@ -309,8 +314,8 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
   // ── Rebalance planner (equal-weight target) ────────────────────────────────
   // Stablecoins are dry powder, not part of the equal-weight target — exclude them.
-  const targetWeight = 1 / n
-  const rebalanceAssets = enriched.filter(h => categorizeAsset(h) !== 'cash')
+  const targetWeight = n > 0 ? 1 / n : 0
+  const rebalanceAssets = investments.filter(h => categorizeAsset(h) !== 'cash')
   const rebalanceValue  = rebalanceAssets.reduce((s, h) => s + h.value, 0)
   const rebTargetWeight = rebalanceAssets.length ? 1 / rebalanceAssets.length : 0
   const rebalance = rebalanceAssets.map(h => {
@@ -1976,6 +1981,11 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
 }
 
 // ── Targets Tab ──────────────────────────────────────────────────────────
+function fmtQty(n) {
+  if (!n && n !== 0) return '0'
+  return n.toFixed(4).replace(/\.?0+$/, '') || '0'
+}
+
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
@@ -2001,7 +2011,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   }
 
   // Summary stats
-  const { totalTargets, totalReached, totalPotentialProceeds, chartData, rows } = targetsAnalysis
+  const { totalTargets, totalReached, totalPotentialProceeds, chartData, rows, rowsWithTargets } = targetsAnalysis
 
   return (
     <div className="dvx-targets-page">
@@ -2012,12 +2022,13 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
         <StatCard label="Potential Proceeds"
           value={`$${totalPotentialProceeds >= 1000 ? (totalPotentialProceeds/1000).toFixed(1)+'k' : fmt(totalPotentialProceeds)}`}
           color="var(--g)" />
-        <StatCard label="Assets Planned" value={rows.length} />
+        <StatCard label="Assets Planned" value={`${rowsWithTargets} / ${rows.length}`} />
       </div>
 
       {/* Sell targets table — asset × Target 1, 2, 3… */}
       {rows.length > 0 && (() => {
         const maxTargets = rows.reduce((m, r) => Math.max(m, r.targets.length), 0)
+        if (maxTargets === 0) return null
         return (
           <div className="glass-card">
             <h3 style={{ margin:'0 0 0.85rem' }}>Sell Targets Plan</h3>
@@ -2034,6 +2045,19 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                 </thead>
                 <tbody>
                   {rows.map(r => {
+                    if (r.targets.length === 0) {
+                      return (
+                        <tr key={r.coinId}>
+                          <td className="dvx-tgt-td-asset">
+                            <strong>{r.coinSymbol?.toUpperCase()}</strong>
+                            <span className="dvx-tgt-now">{r.currentPrice > 0 ? `$${fmt(r.currentPrice)}` : '—'}</span>
+                          </td>
+                          <td colSpan={maxTargets + 1} className="dvx-tgt-empty" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            No targets yet — scroll down to add
+                          </td>
+                        </tr>
+                      )
+                    }
                     const totalProjected = r.targets.reduce((s, t) => s + t.proceeds, 0)
                     return (
                     <tr key={r.coinId}>
@@ -2049,7 +2073,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                           <td key={i} className={t.reached ? 'dvx-tgt-cell-reached' : ''}>
                             <span className="dvx-tgt-price">${fmt(t.price)}</span>
                             <span className="dvx-tgt-meta">
-                              {t.reached ? '✓ reached' : `sell ${sellPct.toFixed(0)}%`}
+                              {t.reached ? '✓ reached' : `sell ${sellPct.toFixed(0)}% · ${fmtQty(t.sellQty)} ${r.coinSymbol.toUpperCase()}`}
                             </span>
                           </td>
                         )
@@ -2824,7 +2848,10 @@ export default function Dashboard() {
     for (const h of enriched) {
       if (categorizeAsset(h) === 'cash') continue // stablecoins have no sell targets
       const plan = coinTargets[h.coin_id]?.targets || []
-      if (!plan.length) continue
+      if (!plan.length) {
+        rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
+        continue
+      }
       const currentPrice = h.price
       const holdingRows = plan.map(t => {
         const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
@@ -2847,7 +2874,7 @@ export default function Dashboard() {
       }))
     ).slice(0, 10)
 
-    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0) }
+    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
   const tabs = [

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { isStablecoin } from '../stablecoins'
 
 const NON_CRYPTO = ['stock:', 'metal:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
 
@@ -31,7 +32,7 @@ export default function LiquidityRisk({ holdings }) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
 
-  const cryptoHoldings = (holdings || []).filter(h => isCrypto(h.coin_id || h.id))
+  const cryptoHoldings = (holdings || []).filter(h => isCrypto(h.coin_id || h.id) && !isStablecoin(h.coin_id || h.id, h.coin_symbol))
 
   useEffect(() => {
     if (!open || cryptoHoldings.length === 0 || data) return

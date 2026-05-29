@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { isStablecoin } from '../stablecoins'
 
 const PROXIES = [
   url => 'https://corsproxy.io/?' + encodeURIComponent(url),
@@ -121,7 +122,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
   const [open, setOpen]       = useState(true)
 
   const cryptoHoldings = enriched
-    .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:'))
+    .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:') && !isStablecoin(h.coin_id, h.coin_symbol))
     .slice(0, MAX_ASSETS)
 
   async function compute() {
