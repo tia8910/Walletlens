@@ -4975,6 +4975,8 @@ tr:last-child td { border-bottom: none; }
 .dvx-tgt-cell-reached .dvx-tgt-price { color: var(--g); }
 .dvx-tgt-cell-reached .dvx-tgt-meta { color: var(--g); }
 .dvx-tgt-empty { color: var(--text-sub); opacity: 0.4; }
+.dvx-tgt-th-total { text-align: right !important; }
+.dvx-tgt-td-total { text-align: right; font-weight: 800; color: var(--g); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Add-target form with % selector */
 .dvx-tgt-form { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 0.75rem; }
