@@ -354,6 +354,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!isBuy && !sellFor) { setMsg('Choose what to sell for.'); return }
     if (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) { setMsg('Enter the asset to buy with.'); return }
     if (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim()) { setMsg('Enter the asset to sell for.'); return }
+    // Numeric validation — block NaN/negative/zero before anything is recorded.
+    const amtCheck = parseFloat(amount), pxCheck = parseFloat(price)
+    if (!isFinite(amtCheck) || amtCheck <= 0) { setMsg('Enter a valid amount greater than 0.'); return }
+    if (!isFinite(pxCheck) || pxCheck < 0) { setMsg('Enter a valid price.'); return }
+    // A sell can never exceed the held balance (would create a negative position).
+    if (!isBuy && holdingForCoin && isFinite(holdingForCoin.amount) && amtCheck > holdingForCoin.amount + 1e-9) {
+      setMsg(`You only hold ${parseFloat(Number(holdingForCoin.amount).toFixed(8))} ${holdingForCoin.coin_symbol?.toUpperCase() || ''}.`); return
+    }
     setBusy(true); setMsg('')
     try {
       const wid = walletId || (wallets[0]?.id ?? '1')

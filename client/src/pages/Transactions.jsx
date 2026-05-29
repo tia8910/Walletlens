@@ -24,7 +24,9 @@ async function buildReceiveLeg(target, proceedsUsd) {
   if (T === 'BTC') {
     const prices = await api.getPrices('bitcoin')
     const btcUsd = prices?.bitcoin?.usd || 0
-    if (!btcUsd) return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: 0, pricePerUnit: 0 }
+    // Price unavailable → skip the leg rather than recording a 0-amount BTC
+    // entry (which would silently lose the proceeds and corrupt holdings).
+    if (!btcUsd) return null
     return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: proceedsUsd / btcUsd, pricePerUnit: btcUsd }
   }
   if (T === 'EUR') {
@@ -434,6 +436,18 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
     const amount = parseFloat(form.amount)
     const pricePerUnit = parseFloat(form.price_per_unit)
+    // Reject invalid numbers so NaN/negative values never reach storage and
+    // corrupt the portfolio aggregation.
+    if (!isFinite(amount) || amount <= 0 || !isFinite(pricePerUnit) || pricePerUnit < 0) {
+      alert('Enter a valid amount and price (positive numbers).')
+      return
+    }
+    // Never let a sell exceed the held balance — that would create a negative
+    // (short) position the app can't represent.
+    if (form.type === 'sell' && sellHoldings && isFinite(sellHoldings.amount) && amount > sellHoldings.amount + 1e-9) {
+      alert(`You only hold ${sellHoldings.amount} ${(sellHoldings.coin_symbol || '').toUpperCase()}. Reduce the amount.`)
+      return
+    }
 
     // Record the primary transaction (sell/buy)
     await api.addTransaction({

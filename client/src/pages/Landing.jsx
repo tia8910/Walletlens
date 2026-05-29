@@ -270,18 +270,17 @@ export default function Landing() {
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
           <div className="lp-cta-row">
-            <button className="lp-cta-primary" onClick={() => { track('landing_cta_launch'); navigate('/dashboard') }}>
-              {t('ctaLaunch')}
+            <button className="lp-cta-primary" onClick={() => { track('landing_cta_net_worth'); navigate('/dashboard') }}>
+              Track your net worth
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
-            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_market'); navigate('/market') }}>
-              {t('ctaMarket')}
+            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_wallet'); navigate('/dashboard') }}>
+              Create wallet
+            </button>
+            <button className="lp-cta-ghost" onClick={() => { track('landing_cta_evaluate'); navigate('/dashboard', { state: { tab: 'ai' } }) }}>
+              Evaluate your portfolio
             </button>
           </div>
-
-          <button className="lp-lang-toggle" onClick={() => { const newLang = lang === 'en' ? 'ar' : 'en'; track('landing_lang_toggle', { to: newLang }); setLang(newLang) }}>
-            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
-          </button>
 
           <div className="lp-badges">
             <span className="lp-badge">{t('badge1')}</span>
@@ -683,9 +682,6 @@ export default function Landing() {
             <svg className="lp-x-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             @walletlenss
           </a>
-          <button className="lp-lang-toggle lp-lang-toggle-sm" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
-            {lang === 'en' ? '🌐 العربية' : '🌐 English'}
-          </button>
         </nav>
       </footer>
     </div>

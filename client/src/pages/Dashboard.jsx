@@ -130,7 +130,7 @@ const CATEGORY_LABELS = {
 
 // ── AI analysis engine ────────────────────────────────────────────────────
 function computeAI(enriched, prices, transactions, totalValue) {
-  if (!enriched.length || totalValue === 0) return null
+  if (!enriched.length || !totalValue || !isFinite(totalValue)) return null
 
   // Weights (0-1 each)
   const weights = enriched.map(h => h.value / totalValue)
@@ -736,10 +736,10 @@ const DEMO = {
   ],
 }
 
-const fmt   = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtN  = n => { const s = Math.abs(n) >= 1000 ? `$${(Math.abs(n)/1000).toFixed(1)}k` : `$${Math.abs(n).toFixed(0)}`; return n < 0 ? `-${s}` : s }
+const fmt   = n => { const v = Number(n); return isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00' }
+const fmtN  = n => { const v = Number(n); if (!isFinite(v)) return '$0'; const s = Math.abs(v) >= 1000 ? `$${(Math.abs(v)/1000).toFixed(1)}k` : `$${Math.abs(v).toFixed(0)}`; return v < 0 ? `-${s}` : s }
 const fmtAmt = n => { const v = parseFloat(n); if (!isFinite(v)) return '0'; if (v >= 100) return v.toLocaleString(undefined, { maximumFractionDigits: 2 }); if (v >= 1) return v.toLocaleString(undefined, { maximumFractionDigits: 4 }); return v.toLocaleString(undefined, { maximumSignificantDigits: 4 }) }
-const pct   = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
+const pct   = n => { const v = Number(n); if (!isFinite(v)) return '0.00%'; return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` }
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
 const TOOLTIP_STYLE = {
@@ -787,7 +787,7 @@ const EVAL_CATEGORIES = [
     color: 'var(--g)',
     check: (enriched, totalValue) => {
       const n = enriched.length
-      const weights = enriched.map(h => h.value / totalValue)
+      const weights = enriched.map(h => totalValue > 0 ? h.value / totalValue : 0)
       const hhi = weights.reduce((s, w) => s + w * w, 0)
       if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 assets to reduce single-coin risk.` }
       if (hhi > 0.5) return { pass: false, score: 30, tip: `One coin dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single asset exceeds 50%.` }
@@ -846,7 +846,7 @@ const EVAL_CATEGORIES = [
     color: 'var(--g)',
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
-      const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100
+      const avgPnlPct = totalValue > 0 ? enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100 : 0
       if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
       if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
       if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits into stablecoins to lock in gains.` }

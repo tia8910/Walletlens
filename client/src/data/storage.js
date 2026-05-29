@@ -17,8 +17,16 @@ export function saveData(key, data) {
 }
 
 export function bumpId(key) {
-  const current = parseInt(localStorage.getItem(key) || '1', 10)
-  localStorage.setItem(key, String(current + 1))
+  let current = 1
+  try {
+    current = parseInt(localStorage.getItem(key) || '1', 10)
+    if (!Number.isFinite(current)) current = 1
+    localStorage.setItem(key, String(current + 1))
+  } catch {
+    // Storage full/unavailable — fall back to a time-based id so callers
+    // still get a unique value instead of throwing mid-write.
+    current = Date.now()
+  }
   return current
 }
 
