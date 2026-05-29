@@ -2340,43 +2340,43 @@ function linearRegression(candles) {
 
 // Custom candle shape rendered via Recharts customized bar
 function CandleShape(props) {
-  const { x, y, width, payload, yAxis } = props
-  if (!payload || !yAxis) return null
+  const { x, width, payload, background, domain } = props
+  if (!payload || !background || !domain) return null
   const { open, close, high, low } = payload
-  const { scale } = yAxis
-  if (typeof scale !== 'function') return null
 
-  const yOpen  = scale(open)
-  const yClose = scale(close)
-  const yHigh  = scale(high)
-  const yLow   = scale(low)
+  // Map a data value → pixel y using the chart's background rect + domain
+  const chartTop    = background.y
+  const chartHeight = background.height
+  const [domMin, domMax] = domain
+  const range = domMax - domMin || 1
+  const toY = v => chartTop + chartHeight * (1 - (v - domMin) / range)
 
-  const bullish    = close >= open
-  const color      = bullish ? '#22c55e' : '#f87171'
-  const bodyTop    = Math.min(yOpen, yClose)
-  const bodyHeight = Math.max(Math.abs(yClose - yOpen), 1)
-  const midX       = x + width / 2
+  const yOpen   = toY(open)
+  const yClose  = toY(close)
+  const yHigh   = toY(high)
+  const yLow    = toY(low)
+  const bullish = close >= open
+  const color   = bullish ? '#22c55e' : '#f87171'
+  const bodyTop = Math.min(yOpen, yClose)
+  const bodyH   = Math.max(Math.abs(yClose - yOpen), 1.5)
+  const midX    = x + width / 2
 
   return (
     <g>
-      {/* Wick */}
-      <line x1={midX} y1={yHigh} x2={midX} y2={yLow} stroke={color} strokeWidth={1.5} opacity={0.8} />
-      {/* Body */}
+      <line x1={midX} y1={yHigh} x2={midX} y2={yLow} stroke={color} strokeWidth={1.5} opacity={0.85} />
       <rect
         x={x + width * 0.15} y={bodyTop}
-        width={width * 0.7} height={bodyHeight}
-        fill={bullish ? color : color}
-        fillOpacity={bullish ? 0.85 : 0.75}
-        stroke={color} strokeWidth={1}
-        rx={1}
+        width={width * 0.7} height={bodyH}
+        fill={color} fillOpacity={bullish ? 0.85 : 0.75}
+        stroke={color} strokeWidth={1} rx={1}
       />
     </g>
   )
 }
 
 function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
-  const bucketMap = { '4H': 4, '1D': 4, '7D': 4, '30D': 4 }
-  const bucketSize = bucketMap[perfTf] || 4
+  // Target ~20 candles regardless of series density
+  const bucketSize = Math.max(1, Math.floor(perfSeries.length / 20))
 
   const rawCandles = buildOHLC(perfSeries, bucketSize)
   if (rawCandles.length < 3) return null
@@ -2404,7 +2404,7 @@ function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
           }}
           cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
         />
-        <Bar dataKey="high" shape={<CandleShape />} isAnimationActive={false} />
+        <Bar dataKey="high" shape={<CandleShape domain={domain} />} isAnimationActive={false} />
         <Line
           type="linear" dataKey="trend"
           stroke={strokeColor} strokeWidth={1.5}
