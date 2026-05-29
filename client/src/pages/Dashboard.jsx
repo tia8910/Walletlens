@@ -3345,7 +3345,11 @@ export default function Dashboard() {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
-              return (
+              // Use candlestick chart when there are enough data points; fall back to area chart.
+              const candleEl = perfSeries.length >= 3
+                ? <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
+                : null
+              return candleEl || (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
