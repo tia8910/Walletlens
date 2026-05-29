@@ -364,7 +364,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     }
     setBusy(true); setMsg('')
     try {
-      const wid = walletId || (wallets[0]?.id ?? '1')
+      // Auto-create a default wallet if the user is trading before making one,
+      // so they never have to set up a wallet first.
+      let wid = walletId || wallets[0]?.id
+      if (!wid) {
+        const w = await api.createWallet({ name: 'My Wallet' })
+        wid = w.id
+      }
       const TROY_OZ = 31.1034768
       const isMetal = category === 'gold' || category === 'silver'
       const rawAmt = parseFloat(amount)
