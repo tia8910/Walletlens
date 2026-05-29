@@ -1357,16 +1357,27 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
-  { tag:'ALL ASSETS', icon:'🌍', color:'#34d399', title:'One Dashboard — All Assets', desc:'Crypto, stocks, ETFs, precious metals & cash. See your complete net worth updated live in one place.' },
-  { tag:'CRYPTO', icon:'₿', color:'#f7931a', title:'10,000+ Coins Tracked', desc:'Real-time prices, P&L, and allocation for every cryptocurrency — from Bitcoin to micro-cap altcoins.' },
-  { tag:'STOCKS & ETFs', icon:'📈', color:'#60a5fa', title:'Stocks & ETFs Side by Side', desc:'Track AAPL, NVDA, TSLA, and any ticker. Stocks sit right alongside your crypto in one net worth view.' },
-  { tag:'METALS', icon:'🟡', color:'#ffd700', title:'Precious Metals by Weight', desc:'Gold, silver, and platinum tracked by oz or gram with live spot prices — treated as a true asset class.' },
-  { tag:'CASH', icon:'💵', color:'#22c55e', title:'Cash & Stablecoins', desc:'USDT, USDC, and fiat included in net worth but excluded from P&L — so your profit numbers are honest.' },
-  { tag:'AI ADVISOR', icon:'🤖', color:'#818cf8', title:'AI Portfolio Advisor', desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
-  { tag:'RISK', icon:'⚠️', color:'#f59e0b', title:'Risk Scanner', desc:'Concentration risk, volatility exposure, liquidity flags — know every risk before the market moves.' },
-  { tag:'VOICE', icon:'🎙️', color:'#10b981', title:'Voice Trade Import', desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it instantly. English and Arabic supported.' },
-  { tag:'PRIVACY', icon:'🔒', color:'#3b82f6', title:'100% Private — No Server', desc:'Everything stays on your device. No account, no cloud sync, no tracking. Your data is yours alone.' },
-  { tag:'FREE', icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch', desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
+  { tag:'ALL ASSETS',    icon:'🌍', color:'#34d399', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
+  { tag:'CRYPTO',        icon:'₿',  color:'#f7931a', title:'10,000+ Coins Tracked',             desc:'Real-time prices, P&L, and allocation for any cryptocurrency — from Bitcoin to micro-cap altcoins.' },
+  { tag:'STOCKS & ETFs', icon:'📈', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
+  { tag:'METALS',        icon:'🟡', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
+  { tag:'CASH',          icon:'💵', color:'#22c55e', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
+  { tag:'AI ADVISOR',    icon:'🤖', color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
+  { tag:'RISK SCANNER',  icon:'⚠️', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
+  { tag:'RISK BUDGET',   icon:'📐', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
+  { tag:'SET TARGETS',   icon:'🎯', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
+  { tag:'SELL PLAN',     icon:'📋', color:'#34d399', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
+  { tag:'BUY/SELL TIMING',icon:'⏱️',color:'#10b981', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
+  { tag:'WHALE ALERTS',  icon:'🐋', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
+  { tag:'PRICE ALERTS',  icon:'🔔', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
+  { tag:'GOALS',         icon:'🏅', color:'#fbbf24', title:'Goal-Based Portfolio Tracker',      desc:'Set a target (e.g. $50K by Dec 2026) — track progress with a live ring, DCA calc & probability badge.' },
+  { tag:'MARKET MOOD',   icon:'🌡️', color:'#f87171', title:'Fear & Greed Gauge',               desc:'Real-time market sentiment scored from live crypto headlines — know the crowd\'s emotion before you trade.' },
+  { tag:'SECTOR MAP',    icon:'🗺️', color:'#818cf8', title:'Sector Rotation Heatmap',          desc:'L1, L2, DeFi, AI, Gaming, Meme — each sector colour-coded by 7-day performance so you follow the money.' },
+  { tag:'CORRELATION',   icon:'🧩', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
+  { tag:'WEEKLY REPORT', icon:'📅', color:'#34d399', title:'Auto Weekly Performance Report',    desc:'Auto-generated weekly summary — top movers, P&L breakdown, and what changed this week.' },
+  { tag:'VOICE',         icon:'🎙️', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
+  { tag:'PRIVACY',       icon:'🔒', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
+  { tag:'FREE',          icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
 ]
 
 function FeatureSlideshow() {
