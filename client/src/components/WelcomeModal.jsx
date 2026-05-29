@@ -1,20 +1,11 @@
 import { useState, useEffect } from 'react'
 import { track } from '../analytics'
+import Logo from './Logo'
 
 const KEY = 'wl_welcomed_v2'
 
-const WalletLensLogo = () => (
-  <svg viewBox="0 0 64 64" width="46" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="32" cy="32" r="24" stroke="rgba(0,200,83,0.2)" strokeWidth="1"/>
-    <circle cx="32" cy="32" r="17" stroke="#00c853" strokeWidth="3" fill="none" strokeOpacity="0.9"/>
-    <circle cx="32" cy="32" r="8.5" fill="#00c853"/>
-    <circle cx="32" cy="32" r="3.5" fill="rgba(0,0,0,0.45)"/>
-    <line x1="32" y1="8" x2="32" y2="14" stroke="rgba(0,200,83,0.35)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="32" y1="50" x2="32" y2="56" stroke="rgba(0,200,83,0.35)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="8" y1="32" x2="14" y2="32" stroke="rgba(0,200,83,0.35)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="50" y1="32" x2="56" y2="32" stroke="rgba(0,200,83,0.35)" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-)
+// Use the real brand logo on the welcome card.
+const WalletLensLogo = () => <Logo size={48} animated />
 
 const STEPS = [
   {
