@@ -2401,14 +2401,20 @@ function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
         <XAxis hide dataKey="i" type="number" domain={['dataMin', 'dataMax']} />
         <YAxis hide domain={domain} />
         <Tooltip
-          contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
-          itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.85rem' }}
-          labelStyle={{ display:'none' }}
-          formatter={(v, name) => {
-            if (name === 'trend') return null
-            return [`$${v != null ? v.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }) : ''}`, name]
-          }}
           cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null
+            const c = payload[0]?.payload; if (!c) return null
+            const bull = c.close >= c.open
+            const clr = bull ? '#22c55e' : '#f87171'
+            const f = v => v != null ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : ''
+            return (
+              <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.45rem 0.75rem', boxShadow:'var(--shadow)', fontSize:'0.8rem' }}>
+                <div style={{ color:clr, fontWeight:800 }}>O {f(c.open)} · C {f(c.close)}</div>
+                <div style={{ color:'var(--text-muted)', marginTop:2 }}>H {f(c.high)} · L {f(c.low)}</div>
+              </div>
+            )
+          }}
         />
         <Bar dataKey="high" shape={<CandleShape domain={domain} />} isAnimationActive={false} />
         <Line
@@ -3621,9 +3627,6 @@ export default function Dashboard() {
             {/* Right column — order: -1 on mobile so it renders before left col */}
             <div className="dvx-col-side">
 
-              {/* ── 1st: Goal Tracker ── */}
-              {cardVis.goal_tracker && <GoalTracker currentValue={totalValue} />}
-
               {/* ── Allocation donut (by category) ── */}
               {cardVis.allocation && <div className="glass-card">
                 <h3>{pricesFailed ? t('allocationInvested') : 'Net Worth by Category'}</h3>
@@ -3652,8 +3655,8 @@ export default function Dashboard() {
                 }
               </div>}
 
-              {/* Net Worth History (30-day from transactions) */}
-              {cardVis.net_worth_history && !isDemo && transactions.length > 0 && (() => {
+              {/* Net Worth History — removed */}
+              {false && !isDemo && transactions.length > 0 && (() => {
                 const now = Date.now()
                 const days = 30
                 const points = Array.from({ length: days }, (_, i) => {
