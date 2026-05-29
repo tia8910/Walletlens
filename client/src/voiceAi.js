@@ -72,14 +72,36 @@ function filterTrades(arr) {
 }
 
 // Returns a (possibly empty) array of { type, symbol, name?, amount, price? }.
-// Tries the user's own key in-browser first; falls back to the server endpoint.
+//
+// PRIMARY path is the serverless /api/voice-parse endpoint, which uses the
+// app owner's ANTHROPIC_API_KEY secret — so every user gets smart parsing
+// with no key of their own and the key is never exposed to the browser.
+// Falls back to a direct in-browser call only if the server is unreachable
+// or not configured AND a local key happens to be present (dev convenience).
 export async function parseTradesWithClaude(transcript, hintLang = 'en') {
   const text = (transcript || '').toString().trim().slice(0, 500)
   if (!text) return []
   const lang = hintLang === 'ar' ? 'ar' : 'en'
-  const apiKey = getAnthropicKey()
 
-  // 1) Direct browser call with the user's own key (no server needed).
+  // 1) Server endpoint with the owner's secret key (works for everyone).
+  try {
+    const resp = await fetch('/api/voice-parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: text, hintLang: lang }),
+    })
+    if (resp.ok) {
+      const data = await resp.json()
+      const trades = filterTrades(data?.trades)
+      if (trades.length) return trades
+    }
+    // 503 not_configured / 5xx → try the browser fallback below
+  } catch {
+    // network error → try the browser fallback below
+  }
+
+  // 2) Direct browser call (only if a local key exists — e.g. local dev).
+  const apiKey = getAnthropicKey()
   if (apiKey) {
     try {
       const res = await fetch(ANTHROPIC_API, {
@@ -100,29 +122,11 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en') {
         const data = await res.json()
         const out = data.content?.[0]?.text || ''
         const m = out.match(/\{[\s\S]*\}/)
-        if (m) {
-          const trades = filterTrades(JSON.parse(m[0]).trades)
-          if (trades.length) return trades
-        }
+        if (m) return filterTrades(JSON.parse(m[0]).trades)
       }
     } catch {
-      // fall through to server fallback
+      // give up gracefully
     }
-  }
-
-  // 2) Serverless fallback (uses a server-configured key, if available).
-  try {
-    const resp = await fetch('/api/voice-parse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript: text, hintLang: lang }),
-    })
-    if (resp.ok) {
-      const data = await resp.json()
-      return filterTrades(data?.trades)
-    }
-  } catch {
-    // no network / no server — give up gracefully
   }
   return []
 }

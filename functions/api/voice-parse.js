@@ -68,7 +68,9 @@ Extract every TRADE the user described. Return STRICT JSON ONLY — no markdown 
 }
 
 Rules:
-- Multiple trades in one sentence → multiple objects in the array (e.g. "I bought 5 Selena and 1 Bitcoin" → [SOL × 5, BTC × 1]).
+- MULTIPLE trades in one sentence → one object PER asset. "I bought 5 Selena and 1 Bitcoin" → [SOL × 5, BTC × 1]. "I bought 1 Bitcoin and 1 Ethereum" → [BTC × 1, ETH × 1]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it — apply it to each.
+- A shared amount before a list applies to each coin unless a per-coin amount is given: "I bought 5 of Bitcoin and Ethereum" → [BTC × 5, ETH × 5]; "I bought 2 Solana and 3 Cardano" → [SOL × 2, ADA × 3].
+- The Arabic conjunction "و" (and) separates assets: "بيتكوين وايثيريوم" = Bitcoin AND Ethereum (two assets).
 - If the transcript is too garbled to extract ANY trade, return { "trades": [] }.
 - Recognise Arabic phonetics that English STT mis-rendered (e.g. "selena" = Solana, "street ultra" or "ash tara" or "ish tari" = اشتري = buy, "baat" / "bat" / "bait" = بعت = sold).
 - Arabic dialect intent verbs: اشتري/شريت/جبت/أخذت/حطيت/كومت/جمعت/كسبت/استثمرت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت = SELL.
