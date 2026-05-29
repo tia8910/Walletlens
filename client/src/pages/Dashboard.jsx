@@ -1356,45 +1356,102 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 }
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
-function FeatureSlideshow() {
-  const SLIDES = [
-    { icon:'📊', color:'#34d399', title:'Track Your Net Worth', desc:'All assets in one dashboard — crypto, stocks, metals & cash. Live prices, P&L, and allocation at a glance.' },
-    { icon:'🤖', color:'#818cf8', title:'AI Portfolio Analysis', desc:'Get a portfolio health score, diversification grade, and personalised recommendations powered by AI.' },
-    { icon:'⚠️', color:'#f59e0b', title:'Risk Scanner', desc:'Spot concentration risk, volatility exposure, and liquidity issues before they hurt your returns.' },
-    { icon:'🎙️', color:'#10b981', title:'Voice Trade Import', desc:'Just say "I bought 0.5 BTC at 60K" and WalletLens logs it instantly. English and Arabic supported.' },
-    { icon:'🎯', color:'#f87171', title:'Price Targets & Alerts', desc:'Set exit targets for every holding and get notified the moment prices hit your levels.' },
-    { icon:'🔒', color:'#60a5fa', title:'100% Private — No Server', desc:'Your data never leaves your device. No account, no cloud, no tracking. Ever.' },
-  ]
-  const [idx, setIdx] = useState(0)
-  const [visible, setVisible] = useState(true)
+const FEATURE_SLIDES = [
+  { tag:'ALL ASSETS', icon:'🌍', color:'#34d399', title:'One Dashboard — All Assets', desc:'Crypto, stocks, ETFs, precious metals & cash. See your complete net worth updated live in one place.' },
+  { tag:'CRYPTO', icon:'₿', color:'#f7931a', title:'10,000+ Coins Tracked', desc:'Real-time prices, P&L, and allocation for every cryptocurrency — from Bitcoin to micro-cap altcoins.' },
+  { tag:'STOCKS & ETFs', icon:'📈', color:'#60a5fa', title:'Stocks & ETFs Side by Side', desc:'Track AAPL, NVDA, TSLA, and any ticker. Stocks sit right alongside your crypto in one net worth view.' },
+  { tag:'METALS', icon:'🟡', color:'#ffd700', title:'Precious Metals by Weight', desc:'Gold, silver, and platinum tracked by oz or gram with live spot prices — treated as a true asset class.' },
+  { tag:'CASH', icon:'💵', color:'#22c55e', title:'Cash & Stablecoins', desc:'USDT, USDC, and fiat included in net worth but excluded from P&L — so your profit numbers are honest.' },
+  { tag:'AI ADVISOR', icon:'🤖', color:'#818cf8', title:'AI Portfolio Advisor', desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
+  { tag:'RISK', icon:'⚠️', color:'#f59e0b', title:'Risk Scanner', desc:'Concentration risk, volatility exposure, liquidity flags — know every risk before the market moves.' },
+  { tag:'VOICE', icon:'🎙️', color:'#10b981', title:'Voice Trade Import', desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it instantly. English and Arabic supported.' },
+  { tag:'PRIVACY', icon:'🔒', color:'#3b82f6', title:'100% Private — No Server', desc:'Everything stays on your device. No account, no cloud sync, no tracking. Your data is yours alone.' },
+  { tag:'FREE', icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch', desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
+]
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setVisible(false)
-      setTimeout(() => { setIdx(i => (i + 1) % SLIDES.length); setVisible(true) }, 280)
-    }, 3200)
-    return () => clearInterval(id)
+function FeatureSlideshow() {
+  const [idx, setIdx]         = useState(0)
+  const [dir, setDir]         = useState(1)
+  const [animKey, setAnimKey] = useState(0)
+  const [paused, setPaused]   = useState(false)
+  const touchX = useRef(null)
+
+  const goTo = useCallback((newIdx, direction) => {
+    setDir(direction); setIdx(newIdx); setAnimKey(k => k + 1)
   }, [])
 
-  const slide = SLIDES[idx]
+  const next = useCallback(() => goTo((idx + 1) % FEATURE_SLIDES.length,  1), [idx, goTo])
+  const prev = useCallback(() => goTo((idx - 1 + FEATURE_SLIDES.length) % FEATURE_SLIDES.length, -1), [idx, goTo])
+
+  useEffect(() => {
+    if (paused) return
+    const id = setInterval(() => {
+      setDir(1); setIdx(i => (i + 1) % FEATURE_SLIDES.length); setAnimKey(k => k + 1)
+    }, 4000)
+    return () => clearInterval(id)
+  }, [paused])
+
+  const slide = FEATURE_SLIDES[idx]
   return (
-    <div style={{ margin: '0 auto 1.25rem', width: '100%' }}>
-      <div style={{
-        borderRadius: 16, border: `1.5px solid ${slide.color}28`,
-        background: `linear-gradient(135deg,${slide.color}0a,${slide.color}04)`,
-        padding: '1.4rem 1.1rem', minHeight: 130,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        textAlign: 'center', transition: 'opacity 0.28s', opacity: visible ? 1 : 0,
-      }}>
-        <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>{slide.icon}</div>
-        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: slide.color, marginBottom: '0.35rem' }}>{slide.title}</div>
-        <div style={{ fontSize: '0.77rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{slide.desc}</div>
+    <div style={{ margin:'0 auto 1.25rem', width:'100%', userSelect:'none' }}
+      onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; setPaused(true) }}
+      onTouchEnd={e => {
+        if (touchX.current === null) return
+        const dx = e.changedTouches[0].clientX - touchX.current
+        if (Math.abs(dx) > 28) { if (dx < 0) next(); else prev() }
+        touchX.current = null; setPaused(false)
+      }}
+    >
+      <style>{`
+        @keyframes fs-right{from{transform:translateX(36px);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes fs-left {from{transform:translateX(-36px);opacity:0}to{transform:translateX(0);opacity:1}}
+      `}</style>
+      <div style={{ position:'relative', padding:'0 22px' }}>
+        {/* Prev arrow */}
+        <button onClick={prev} style={{
+          position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
+          width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
+          cursor:'pointer', background:'var(--surface-1)', color:'var(--text-muted)',
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', lineHeight:1,
+        }}>‹</button>
+
+        {/* Slide */}
+        <div key={animKey} style={{
+          borderRadius:16, border:`1.5px solid ${slide.color}30`,
+          background:`linear-gradient(135deg,${slide.color}0e,${slide.color}05)`,
+          padding:'1.3rem 1rem', minHeight:156,
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          textAlign:'center', overflow:'hidden',
+          animation:`${dir > 0 ? 'fs-right' : 'fs-left'} 0.3s ease both`,
+        }}>
+          <span style={{
+            fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase',
+            color:slide.color, background:`${slide.color}18`, borderRadius:4,
+            padding:'0.18rem 0.45rem', marginBottom:'0.6rem', display:'inline-block',
+          }}>{slide.tag}</span>
+          <div style={{ fontSize:'2rem', marginBottom:'0.45rem' }}>{slide.icon}</div>
+          <div style={{ fontWeight:800, fontSize:'0.92rem', color:'var(--text)', marginBottom:'0.35rem', lineHeight:1.3 }}>{slide.title}</div>
+          <div style={{ fontSize:'0.76rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:280 }}>{slide.desc}</div>
+        </div>
+
+        {/* Next arrow */}
+        <button onClick={next} style={{
+          position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', zIndex:2,
+          width:28, height:28, borderRadius:'50%', border:'1px solid rgba(var(--g-rgb),0.2)',
+          cursor:'pointer', background:'var(--surface-1)', color:'var(--text-muted)',
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', lineHeight:1,
+        }}>›</button>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.6rem' }}>
-        {SLIDES.map((s, i) => (
-          <button key={i} onClick={() => { setVisible(false); setTimeout(() => { setIdx(i); setVisible(true) }, 180) }} style={{
-            width: i === idx ? 18 : 6, height: 6, borderRadius: 3, border: 'none', cursor: 'pointer', padding: 0,
-            background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.18)', transition: 'all 0.3s',
+
+      {/* Dot nav */}
+      <div style={{ display:'flex', justifyContent:'center', gap:'0.32rem', marginTop:'0.65rem', flexWrap:'wrap' }}>
+        {FEATURE_SLIDES.map((_, i) => (
+          <button key={i} onClick={() => goTo(i, i > idx ? 1 : -1)} style={{
+            width: i === idx ? 18 : 6, height:6, borderRadius:3,
+            border:'none', cursor:'pointer', padding:0,
+            background: i === idx ? slide.color : 'rgba(var(--g-rgb),0.18)',
+            transition:'all 0.3s',
           }} />
         ))}
       </div>
