@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
+  ComposedChart, Line,
 } from 'recharts'
 import { api } from '../api'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
@@ -1925,45 +1926,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         </button>
       </div>
 
-      {/* Primary CTA — creative dark command-center button */}
-      <button onClick={onAddTrade} style={{
-        width:'100%', display:'flex', alignItems:'center', gap:'0.65rem',
-        height:'60px', padding:'0 1.2rem',
-        borderRadius:'14px',
-        border:'1.5px solid rgba(var(--g-rgb),0.4)',
-        cursor:'pointer',
-        fontSize:'1rem', fontWeight:800, color:'var(--g)',
-        background:'linear-gradient(135deg, var(--ink2,#061a0f) 0%, var(--bg4,#0d2e18) 100%)',
-        position:'relative', overflow:'hidden',
-        animation:'ep-glow-pulse 2.4s ease-in-out infinite',
-        marginBottom:'1.25rem',
-      }}>
-        {/* sweep shimmer */}
-        <span style={{
-          position:'absolute', top:0, width:'40%', height:'100%',
-          background:'linear-gradient(90deg,transparent,rgba(var(--g-rgb),.09),transparent)',
-          animation:'ep-sweep 2.6s ease-in-out infinite',
-          pointerEvents:'none',
-        }}/>
-        {/* glowing + ring icon */}
-        <span style={{
-          width:38, height:38, borderRadius:'50%', flexShrink:0,
-          border:'2px solid rgba(var(--g-rgb),0.55)',
-          background:'rgba(var(--g-rgb),0.1)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          animation:'ep-icon-ring 2.4s ease-in-out infinite',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.8" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </span>
-        <span style={{ flex:1, textAlign:'left', letterSpacing:'0.01em' }}>Add a trade</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:0.55, flexShrink:0 }}>
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-
-      {/* Import buttons (Excel / Voice) — rendered just below Add a trade */}
+      {/* Import buttons (Excel / Voice) */}
       {importsSlot}
 
       {/* Quick-add chips */}
@@ -2339,6 +2302,121 @@ function AlertsSection({ enriched, prices, isDemo }) {
   )
 }
 
+// ── Candlestick chart helper ─────────────────────────────────────────────────
+// Buckets `perfSeries` (array of { i, v }) into OHLC candles, then renders a
+// ComposedChart with custom SVG candle shapes + a linear-regression trend line.
+// Falls back to null if there are fewer than 3 input points (caller shows AreaChart).
+
+function buildOHLC(series, bucketSize) {
+  const candles = []
+  for (let start = 0; start < series.length; start += bucketSize) {
+    const bucket = series.slice(start, start + bucketSize)
+    if (bucket.length === 0) continue
+    const values = bucket.map(p => p.v)
+    candles.push({
+      i: bucket[Math.floor(bucket.length / 2)].i,
+      open:  values[0],
+      close: values[values.length - 1],
+      high:  Math.max(...values),
+      low:   Math.min(...values),
+    })
+  }
+  return candles
+}
+
+function linearRegression(candles) {
+  const n = candles.length
+  if (n < 2) return candles.map(c => ({ ...c, trend: c.close }))
+  const xs = candles.map((_, i) => i)
+  const ys = candles.map(c => c.close)
+  const meanX = xs.reduce((a, b) => a + b, 0) / n
+  const meanY = ys.reduce((a, b) => a + b, 0) / n
+  const num = xs.reduce((s, x, i) => s + (x - meanX) * (ys[i] - meanY), 0)
+  const den = xs.reduce((s, x) => s + (x - meanX) ** 2, 0)
+  const slope = den === 0 ? 0 : num / den
+  const intercept = meanY - slope * meanX
+  return candles.map((c, i) => ({ ...c, trend: intercept + slope * i }))
+}
+
+// Custom candle shape rendered via Recharts customized bar
+function CandleShape(props) {
+  const { x, y, width, payload, yAxis } = props
+  if (!payload || !yAxis) return null
+  const { open, close, high, low } = payload
+  const { scale } = yAxis
+  if (typeof scale !== 'function') return null
+
+  const yOpen  = scale(open)
+  const yClose = scale(close)
+  const yHigh  = scale(high)
+  const yLow   = scale(low)
+
+  const bullish    = close >= open
+  const color      = bullish ? '#22c55e' : '#f87171'
+  const bodyTop    = Math.min(yOpen, yClose)
+  const bodyHeight = Math.max(Math.abs(yClose - yOpen), 1)
+  const midX       = x + width / 2
+
+  return (
+    <g>
+      {/* Wick */}
+      <line x1={midX} y1={yHigh} x2={midX} y2={yLow} stroke={color} strokeWidth={1.5} opacity={0.8} />
+      {/* Body */}
+      <rect
+        x={x + width * 0.15} y={bodyTop}
+        width={width * 0.7} height={bodyHeight}
+        fill={bullish ? color : color}
+        fillOpacity={bullish ? 0.85 : 0.75}
+        stroke={color} strokeWidth={1}
+        rx={1}
+      />
+    </g>
+  )
+}
+
+function CandlestickChart({ perfSeries, perfTf, strokeColor }) {
+  const bucketMap = { '4H': 4, '1D': 4, '7D': 4, '30D': 4 }
+  const bucketSize = bucketMap[perfTf] || 4
+
+  const rawCandles = buildOHLC(perfSeries, bucketSize)
+  if (rawCandles.length < 3) return null
+  const candles = linearRegression(rawCandles)
+
+  // Domain with padding
+  const allValues = candles.flatMap(c => [c.high, c.low, c.trend])
+  const minV = Math.min(...allValues)
+  const maxV = Math.max(...allValues)
+  const pad  = (maxV - minV) * 0.05 || 1
+  const domain = [minV - pad, maxV + pad]
+
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <ComposedChart data={candles} margin={{ left:0, right:0, top:8, bottom:0 }}>
+        <XAxis hide dataKey="i" type="number" domain={['dataMin', 'dataMax']} />
+        <YAxis hide domain={domain} />
+        <Tooltip
+          contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
+          itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.85rem' }}
+          labelStyle={{ display:'none' }}
+          formatter={(v, name) => {
+            if (name === 'trend') return null
+            return [`$${v != null ? v.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }) : ''}`, name]
+          }}
+          cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
+        />
+        <Bar dataKey="high" shape={<CandleShape />} isAnimationActive={false} />
+        <Line
+          type="linear" dataKey="trend"
+          stroke={strokeColor} strokeWidth={1.5}
+          strokeDasharray="5 3"
+          dot={false} activeDot={false}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -2496,7 +2574,16 @@ export default function Dashboard() {
       api.getTransactions(), api.getWallets(), api.getCoinTargets(),
     ])
     portfolioRef.current = p
-    setPortfolio(p); setTransactions(txs); setWallets(ws); setCoinTargets(ct || {})
+    // Auto-create a default wallet for brand-new users so they never see
+    // "Please select a wallet first." on their very first visit.
+    if (ws.length === 0) {
+      await api.createWallet({ name: 'My Wallet' })
+      const freshWs = await api.getWallets()
+      setWallets(freshWs)
+    } else {
+      setWallets(ws)
+    }
+    setPortfolio(p); setTransactions(txs); setCoinTargets(ct || {})
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
@@ -3258,7 +3345,11 @@ export default function Dashboard() {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
-              return (
+              // Use candlestick chart when there are enough data points; fall back to area chart.
+              const candleEl = perfSeries.length >= 3
+                ? <CandlestickChart key={perfTf} perfSeries={perfSeries} perfTf={perfTf} strokeColor={strokeColor} />
+                : null
+              return candleEl || (
                 <ResponsiveContainer key={perfTf} width="100%" height={180}>
                   <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
