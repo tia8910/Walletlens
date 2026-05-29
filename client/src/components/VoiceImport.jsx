@@ -3,6 +3,7 @@ import { loadData, saveData, bumpId } from '../data/storage'
 import { track } from '../analytics'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
+import { parseTradesWithClaude } from '../voiceAi'
 import {
   POPULAR_TICKERS, POPULAR_FIAT,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
@@ -1127,20 +1128,19 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     return idx
   }
 
-  // Ask the Claude-powered server-side parser to interpret a transcript that
-  // our local regex parser couldn't make sense of. Replaces the parsed result
-  // on success; silently falls back to the local parse on any failure.
+  const [aiThinking, setAiThinking] = useState(false)
+
+  // Ask Claude to interpret a transcript the local regex parser couldn't fully
+  // resolve. Runs DIRECTLY in the browser with the user's own key (falling back
+  // to the serverless endpoint), so it handles multi-trade sentences, dialects,
+  // and slang in Arabic + English — e.g. "I bought 1 Bitcoin and 1 Ethereum"
+  // becomes two orders. Replaces the parsed result on success; silently keeps
+  // the local parse on any failure.
   const tryAiFallback = async (rawText) => {
     if (!rawText || rawText.length < 3) return
+    setAiThinking(true)
     try {
-      const resp = await fetch('/api/voice-parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: rawText, hintLang: lang.startsWith('ar') ? 'ar' : 'en' }),
-      })
-      if (!resp.ok) return
-      const data = await resp.json()
-      const trades = Array.isArray(data?.trades) ? data.trades : []
+      const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en')
       if (!trades.length) return
       const idx = getSymbolIndex()
       const transactions = trades.map(t => {
@@ -1151,16 +1151,27 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           amount: typeof t.amount === 'number' ? t.amount : null,
           price: typeof t.price === 'number' ? t.price : null,
           matchedWord: t.type === 'buy' ? 'bought' : 'sold',
+          // Keep unmatched symbols so the user can resolve them via search,
+          // and remember the spoken name to seed that search box.
+          coinSymbol: (t.symbol || '').toUpperCase(),
+          coinName: t.name || '',
           suggestions: coin ? null : [],
         }
-      }).filter(t => t.coin && t.amount != null)
+      }).filter(t => t.amount != null && (t.coin || t.coinSymbol))
       if (!transactions.length) return
       const aiParsed = { original: rawText, transactions }
       setParsed(aiParsed)
+      // Pre-fill the asset search for any coin Claude named but we couldn't map
+      // to an internal entry, so matching results appear without retyping.
+      const seed = {}
+      transactions.forEach((t, i) => { if (!t.coin && t.coinName) seed[i] = t.coinName })
+      if (Object.keys(seed).length) setAssetQueries(seed)
       setReaction(getReaction(rawText, aiParsed.transactions[0] || {}))
       track('voice_ai_fallback_used', { tx_count: transactions.length })
     } catch {
       // Network / parse error — keep the local parse result
+    } finally {
+      setAiThinking(false)
     }
   }
 
@@ -1477,6 +1488,16 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   ? '⚠️ لم أسمع شيئاً — تحدث بوضوح، أو تحقق من إذن الميكروفون والإنترنت'
                   : '⚠️ Not hearing you — speak clearly, or check mic permission and internet connection'}
               </p>
+            </div>
+          )}
+
+          {/* AI interpreting indicator */}
+          {aiThinking && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'0.6rem', padding:'0.5rem 0.9rem', borderRadius:'10px', background:'rgba(129,140,248,0.1)', border:'1px solid rgba(129,140,248,0.3)' }}>
+              <span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(129,140,248,0.35)', borderTopColor:'#818cf8', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
+              <span style={{ fontSize:'0.8rem', color:'#818cf8', fontWeight:700 }}>
+                {isAr ? '✨ الذكاء الاصطناعي يحلل كلامك…' : '✨ AI is interpreting your trade…'}
+              </span>
             </div>
           )}
 
