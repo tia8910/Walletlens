@@ -35,6 +35,48 @@ function go(navigate, route) {
   navigate(path, Object.keys(state).length ? { state } : undefined)
 }
 
+const FAB_SIZE = 56
+const POS_KEY = 'wl_assistant_fab_pos'
+const DRAG_THRESHOLD = 6 // px before a press counts as a drag (vs a tap)
+
+function loadPos() {
+  try {
+    const raw = localStorage.getItem(POS_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw)
+    if (typeof p?.x === 'number' && typeof p?.y === 'number') return p
+  } catch {}
+  return null
+}
+
+function clampPos(x, y) {
+  const maxX = window.innerWidth - FAB_SIZE - 8
+  const maxY = window.innerHeight - FAB_SIZE - 8
+  return { x: Math.max(8, Math.min(maxX, x)), y: Math.max(8, Math.min(maxY, y)) }
+}
+
+// Position the panel near the fab, opening above/below and clamped on-screen.
+function panelStyleFor(pos) {
+  const vw = window.innerWidth, vh = window.innerHeight
+  const gap = 12
+  const panelW = Math.min(380, vw - 16)
+  let left = pos.x + FAB_SIZE - panelW           // align right edges by default
+  left = Math.max(8, Math.min(vw - panelW - 8, left))
+  const openAbove = pos.y > vh / 2
+  const style = { left: `${left}px`, right: 'auto', width: `${panelW}px` }
+  if (openAbove) {
+    const bottom = vh - pos.y + gap
+    style.bottom = `${bottom}px`; style.top = 'auto'
+    style.maxHeight = `${Math.max(220, vh - bottom - 16)}px`
+  } else {
+    const top = pos.y + FAB_SIZE + gap
+    style.top = `${top}px`; style.bottom = 'auto'
+    style.maxHeight = `${Math.max(220, vh - top - 16)}px`
+  }
+  style.height = 'auto'
+  return style
+}
+
 export default function AssistantChat() {
   const navigate = useNavigate()
   const { lang } = useLanguage()
@@ -43,8 +85,11 @@ export default function AssistantChat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [pos, setPos] = useState(loadPos) // null = default bottom-right (CSS)
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
+  const fabRef = useRef(null)
+  const drag = useRef({ active: false, moved: false, startX: 0, startY: 0, offX: 0, offY: 0 })
 
   const isAr = lang === 'ar'
 
@@ -54,6 +99,47 @@ export default function AssistantChat() {
       inputRef.current?.focus()
     }
   }, [messages, open, loading])
+
+  // Keep the fab inside the viewport on resize/orientation change.
+  useEffect(() => {
+    if (!pos) return
+    const onResize = () => setPos(p => (p ? clampPos(p.x, p.y) : p))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [pos])
+
+  function onFabPointerDown(e) {
+    const rect = fabRef.current.getBoundingClientRect()
+    drag.current = {
+      active: true, moved: false,
+      startX: e.clientX, startY: e.clientY,
+      offX: e.clientX - rect.left, offY: e.clientY - rect.top,
+    }
+    try { fabRef.current.setPointerCapture(e.pointerId) } catch {}
+  }
+  function onFabPointerMove(e) {
+    const d = drag.current
+    if (!d.active) return
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY
+    if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+    d.moved = true
+    setPos(clampPos(e.clientX - d.offX, e.clientY - d.offY))
+  }
+  function onFabPointerUp(e) {
+    const d = drag.current
+    if (!d.active) return
+    d.active = false
+    try { fabRef.current.releasePointerCapture(e.pointerId) } catch {}
+    if (d.moved) {
+      setPos(p => { if (p) { try { localStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {} } return p })
+    }
+  }
+  function onFabClick() {
+    // Suppress the click that follows a drag so dragging never toggles the panel.
+    if (drag.current.moved) { drag.current.moved = false; return }
+    setOpen(o => !o)
+    if (!open) track('assistant_open')
+  }
 
   async function send(text) {
     const trimmed = (text ?? input).trim()
@@ -91,8 +177,13 @@ export default function AssistantChat() {
   return (
     <>
       <button
-        className={`wlc-fab ${open ? 'wlc-fab-open' : ''}`}
-        onClick={() => { setOpen(o => !o); if (!open) track('assistant_open') }}
+        ref={fabRef}
+        className={`wlc-fab ${open ? 'wlc-fab-open' : ''} ${drag.current.moved ? 'wlc-fab-dragging' : ''}`}
+        style={pos ? { left: `${pos.x}px`, top: `${pos.y}px`, right: 'auto', bottom: 'auto' } : undefined}
+        onPointerDown={onFabPointerDown}
+        onPointerMove={onFabPointerMove}
+        onPointerUp={onFabPointerUp}
+        onClick={onFabClick}
         aria-label={isAr ? 'المساعد' : 'Assistant'}
       >
         {open ? (
@@ -103,7 +194,7 @@ export default function AssistantChat() {
       </button>
 
       {open && (
-        <div className="wlc-panel" role="dialog" aria-label="WalletLens assistant">
+        <div className="wlc-panel" role="dialog" aria-label="WalletLens assistant" style={pos ? panelStyleFor(pos) : undefined}>
           <div className="wlc-header">
             <div className="wlc-header-title">
               <span className="wlc-dot" />
