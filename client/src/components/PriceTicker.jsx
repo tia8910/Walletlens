@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react'
+import { useEffect, useState, useMemo, memo } from 'react'
 import { api } from '../api'
 
 const TICKER_REFRESH_MS = 60_000
@@ -66,7 +66,8 @@ function PriceTicker() {
   if (items.length === 0) return null
 
   // Duplicate the list so the marquee loops seamlessly
-  const doubled = [...items, ...items]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const doubled = useMemo(() => [...items, ...items], [items])
 
   return (
     <div className="ticker-strip" aria-hidden="true">

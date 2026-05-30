@@ -90,10 +90,8 @@ export default function DynamicBackground({
       }
       ctx.stroke()
 
-      // Particles
+      // Particles — no shadowBlur (expensive GPU compositing pass per particle)
       ctx.fillStyle = col
-      ctx.shadowBlur = 18
-      ctx.shadowColor = col
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
@@ -103,7 +101,6 @@ export default function DynamicBackground({
         if (p.y > h + 10) p.y = -10
         ctx.fillRect(p.x, p.y, p.size, p.size)
       }
-      ctx.shadowBlur = 0
 
       raf = requestAnimationFrame(step)
     }
