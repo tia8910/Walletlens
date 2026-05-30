@@ -2413,6 +2413,42 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [displayCurrency, prices])
 
+  // ── Display-currency conversion ───────────────────────────────────────────
+  // Every monetary figure on the dashboard is stored in USD. `cv()` turns a USD
+  // amount into the currency the user picked (fiat via live FX, or BTC) so the
+  // whole dashboard re-denominates consistently — not just the hero total.
+  const curConv = useMemo(() => {
+    if (displayCurrency === 'BTC') {
+      const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price || btcUsd
+      return { sym: '₿', rate: btcPrice ? 1 / btcPrice : null, btc: true }
+    }
+    if (displayCurrency === 'USD') return { sym: '$', rate: 1, btc: false }
+    const fiat = POPULAR_FIAT.find(f => f.code === displayCurrency)
+    return { sym: fiat?.symbol || displayCurrency, rate: fxRates[displayCurrency] || null, btc: false }
+  }, [displayCurrency, fxRates, btcUsd, prices])
+
+  // Full-precision money string in the active currency (e.g. "E£ 410,233.50").
+  const cv = useCallback((usd) => {
+    const n = Number(usd) || 0
+    if (!curConv.rate) return `$${fmt(Math.abs(n))}`
+    const v = n * curConv.rate
+    if (curConv.btc) return `₿ ${Math.abs(v) < 1 ? Math.abs(v).toFixed(6) : Math.abs(v).toFixed(4)}`
+    const sp = curConv.sym.length > 1 ? ' ' : ''
+    return `${curConv.sym}${sp}${fmt(Math.abs(v))}`
+  }, [curConv])
+
+  // Compact variant for chart axes (e.g. "E£12k", "₿0.45").
+  const cvN = useCallback((usd) => {
+    const n = Number(usd) || 0
+    const rate = curConv.rate || 1
+    const v = n * rate
+    if (curConv.btc) return `₿${Math.abs(v) < 1 ? Math.abs(v).toFixed(3) : Math.abs(v).toFixed(1)}`
+    const sp = curConv.sym.length > 1 ? ' ' : ''
+    const abs = Math.abs(v)
+    const s = abs >= 1000 ? `${(abs / 1000).toFixed(1)}k` : `${abs.toFixed(0)}`
+    return `${v < 0 ? '-' : ''}${curConv.sym}${sp}${s}`
+  }, [curConv])
+
   function saveCurrency(code) {
     setDisplayCurrency(code)
     setShowCurrencyPicker(false)
@@ -3092,16 +3128,7 @@ export default function Dashboard() {
               </button>
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
-              {hidden ? '••••••' : (() => {
-                const usdVal = loaded ? tickerValue : 0
-                if (displayCurrency === 'BTC') {
-                  const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price || btcUsd
-                  return btcPrice ? `₿ ${(usdVal / btcPrice).toFixed(6)}` : `$${fmt(usdVal)}`
-                }
-                const fiat = POPULAR_FIAT.find(f => f.code === displayCurrency)
-                const rate = fxRates[displayCurrency] || (displayCurrency === 'USD' ? 1 : null)
-                return rate ? `${fiat?.symbol || displayCurrency} ${fmt(usdVal * rate)}` : `$${fmt(usdVal)}`
-              })()}
+              {hidden ? '••••••' : cv(loaded ? tickerValue : 0)}
             </h2>
             {wallets.length > 1 && (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginBottom:'0.6rem' }}>
@@ -3208,7 +3235,7 @@ export default function Dashboard() {
             </div>
             {!pricesFailed && totalPnL !== 0 && (
               <p className={`dvx-hero-change ${totalPnL >= 0 ? 'up' : 'dn'} ${hidden ? 'dvx-hidden-val' : ''}`}>
-                {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} $${fmt(Math.abs(totalPnL))} (${pct(totalPnLPct)}) ${t('allTime')}`}
+                {hidden ? '••••• (••••%)' : `${totalPnL >= 0 ? '↑' : '↓'} ${cv(totalPnL)} (${pct(totalPnLPct)}) ${t('allTime')}`}
               </p>
             )}
             {/* Timeframe selector + performance chart — merged into portfolio overview card */}
@@ -3251,7 +3278,7 @@ export default function Dashboard() {
                       contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
                       itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
                       labelStyle={{ display:'none' }}
-                      formatter={v => [`$${fmt(v)}`, '']}
+                      formatter={v => [cv(v), '']}
                       cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
                     />
                     <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
@@ -3272,8 +3299,8 @@ export default function Dashboard() {
           {/* Stats row */}
           {enriched.length > 0 && (
             <div className="dvx-stats-row">
-              <StatCard label={t('invested')}    value={hidden ? '••••' : `$${fmt(totalInvested)}`} />
-              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : ''}$${fmt(Math.abs(totalPnL))}`}
+              <StatCard label={t('invested')}    value={hidden ? '••••' : cv(totalInvested)} />
+              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : '-'}${cv(totalPnL)}`}
                 color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
             </div>
@@ -3285,11 +3312,11 @@ export default function Dashboard() {
               {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
                 <div key={cat} className="dvx-cat-summary-card glass-card">
                   <CatLabel cat={cat} className="dvx-cat-summary-label" />
-                  <div className="dvx-cat-summary-value">{hidden ? '••••' : `$${fmt(value)}`}</div>
+                  <div className="dvx-cat-summary-value">{hidden ? '••••' : cv(value)}</div>
                   <div className="dvx-cat-summary-pct">{pct.toFixed(1)}%</div>
                   {cat !== 'cash' && pnl !== 0 && !pricesFailed && (
                     <div className={`dvx-cat-summary-pnl${pnl >= 0 ? ' pos' : ' neg'}`}>
-                      {pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(pnl))}`}
+                      {pnl >= 0 ? '+' : '-'}{hidden ? '••' : cv(pnl)}
                       <span className="dvx-cat-summary-pnlpct"> ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)</span>
                     </div>
                   )}
@@ -3316,14 +3343,14 @@ export default function Dashboard() {
                       <div className="dvx-cat-bar-fill" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="dvx-cat-right">
-                      <span className="dvx-cat-value">{hidden ? '••••' : `$${fmt(value)}`}</span>
+                      <span className="dvx-cat-value">{hidden ? '••••' : cv(value)}</span>
                       {cat !== 'cash' && pnl !== 0 && !pricesFailed && (
                         <span className={`dvx-cat-pnl${pnl >= 0 ? ' pos' : ' neg'}`}>
-                          {pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(pnl))}`} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
+                          {pnl >= 0 ? '+' : '-'}{hidden ? '••' : cv(pnl)} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
                         </span>
                       )}
                       {cat !== 'cash' && invested > 0 && (
-                        <span className="dvx-cat-invested">inv: {hidden ? '••••' : `$${fmt(invested)}`}</span>
+                        <span className="dvx-cat-invested">inv: {hidden ? '••••' : cv(invested)}</span>
                       )}
                     </div>
                     {assets.length > 1 && (
@@ -3337,7 +3364,7 @@ export default function Dashboard() {
                                 <div className="dvx-cat-asset-fill" style={{ width: `${Math.min(aPct, 100)}%` }} />
                               </div>
                               <span className="dvx-cat-asset-pct">{aPct.toFixed(0)}%</span>
-                              <span className="dvx-cat-asset-val">{hidden ? '••' : `$${fmt(a.value)}`}</span>
+                              <span className="dvx-cat-asset-val">{hidden ? '••' : cv(a.value)}</span>
                             </div>
                           )
                         })}
@@ -3363,8 +3390,8 @@ export default function Dashboard() {
                       <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
                       <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
-                        tickFormatter={v => fmtN(v)} width={50}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'P&L']}/>
+                        tickFormatter={v => cvN(v)} width={50}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [cv(v), 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
@@ -3409,14 +3436,14 @@ export default function Dashboard() {
                               <CatLabel cat={cat} className="dvx-cat-group-name" />
                               {ci && (
                                 <span className="dvx-cat-group-stats">
-                                  <span>{hidden ? '••••' : `$${fmt(ci.value)}`}</span>
+                                  <span>{hidden ? '••••' : cv(ci.value)}</span>
                                   <span className="dvx-cat-group-sep">·</span>
                                   <span>{ci.pct.toFixed(1)}%</span>
                                   {cat !== 'cash' && ci.pnl !== 0 && !pricesFailed && (
                                     <>
                                       <span className="dvx-cat-group-sep">·</span>
                                       <span style={{ color: ci.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
-                                        {ci.pnl >= 0 ? '+' : ''}{hidden ? '••' : `$${fmt(Math.abs(ci.pnl))}`} ({ci.pnlPct >= 0 ? '+' : ''}{ci.pnlPct.toFixed(1)}%)
+                                        {ci.pnl >= 0 ? '+' : '-'}{hidden ? '••' : cv(ci.pnl)} ({ci.pnlPct >= 0 ? '+' : ''}{ci.pnlPct.toFixed(1)}%)
                                       </span>
                                     </>
                                   )}
@@ -3458,7 +3485,7 @@ export default function Dashboard() {
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
                                           Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>
-                                            ${fmt(breakEvenPrice)}
+                                            {cv(breakEvenPrice)}
                                           </span>
                                           {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171' }}>
                                             {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
@@ -3466,8 +3493,8 @@ export default function Dashboard() {
                                         </span>
                                       ) : (
                                         <span className="muted">
-                                          {h.price > 0 ? `$${fmt(h.price)}` : `inv $${fmt(h.total_invested)}`}
-                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg $${fmt(breakEvenPrice)}`}
+                                          {h.price > 0 ? cv(h.price) : `inv ${cv(h.total_invested)}`}
+                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg ${cv(breakEvenPrice)}`}
                                           {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}
                                         </span>
                                       )}
@@ -3484,10 +3511,10 @@ export default function Dashboard() {
                                       )}
                                     </div>
                                     <div style={TEXT_RIGHT_STYLE}>
-                                      <div className="dvx-holding-val">${fmt(displayValue)}</div>
+                                      <div className="dvx-holding-val">{cv(displayValue)}</div>
                                       {!showBreakEven && hasPnl && (
                                         <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? 'var(--g)' : '#f87171', marginTop:'0.1rem' }}>
-                                          {h.pnl >= 0 ? '+' : ''}${fmt(h.pnl)} ({pct(h.pnlPct)})
+                                          {h.pnl >= 0 ? '+' : '-'}{cv(h.pnl)} ({pct(h.pnlPct)})
                                         </div>
                                       )}
                                     </div>
@@ -3531,7 +3558,7 @@ export default function Dashboard() {
                           innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
                           {catAllocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [`$${fmt(v)}`, n]}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [cv(v), n]}/>
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="dvx-legend">
@@ -3581,8 +3608,8 @@ export default function Dashboard() {
                         </defs>
                         <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="2 6"/>
                         <YAxis tick={{ fill:'rgba(255,255,255,0.3)', fontSize:9 }} axisLine={false} tickLine={false}
-                          tickFormatter={v => `$${fmtN(v)}`} width={42}/>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [`$${fmt(v)}`, 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
+                          tickFormatter={v => cvN(v)} width={42}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [cv(v), 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
                         <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
                       </AreaChart>
                     </ResponsiveContainer>
