@@ -1,6 +1,6 @@
 # WalletLens Voice-Parse + Analysis API
 
-A tiny serverless endpoint that powers two Claude-backed features for the
+A tiny serverless endpoint that powers three Claude-backed features for the
 WalletLens static site:
 
 1. **Voice/typed trade import** — turns a sentence ("I bought 1 Bitcoin and 1
@@ -8,10 +8,14 @@ WalletLens static site:
 2. **Magic Indicator AI Verdict** — synthesises the pre-computed technical /
    on-chain / volume / whale / fundamental pillars into a natural-language
    direction. `POST { mode: "analyze", asset, magic, pillars, stats }`
+3. **In-app assistant** — a feature-finder chat (Claude Haiku) that points users
+   to the right page/tab. `POST { mode: "assistant", lang, messages: [{role,content}] }`
+   → `{ ok, reply }`. The reply may contain `[[nav:/route|Label]]` markers the
+   client turns into one-tap buttons.
 
 > ⚠️ If you already deployed this for voice, **redeploy** (or push) to pick up
-> the `analyze` mode — older deployments only handle voice and the AI Verdict
-> button will gracefully show "unavailable" until then. Voice keeps working
+> the `analyze` and `assistant` modes — older deployments only handle voice and
+> those features gracefully show "unavailable" until then. Voice keeps working
 > regardless.
 
 The site itself is static (GitHub Pages) and **cannot** hold a secret key, so
