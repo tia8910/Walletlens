@@ -285,6 +285,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const headerActionIdx = useCycleIdx()
+  const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
@@ -409,6 +410,22 @@ export default function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
+
+      <footer className="wl-app-footer">
+        <div className="wl-app-footer-brand">
+          <Logo size={22} />
+          <span>WalletLens © {new Date().getFullYear()}</span>
+        </div>
+        <nav className="wl-app-footer-links">
+          <button onClick={() => navigate('/about')}>{t('about')}</button>
+          <button onClick={() => navigate('/blog')}>{t('blog')}</button>
+          <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
+          <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
+          <a href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" className="wl-app-footer-x" aria-label="Follow @walletlenss on X">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+        </nav>
+      </footer>
 
       <Suspense fallback={null}><WelcomeModal /></Suspense>
       <Suspense fallback={null}><PWAInstallPrompt /></Suspense>

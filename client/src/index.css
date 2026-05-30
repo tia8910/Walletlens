@@ -6672,6 +6672,30 @@ input[type="date"] { color-scheme: dark; }
 .lp-footer-links a { color: var(--text-muted); text-decoration: none; font-size: .85rem; transition: color .15s; }
 .lp-footer-links a:hover { color: #00ffaa; }
 
+/* ── App footer (dashboard + inner pages) ──────────────────────────────── */
+.wl-app-footer {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 1.5rem auto 0;
+  padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(var(--g-rgb),0.12);
+}
+.wl-app-footer-brand { display: flex; align-items: center; gap: .55rem; color: var(--text-muted); font-size: .82rem; font-weight: 600; }
+.wl-app-footer-links { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.wl-app-footer-links button {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--text-muted); font-size: .82rem; font-weight: 600; font-family: inherit;
+  transition: color .15s;
+}
+.wl-app-footer-links button:hover { color: var(--g); }
+.wl-app-footer-x { display: inline-flex; align-items: center; color: var(--text-muted); transition: color .15s; }
+.wl-app-footer-x:hover { color: var(--g); }
+[dir="rtl"] .wl-app-footer { direction: rtl; }
+@media (max-width: 560px) {
+  .wl-app-footer { flex-direction: column; align-items: center; text-align: center; gap: .85rem; }
+}
+
 /* ── RTL / Arabic support ──────────────────────────────────────────────── */
 [dir="rtl"] .wl-drawer { left: auto; right: 0; transform: translateX(100%); }
 [dir="rtl"] .wl-drawer-open { transform: translateX(0); }
