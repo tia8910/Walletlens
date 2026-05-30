@@ -9519,26 +9519,49 @@ input[type="date"] { color-scheme: dark; }
 }
 .lp .lp-cta-primary:active::before { animation: none; }
 
-/* Ghost buttons — frosted glass premium upgrade */
+/* Ghost buttons — dynamic animated emerald-tinted fill */
 .lp .lp-cta-ghost {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.22);
-  color: rgba(255,255,255,0.88);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(52,211,153,0.28);
+  color: rgba(255,255,255,0.92);
   backdrop-filter: blur(12px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-  transition: background 0.2s, border-color 0.2s, color 0.2s,
+  background: linear-gradient(120deg,
+    rgba(6,78,53,0.55) 0%,
+    rgba(16,185,129,0.32) 38%,
+    rgba(6,78,53,0.55) 72%,
+    rgba(16,185,129,0.32) 100%);
+  background-size: 220% 220%;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.22), 0 0 0 1px rgba(52,211,153,0.08) inset;
+  animation: lp-cta-ghost-flow 5s ease-in-out infinite;
+  transition: border-color 0.2s, color 0.2s,
               transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
 }
+@keyframes lp-cta-ghost-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+/* Subtle sheen sweep so the fill reads as alive */
+.lp .lp-cta-ghost::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+  transform: skewX(-18deg);
+  animation: lp-cta-shimmer 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
 .lp .lp-cta-ghost:hover {
-  background: rgba(255,255,255,0.11);
-  border-color: rgba(52,211,153,0.52);
+  border-color: rgba(52,211,153,0.6);
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.22), 0 0 14px rgba(52,211,153,0.16);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.28), 0 0 20px rgba(52,211,153,0.28), 0 0 0 1px rgba(52,211,153,0.22) inset;
+  animation-duration: 2.4s;
 }
 .lp .lp-cta-ghost:active {
   transform: scale(0.97) translateY(0);
-  box-shadow: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
 }
 
 /* Final section CTA — larger variant */
