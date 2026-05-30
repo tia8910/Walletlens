@@ -225,7 +225,6 @@ console.log(`\nPrerendered ${POSTS.length + 2} content pages into dist/.`)
 const STATIC_ROUTES = [
   { path: '/',             changefreq: 'weekly',  priority: '1.0'  },
   { path: '/dashboard',    changefreq: 'daily',   priority: '0.95' },
-  { path: '/market',       changefreq: 'daily',   priority: '0.9'  },
   { path: '/coach',        changefreq: 'weekly',  priority: '0.9'  },
   { path: '/academy',      changefreq: 'weekly',  priority: '0.85' },
   { path: '/alpha',        changefreq: 'daily',   priority: '0.85' },
