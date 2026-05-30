@@ -895,14 +895,16 @@ export const api = {
       }));
     }
 
-    // Fiat currencies — convert each ISO code to USD-per-unit via live FX
+    // Fiat currencies — convert each ISO code to USD-per-unit via live FX.
+    // fetchFiatRates returns units-per-USD (e.g. EGP ≈ 52), so the USD value
+    // of ONE unit is the reciprocal (1 EGP ≈ $0.019).
     if (fiatIds.length > 0) {
       tasks.push(fetchFiatRates().then(rates => {
         for (const id of fiatIds) {
           const code = id.slice(FIAT_PREFIX.length).toUpperCase();
-          const usd = rates[code];
-          if (typeof usd === 'number' && usd > 0) {
-            result[id] = { usd, usd_24h_change: 0, source: 'er-api', name: code };
+          const perUsd = rates[code];
+          if (typeof perUsd === 'number' && perUsd > 0) {
+            result[id] = { usd: 1 / perUsd, usd_24h_change: 0, source: 'er-api', name: code };
           } else if (manual[id]) {
             result[id] = { ...manual[id], source: 'manual' };
           }
