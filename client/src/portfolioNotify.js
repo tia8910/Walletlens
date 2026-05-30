@@ -55,3 +55,48 @@ export async function requestPortfolioNotifPermission() {
   const result = await Notification.requestPermission()
   return result === 'granted'
 }
+
+// ── Price-target reached alerts ────────────────────────────────────────────
+const TARGET_FIRED_KEY = 'wl_target_reached_fired'
+
+function loadFiredTargets() {
+  try { return JSON.parse(localStorage.getItem(TARGET_FIRED_KEY) || '{}') } catch { return {} }
+}
+function saveFiredTargets(map) {
+  try { localStorage.setItem(TARGET_FIRED_KEY, JSON.stringify(map)) } catch {}
+}
+
+// Fire a one-time notification for each newly-reached target. `reached` is a
+// list of { id, symbol, price }. We dedupe by target id in localStorage so the
+// same target never alerts twice, and clear stale ids so re-armed targets work.
+export function notifyTargetsReached(reached, activeIds = []) {
+  if (!Array.isArray(reached)) return
+  const fired = loadFiredTargets()
+
+  // Prune ids no longer active (target deleted) so they can re-fire if recreated
+  let pruned = false
+  for (const id of Object.keys(fired)) {
+    if (!activeIds.includes(id)) { delete fired[id]; pruned = true }
+  }
+
+  const canNotify = ('Notification' in window) && Notification.permission === 'granted'
+  let changed = pruned
+  for (const t of reached) {
+    if (fired[t.id]) continue
+    fired[t.id] = Date.now()
+    changed = true
+    if (canNotify) {
+      const sym = (t.symbol || 'asset').toUpperCase()
+      const priceStr = t.price >= 1
+        ? '$' + t.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : '$' + t.price.toPrecision(2)
+      try {
+        new Notification(`Target reached — ${sym}`, {
+          body: `You reached your target for ${sym} at ${priceStr}. Time to take profits?`,
+          icon: '/icon-192.svg', badge: '/icon-192.svg', tag: `target-${t.id}`,
+        })
+      } catch {}
+    }
+  }
+  if (changed) saveFiredTargets(fired)
+}
