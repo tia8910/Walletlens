@@ -8825,6 +8825,14 @@ input[type="date"] { color-scheme: dark; }
 /* ── SmartImport ─────────────────────────────────────────────────────────── */
 .dvx-excel-import-bar { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
 .dvx-excel-import-panel { padding: 1rem; margin-bottom: 0.5rem; }
+/* On mobile the four import buttons (Excel/CSV, Voice, Screenshot, Backup) can't
+   fit on a single row, so wrap them into a tidy 2×2 grid that fills 100% width. */
+@media (max-width: 560px) {
+  .dvx-excel-import-bar > button {
+    flex: 1 1 calc(50% - 0.2rem) !important;
+    min-width: 0 !important;
+  }
+}
 .dvx-btn-sm { padding: 0.45rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
 
 .si-root { display: flex; flex-direction: column; gap: 0.75rem; }
