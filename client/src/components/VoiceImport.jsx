@@ -1143,8 +1143,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     try {
       const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en', alternatives)
       if (!trades.length) return
-      // Don't let a weaker AI result overwrite a richer local multi-parse.
-      if (trades.length < localComplete) return
+      void localComplete // Claude is authoritative — always use its result
       const idx = getSymbolIndex()
       const transactions = trades.map(t => {
         const coin = idx[(t.symbol || '').toUpperCase()] || null

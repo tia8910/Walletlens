@@ -68,12 +68,14 @@ Extract EVERY trade the user described. Return STRICT JSON ONLY — no markdown 
 }
 
 Rules:
-- MULTIPLE trades in one sentence → one object PER asset. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb can govern several coins — apply it to each.
+- MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from the FIRST asset to the LAST — never stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each.
+- Worked Arabic example: "اشتريت اثنين سولانا وثلاث ايثيريوم وبعت نص بيتكوين" → [{buy SOL 2},{buy ETH 3},{sell BTC 0.5}]. The verb switches to "بعت" (sell) for Bitcoin only.
 - A shared amount before a list applies to each unless a per-coin amount is given: "I bought 2 Solana and 3 Cardano" → [SOL × 2, ADA × 3]; "I bought 5 of Bitcoin and Ethereum" → [BTC × 5, ETH × 5].
 - If the transcript is too garbled to extract ANY trade, return { "trades": [] }.
 - Recognise Arabic phonetics English STT mis-rendered (e.g. "selena" = Solana, "street ultra"/"ash tara"/"ish tari" = اشتري = buy, "baat"/"bat"/"bait" = بعت = sold).
-- Arabic dialect intent verbs: اشتري/شريت/جبت/أخذت/حطيت/كومت/جمعت/كسبت/استثمرت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت = SELL.
-- Amount slang: "5K"/"5 grand"/"5 racks"/"5 stack" = 5000; "2 mil" = 2,000,000; "half" = 0.5; "quarter" = 0.25. Arabic: الف=1000, مليون=1,000,000, نص=0.5, ربع=0.25.
+- Arabic dialect intent verbs: اشتري/اشتريت/شريت/جبت/أخذت/خذيت/حطيت/كومت/جمعت/كسبت/استثمرت/دخلت/نزلت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت/طلعت/فشيت = SELL.
+- Arabic spelled numbers: واحد=1, اثنين/اتنين=2, ثلاثة/تلاتة=3, اربعة=4, خمسة=5, عشرة=10.
+- Amount slang: "5K"/"5 grand"/"5 racks"/"5 stack" = 5000; "2 mil" = 2,000,000; "half" = 0.5; "quarter" = 0.25. Arabic: الف/ألف=1000, مليون=1,000,000, نص/نصف=0.5, ربع=0.25.
 - Common STT mis-hearings of coins: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
 - Stocks: Apple = AAPL, Tesla = TSLA, Microsoft = MSFT, NVIDIA = NVDA, Google = GOOGL, Amazon = AMZN, Meta = META, Palantir = PLTR, Coinbase = COIN, Robinhood = HOOD.
 - Metals: gold = XAU, silver = XAG, platinum = XPT, copper = HG.
@@ -137,13 +139,16 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en', alterna
         },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 900,
-          messages: [{ role: 'user', content: buildPrompt(text, lang, alts) }],
+          max_tokens: 1500,
+          messages: [
+            { role: 'user', content: buildPrompt(text, lang, alts) },
+            { role: 'assistant', content: '{' },
+          ],
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        const out = data.content?.[0]?.text || ''
+        const out = '{' + (data.content?.[0]?.text || '')
         const m = out.match(/\{[\s\S]*\}/)
         if (m) return filterTrades(JSON.parse(m[0]).trades)
       }
