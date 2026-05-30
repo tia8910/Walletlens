@@ -2106,7 +2106,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                 </div>
                 <button
                   className="dvx-btn dvx-btn-primary"
-                  style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem', borderRadius:8 }}
+                  style={{ padding:'0.35rem 0.8rem', fontSize:'0.75rem' }}
                   disabled={!isAdding && available <= 0}
                   onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', mode:'pct', pct:100 } })}>
 
@@ -2174,7 +2174,6 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   </div>
                   <button
                     className="dvx-btn dvx-btn-primary dvx-tgt-save"
-                    style={{ borderRadius:8 }}
                     disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0}
                     onClick={() => saveTarget(h.coin_id, addState.price, addQty)}>
                     Save Target
