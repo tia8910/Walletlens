@@ -2,14 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
+import Icon from './Icon'
 import { TOKEN_UNLOCKS } from '../data/assets'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
 const UNLOCK_SEVERITY = {
-  critical: { color: '#f87171', bg: 'rgba(248,113,113,0.10)', icon: '🔓', label: 'Critical Unlock' },
-  high:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)',  icon: '🔓', label: 'High Unlock'     },
-  medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',  icon: '🔔', label: 'Unlock Watch'    },
+  critical: { color: '#f87171', bg: 'rgba(248,113,113,0.10)', icon: 'unlock', label: 'Critical Unlock' },
+  high:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)',  icon: 'unlock', label: 'High Unlock'     },
+  medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',  icon: 'bell',   label: 'Unlock Watch'    },
 }
 
 function TokenUnlockAlerts({ enriched }) {
@@ -25,7 +26,7 @@ function TokenUnlockAlerts({ enriched }) {
   return (
     <div className="tua-root">
       <div className="tua-header" onClick={() => setExpanded(v => !v)}>
-        <span className="tua-header-icon">🔓</span>
+        <span className="tua-header-icon"><Icon name="unlock" size={18} /></span>
         <div className="tua-header-text">
           <span className="tua-header-title">Token Unlock Alerts</span>
           <span className="tua-header-sub">
@@ -50,8 +51,8 @@ function TokenUnlockAlerts({ enriched }) {
                   <div className="tua-card-info">
                     <div className="tua-card-sym">
                       <strong>{u.symbol}</strong>
-                      <span className="tua-sev-pill" style={{ color: sev.color, borderColor: sev.color + '55', background: sev.color + '18' }}>
-                        {sev.icon} {sev.label}
+                      <span className="tua-sev-pill" style={{ color: sev.color, borderColor: sev.color + '55', background: sev.color + '18', display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+                        <Icon name={sev.icon} size={12} /> {sev.label}
                       </span>
                     </div>
                     <div className="tua-card-note">{u.note}</div>
@@ -75,7 +76,7 @@ function TokenUnlockAlerts({ enriched }) {
             </button>
           )}
           <a href="https://token.unlocks.app" target="_blank" rel="noopener noreferrer" className="tua-source-link">
-            📅 View full unlock calendar → token.unlocks.app
+            <Icon name="calendar" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />View full unlock calendar → token.unlocks.app
           </a>
         </div>
       )}
@@ -145,10 +146,10 @@ function fmtUsd(n) {
 }
 
 const SIGNAL_META = {
-  whale:      { icon: '🐋', color: '#38bdf8', label: 'Whale Move'   },
-  momentum:   { icon: '🚀', color: '#a78bfa', label: 'Momentum'     },
-  volume:     { icon: '📊', color: '#fb923c', label: 'Vol Anomaly'  },
-  news:       { icon: '📰', color: '#4ade80', label: 'Breaking News' },
+  whale:      { icon: 'flow',         color: '#38bdf8', label: 'Whale Move'   },
+  momentum:   { icon: 'arrow-ne',     color: '#a78bfa', label: 'Momentum'     },
+  volume:     { icon: 'volume-chart', color: '#fb923c', label: 'Vol Anomaly'  },
+  news:       { icon: 'news',         color: '#4ade80', label: 'Breaking News' },
 }
 
 // ── Correlation engine (pure function, no side-effects) ────────────────────
@@ -206,7 +207,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
       const chg24 = mkt.price_change_percentage_24h || 0
       const chg1h = mkt.price_change_percentage_1h_in_currency || 0
       if (Math.abs(chg24) >= cfg.momentumPct) {
-        const dir = chg24 > 0 ? '🟢' : '🔴'
+        const dir = chg24 > 0 ? '▲' : '▼'
         signals.push({
           type: 'momentum',
           desc: `${dir} ${chg24 > 0 ? '+' : ''}${chg24.toFixed(1)}% in 24h`,
@@ -216,7 +217,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
         })
       } else if (Math.abs(chg1h) >= cfg.momentumPct / 2) {
         // 1h momentum is worth half the threshold
-        const dir = chg1h > 0 ? '🟢' : '🔴'
+        const dir = chg1h > 0 ? '▲' : '▼'
         signals.push({
           type: 'momentum',
           desc: `${dir} ${chg1h > 0 ? '+' : ''}${chg1h.toFixed(1)}% in 1h`,
@@ -515,7 +516,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       <div className="sa-legend">
         {Object.entries(SIGNAL_META).map(([type, m]) => (
           <div key={type} className="sa-legend-item">
-            <span>{m.icon}</span>
+            <span><Icon name={m.icon} size={14} style={{ color: m.color }} /></span>
             <span style={{ color: m.color, fontSize: '0.72rem', fontWeight: 700 }}>{m.label}</span>
           </div>
         ))}
@@ -580,7 +581,7 @@ function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
           const m = SIGNAL_META[s.type] || {}
           return (
             <div key={i} className="sa-signal-pill" style={{ '--sc': m.color || '#fff' }}>
-              <span className="sa-signal-icon">{m.icon}</span>
+              <span className="sa-signal-icon">{m.icon ? <Icon name={m.icon} size={14} style={{ color: m.color }} /> : null}</span>
               <span className="sa-signal-desc">
                 {s.url
                   ? <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{s.desc}</a>

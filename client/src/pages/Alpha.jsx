@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 import { track } from '../analytics'
 import CoinLogo from '../components/CoinLogo'
+import Icon from '../components/Icon'
 
 const CG = 'https://api.coingecko.com/api/v3'
 const CACHE_KEY = 'wl_alpha_cache_v1'
@@ -354,7 +355,7 @@ export default function Alpha() {
       {/* ── My Holdings Signals ── */}
       {cryptoHoldings.length > 0 && (warnings.length > 0 || opportunities.length > 0 || strongHoldings.length > 0) && (
         <div className="glass-card alpha-section-card">
-          <SectionHead icon="📊" title="Your Portfolio Signals" sub="Based on your actual holdings" />
+          <SectionHead icon={<Icon name="bar-chart" size={20} />} title="Your Portfolio Signals" sub="Based on your actual holdings" />
           <div className="alpha-signal-list">
             {warnings.map(h => {
               const chg = prices[h.coin_id]?.usd_24h_change ?? 0
@@ -397,7 +398,7 @@ export default function Alpha() {
 
       {/* ── Smart Money / Trending ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon="🐋" title="Smart Money" sub="What's trending with large volume right now" live />
+        <SectionHead icon={<Icon name="flow" size={20} />} title="Smart Money" sub="What's trending with large volume right now" live />
         {loading && trending.length === 0 ? (
           <div className="alpha-loading-row muted">Fetching signals…</div>
         ) : (
@@ -419,7 +420,7 @@ export default function Alpha() {
 
       {/* ── Top Gainers ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon="🚀" title="Top Gainers" sub="Coins up 5%+ in the last 24 hours" live />
+        <SectionHead icon={<Icon name="arrow-ne" size={20} />} title="Top Gainers" sub="Coins up 5%+ in the last 24 hours" live />
         {loading && topGainers.length === 0 ? (
           <div className="alpha-loading-row muted">Fetching…</div>
         ) : topGainers.length === 0 ? (
@@ -440,7 +441,7 @@ export default function Alpha() {
 
       {/* ── Hidden Gems ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon="💎" title="Hidden Gems" sub="Rank 50–300 coins with high volume momentum" live />
+        <SectionHead icon={<Icon name="diamond" size={20} />} title="Hidden Gems" sub="Rank 50–300 coins with high volume momentum" live />
         {loading && gems.length === 0 ? (
           <div className="alpha-loading-row muted">Scanning…</div>
         ) : gems.length === 0 ? (
@@ -466,7 +467,7 @@ export default function Alpha() {
       {/* ── Bearish Watch ── */}
       {topLosers.length > 0 && (
         <div className="glass-card alpha-section-card">
-          <SectionHead icon="⚠️" title="Bearish Watch" sub="Coins down 5%+ today — possible oversold bounces" />
+          <SectionHead icon={<Icon name="warning" size={20} />} title="Bearish Watch" sub="Coins down 5%+ today — possible oversold bounces" />
           <div className="alpha-coin-list">
             {topLosers.map(c => (
               <CoinCard key={c.id}

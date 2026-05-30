@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+import Icon from '../components/Icon'
 
 const SmartAlerts = lazy(() => import('../components/SmartAlerts'))
 
@@ -109,8 +110,8 @@ export default function Whales() {
           { k: 'volume', l: 'Volume Anomalies' },
           { k: 'trending', l: 'Trending' },
           { k: 'btc', l: 'BTC Whale Txs' },
-          { k: 'feed', l: '🐋 Whale Feed' },
-          { k: 'flows', l: '🏦 Exchange Flows' },
+          { k: 'feed', l: 'Whale Feed' },
+          { k: 'flows', l: 'Exchange Flows' },
         ].map(t => (
           <button
             key={t.k}
@@ -159,7 +160,7 @@ export default function Whales() {
       {!loading && tab === 'volume' && (
         <div className="whale-split">
           <div className="whale-card">
-            <h3 className="whale-card-h">🔥 Volume Anomalies</h3>
+            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="volume-chart" size={16} style={{ color:'#fb923c' }} />Volume Anomalies</h3>
             <p className="whale-help">Highest 24h-volume / market-cap ratio — unusual turnover, often whale entry.</p>
             {volumeAnomalies.map(c => (
               <div key={c.id} className="whale-row">
@@ -182,7 +183,7 @@ export default function Whales() {
             ))}
           </div>
           <div className="whale-card">
-            <h3 className="whale-card-h">💰 Volume Leaders</h3>
+            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bar-chart" size={16} style={{ color:'var(--g)' }} />Volume Leaders</h3>
             <p className="whale-help">Where the most dollars are flowing right now.</p>
             {volumeLeaders.map(c => (
               <div key={c.id} className="whale-row">
@@ -209,7 +210,7 @@ export default function Whales() {
 
       {!loading && tab === 'trending' && (
         <div className="whale-card">
-          <h3 className="whale-card-h">🔍 Trending Searches (CoinGecko)</h3>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="search" size={16} style={{ color:'var(--text-muted)' }} />Trending Searches (CoinGecko)</h3>
           <p className="whale-help">Most-searched coins on CoinGecko in the last 24h. A leading indicator of retail attention.</p>
           <div className="trending-grid">
             {trending.map((t, i) => (
@@ -231,7 +232,7 @@ export default function Whales() {
 
       {!loading && tab === 'btc' && (
         <div className="whale-card">
-          <h3 className="whale-card-h">🐋 Live Bitcoin Whale Transactions</h3>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />Live Bitcoin Whale Transactions</h3>
           <p className="whale-help">Unconfirmed BTC txs over $500K from blockchain.info — refresh to see new ones.</p>
           {largeTx.length === 0 && (
             <p className="muted">No whale txs in current mempool snapshot. Try refresh.</p>
@@ -244,7 +245,7 @@ export default function Whales() {
               target="_blank"
               rel="noreferrer"
             >
-              <div className="btc-tx-icon">🐋</div>
+              <div className="btc-tx-icon"><Icon name="flow" size={18} style={{ color:'#38bdf8' }} /></div>
               <div className="btc-tx-main">
                 <div className="btc-tx-amt">{tx.btc.toFixed(2)} BTC</div>
                 <div className="btc-tx-hash">{tx.hash.slice(0, 14)}…{tx.hash.slice(-6)}</div>
@@ -260,7 +261,7 @@ export default function Whales() {
 
       {!loading && tab === 'feed' && (
         <div className="whale-card">
-          <h3 className="whale-card-h">🐋 Multi-Chain Whale Alert Feed</h3>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />Multi-Chain Whale Alert Feed</h3>
           <p className="whale-help">Large transfers (&gt;$500K) across BTC and ETH mempools — live, no API key required.</p>
           {whaleFeed.length === 0 && (
             <p className="muted">No whale transfers detected right now. Try refresh.</p>
@@ -291,14 +292,14 @@ export default function Whales() {
 
       {!loading && tab === 'flows' && (
         <div className="whale-card">
-          <h3 className="whale-card-h">🏦 Exchange Flow Rankings</h3>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bank" size={16} style={{ color:'var(--text-muted)' }} />Exchange Flow Rankings</h3>
           <p className="whale-help">Top exchanges by 24h BTC-equivalent volume. High trust score + high volume = healthy liquidity.</p>
           {exchangeFlows.length === 0 && <p className="muted">Could not load exchange data.</p>}
           {exchangeFlows.map((ex, i) => (
             <div key={ex.id} className="exchange-row">
               <div className="exchange-rank">#{i + 1}</div>
               <div className="exchange-logo">
-                {ex.image ? <img src={ex.image} alt="" width={28} height={28} /> : <span className="exchange-logo-placeholder">🏦</span>}
+                {ex.image ? <img src={ex.image} alt="" width={28} height={28} /> : <span className="exchange-logo-placeholder"><Icon name="bank" size={18} /></span>}
               </div>
               <div className="exchange-info">
                 <div className="whale-name">{ex.name}</div>

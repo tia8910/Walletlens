@@ -1,6 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#071a0c"/>
-  <circle cx="256" cy="256" r="170" fill="none" stroke="#00c853" stroke-width="26"/>
-  <circle cx="256" cy="256" r="100" fill="none" stroke="#00c853" stroke-width="16" opacity="0.55"/>
-  <circle cx="256" cy="256" r="58" fill="#00c853"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="wl" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4ade80"/>
+      <stop offset="0.5" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#14532d"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#071a0c"/>
+  <g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)">
+    <circle cx="27" cy="25" r="19" stroke="url(#wl)" stroke-width="5.5"/>
+    <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/>
+    <rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wl)"/>
+    <rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wl)"/>
+    <rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wl)"/>
+    <line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wl)" stroke-width="5.5" stroke-linecap="round"/>
+  </g>
 </svg>

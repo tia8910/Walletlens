@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useTheme } from '../ThemeContext'
+import Icon from './Icon'
 
 // Weighted keyword lists for sentiment scoring
 const BULLISH = [
@@ -79,11 +80,11 @@ function computeMood(articles) {
 }
 
 function moodLabel(score) {
-  if (score >= 80) return { label: 'Extreme Greed', color: '#22c55e', emoji: '🤑' }
-  if (score >= 60) return { label: 'Greed',         color: '#86efac', emoji: '😏' }
-  if (score >= 45) return { label: 'Neutral',        color: '#94a3b8', emoji: '😐' }
-  if (score >= 25) return { label: 'Fear',           color: '#fb923c', emoji: '😰' }
-  return                  { label: 'Extreme Fear',   color: '#f87171', emoji: '😱' }
+  if (score >= 80) return { label: 'Extreme Greed', color: '#22c55e', icon: 'smile' }
+  if (score >= 60) return { label: 'Greed',         color: '#86efac', icon: 'smile' }
+  if (score >= 45) return { label: 'Neutral',        color: '#94a3b8', icon: 'meh' }
+  if (score >= 25) return { label: 'Fear',           color: '#fb923c', icon: 'frown' }
+  return                  { label: 'Extreme Fear',   color: '#f87171', icon: 'frown' }
 }
 
 // Animated arc dial
@@ -223,7 +224,7 @@ export default function MarketMood() {
         <>
           <Dial score={mood.score} isLight={mode === 'light'} />
           <div style={{ textAlign: 'center', marginTop: '-0.3rem', paddingBottom: '0.3rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>{info.emoji}</span>
+            <Icon name={info.icon} size={20} style={{ color: info.color, verticalAlign: '-4px' }} />
             <span style={{ fontSize: '0.92rem', fontWeight: 800, color: info.color, marginLeft: '0.4rem' }}>
               {info.label}
             </span>
@@ -236,9 +237,9 @@ export default function MarketMood() {
             fontSize: '0.62rem', color: 'var(--text-sub)',
             marginTop: '0.25rem', padding: '0 0.25rem',
           }}>
-            <span>😱 Fear</span>
-            <span>😐 Neutral</span>
-            <span>🤑 Greed</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="frown" size={12} style={{ color: '#f87171' }} />Fear</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: '#94a3b8' }} />Neutral</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: '#22c55e' }} />Greed</span>
           </div>
         </>
       ) : (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from '../ThemeContext'
+import Icon from './Icon'
 
 const PROXIES = [
   u => 'https://corsproxy.io/?' + encodeURIComponent(u),
@@ -244,12 +245,12 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
   const labelColor = isLight ? 'rgba(0,0,0,0.7)' : 'var(--text-muted)'
 
   const rows = [
-    { icon: pct24h >= 0 ? '📈' : '📉', label: '24h move',     value: `${pct24h >= 0 ? '+' : ''}${pct24h.toFixed(1)}%`, warn: pct24h > 10 },
-    { icon: pct7d  >= 0 ? '📈' : '📉', label: '7d move',      value: `${pct7d  >= 0 ? '+' : ''}${pct7d.toFixed(1)}%`,  warn: pct7d  > 20 },
-    vsAvg      ? { icon: '📊', label: 'vs 30d average', value: vsAvg.label,        warn: vsAvg.score < 0 } : null,
-    athSignal  ? { icon: '🏔️', label: 'vs All-Time High', value: athSignal.label,  warn: athSignal.score < 0 } : null,
-    momentum.score < -1 ? { icon: '⚠️', label: 'Momentum',  value: momentum.label, warn: true } : null,
-    vsUserCost ? { icon: vsUserCost.warn ? '⚠️' : '💰', label: 'vs your avg cost', value: vsUserCost.label, warn: vsUserCost.warn } : null,
+    { icon: pct24h >= 0 ? 'trend-up' : 'trend-down', label: '24h move',     value: `${pct24h >= 0 ? '+' : ''}${pct24h.toFixed(1)}%`, warn: pct24h > 10 },
+    { icon: pct7d  >= 0 ? 'trend-up' : 'trend-down', label: '7d move',      value: `${pct7d  >= 0 ? '+' : ''}${pct7d.toFixed(1)}%`,  warn: pct7d  > 20 },
+    vsAvg      ? { icon: 'bar-chart', label: 'vs 30d average', value: vsAvg.label,        warn: vsAvg.score < 0 } : null,
+    athSignal  ? { icon: 'award', label: 'vs All-Time High', value: athSignal.label,  warn: athSignal.score < 0 } : null,
+    momentum.score < -1 ? { icon: 'warning', label: 'Momentum',  value: momentum.label, warn: true } : null,
+    vsUserCost ? { icon: vsUserCost.warn ? 'warning' : 'banknote', label: 'vs your avg cost', value: vsUserCost.label, warn: vsUserCost.warn } : null,
   ].filter(Boolean)
 
   return (
@@ -260,7 +261,7 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
     }}>
       {/* Verdict header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '1.1rem' }}>{v.emoji}</span>
+        <span style={{ width: 9, height: 9, borderRadius: '50%', background: v.color, display: 'inline-block', flexShrink: 0, boxShadow: `0 0 6px ${v.color}66` }} />
         <span style={{ fontWeight: 800, fontSize: '0.9rem', color: v.color }}>{v.text}</span>
         <span style={{ fontSize: '0.7rem', color: 'var(--text-sub)', marginLeft: 'auto' }}>
           {mode === 'sell' ? 'Good time to sell?' : 'Good time to buy?'}
@@ -271,7 +272,10 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-            <span style={{ color: labelColor }}>{r.icon} {r.label}</span>
+            <span style={{ color: labelColor, display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+              <Icon name={r.icon} size={13} style={{ color: r.warn ? valueWarn : 'var(--text-sub)', flexShrink: 0 }} />
+              {r.label}
+            </span>
             <span style={{ fontWeight: 700, color: r.warn ? valueWarn : valueGood }}>{r.value}</span>
           </div>
         ))}
@@ -281,25 +285,25 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       {mode === 'buy' && totalScore <= -2 && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceWarnColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
-          ⚠️ Prices may be elevated due to recent hype. Consider waiting for a dip or splitting your buy over several days.
+          <Icon name="warning" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />Prices may be elevated due to recent hype. Consider waiting for a dip or splitting your buy over several days.
         </div>
       )}
       {mode === 'buy' && totalScore >= 2 && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceGoodColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(134,239,172,0.06)', borderRadius: 8 }}>
-          💡 This looks like a reasonable entry point. Still consider DCA — split across 2–3 buys.
+          <Icon name="lightbulb" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />This looks like a reasonable entry point. Still consider DCA — split across 2–3 buys.
         </div>
       )}
       {mode === 'sell' && totalScore >= 2 && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceGoodColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(134,239,172,0.06)', borderRadius: 8 }}>
-          💡 Price looks elevated — good time to take profit. Consider selling in parts to avoid missing further upside.
+          <Icon name="lightbulb" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />Price looks elevated — good time to take profit. Consider selling in parts to avoid missing further upside.
         </div>
       )}
       {mode === 'sell' && totalScore <= -2 && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: adviceWarnColor, lineHeight: 1.5,
           padding: '0.4rem 0.6rem', background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
-          ⚠️ You may be selling at a low. Unless you need the funds urgently, consider waiting for a recovery.
+          <Icon name="warning" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />You may be selling at a low. Unless you need the funds urgently, consider waiting for a recovery.
         </div>
       )}
     </div>

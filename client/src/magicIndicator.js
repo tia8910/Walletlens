@@ -144,13 +144,13 @@ export function pillarFundamental(fundamental) {
   return { available: true, score: cr(s), note: notes.join(' · ') || 'market fundamentals' }
 }
 
-// Direction label / colour / emoji for a composite score.
+// Direction label / colour / icon for a composite score.
 export function directionMeta(score) {
-  if (score >= 45) return { label: 'Strong Buy', stance: 'bullish', emoji: '🚀', color: '#16a34a' }
-  if (score >= 15) return { label: 'Accumulate', stance: 'bullish', emoji: '📈', color: '#22c55e' }
-  if (score > -15) return { label: 'Neutral', stance: 'neutral', emoji: '⚖️', color: '#94a3b8' }
-  if (score > -45) return { label: 'Reduce', stance: 'bearish', emoji: '📉', color: '#f59e0b' }
-  return { label: 'Distribute', stance: 'bearish', emoji: '🔻', color: '#ef4444' }
+  if (score >= 45) return { label: 'Strong Buy', stance: 'bullish', icon: 'arrow-ne', color: '#16a34a' }
+  if (score >= 15) return { label: 'Accumulate', stance: 'bullish', icon: 'trend-up', color: '#22c55e' }
+  if (score > -15) return { label: 'Neutral', stance: 'neutral', icon: 'scale', color: '#94a3b8' }
+  if (score > -45) return { label: 'Reduce', stance: 'bearish', icon: 'trend-down', color: '#f59e0b' }
+  return { label: 'Distribute', stance: 'bearish', icon: 'arrow-down', color: '#ef4444' }
 }
 
 const PILLAR_DEFS = [

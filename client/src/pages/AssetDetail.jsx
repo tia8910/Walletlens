@@ -4,6 +4,7 @@ import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } f
 import { track } from '../analytics'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
+import Icon from '../components/Icon'
 import TradeSheet from '../components/TradeSheet'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
@@ -285,7 +286,7 @@ export default function AssetDetail() {
       {/* Private coin notes */}
       <div className="glass-card coin-note-card">
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.5rem' }}>
-          <h3 style={{ margin:0, fontSize:'0.95rem' }}>📝 My Notes</h3>
+          <h3 style={{ margin:0, fontSize:'0.95rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="notes" size={16} style={{ color:'var(--text-muted)' }} />My Notes</h3>
           {!noteEditing && (
             <button className="btn-secondary btn-sm" onClick={() => setNoteEditing(true)}>
               {note ? 'Edit' : '+ Add note'}
@@ -439,7 +440,7 @@ function WhalePanel({ s, symbol }) {
   return (
     <div className="whale-panel">
       <div className="whale-panel-head">
-        <h3>🐋 Whale Activity & Smart Signals</h3>
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={17} style={{ color:'#38bdf8' }} />Whale Activity & Smart Signals</h3>
         <span className="whale-panel-window">Last {s.windowDays}d</span>
       </div>
 
@@ -531,7 +532,7 @@ function TechnicalsCard({ ta }) {
   return (
     <div className="whale-panel">
       <div className="whale-panel-head">
-        <h3>📐 Technical Analysis</h3>
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={17} style={{ color:'var(--g)' }} />Technical Analysis</h3>
         <span className="whale-panel-window">{ta.samples}d daily</span>
       </div>
 

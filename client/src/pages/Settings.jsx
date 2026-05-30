@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
+import Icon from '../components/Icon'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
@@ -79,7 +80,7 @@ export default function Settings() {
 
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title">🎨 Appearance</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="sliders" size={16} />Appearance</h3>
 
         {/* Color Theme */}
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
@@ -101,7 +102,7 @@ export default function Settings() {
                 }}>
                   {t.logo
                     ? <img src={t.logo} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                    : t.icon}
+                    : null}
                 </span>
                 {t.name}
               </button>
@@ -118,12 +119,12 @@ export default function Settings() {
             <span className="settings-hint">Light or dark background</span>
           </div>
           <div className="settings-chips">
-            {[{ id: 'dark', label: 'Dark', icon: '🌙' }, { id: 'light', label: 'Light', icon: '☀️' }].map(m => (
+            {[{ id: 'dark', label: 'Dark', icon: 'moon' }, { id: 'light', label: 'Light', icon: 'sun' }].map(m => (
               <button key={m.id}
                 className={`settings-chip ${colorMode === m.id ? 'active' : ''}`}
                 onClick={() => { setColorMode(m.id); track('mode_changed', { mode: m.id, source: 'settings' }) }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ fontSize: '1rem' }}>{m.icon}</span>
+                <Icon name={m.icon} size={15} />
                 {m.label}
               </button>
             ))}
@@ -194,7 +195,7 @@ export default function Settings() {
 
       {/* ── Notifications ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title">🔔 Notifications</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />Notifications</h3>
 
         {[
           { key:'notifPortfolio', label:'Portfolio Moves',  hint:'Alert when your wallet is up or down ±5%', val: notifPortfolio, needsPerm: true },
@@ -221,7 +222,7 @@ export default function Settings() {
 
       {/* ── Security ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title">🔒 Security</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />Security</h3>
         <BiometricToggle />
       </div>
 

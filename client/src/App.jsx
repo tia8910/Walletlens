@@ -6,6 +6,7 @@ import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
+import Icon from './components/Icon'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
@@ -249,7 +250,7 @@ function Drawer({ open, onClose }) {
             className="wl-drawer-mode-toggle"
             onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
           >
-            <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
+            <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={16} />
             <span>{mode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
         </div>

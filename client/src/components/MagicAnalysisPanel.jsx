@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { track, trackAI } from '../analytics'
 import CoinLogo from './CoinLogo'
+import Icon from './Icon'
 import { computeMagic, aggregateMagic } from '../magicIndicator'
 import { getAiVerdict } from '../magicAi'
 import { isStablecoin } from '../stablecoins'
@@ -36,8 +37,8 @@ function MagicGauge({ score, direction, confidence, big }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-        <span style={{ fontSize: big ? '1.35rem' : '1.05rem', fontWeight: 800, color: direction.color }}>
-          {direction.emoji} {direction.label}
+        <span style={{ fontSize: big ? '1.35rem' : '1.05rem', fontWeight: 800, color: direction.color, display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}>
+          <Icon name={direction.icon} size={big ? 22 : 18} /> {direction.label}
         </span>
         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: direction.color }}>
           {score > 0 ? '+' : ''}{score}
@@ -266,7 +267,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
   if (!cryptoIds.length) {
     return (
       <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>📐</div>
+        <div style={{ marginBottom: '0.4rem', display: 'flex', justifyContent: 'center' }}><Icon name="pulse" size={30} style={{ color: 'var(--g)' }} /></div>
         <p className="muted" style={{ margin: 0 }}>
           Add a crypto holding to see the Magic Indicator — technicals, on-chain flow, volume,
           whales and fundamentals merged into one direction.
