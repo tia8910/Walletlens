@@ -2362,6 +2362,7 @@ export default function Dashboard() {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').displayCurrency || 'USD' } catch { return 'USD' }
   })
   const [fxRates, setFxRates] = useState({})
+  const [btcUsd, setBtcUsd] = useState(0)
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [showExcelImport, setShowExcelImport] = useState(false)
   const [showVoiceImport, setShowVoiceImport] = useState(false)
@@ -2398,6 +2399,19 @@ export default function Dashboard() {
   useEffect(() => {
     api.getFiatRates().then(r => setFxRates(r || {})).catch(() => {})
   }, [])
+
+  // Always keep a live BTC/USD price so "view in Bitcoin" works even when the
+  // user holds no BTC (its price isn't otherwise in the `prices` map).
+  useEffect(() => {
+    if (displayCurrency !== 'BTC') return
+    if (prices['bitcoin']?.usd || prices['bitcoin']?.price) return
+    let cancelled = false
+    api.getPrices('bitcoin').then(p => {
+      const px = p?.bitcoin?.usd || p?.bitcoin?.price
+      if (px && !cancelled) setBtcUsd(px)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [displayCurrency, prices])
 
   function saveCurrency(code) {
     setDisplayCurrency(code)
@@ -3081,7 +3095,7 @@ export default function Dashboard() {
               {hidden ? '••••••' : (() => {
                 const usdVal = loaded ? tickerValue : 0
                 if (displayCurrency === 'BTC') {
-                  const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price
+                  const btcPrice = prices['bitcoin']?.usd || prices['bitcoin']?.price || btcUsd
                   return btcPrice ? `₿ ${(usdVal / btcPrice).toFixed(6)}` : `$${fmt(usdVal)}`
                 }
                 const fiat = POPULAR_FIAT.find(f => f.code === displayCurrency)
