@@ -1,5 +1,38 @@
 // Blog post content — shared by the Blog page (client render) and the
 // build-time prerender script (scripts/prerender.mjs) so crawlers get real HTML.
+
+// Stop-words ignored when scoring topical relatedness between posts.
+const STOP = new Set('the a an and or of to in for your you how what is are be on with that this it as at by from across into not but new — your guide complete'.split(' '))
+function topicWords(p) {
+  return new Set(
+    `${p.title} ${p.summary}`.toLowerCase()
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !STOP.has(w))
+  )
+}
+
+// Pick the `n` posts most topically related to `slug` (shared title/summary
+// words), tie-broken by original order. Used for the "Related articles"
+// internal-linking section on every post — boosts pages/session and SEO.
+export function relatedPosts(slug, n = 3) {
+  const idx = POSTS.findIndex(p => p.slug === slug)
+  if (idx < 0) return POSTS.slice(0, n)
+  const me = topicWords(POSTS[idx])
+  return POSTS
+    .map((p, i) => {
+      if (i === idx) return null
+      const words = topicWords(p)
+      let overlap = 0
+      for (const w of words) if (me.has(w)) overlap++
+      return { p, overlap, i }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.overlap - a.overlap || a.i - b.i)
+    .slice(0, n)
+    .map(x => x.p)
+}
+
 export const POSTS = [
   {
     slug: 'how-to-track-crypto-portfolio-free',
