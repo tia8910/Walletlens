@@ -227,7 +227,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
   const inProfit = investments.filter(h => h.pnl > 0)
   const inLoss   = investments.filter(h => h.pnl < 0)
-  if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: `All ${inProfit.length} positions are in profit 🚀` })
+  if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: `All ${inProfit.length} positions are in profit` })
   else if (inProfit.length > 0) insights.push({ type: 'info', text: `${inProfit.length} of ${n} positions in profit, ${inLoss.length} in loss.` })
 
   if (momentum > 3) insights.push({ type: 'good', text: `Strong bullish momentum: weighted 24h gain of +${momentum.toFixed(2)}% across holdings.` })
@@ -729,7 +729,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'diversification',
     label: 'Diversification',
-    icon: '⚖️',
+    icon: 'scale',
     color: 'var(--g)',
     check: (enriched, totalValue) => {
       const n = enriched.length
@@ -744,7 +744,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'stablecoin',
     label: 'Stablecoin Reserve',
-    icon: '🏦',
+    icon: 'bank',
     color: '#60a5fa',
     check: (enriched, totalValue) => {
       const stables = ['tether','usd-coin','dai','binance-usd','true-usd','frax']
@@ -760,7 +760,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'large_cap',
     label: 'Large-Cap Weight',
-    icon: '🐋',
+    icon: 'award',
     color: '#3b82f6',
     check: (enriched, totalValue) => {
       const largeCap = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
@@ -774,7 +774,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'sell_targets',
     label: 'Profit Targets Set',
-    icon: '🎯',
+    icon: 'target',
     color: '#fbbf24',
     check: (enriched, totalValue, targets) => {
       const coinsWithTargets = new Set(targets.map(tg => tg.coin_id))
@@ -788,7 +788,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'pnl_health',
     label: 'P&L Health',
-    icon: '💚',
+    icon: 'pulse',
     color: 'var(--g)',
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
@@ -802,7 +802,7 @@ const EVAL_CATEGORIES = [
   {
     id: 'sector_spread',
     label: 'Sector Spread',
-    icon: '🗂️',
+    icon: 'grid',
     color: '#a78bfa',
     check: (enriched) => {
       const sectors = {
@@ -864,7 +864,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
   if (!enriched.length) return (
     <div className="dvx-form-page">
       <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem' }}>
-        <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🔍</div>
+        <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="search" size={38} style={{ color:'var(--text-sub)' }} /></div>
         <h3 style={{ marginBottom:'0.5rem' }}>No Holdings to Evaluate</h3>
         <p className="muted">Add some crypto holdings first and we'll tell you what your wallet is missing.</p>
       </div>
@@ -884,12 +884,12 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
           </p>
           {missing.length > 0 && (
             <div className="eval-missing-count">
-              ⚠️ {missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
+              <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
             </div>
           )}
           {missing.length === 0 && (
             <div className="eval-missing-count" style={{ color:'var(--g)' }}>
-              ✅ All checks passed — excellent wallet health!
+              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>All checks passed — excellent wallet health!
             </div>
           )}
         </div>
@@ -904,7 +904,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
             onClick={() => { const opening = expanded !== cat.id; setExpanded(opening ? cat.id : null); if (opening) track('eval_cat_expand', { cat: cat.id, pass: cat.pass, score: cat.score }) }}
             style={{ '--eval-color': cat.color }}>
             <div className="eval-cat-header">
-              <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon}</span>
+              <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}</span>
               <div className="eval-cat-info">
                 <div className="eval-cat-label">{cat.label}</div>
                 <div className="eval-cat-bar-wrap">
@@ -920,7 +920,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
             </div>
             {expanded === cat.id && (
               <div className="eval-cat-tip">
-                <span style={{ marginRight:'0.5rem' }}>{cat.pass ? '💡' : '🔧'}</span>
+                <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g)' : '#f59e0b' }} />
                 {cat.tip}
               </div>
             )}
@@ -1270,7 +1270,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 
   return (
     <div className="glass-card heatmap-card">
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700 }}>🗺️ Portfolio Heatmap</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color:'var(--g)' }} />Portfolio Heatmap</h3>
       <div className="heatmap-grid">
         {cells.map((c, i) => {
           const minSize = 60
@@ -1305,29 +1305,29 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
-  { tag:'ALL ASSETS',    icon:'🌍', color:'#34d399', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
+  { tag:'ALL ASSETS',    icon:'globe', color:'#34d399', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
   { tag:'CRYPTO',        icon:'₿',  color:'#f7931a', title:'10,000+ Coins Tracked',             desc:'Real-time prices, P&L, and allocation for any cryptocurrency — from Bitcoin to micro-cap altcoins.' },
-  { tag:'STOCKS & ETFs', icon:'📈', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
-  { tag:'METALS',        icon:'🟡', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
-  { tag:'CASH',          icon:'💵', color:'#22c55e', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
+  { tag:'STOCKS & ETFs', icon:'trend-up', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
+  { tag:'METALS',        icon:'diamond', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
+  { tag:'CASH',          icon:'banknote', color:'#22c55e', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
   { tag:'AI ADVISOR',    icon:'✦',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
-  { tag:'RISK SCANNER',  icon:'⚠️', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
-  { tag:'RISK BUDGET',   icon:'📐', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
-  { tag:'SET TARGETS',   icon:'🎯', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
-  { tag:'SELL PLAN',     icon:'📋', color:'#34d399', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
-  { tag:'BUY/SELL TIMING',icon:'⏱️',color:'#10b981', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
-  { tag:'WHALE ALERTS',  icon:'🐋', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
-  { tag:'PRICE ALERTS',  icon:'🔔', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
-  { tag:'GOALS',         icon:'🏅', color:'#fbbf24', title:'Goal-Based Portfolio Tracker',      desc:'Set a target (e.g. $50K by Dec 2026) — track progress with a live ring, DCA calc & probability badge.' },
-  { tag:'MARKET MOOD',   icon:'🌡️', color:'#f87171', title:'Fear & Greed Gauge',               desc:'Real-time market sentiment scored from live crypto headlines — know the crowd\'s emotion before you trade.' },
-  { tag:'SECTOR MAP',    icon:'🗺️', color:'#818cf8', title:'Sector Rotation Heatmap',          desc:'L1, L2, DeFi, AI, Gaming, Meme — each sector colour-coded by 7-day performance so you follow the money.' },
-  { tag:'CORRELATION',   icon:'🧩', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
-  { tag:'ACADEMY',       icon:'🎓', color:'#34d399', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
-  { tag:'INVESTMENT HACKS',icon:'💡',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
-  { tag:'VOICE',         icon:'🎙️', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
-  { tag:'SCREENSHOT',    icon:'📸', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
-  { tag:'PRIVACY',       icon:'🔒', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
-  { tag:'FREE',          icon:'🏆', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
+  { tag:'RISK SCANNER',  icon:'warning', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
+  { tag:'RISK BUDGET',   icon:'sliders', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
+  { tag:'SET TARGETS',   icon:'target', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
+  { tag:'SELL PLAN',     icon:'clipboard', color:'#34d399', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
+  { tag:'BUY/SELL TIMING',icon:'gauge',color:'#10b981', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
+  { tag:'WHALE ALERTS',  icon:'flow', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
+  { tag:'PRICE ALERTS',  icon:'bell', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
+  { tag:'GOALS',         icon:'award', color:'#fbbf24', title:'Goal-Based Portfolio Tracker',      desc:'Set a target (e.g. $50K by Dec 2026) — track progress with a live ring, DCA calc & probability badge.' },
+  { tag:'MARKET MOOD',   icon:'thermometer', color:'#f87171', title:'Fear & Greed Gauge',               desc:'Real-time market sentiment scored from live crypto headlines — know the crowd\'s emotion before you trade.' },
+  { tag:'SECTOR MAP',    icon:'map', color:'#818cf8', title:'Sector Rotation Heatmap',          desc:'L1, L2, DeFi, AI, Gaming, Meme — each sector colour-coded by 7-day performance so you follow the money.' },
+  { tag:'CORRELATION',   icon:'grid', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
+  { tag:'ACADEMY',       icon:'graduation', color:'#34d399', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
+  { tag:'INVESTMENT HACKS',icon:'lightbulb',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
+  { tag:'VOICE',         icon:'mic', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
+  { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
+  { tag:'PRIVACY',       icon:'lock', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
+  { tag:'FREE',          icon:'award', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
 ]
 
 const FS_SLIDE_MS = 4500
@@ -1413,10 +1413,10 @@ function FeatureSlideshow() {
               filter:'blur(8px)', animation:'fs-orb 3.2s ease-in-out infinite',
             }} />
             <div className="fs-icon" style={{
-              position:'relative', fontSize:'2.2rem', lineHeight:1,
+              position:'relative', fontSize:'2.2rem', lineHeight:1, color:slide.color,
               animation:'fs-icon-pop 0.55s cubic-bezier(0.34,1.56,0.64,1) both',
               filter:`drop-shadow(0 3px 8px ${slide.color}66)`,
-            }}>{slide.icon}</div>
+            }}>{slide.icon.length <= 2 ? slide.icon : <Icon name={slide.icon} size={38} />}</div>
           </div>
 
           {/* Tag with shimmer sweep */}
@@ -1477,9 +1477,9 @@ function FeatureSlideshow() {
 // Manage tab until all four steps are done or the user skips. ──────────────
 function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onViewDashboard, onOpenAI, onDismiss }) {
   const steps = [
-    { key:'wallet', icon:'👛', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
-    { key:'trade',  icon:'🎙️', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
-    { key:'track',  icon:'📊', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
+    { key:'wallet', icon:'banknote', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
+    { key:'trade',  icon:'mic', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
+    { key:'track',  icon:'bar-chart', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
     { key:'ai',     icon:'✦',  label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
   ]
   const total = steps.length
@@ -1520,7 +1520,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
           </div>
         </div>
         <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.25rem' }}>
-          {allDone ? "You're all set! 🎉" : 'Welcome to WalletLens'}
+          {allDone ? "You're all set!" : 'Welcome to WalletLens'}
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color:'var(--g)', marginBottom:'0.9rem' }}>
           <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>ANALYZE</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
@@ -1571,7 +1571,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
               }}>
                 {s.done
                   ? <svg className="ob-anim" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation:'ob-check 0.4s ease both' }}><polyline points="20 6 9 17 4 12"/></svg>
-                  : <span style={{ fontSize:'1rem' }}>{s.icon}</span>}
+                  : (s.icon.length <= 2 ? <span style={{ fontSize:'1rem' }}>{s.icon}</span> : <Icon name={s.icon} size={15} />)}
               </span>
               {/* Content */}
               <div style={{
@@ -1839,7 +1839,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           color: 'var(--g)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <span style={{ fontSize: '1rem' }}>➕</span> Add trade
+          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Add trade
         </button>
         <button onClick={() => onImportAction('backup')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
@@ -1848,7 +1848,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           color: '#60a5fa', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <span style={{ fontSize: '1rem' }}>📁</span> Import backup
+          <Icon name="folder" size={15} /> Import backup
         </button>
         <button onClick={() => onImportAction('voice')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
@@ -1857,7 +1857,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           color: '#10b981', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <span style={{ fontSize: '1rem' }}>🎙️</span> Voice import
+          <Icon name="mic" size={15} /> Voice import
         </button>
         <button onClick={() => onImportAction('excel')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
@@ -1866,7 +1866,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           color: '#a78bfa', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <span style={{ fontSize: '1rem' }}>📊</span> Import Excel
+          <Icon name="bar-chart" size={15} /> Import Excel
         </button>
       </div>
 
@@ -2245,10 +2245,10 @@ function AlertsSection({ enriched, prices, isDemo }) {
     <div>
       <div className="sa-alert-tabs">
         <button className={`sa-alert-tab ${alertTab === 'smart' ? 'active' : ''}`} onClick={() => setAlertTab('smart')}>
-          ⚡ Smart Alerts
+          <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Smart Alerts
         </button>
         <button className={`sa-alert-tab ${alertTab === 'price' ? 'active' : ''}`} onClick={() => setAlertTab('price')}>
-          🔔 Price Alerts
+          <Icon name="bell" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Price Alerts
         </button>
       </div>
       {alertTab === 'smart' && (
@@ -3397,7 +3397,7 @@ export default function Dashboard() {
                                           const dateStr = u.nextUnlock ? new Date(u.nextUnlock).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'2-digit' }) : null
                                           return (
                                             <span className="dvx-cat-badge dvx-unlock-badge" style={{ background: col + '18', color: col, borderColor: col + '44' }} title={u.note}>
-                                              🔓 {u.unlockPct}%/mo{dateStr ? ` · ${daysUntil !== null && daysUntil <= 0 ? 'now!' : dateStr}` : ''}
+                                              <Icon name="unlock" size={11} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} />{u.unlockPct}%/mo{dateStr ? ` · ${daysUntil !== null && daysUntil <= 0 ? 'now!' : dateStr}` : ''}
                                             </span>
                                           )
                                         })()}
@@ -3514,7 +3514,7 @@ export default function Dashboard() {
                 return (
                   <div className="glass-card">
                     <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0 }}>💰 Net Worth History</h3>
+                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color:'var(--g)' }} />Net Worth History</h3>
                       <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
                     </div>
                     <ResponsiveContainer width="100%" height={175}>
@@ -3560,7 +3560,7 @@ export default function Dashboard() {
           {/* Today's Movers — actionable daily insight */}
           {cardVis.movers && !isDemo && enriched.length >= 2 && !pricesFailed && (
             <div className="glass-card dvx-movers-card">
-              <h3 style={{ margin:'0 0 0.75rem' }}>📈 Today's Movers</h3>
+              <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color:'var(--g)' }} />Today's Movers</h3>
               <div className="dvx-movers-row">
                 {[...enriched]
                   .filter(h => prices[h.coin_id]?.usd_24h_change != null)
@@ -3660,16 +3660,16 @@ export default function Dashboard() {
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g)', fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem' }}>➕</span> Add trade
+              <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Add trade
             </button>
             <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem' }}>📁</span> Import backup
+              <Icon name="folder" size={15} /> Import backup
             </button>
             <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'#10b981', fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem' }}>🎙️</span> Voice import
+              <Icon name="mic" size={15} /> Voice import
             </button>
             <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(167,139,250,0.1)', border:'1.5px solid rgba(167,139,250,0.3)', color:'#a78bfa', fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem' }}>📊</span> Import Excel
+              <Icon name="bar-chart" size={15} /> Import Excel
             </button>
           </div>
           {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
@@ -3759,16 +3759,16 @@ export default function Dashboard() {
               <>
                 <div style={{ textAlign:'center', marginBottom:'1.1rem' }}>
                   <div style={{ display:'flex', justifyContent:'center', marginBottom:'0.6rem' }}><Logo size={40} animated /></div>
-                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>Wallet created 🎉</div>
+                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>Wallet created</div>
                   <div style={{ fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem' }}>How would you like to add your holdings?</div>
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
                   {[
-                    { icon:'✍️', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
-                    { icon:'🎙️', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
-                    { icon:'📸', label:'Screenshot', desc:'AI reads it', color:'244,114,182', fn:() => setImportMode('screenshot') },
-                    { icon:'📊', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
-                    { icon:'📁', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
+                    { icon:'notes', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
+                    { icon:'mic', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
+                    { icon:'camera', label:'Screenshot', desc:'AI reads it', color:'244,114,182', fn:() => setImportMode('screenshot') },
+                    { icon:'bar-chart', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
+                    { icon:'folder', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
                   ].map(o => (
                     <button key={o.label} onClick={o.fn} style={{
                       display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'0.2rem',
@@ -3776,7 +3776,7 @@ export default function Dashboard() {
                       background:`rgba(${o.color},0.1)`, border:`1.5px solid rgba(${o.color},0.3)`,
                       color:`rgb(${o.color})`,
                     }}>
-                      <span style={{ fontSize:'1.4rem' }}>{o.icon}</span>
+                      <Icon name={o.icon} size={22} style={{ color:`rgb(${o.color})` }} />
                       <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)' }}>{o.label}</span>
                       <span style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{o.desc}</span>
                     </button>
@@ -3832,7 +3832,7 @@ export default function Dashboard() {
           animation: 'slideUpFade 0.3s ease',
           whiteSpace: 'nowrap',
         }}>
-          <span style={{ fontSize: '1rem' }}>📊</span>
+          <Icon name="bar-chart" size={15} style={{ color: 'var(--text-muted)' }} />
           <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Log your latest trade</span>
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
