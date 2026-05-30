@@ -222,12 +222,46 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
           </p>
         </div>
         {!open && (
-          <button onClick={generate} disabled={loading} style={{
-            background:'var(--g)', color:'#000', border:'none',
-            borderRadius:10, padding:'0.5rem 1.1rem',
-            fontWeight:700, fontSize:'0.85rem', cursor: loading ? 'wait' : 'pointer',
-            flexShrink:0, opacity: loading ? 0.7 : 1,
-          }}>{loading ? '⏳ Analyzing…' : '✨ Generate'}</button>
+          <button
+            onClick={generate}
+            disabled={loading}
+            onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.12)' } }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = '' }}
+            style={{
+              flexShrink:0, position:'relative', overflow:'hidden',
+              display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.45rem',
+              padding:'0.55rem 1.15rem', borderRadius:10,
+              fontWeight:800, fontSize:'0.85rem', whiteSpace:'nowrap',
+              cursor: loading ? 'wait' : 'pointer',
+              color:'#ffffff',
+              background:'linear-gradient(135deg, rgba(4,120,87,0.85), rgba(16,185,129,1))',
+              border:'1.5px solid rgba(4,120,87,0.9)',
+              boxShadow:'0 4px 14px rgba(16,185,129,0.5), 0 0 10px rgba(16,185,129,0.35)',
+              transition:'transform 0.18s ease, filter 0.18s ease',
+              animation: loading ? 'none' : 'sp-btn-glow 2.4s ease-in-out infinite',
+              opacity: loading ? 0.75 : 1,
+            }}
+          >
+            <style>{`
+              @keyframes sp-btn-glow {
+                0%,100% { box-shadow: 0 4px 12px rgba(16,185,129,0.4), 0 0 8px rgba(16,185,129,0.3); }
+                50%     { box-shadow: 0 4px 20px rgba(16,185,129,0.7), 0 0 18px rgba(16,185,129,0.6); }
+              }
+              @keyframes sp-btn-shimmer {
+                0%,55%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
+                60%     { opacity:1; }
+                80%,100% { transform: translateX(230%) skewX(-15deg); opacity:0; }
+              }
+            `}</style>
+            {!loading && (
+              <span aria-hidden style={{
+                position:'absolute', inset:0, pointerEvents:'none',
+                background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
+                animation:'sp-btn-shimmer 3.5s ease-in-out infinite',
+              }} />
+            )}
+            <span style={{ position:'relative' }}>{loading ? '⏳ Analyzing…' : '✨ Generate'}</span>
+          </button>
         )}
         {open && (
           <button onClick={() => setOpen(false)} style={{
