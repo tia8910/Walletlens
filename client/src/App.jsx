@@ -344,7 +344,13 @@ export default function App() {
             <IconMenu />
           </button>
           <div className="wl-topbar-brand">
-            <Logo size={36} animated />
+            <button
+              className="wl-logo-btn"
+              onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }}
+              aria-label="Quick Stats"
+            >
+              <Logo size={36} animated />
+            </button>
             <div className="wl-topbar-brand-text">
               <strong className="wl-topbar-brand-name">WalletLens</strong>
               <div className="wl-topbar-brand-actions">
@@ -407,7 +413,6 @@ export default function App() {
       <Suspense fallback={null}><WelcomeModal /></Suspense>
       <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
 
-      <button className="floating-lens" onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }} aria-label="Quick Stats"><Logo size={30} /></button>
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>
   )

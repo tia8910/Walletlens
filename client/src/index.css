@@ -2998,7 +2998,6 @@ tr:last-child td { border-bottom: none; }
   .sidebar { display: none !important; }
   .content { margin-left: 0 !important; padding: 0 0.9rem 2rem; max-width: 100% !important; }
 
-  .floating-lens { bottom: 1.25rem; right: 1rem; width: 60px; height: 60px; font-size: 1.7rem; border-width: 3px; }
 
   .topbar {
     display: block; position: sticky; top: 0; z-index: 80;
@@ -3659,31 +3658,24 @@ tr:last-child td { border-bottom: none; }
 }
 
 /* ═══ Floating Lens (bottom-right global) ═══ */
-.floating-lens {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 80px; height: 80px;
+/* Header logo as interactive Quick Stats trigger */
+.wl-logo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, var(--g) 0%, var(--g) 45%, var(--gd) 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.4rem;
-  cursor: pointer; z-index: 60;
-  border: 4px solid rgba(var(--g-rgb), 0.5);
-  animation: lens-pulse-strong 2.3s ease-in-out infinite;
-  transition: transform 0.22s ease;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  flex-shrink: 0;
 }
-.floating-lens:hover { transform: scale(1.08); }
-.floating-lens.burst { transform: scale(1.7); transition: transform 0.18s ease; }
-
-@keyframes lens-pulse-strong {
-  0%, 100% { box-shadow: 0 0 12px rgba(var(--g-rgb),0.06); }
-  50%      { box-shadow: 0 0 12px rgba(var(--g-rgb),0.06); }
-}
-.lens-pulse { animation: lens-pulse-strong 2.3s ease-in-out infinite; }
+.wl-logo-btn:hover { transform: scale(1.1); filter: drop-shadow(0 0 6px rgba(var(--g-rgb), 0.5)); }
+.wl-logo-btn.burst { transform: scale(1.35); transition: transform 0.18s ease; }
 
 @media (prefers-reduced-motion: reduce) {
-  .lens-pulse, .floating-lens { animation: none; }
+  .wl-logo-btn { transition: none; }
 }
 
 /* ═══ AI Decision Engine ═══ */
