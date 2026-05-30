@@ -9362,3 +9362,23 @@ input[type="date"] { color-scheme: dark; }
   box-shadow: none;
   cursor: not-allowed;
 }
+
+/* Trade sheet confirm-buy button — same gradient as "Add a trade" CTA */
+.bs-submit.dvx-btn-primary {
+  background: linear-gradient(135deg, #047857, #10b981);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+}
+.bs-submit.dvx-btn-primary:hover {
+  background: linear-gradient(135deg, #047857, #10b981);
+  color: #fff;
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 22px rgba(5, 150, 105, 0.5);
+}
+.bs-submit.dvx-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.35);
+  filter: brightness(0.97);
+}
