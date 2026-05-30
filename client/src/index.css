@@ -9244,3 +9244,80 @@ input[type="date"] { color-scheme: dark; }
   .dvx-page { overflow-x: hidden; }
 }
 [data-wl-light] .coach-score-pill { background: rgba(255,255,255,0.7); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UNIFIED PRIMARY BUTTON
+   One solid-green look across the whole app, matching the "Add Trade"
+   reference: solid var(--g) fill, bold black text, 12px radius, soft
+   green-tinted shadow, gentle lift on hover. Each button keeps its own
+   padding / font-size / width — only the visual skin is unified here.
+   (Danger / sell / ghost / outline buttons are intentionally excluded.)
+   ═══════════════════════════════════════════════════════════════════════ */
+.dvx-btn-primary,
+.btn-add-target,
+.dash-v2-cta,
+.landing-cta,
+.lp-cta-primary,
+.dvx-hero-cta-buy,
+.data-export-btn,
+.ms-btn-share,
+.blog-cta-btn,
+.buy-btn,
+.submit-btn.buy {
+  background: var(--g);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(var(--g-rgb), 0.32);
+  outline: none;
+  animation: none;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+.dvx-btn-primary:hover,
+.btn-add-target:hover,
+.dash-v2-cta:hover,
+.landing-cta:hover,
+.lp-cta-primary:hover,
+.dvx-hero-cta-buy:hover,
+.data-export-btn:hover,
+.ms-btn-share:hover,
+.blog-cta-btn:hover,
+.buy-btn:hover,
+.submit-btn.buy:hover {
+  background: var(--g);
+  color: #000;
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 22px rgba(var(--g-rgb), 0.45);
+  outline: none;
+  animation: none;
+}
+.dvx-btn-primary:active,
+.btn-add-target:active,
+.dash-v2-cta:active,
+.landing-cta:active,
+.lp-cta-primary:active,
+.dvx-hero-cta-buy:active,
+.data-export-btn:active,
+.ms-btn-share:active,
+.blog-cta-btn:active,
+.buy-btn:active,
+.submit-btn.buy:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(var(--g-rgb), 0.3);
+  filter: brightness(0.98);
+}
+.dvx-btn-primary:disabled,
+.btn-add-target:disabled,
+.dash-v2-cta:disabled,
+.landing-cta:disabled,
+.lp-cta-primary:disabled,
+.data-export-btn:disabled,
+.submit-btn.buy:disabled {
+  opacity: 0.5;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
