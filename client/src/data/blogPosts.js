@@ -782,4 +782,302 @@ The best framework fails if you abandon it under stress. A few habits help:
 You cannot control whether any individual bet works out. You can control how much it can hurt you. Size positions so no single loss is fatal, cap concentration, rebalance to enforce your limits, and plan exits before you need them. Do that consistently and you give yourself the one thing that compounds returns over a lifetime: survival.
     `
   },
+  {
+    slug: 'what-is-net-worth-and-how-to-calculate-yours',
+    title: 'What Is Net Worth and How to Calculate Yours',
+    date: 'May 2026',
+    readTime: '5 min read',
+    summary: 'Net worth is the single most important number in your financial life. Here is what it means, how to calculate it accurately, and why most people get it wrong.',
+    content: `
+Net worth is the foundation of personal finance. It is the one number that tells you, honestly and completely, where you stand financially. Yet most people have only a vague sense of what it is — and almost no one has calculated it recently enough to act on it.
+
+## What Is Net Worth?
+
+Net worth is simple in definition: **everything you own minus everything you owe**.
+
+Assets − Liabilities = Net Worth
+
+A positive number means your assets exceed your debts. A negative number — common for young people with student loans or mortgages that exceed their assets — means you owe more than you own. Neither is shameful; the point is to know the number and trend it in the right direction.
+
+## What Counts as an Asset?
+
+Assets are everything of financial value that you own:
+
+**Liquid assets (easy to convert to cash):**
+- Cash in bank accounts
+- Cryptocurrency holdings
+- Stocks, ETFs, and mutual funds
+- Stablecoins and money-market funds
+
+**Semi-liquid assets:**
+- Precious metals (gold, silver)
+- Bonds and fixed-income instruments
+- Retirement accounts (401k, IRA, pension fund value)
+
+**Illiquid assets:**
+- Real estate (your home, investment properties) — use current market value, not purchase price
+- Business ownership interests
+- Vehicles — use current resale value, not what you paid
+
+One important rule: use realistic current market values, not what you paid or what you hope to sell for. Overestimating asset values produces a flattering but useless number.
+
+## What Counts as a Liability?
+
+Liabilities are everything you owe:
+
+- Mortgage balance outstanding
+- Student loans
+- Car loans
+- Credit card balances (total outstanding, not just the minimum payment)
+- Personal loans
+- Any other debts
+
+Do not confuse a monthly payment with a liability. The liability is the full outstanding balance.
+
+## Why Net Worth Matters More Than Income
+
+Income is a flow; net worth is a stock. A high earner who spends everything has a net worth that barely grows. Someone on a moderate salary who saves and invests consistently accumulates real wealth. The scoreboard of financial life is net worth, not income.
+
+**Net worth reveals your actual financial resilience.** If you lost your income tomorrow, your net worth determines how long you can survive and whether you have options. A high income with zero savings is fragile; even a modest net worth provides security.
+
+**It connects short-term decisions to long-term outcomes.** Every time you pay down debt or invest rather than spend, you can see the effect on this one number.
+
+## The Net Worth Calculation in Practice
+
+Here is a simple worked example:
+
+| Asset | Value |
+|-------|-------|
+| Cash and savings | $12,000 |
+| Crypto portfolio | $18,500 |
+| Stocks and ETFs | $34,000 |
+| Gold holdings | $8,000 |
+| Car (resale value) | $9,500 |
+| Total Assets | $82,000 |
+
+| Liability | Balance |
+|-----------|---------|
+| Car loan | $5,200 |
+| Student loan | $14,000 |
+| Credit card | $1,800 |
+| Total Liabilities | $21,000 |
+
+**Net Worth: $82,000 − $21,000 = $61,000**
+
+## Common Mistakes That Distort Your Number
+
+**Including retirement accounts at face value without accounting for taxes.** In a traditional IRA or 401k, you will owe income tax on withdrawals. Some people reduce these values by their expected tax rate for a more conservative estimate.
+
+**Using purchase price instead of market value.** Your home is worth what someone would pay for it today, not what you paid in 2018.
+
+**Forgetting small debts.** A forgotten $800 credit card balance or an old store credit is still a liability.
+
+**Ignoring illiquid assets.** A business, a collectibles collection, or equity in a property all count — even if they take time to convert to cash.
+
+## How Often Should You Calculate It?
+
+Monthly is ideal for active investors; quarterly is the minimum. The trend matters as much as the number. A net worth that grows consistently — even slowly — is a healthy financial life. A stagnant or declining one is a signal to change something.
+
+## Tracking It Without a Spreadsheet
+
+The challenge with net worth tracking is that assets are scattered across different institutions: a crypto wallet here, a brokerage there, a metals holding, a bank account. WalletLens was built for exactly this: it tracks crypto, precious metals, stocks, and cash in one dashboard with live prices, so your complete investment net worth updates in real time — no spreadsheet, no account, no data shared with any server.
+
+Start with your investment assets. Add your cash and savings manually. Then subtract your liabilities. You have your net worth.
+
+## Conclusion
+
+Net worth is the honest measure of your financial life. Assets minus liabilities — calculate it today, even roughly, and you have a baseline to improve from. Track it regularly and you have one of the most powerful tools in personal finance: a single number that tells you whether you are moving forward.
+    `
+  },
+  {
+    slug: 'how-to-grow-your-net-worth',
+    title: 'How to Grow Your Net Worth: A Practical Framework',
+    date: 'May 2026',
+    readTime: '6 min read',
+    summary: 'Growing net worth is not about earning more — it is about the gap between what you build and what you owe. Here is a practical framework that works across income levels.',
+    content: `
+Most financial advice focuses on income: earn more, get promoted, start a side hustle. Income matters, but it is not the variable that builds wealth. The variable that builds wealth is the gap between what you accumulate and what you owe — and how fast you widen that gap over time.
+
+This guide is a framework for growing net worth systematically, regardless of how much you currently earn.
+
+## The Two Levers: Grow Assets, Shrink Liabilities
+
+Net worth has exactly two inputs: your assets and your liabilities. Every decision you make either grows one, shrinks the other, or both. That is the whole framework.
+
+**Growing assets:**
+- Investing in appreciating assets (stocks, crypto, real estate, precious metals)
+- Keeping cash in interest-bearing accounts rather than current accounts
+- Building income-generating assets (a business, rental property)
+- Avoiding depreciating "assets" like new cars and consumer electronics
+
+**Shrinking liabilities:**
+- Aggressively paying down high-interest debt (credit cards, personal loans)
+- Refinancing to lower interest rates where possible
+- Avoiding new debt for consumption (things that do not generate a return)
+- Mortgage overpayments if the interest rate exceeds safe investment returns
+
+## Prioritise by Interest Rate
+
+Not all debt is equally bad. A mortgage at 3% while your investments return 8% per year means paying it off slowly is financially rational — you are better off investing the difference. Credit card debt at 22% is the opposite: no investment reliably beats 22% risk-free.
+
+A sensible order:
+1. Pay the minimum on all debts to avoid penalties.
+2. Build a small emergency fund (1–2 months of expenses in cash).
+3. Pay off all high-interest debt (above 8–10%) aggressively.
+4. Invest the surplus in diversified assets.
+5. Pay down medium-rate debt (mortgage) at whatever pace lets you sleep.
+
+## The Net Worth Mindset: Every Dollar Is a Decision
+
+The core habit of wealth builders is asking the same question about every dollar: does this grow my net worth or shrink it?
+
+Buying a coffee does not meaningfully shrink your net worth. Taking a $15,000 personal loan to fund a holiday does. The distinction is between spending money you have versus borrowing money you will have to repay with interest.
+
+This is not a call for frugality — it is a call for intentionality. Spending on experiences and quality of life is a legitimate choice. Unconsciously accumulating consumer debt is not.
+
+## The Compounding Effect
+
+The most powerful force in net worth growth is compounding — earning returns not just on your principal but on your previous returns. The longer this runs, the more dramatic the effect.
+
+| Starting Net Worth | Annual Growth Rate | Net Worth After 20 Years |
+|--------------------|--------------------|--------------------------|
+| $10,000 | 5% | $26,500 |
+| $10,000 | 8% | $46,600 |
+| $10,000 | 12% | $96,500 |
+
+The difference between 5% and 12% over 20 years is not a 2.4x difference in the final number — it is a 3.6x difference. Compounding rewards patience and penalises delay.
+
+This is why starting early matters more than starting large. $500 invested at 22 with 8% annual returns is worth more by retirement than $5,000 invested at 42.
+
+## Diversify to Protect What You Build
+
+A single bad outcome — one asset going to zero, one company collapsing, one market crash — should not be able to devastate your net worth. Diversification is how you prevent that.
+
+In practice this means:
+- Spreading across asset classes (crypto, stocks, gold, real estate, cash)
+- Spreading within each class (multiple coins, multiple stocks, not just one sector)
+- Keeping a cash reserve so you are never forced to sell at the worst time
+
+The goal is not to maximise returns — it is to build a portfolio where no single disaster is fatal.
+
+## Increase Income and Direct the Surplus to Assets
+
+Income growth accelerates net worth, but only if the additional income goes to assets rather than lifestyle inflation. Every pay rise, bonus, or extra-income source is an opportunity: some to quality of life, most to the asset column.
+
+A common rule: when income increases, keep lifestyle spending flat for one year and direct the entire increase to investments or debt paydown. After one year, you have built a new base of assets and can adjust lifestyle more deliberately.
+
+## Track It Consistently
+
+You cannot manage what you do not measure. Checking your net worth regularly — monthly or quarterly — makes the connection between daily decisions and long-term wealth visible and real.
+
+Use a tool that shows all your assets in one place. If your investment net worth is spread across crypto, stocks, and metals, you need a single view to see the true picture. WalletLens was built exactly for this — a unified net worth dashboard with live prices across asset classes, completely local and private.
+
+## Milestones That Change the Game
+
+Net worth growth is not linear — there are thresholds where your financial position qualitatively changes:
+
+**$0 net worth:** You have paid off all debts. Everything you earn now goes to building, not catching up.
+
+**3–6 months of expenses saved:** Financial resilience. A job loss or emergency does not force you to take on debt.
+
+**First $100K:** This is the hardest and most important milestone. Past $100K, compounding starts doing meaningful work for you. The first $100K takes longer than the next $100K.
+
+**Income from assets exceeds monthly expenses:** This is financial freedom — your money works harder than you do. From here, work becomes optional.
+
+## Conclusion
+
+Growing net worth is a system, not a secret. Grow assets, shrink liabilities, let compounding run. Prioritise high-rate debt, invest the surplus, and track the number regularly so progress is visible and setbacks are caught early. The framework is simple. The discipline to apply it consistently is the work.
+    `
+  },
+  {
+    slug: 'how-to-track-net-worth-across-all-assets',
+    title: 'How to Track Your Net Worth Across Crypto, Stocks, Gold, and Cash',
+    date: 'May 2026',
+    readTime: '5 min read',
+    summary: 'Your financial picture is scattered across wallets, brokerages, bank accounts, and metal holdings. Here is how to bring it all into one live net worth view without spreadsheets or subscriptions.',
+    content: `
+Most people have a fragmented view of their own wealth. Their crypto is in one app, stocks in a brokerage, gold in a dealer account, and cash spread across two or three bank accounts. Seeing the complete picture requires opening five different tabs and mentally adding them together — which means most people simply do not do it.
+
+A complete, live net worth view across every asset class is not a luxury. It is the foundation for every good financial decision: allocation, rebalancing, risk assessment, goal tracking. Without it, you are flying blind.
+
+## Why Multi-Asset Tracking Is Hard
+
+The core challenge is that different asset classes live in different places and update at different speeds:
+
+**Cryptocurrency** — prices update every second. Your BTC, ETH, and altcoin values change continuously. Exchange balances require API access or manual entry to stay current.
+
+**Stocks and ETFs** — real-time quotes during market hours, frozen overnight and on weekends. Held at brokerages that rarely share data with other tools.
+
+**Precious metals** — gold and silver spot prices update throughout the trading day. Physical holdings have no automatic tracking at all.
+
+**Cash and stablecoins** — relatively stable, but spread across bank accounts, money market funds, and on-chain wallets. Often forgotten in net worth calculations.
+
+Most tracking tools solve only one of these. Crypto apps do not understand gold. Stock trackers ignore Bitcoin. Spreadsheets go stale the moment you close them.
+
+## The Right Mental Model: Buckets and Weights
+
+Before you track, you need a mental model. Think of your net worth in five buckets:
+
+**₿ Crypto** — Bitcoin, Ethereum, altcoins, and any token with market-driven price. High volatility, 24/7 markets, highest risk and potential return.
+
+**🟡 Precious Metals** — gold, silver, platinum. Inflation hedges and stores of value. Slow-moving compared to crypto, priced in troy ounces.
+
+**📈 Stocks & ETFs** — equities, index funds, sector ETFs. Driven by corporate earnings and macro factors.
+
+**💵 Cash & Stablecoins** — bank balances, stablecoins, money market funds. The dry powder bucket. Not an investment, but counts in net worth.
+
+**🏠 Real Estate** — property at current market value, net of mortgage balance.
+
+For most retail investors, the first four buckets are where active tracking matters. Real estate is relatively static and can be updated manually a few times a year.
+
+## Setting Up Live Multi-Asset Tracking in WalletLens
+
+WalletLens is built around this exact five-bucket model, covering all asset classes with live prices:
+
+**1. Add your crypto holdings.** Search any of 10,000+ coins by name or ticker. Enter your quantity and average buy price. WalletLens pulls live prices and calculates your P&L immediately.
+
+**2. Add precious metals.** Enter gold as XAU and silver as XAG — WalletLens uses live spot prices from financial markets. Enter your quantity in troy ounces (1 gram = 0.0321 oz if you think in grams).
+
+**3. Add stocks and ETFs.** Search by ticker (AAPL, NVDA, VOO, QQQ). Live prices update during market hours. P&L is calculated from your purchase price.
+
+**4. Add cash and stablecoins.** Bank balances can be entered as USD, EUR, or any major fiat. Stablecoins like USDT and USDC are tracked separately from your invested assets, so they show as dry powder rather than distorting your P&L.
+
+The result: a single dashboard showing your total net worth across all four categories, with a live donut chart breaking down your allocation and a category-by-category P&L summary.
+
+## The Allocation View: What You Actually Own
+
+Once your holdings are entered, the allocation view tells you something the scattered approach cannot: what percentage of your total net worth sits in each bucket.
+
+This matters because allocation is where risk lives. Two people can both have a $200,000 net worth and completely different risk profiles:
+
+| Person | Crypto | Stocks | Gold | Cash |
+|--------|--------|--------|------|------|
+| A | 80% | 10% | 5% | 5% |
+| B | 30% | 40% | 20% | 10% |
+
+Person A has the same net worth as Person B but is catastrophically more exposed to a crypto crash. Without a unified view, they would not know their true risk.
+
+## Keeping It Current
+
+The main discipline with manual tracking is logging every transaction as it happens:
+- Every crypto buy or sell
+- Every stock purchase or dividend reinvestment
+- Any changes to metals holdings
+- Monthly update to cash balances
+
+In practice this is a few seconds per trade. WalletLens also supports voice import — you can say "I bought 0.5 ETH at $3,200" and the trade is logged — as well as a quick-entry form for each asset class.
+
+## Privacy: Why Local-First Matters
+
+Tracking your complete net worth in one place creates a detailed financial profile. That profile should not live on someone else's server. WalletLens stores all your data in your browser's local storage — nothing is transmitted to any server. There is no account, no login, no email address. Your financial data stays entirely on your device.
+
+## Exporting and Backing Up
+
+Because your data lives in the browser, backing up is important. The WalletLens Export function generates a compact WLZ code — a compressed snapshot of all your trades and holdings. Save it to a notes app, a secure cloud document, or an encrypted password manager. To restore on any device, paste the code into Import. The whole process takes five seconds.
+
+## Conclusion
+
+Your net worth is the sum of everything across all the accounts and assets you hold. Seeing it clearly — categorised, live-priced, allocation-weighted — takes no more than fifteen minutes to set up and dramatically improves every subsequent financial decision you make. Stop guessing at the total and start tracking it in one place.
+    `
+  },
 ]

@@ -1,6 +1,43 @@
 import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
 import Logo from '../components/Logo'
 import { POSTS } from '../data/blogPosts'
+
+function ShareBar({ post }) {
+  const [copied, setCopied] = useState(false)
+  const url = `https://walletlens.live/blog/${post.slug}`
+  const tweetText = encodeURIComponent(`${post.title}\n\n${post.summary}\n\n${url}`)
+
+  function copyLink() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="blog-share-bar">
+      <span className="blog-share-label">Share</span>
+      <a
+        className="blog-share-btn blog-share-x"
+        href={`https://twitter.com/intent/tweet?text=${tweetText}`}
+        target="_blank" rel="noopener noreferrer"
+        aria-label="Share on X"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Post on X
+      </a>
+      <button className="blog-share-btn blog-share-copy" onClick={copyLink} aria-label="Copy link">
+        {copied ? (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        ) : (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        )}
+        {copied ? 'Copied!' : 'Copy link'}
+      </button>
+    </div>
+  )
+}
 
 function PostCard({ post }) {
   return (
@@ -83,6 +120,7 @@ export default function Blog() {
           <hr className="blog-divider" />
           {renderMarkdown(post.content)}
           <hr className="blog-divider" />
+          <ShareBar post={post} />
           <div className="blog-cta-box">
             <strong>Start tracking your portfolio for free</strong>
             <p>WalletLens is 100% free, no account required, and all your data stays on your device.</p>
