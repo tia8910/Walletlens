@@ -63,6 +63,50 @@ Rules:
 - A coin with no clear buy/sell intent → skip it, don't invent one.`
 }
 
+// ── In-app assistant ──────────────────────────────────────────────────────
+// A lightweight feature-finder chat. Understands the app's feature map and
+// points users at the right page/tab via [[nav:/route|Label]] markers that the
+// client turns into one-tap buttons. Uses Haiku for speed/cost.
+const ASSISTANT_FEATURES = [
+  "- Dashboard (/dashboard): Net worth overview, P&L, allocation donut, holdings by category.",
+  "- AI Analysis (/dashboard?tab=ai): Portfolio health score, Fear & Greed gauge, stress test, rebalance planner, entry quality, risk scanner.",
+  "- Sell Targets (/dashboard?tab=targets): Set price targets per asset and track progress toward taking profit.",
+  "- Price Alerts (/dashboard?tab=alerts): Get notified when an asset crosses a price you choose.",
+  "- Wallets & Backup (/dashboard?tab=manage): Manage wallets and export/import your data as a backup code.",
+  "- Transactions (/transactions): Log buys/sells and view full trade history.",
+  "- Market (/market): Live prices for crypto, metals, and stocks.",
+  "- Whale Tracker (/whales): Large on-chain transactions and smart-money / volume signals.",
+  "- Alpha (/alpha): Deep-dive portfolio analytics and correlation/sector views.",
+  "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve, P&L health.",
+  "- Technicals (/technicals): RSI, MACD, Bollinger Bands and trend signals per asset.",
+  "- Academy (/academy): Educational guides on investing and using WalletLens.",
+  "- Settings (/settings): Theme, display currency, language, biometric lock, backup/export.",
+].join("\n")
+
+function buildAssistantSystem(lang: string): string {
+  const langLine = lang === "ar"
+    ? "Reply in Arabic (the user is using the app in Arabic)."
+    : "Reply in English."
+  return `You are the friendly in-app assistant for WalletLens, a free, private, all-asset portfolio tracker (crypto, precious metals, stocks, and cash). Your job is to understand what the user wants to accomplish and point them to the right feature.
+
+${langLine}
+
+Be concise and warm — usually 1–3 short sentences. Do not invent features that are not in the list. WalletLens is 100% local: no account, no wallet connection, data never leaves the device — reassure users about privacy when relevant.
+
+Available features (and their routes):
+${ASSISTANT_FEATURES}
+
+When you recommend a place in the app for the user to go, ALWAYS end that recommendation with a navigation marker on its own line, in this exact format:
+[[nav:/route|Button Label]]
+
+Examples:
+- "where do I add a trade?" → "You can log buys and sells in Transactions. [[nav:/transactions|Open Transactions]]"
+- "is my portfolio too risky?" → "Run the AI Analysis — it gives a health score and a stress test. [[nav:/dashboard?tab=ai|Open AI Analysis]]"
+- "I want to plan when to sell" → "Set price targets per asset and track progress. [[nav:/dashboard?tab=targets|Open Sell Targets]]"
+
+You may include more than one marker if several features fit. Only use routes from the list above. If the user asks something unrelated to the app, answer briefly and helpfully without a marker.`
+}
+
 // deno-lint-ignore no-explicit-any
 function filterTrades(arr: any): any[] {
   return Array.isArray(arr)
@@ -216,6 +260,49 @@ Rules:
       return new Response(JSON.stringify({ ok: true, verdict }), { headers })
     } catch (e) {
       console.error("analyze error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
+  // ── In-app assistant (mode: "assistant") ──────────────────────────────────
+  // Accepts a short chat history and returns Claude Haiku's reply. The reply
+  // may contain [[nav:/route|Label]] markers the client renders as buttons.
+  if (body?.mode === "assistant") {
+    const lang = body.lang === "ar" ? "ar" : "en"
+    // deno-lint-ignore no-explicit-any
+    const rawMsgs = Array.isArray(body.messages) ? body.messages : []
+    const messages = rawMsgs
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .slice(-12) // cap history
+      .map((m: any) => ({ role: m.role, content: m.content.toString().slice(0, 2000) }))
+    if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+      return new Response(JSON.stringify({ error: "no_message" }), { status: 400, headers })
+    }
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          system: buildAssistantSystem(lang),
+          messages,
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (assistant):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const reply = data.content?.[0]?.text || ""
+      return new Response(JSON.stringify({ ok: true, reply }), { headers })
+    } catch (e) {
+      console.error("assistant error:", e)
       return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
     }
   }

@@ -10,6 +10,7 @@ import Icon from './components/Icon'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
+const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
@@ -429,6 +430,7 @@ export default function App() {
 
       <Suspense fallback={null}><WelcomeModal /></Suspense>
       <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
+      <Suspense fallback={null}><AssistantChat /></Suspense>
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>
