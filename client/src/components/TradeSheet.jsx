@@ -940,8 +940,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           {/* Footer — outside scrollable bs-body so the button is always tappable */}
           <div className="bs-footer">
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0 0 0.5rem' }}>{msg}</p>}
-            <button className="bs-submit"
-              style={{ background: isBuy ? 'linear-gradient(135deg, var(--g), var(--gd))' : 'linear-gradient(135deg, #fb7185, #ef4444)', color: isBuy ? '#000' : '#fff' }}
+            <button className={`bs-submit ${isBuy ? 'dvx-btn-primary' : 'dvx-btn-sell'}`}
               onClick={() => { playTradeSound(isBuy); submit() }}
               disabled={busy || !asset || !amount || !price || (isBuy ? !buyWith : !sellFor) || (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) || (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim())}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
