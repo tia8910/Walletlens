@@ -768,6 +768,8 @@ export const api = {
   getPortfolio: async (walletId) => {
     let txs = loadData('transactions');
     if (walletId) txs = txs.filter(t => t.wallet_id === parseInt(walletId));
+    // Sort ascending so cost-basis removal uses the correct running average
+    txs = txs.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     const holdings = {};
     for (const tx of txs) {
@@ -791,8 +793,11 @@ export const api = {
         holdings[tx.coin_id].amount += tx.amount;
         holdings[tx.coin_id].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
-        holdings[tx.coin_id].amount -= tx.amount;
-        holdings[tx.coin_id].total_invested -= tx.total_cost;
+        const h = holdings[tx.coin_id];
+        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct
+        const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
+        h.total_invested = Math.max(0, h.total_invested - avgCost * tx.amount);
+        h.amount -= tx.amount;
       }
     }
 
