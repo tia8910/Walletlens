@@ -660,7 +660,7 @@ input, select, textarea {
 [data-wl-light] .news-ticker-dot    { color: rgba(0,0,0,0.2); }
 [data-wl-light] .news-ticker-share  { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .news-ticker-share:hover { background: rgba(0,0,0,0.09); color: var(--text); }
-[data-wl-light] .news-show-all-btn { color: #000; }
+[data-wl-light] .news-show-all-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 
 /* ── Price ticker (top scrollbar) ── */
 [data-wl-light] .tick-val { color: var(--text-muted); }
@@ -7936,27 +7936,20 @@ input[type="date"] { color-scheme: dark; }
 .news-show-all-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: var(--g);
-  border: none;
-  border-radius: 12px;
-  padding: 0.55rem 1.4rem;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #000;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px;
+  padding: 0.3rem 1rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(var(--g-rgb), 0.32);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .news-show-all-btn:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: 0 7px 22px rgba(var(--g-rgb), 0.45);
-}
-.news-show-all-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 3px 10px rgba(var(--g-rgb), 0.3);
-  filter: brightness(0.98);
+  background: rgba(var(--g-rgb),0.08);
+  border-color: rgba(var(--g-rgb),0.3);
+  color: var(--g);
 }
 
 /* ── News Modal ─────────────────────────────────────────────────────────── */
