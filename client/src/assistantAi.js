@@ -27,7 +27,6 @@ export const FEATURES = [
   { route: '/dashboard?tab=alerts',  label: 'Price Alerts' },
   { route: '/dashboard?tab=manage',  label: 'Wallets & Backup' },
   { route: '/transactions',          label: 'Transactions' },
-  { route: '/market',                label: 'Market' },
   { route: '/whales',                label: 'Whale Tracker' },
   { route: '/alpha',                 label: 'Alpha' },
   { route: '/coach',                 label: 'Coach' },

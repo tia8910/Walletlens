@@ -643,8 +643,6 @@ export default function Landing() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
         <div className="lp-final-links">
-          <button className="lp-link" onClick={() => navigate('/market')}>{t('navMarket')}</button>
-          <span>·</span>
           <button className="lp-link" onClick={() => navigate('/whales')}>{t('whaleTracker')}</button>
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/alpha')}>Alpha</button>

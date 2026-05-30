@@ -1905,19 +1905,6 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         })}
       </div>
 
-      {/* Browse market */}
-      <div style={{ display:'flex', justifyContent:'center', marginBottom:'1.25rem' }}>
-        <button onClick={() => navigate('/market')} style={{
-          display:'inline-flex', alignItems:'center', gap:'0.4rem',
-          padding:'0.55rem 1.4rem', borderRadius:'50px',
-          background:'var(--surface-1)',
-          border:'1px solid #60a5fa33',
-          color:'#60a5fa', fontWeight:700, fontSize:'0.82rem', cursor:'pointer',
-        }}>
-          🔍 Browse market
-        </button>
-      </div>
-
       <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>
         Your data stays on your device — no account needed
       </div>
