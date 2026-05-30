@@ -1143,8 +1143,12 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     try {
       const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en', alternatives)
       if (!trades.length) return
-      // Don't let a weaker AI result overwrite a richer local multi-parse.
-      if (trades.length < localComplete) return
+      // Claude (with every recognizer transcript to triangulate) is far more
+      // reliable than the local regex parser for Arabic dialects and multi-trade
+      // sentences, so whenever it returns trades we trust it over the local parse.
+      // The local result is only kept when Claude returns nothing (offline/no key),
+      // handled by the early return above.
+      void localComplete
       const idx = getSymbolIndex()
       const transactions = trades.map(t => {
         const coin = idx[(t.symbol || '').toUpperCase()] || null
