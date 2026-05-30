@@ -129,7 +129,7 @@ const CATEGORY_LABELS = {
   metals: 'Precious Metals',
   stocks: 'Stocks & ETFs',
   realestate: 'Real Estate',
-  cash: 'Cash & Stables',
+  cash: 'Cash',
 }
 // SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
 const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
