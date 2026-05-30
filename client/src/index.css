@@ -3660,27 +3660,22 @@ tr:last-child td { border-bottom: none; }
 /* ═══ Floating Lens (bottom-right global) ═══ */
 /* Header logo as interactive Quick Stats trigger */
 .wl-logo-btn {
-  background: radial-gradient(circle at 30% 30%, var(--g) 0%, var(--g) 45%, var(--gd) 100%);
-  border: 3px solid rgba(var(--g-rgb), 0.45);
-  padding: 6px;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: transform 0.22s ease;
+  transition: transform 0.2s ease;
   flex-shrink: 0;
-  animation: logo-lens-pulse 2.3s ease-in-out infinite;
-}
-@keyframes logo-lens-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--g-rgb), 0.0); }
-  50%       { box-shadow: 0 0 14px 4px rgba(var(--g-rgb), 0.35); }
 }
 .wl-logo-btn:hover { transform: scale(1.1); }
-.wl-logo-btn.burst { transform: scale(1.5); transition: transform 0.18s ease; }
+.wl-logo-btn.burst { transform: scale(1.35); transition: transform 0.18s ease; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-logo-btn { transition: none; animation: none; }
+  .wl-logo-btn { transition: none; }
 }
 
 /* ═══ AI Decision Engine ═══ */
