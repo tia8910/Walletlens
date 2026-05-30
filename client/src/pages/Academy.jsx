@@ -365,15 +365,31 @@ function drawHackImage(hack, color) {
   ctx.fillStyle = color
   ctx.fillRect(0, 0, 6, H)
 
-  // WalletLens logo (concentric circles)
-  const lx = 72, ly = 72, r = 38
-  ctx.strokeStyle = '#00c853'; ctx.lineWidth = 7
-  ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.stroke()
-  ctx.lineWidth = 4; ctx.globalAlpha = 0.55
-  ctx.beginPath(); ctx.arc(lx, ly, r * 0.59, 0, Math.PI * 2); ctx.stroke()
-  ctx.globalAlpha = 1
-  ctx.fillStyle = '#00c853'
-  ctx.beginPath(); ctx.arc(lx, ly, r * 0.34, 0, Math.PI * 2); ctx.fill()
+  // WalletLens logo — magnifying glass with chart bars (matches Logo.jsx @ 64×64 viewBox)
+  // Scale factor: render at ~80px → scale = 80/64 = 1.25, offset to (32, 32)
+  const logoScale = 1.25, ox = 32, oy = 32
+  const lt = (x, y) => [ox + x * logoScale, oy + y * logoScale]
+  // Gradient: #4ade80 → #16a34a
+  const lg = ctx.createLinearGradient(...lt(5, 5), ...lt(52, 52))
+  lg.addColorStop(0, '#4ade80'); lg.addColorStop(0.5, '#16a34a'); lg.addColorStop(1, '#14532d')
+  // Main ring
+  const [rcx, rcy] = lt(27, 25)
+  ctx.strokeStyle = lg; ctx.lineWidth = 5.5 * logoScale; ctx.globalAlpha = 1
+  ctx.beginPath(); ctx.arc(rcx, rcy, 19 * logoScale, 0, Math.PI * 2); ctx.stroke()
+  // Small dot upper-right
+  const [dcx, dcy] = lt(40.5, 11.5)
+  ctx.fillStyle = '#4ade80'
+  ctx.beginPath(); ctx.arc(dcx, dcy, 3.8 * logoScale, 0, Math.PI * 2); ctx.fill()
+  // Ascending bars
+  ctx.fillStyle = lg
+  const bars = [[14.5, 26.5, 5, 7.5], [21.5, 21, 5, 13], [28.5, 15.5, 5, 18.5]]
+  for (const [bx, by, bw, bh] of bars) {
+    const [px, py] = lt(bx, by)
+    ctx.beginPath(); ctx.roundRect(px, py, bw * logoScale, bh * logoScale, 1.2 * logoScale); ctx.fill()
+  }
+  // Handle
+  ctx.strokeStyle = lg; ctx.lineWidth = 5.5 * logoScale; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(...lt(13.5, 39)); ctx.lineTo(...lt(4, 55)); ctx.stroke()
 
   // Brand name
   ctx.fillStyle = '#ffffff'
