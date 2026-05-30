@@ -31,6 +31,17 @@ describe('individual pillars', () => {
     expect(pillarVolume(bearishSignals).score).toBeLessThan(0)
     expect(pillarVolume(undefined).available).toBe(false)
   })
+  it('volume pillar falls back to fundamentals turnover when volPulse is missing', () => {
+    // No smart-signals (rate-limited chart fetch) but fundamentals present.
+    const up = pillarVolume(null, { marketCap: 5e10, totalVolume: 5e9, change24h: 3 })
+    expect(up.available).toBe(true)
+    expect(up.score).toBeGreaterThan(0)
+    expect(up.note).toMatch(/turnover/)
+    const down = pillarVolume(null, { marketCap: 5e10, totalVolume: 5e9, change24h: -3 })
+    expect(down.score).toBeLessThan(0)
+    // Still n/a when neither signals nor usable fundamentals exist.
+    expect(pillarVolume(null, { marketCap: 0, totalVolume: 0 }).available).toBe(false)
+  })
   it('whale pillar mirrors the whale score', () => {
     expect(pillarWhales(bullishSignals).score).toBe(65)
     expect(pillarWhales(bearishSignals).score).toBe(-65)
