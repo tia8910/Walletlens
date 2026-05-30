@@ -105,7 +105,8 @@ function categorizeAsset(h) {
   if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
   if (id.startsWith('stock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
   if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
-  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us','usdt','usdc','dai','busd','tusd','frax','usdd'].includes(sym)) return 'cash'
+  // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
+  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
   return 'crypto'
 }
 
@@ -1961,8 +1962,8 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
 
-  // Stablecoins (cash) are pegged ~$1 — no sell target makes sense, exclude them.
-  const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash')
+  // Pegged assets (fiat cash + stablecoins) have no sell target — exclude both.
+  const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol))
 
   async function saveTarget(coinId, priceVal, qtyVal) {
     const p = parseFloat(priceVal)
@@ -2622,10 +2623,12 @@ export default function Dashboard() {
 
   const catBreakdown = useMemo(() => {
     if (!enriched.length) return []
-    const totals = {}; const investeds = {}; const pnls = {}
+    const totals = {}; const investeds = {}; const pnls = {}; const assetsByCat = {}
     enriched.forEach(h => {
       const cat = categorizeAsset(h)
-      totals[cat] = (totals[cat] || 0) + (h.value > 0 ? h.value : h.total_invested)
+      const val = h.value > 0 ? h.value : h.total_invested
+      totals[cat] = (totals[cat] || 0) + val
+      ;(assetsByCat[cat] = assetsByCat[cat] || []).push({ symbol: h.coin_symbol?.toUpperCase() || '?', value: val })
       if (cat !== 'cash') {
         investeds[cat] = (investeds[cat] || 0) + h.total_invested
         pnls[cat] = (pnls[cat] || 0) + (h.pnl || 0)
@@ -2635,11 +2638,12 @@ export default function Dashboard() {
       const invested = investeds[cat] || 0
       const pnl = pnls[cat] || 0
       const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
+      const assets = (assetsByCat[cat] || []).sort((a, b) => b.value - a.value)
       return {
         cat, label: CATEGORY_LABELS[cat],
         value: totals[cat],
         pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
-        invested, pnl, pnlPct,
+        invested, pnl, pnlPct, assets,
       }
     })
   }, [enriched, totalValue])
@@ -2690,7 +2694,7 @@ export default function Dashboard() {
     let totalReached = 0
 
     for (const h of enriched) {
-      if (categorizeAsset(h) === 'cash') continue // stablecoins have no sell targets
+      if (categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)) continue
       const plan = coinTargets[h.coin_id]?.targets || []
       if (!plan.length) {
         rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
@@ -3269,7 +3273,7 @@ export default function Dashboard() {
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
               <div className="dvx-cat-list">
-                {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested }) => (
+                {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested, assets }) => (
                   <div key={cat} className="dvx-cat-row">
                     <div className="dvx-cat-info">
                       <CatLabel cat={cat} className="dvx-cat-label" />
@@ -3289,6 +3293,23 @@ export default function Dashboard() {
                         <span className="dvx-cat-invested">inv: {hidden ? '••••' : `$${fmt(invested)}`}</span>
                       )}
                     </div>
+                    {assets.length > 1 && (
+                      <div className="dvx-cat-asset-list">
+                        {assets.map(a => {
+                          const aPct = value > 0 ? (a.value / value) * 100 : 0
+                          return (
+                            <div key={a.symbol} className="dvx-cat-asset-row">
+                              <span className="dvx-cat-asset-sym">{a.symbol}</span>
+                              <div className="dvx-cat-asset-bar">
+                                <div className="dvx-cat-asset-fill" style={{ width: `${Math.min(aPct, 100)}%` }} />
+                              </div>
+                              <span className="dvx-cat-asset-pct">{aPct.toFixed(0)}%</span>
+                              <span className="dvx-cat-asset-val">{hidden ? '••' : `$${fmt(a.value)}`}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -3372,7 +3393,7 @@ export default function Dashboard() {
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
-                                const isStable      = categorizeAsset(h) === 'cash'
+                                const isStable      = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
                                 const hasPnl        = h.pnl !== 0 && !pricesFailed && !isStable
                                 const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
                                 const beDistance     = h.price > 0 && breakEvenPrice > 0
