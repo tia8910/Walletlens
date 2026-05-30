@@ -4840,7 +4840,7 @@ tr:last-child td { border-bottom: none; }
 .dvx-cat-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   gap: 0.2rem 0.75rem;
   align-items: start;
 }
@@ -4868,6 +4868,59 @@ tr:last-child td { border-bottom: none; }
 .dvx-cat-pnl.pos { color: var(--g); }
 .dvx-cat-pnl.neg { color: #f87171; }
 .dvx-cat-invested { font-size: 0.65rem; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Per-asset allocation list inside each category row ── */
+.dvx-cat-asset-list {
+  grid-column: 1 / -1;
+  margin-top: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+.dvx-cat-asset-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr 2.2rem 3.6rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dvx-cat-asset-sym {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--text-sub);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dvx-cat-asset-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 2px;
+  overflow: hidden;
+}
+[data-wl-light] .dvx-cat-asset-bar { background: rgba(0,0,0,0.08); }
+.dvx-cat-asset-fill {
+  height: 100%;
+  background: var(--g);
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+.dvx-cat-asset-pct {
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.dvx-cat-asset-val {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 
 /* ── Landing final CTA brand lockup ── */
 .lp-final-brand-lockup {
