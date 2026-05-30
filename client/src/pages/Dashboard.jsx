@@ -16,7 +16,7 @@ import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
-import { checkPortfolioMove, setPortfolioBaseline } from '../portfolioNotify'
+import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
@@ -1985,6 +1985,19 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   // Summary stats
   const { totalTargets, totalReached, totalPotentialProceeds, chartData, rows, rowsWithTargets } = targetsAnalysis
 
+  // Fire a one-time "you reached your target" alert per target as it's hit.
+  useEffect(() => {
+    const reached = []
+    const activeIds = []
+    for (const r of rows) {
+      for (const t of r.targets) {
+        activeIds.push(String(t.id))
+        if (t.reached) reached.push({ id: String(t.id), symbol: r.coinSymbol, price: t.price })
+      }
+    }
+    if (activeIds.length) notifyTargetsReached(reached, activeIds)
+  }, [rows])
+
   return (
     <div className="dvx-targets-page">
       {/* Summary cards */}
@@ -2191,6 +2204,12 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                 const gainVsNow = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
                 return (
                   <div key={t.id} className={`dvx-target-row ${reached ? 'dvx-target-reached' : ''}`}>
+                    {reached && (
+                      <div className="dvx-target-reached-banner">
+                        <Icon name="target" size={13} />
+                        Target reached — consider taking profits on {h.coin_symbol?.toUpperCase()}
+                      </div>
+                    )}
                     <div className="dvx-target-row-top">
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Target Price</span>

@@ -5171,7 +5171,28 @@ tr:last-child td { border-bottom: none; }
   transition: border-color 0.2s;
 }
 .dvx-target-row:hover { border-color: rgba(var(--g-rgb),0.35); }
-.dvx-target-reached { border-color: rgba(var(--g-rgb),0.45) !important; background: rgba(var(--g-rgb),0.06) !important; }
+.dvx-target-reached {
+  border-color: rgba(var(--g-rgb),0.55) !important;
+  background: rgba(var(--g-rgb),0.09) !important;
+  animation: dvx-target-glow 2.2s ease-in-out infinite;
+}
+@keyframes dvx-target-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--g-rgb), 0.0); }
+  50%       { box-shadow: 0 0 16px 1px rgba(var(--g-rgb), 0.35); }
+}
+.dvx-target-reached-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--g);
+  letter-spacing: 0.01em;
+  margin-bottom: 0.1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dvx-target-reached { animation: none; }
+}
 
 .dvx-target-row-top {
   display: grid;
