@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { isStablecoin } from '../stablecoins'
+import Icon from './Icon'
 
 const NON_CRYPTO = ['stock:', 'metal:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
 
@@ -14,9 +15,9 @@ function isCrypto(id) {
 }
 
 function badge(impact) {
-  if (impact < 0.1) return { label: 'High Liquidity', color: '#22c55e', dot: '🟢' }
-  if (impact < 1)   return { label: 'Medium', color: '#fb923c', dot: '🟡' }
-  return { label: 'Low Liquidity', color: '#f87171', dot: '🔴' }
+  if (impact < 0.1) return { label: 'High Liquidity', color: '#22c55e' }
+  if (impact < 1)   return { label: 'Medium', color: '#fb923c' }
+  return { label: 'Low Liquidity', color: '#f87171' }
 }
 
 function fmt(n) {
@@ -163,7 +164,7 @@ export default function LiquidityRisk({ holdings }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1rem' }}>💧</span>
+          <Icon name="droplet" size={16} style={{ color: '#38bdf8' }} />
           <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Liquidity Risk Score</span>
           {data && (
             <span style={{
@@ -247,7 +248,7 @@ export default function LiquidityRisk({ holdings }) {
                         fontWeight: 700,
                         whiteSpace: 'nowrap',
                       }}>
-                        {b.dot} {b.label}
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: b.color, display: 'inline-block', marginRight: '0.35em', verticalAlign: 'middle' }} />{b.label}
                       </span>
                     </div>
                   </div>

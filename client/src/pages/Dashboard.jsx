@@ -10,6 +10,7 @@ import { isStablecoin } from '../stablecoins'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
+import Icon from '../components/Icon'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
@@ -123,11 +124,25 @@ function getAssetCategoryBadge(h) {
 
 const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
 const CATEGORY_LABELS = {
-  crypto: '₿ Crypto',
-  metals: '🟡 Precious Metals',
-  stocks: '📈 Stocks & ETFs',
-  realestate: '🏠 Real Estate',
-  cash: '💵 Cash & Stables',
+  crypto: 'Crypto',
+  metals: 'Precious Metals',
+  stocks: 'Stocks & ETFs',
+  realestate: 'Real Estate',
+  cash: 'Cash & Stables',
+}
+// SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
+const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
+const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#f5c542', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
+
+function CatLabel({ cat, className, iconSize = 14 }) {
+  return (
+    <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+      {cat === 'crypto'
+        ? <span style={{ fontWeight: 800, color: CATEGORY_COLOR.crypto, lineHeight: 1 }}>₿</span>
+        : <Icon name={CATEGORY_ICON[cat]} size={iconSize} style={{ color: CATEGORY_COLOR[cat], flexShrink: 0 }} />}
+      {CATEGORY_LABELS[cat]}
+    </span>
+  )
 }
 
 // ── AI analysis engine ────────────────────────────────────────────────────
@@ -3233,7 +3248,7 @@ export default function Dashboard() {
             <div className="dvx-cat-summary-row">
               {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
                 <div key={cat} className="dvx-cat-summary-card glass-card">
-                  <div className="dvx-cat-summary-label">{label}</div>
+                  <CatLabel cat={cat} className="dvx-cat-summary-label" />
                   <div className="dvx-cat-summary-value">{hidden ? '••••' : `$${fmt(value)}`}</div>
                   <div className="dvx-cat-summary-pct">{pct.toFixed(1)}%</div>
                   {cat !== 'cash' && pnl !== 0 && !pricesFailed && (
@@ -3258,7 +3273,7 @@ export default function Dashboard() {
                 {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested }) => (
                   <div key={cat} className="dvx-cat-row">
                     <div className="dvx-cat-info">
-                      <span className="dvx-cat-label">{label}</span>
+                      <CatLabel cat={cat} className="dvx-cat-label" />
                       <span className="dvx-cat-pct">{pct.toFixed(1)}%</span>
                     </div>
                     <div className="dvx-cat-bar-track">
@@ -3338,7 +3353,7 @@ export default function Dashboard() {
                           return (
                           <div key={cat}>
                             <div className="dvx-cat-group-hdr">
-                              <span className="dvx-cat-group-name">{CATEGORY_LABELS[cat]}</span>
+                              <CatLabel cat={cat} className="dvx-cat-group-name" />
                               {ci && (
                                 <span className="dvx-cat-group-stats">
                                   <span>{hidden ? '••••' : `$${fmt(ci.value)}`}</span>

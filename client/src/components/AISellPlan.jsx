@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import Icon from './Icon'
 import { track, trackAI } from '../analytics'
 import { api } from '../api'
 import { buildTASellPlan } from '../technicals'
@@ -215,7 +216,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
     <div className="glass-card" style={{ marginTop: '1rem' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'1rem' }}>
         <div>
-          <h3 style={{ margin:0, fontSize:'1rem' }}>🎯 Smart Sell Plan</h3>
+          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color:'var(--g)' }} />Smart Sell Plan</h3>
           <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>
             Technical-analysis exit strategy — targets from real support/resistance, RSI, MACD &amp; trend. No API key needed.
           </p>
@@ -245,7 +246,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
             borderRadius:10, padding:'0.75rem 1rem', marginBottom:'1rem',
             fontSize:'0.85rem', color:'var(--text)', lineHeight:1.6,
           }}>
-            📊 {plan.summary}
+            <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.4em', color:'var(--text-muted)' }} />{plan.summary}
           </div>
 
           {/* Per-coin rows */}
