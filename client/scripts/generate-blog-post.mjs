@@ -58,14 +58,14 @@ ${existingTitles.map(t => `- ${t}`).join('\n')}
 
 Target a specific long-tail keyword a real person would search (e.g. "how to track net worth in multiple currencies", "crypto portfolio rebalancing strategy", "best way to track gold and silver investments", "is it safe to connect exchange API to a tracker", "how to read a portfolio allocation chart"). Be original and specific — not a rehash of an existing title.
 
-Return STRICT JSON ONLY, no markdown fences, no commentary, this exact shape:
-{
-  "title": "<compelling, specific, <=70 chars, title case>",
-  "slug": "<url-safe-kebab-case, lowercase, derived from the topic, must be unique>",
-  "summary": "<1-2 sentence meta description, 120-160 chars, search-friendly>",
-  "readTime": "<N min read>",
-  "content": "<the full article body in Markdown>"
-}
+Return the result in EXACTLY this plain-text format — four header lines, then a BODY: line, then the full Markdown article. No preamble, no commentary, no code fences:
+
+TITLE: <compelling, specific, <=70 chars, title case>
+SLUG: <url-safe-kebab-case, lowercase, derived from the topic, must be unique>
+SUMMARY: <1-2 sentence meta description, 120-160 chars, search-friendly>
+READTIME: <N min read>
+BODY:
+<the full article body in Markdown, spanning as many lines as needed>
 
 Content rules:
 - 900-1300 words. Start with 1-2 plain paragraphs (NO H1 — the title is rendered separately).
@@ -91,7 +91,9 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
     system,
     messages: [
       { role: 'user', content: prompt },
-      { role: 'assistant', content: '{' },
+      // Prefill the first header line so the model goes straight into the
+      // format with no preamble or code fences.
+      { role: 'assistant', content: 'TITLE: ' },
     ],
   }),
 })
@@ -102,26 +104,32 @@ if (!resp.ok) {
 }
 
 const data = await resp.json()
-const text = '{' + (data.content?.[0]?.text || '')
-const match = text.match(/\{[\s\S]*\}/)
-if (!match) {
-  console.error('No JSON found in Claude response.')
+// Re-attach the prefilled "TITLE: " so the whole document is parseable.
+const raw_out = 'TITLE: ' + (data.content?.[0]?.text || '')
+
+// Parse the newline-safe sentinel format (avoids JSON-in-string newline bugs
+// that long Markdown bodies trigger). Headers first, everything after "BODY:"
+// is the article.
+const bodyIdx = raw_out.indexOf('\nBODY:')
+if (bodyIdx === -1) {
+  console.error('Response missing BODY: marker. First 400 chars:\n' + raw_out.slice(0, 400))
   process.exit(1)
 }
-
-let post
-try {
-  post = JSON.parse(match[0])
-} catch (e) {
-  console.error('Failed to parse JSON from Claude:', e.message)
-  process.exit(1)
+const headerText = raw_out.slice(0, bodyIdx)
+let content = raw_out.slice(bodyIdx + '\nBODY:'.length).replace(/^\r?\n/, '')
+const field = name => {
+  const m = headerText.match(new RegExp('^' + name + ':\\s*(.+)$', 'mi'))
+  return m ? m[1].trim() : ''
 }
 
 // ── Validate + sanitise ────────────────────────────────────────────────────
 const slugify = s => (s || '').toString().toLowerCase().trim()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80)
 
-let { title, slug, summary, readTime, content } = post
+let title    = field('TITLE')
+let slug     = field('SLUG')
+let summary  = field('SUMMARY')
+let readTime = field('READTIME')
 slug = slugify(slug || title)
 
 if (!title || !slug || !summary || !content || content.length < 500) {
@@ -133,6 +141,9 @@ if (existingSlugs.includes(slug)) {
   console.log(`Slug "${slug}" already exists — skipping to avoid a duplicate.`)
   process.exit(0)
 }
+
+// Strip any stray Markdown code fences the model may have wrapped the body in.
+content = content.replace(/^```[a-z]*\s*\n/i, '').replace(/\n?```\s*$/i, '').trim()
 
 // The content lives inside a JS template literal: neutralise backticks and ${.
 const safe = str => str.toString().replace(/`/g, "'").replace(/\$\{/g, '$ {')
