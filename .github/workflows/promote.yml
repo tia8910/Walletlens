@@ -1,11 +1,11 @@
 name: WalletLens Promotion Agent
 
-# Discovers Reddit posts asking about net-worth / portfolio / investment trackers
-# and drafts honest, helpful replies for a human to review and post MANUALLY
-# (it never posts anything itself). Drafts are delivered as a GitHub Issue.
+# Uses Claude with built-in web search to find Reddit posts asking about
+# net-worth / portfolio / investment trackers, then drafts honest, helpful
+# replies for a human to review and post MANUALLY (never auto-posts).
+# Drafts are delivered as a GitHub Issue.
 #
-# Required secret: ANTHROPIC_API_KEY
-# Optional secrets: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET (more reliable search)
+# Required secret: ANTHROPIC_API_KEY (no Reddit credentials needed)
 
 on:
   schedule:
@@ -36,8 +36,6 @@ jobs:
       - name: Find posts and draft replies
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
-          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: node promo/find-and-draft.mjs
 
       - name: Commit dedupe state
