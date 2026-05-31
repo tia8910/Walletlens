@@ -54,7 +54,7 @@ Rules:
 - MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from the FIRST asset to the LAST — never stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each.
 - Worked Arabic example: "اشتريت اثنين سولانا وثلاث ايثيريوم وبعت نص بيتكوين" → [{buy SOL 2},{buy ETH 3},{sell BTC 0.5}]. The verb switches to "بعت" (sell) for Bitcoin only.
 - A shared amount before a list applies to each unless a per-coin amount is given: "2 Solana and 3 Cardano" → [SOL×2, ADA×3]; "5 of Bitcoin and Ethereum" → [BTC×5, ETH×5].
-- Arabic "و" (and) separates assets: "بيتكوين وايثيريوم" = two assets.
+- Arabic "و" / "و " (and) separates assets: "بيتكوين وايثيريوم" = two assets. So does a comma or pause.
 - Too garbled to extract any trade → { "trades": [] }.
 - Arabic dialect intent verbs: اشتري/اشتريت/شريت/جبت/أخذت/خذيت/حطيت/كومت/جمعت/كسبت/استثمرت/دخلت/نزلت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت/طلعت/فشيت = SELL.
 - Arabic spelled numbers: واحد=1, اثنين/اتنين=2, ثلاثة/تلاتة=3, اربعة=4, خمسة=5, عشرة=10.
@@ -63,6 +63,49 @@ Rules:
 - Stocks: Apple=AAPL, Tesla=TSLA, Microsoft=MSFT, NVIDIA=NVDA, Google=GOOGL, Amazon=AMZN, Meta=META, Palantir=PLTR, Coinbase=COIN, Robinhood=HOOD.
 - Metals: gold=XAU, silver=XAG, platinum=XPT, copper=HG.
 - A coin with no clear buy/sell intent → skip it, don't invent one.`
+}
+
+// ── In-app assistant ──────────────────────────────────────────────────────
+// A lightweight feature-finder chat. Understands the app's feature map and
+// points users at the right page/tab via [[nav:/route|Label]] markers that the
+// client turns into one-tap buttons. Uses Haiku for speed/cost.
+const ASSISTANT_FEATURES = [
+  "- Dashboard (/dashboard): Net worth overview, P&L, allocation donut, holdings by category.",
+  "- AI Analysis (/dashboard?tab=ai): Portfolio health score, Fear & Greed gauge, stress test, rebalance planner, entry quality, risk scanner.",
+  "- Sell Targets (/dashboard?tab=targets): Set price targets per asset and track progress toward taking profit.",
+  "- Price Alerts (/dashboard?tab=alerts): Get notified when an asset crosses a price you choose.",
+  "- Wallets & Backup (/dashboard?tab=manage): Manage wallets and export/import your data as a backup code.",
+  "- Transactions (/transactions): Log buys/sells and view full trade history.",
+  "- Whale Tracker (/whales): Large on-chain transactions and smart-money / volume signals.",
+  "- Alpha (/alpha): Deep-dive portfolio analytics and correlation/sector views.",
+  "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve, P&L health.",
+  "- Technicals (/technicals): RSI, MACD, Bollinger Bands and trend signals per asset.",
+  "- Academy (/academy): Educational guides on investing and using WalletLens.",
+  "- Settings (/settings): Theme, display currency, language, biometric lock, backup/export.",
+].join("\n")
+
+function buildAssistantSystem(lang: string): string {
+  const langLine = lang === "ar"
+    ? "Reply in Arabic (the user is using the app in Arabic)."
+    : "Reply in English."
+  return `You are the friendly in-app assistant for WalletLens, a free, private, all-asset portfolio tracker (crypto, precious metals, stocks, and cash). Your job is to understand what the user wants to accomplish and point them to the right feature.
+
+${langLine}
+
+Be concise and warm — usually 1–3 short sentences. Do not invent features that are not in the list. WalletLens is 100% local: no account, no wallet connection, data never leaves the device — reassure users about privacy when relevant.
+
+Available features (and their routes):
+${ASSISTANT_FEATURES}
+
+When you recommend a place in the app for the user to go, ALWAYS end that recommendation with a navigation marker on its own line, in this exact format:
+[[nav:/route|Button Label]]
+
+Examples:
+- "where do I add a trade?" → "You can log buys and sells in Transactions. [[nav:/transactions|Open Transactions]]"
+- "is my portfolio too risky?" → "Run the AI Analysis — it gives a health score and a stress test. [[nav:/dashboard?tab=ai|Open AI Analysis]]"
+- "I want to plan when to sell" → "Set price targets per asset and track progress. [[nav:/dashboard?tab=targets|Open Sell Targets]]"
+
+You may include more than one marker if several features fit. Only use routes from the list above. If the user asks something unrelated to the app, answer briefly and helpfully without a marker.`
 }
 
 // deno-lint-ignore no-explicit-any
@@ -222,6 +265,49 @@ Rules:
     }
   }
 
+  // ── In-app assistant (mode: "assistant") ──────────────────────────────────
+  // Accepts a short chat history and returns Claude Haiku's reply. The reply
+  // may contain [[nav:/route|Label]] markers the client renders as buttons.
+  if (body?.mode === "assistant") {
+    const lang = body.lang === "ar" ? "ar" : "en"
+    // deno-lint-ignore no-explicit-any
+    const rawMsgs = Array.isArray(body.messages) ? body.messages : []
+    const messages = rawMsgs
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .slice(-12) // cap history
+      .map((m: any) => ({ role: m.role, content: m.content.toString().slice(0, 2000) }))
+    if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+      return new Response(JSON.stringify({ error: "no_message" }), { status: 400, headers })
+    }
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          system: buildAssistantSystem(lang),
+          messages,
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (assistant):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const reply = data.content?.[0]?.text || ""
+      return new Response(JSON.stringify({ ok: true, reply }), { headers })
+    } catch (e) {
+      console.error("assistant error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
   const transcript = (body.transcript || "").toString().trim().slice(0, 500)
   if (!transcript) {
     return new Response(JSON.stringify({ error: "no_transcript" }), { status: 400, headers })
@@ -247,6 +333,8 @@ Rules:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
+        // Higher cap so long multi-trade JSON is never truncated (which would
+        // silently drop trades). Prefill "{" forces clean JSON with no preamble.
         max_tokens: 1500,
         messages: [
           { role: "user", content: buildPrompt(transcript, hintLang, alternatives) },
@@ -262,6 +350,7 @@ Rules:
     }
 
     const data = await resp.json()
+    // Re-attach the prefilled "{" so we parse the full JSON object.
     const text = "{" + (data.content?.[0]?.text || "")
     const match = text.match(/\{[\s\S]*\}/)
     if (!match) throw new Error("no JSON in response")

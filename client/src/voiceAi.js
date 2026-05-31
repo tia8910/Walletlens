@@ -139,6 +139,8 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en', alterna
         },
         body: JSON.stringify({
           model: MODEL,
+          // Higher cap so long multi-trade JSON is never truncated; prefill "{"
+          // forces clean JSON output with no preamble.
           max_tokens: 1500,
           messages: [
             { role: 'user', content: buildPrompt(text, lang, alts) },

@@ -10,6 +10,7 @@ import Icon from './components/Icon'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
+const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
@@ -47,7 +48,6 @@ function useCycleIdx() {
 }
 
 const Transactions = lazy(() => import('./pages/Transactions'))
-const Market       = lazy(() => import('./pages/Market'))
 const Whales       = lazy(() => import('./pages/Whales'))
 const Alpha        = lazy(() => import('./pages/Alpha'))
 const Academy      = lazy(() => import('./pages/Academy'))
@@ -66,7 +66,6 @@ function PageFallback() {
 
 function IconHome()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5l9-7 9 7V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg> }
 function IconTrades() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg> }
-function IconMarket() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg> }
 function IconWhale()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/><circle cx="7" cy="12" r="0.8" fill="currentColor"/></svg> }
 function IconAlpha()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg> }
 function IconAcademy() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> }
@@ -181,7 +180,6 @@ function Drawer({ open, onClose }) {
         <div className="wl-drawer-section">
           <div className="wl-drawer-label">Pages</div>
           <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
-          <button className={active('/market')} onClick={() => go('/market')}><IconMarket /><span>{t('market')}</span></button>
           <button className={active('/coach')} onClick={() => go('/coach')}>
             <IconCoach /><span style={{ color: '#00c853' }}>Coach</span>
           </button>
@@ -285,6 +283,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const headerActionIdx = useCycleIdx()
+  const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
@@ -392,7 +391,6 @@ export default function App() {
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
-              <Route path="/market" element={<Market />} />
               <Route path="/whales" element={<Whales />} />
               <Route path="/alpha" element={<Alpha />} />
               <Route path="/academy" element={<Academy />} />
@@ -410,8 +408,25 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
+      <footer className="wl-app-footer">
+        <div className="wl-app-footer-brand">
+          <Logo size={22} />
+          <span>WalletLens © {new Date().getFullYear()}</span>
+        </div>
+        <nav className="wl-app-footer-links">
+          <button onClick={() => navigate('/about')}>{t('about')}</button>
+          <button onClick={() => navigate('/blog')}>{t('blog')}</button>
+          <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
+          <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
+          <a href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" className="wl-app-footer-x" aria-label="Follow @walletlenss on X">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+        </nav>
+      </footer>
+
       <Suspense fallback={null}><WelcomeModal /></Suspense>
       <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
+      <Suspense fallback={null}><AssistantChat /></Suspense>
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>

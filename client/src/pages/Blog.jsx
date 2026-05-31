@@ -1,7 +1,46 @@
 import { Link, useParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Logo from '../components/Logo'
-import { POSTS } from '../data/blogPosts'
+import { POSTS, relatedPosts } from '../data/blogPosts'
+
+const ORIGIN = 'https://walletlens.live'
+
+// Keep <head> in sync with the current blog route for client-side navigation
+// (the prerendered static HTML already covers crawlers that don't run JS; this
+// covers SPA navigation and JS-executing AI/search bots). Restores defaults on
+// unmount so other routes aren't left with a stale title/canonical.
+function useBlogHead(post) {
+  useEffect(() => {
+    const prevTitle = document.title
+    const setMeta = (selector, attr, value) => {
+      let el = document.head.querySelector(selector)
+      if (!el) {
+        el = document.createElement(selector.startsWith('link') ? 'link' : 'meta')
+        if (selector.startsWith('link')) el.setAttribute('rel', 'canonical')
+        else if (selector.includes('property=')) el.setAttribute('property', selector.match(/property="([^"]+)"/)[1])
+        else el.setAttribute('name', selector.match(/name="([^"]+)"/)[1])
+        document.head.appendChild(el)
+      }
+      el.setAttribute(attr, value)
+      return el
+    }
+
+    const url = post ? `${ORIGIN}/blog/${post.slug}` : `${ORIGIN}/blog`
+    const title = post ? `${post.title} | WalletLens` : 'Blog — Portfolio Tracking, Crypto Investing & Market Analysis | WalletLens'
+    const desc = post ? post.summary : 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.'
+
+    document.title = title
+    setMeta('meta[name="description"]', 'content', desc)
+    setMeta('link[rel="canonical"]', 'href', url)
+    setMeta('meta[property="og:title"]', 'content', title)
+    setMeta('meta[property="og:description"]', 'content', desc)
+    setMeta('meta[property="og:url"]', 'content', url)
+    setMeta('meta[name="twitter:title"]', 'content', title)
+    setMeta('meta[name="twitter:description"]', 'content', desc)
+
+    return () => { document.title = prevTitle }
+  }, [post])
+}
 
 function ShareBar({ post }) {
   const [copied, setCopied] = useState(false)
@@ -47,6 +86,25 @@ function PostCard({ post }) {
       <p className="blog-card-summary">{post.summary}</p>
       <span className="blog-card-cta">Read article →</span>
     </Link>
+  )
+}
+
+function RelatedPosts({ slug }) {
+  const related = relatedPosts(slug, 3)
+  if (!related.length) return null
+  return (
+    <nav className="blog-related" aria-label="Related articles">
+      <h2 className="blog-related-title">Keep reading</h2>
+      <div className="blog-related-grid">
+        {related.map(p => (
+          <Link key={p.slug} to={`/blog/${p.slug}`} className="blog-related-card">
+            <span className="blog-related-meta">{p.readTime}</span>
+            <span className="blog-related-name">{p.title}</span>
+            <span className="blog-related-cta">Read →</span>
+          </Link>
+        ))}
+      </div>
+    </nav>
   )
 }
 
@@ -98,6 +156,7 @@ function renderMarkdown(text) {
 export default function Blog() {
   const { slug } = useParams()
   const post = slug ? POSTS.find(p => p.slug === slug) : null
+  useBlogHead(post)
 
   if (slug && !post) {
     return (
@@ -126,6 +185,7 @@ export default function Blog() {
             <p>WalletLens is 100% free, no account required, and all your data stays on your device.</p>
             <Link to="/dashboard" className="blog-cta-btn">Open WalletLens →</Link>
           </div>
+          <RelatedPosts slug={post.slug} />
         </article>
         <footer className="doc-footer">
           <Link to="/blog">← All Articles</Link>

@@ -13,11 +13,14 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { POSTS } from '../src/data/blogPosts.js'
+import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
+const PUBLIC = resolve(__dirname, '..', 'public')
 const ORIGIN = 'https://walletlens.live'
+const OG_IMAGE = `${ORIGIN}/og-image.svg`
+const TODAY = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
 const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
 
@@ -25,6 +28,18 @@ const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
 const esc = (s = '') => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;')
+
+// Parse a loose post date like "May 2026" → ISO "2026-05-01" for structured
+// data. Falls back to the build date if it can't be parsed.
+const MONTHS = { january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8, september:9, october:10, november:11, december:12 }
+function postIsoDate(date) {
+  if (!date) return TODAY
+  const m = String(date).match(/([A-Za-z]+)\s+(\d{4})/)
+  if (!m) return TODAY
+  const mon = MONTHS[m[1].toLowerCase()]
+  if (!mon) return TODAY
+  return `${m[2]}-${String(mon).padStart(2, '0')}-01`
+}
 
 // Inline markdown: **bold** and [text](url)
 function inline(text) {
@@ -83,7 +98,9 @@ function buildPage({ path, title, description, bodyHtml, jsonLd }) {
   html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
   if (jsonLd) {
-    html = html.replace('</head>', `  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n  </head>`)
+    const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
+    const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>`).join('\n')
+    html = html.replace('</head>', `${scripts}\n  </head>`)
   }
   // Hidden-but-crawlable content block, injected as first child of #root.
   // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
@@ -154,24 +171,95 @@ for (const p of POSTS) {
   <p>${esc(p.summary)}</p>
   ${mdToHtml(p.content)}
   <p><a href="/dashboard">Start tracking your portfolio for free with WalletLens →</a></p>
+  <nav aria-label="Related articles">
+    <h2>Keep reading</h2>
+    <ul>
+${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.title)}</a> — ${esc(r.summary)}</li>`).join('\n')}
+    </ul>
+  </nav>
   <p><a href="/blog">← All articles</a></p>
 </article>`
+  const iso = postIsoDate(p.date)
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
     title: `${p.title} | WalletLens`,
     description: p.summary,
     bodyHtml: articleHtml,
-    jsonLd: {
-      '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
-      headline: p.title,
-      description: p.summary,
-      author: { '@type': 'Organization', name: 'WalletLens' },
-      publisher: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
-      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
-      url: `${ORIGIN}/blog/${p.slug}`,
-    },
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: p.title,
+        description: p.summary,
+        image: OG_IMAGE,
+        datePublished: iso,
+        dateModified: TODAY,
+        author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
+        publisher: {
+          '@type': 'Organization',
+          name: 'WalletLens',
+          url: ORIGIN,
+          logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
+        },
+        mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
+        url: `${ORIGIN}/blog/${p.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog' },
+          { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}` },
+        ],
+      },
+    ],
   }))
 }
 
 console.log(`\nPrerendered ${POSTS.length + 2} content pages into dist/.`)
+
+// ── sitemap.xml ────────────────────────────────────────────────────────────
+// Generated from the static route list + every blog post, so it can never
+// drift out of sync with the posts data.
+const STATIC_ROUTES = [
+  { path: '/',             changefreq: 'weekly',  priority: '1.0'  },
+  { path: '/dashboard',    changefreq: 'daily',   priority: '0.95' },
+  { path: '/coach',        changefreq: 'weekly',  priority: '0.9'  },
+  { path: '/academy',      changefreq: 'weekly',  priority: '0.85' },
+  { path: '/alpha',        changefreq: 'daily',   priority: '0.85' },
+  { path: '/whales',       changefreq: 'daily',   priority: '0.75' },
+  { path: '/transactions', changefreq: 'weekly',  priority: '0.7'  },
+  { path: '/blog',         changefreq: 'weekly',  priority: '0.9'  },
+  { path: '/about',        changefreq: 'monthly', priority: '0.7'  },
+  { path: '/privacy',      changefreq: 'monthly', priority: '0.5'  },
+  { path: '/terms',        changefreq: 'monthly', priority: '0.5'  },
+]
+function urlEntry({ loc, lastmod, changefreq, priority }) {
+  return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
+}
+const sitemapUrls = [
+  ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
+  ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
+]
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
+writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + POSTS.length} urls).`)
+
+// ── llms.txt ───────────────────────────────────────────────────────────────
+// Keep the curated llms.txt body, but regenerate the "## Blog articles" list
+// from POSTS so every article is always advertised to AI answer engines.
+try {
+  const llmsTemplate = readFileSync(resolve(PUBLIC, 'llms.txt'), 'utf8')
+  const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}): ${p.summary}`).join('\n')
+  const newSection = `## Blog articles\n\n${articleList}\n`
+  // Replace from the "## Blog articles" heading up to the next "## " heading.
+  const llms = llmsTemplate.replace(
+    /## Blog articles[\s\S]*?(?=\n## )/,
+    newSection + '\n'
+  )
+  writeFileSync(resolve(DIST, 'llms.txt'), llms, 'utf8')
+  console.log(`Wrote llms.txt (${POSTS.length} articles).`)
+} catch (e) {
+  console.warn('llms.txt generation skipped:', e.message)
+}
