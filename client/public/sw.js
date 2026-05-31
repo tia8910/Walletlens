@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v133'
+const SW_VERSION = 'v134'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
@@ -77,22 +77,29 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Hashed assets (/assets/): network-first, long-lived cache fallback
+  // ── Hashed assets (/assets/): cache-first (content-hash guarantees immutability)
+  // Files under /assets/ are Vite-hashed — a new deploy produces new filenames,
+  // so a cached response is always correct and network re-validation is wasted work.
   if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
     e.respondWith(
-      fetch(req)
-        .then(res => {
-          if (res?.ok) {
-            caches.open(STATIC).then(c => c.put(req, res.clone()))
-          } else if (res?.status === 404) {
+      caches.open(STATIC).then(async cache => {
+        const cached = await cache.match(req)
+        if (cached) return cached
+        try {
+          const fresh = await fetch(req)
+          if (fresh?.ok) {
+            cache.put(req, fresh.clone())
+          } else if (fresh?.status === 404) {
             // Chunk no longer exists — new deployment. Tell all clients to reload.
             self.clients.matchAll({ includeUncontrolled: true }).then(clients =>
               clients.forEach(c => c.postMessage({ type: 'CHUNK_404' }))
             )
           }
-          return res
-        })
-        .catch(() => caches.match(req))
+          return fresh
+        } catch {
+          return new Response('Asset unavailable offline', { status: 503 })
+        }
+      })
     )
     return
   }

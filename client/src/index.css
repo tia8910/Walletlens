@@ -1060,6 +1060,8 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   position: relative;
   animation: ll-zoom-ring 2s ease-in-out infinite;
   flex-shrink: 0;
+  will-change: transform;
+  contain: layout style;
 }
 .lens-ring-sm { width: 30px; height: 30px; border-width: 2px; }
 .lens-mid {
@@ -1269,6 +1271,7 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   animation: tk-scroll 30s linear infinite;
   white-space: nowrap;
   width: max-content;
+  will-change: transform;
 }
 @keyframes tk-scroll {
   from { transform: translateX(0); }
@@ -9657,7 +9660,7 @@ input[type="date"] { color-scheme: dark; }
 }
 .wlc-fab:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 10px 30px rgba(16,185,129,0.65); }
 .wlc-fab:active { transform: scale(0.94); }
-.wlc-fab-dragging { cursor: grabbing; transition: none; transform: scale(1.08); box-shadow: 0 14px 36px rgba(16,185,129,0.7); }
+.wlc-fab-dragging { cursor: grabbing; transition: none; transform: scale(1.08); box-shadow: 0 14px 36px rgba(16,185,129,0.7); will-change: transform; }
 .wlc-fab-open { background: linear-gradient(135deg, #334155, #1e293b); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
 
 .wlc-panel {
