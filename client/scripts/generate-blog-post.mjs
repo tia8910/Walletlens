@@ -11,7 +11,7 @@
 //
 // Run:  ANTHROPIC_API_KEY=sk-... node scripts/generate-blog-post.mjs
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
@@ -19,10 +19,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const POSTS_FILE = resolve(__dirname, '../src/data/blogPosts.js')
 const MODEL = 'claude-sonnet-4-6'
 
+// Surface diagnostics where they're actually visible: a GitHub "::error::"
+// annotation (shows in the run's Annotations panel) + the step summary, not
+// just buried in the step log.
+function note(msg) {
+  console.log(msg)
+  const f = process.env.GITHUB_STEP_SUMMARY
+  if (f) { try { appendFileSync(f, msg + '\n') } catch {} }
+}
+function fail(msg) {
+  const oneLine = msg.replace(/\r?\n/g, ' ').slice(0, 800)
+  console.error(msg)
+  console.log(`::error::${oneLine}`)
+  const f = process.env.GITHUB_STEP_SUMMARY
+  if (f) { try { appendFileSync(f, `\n**❌ ${oneLine}**\n`) } catch {} }
+  process.exit(1)
+}
+
 const apiKey = process.env.ANTHROPIC_API_KEY
 if (!apiKey) {
-  console.error('ANTHROPIC_API_KEY not set — aborting.')
-  process.exit(1)
+  fail('ANTHROPIC_API_KEY is not set. Add it as a repository secret: Settings → Secrets and variables → Actions → New repository secret, named exactly ANTHROPIC_API_KEY.')
+}
+// Safe key diagnostic — never prints the key itself, only its shape.
+note(`Key present: yes · length ${apiKey.length} · prefix "${apiKey.slice(0, 7)}…"`)
+if (!/^sk-ant-/.test(apiKey)) {
+  note('⚠ Key does not start with "sk-ant-" — it may be the wrong value (Anthropic keys start with sk-ant-).')
 }
 
 const raw = readFileSync(POSTS_FILE, 'utf8')
@@ -99,8 +120,8 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
 })
 
 if (!resp.ok) {
-  console.error('Claude API error:', resp.status, await resp.text())
-  process.exit(1)
+  const body = await resp.text().catch(() => '')
+  fail(`Claude API returned ${resp.status} ${resp.statusText}. ${body.slice(0, 400)}`)
 }
 
 const data = await resp.json()
@@ -112,8 +133,7 @@ const raw_out = 'TITLE: ' + (data.content?.[0]?.text || '')
 // is the article.
 const bodyIdx = raw_out.indexOf('\nBODY:')
 if (bodyIdx === -1) {
-  console.error('Response missing BODY: marker. First 400 chars:\n' + raw_out.slice(0, 400))
-  process.exit(1)
+  fail('Response missing BODY: marker. First 400 chars: ' + raw_out.slice(0, 400))
 }
 const headerText = raw_out.slice(0, bodyIdx)
 let content = raw_out.slice(bodyIdx + '\nBODY:'.length).replace(/^\r?\n/, '')
@@ -133,8 +153,7 @@ let readTime = field('READTIME')
 slug = slugify(slug || title)
 
 if (!title || !slug || !summary || !content || content.length < 500) {
-  console.error('Generated post is missing required fields or too short — aborting.')
-  process.exit(1)
+  fail(`Generated post missing fields or too short. title=${!!title} slug=${!!slug} summary=${!!summary} contentLen=${content.length}`)
 }
 
 if (existingSlugs.includes(slug)) {
@@ -167,12 +186,9 @@ ${content}
 // Insert the new post at the END of the POSTS array (before the final "]").
 const closeIdx = raw.lastIndexOf(']')
 if (closeIdx === -1) {
-  console.error('Could not find the closing "]" of the POSTS array — aborting.')
-  process.exit(1)
+  fail('Could not find the closing "]" of the POSTS array in blogPosts.js.')
 }
 const updated = raw.slice(0, closeIdx) + block + raw.slice(closeIdx)
 writeFileSync(POSTS_FILE, updated, 'utf8')
 
-console.log(`✓ Added new post: "${title}"`)
-console.log(`  slug: ${slug}`)
-console.log(`  ${content.split(/\s+/).length} words`)
+note(`✓ Added new post: "${title}" (slug: ${slug}, ${content.split(/\s+/).length} words)`)
