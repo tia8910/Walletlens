@@ -57,12 +57,15 @@ PRODUCT (all true — never invent features):
 ${FEATURES}
 
 YOUR TASK:
-1. Use web_search to find Reddit posts from the LAST 7 DAYS where someone is genuinely asking for a net-worth, portfolio, or investment tracking tool recommendation. Run multiple searches using varied queries — do NOT use the site: operator as it may be restricted. Try:
-   - reddit "net worth tracker" recommend 2025
-   - reddit "portfolio tracker app" which best
-   - reddit "track my investments" app recommendation
-   - reddit "net worth app" best free
-   - reddit portfolio tracker tool suggestion
+1. Use web_search to find Reddit posts (recent ones preferred, but include any from the past few months) where someone is asking for a net-worth, portfolio, or investment tracking tool recommendation. Run ALL of these searches (run each one — do NOT use the site: operator as it may be restricted):
+   - reddit net worth tracker app recommendation
+   - reddit best portfolio tracker app
+   - reddit how to track my investments app
+   - reddit net worth app suggestions
+   - reddit portfolio tracker tool free
+   - reddit track crypto and stocks one app
+   - reddit best app to track all investments
+Aim to surface at least a few real candidate threads. It is fine to include posts that are a few weeks or months old — the human will check them.
 
 2. For each RELEVANT post (person genuinely wants a tool recommendation), draft a reply that:
    - Answers/helps the person FIRST, like a real Redditor
@@ -99,12 +102,18 @@ try {
   data = await res.json()
 } catch (e) { fail(`Claude request failed: ${String(e)}`) }
 
-// Response may contain tool_use blocks followed by a text block
-const text = (data.content || []).find(b => b.type === 'text')?.text || ''
+// Count how many web searches Claude actually performed (visibility into search)
+const searchCount = (data.content || []).filter(b => b.type === 'server_tool_use').length
+note(`Claude ran ${searchCount} web search(es).`)
+
+// Response may contain tool_use blocks followed by a text block. Concatenate
+// all text blocks in case the JSON is split across them.
+const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n')
 const m = text.match(/\{[\s\S]*\}/)
 if (!m) {
   // Claude couldn't find posts or returned plain text — treat as empty result
-  note('No JSON in Claude response (no posts found this run). Response: ' + text.slice(0, 200))
+  note('No JSON in Claude response (no posts found this run). Full response below:')
+  note('```\n' + text.slice(0, 1500) + '\n```')
   process.exit(0)
 }
 
