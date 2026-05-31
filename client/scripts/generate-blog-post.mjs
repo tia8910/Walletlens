@@ -112,9 +112,11 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
     system,
     messages: [
       { role: 'user', content: prompt },
-      // Prefill the first header line so the model goes straight into the
-      // format with no preamble or code fences.
-      { role: 'assistant', content: 'TITLE: ' },
+      // Prefill the first header so the model goes straight into the format
+      // with no preamble or code fences. NOTE: assistant prefill content must
+      // NOT end with trailing whitespace (the API rejects it with a 400), so
+      // this is "TITLE:" with no trailing space.
+      { role: 'assistant', content: 'TITLE:' },
     ],
   }),
 })
@@ -125,8 +127,8 @@ if (!resp.ok) {
 }
 
 const data = await resp.json()
-// Re-attach the prefilled "TITLE: " so the whole document is parseable.
-const raw_out = 'TITLE: ' + (data.content?.[0]?.text || '')
+// Re-attach the prefilled "TITLE:" so the whole document is parseable.
+const raw_out = 'TITLE:' + (data.content?.[0]?.text || '')
 
 // Parse the newline-safe sentinel format (avoids JSON-in-string newline bugs
 // that long Markdown bodies trigger). Headers first, everything after "BODY:"
