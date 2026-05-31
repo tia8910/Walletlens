@@ -252,6 +252,7 @@ For each post, decide if WalletLens would be a genuinely helpful mention. Draft 
 A good reply:
 - Adds genuine value to the discussion first
 - Mentions WalletLens as ONE option where it fits naturally; never oversell
+- ALWAYS includes the URL: walletlens.live — people need to know where to find it
 - Includes "(disclosure: I'm on the team)"
 - Is ≤80 words, a single paragraph, no line breaks
 - Based ONLY on the real features listed above
