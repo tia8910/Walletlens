@@ -63,24 +63,50 @@ const KEYWORDS = [
   'allocation', 'holdings', 'balance',
 ]
 
-// ── RSS parser (no external deps) ───────────────────────────────────────────
-function parseRSS(xml) {
+// ── Feed parser — handles both RSS 2.0 (<item>) and Atom (<entry>) ───────────
+function parseFeed(xml) {
   const items = []
-  // Extract all <item>...</item> blocks
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g
-  let itemMatch
-  while ((itemMatch = itemRegex.exec(xml)) !== null) {
-    const block = itemMatch[1]
+
+  // Atom: <entry>...</entry> blocks
+  // RSS:  <item>...</item> blocks
+  const isAtom = /<entry[\s>]/i.test(xml)
+  const blockTag = isAtom ? 'entry' : 'item'
+  const blockRegex = new RegExp(`<${blockTag}[\\s>]([\\s\\S]*?)<\\/${blockTag}>`, 'gi')
+
+  let m
+  while ((m = blockRegex.exec(xml)) !== null) {
+    const block = m[1]
 
     const title = extractField(block, 'title')
-    const link = extractField(block, 'link')
-    const description = extractField(block, 'description')
 
-    if (!link) continue
+    // Atom uses <link href="URL"/> (self-closing with attribute)
+    // RSS uses <link>URL</link>
+    let link = ''
+    const atomLink = block.match(/<link[^>]+href=["']([^"']+)["'][^>]*\/?>/i)
+    if (atomLink) {
+      link = atomLink[1]
+    } else {
+      link = extractField(block, 'link')
+    }
+
+    // Atom uses <content> or <summary>; RSS uses <description>
+    const description = isAtom
+      ? (extractField(block, 'content') || extractField(block, 'summary'))
+      : extractField(block, 'description')
+
+    if (!link || !link.includes('reddit.com')) continue
 
     // Extract post ID from URL: /comments/XXXX/
-    const idMatch = link.match(/\/comments\/([a-z0-9]+)\//i)
-    const id = idMatch ? idMatch[1] : null
+    // Also handle Atom <id> like "t3_abc123"
+    let id = null
+    const urlId = link.match(/\/comments\/([a-z0-9]+)\//i)
+    if (urlId) {
+      id = urlId[1]
+    } else {
+      const atomId = extractField(block, 'id')
+      const t3Id = atomId.match(/t3_([a-z0-9]+)/i)
+      if (t3Id) id = t3Id[1]
+    }
 
     items.push({ title, link, description, id })
   }
@@ -97,14 +123,6 @@ function extractField(block, field) {
   const plainRegex = new RegExp(`<${field}[^>]*>([\\s\\S]*?)<\\/${field}>`, 'i')
   const plainMatch = block.match(plainRegex)
   if (plainMatch) return decodeEntities(plainMatch[1].trim())
-
-  // Self-closing or link as text node (Reddit sometimes puts link after </title>)
-  // For <link>, also try the pattern where it's a bare URL text node between tags
-  if (field === 'link') {
-    const linkTextRegex = /<link>(https?:\/\/[^\s<]+)<\/link>/i
-    const ltMatch = block.match(linkTextRegex)
-    if (ltMatch) return ltMatch[1].trim()
-  }
 
   return ''
 }
@@ -158,7 +176,7 @@ for (const sub of SUBREDDITS) {
     }
 
     const xml = await res.text()
-    const items = parseRSS(xml)
+    const items = parseFeed(xml)
 
     // Filter: keyword match, not already seen, within last 30 days
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
