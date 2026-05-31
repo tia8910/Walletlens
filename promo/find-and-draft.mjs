@@ -57,29 +57,31 @@ PRODUCT (all true — never invent features):
 ${FEATURES}
 
 YOUR TASK:
-1. Use web_search to find Reddit posts (recent ones preferred, but include any from the past few months) where someone is asking for a net-worth, portfolio, or investment tracking tool recommendation. Run ALL of these searches (run each one — do NOT use the site: operator as it may be restricted):
-   - reddit net worth tracker app recommendation
-   - reddit best portfolio tracker app
-   - reddit how to track my investments app
-   - reddit net worth app suggestions
-   - reddit portfolio tracker tool free
-   - reddit track crypto and stocks one app
-   - reddit best app to track all investments
-Aim to surface at least a few real candidate threads. It is fine to include posts that are a few weeks or months old — the human will check them.
+1. Use web_search to find Reddit threads about portfolio tracking, net worth, or investment management. Cast a wide net — include threads where people are asking for tools, discussing tools, comparing apps, or sharing how they track their finances. Any thread where a helpful reply mentioning WalletLens would fit naturally. Posts from the last year are fine. Run ALL of these searches:
+   - reddit portfolio tracker app
+   - reddit net worth tracker
+   - reddit track investments app
+   - reddit crypto portfolio tracker
+   - reddit how to track net worth
+   - reddit investment tracking spreadsheet app
+   - reddit personal finance tracker app
 
-2. For each RELEVANT post (person genuinely wants a tool recommendation), draft a reply that:
-   - Answers/helps the person FIRST, like a real Redditor
-   - Mentions WalletLens as ONE option (not the only one) where it genuinely fits; never oversell
-   - Includes a short honest affiliation disclosure: "(disclosure: I'm on the team)"
-   - Is concise (≤80 words), natural, specific to their question
-   - Is a SINGLE paragraph with NO line breaks
-   - Grounded ONLY in the real features above — never invent features
+2. For EACH Reddit thread you find, include it in the JSON and draft a reply if WalletLens fits. The bar is LOW — if there's any chance a reply could help someone in the thread, include it. The human will review and skip anything that doesn't feel right.
 
-3. Mark as NOT relevant (relevant: false, reply: "") if: off-topic, not seeking a tool, already resolved, hostile, from r/personalfinance (bans self-promo) or similar rule-strict subs.${seenBlock}
+   A good reply:
+   - Adds genuine value to the discussion first
+   - Mentions WalletLens as ONE option where it fits naturally; never oversell
+   - Includes "(disclosure: I'm on the team)"
+   - Is ≤80 words, a single paragraph, no line breaks
+   - Based ONLY on the real features above
 
-IMPORTANT: You MUST always respond with JSON, even if searches return nothing. If no relevant posts are found, return {"posts":[]}.
+3. Only mark relevant=false (and reply="") for threads that are: completely off-topic, from r/personalfinance or r/investing (strict no-promo rules), or hostile/locked.${seenBlock}
+
+AIM FOR AT LEAST 5 posts with drafted replies. The human review step will discard anything not suitable.
+
+IMPORTANT: Always respond with JSON. Return {"posts":[]} only if you truly found nothing at all.
 Return STRICT JSON ONLY, no markdown fences, no explanatory text:
-{"posts":[{"url":"https://reddit.com/r/...","subreddit":"subreddit_name","title":"post title","relevant":true,"reply":"single-paragraph reply or empty","reason":"short why/why not"}]}`
+{"posts":[{"url":"https://reddit.com/r/...","subreddit":"subreddit_name","title":"post title","relevant":true,"reply":"single-paragraph reply or empty","reason":"one line why included or skipped"}]}`
 
 let data
 try {
