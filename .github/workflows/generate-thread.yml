@@ -1,0 +1,45 @@
+name: WalletLens Thread Generator
+
+# Generates a weekly educational Twitter/X thread about personal finance /
+# portfolio tracking / crypto that mentions WalletLens naturally.
+# The ready-to-post thread is delivered as a GitHub Issue for human review.
+#
+# Required secret: ANTHROPIC_API_KEY
+
+on:
+  schedule:
+    - cron: '0 10 * * 3'   # Every Wednesday 10:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  generate-thread:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate thread
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node promo/generate-thread.mjs
+
+      - name: Open review issue (if thread was generated)
+        if: ${{ hashFiles('promo/thread.json') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues" \
+            -d @promo/thread.json > /dev/null \
+            && echo "Thread review issue created."
