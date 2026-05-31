@@ -79,7 +79,7 @@ ${existingTitles.map(t => `- ${t}`).join('\n')}
 
 Target a specific long-tail keyword a real person would search (e.g. "how to track net worth in multiple currencies", "crypto portfolio rebalancing strategy", "best way to track gold and silver investments", "is it safe to connect exchange API to a tracker", "how to read a portfolio allocation chart"). Be original and specific — not a rehash of an existing title.
 
-Return the result in EXACTLY this plain-text format — four header lines, then a BODY: line, then the full Markdown article. No preamble, no commentary, no code fences:
+Return the result in EXACTLY this plain-text format — four header lines, then a BODY: line, then the full Markdown article. Your reply MUST begin immediately with "TITLE:" — output nothing before it (no preamble, no commentary, no code fences):
 
 TITLE: <compelling, specific, <=70 chars, title case>
 SLUG: <url-safe-kebab-case, lowercase, derived from the topic, must be unique>
@@ -110,13 +110,11 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
     model: MODEL,
     max_tokens: 4000,
     system,
+    // No assistant prefill: this model rejects it ("must end with a user
+    // message"). The prompt already instructs the model to begin its reply
+    // with "TITLE:"; we tolerate any stray preamble when parsing below.
     messages: [
       { role: 'user', content: prompt },
-      // Prefill the first header so the model goes straight into the format
-      // with no preamble or code fences. NOTE: assistant prefill content must
-      // NOT end with trailing whitespace (the API rejects it with a 400), so
-      // this is "TITLE:" with no trailing space.
-      { role: 'assistant', content: 'TITLE:' },
     ],
   }),
 })
@@ -127,8 +125,13 @@ if (!resp.ok) {
 }
 
 const data = await resp.json()
-// Re-attach the prefilled "TITLE:" so the whole document is parseable.
-const raw_out = 'TITLE:' + (data.content?.[0]?.text || '')
+let raw_out = (data.content?.[0]?.text || '')
+// Drop any preamble the model emitted before the first "TITLE:" header.
+const tStart = raw_out.indexOf('TITLE:')
+if (tStart === -1) {
+  fail('Response has no TITLE: header. First 400 chars: ' + raw_out.slice(0, 400))
+}
+raw_out = raw_out.slice(tStart)
 
 // Parse the newline-safe sentinel format (avoids JSON-in-string newline bugs
 // that long Markdown bodies trigger). Headers first, everything after "BODY:"
