@@ -1113,4 +1113,107 @@ Because your data lives in the browser, backing up is important. The WalletLens 
 Your net worth is the sum of everything across all the accounts and assets you hold. Seeing it clearly — categorised, live-priced, allocation-weighted — takes no more than fifteen minutes to set up and dramatically improves every subsequent financial decision you make. Stop guessing at the total and start tracking it in one place.
     `
   },
+  {
+    slug: 'is-it-safe-to-connect-exchange-api-to-portfolio-tracker',
+    title: 'Is It Safe to Connect Your Exchange API to a Portfolio Tracker?',
+    date: 'May 2026',
+    readTime: '7 min read',
+    summary: 'Thinking about linking your exchange API to a portfolio tracker? Learn the real risks, what to check, and safer alternatives before you connect.',
+    content: `
+If you've ever tried to keep tabs on multiple crypto exchanges at once, you've probably seen the option to connect via API. It sounds convenient — your balances update automatically, your trades sync in real time, and you never have to enter a number manually again. But before you paste that API key into a third-party app, it's worth asking a straightforward question: what exactly are you handing over, and to whom?
+
+This guide breaks down how exchange API connections work, what the genuine risks are, which permissions actually matter, and what to look for in any tracker you trust with that access. No scare tactics — just the information you need to make a clear-eyed decision.
+
+## What Is an Exchange API Key, Anyway?
+
+API stands for Application Programming Interface. When a crypto exchange like Coinbase, Binance, or Kraken generates an API key for your account, it creates a unique credential that lets an external application communicate with your account on your behalf.
+
+Think of it like a valet key for a car. A valet key lets someone park the vehicle but (in theory) can't open the glove box or trunk. An exchange API key works similarly — you can configure it with specific permissions. The critical question is always: **which permissions are you granting?**
+
+Most exchanges let you create keys with one or more of these permission tiers:
+
+| Permission | What It Allows |
+|---|---|
+| Read-only | View balances, trade history, open orders |
+| Trade | Place and cancel orders on your behalf |
+| Withdraw | Send funds to external addresses |
+
+**Read-only is the only permission a portfolio tracker ever needs.** If a tracker asks for trade or withdraw permissions, that is a serious red flag — close the tab.
+
+## The Real Risks of API-Connected Trackers
+
+Connecting a read-only key to a reputable tracker carries relatively low risk. But "relatively low" is not the same as zero, and there are several threat surfaces worth understanding.
+
+**1. The tracker itself gets breached.**
+Any service that stores your API keys on its servers is a potential target. If that company's database is leaked or hacked, your keys are exposed. Even read-only keys reveal your full balance history, which is valuable to phishing attackers and tax authorities in certain jurisdictions.
+
+**2. The tracker turns malicious.**
+It sounds dramatic, but many smaller portfolio apps are run by tiny teams or anonymous developers. Free services need to monetise somehow. Some sell anonymised (or not-so-anonymised) user data. Others have been known to quietly add trade permissions to key requests over time.
+
+**3. Key theft via malware on your own machine.**
+If your device is already compromised, an attacker can intercept API keys before they ever reach the tracker. This is a you-side problem, not a tracker-side problem — but it's worth mentioning because API keys don't expire automatically.
+
+**4. Account enumeration and social engineering.**
+Even read-only access exposes your holdings. If a bad actor knows you hold 12 BTC, they have a target. This is the "wrench attack" in digital form — it starts with data.
+
+## What Makes a Tracker Genuinely Safe?
+
+When evaluating any portfolio tracking tool, run through this checklist:
+
+- **Does it require an account or email?** If yes, your data (and potentially your API keys) live on their server. That's a data breach waiting to happen.
+- **What permissions does it actually request?** Always generate a key manually on your exchange and select *only* read-only. Never let a tracker auto-generate keys for you.
+- **Is the app open-source?** Open-source code can be audited by the community. Closed-source apps require you to trust the developer blindly.
+- **Does it have a privacy policy that sells data?** Read the fine print. "We may share data with partners" is a polite way of saying they monetise your portfolio information.
+- **Where does computation happen?** On-device processing means your data never leaves your browser or app. Server-side processing means someone else sees your numbers.
+
+## The Alternative: Manual and Local-First Tracking
+
+Here's a perspective shift that many investors don't consider: **you don't have to connect an API at all.**
+
+The privacy-conscious approach is to track your portfolio locally, entering trades manually — or using smarter import options — without ever exposing an API key to a third party. Yes, it takes a few extra minutes when you make a trade. But the security trade-off is significant.
+
+[walletlens.live](https://walletlens.live) is built entirely around this philosophy. It is 100% local-first: all your data lives in your browser, nothing is sent to any server, and there is no account, no login, and no email required. Because there's no server storing your holdings, there's nothing to breach.
+
+Instead of API sync, WalletLens offers several ways to get data in quickly:
+
+- **Manual entry** for individual trades
+- **Voice input** — say something like "I bought 0.5 ETH at 3200" and the trade is logged
+- **Screenshot import** — photograph or upload a screenshot of your exchange history
+- **Excel or CSV import** for bulk trade history
+
+For most investors who aren't executing dozens of trades per day, these options cover everything needed without the API risk surface.
+
+## If You Do Use an API — Do It Right
+
+Some investors genuinely benefit from API connections, particularly active traders managing large portfolios across many exchanges. If that's you, here's how to minimise your exposure:
+
+1. **Create a dedicated read-only key** for the tracker. Never reuse keys across apps.
+2. **Whitelist IP addresses** if your exchange supports it. This limits where the key can be used from.
+3. **Set an expiry date** on the key if the exchange allows it — 30 or 90 days, then rotate.
+4. **Use two-factor authentication** on your exchange account, separate from anything the tracker can access.
+5. **Revoke keys immediately** if you stop using a tracker, or if the service announces any kind of breach or ownership change.
+6. **Never grant trade or withdraw permissions** to a portfolio tracker. Ever.
+7. **Check the tracker's status page and security history** before connecting. Past incidents are informative.
+
+## What About Blockchain Address Tracking?
+
+A middle-ground option worth knowing about: some trackers let you input a **public wallet address** (not a private key, not an API key) and pull balance data from the blockchain directly. Because public addresses are, by definition, public information, this carries essentially no custody risk — you're not granting access to anything. The downside is that it typically shows current balances but not detailed trade history or cost basis data.
+
+For a clean net-worth snapshot, public address tracking is a low-risk option. For P&L tracking and tax prep, you'll need trade-level detail, which means either manual entry or API access.
+
+## Putting It All Together
+
+The safest portfolio tracker is one that never touches your exchange credentials in the first place. If a tool can give you live prices, P&L, allocation breakdowns, and AI-powered analysis — all computed locally, with no server involved — the API connection question becomes largely moot.
+
+WalletLens takes this approach across every asset class it covers: crypto, stocks, ETFs, gold, silver, real estate, and cash all land in a single net-worth view, with unrealized P&L and allocation charts computed on your device. Features like sell targets, a health score, a stress test, and a rebalance planner run locally too. Your data never leaves the browser.
+
+For investors who do connect APIs elsewhere, the principles above — read-only only, key rotation, IP whitelisting, separate keys per app — dramatically reduce your risk profile. Treat API keys like passwords: unique, limited in scope, and revoked the moment they're no longer needed.
+
+*Note: This article is educational and does not constitute financial or legal advice. For questions about tax reporting obligations related to your exchange data, consult a qualified professional in your jurisdiction.*
+
+## Conclusion
+
+Connecting an exchange API to a portfolio tracker is not inherently dangerous, but it introduces real risks that most investors don't fully think through. The two biggest are storing sensitive credentials on third-party servers and inadvertently granting more permissions than a tracker actually needs. Read-only keys, IP whitelisting, and regular rotation go a long way — but the simplest solution is a local-first tracker that makes API connections unnecessary in the first place. Know what you're sharing, with whom, and why. Your portfolio security is worth the extra few minutes of due diligence.
+    `
+  },
 ]
