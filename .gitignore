@@ -5,3 +5,6 @@ dist/
 .DS_Store
 *.db-shm
 *.db-wal
+
+# Transient promo agent issue payload (created at runtime, not committed)
+promo/issue.json
