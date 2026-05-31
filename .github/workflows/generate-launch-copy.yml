@@ -1,0 +1,46 @@
+name: WalletLens Launch Copy Generator
+
+# One-time script that generates ready-to-post copy for:
+#   • Show HN (Hacker News)
+#   • Product Hunt (tagline, description, maker first comment)
+#   • IndieHackers (title + intro paragraph)
+#
+# Trigger manually via "Run workflow" in the Actions tab.
+# The copy is delivered as a GitHub Issue for human review and editing.
+#
+# Required secret: ANTHROPIC_API_KEY
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  generate-launch-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate launch copy
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node promo/launch-copy.mjs
+
+      - name: Open review issue (if copy was generated)
+        if: ${{ hashFiles('promo/launch-copy.json') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues" \
+            -d @promo/launch-copy.json > /dev/null \
+            && echo "Launch copy review issue created."

@@ -1,6 +1,6 @@
 // WalletLens promotion agent — DISCOVER + DRAFT only (never auto-posts).
 //
-// Uses Claude with built-in web search to find recent Reddit posts where someone
+// Fetches Reddit public RSS feeds to find recent posts where someone
 // is genuinely asking for a net-worth / portfolio / investment-tracking tool,
 // then drafts honest, helpful replies for a human to review and post MANUALLY.
 // Drafts are delivered as a GitHub Issue. No Reddit credentials needed.
@@ -39,49 +39,209 @@ if (!apiKey) fail('ANTHROPIC_API_KEY is not set (add it as a repository secret).
 // ── What we promote ─────────────────────────────────────────────────────────
 const FEATURES = `WalletLens (walletlens.live) — free, private, browser-based net-worth & portfolio tracker. 100% local (no account/login/email, nothing leaves the browser). Tracks crypto, stocks/ETFs, precious metals, real estate and cash in one net-worth view broken down by category. Live prices, average cost basis, P&L, allocation donut. Manual + voice + screenshot + CSV import. On-device AI analysis (health score, fear & greed, stress test, rebalance). Sell-target tracking. Backup via an export code. No exchange API keys required.`
 
-// ── De-dupe: skip URLs we've already surfaced ───────────────────────────────
+// ── Subreddits to monitor ────────────────────────────────────────────────────
+const SUBREDDITS = [
+  'CryptoCurrency',
+  'BitcoinBeginners',
+  'CryptoMarkets',
+  'CryptoInvesting',
+  'eupersonalfinance',
+  'UKPersonalFinance',
+  'AusFinance',
+  'financialindependence',
+  'ETFs',
+  'Bogleheads',
+  'portfolios',
+  'stocks',
+  'algotrading',
+]
+
+// ── Keywords to filter posts ─────────────────────────────────────────────────
+const KEYWORDS = [
+  'track', 'tracker', 'tracking', 'portfolio', 'net worth', 'networth',
+  'investments', 'app', 'tool', 'spreadsheet', 'manage', 'monitor',
+  'allocation', 'holdings', 'balance',
+]
+
+// ── RSS parser (no external deps) ───────────────────────────────────────────
+function parseRSS(xml) {
+  const items = []
+  // Extract all <item>...</item> blocks
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g
+  let itemMatch
+  while ((itemMatch = itemRegex.exec(xml)) !== null) {
+    const block = itemMatch[1]
+
+    const title = extractField(block, 'title')
+    const link = extractField(block, 'link')
+    const description = extractField(block, 'description')
+
+    if (!link) continue
+
+    // Extract post ID from URL: /comments/XXXX/
+    const idMatch = link.match(/\/comments\/([a-z0-9]+)\//i)
+    const id = idMatch ? idMatch[1] : null
+
+    items.push({ title, link, description, id })
+  }
+  return items
+}
+
+function extractField(block, field) {
+  // Try CDATA form first: <field><![CDATA[...]]></field>
+  const cdataRegex = new RegExp(`<${field}[^>]*>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*<\\/${field}>`, 'i')
+  const cdataMatch = block.match(cdataRegex)
+  if (cdataMatch) return decodeEntities(cdataMatch[1].trim())
+
+  // Plain text form: <field>...</field>
+  const plainRegex = new RegExp(`<${field}[^>]*>([\\s\\S]*?)<\\/${field}>`, 'i')
+  const plainMatch = block.match(plainRegex)
+  if (plainMatch) return decodeEntities(plainMatch[1].trim())
+
+  // Self-closing or link as text node (Reddit sometimes puts link after </title>)
+  // For <link>, also try the pattern where it's a bare URL text node between tags
+  if (field === 'link') {
+    const linkTextRegex = /<link>(https?:\/\/[^\s<]+)<\/link>/i
+    const ltMatch = block.match(linkTextRegex)
+    if (ltMatch) return ltMatch[1].trim()
+  }
+
+  return ''
+}
+
+function decodeEntities(str) {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+}
+
+// ── Keyword filter ───────────────────────────────────────────────────────────
+function matchesKeyword(text) {
+  const lower = (text || '').toLowerCase()
+  return KEYWORDS.some(kw => lower.includes(kw))
+}
+
+// ── Delay helper ─────────────────────────────────────────────────────────────
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// ── De-dupe: skip post IDs we've already surfaced ───────────────────────────
 let seen = []
 try { seen = JSON.parse(readFileSync(SEEN_FILE, 'utf8')) } catch {}
 const seenSet = new Set(Array.isArray(seen) ? seen : [])
 
-const seenBlock = seenSet.size
-  ? `\nSkip posts whose URL matches any of these already-seen URLs:\n${[...seenSet].slice(-50).map(u => `- ${u}`).join('\n')}`
-  : ''
+// ── Fetch RSS feeds ──────────────────────────────────────────────────────────
+note('Fetching Reddit RSS feeds...')
 
-// ── Ask Claude to search Reddit and draft replies ───────────────────────────
-note('Searching Reddit via Claude built-in web search...')
+const candidates = []   // { id, url, subreddit, title, description }
+const seenIds = new Set(seenSet)  // dedupe by post ID during collection
 
-const prompt = `You help promote WalletLens HONESTLY on Reddit by finding relevant posts and drafting replies a human will review and post manually. Be helpful first, never spammy.
+for (const sub of SUBREDDITS) {
+  const url = `https://www.reddit.com/r/${sub}/new.rss?limit=25`
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'WalletLens-PromoBot/1.0 (promotion agent; contact walletlens.live)',
+      },
+      signal: AbortSignal.timeout(15000),
+    })
+
+    if (!res.ok) {
+      note(`  r/${sub}: HTTP ${res.status} — skipping`)
+      await delay(1200)
+      continue
+    }
+
+    const xml = await res.text()
+    const items = parseRSS(xml)
+
+    // Filter: keyword match, not already seen, within last 30 days
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+    let subCount = 0
+
+    for (const item of items) {
+      if (!item.id) continue
+      if (seenIds.has(item.id)) continue
+
+      const text = (item.title || '') + ' ' + (item.description || '')
+      if (!matchesKeyword(text)) continue
+
+      // Stop once we have 20 candidates total
+      if (candidates.length >= 20) break
+
+      seenIds.add(item.id)
+      candidates.push({
+        id: item.id,
+        url: item.link,
+        subreddit: sub,
+        title: (item.title || '').slice(0, 300),
+        description: (item.description || '').slice(0, 800),
+      })
+      subCount++
+    }
+
+    note(`  r/${sub}: ${items.length} posts fetched, ${subCount} candidate(s) added`)
+  } catch (e) {
+    note(`  r/${sub}: fetch error (${String(e).slice(0, 120)}) — skipping`)
+  }
+
+  if (candidates.length >= 20) {
+    note('  Reached 20-candidate limit — stopping early')
+    break
+  }
+
+  await delay(1200)
+}
+
+note(`Total candidates: ${candidates.length}`)
+
+if (candidates.length === 0) {
+  note('No matching posts found this run — no issue created.')
+  const xLinks = [
+    'net worth tracker', 'portfolio tracker app', 'track my investments',
+    'net worth app recommendation', 'best app to track portfolio',
+  ].map(q => `- [${q}](https://x.com/search?q=${encodeURIComponent(q)}&f=live)`).join('\n')
+  note('\n### Manual X (Twitter) live searches to scan\n' + xLinks)
+  process.exit(0)
+}
+
+// ── Mark all candidate IDs as seen ──────────────────────────────────────────
+const newSeen = Array.from(new Set([...seenSet, ...candidates.map(c => c.id)])).slice(-500)
+writeFileSync(SEEN_FILE, JSON.stringify(newSeen, null, 0) + '\n', 'utf8')
+
+// ── Ask Claude to judge relevance and draft replies ──────────────────────────
+note('Sending candidates to Claude for relevance check and reply drafting...')
+
+const postsBlock = candidates.map((c, i) =>
+  `[${i + 1}] id=${c.id} sub=r/${c.subreddit}\nTitle: ${c.title}\nBody snippet: ${c.description}`
+).join('\n\n')
+
+const prompt = `You help promote WalletLens HONESTLY on Reddit by judging whether posts are relevant and drafting replies a human will review and post manually. Be helpful first, never spammy.
 
 PRODUCT (all true — never invent features):
 ${FEATURES}
 
-YOUR TASK:
-1. Use web_search to find Reddit threads about portfolio tracking, net worth, or investment management. Cast a wide net — include threads where people are asking for tools, discussing tools, comparing apps, or sharing how they track their finances. Any thread where a helpful reply mentioning WalletLens would fit naturally. Posts from the last year are fine. Run ALL of these searches:
-   - reddit portfolio tracker app
-   - reddit net worth tracker
-   - reddit track investments app
-   - reddit crypto portfolio tracker
-   - reddit how to track net worth
-   - reddit investment tracking spreadsheet app
-   - reddit personal finance tracker app
+POSTS TO EVALUATE:
+${postsBlock}
 
-2. For EACH Reddit thread you find, include it in the JSON and draft a reply if WalletLens fits. The bar is LOW — if there's any chance a reply could help someone in the thread, include it. The human will review and skip anything that doesn't feel right.
+For each post, decide if WalletLens would be a genuinely helpful mention. Draft a reply for relevant ones.
 
-   A good reply:
-   - Adds genuine value to the discussion first
-   - Mentions WalletLens as ONE option where it fits naturally; never oversell
-   - Includes "(disclosure: I'm on the team)"
-   - Is ≤80 words, a single paragraph, no line breaks
-   - Based ONLY on the real features above
+A good reply:
+- Adds genuine value to the discussion first
+- Mentions WalletLens as ONE option where it fits naturally; never oversell
+- Includes "(disclosure: I'm on the team)"
+- Is ≤80 words, a single paragraph, no line breaks
+- Based ONLY on the real features listed above
 
-3. Only mark relevant=false (and reply="") for threads that are: completely off-topic, from r/personalfinance or r/investing (strict no-promo rules), or hostile/locked.${seenBlock}
+Mark relevant=false (and reply="") only for posts that are completely off-topic, from subreddits with strict no-promo rules (r/personalfinance, r/investing), or clearly hostile/locked.
 
-AIM FOR AT LEAST 5 posts with drafted replies. The human review step will discard anything not suitable.
-
-IMPORTANT: Always respond with JSON. Return {"posts":[]} only if you truly found nothing at all.
 Return STRICT JSON ONLY, no markdown fences, no explanatory text:
-{"posts":[{"url":"https://reddit.com/r/...","subreddit":"subreddit_name","title":"post title","relevant":true,"reply":"single-paragraph reply or empty","reason":"one line why included or skipped"}]}`
+{"results":[{"id":"<reddit_post_id>","relevant":true,"reply":"single-paragraph reply or empty string","reason":"one line why included or skipped"}]}`
 
 let data
 try {
@@ -91,12 +251,10 @@ try {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'web-search-2025-03-05',
     },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 4000,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -104,17 +262,10 @@ try {
   data = await res.json()
 } catch (e) { fail(`Claude request failed: ${String(e)}`) }
 
-// Count how many web searches Claude actually performed (visibility into search)
-const searchCount = (data.content || []).filter(b => b.type === 'server_tool_use').length
-note(`Claude ran ${searchCount} web search(es).`)
-
-// Response may contain tool_use blocks followed by a text block. Concatenate
-// all text blocks in case the JSON is split across them.
 const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n')
 const m = text.match(/\{[\s\S]*\}/)
 if (!m) {
-  // Claude couldn't find posts or returned plain text — treat as empty result
-  note('No JSON in Claude response (no posts found this run). Full response below:')
+  note('No JSON in Claude response — treating as empty result. Full response:')
   note('```\n' + text.slice(0, 1500) + '\n```')
   process.exit(0)
 }
@@ -125,14 +276,23 @@ try { parsed = JSON.parse(m[0]) } catch (e) {
   process.exit(0)
 }
 
-const allPosts = (parsed.posts || []).filter(p => p.url && p.url.startsWith('http'))
-const drafts = allPosts.filter(p => p.relevant && p.reply && p.reply.trim())
+// Merge Claude judgements back with original candidate metadata
+const results = (parsed.results || [])
+const drafts = results
+  .filter(r => r.relevant && r.reply && r.reply.trim())
+  .map(r => {
+    const candidate = candidates.find(c => c.id === r.id)
+    return {
+      id: r.id,
+      url: candidate ? candidate.url : `https://reddit.com/comments/${r.id}/`,
+      subreddit: candidate ? candidate.subreddit : 'unknown',
+      title: candidate ? candidate.title : '',
+      reply: r.reply,
+      reason: r.reason || '',
+    }
+  })
 
-note(`Found ${allPosts.length} post(s) total, ${drafts.length} with drafted replies.`)
-
-// Mark all found posts as seen so we never re-surface them
-const newSeen = Array.from(new Set([...seenSet, ...allPosts.map(p => p.url)])).slice(-500)
-writeFileSync(SEEN_FILE, JSON.stringify(newSeen, null, 0) + '\n', 'utf8')
+note(`Evaluated ${results.length} post(s), ${drafts.length} with drafted replies.`)
 
 if (!drafts.length) {
   note('Nothing worth posting this run — no issue created.')
