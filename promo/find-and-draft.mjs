@@ -57,12 +57,12 @@ PRODUCT (all true — never invent features):
 ${FEATURES}
 
 YOUR TASK:
-1. Use web_search to find Reddit posts from the LAST 7 DAYS where someone is genuinely asking for a net-worth, portfolio, or investment tracking tool recommendation. Run multiple searches:
-   - site:reddit.com "net worth tracker" recommend
-   - site:reddit.com "portfolio tracker" which app
-   - site:reddit.com "track my investments" app recommend
-   - site:reddit.com "net worth app" best
-   - site:reddit.com track portfolio investments 2025
+1. Use web_search to find Reddit posts from the LAST 7 DAYS where someone is genuinely asking for a net-worth, portfolio, or investment tracking tool recommendation. Run multiple searches using varied queries — do NOT use the site: operator as it may be restricted. Try:
+   - reddit "net worth tracker" recommend 2025
+   - reddit "portfolio tracker app" which best
+   - reddit "track my investments" app recommendation
+   - reddit "net worth app" best free
+   - reddit portfolio tracker tool suggestion
 
 2. For each RELEVANT post (person genuinely wants a tool recommendation), draft a reply that:
    - Answers/helps the person FIRST, like a real Redditor
@@ -74,7 +74,8 @@ YOUR TASK:
 
 3. Mark as NOT relevant (relevant: false, reply: "") if: off-topic, not seeking a tool, already resolved, hostile, from r/personalfinance (bans self-promo) or similar rule-strict subs.${seenBlock}
 
-Return STRICT JSON ONLY, no markdown fences:
+IMPORTANT: You MUST always respond with JSON, even if searches return nothing. If no relevant posts are found, return {"posts":[]}.
+Return STRICT JSON ONLY, no markdown fences, no explanatory text:
 {"posts":[{"url":"https://reddit.com/r/...","subreddit":"subreddit_name","title":"post title","relevant":true,"reply":"single-paragraph reply or empty","reason":"short why/why not"}]}`
 
 let data
@@ -101,10 +102,17 @@ try {
 // Response may contain tool_use blocks followed by a text block
 const text = (data.content || []).find(b => b.type === 'text')?.text || ''
 const m = text.match(/\{[\s\S]*\}/)
-if (!m) fail('No JSON in Claude response. First 400 chars: ' + text.slice(0, 400))
+if (!m) {
+  // Claude couldn't find posts or returned plain text — treat as empty result
+  note('No JSON in Claude response (no posts found this run). Response: ' + text.slice(0, 200))
+  process.exit(0)
+}
 
 let parsed
-try { parsed = JSON.parse(m[0]) } catch (e) { fail('Failed to parse Claude JSON: ' + e.message) }
+try { parsed = JSON.parse(m[0]) } catch (e) {
+  note('Could not parse Claude JSON — treating as empty result. Error: ' + e.message)
+  process.exit(0)
+}
 
 const allPosts = (parsed.posts || []).filter(p => p.url && p.url.startsWith('http'))
 const drafts = allPosts.filter(p => p.relevant && p.reply && p.reply.trim())
