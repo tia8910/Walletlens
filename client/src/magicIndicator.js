@@ -45,43 +45,45 @@ export function pillarTechnical(ta, fundamental) {
 }
 
 // ── Pillar 2: Volume (confirmation) ──────────────────────────────────────
-// Primary signal is the volume pulse (last-24h vs window-average) from the
-// per-coin chart fetch. That fetch is the first to drop out under CoinGecko
-// rate limits, so when it's missing we fall back to the asset's 24h volume vs
-// market cap (turnover) from the bulk fundamentals call — which is almost
-// always present — so the pillar still reads a value instead of "n/a".
+// Turnover (24h volume / market cap) from the bulk fundamentals call is the
+// primary, reliably-present signal so the pillar almost always reads a real
+// value. When the per-coin chart is available its volume pulse refines the
+// score (a surge above average boosts conviction). Previously the pulse path
+// short-circuited to 0 whenever volume was at/below average, which left most
+// assets reading a flat 0 — turnover now anchors the score instead.
 export function pillarVolume(signals, fundamental) {
-  if (signals && typeof signals.volPulse === 'number') {
-    const vp = signals.volPulse
-    const mo = signals.momentum ?? 0
-    const dir = Math.sign(mo || signals.adNormalized || 0) || 1
-    // Above-average volume → conviction; below-average → dampen toward neutral.
-    const surge = Math.tanh(Math.max(0, vp - 1)) // 0..1
-    let score = surge * 100 * dir
-    if (vp < 1) score *= 0.4
-    return {
-      available: true,
-      score: cr(score),
-      note: `${vp.toFixed(2)}× avg volume, ${dir >= 0 ? 'confirming up' : 'on weakness'}`,
-    }
-  }
+  const notes = []
+  let score = null
 
-  // Fallback: turnover (24h volume / market cap) as a liquidity/conviction proxy.
+  // Base: turnover-driven conviction in the direction of the price move.
   if (fundamental && fundamental.marketCap > 0 && fundamental.totalVolume > 0) {
     const turnover = fundamental.totalVolume / fundamental.marketCap
     const dir = Math.sign(fundamental.change24h ?? fundamental.change30d ?? 0) || 1
-    // Map turnover to a 0..1 conviction: ~3%+ daily turnover is healthy/active.
-    const conviction = Math.tanh(turnover / 0.05) // 0..1, ~0.76 at 5%
-    let score = conviction * 70 * dir // capped softer than the pulse path
-    if (turnover < 0.005) score *= 0.4 // very thin volume → dampen
-    return {
-      available: true,
-      score: cr(score),
-      note: `${(turnover * 100).toFixed(1)}% turnover, ${dir >= 0 ? 'confirming up' : 'on weakness'}`,
-    }
+    const conviction = Math.tanh(turnover / 0.05) // 0..1, ~0.76 at 5% daily turnover
+    let s = conviction * 70 * dir
+    if (turnover < 0.005) s *= 0.4 // very thin volume → dampen
+    score = s
+    notes.push(`${(turnover * 100).toFixed(1)}% turnover`)
   }
 
-  return { available: false }
+  // Refinement: volume pulse vs the trailing average when the chart is present.
+  if (signals && typeof signals.volPulse === 'number') {
+    const vp = signals.volPulse
+    const mo = signals.momentum ?? 0
+    const dir = Math.sign(mo || signals.adNormalized || (fundamental?.change24h ?? 0)) || 1
+    const dev = Math.tanh(Math.abs(vp - 1)) // 0..1 deviation from average
+    const pulse = (vp >= 1 ? dev : -dev * 0.5) * 100 * dir
+    score = score == null ? pulse : score * 0.55 + pulse * 0.45
+    notes.unshift(`${vp.toFixed(2)}× avg volume`)
+  }
+
+  if (score == null) return { available: false }
+  const dirUp = score >= 0
+  return {
+    available: true,
+    score: cr(score),
+    note: `${notes.join(' · ')}, ${dirUp ? 'confirming up' : 'on weakness'}`,
+  }
 }
 
 // ── Pillar 3: Whales (accumulation / distribution) ───────────────────────

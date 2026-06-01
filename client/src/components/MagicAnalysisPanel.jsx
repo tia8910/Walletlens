@@ -44,11 +44,44 @@ function rr(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-// Render a single asset's analysis card to a square PNG canvas. We draw a
-// lettered coin badge (not the remote logo) to avoid tainting the canvas,
-// which would block toBlob()/toDataURL().
-function drawShareCard(canvas, item) {
+// Load an image cross-origin so it can be drawn without tainting the canvas
+// (which would block toBlob/toDataURL). Resolves null on error/timeout.
+function loadCorsImage(src) {
+  return new Promise((resolve) => {
+    if (!src) { resolve(null); return }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.referrerPolicy = 'no-referrer'
+    let done = false
+    const finish = (v) => { if (!done) { done = true; resolve(v) } }
+    img.onload = () => finish(img)
+    img.onerror = () => finish(null)
+    setTimeout(() => finish(null), 4500)
+    img.src = src
+  })
+}
+
+// Try the asset's own image, then CORS-friendly icon CDNs, returning the first
+// that loads. All are served with permissive CORS so the canvas stays clean.
+async function loadCoinLogo(item) {
+  const sym = (item.coin_symbol || '').toLowerCase()
+  const candidates = [
+    item.coin_image,
+    sym && `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`,
+    sym && `https://assets.coincap.io/assets/icons/${sym}@2x.png`,
+  ].filter(Boolean)
+  for (const url of candidates) {
+    const img = await loadCorsImage(url)
+    if (img) return img
+  }
+  return null
+}
+
+// Render a single asset's analysis card to a square PNG canvas. Draws the real
+// coin logo when it loads cross-origin; otherwise a lettered badge fallback.
+async function drawShareCard(canvas, item) {
   const m = item.magic
+  const logo = await loadCoinLogo(item)
   const W = 1080, H = 1080, dpr = 2
   canvas.width = W * dpr; canvas.height = H * dpr
   const ctx = canvas.getContext('2d')
@@ -65,17 +98,27 @@ function drawShareCard(canvas, item) {
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,230,118,0.18)'; ctx.stroke()
 
   const PAD = 84
-  // ── Header: coin badge + symbol/name ──
+  // ── Header: coin logo (or lettered badge) + symbol/name ──
   const sym = (item.coin_symbol || '?').toUpperCase()
-  ctx.save()
-  rr(ctx, PAD, 96, 92, 92, 24)
-  const badge = ctx.createLinearGradient(PAD, 96, PAD + 92, 188)
-  badge.addColorStop(0, accent); badge.addColorStop(1, '#00b35a')
-  ctx.fillStyle = badge; ctx.fill()
-  ctx.fillStyle = '#022'; ctx.font = '800 38px Inter, system-ui, sans-serif'
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.fillText(sym.slice(0, 4), PAD + 46, 144)
-  ctx.restore()
+  const LX = PAD, LY = 96, LS = 92
+  if (logo) {
+    ctx.save()
+    ctx.beginPath(); ctx.arc(LX + LS / 2, LY + LS / 2, LS / 2, 0, Math.PI * 2); ctx.closePath()
+    ctx.fillStyle = '#fff'; ctx.fill() // white disc behind transparent logos
+    ctx.clip()
+    try { ctx.drawImage(logo, LX, LY, LS, LS) } catch {}
+    ctx.restore()
+  } else {
+    ctx.save()
+    rr(ctx, LX, LY, LS, LS, 24)
+    const badge = ctx.createLinearGradient(LX, LY, LX + LS, LY + LS)
+    badge.addColorStop(0, accent); badge.addColorStop(1, '#00b35a')
+    ctx.fillStyle = badge; ctx.fill()
+    ctx.fillStyle = '#022'; ctx.font = '800 38px Inter, system-ui, sans-serif'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(sym.slice(0, 4), LX + LS / 2, LY + LS / 2 + 2)
+    ctx.restore()
+  }
 
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = '#fff'; ctx.font = '800 52px Inter, system-ui, sans-serif'
@@ -182,7 +225,7 @@ function ShareCardButton({ item }) {
     setSharing(true)
     track('magic_card_share_x', { symbol: item.coin_symbol })
     const canvas = document.createElement('canvas')
-    try { drawShareCard(canvas, item) } catch { setSharing(false); return }
+    try { await drawShareCard(canvas, item) } catch { setSharing(false); return }
 
     const sym = (item.coin_symbol || 'asset').toLowerCase()
     const filename = `walletlens-${sym}.png`
