@@ -20,17 +20,28 @@ const round = (v) => Math.round(v)
 const cr = (v) => Math.round(clamp(v))
 
 // ── Pillar 1: Technical ──────────────────────────────────────────────────
-export function pillarTechnical(ta) {
-  if (!ta || typeof ta.score !== 'number') return { available: false }
-  const bits = []
-  if (ta.trend) bits.push(ta.trend)
-  if (ta.rsi != null) bits.push(`RSI ${Math.round(ta.rsi)}`)
-  if (ta.macd?.cross) bits.push(`MACD ${ta.macd.cross}`)
-  return {
-    available: true,
-    score: cr(ta.score),
-    note: bits.join(' · ') || 'price structure',
+export function pillarTechnical(ta, fundamental) {
+  if (ta && typeof ta.score === 'number') {
+    const bits = []
+    if (ta.trend) bits.push(ta.trend)
+    if (ta.rsi != null) bits.push(`RSI ${Math.round(ta.rsi)}`)
+    if (ta.macd?.cross) bits.push(`MACD ${ta.macd.cross}`)
+    return {
+      available: true,
+      score: cr(ta.score),
+      note: bits.join(' · ') || 'price structure',
+    }
   }
+  // Fallback: when the per-coin candle fetch is rate-limited, derive a
+  // momentum-based technical read from 24h/30d price change so the pillar
+  // still shows a value instead of "n/a". Flagged as a proxy in the note.
+  if (fundamental && (typeof fundamental.change30d === 'number' || typeof fundamental.change24h === 'number')) {
+    const c30 = fundamental.change30d ?? 0
+    const c24 = fundamental.change24h ?? 0
+    const score = cr(Math.tanh(c30 / 40) * 65 + Math.tanh(c24 / 12) * 35)
+    return { available: true, score, note: `price-momentum proxy (${c30 >= 0 ? '+' : ''}${Math.round(c30)}% 30d)` }
+  }
+  return { available: false }
 }
 
 // ── Pillar 2: Volume (confirmation) ──────────────────────────────────────
@@ -74,16 +85,31 @@ export function pillarVolume(signals, fundamental) {
 }
 
 // ── Pillar 3: Whales (accumulation / distribution) ───────────────────────
-export function pillarWhales(signals) {
-  if (!signals || typeof signals.whaleScore !== 'number') return { available: false }
-  const w = signals.whaleScore
-  const label =
+export function pillarWhales(signals, fundamental) {
+  const flowLabel = (w) =>
     w >= 50 ? 'strong accumulation' :
     w >= 20 ? 'mild accumulation' :
     w >= -20 ? 'neutral flow' :
     w >= -50 ? 'mild distribution' :
     'strong distribution'
-  return { available: true, score: cr(w), note: label }
+
+  if (signals && typeof signals.whaleScore === 'number') {
+    return { available: true, score: cr(signals.whaleScore), note: flowLabel(signals.whaleScore) }
+  }
+  // Fallback 1: accumulation/distribution flow if the whale feed is missing.
+  if (signals && typeof signals.adNormalized === 'number') {
+    const score = cr(signals.adNormalized * 100)
+    return { available: true, score, note: `${flowLabel(score)} (flow estimate)` }
+  }
+  // Fallback 2: turnover-vs-momentum proxy from bulk fundamentals so the
+  // pillar always reads a value instead of "n/a".
+  if (fundamental && fundamental.marketCap > 0 && fundamental.totalVolume > 0) {
+    const turnover = fundamental.totalVolume / fundamental.marketCap
+    const dir = Math.sign(fundamental.change24h ?? fundamental.change30d ?? 0) || 1
+    const score = cr(Math.tanh(turnover / 0.08) * 45 * dir)
+    return { available: true, score, note: `${flowLabel(score)} (volume proxy)` }
+  }
+  return { available: false }
 }
 
 // ── Pillar 4: On-chain (flow + supply/turnover proxies) ──────────────────
@@ -189,9 +215,9 @@ const PILLAR_DEFS = [
 // Returns null only when no pillar has data.
 export function computeMagic({ ta, signals, fundamental } = {}) {
   const raw = {
-    technical: pillarTechnical(ta),
+    technical: pillarTechnical(ta, fundamental),
     volume: pillarVolume(signals, fundamental),
-    whales: pillarWhales(signals),
+    whales: pillarWhales(signals, fundamental),
     onchain: pillarOnchain(signals, fundamental),
     fundamental: pillarFundamental(fundamental),
   }

@@ -31,6 +31,199 @@ const money = (n) => {
   return '$' + (+n).toPrecision(4)
 }
 
+// ── Share-image generation (canvas) ───────────────────────────────────────
+// Rounded-rect path helper.
+function rr(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+// Render a single asset's analysis card to a square PNG canvas. We draw a
+// lettered coin badge (not the remote logo) to avoid tainting the canvas,
+// which would block toBlob()/toDataURL().
+function drawShareCard(canvas, item) {
+  const m = item.magic
+  const W = 1080, H = 1080, dpr = 2
+  canvas.width = W * dpr; canvas.height = H * dpr
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const accent = '#00e676'
+  const up = '#22c55e', down = '#ef4444'
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H)
+  bg.addColorStop(0, '#020f07'); bg.addColorStop(1, '#06160d')
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H)
+  rr(ctx, 40, 40, W - 80, H - 80, 40)
+  ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fill()
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,230,118,0.18)'; ctx.stroke()
+
+  const PAD = 84
+  // ── Header: coin badge + symbol/name ──
+  const sym = (item.coin_symbol || '?').toUpperCase()
+  ctx.save()
+  rr(ctx, PAD, 96, 92, 92, 24)
+  const badge = ctx.createLinearGradient(PAD, 96, PAD + 92, 188)
+  badge.addColorStop(0, accent); badge.addColorStop(1, '#00b35a')
+  ctx.fillStyle = badge; ctx.fill()
+  ctx.fillStyle = '#022'; ctx.font = '800 38px Inter, system-ui, sans-serif'
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.fillText(sym.slice(0, 4), PAD + 46, 144)
+  ctx.restore()
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = '#fff'; ctx.font = '800 52px Inter, system-ui, sans-serif'
+  ctx.fillText(sym, PAD + 116, 138)
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '400 30px Inter, system-ui, sans-serif'
+  ctx.fillText(item.coin_name || '', PAD + 116, 176)
+
+  // Price · change · weight
+  const chg = item.fundamental?.change24h
+  let px = PAD
+  ctx.font = '700 32px Inter, system-ui, sans-serif'; ctx.fillStyle = '#fff'
+  const priceStr = money(item.price)
+  ctx.fillText(priceStr, px, 250); px += ctx.measureText(priceStr).width + 22
+  if (chg != null) {
+    ctx.fillStyle = chg >= 0 ? up : down
+    const cstr = `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%`
+    ctx.fillText(cstr, px, 250); px += ctx.measureText(cstr).width + 22
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.fillText(`· ${item.weight.toFixed(1)}% of book`, px, 250)
+
+  // ── Verdict label + score ──
+  ctx.fillStyle = m.direction.color; ctx.font = '800 72px Inter, system-ui, sans-serif'
+  ctx.fillText(m.direction.label, PAD, 360)
+  ctx.textAlign = 'right'; ctx.font = '700 48px Inter, system-ui, sans-serif'
+  ctx.fillText(`${m.score > 0 ? '+' : ''}${m.score}`, W - PAD, 360)
+  ctx.textAlign = 'left'
+
+  // Diverging gauge track
+  const gx = PAD, gy = 400, gw = W - PAD * 2, gh = 16
+  const grad = ctx.createLinearGradient(gx, 0, gx + gw, 0)
+  grad.addColorStop(0, '#ef4444'); grad.addColorStop(0.5, '#9ca3af'); grad.addColorStop(1, '#22c55e')
+  rr(ctx, gx, gy, gw, gh, 8); ctx.fillStyle = grad; ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha = 1
+  const mpos = gx + ((m.score + 100) / 200) * gw
+  ctx.beginPath(); ctx.arc(mpos, gy + gh / 2, 18, 0, Math.PI * 2)
+  ctx.fillStyle = m.direction.color; ctx.shadowColor = m.direction.color; ctx.shadowBlur = 20; ctx.fill(); ctx.shadowBlur = 0
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '600 24px Inter, system-ui, sans-serif'
+  ctx.fillText('Distribute', gx, gy + 56)
+  ctx.textAlign = 'center'; ctx.fillText('Neutral', gx + gw / 2, gy + 56)
+  ctx.textAlign = 'right'; ctx.fillText('Accumulate', gx + gw, gy + 56)
+  ctx.textAlign = 'left'
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '400 28px Inter, system-ui, sans-serif'
+  ctx.fillText('Confidence ', PAD, gy + 116)
+  const cw = ctx.measureText('Confidence ').width
+  ctx.fillStyle = '#fff'; ctx.font = '700 28px Inter, system-ui, sans-serif'
+  ctx.fillText(`${m.confidence}%`, PAD + cw, gy + 116)
+
+  // ── Pillar bars ──
+  let py = 600
+  const barX = PAD + 220, barW = W - PAD * 2 - 220 - 110
+  for (const p of m.pillars) {
+    const avail = p.available
+    const s = avail ? p.score : 0
+    const color = !avail ? 'rgba(255,255,255,0.3)' : s >= 0 ? up : down
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '600 30px Inter, system-ui, sans-serif'
+    ctx.fillText(p.label, PAD, py + 8)
+    // track
+    rr(ctx, barX, py - 14, barW, 14, 7); ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fill()
+    // zero tick
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(barX + barW / 2 - 1, py - 18, 2, 22)
+    if (avail) {
+      const wpct = Math.min(0.5, Math.abs(s) / 200)
+      const fillW = wpct * barW
+      const fillL = s >= 0 ? barX + barW / 2 : barX + barW / 2 - fillW
+      rr(ctx, fillL, py - 14, Math.max(fillW, 4), 14, 7); ctx.fillStyle = color; ctx.fill()
+    }
+    ctx.textAlign = 'right'; ctx.fillStyle = color; ctx.font = '700 30px Inter, system-ui, sans-serif'
+    ctx.fillText(avail ? (s > 0 ? '+' + s : '' + s) : 'n/a', W - PAD, py + 8)
+    ctx.textAlign = 'left'
+    py += 66
+  }
+
+  // ── Footer brand ──
+  ctx.fillStyle = accent; ctx.font = '800 36px Inter, system-ui, sans-serif'
+  ctx.fillText('WalletLens', PAD, H - 96)
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '400 28px Inter, system-ui, sans-serif'
+  ctx.fillText('Track your portfolio free → walletlens.live', PAD, H - 60)
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '400 24px Inter, system-ui, sans-serif'
+  ctx.fillText('Magic Indicator · not financial advice', W - PAD, H - 60)
+  ctx.textAlign = 'left'
+}
+
+function tweetTextFor(item) {
+  const m = item.magic
+  const sym = (item.coin_symbol || '').toUpperCase()
+  const pills = m.pillars
+    .filter(p => p.available)
+    .map(p => `${p.label} ${p.score > 0 ? '+' : ''}${p.score}`)
+    .join(' · ')
+  return encodeURIComponent(
+    `$${sym} ${item.coin_name ? '— ' + item.coin_name : ''}\n` +
+    `Magic Indicator: ${m.direction.label} (${m.score > 0 ? '+' : ''}${m.score}) · ${m.confidence}% confidence\n\n` +
+    (pills ? pills + '\n\n' : '') +
+    `Tracked free & private with WalletLens → walletlens.live/?ref=share`
+  )
+}
+
+// ── Per-card "Share to X" button ───────────────────────────────────────────
+function ShareCardButton({ item }) {
+  const [sharing, setSharing] = useState(false)
+
+  async function share() {
+    if (sharing) return
+    setSharing(true)
+    track('magic_card_share_x', { symbol: item.coin_symbol })
+    const canvas = document.createElement('canvas')
+    try { drawShareCard(canvas, item) } catch { setSharing(false); return }
+
+    const sym = (item.coin_symbol || 'asset').toLowerCase()
+    const filename = `walletlens-${sym}.png`
+    let usedWebShare = false
+    try {
+      if (navigator.canShare) {
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+        if (blob) {
+          const file = new File([blob], filename, { type: 'image/png' })
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item)) })
+            usedWebShare = true
+          }
+        }
+      }
+    } catch (e) {
+      if (e?.name === 'AbortError') { setSharing(false); return }
+    }
+    if (!usedWebShare) {
+      // Desktop: download the image so the user can attach it, then open X compose.
+      try {
+        const dataUrl = canvas.toDataURL('image/png')
+        const a = document.createElement('a')
+        a.href = dataUrl; a.download = filename; a.click()
+      } catch {}
+      setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item)}`, '_blank', 'noopener'), 400)
+    }
+    setSharing(false)
+  }
+
+  return (
+    <button className="magic-share-btn" onClick={share} disabled={sharing}
+      title="Share this analysis on X (image included)" aria-label={`Share ${item.coin_symbol} analysis on X`}>
+      {sharing ? '…' : (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      )}
+      <span>Share</span>
+    </button>
+  )
+}
+
 // ── Diverging gauge (-100..100) ──────────────────────────────────────────
 function MagicGauge({ score, direction, confidence, big }) {
   const pos = ((score + 100) / 200) * 100
@@ -120,19 +313,26 @@ function AiVerdict({ item }) {
     else setState('error')
   }
 
-  if (state === 'idle') return <button className="magic-ai-btn" onClick={run}>✦ AI Verdict</button>
+  if (state === 'idle') return (
+    <button className="magic-ai-btn" onClick={run}>
+      <Icon name="search" size={15} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />Detailed Analysis
+    </button>
+  )
   if (state === 'loading') return <div className="magic-ai-loading">✦ Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
   if (state === 'error') {
     return (
       <div className="magic-ai-err">
-        AI verdict unavailable — the indicator above still reflects the full analysis.
+        Detailed analysis unavailable — the indicator above still reflects the full analysis.
         <button className="magic-ai-btn" style={{ marginLeft: '0.5rem' }} onClick={run}>Retry</button>
       </div>
     )
   }
   return (
     <div className="magic-ai-card">
-      <div className="magic-ai-head">✦ AI Verdict{verdict.direction ? <span className="magic-ai-dir">{verdict.direction}</span> : null}</div>
+      <div className="magic-ai-head">
+        <Icon name="search" size={16} style={{ verticalAlign: '-3px', marginRight: '0.35em' }} />Detailed Analysis
+        {verdict.direction ? <span className="magic-ai-dir">{verdict.direction}</span> : null}
+      </div>
       {verdict.oneLiner && <p className="magic-ai-line">{verdict.oneLiner}</p>}
       <div className="magic-ai-cols">
         {verdict.bull?.length > 0 && (
@@ -193,7 +393,10 @@ function AssetCard({ item, onOpen }) {
 
       <div className="magic-card-foot">
         <AiVerdict item={item} />
-        <button className="magic-detail-link" onClick={onOpen}>Full chart →</button>
+        <div className="magic-foot-actions">
+          <ShareCardButton item={item} />
+          <button className="magic-detail-link" onClick={onOpen}>Full chart →</button>
+        </div>
       </div>
     </div>
   )
