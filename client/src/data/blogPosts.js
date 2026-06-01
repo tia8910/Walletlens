@@ -1619,4 +1619,73 @@ You can explore it on the [Analysis tab](https://walletlens.live/technicals) —
 The Magic Indicator is not magic, and it does not claim to be. It is a disciplined way of doing what a careful analyst would do — weigh technicals, on-chain activity, volume, whale behaviour, and fundamentals together — but automated across every holding and condensed into one direction plus an honest confidence score. It will not tell you the future. What it will do is replace the impossible task of manually juggling five kinds of analysis per coin with a single, transparent reading you can use as one informed input into your own decisions.
     `
   },
+  {
+    slug: 'best-free-net-worth-tracker',
+    title: 'The Best Free Net Worth Tracker for 2026',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account options compare.',
+    content: `
+Your net worth is the single most important number in your financial life: everything you own minus everything you owe. Yet most people have no idea what it is on any given day, because their assets are scattered across a brokerage, a crypto exchange, a bank, and maybe some gold in a drawer. A net worth tracker fixes that by pulling every asset class into one view. This guide explains what a good net worth tracker does, what to look for, and how to track yours for free without handing your financial life to a third party.
+
+## What a Net Worth Tracker Actually Does
+
+A net worth tracker answers three questions that no single bank or brokerage app can:
+
+- **What am I worth right now?** One live number across every asset — crypto, equities, metals, cash.
+- **How is it allocated?** What share is in volatile assets versus stable ones, so you know your real risk.
+- **Is it growing?** Whether your net worth is trending up over time, which is the only scoreboard that matters long term.
+
+The key difference from a portfolio tracker is breadth. A portfolio tracker usually means crypto *or* stocks. A net worth tracker means **everything, together**.
+
+## What to Look For in a Net Worth Tracker
+
+Before picking a tool, judge it on these dimensions:
+
+- **Asset coverage.** Can it hold crypto, stocks and ETFs, precious metals, fiat cash, and FX? If it only does one or two, it is not a net worth tracker.
+- **Cost.** Many net worth tools (Kubera, Empower/Personal Capital tiers, CoinStats premium) charge a subscription or monetise your data. Is it genuinely free?
+- **Account & privacy.** Does it require a login and store your finances on its servers, or can it run privately on your device?
+- **Account linking.** Auto-linking your bank and brokerage is convenient but means a third party holds credentials to your accounts. Manual entry is more private and works for assets that cannot be linked (cold-storage crypto, physical gold).
+- **Allocation & analysis.** Does it just show a total, or does it break down allocation, risk, and trends?
+- **Export.** Can you get your data out if you leave?
+
+## The Trade-Off: Linked vs Local
+
+Most well-known net worth trackers rely on **account aggregation** — you connect your bank and brokerage via a service like Plaid, and balances update automatically. It is convenient, but it means your credentials and full financial picture sit on a third party's servers, and these tools almost always charge for the privilege.
+
+The alternative is a **local-first** tracker: you enter holdings yourself (or import them), and everything is stored only in your browser. You trade a little convenience for complete privacy and zero cost — and you can track assets that cannot be auto-linked anyway.
+
+## Tracking Your Net Worth Free With WalletLens
+
+[WalletLens](https://walletlens.live) is a free, no-account net worth tracker built around the local-first approach. In one dashboard it combines:
+
+- **Crypto** — Bitcoin, Ethereum, and thousands of other coins at live prices.
+- **Stocks & ETFs** — US equities and funds.
+- **Precious metals** — gold, silver, platinum.
+- **Cash & stablecoins** — treated as cash, not speculative positions, so your figures stay honest.
+- **FX** — balances in multiple currencies converted correctly.
+
+It shows a single live net-worth total, an allocation breakdown by category, and — because everything is local — none of it ever leaves your device. There is no account, no subscription, and no linking of your bank credentials. It is a Progressive Web App, so you can install it on your phone or desktop and it works offline with cached prices.
+
+On top of the raw number, WalletLens adds an on-device AI layer: a portfolio **health score**, a diversification grade, a risk scan, and a stress test — the kind of analysis that paid tools charge for, running privately on your holdings.
+
+## How to Calculate and Track Your Net Worth
+
+1. **List every asset.** Crypto, brokerage holdings, cash, gold — everything you own.
+2. **List every liability.** Loans, credit-card balances, mortgages.
+3. **Enter assets into a tracker.** In WalletLens, add each holding with its quantity and cost. You can type, speak ("I have 3 shares of VOO"), or import a CSV.
+4. **Subtract liabilities** to get true net worth, and note it.
+5. **Check monthly.** Net worth is a trend, not a snapshot — review it on a schedule and watch the direction.
+
+## Keep It Updated With Minimal Effort
+
+The reason most people abandon net worth tracking is the upkeep. WalletLens minimises it: live prices update your asset values automatically, voice and CSV import make adding holdings fast, and a one-click backup code lets you carry your data between devices without an account.
+
+> **Educational note:** A net worth tracker is an informational and planning tool, not financial advice. Live prices may differ slightly from your broker or exchange of record. Verify anything you act on.
+
+## Conclusion
+
+The best free net worth tracker is the one that covers every asset class you own, costs nothing, and respects your privacy. If you want automatic bank linking and do not mind paying, the subscription tools deliver that. But if you want to see your complete net worth — crypto, stocks, gold, and cash — in one free app that needs no account and keeps your financial life on your own device, a local-first tracker like WalletLens is built exactly for that. Start by listing what you own, put it all in one place, and check the trend each month. The clarity of knowing your real number, and watching it grow, is the foundation of every other financial decision you will make.
+    `
+  },
 ]

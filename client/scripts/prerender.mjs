@@ -120,11 +120,11 @@ function write(routePath, html) {
 
 // ── Homepage ─────────────────────────────────────────────────────────────────
 const homeBody = `
-<h1>WalletLens — Free All-Asset Portfolio Tracker</h1>
-<p>WalletLens is a free, private, browser-based portfolio tracker for <strong>crypto, US stocks, gold, silver, bonds, fiat and FX</strong> — all in one dashboard. No account, no subscription, and your data stays on your device.</p>
+<h1>WalletLens — Free Net Worth &amp; Portfolio Tracker</h1>
+<p>WalletLens is a free, private, browser-based <strong>net worth tracker and all-asset portfolio tracker</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one dashboard. It is a free tool for personal investment management: track and manage all your investments in one place, with no account, no subscription, and your data kept on your device.</p>
 <h2>What you can do with WalletLens</h2>
 <ul>
-<li><strong>Track every asset class</strong> in a single net-worth dashboard with live prices.</li>
+<li><strong>Track your whole net worth</strong> across every asset class in a single dashboard with live prices.</li>
 <li><strong>See your P&amp;L</strong> in dollars and percentage, broken down by asset and category.</li>
 <li><strong>AI portfolio analysis</strong> — health score, personalised Fear &amp; Greed gauge, stress tests, entry quality, and a rebalance planner, all computed on your device.</li>
 <li><strong>Multi-target sell plans</strong> — set price targets and the percentage of each holding to sell, with live progress bars.</li>
@@ -139,8 +139,8 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 `
 write('/', buildPage({
   path: '/',
-  title: 'WalletLens — Free All-Asset Portfolio Tracker | Crypto, Stocks, Gold, FX',
-  description: 'Track every asset in one lens — crypto, US stocks, gold, silver, fiat & FX. 100% free, no account, AI insights, multi-target sell plans. Your data stays on your device.',
+  title: 'WalletLens — Free Net Worth & Portfolio Tracker | Crypto, Stocks, Gold',
+  description: 'Track your entire net worth in one free app — crypto, US stocks, gold, silver, cash & FX. The free net worth tracker for managing all your investments in one place. No account, AI insights, data stays on your device.',
   bodyHtml: homeBody,
 }))
 
