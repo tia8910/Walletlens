@@ -1216,4 +1216,106 @@ For investors who do connect APIs elsewhere, the principles above — read-only 
 Connecting an exchange API to a portfolio tracker is not inherently dangerous, but it introduces real risks that most investors don't fully think through. The two biggest are storing sensitive credentials on third-party servers and inadvertently granting more permissions than a tracker actually needs. Read-only keys, IP whitelisting, and regular rotation go a long way — but the simplest solution is a local-first tracker that makes API connections unnecessary in the first place. Know what you're sharing, with whom, and why. Your portfolio security is worth the extra few minutes of due diligence.
     `
   },
+  {
+    slug: 'how-to-rebalance-crypto-stock-portfolio',
+    title: 'How to Rebalance a Crypto and Stock Portfolio (Step by Step)',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026.',
+    content: `
+Most investors spend a lot of energy picking assets and almost no energy maintaining them. You build a thoughtful mix of Bitcoin, equities, gold, and cash — and then the market moves, and six months later your "balanced" portfolio looks nothing like what you intended. That drift is normal. What separates disciplined investors from reactive ones is a rebalancing plan.
+
+Rebalancing is the process of selling a portion of what has grown and buying more of what has lagged, so your portfolio returns to its target allocation. It sounds simple. In practice, it requires good records, a clear target, and the emotional discipline to trim your winners. This guide walks through exactly how to do it.
+
+## What Is Portfolio Rebalancing (and Why Does It Matter)?
+
+When one asset rises sharply, its weight in your portfolio grows. If Bitcoin doubles while your stocks stay flat, crypto might balloon from 30% of your net worth to 55%. You did not choose 55% — you now have more risk than you planned for, and you probably do not realise it unless you are actively tracking allocations.
+
+Rebalancing corrects this in two ways:
+
+- **Risk control:** It prevents any single asset class from silently dominating your portfolio.
+- **Systematic discipline:** It forces you to sell high and buy low in a rules-based way, removing emotion from the decision.
+
+Research from Vanguard and others consistently shows that a simple annual rebalance outperforms a buy-and-hold-and-ignore approach on a risk-adjusted basis over long periods — not because it maximises returns, but because it keeps volatility in check.
+
+## Step 1 — Know Your Current Allocation
+
+Before you can rebalance, you need an honest picture of where you stand right now. This means adding up the current market value of every asset class: crypto, stocks and ETFs, gold and silver, real estate equity, and cash.
+
+Many investors underestimate how fragmented this is. Crypto lives on exchanges and wallets, stocks sit in a brokerage, gold might be a physical holding or an ETF, and savings are spread across accounts. Pulling all of this into one view manually is tedious — and errors mean your rebalance targets will be wrong.
+
+A tool like [walletlens.live](https://walletlens.live) was built for exactly this. It lets you track crypto (10,000+ assets with live prices), stocks, ETFs, gold, silver, real estate, and cash in a single net-worth dashboard, broken down by category. The allocation donut updates automatically as prices change, so you can see in seconds whether crypto is 30% or 55% of your portfolio. Everything stays in your browser — no account, no login, no data ever sent to a server.
+
+## Step 2 — Define Your Target Allocation
+
+Your target allocation is a personal decision based on your time horizon, income, and tolerance for volatility. There is no universally correct answer, but here are three example frameworks to give you a starting point:
+
+| Profile | Crypto | Stocks / ETFs | Gold / Silver | Cash |
+|---|---|---|---|---|
+| Conservative | 10% | 50% | 25% | 15% |
+| Balanced | 25% | 45% | 20% | 10% |
+| Aggressive | 50% | 35% | 10% | 5% |
+
+Write your target allocation down. It needs to exist outside your head, or you will second-guess it every time the market moves.
+
+> **Educational note:** This table is illustrative only. It is not financial advice. Your personal allocation should reflect your own circumstances and, where appropriate, guidance from a qualified adviser.
+
+## Step 3 — Calculate the Drift
+
+Once you have your current allocation and your target, the gap between them is your drift. A common rule of thumb is to rebalance when any single asset class drifts more than **5 percentage points** from its target. Some investors use 10 points for a less active approach.
+
+For example: your target for crypto is 25%, but live prices have pushed it to 38%. That is 13 points of drift — well past the 5-point threshold. Time to act.
+
+If you are tracking allocations in WalletLens, the category breakdown view shows your current weights at a glance. You can compare them against your written targets without needing a spreadsheet.
+
+## Step 4 — Calculate the Trades
+
+This is where people often stall. The maths sounds complicated, but it is straightforward.
+
+1. Note your **total portfolio value** (e.g. $80,000).
+2. Multiply each target percentage by that total to get the **target dollar value** per category.
+3. Subtract your current dollar value in each category to get the **trade size**.
+
+Example with a $80,000 portfolio:
+
+| Category | Target % | Target Value | Current Value | Action |
+|---|---|---|---|---|
+| Crypto | 25% | $20,000 | $30,400 | Sell $10,400 |
+| Stocks | 45% | $36,000 | $32,000 | Buy $4,000 |
+| Gold | 20% | $16,000 | $14,600 | Buy $1,400 |
+| Cash | 10% | $8,000 | $3,000 | Add $5,000 |
+
+In practice, you may not execute every trade at once — especially in crypto, where gas fees and spreads add up. It is perfectly reasonable to prioritise the largest drifts first.
+
+## Step 5 — Consider Taxes and Costs Before You Trade
+
+Rebalancing by selling winners can trigger a taxable event, depending on your jurisdiction and holding period. In many countries, assets held longer than 12 months qualify for preferential long-term capital gains treatment. If you are close to that threshold, waiting a few weeks before selling can meaningfully change your tax outcome.
+
+Similarly, frequent rebalancing in taxable accounts erodes returns through transaction costs and taxes. A few practical ways to minimise this:
+
+- **Rebalance inside tax-advantaged accounts** (ISAs, SIPPs, IRAs, superannuation) where possible.
+- **Direct new contributions** toward underweight categories instead of selling overweight ones. This is called "cash-flow rebalancing" and avoids triggering gains entirely.
+- **Use dividends or staking rewards** to top up underweight positions.
+
+> **Educational note:** Tax rules vary significantly by country and individual circumstance. Nothing here constitutes tax advice. Consult a qualified tax professional before making decisions with tax implications.
+
+## How Often Should You Rebalance?
+
+There are two schools of thought: **calendar-based** (rebalance on a set schedule, e.g. every six months) and **threshold-based** (rebalance only when drift exceeds a set limit, e.g. 5%).
+
+Research generally favours threshold-based rebalancing because it responds to actual market movements rather than an arbitrary date. However, calendar-based is easier to stick to for most people. A hybrid approach — check quarterly, rebalance only if drift exceeds 5% — combines the structure of a schedule with the efficiency of thresholds.
+
+In volatile markets like crypto, quarterly checks are the minimum. A 40% Bitcoin move in a single month can blow past any threshold quickly.
+
+## Tracking Your Rebalance Plan Over Time
+
+Rebalancing is not a one-time event. It is an ongoing practice. That means keeping records of your trades, your cost basis on each position, and your portfolio value at each rebalance date so you can see whether the discipline is paying off.
+
+WalletLens includes a built-in rebalance planner as part of its on-device AI analysis suite, alongside a portfolio health score and stress test. You can also log trades manually, via voice command ("I bought 2 shares of SPY at $540"), or by importing a CSV — and everything stays private in your browser with no cloud dependency. When you want a snapshot to return to later, you export a compact WLZ backup code and restore it in one click.
+
+## Conclusion
+
+Rebalancing is one of the most underrated habits in long-term investing. It will not make you rich overnight, but it will prevent your carefully chosen allocation from silently morphing into something you never intended. The process is repeatable: measure your current allocation, compare it to your target, calculate the trades, consider the tax angle, and execute the largest corrections first. Do this consistently — even just once or twice a year — and you stay in control of your risk regardless of what the market does. The investors who compound wealth steadily are rarely the ones who picked the best asset. They are the ones who maintained their plan when it was hardest to do so.
+    `
+  },
 ]
