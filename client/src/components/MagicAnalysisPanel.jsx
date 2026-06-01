@@ -171,8 +171,11 @@ async function drawShareCard(canvas, item) {
   const barX = PAD + 220, barW = W - PAD * 2 - 220 - 110
   for (const p of m.pillars) {
     const est = p.estimated
+    const proxy = p.quality === 'proxy'
     const s = p.score ?? 0
-    const color = est ? 'rgba(255,255,255,0.35)' : s >= 0 ? up : down
+    const color = est ? 'rgba(255,255,255,0.35)'
+      : proxy ? (s >= 0 ? '#6ee7b7' : '#fca5a5')
+      : s >= 0 ? up : down
     ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '600 30px Inter, system-ui, sans-serif'
     ctx.fillText(p.label, PAD, py + 8)
     // track
@@ -186,7 +189,7 @@ async function drawShareCard(canvas, item) {
       rr(ctx, fillL, py - 14, Math.max(fillW, 4), 14, 7); ctx.fillStyle = color; ctx.fill()
     }
     ctx.textAlign = 'right'; ctx.fillStyle = color; ctx.font = '700 30px Inter, system-ui, sans-serif'
-    ctx.fillText(`${s > 0 ? '+' + s : s}${est ? '*' : ''}`, W - PAD, py + 8)
+    ctx.fillText(`${s > 0 ? '+' + s : s}${est ? '*' : proxy ? '~' : ''}`, W - PAD, py + 8)
     ctx.textAlign = 'left'
     py += 66
   }
@@ -304,10 +307,16 @@ function PillarBars({ pillars }) {
     <div className="pillar-list">
       {pillars.map((p) => {
         const est = p.estimated
+        const proxy = p.quality === 'proxy'
         const s = p.score ?? 0
-        const color = est ? 'var(--text2)' : s >= 0 ? '#22c55e' : '#ef4444'
+        const color = est ? 'var(--text2)'
+          : proxy ? (s >= 0 ? '#6ee7b7' : '#fca5a5')   // muted = estimated from related data
+          : s >= 0 ? '#22c55e' : '#ef4444'
         const widthPct = Math.min(50, Math.abs(s) / 2)
-        const title = est ? `${PILLAR_INFO[p.key]} (estimated — live feed unavailable)` : PILLAR_INFO[p.key]
+        const marker = est ? '*' : proxy ? '~' : ''
+        const title = est ? `${PILLAR_INFO[p.key]} — no live data, shown neutral`
+          : proxy ? `${PILLAR_INFO[p.key]} — estimated from related data (live feed unavailable)`
+          : PILLAR_INFO[p.key]
         return (
           <div key={p.key} className="pillar-row" title={title}>
             <div className="pillar-name">{p.label}</div>
@@ -316,11 +325,11 @@ function PillarBars({ pillars }) {
               {!est && s !== 0 && (
                 <div
                   className="pillar-fill"
-                  style={{ background: color, width: `${widthPct}%`, left: s >= 0 ? '50%' : `${50 - widthPct}%` }}
+                  style={{ background: color, width: `${widthPct}%`, left: s >= 0 ? '50%' : `${50 - widthPct}%`, opacity: proxy ? 0.7 : 1 }}
                 />
               )}
             </div>
-            <div className="pillar-val" style={{ color }}>{s > 0 ? '+' + s : s}{est ? '*' : ''}</div>
+            <div className="pillar-val" style={{ color }}>{s > 0 ? '+' + s : s}{marker}</div>
           </div>
         )
       })}
@@ -544,6 +553,14 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
           <AssetCard key={item.coin_id} item={item} onOpen={() => navigate(`/asset/${item.coin_id}`)} />
         ))}
       </div>
+
+      {cryptoItems.some(it => it.magic?.pillars?.some(p => p.estimated || p.quality === 'proxy')) && (
+        <p className="muted" style={{ fontSize: '0.72rem', margin: '0.6rem 0.2rem 0' }}>
+          <b>~</b> estimated from related data and <b>*</b> shown neutral when a live feed is
+          temporarily unavailable (rate-limited). These count at reduced or zero weight, so the
+          headline reading stays driven by live data — values refresh automatically within the hour.
+        </p>
+      )}
 
       {nonCryptoCount > 0 && (
         <div className="glass-card" style={{ marginTop: '1rem', padding: '0.9rem 1.1rem' }}>

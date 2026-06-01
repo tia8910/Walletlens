@@ -28,18 +28,20 @@ export function pillarTechnical(ta, fundamental) {
     if (ta.macd?.cross) bits.push(`MACD ${ta.macd.cross}`)
     return {
       available: true,
+      quality: 'live',
       score: cr(ta.score),
       note: bits.join(' · ') || 'price structure',
     }
   }
   // Fallback: when the per-coin candle fetch is rate-limited, derive a
   // momentum-based technical read from 24h/30d price change so the pillar
-  // still shows a value instead of "n/a". Flagged as a proxy in the note.
+  // still shows a value. This is NOT true RSI/MACD analysis, so it's marked
+  // `proxy` and counts at reduced weight in the composite.
   if (fundamental && (typeof fundamental.change30d === 'number' || typeof fundamental.change24h === 'number')) {
     const c30 = fundamental.change30d ?? 0
     const c24 = fundamental.change24h ?? 0
     const score = cr(Math.tanh(c30 / 40) * 65 + Math.tanh(c24 / 12) * 35)
-    return { available: true, score, note: `price-momentum proxy (${c30 >= 0 ? '+' : ''}${Math.round(c30)}% 30d)` }
+    return { available: true, quality: 'proxy', score, note: `price-momentum proxy (${c30 >= 0 ? '+' : ''}${Math.round(c30)}% 30d)` }
   }
   return { available: false }
 }
@@ -81,6 +83,7 @@ export function pillarVolume(signals, fundamental) {
   const dirUp = score >= 0
   return {
     available: true,
+    quality: 'live', // turnover & pulse are real volume data
     score: cr(score),
     note: `${notes.join(' · ')}, ${dirUp ? 'confirming up' : 'on weakness'}`,
   }
@@ -96,20 +99,21 @@ export function pillarWhales(signals, fundamental) {
     'strong distribution'
 
   if (signals && typeof signals.whaleScore === 'number') {
-    return { available: true, score: cr(signals.whaleScore), note: flowLabel(signals.whaleScore) }
+    return { available: true, quality: 'live', score: cr(signals.whaleScore), note: flowLabel(signals.whaleScore) }
   }
-  // Fallback 1: accumulation/distribution flow if the whale feed is missing.
+  // Fallback 1: accumulation/distribution flow — this is the core component of
+  // the whale score, so it's a faithful read, not a loose proxy.
   if (signals && typeof signals.adNormalized === 'number') {
     const score = cr(signals.adNormalized * 100)
-    return { available: true, score, note: `${flowLabel(score)} (flow estimate)` }
+    return { available: true, quality: 'live', score, note: `${flowLabel(score)} (flow)` }
   }
-  // Fallback 2: turnover-vs-momentum proxy from bulk fundamentals so the
-  // pillar always reads a value instead of "n/a".
+  // Fallback 2: turnover×direction is only loosely related to whale flow, so
+  // it's marked `proxy` and counts at reduced weight in the composite.
   if (fundamental && fundamental.marketCap > 0 && fundamental.totalVolume > 0) {
     const turnover = fundamental.totalVolume / fundamental.marketCap
     const dir = Math.sign(fundamental.change24h ?? fundamental.change30d ?? 0) || 1
     const score = cr(Math.tanh(turnover / 0.08) * 45 * dir)
-    return { available: true, score, note: `${flowLabel(score)} (volume proxy)` }
+    return { available: true, quality: 'proxy', score, note: `${flowLabel(score)} (volume proxy)` }
   }
   return { available: false }
 }
@@ -152,7 +156,7 @@ export function pillarOnchain(signals, fundamental) {
   if (!parts.length) return { available: false }
   const wsum = parts.reduce((s, p) => s + p.w, 0)
   const score = parts.reduce((s, p) => s + p.v * p.w, 0) / wsum
-  return { available: true, score: cr(score), note: notes.join(' · ') }
+  return { available: true, quality: 'live', score: cr(score), note: notes.join(' · ') }
 }
 
 // ── Pillar 5: Fundamental ────────────────────────────────────────────────
@@ -192,7 +196,7 @@ export function pillarFundamental(fundamental) {
     s += clamp(Math.tanh(fundamental.change30d / 60) * 20, -20, 20)
   }
 
-  return { available: true, score: cr(s), note: notes.join(' · ') || 'market fundamentals' }
+  return { available: true, quality: 'live', score: cr(s), note: notes.join(' · ') || 'market fundamentals' }
 }
 
 // Direction label / colour / icon for a composite score.
@@ -229,35 +233,46 @@ export function computeMagic({ ta, signals, fundamental } = {}) {
   const pillars = PILLAR_DEFS.map((d) => {
     const r = raw[d.key]
     if (r.available) {
-      return { key: d.key, label: d.label, weight: d.weight, available: true, score: r.score, note: r.note, estimated: false }
+      return { key: d.key, label: d.label, weight: d.weight, available: true, score: r.score, note: r.note, quality: r.quality || 'live', estimated: false }
     }
     // Last-resort neutral so the row reads "0" instead of "n/a". Marked
-    // `estimated` so it's excluded from the composite score & confidence.
-    return { key: d.key, label: d.label, weight: d.weight, available: true, score: 0, note: 'limited data — neutral', estimated: true }
+    // `none`/`estimated` so it's excluded from the composite & confidence.
+    return { key: d.key, label: d.label, weight: d.weight, available: true, score: 0, note: 'limited data — neutral', quality: 'none', estimated: true }
   })
 
-  // Composite is built only from data-backed pillars (real + proxy), never
-  // from the neutral fillers, so confidence isn't inflated by missing feeds.
-  const basis = pillars.filter((p) => !p.estimated)
-  if (!basis.length) {
+  // Effective weight by data quality: live data at full weight, proxies (price
+  // momentum standing in for real TA, turnover standing in for whale flow) at
+  // half so the composite stays driven by genuine signals, neutral fillers at
+  // zero. This keeps the reading accurate and confidence honest.
+  const QW = { live: 1, proxy: 0.5, none: 0 }
+  const ew = (p) => p.weight * QW[p.quality]
+
+  const basis = pillars.filter((p) => p.quality !== 'none')
+  const ewsum = basis.reduce((s, p) => s + ew(p), 0)
+  if (!basis.length || ewsum <= 0) {
     return { score: 0, direction: directionMeta(0), confidence: 0, coverage: 0, pillars }
   }
 
-  const wsum = basis.reduce((s, p) => s + p.weight, 0)
-  const score = clamp(basis.reduce((s, p) => s + p.score * p.weight, 0) / wsum)
+  const score = clamp(basis.reduce((s, p) => s + p.score * ew(p), 0) / ewsum)
 
-  // Confidence: how much of the model is covered + how much the pillars agree
-  // with the composite direction.
-  const coverage = basis.length / PILLAR_DEFS.length
+  // Confidence: effective coverage of the model + how strongly the pillars
+  // agree with the composite direction (both weighted by data quality, so
+  // proxy-heavy reads report lower confidence).
+  const fullW = PILLAR_DEFS.reduce((s, d) => s + d.weight, 0)
+  const coverage = ewsum / fullW
   const compSign = Math.sign(score) || 1
   let agreeW = 0
   for (const p of basis) {
+    const w = ew(p)
     const ps = Math.sign(p.score)
-    if (Math.abs(p.score) < 8) agreeW += 0.5 * p.weight     // ~neutral: half credit
-    else if (ps === compSign) agreeW += p.weight
+    if (Math.abs(p.score) < 8) agreeW += 0.5 * w     // ~neutral: half credit
+    else if (ps === compSign) agreeW += w
   }
-  const agreement = agreeW / wsum
-  const confidence = round(100 * (0.35 * coverage + 0.65 * agreement))
+  const agreement = agreeW / ewsum
+  // Gate confidence by coverage so a single proxy pillar (which trivially
+  // "agrees" with itself) can't report high confidence — thin or proxy-heavy
+  // reads stay honestly low.
+  const confidence = round(100 * coverage * (0.4 + 0.6 * agreement))
 
   return {
     score: round(score),
