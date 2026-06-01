@@ -9,10 +9,10 @@ export default function About() {
       </header>
       <article className="doc-article">
         <h1>About WalletLens</h1>
-        <p className="doc-meta">The free, private, all-asset portfolio tracker</p>
+        <p className="doc-meta">The free, private net worth & all-asset portfolio tracker</p>
 
         <h2>What is WalletLens?</h2>
-        <p>WalletLens is a free, open-source portfolio tracker that lets you monitor all your investments — crypto, US stocks, gold, silver, fiat currencies, and bonds — in one unified dashboard. It runs entirely in your browser with no account, no server, and no subscription fee.</p>
+        <p>WalletLens is a free, open-source net worth tracker that lets you track and manage all your investments — crypto, US stocks, gold, silver, fiat currencies, cash, and bonds — in one unified dashboard. It is built for personal investment management: see your entire net worth in one place, running entirely in your browser with no account, no server, and no subscription fee.</p>
         <p>The name comes from the idea of a lens: a tool that brings distant, complex things into sharp focus. WalletLens does exactly that for your wealth.</p>
 
         <h2>Why We Built It</h2>

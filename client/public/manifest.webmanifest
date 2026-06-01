@@ -1,7 +1,7 @@
 {
-  "name": "WalletLens",
+  "name": "WalletLens — Net Worth & Portfolio Tracker",
   "short_name": "WalletLens",
-  "description": "Track crypto, gold, silver, US stocks, and bonds in one place.",
+  "description": "Free net worth tracker — manage all your investments in one place: crypto, US stocks, gold, silver, cash and FX. No account, private on your device.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
