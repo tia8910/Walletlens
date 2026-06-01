@@ -220,11 +220,11 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
 // ── About ────────────────────────────────────────────────────────────────────
 write('/about', buildPage({
   path: '/about',
-  title: 'About WalletLens — Free Private All-Asset Portfolio Tracker',
-  description: 'WalletLens is a free, private, browser-based portfolio tracker. No account, no server, no data collection. Track crypto, stocks, gold, silver, fiat and FX in one net-worth dashboard.',
+  title: 'About WalletLens — Free Net Worth & All-Asset Portfolio Tracker',
+  description: 'WalletLens is a free, private, browser-based net worth tracker for personal investment management. No account, no server, no data collection. Track your whole net worth — crypto, stocks, gold, silver, cash and FX — in one dashboard.',
   bodyHtml: `
 <h1>About WalletLens</h1>
-<p>WalletLens is a free, private portfolio tracker that runs entirely in your browser. No account, no email, no server — your holdings never leave your device.</p>
+<p>WalletLens is a free, private net worth tracker that runs entirely in your browser. It is a complete tool for personal investment management — track and manage every asset you own in one place — with no account, no email, and no server, so your holdings never leave your device.</p>
 <h2>What we built</h2>
 <p>A single dashboard for your entire net worth: crypto, US stocks &amp; ETFs, gold, silver, platinum, fiat currencies, bonds, and any other asset. Live prices, cost-basis tracking, P&amp;L, allocation donut, multi-target sell plans, and on-device AI analysis — all free, forever.</p>
 <h2>Why local-first?</h2>
