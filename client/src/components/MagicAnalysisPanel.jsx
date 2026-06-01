@@ -319,12 +319,16 @@ function tweetTextFor(item, verdict) {
     .map(p => `${p.label} ${p.score > 0 ? '+' : ''}${p.score}`)
     .join(' · ')
   const verdictLine = verdict?.oneLiner ? `\n${verdict.oneLiner}` : ''
+  // Top bull/bear point each — keeps the tweet readable while surfacing the
+  // detailed analysis in the text (the full set still goes in the image).
+  const bull = verdict?.bull?.[0] ? `\n✅ ${verdict.bull[0]}` : ''
+  const bear = verdict?.bear?.[0] ? `\n⚠️ ${verdict.bear[0]}` : ''
   const actionLine = verdict?.action ? `\n→ ${verdict.action}` : ''
   return encodeURIComponent(
     `$${sym} ${item.coin_name ? '— ' + item.coin_name : ''}\n` +
     `Magic Indicator: ${m.direction.label} (${m.score > 0 ? '+' : ''}${m.score}) · ${m.confidence}% confidence\n\n` +
     (pills ? pills + '\n' : '') +
-    verdictLine + actionLine + '\n\n' +
+    verdictLine + bull + bear + actionLine + '\n\n' +
     `Tracked free & private with WalletLens → walletlens.live/?ref=share`
   )
 }
