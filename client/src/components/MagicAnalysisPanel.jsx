@@ -291,6 +291,26 @@ async function drawShareCard(canvas, item, verdict) {
   ctx.textAlign = 'left'
 }
 
+// Build the payload sent to the AI verdict endpoint. Shared by the
+// "Detailed Analysis" button and the Share button (which auto-fetches).
+function buildVerdictPayload(item) {
+  return {
+    asset: { symbol: item.coin_symbol?.toUpperCase(), name: item.coin_name },
+    magic: { score: item.magic.score, direction: item.magic.direction.label, confidence: item.magic.confidence },
+    pillars: item.magic.pillars.filter(p => !p.estimated).map(p => ({ label: p.label, score: p.score, note: p.note })),
+    stats: {
+      rsi: item.ta?.rsi != null ? Math.round(item.ta.rsi) : undefined,
+      trend: item.ta?.trend,
+      macd: item.ta?.macd?.cross || (item.ta?.macd ? (item.ta.macd.hist > 0 ? 'positive' : 'negative') : undefined),
+      whaleScore: item.signals?.whaleScore,
+      marketCapRank: item.fundamental?.marketCapRank,
+      pctFromATH: item.fundamental?.athChangePct != null ? Math.round(item.fundamental.athChangePct) + '%' : undefined,
+      change30d: item.fundamental?.change30d != null ? Math.round(item.fundamental.change30d) + '%' : undefined,
+      pnlPct: Math.round(item.pnlPct) + '%',
+    },
+  }
+}
+
 function tweetTextFor(item, verdict) {
   const m = item.magic
   const sym = (item.coin_symbol || '').toUpperCase()
@@ -316,9 +336,16 @@ function ShareCardButton({ item, verdict }) {
   async function share() {
     if (sharing) return
     setSharing(true)
-    track('magic_card_share_x', { symbol: item.coin_symbol, hasVerdict: !!verdict })
+    // Auto-fetch the Detailed Analysis if the user hasn't run it yet, so the
+    // verdict is always included in the share. Uses the 1h cache → instant if
+    // already run; a failure just falls back to the indicator-only share.
+    let v = verdict
+    if (!v) {
+      try { v = await getAiVerdict(item.coin_id, buildVerdictPayload(item)) } catch {}
+    }
+    track('magic_card_share_x', { symbol: item.coin_symbol, hasVerdict: !!v })
     const canvas = document.createElement('canvas')
-    try { await drawShareCard(canvas, item, verdict) } catch { setSharing(false); return }
+    try { await drawShareCard(canvas, item, v) } catch { setSharing(false); return }
 
     const sym = (item.coin_symbol || 'asset').toLowerCase()
     const filename = `walletlens-${sym}.png`
@@ -329,7 +356,7 @@ function ShareCardButton({ item, verdict }) {
         if (blob) {
           const file = new File([blob], filename, { type: 'image/png' })
           if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item, verdict)) })
+            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item, v)) })
             usedWebShare = true
           }
         }
@@ -344,7 +371,7 @@ function ShareCardButton({ item, verdict }) {
         const a = document.createElement('a')
         a.href = dataUrl; a.download = filename; a.click()
       } catch {}
-      setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item, verdict)}`, '_blank', 'noopener'), 400)
+      setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item, v)}`, '_blank', 'noopener'), 400)
     }
     setSharing(false)
   }
@@ -436,22 +463,7 @@ function AiVerdict({ item, onVerdictReady }) {
     if (state === 'loading') return
     setState('loading')
     trackAI({ action: 'magic_ai_verdict', symbol: item.coin_symbol })
-    const payload = {
-      asset: { symbol: item.coin_symbol?.toUpperCase(), name: item.coin_name },
-      magic: { score: item.magic.score, direction: item.magic.direction.label, confidence: item.magic.confidence },
-      pillars: item.magic.pillars.filter(p => !p.estimated).map(p => ({ label: p.label, score: p.score, note: p.note })),
-      stats: {
-        rsi: item.ta?.rsi != null ? Math.round(item.ta.rsi) : undefined,
-        trend: item.ta?.trend,
-        macd: item.ta?.macd?.cross || (item.ta?.macd ? (item.ta.macd.hist > 0 ? 'positive' : 'negative') : undefined),
-        whaleScore: item.signals?.whaleScore,
-        marketCapRank: item.fundamental?.marketCapRank,
-        pctFromATH: item.fundamental?.athChangePct != null ? Math.round(item.fundamental.athChangePct) + '%' : undefined,
-        change30d: item.fundamental?.change30d != null ? Math.round(item.fundamental.change30d) + '%' : undefined,
-        pnlPct: Math.round(item.pnlPct) + '%',
-      },
-    }
-    const v = await getAiVerdict(item.coin_id, payload)
+    const v = await getAiVerdict(item.coin_id, buildVerdictPayload(item))
     if (v) {
       setVerdict(v)
       setState('done')
