@@ -267,7 +267,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
     track('weekly_report_share_x')
     const up = stats?.weekChange >= 0
     const text = encodeURIComponent(
-      `My crypto portfolio week: ${up ? '📈' : '📉'} ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with @walletlenss — free, private, no account.\n\nwalletlens.live #WalletLens`
+      `My crypto portfolio week: ${up ? '📈' : '📉'} ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with WalletLens — free, private, no account.\n\nwalletlens.live #WalletLens`
     )
     try {
       if (navigator.canShare) {

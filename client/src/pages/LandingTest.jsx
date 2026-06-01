@@ -174,7 +174,6 @@ const FOOTER_LINKS = [
   { label: 'Blog',           href: '/blog' },
   { label: 'Privacy',        href: '/privacy' },
   { label: 'Terms',          href: '/terms' },
-  { label: '@walletlenss',   href: 'https://x.com/walletlenss', external: true },
 ]
 
 /* ── Hooks ── */
