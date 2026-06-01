@@ -78,8 +78,6 @@ self.addEventListener('fetch', e => {
   }
 
   // ── Hashed assets (/assets/): cache-first (content-hash guarantees immutability)
-  // Files under /assets/ are Vite-hashed — a new deploy produces new filenames,
-  // so a cached response is always correct and network re-validation is wasted work.
   if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
     e.respondWith(
       caches.open(STATIC).then(async cache => {
