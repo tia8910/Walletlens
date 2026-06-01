@@ -14,7 +14,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
-import { TRACK_COINS } from '../src/data/trackCoins.js'
+import { TRACK_COINS, TRACK_STOCKS, TRACK_METALS, ALL_TRACK_ASSETS } from '../src/data/trackCoins.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -171,9 +171,17 @@ const homeBody = `
 <li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
 <li><strong>Private by design</strong> — manual entry with local-first storage; no exchange API keys required.</li>
 </ul>
-<h2>Track popular coins free</h2>
+<h2>Track popular cryptocurrencies free</h2>
 <ul>
 ${TRACK_COINS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Track US stocks &amp; ETFs free</h2>
+<ul>
+${TRACK_STOCKS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Track precious metals free</h2>
+<ul>
+${TRACK_METALS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
 </ul>
 <h2>Guides &amp; articles</h2>
 <ul>
@@ -251,47 +259,127 @@ write('/free-net-worth-tracker', buildPage({
   ],
 }))
 
-// ── Per-coin landing pages (/track/:slug) ────────────────────────────────────
-// Programmatic SEO: one focused page per top coin targeting "[coin] portfolio
-// tracker" / "track [coin] free" searches. Each is distinct (unique blurb, FAQ,
-// title) to avoid thin/doorway-content penalties.
-for (const c of TRACK_COINS) {
-  const coinBody = `
-<h1>Track ${esc(c.name)} (${esc(c.symbol)}) — Free, No Account</h1>
-<p>Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.</p>
+// ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
+// Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
+// tracker" / "track [asset] free" searches. Covers crypto, US stocks/ETFs, and
+// precious metals. Each is distinct (unique blurb, FAQ, title) to avoid
+// thin/doorway-content penalties.
+for (const c of ALL_TRACK_ASSETS) {
+  const isStock = c.type === 'stock'
+  const isMetal = c.type === 'metal'
+  const isCrypto = !isStock && !isMetal
+
+  const heroTitle = isStock
+    ? `Track ${esc(c.name)} Stock (${esc(c.symbol)}) — Free, No Account`
+    : isMetal
+    ? `Track ${esc(c.name)} Price (${esc(c.symbol)}) — Free, No Account`
+    : `Track ${esc(c.name)} (${esc(c.symbol)}) — Free, No Account`
+
+  const heroPara = isStock
+    ? `Add ${esc(c.name)} shares to your free WalletLens portfolio and watch the live price, your cost basis, and your profit/loss update automatically — alongside your crypto and other investments. No sign-up needed and your data stays on your device.`
+    : isMetal
+    ? `Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price per ounce, your cost basis, and your profit/loss update automatically — alongside your crypto, stocks and other assets. No sign-up needed and your data stays on your device.`
+    : `Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.`
+
+  const whatHeading = isStock ? `What is ${esc(c.name)} stock?` : `What is ${esc(c.name)}?`
+
+  const tradeWord = isStock ? 'position' : isMetal ? 'holding' : 'trade'
+
+  const sideByBullet = isStock
+    ? `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your crypto, gold and cash in a single net-worth view.</li>`
+    : isMetal
+    ? `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your crypto, stocks and cash in a single net-worth view.</li>`
+    : `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your other crypto, stocks, gold and cash in a single net-worth view.</li>`
+
+  const privacyBullet = isStock
+    ? `<li><strong>No brokerage login needed</strong> — enter holdings manually; your data stays on your device.</li>`
+    : isMetal
+    ? `<li><strong>No dealer login needed</strong> — enter your holdings manually; your data stays on your device.</li>`
+    : `<li><strong>Private by design</strong> — your holdings never leave your device; no exchange API keys required.</li>`
+
+  const aiBullet = isCrypto
+    ? `<li><strong>AI analysis</strong> — a health score, risk scan and the Magic Indicator direction for ${esc(c.symbol)}.</li>`
+    : `<li><strong>AI portfolio health score</strong> — see how your ${esc(c.symbol)} position affects your overall portfolio.</li>`
+
+  const addStep = isStock
+    ? `Add ${esc(c.symbol)} shares with the quantity and your average cost per share.`
+    : isMetal
+    ? `Add ${esc(c.symbol)} with your quantity in ounces and the price you paid.`
+    : `Add a ${esc(c.symbol)} trade with the amount and price you paid.`
+
+  const pageTitle = isStock
+    ? `Track ${c.name} Stock (${c.symbol}) Free — No Account | WalletLens`
+    : isMetal
+    ? `Track ${c.name} (${c.symbol}) Price Free — No Account | WalletLens`
+    : `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`
+
+  const pageDesc = isStock
+    ? `Track your ${c.name} (${c.symbol}) shares free on WalletLens — live price, cost basis and P&L alongside your whole net worth. No account, no brokerage login, data stays on your device.`
+    : isMetal
+    ? `Track your ${c.name} (${c.symbol}) holdings free on WalletLens — live price per ounce, cost basis and P&L alongside your whole net worth. No account needed, data stays on your device.`
+    : `Track ${c.name} (${c.symbol}) for free with WalletLens — live price, cost basis and profit/loss, alongside your whole net worth. No account, no wallet connection, data stays on your device.`
+
+  const faq1q = isStock
+    ? `How can I track ${c.name} stock for free?`
+    : isMetal
+    ? `How can I track my ${c.name} holdings for free?`
+    : `How can I track ${c.name} for free?`
+
+  const faq1a = isStock
+    ? `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker with no account needed. Enter your share count and cost basis and it tracks the live price, your P&L, and your position's weight in your net worth automatically.`
+    : isMetal
+    ? `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker with no account needed. Enter your ounces and the price you paid, and it tracks the live price per ounce, your cost basis and P&L automatically, stored privately on your device.`
+    : `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker that needs no account. Enter your ${c.symbol} trades and it tracks live price, cost basis and profit/loss automatically, with your data stored privately on your device.`
+
+  const faq2q = isStock
+    ? `Can I see my ${c.symbol} shares alongside my crypto holdings?`
+    : isMetal
+    ? `Can I track ${c.name} alongside my crypto and stocks?`
+    : `Can I track ${c.symbol} without connecting my wallet or exchange?`
+
+  const faq2a = isStock
+    ? `Yes. WalletLens is a full net worth tracker — it shows ${c.symbol} shares alongside your crypto, gold, cash and other assets in a single live dashboard, with no brokerage connection required.`
+    : isMetal
+    ? `Yes. WalletLens combines every asset class — crypto, stocks, precious metals, cash and FX — in one free dashboard. Your ${c.name} holdings appear next to your other assets with a live net-worth total.`
+    : `Yes. WalletLens uses manual or imported entry, so you never connect a wallet or share exchange API keys. You add your ${c.symbol} holdings and it values them with live prices.`
+
+  const assetBody = `
+<h1>${heroTitle}</h1>
+<p>${heroPara}</p>
 <p><a href="/dashboard">Track ${esc(c.symbol)} free →</a> · <a href="/asset/${esc(c.id)}">View ${esc(c.symbol)} analysis</a></p>
-<h2>What is ${esc(c.name)}?</h2>
+<h2>${whatHeading}</h2>
 <p>${esc(c.name)} (${esc(c.symbol)}) is ${esc(c.blurb)}</p>
 <h2>Why track ${esc(c.symbol)} with WalletLens?</h2>
 <ul>
 <li><strong>100% free</strong> — no account, no subscription, no ads.</li>
-<li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every trade you log.</li>
-<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your other crypto, stocks, gold and cash in a single net-worth view.</li>
-<li><strong>Private by design</strong> — your holdings never leave your device; no exchange API keys required.</li>
-<li><strong>AI analysis</strong> — a health score, risk scan and the Magic Indicator direction for ${esc(c.symbol)}.</li>
+<li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every ${tradeWord} you log.</li>
+${sideByBullet}
+${privacyBullet}
+${aiBullet}
 </ul>
 <h2>How to track ${esc(c.name)} for free</h2>
 <ol>
 <li>Open WalletLens — no account or email needed.</li>
-<li>Add a ${esc(c.symbol)} trade with the amount and price you paid.</li>
+<li>${addStep}</li>
 <li>Watch your ${esc(c.name)} value, P&amp;L and allocation update with live prices.</li>
 </ol>
 <p><a href="/dashboard">Add ${esc(c.symbol)} to your portfolio →</a></p>
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a></p>`
+
   write('/track/' + c.slug, buildPage({
     path: '/track/' + c.slug,
-    title: `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`,
-    description: `Track ${c.name} (${c.symbol}) for free with WalletLens — live price, cost basis and profit/loss, alongside your whole net worth. No account, no wallet connection, data stays on your device.`,
-    bodyHtml: coinBody,
+    title: pageTitle,
+    description: pageDesc,
+    bodyHtml: assetBody,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
         mainEntity: [
-          { '@type': 'Question', name: `How can I track ${c.name} for free?`,
-            acceptedAnswer: { '@type': 'Answer', text: `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker that needs no account. Enter your ${c.symbol} trades and it tracks live price, cost basis and profit/loss automatically, with your data stored privately on your device.` } },
-          { '@type': 'Question', name: `Can I track ${c.symbol} without connecting my wallet or exchange?`,
-            acceptedAnswer: { '@type': 'Answer', text: `Yes. WalletLens uses manual or imported entry, so you never connect a wallet or share exchange API keys. You add your ${c.symbol} holdings and it values them with live prices.` } },
+          { '@type': 'Question', name: faq1q,
+            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
+          { '@type': 'Question', name: faq2q,
+            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
         ],
       },
       {
@@ -305,7 +393,7 @@ for (const c of TRACK_COINS) {
     ],
   }))
 }
-console.log(`Prerendered ${TRACK_COINS.length} /track coin pages.`)
+console.log(`Prerendered ${ALL_TRACK_ASSETS.length} /track asset pages (${TRACK_COINS.length} crypto, ${TRACK_STOCKS.length} stocks, ${TRACK_METALS.length} metals).`)
 
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
@@ -478,12 +566,12 @@ function urlEntry({ loc, lastmod, changefreq, priority }) {
 }
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
-  ...TRACK_COINS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
+  ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + TRACK_COINS.length + POSTS.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
