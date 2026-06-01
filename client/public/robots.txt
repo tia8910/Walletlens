@@ -59,3 +59,5 @@ Sitemap: https://walletlens.live/sitemap.xml
 # LLM/AI guide — see https://llmstxt.org
 # WalletLens overview for AI models / answer engines:
 # https://walletlens.live/llms.txt
+# Full article corpus for AI ingestion:
+# https://walletlens.live/llms-full.txt
