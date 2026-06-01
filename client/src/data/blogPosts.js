@@ -1318,4 +1318,137 @@ WalletLens includes a built-in rebalance planner as part of its on-device AI ana
 Rebalancing is one of the most underrated habits in long-term investing. It will not make you rich overnight, but it will prevent your carefully chosen allocation from silently morphing into something you never intended. The process is repeatable: measure your current allocation, compare it to your target, calculate the trades, consider the tax angle, and execute the largest corrections first. Do this consistently — even just once or twice a year — and you stay in control of your risk regardless of what the market does. The investors who compound wealth steadily are rarely the ones who picked the best asset. They are the ones who maintained their plan when it was hardest to do so.
     `
   },
+  {
+    slug: 'best-free-crypto-portfolio-tracker-no-account',
+    title: 'Best Free Crypto Portfolio Trackers With No Account (2026)',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'A practical comparison of free crypto portfolio trackers you can use without creating an account — the privacy trade-offs, what to look for, and how the no-signup options actually differ.',
+    content: `
+If you search for a crypto portfolio tracker, you will find dozens of apps. Almost all of them ask for the same thing before you can do anything useful: an email address, a password, and often read-access to your exchange accounts. For something as sensitive as your net worth, that is a lot to hand over just to watch a number go up and down.
+
+This guide compares the realistic options for tracking a crypto portfolio **for free and without an account**, explains the trade-offs of each category, and gives you a checklist to judge any tracker yourself.
+
+## What "No Account" Actually Means
+
+"No account" is not just a convenience feature — it is a privacy decision. When a tracker requires sign-up, it creates a permanent record linking your identity (your email) to your holdings on a company's servers. If that company is breached, sold, or subpoenaed, your financial data is part of the package.
+
+A true no-account tracker stores your portfolio **locally on your device** — in the browser's IndexedDB or local storage — so there is no server-side profile of you to leak in the first place. The trade-off is that you are responsible for your own backup, since there is no cloud copy.
+
+## What to Look For in a Free Tracker
+
+Use this checklist to evaluate any portfolio tracker, free or paid:
+
+- **Real cost.** Is it free forever, or a limited trial that locks the useful features (history, tax export, multi-portfolio) behind a subscription?
+- **Account requirement.** Can you start tracking immediately, or must you register first?
+- **Where data lives.** On your device, or on the provider's servers? Read the privacy policy, not the marketing page.
+- **Exchange connection.** Does it ask for API keys? Read-only keys are safer than full-access, but the safest option is no connection at all.
+- **Asset coverage.** Crypto only, or can it also hold your stocks, gold, and cash for a complete net-worth picture?
+- **Export & backup.** Can you get your data out in a portable format if you ever want to leave?
+
+## The Three Main Categories
+
+**1. Exchange-native trackers.** Binance, Coinbase, and other exchanges show a portfolio view for assets held *on that exchange*. They are free and accurate, but they only see one venue and they obviously require an account with that exchange. Useless for cold storage or multi-exchange users.
+
+**2. Cloud aggregators.** Apps like CoinStats, Delta, and CoinMarketCap's portfolio sync across exchanges and wallets. They are powerful, but the free tiers are limited, they require an account, and the convenient "auto-sync" works by storing your API keys or wallet addresses on their servers.
+
+**3. Local-first apps.** A smaller category that stores everything in your browser and requires no account. You enter holdings manually (or by import), and the app fetches live prices to calculate value and P&L. This is the most private approach and the one that is genuinely free, because there is no server cost for the provider to recoup.
+
+## Privacy: Where Your Data Lives
+
+The single most important question is: *after I enter my holdings, who else can see them?* With exchange-native and cloud-aggregator tools, the answer is "the provider, and anyone who breaches them." With a local-first tool, the answer is "only you, on this device."
+
+This is the core reason the no-account category exists. It is not about laziness — it is about not creating a honeypot of net-worth data tied to your name.
+
+## How WalletLens Fits In
+
+[WalletLens](https://walletlens.live) is a local-first, no-account tracker in the third category. There is no sign-up, no email, and no exchange connection. You open the site, add your holdings, and it calculates your live value, P&L, and allocation — with all data stored only in your browser.
+
+A few things that set it apart from most free trackers:
+
+- **It is genuinely free** — no paid tier, no feature locks, no ads on the app.
+- **It tracks more than crypto** — Bitcoin and altcoins alongside US stocks, gold, silver, fiat, and FX, so you see one true net-worth number.
+- **It includes on-device AI analysis** — a portfolio health score, risk scan, and the [Magic Indicator](https://walletlens.live/technicals) direction per holding, computed without sending your holdings anywhere.
+- **Backup is a portable code** — you export a compact WLZ string and restore it on any device, so local-first does not mean you can lose everything.
+
+It is a Progressive Web App, so you can install it on iOS, Android, or desktop like a native app, and cached prices keep working offline.
+
+## How to Start Without an Account
+
+1. Open [walletlens.live](https://walletlens.live) in any browser.
+2. Create a wallet (name it after an exchange or "Cold storage").
+3. Add each holding with the quantity, buy price, and date.
+4. Open the AI tab once you have a few holdings for a health score and risk read.
+5. Export a backup code from settings so you never lose your data.
+
+That is the entire flow — no inbox confirmation, no API keys, no credit card.
+
+> **Educational note:** Portfolio trackers are informational tools, not financial advice. Always verify balances against your exchange or wallet of record, and keep an independent backup of any holdings you rely on.
+
+## Conclusion
+
+The best free crypto portfolio tracker for you depends on what you value. If you only trade on one exchange and trust it with your data, the exchange's own view is fine. If you want cross-exchange auto-sync and do not mind a subscription, a cloud aggregator earns its fee. But if you want something that is genuinely free, requires no account, keeps your data on your own device, and tracks every asset class in one place, a local-first app like WalletLens is built precisely for that. Whichever you choose, run it through the checklist above — the right answer is the one whose privacy and cost model you would still be comfortable with after reading the fine print.
+    `
+  },
+  {
+    slug: 'track-crypto-and-stocks-in-one-app',
+    title: 'How to Track Crypto and Stocks Together in One Portfolio',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'Most people hold crypto, stocks, and some cash or gold — but track each in a separate app and never see the whole picture. Here is how to view your true net worth across every asset class in one place.',
+    content: `
+A typical modern portfolio is not just crypto. It is some Bitcoin and Ethereum, a few shares of an index fund or individual stocks, maybe some gold, and a cash buffer in the bank. The problem is that almost every tracking tool specialises in exactly one of these. So you end up checking a crypto app, a brokerage app, and a banking app — and you never actually see your total net worth in a single number.
+
+This guide explains why a unified, all-asset view matters and how to build one in a single app.
+
+## Why Most People Track Assets in Silos
+
+The tools are built in silos because the data sources are. Crypto prices come from exchanges and aggregators; stock prices come from market-data providers; metals and FX come from yet other feeds. Most apps integrate one source and call it done. The result is that your "portfolio" is really three or four disconnected portfolios, and the most important question — *how much am I actually worth, and how is it allocated?* — has no single answer.
+
+## The Case for a Single Net-Worth View
+
+Seeing everything together changes the decisions you make:
+
+- **True allocation.** You might feel diversified because you own ten coins — but if crypto is 90% of your net worth and your "diversification" is all within that 90%, you are far more concentrated than you think. Only an all-asset view reveals this.
+- **Real risk.** Volatility in a $5,000 crypto bag means something very different if your total net worth is $20,000 versus $500,000. Context requires the whole picture.
+- **Better rebalancing.** You cannot rebalance across asset classes you cannot see side by side. A unified view is the prerequisite for moving between crypto, equities, and cash deliberately.
+
+## What a Unified Tracker Needs to Handle
+
+To genuinely combine asset classes, a tracker has to:
+
+- Price **cryptocurrencies** (thousands of coins, 24/7 markets).
+- Price **equities and ETFs** (Apple, Tesla, index funds — markets that close on weekends).
+- Price **precious metals** (gold, silver, platinum) per ounce or gram.
+- Handle **fiat and FX** so cash balances in different currencies convert correctly.
+- Treat **stablecoins as cash**, not as speculative positions, so your P&L is not distorted.
+
+Few tools do all five. The ones that do let you finally answer the net-worth question.
+
+## The Allocation Question
+
+Once everything is in one place, the natural follow-up is: *what mix should I hold?* There is no universal answer, but a common framework is to decide a target weight for each category — for example, a majority in diversified equities, a smaller satellite allocation to crypto sized so that a large drawdown would not derail your plans, and a cash buffer for opportunities and emergencies. The specific numbers depend entirely on your timeline and risk tolerance. The point of a unified tracker is not to pick those numbers for you, but to show you what your *current* mix actually is so you can compare it to your intended one.
+
+## Setting It Up in One App
+
+[WalletLens](https://walletlens.live) is built around this all-asset idea. In one dashboard you can hold crypto, US stocks and ETFs, gold and silver, fiat, and FX, and it shows a single live net-worth figure with a breakdown by category.
+
+1. Open [walletlens.live](https://walletlens.live) — no account needed.
+2. Add a crypto holding (search any of thousands of coins), then a stock (e.g. "AAPL"), then a metal or cash balance.
+3. Watch the dashboard combine them into one net-worth total, with allocation by category.
+4. Open the AI analysis for a diversification grade and risk read across the whole portfolio — not just the crypto slice.
+
+Because everything is stored locally in your browser, there is no account and no server holding your financial data.
+
+## Keeping It Updated
+
+The friction with manual trackers is data entry. WalletLens reduces it three ways: type a trade in plain language, **speak it by voice** ("I bought two shares of SPY at 540"), or **import a CSV** of your transaction history from an exchange or broker. For one-off snapshots you can also import a screenshot of your holdings and let AI read it into reviewable trades. Once entered, prices update automatically.
+
+> **Educational note:** Combining asset classes in one view is for clarity and planning. It is not investment advice, and live prices can lag or differ from your broker or exchange of record. Verify anything you act on.
+
+## Conclusion
+
+Your net worth is not "my crypto" plus a vague sense of "some stocks somewhere." It is one number, made of several asset classes, with a real allocation you should be able to see at a glance. Tracking crypto and stocks — and gold and cash — together is the only way to know whether you are actually diversified, actually taking the risk you intend, and actually on track. Pick a tool that handles every asset class you own, put them all in one place, and check the combined view regularly. The clarity is worth far more than the few minutes it takes to set up.
+    `
+  },
 ]
