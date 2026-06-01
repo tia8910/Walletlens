@@ -1,0 +1,42 @@
+name: Post YouTube Drafts
+
+# One-click poster: reads the latest open YouTube promo issue and posts all reply drafts.
+# Required secrets: YOUTUBE_OAUTH_CLIENT_ID, YOUTUBE_OAUTH_CLIENT_SECRET, YOUTUBE_OAUTH_REFRESH_TOKEN
+# See promo/README.md for YouTube OAuth setup.
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to post from (blank = latest open YouTube promo issue)'
+        required: false
+        default: ''
+      skip_drafts:
+        description: 'Draft numbers to skip, comma-separated (e.g. "3,7")'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Post YouTube drafts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          YOUTUBE_OAUTH_CLIENT_ID: ${{ secrets.YOUTUBE_OAUTH_CLIENT_ID }}
+          YOUTUBE_OAUTH_CLIENT_SECRET: ${{ secrets.YOUTUBE_OAUTH_CLIENT_SECRET }}
+          YOUTUBE_OAUTH_REFRESH_TOKEN: ${{ secrets.YOUTUBE_OAUTH_REFRESH_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          SKIP_DRAFTS: ${{ inputs.skip_drafts }}
+        run: node promo/post-youtube-drafts.mjs

@@ -1,0 +1,43 @@
+name: Post Reddit Drafts
+
+# One-click poster: reads the latest open Reddit promo issue and posts all reply drafts.
+# Required secrets: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD
+# See promo/README.md for Reddit app setup.
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to post from (blank = latest open Reddit promo issue)'
+        required: false
+        default: ''
+      skip_drafts:
+        description: 'Draft numbers to skip, comma-separated (e.g. "2,4")'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Post Reddit drafts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          SKIP_DRAFTS: ${{ inputs.skip_drafts }}
+        run: node promo/post-reddit-drafts.mjs

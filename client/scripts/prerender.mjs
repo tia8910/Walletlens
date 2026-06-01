@@ -90,13 +90,13 @@ function buildPage({ path, title, description, bodyHtml, jsonLd }) {
   const url = ORIGIN + path
   let html = template
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
-  html = html.replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(description)}$2`)
-  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${esc(url)}$2`)
-  html = html.replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
-  html = html.replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
-  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${esc(url)}$2`)
-  html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
-  html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
+  html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         `$1${esc(url)}$2`)
+  html = html.replace(/(<meta property="og:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
+  html = html.replace(/(<meta property="og:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    `$1${esc(url)}$2`)
+  html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
+  html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
     const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>`).join('\n')
@@ -217,23 +217,81 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
   }))
 }
 
-console.log(`\nPrerendered ${POSTS.length + 2} content pages into dist/.`)
+// ── About ────────────────────────────────────────────────────────────────────
+write('/about', buildPage({
+  path: '/about',
+  title: 'About WalletLens — Free Private All-Asset Portfolio Tracker',
+  description: 'WalletLens is a free, private, browser-based portfolio tracker. No account, no server, no data collection. Track crypto, stocks, gold, silver, fiat and FX in one net-worth dashboard.',
+  bodyHtml: `
+<h1>About WalletLens</h1>
+<p>WalletLens is a free, private portfolio tracker that runs entirely in your browser. No account, no email, no server — your holdings never leave your device.</p>
+<h2>What we built</h2>
+<p>A single dashboard for your entire net worth: crypto, US stocks &amp; ETFs, gold, silver, platinum, fiat currencies, bonds, and any other asset. Live prices, cost-basis tracking, P&amp;L, allocation donut, multi-target sell plans, and on-device AI analysis — all free, forever.</p>
+<h2>Why local-first?</h2>
+<p>Every portfolio tracker we tried asked us to hand over our holdings to a server, connect exchange API keys, or create an account. We didn't want to make that trade-off. WalletLens stores your data in your browser's localStorage and exports it as a single encrypted backup code you control.</p>
+<h2>Privacy by design</h2>
+<p>There is no backend database. There is no login because there is nothing to log into. The only external calls are to public price APIs (CoinGecko, Binance, Stooq, Gold-API) and, optionally, the Anthropic API for AI analysis — both are called directly from your browser with no intermediary server.</p>
+<p><a href="/dashboard">Open the dashboard</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a></p>
+`,
+}))
+
+// ── Privacy ──────────────────────────────────────────────────────────────────
+write('/privacy', buildPage({
+  path: '/privacy',
+  title: 'Privacy Policy — WalletLens',
+  description: 'WalletLens privacy policy. Your portfolio data is stored locally in your browser. No server, no account, no data collection.',
+  bodyHtml: `
+<h1>Privacy Policy</h1>
+<p><em>Effective: January 2025</em></p>
+<h2>Data we do not collect</h2>
+<p>WalletLens does not collect, store, or transmit any personal data or portfolio information. There is no account, no login, no database, and no server that receives your holdings.</p>
+<h2>Local storage</h2>
+<p>All portfolio data (trades, targets, wallet names) is stored in your browser's <code>localStorage</code>. It never leaves your device except when you explicitly export a backup code, which you copy yourself.</p>
+<h2>External API calls</h2>
+<p>To display live prices, WalletLens calls public APIs directly from your browser: CoinGecko, Binance, CoinCap, Stooq, Gold-API, and open exchange-rate APIs. These calls contain no personal information.</p>
+<h2>AI analysis</h2>
+<p>If you use the AI Portfolio Analysis feature, an anonymised snapshot of your holdings (no names, no account details) is sent to the Anthropic API for processing. This is opt-in, performed on demand, and subject to Anthropic's privacy policy.</p>
+<h2>Analytics</h2>
+<p>We use Google Analytics (anonymised, no ad conversion signals) to understand aggregate traffic. No personally identifiable information is collected.</p>
+<p><a href="/about">About WalletLens</a> · <a href="/terms">Terms of Service</a></p>
+`,
+}))
+
+// ── Terms ────────────────────────────────────────────────────────────────────
+write('/terms', buildPage({
+  path: '/terms',
+  title: 'Terms of Service — WalletLens',
+  description: 'WalletLens terms of service. Free to use, no warranty. All portfolio data stays in your browser.',
+  bodyHtml: `
+<h1>Terms of Service</h1>
+<p><em>Effective: January 2025</em></p>
+<h2>Acceptance</h2>
+<p>By using WalletLens you agree to these terms. If you do not agree, please do not use the service.</p>
+<h2>Free service, no warranty</h2>
+<p>WalletLens is provided free of charge and "as is", without warranty of any kind. Live prices are sourced from public APIs and may be delayed or inaccurate. Nothing on WalletLens constitutes financial advice.</p>
+<h2>Your data</h2>
+<p>Your portfolio data is stored in your browser. You are solely responsible for maintaining backups via the export feature. WalletLens has no ability to recover lost data.</p>
+<h2>Acceptable use</h2>
+<p>You may not use WalletLens for any unlawful purpose, attempt to reverse-engineer or scrape the service, or misuse the public price APIs it relies on.</p>
+<h2>Changes</h2>
+<p>We may update these terms at any time. Continued use of WalletLens after changes constitutes acceptance of the updated terms.</p>
+<p><a href="/about">About WalletLens</a> · <a href="/privacy">Privacy Policy</a></p>
+`,
+}))
+
+console.log(`\nPrerendered ${POSTS.length + 5} content pages into dist/.`)
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
-// Generated from the static route list + every blog post, so it can never
-// drift out of sync with the posts data.
+// Only list pages with prerendered content and their own canonical tags.
+// App routes (/dashboard, /whales, /alpha, etc.) are intentionally excluded:
+// they serve the same index.html as the homepage and cause Google to flag
+// "Duplicate, Google chose different canonical than user".
 const STATIC_ROUTES = [
-  { path: '/',             changefreq: 'weekly',  priority: '1.0'  },
-  { path: '/dashboard',    changefreq: 'daily',   priority: '0.95' },
-  { path: '/coach',        changefreq: 'weekly',  priority: '0.9'  },
-  { path: '/academy',      changefreq: 'weekly',  priority: '0.85' },
-  { path: '/alpha',        changefreq: 'daily',   priority: '0.85' },
-  { path: '/whales',       changefreq: 'daily',   priority: '0.75' },
-  { path: '/transactions', changefreq: 'weekly',  priority: '0.7'  },
-  { path: '/blog',         changefreq: 'weekly',  priority: '0.9'  },
-  { path: '/about',        changefreq: 'monthly', priority: '0.7'  },
-  { path: '/privacy',      changefreq: 'monthly', priority: '0.5'  },
-  { path: '/terms',        changefreq: 'monthly', priority: '0.5'  },
+  { path: '/',        changefreq: 'weekly',  priority: '1.0' },
+  { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
+  { path: '/about',   changefreq: 'monthly', priority: '0.7' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
+  { path: '/terms',   changefreq: 'monthly', priority: '0.5' },
 ]
 function urlEntry({ loc, lastmod, changefreq, priority }) {
   return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
