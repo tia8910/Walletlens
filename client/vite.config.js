@@ -33,6 +33,11 @@ export default defineConfig({
           if (id.includes('node_modules/xlsx')) {
             return 'xlsx'
           }
+          // i18n is 32KB of translation strings — isolating it means a translation
+          // update only invalidates this chunk, not the whole app bundle.
+          if (id.includes('/src/i18n.')) {
+            return 'i18n'
+          }
         },
       },
       // Suppress false-positive circular-dependency warnings from recharts internals

@@ -96,18 +96,19 @@
     " />
 
     <!-- Fonts — loaded asynchronously so the stylesheet never blocks rendering.
-         The media="print" trick: browser fetches it at low priority (non-blocking)
-         then the onload handler switches it to screen so it applies immediately.
+         The media="print" trick fetches at low priority (non-blocking) then the
+         onload handler switches it to screen so it applies immediately.
          noscript provides a synchronous fallback for crawlers without JS. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@400&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=DM+Mono:wght@400&display=swap" /></noscript>
 
-    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done) -->
-    <link rel="preconnect" href="https://api.coingecko.com" />
-    <link rel="preconnect" href="https://api.binance.com" />
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
     <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 
