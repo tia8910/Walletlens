@@ -135,7 +135,7 @@ const homeBody = `
 <ul>
 ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.summary)}</li>`).join('\n')}
 </ul>
-<p><a href="/dashboard">Open the WalletLens dashboard</a> · <a href="/blog">Read the blog</a> · <a href="/about">About</a></p>
+<p><a href="/dashboard">Open the WalletLens dashboard</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog">Read the blog</a> · <a href="/about">About</a></p>
 `
 write('/', buildPage({
   path: '/',
