@@ -1,9 +1,11 @@
 # WalletLens Promotion Agent
 
-Discovers Reddit posts and YouTube comments where someone is asking for a
-**net-worth / portfolio / investment-tracking tool**, drafts honest helpful
-replies, and delivers them as GitHub Issues. You review, then post with one
-click — nothing is ever sent automatically.
+Discovers Reddit posts where someone is asking for a **net-worth / portfolio /
+investment-tracking tool** and drafts honest, helpful replies that mention
+WalletLens as one option. **It never posts anything** — drafts are delivered to
+you as a GitHub Issue to review and post manually. This keeps us compliant with
+Reddit/X rules and avoids spam bans (auto-posting promo links gets accounts
+shadowbanned and the domain blacklisted).
 
 ## How it runs
 
@@ -28,35 +30,8 @@ scan them, and paste any tweet to the team to get a drafted reply.
 
 ## Tuning
 
-- Search queries: the `prompt` in `find-and-draft.mjs`
+- Search queries: the `prompt` in `find-and-draft.mjs` (the `site:reddit.com` queries)
 - Frequency: the `cron` in `promote.yml`
-
-## One-click posting — Reddit
-
-Once you've reviewed the draft issue, post all replies with a single workflow run.
-
-### Required setup (one time)
-
-1. Go to **https://www.reddit.com/prefs/apps** → *create another app*
-2. Choose type **script**, set redirect URI to `http://localhost:8080` (unused)
-3. Note the **client ID** (shown under the app name) and **client secret**
-4. Add four repository secrets (Settings → Secrets and variables → Actions):
-
-| Secret | Value |
-|--------|-------|
-| `REDDIT_CLIENT_ID` | client ID from step 3 |
-| `REDDIT_CLIENT_SECRET` | client secret from step 3 |
-| `REDDIT_USERNAME` | your Reddit account username |
-| `REDDIT_PASSWORD` | your Reddit account password |
-
-### How to post
-
-1. Go to **Actions → Post Reddit Drafts → Run workflow**
-2. Optionally enter the issue number and any draft numbers to skip
-3. Click **Run workflow** — done
-
-Drafts are posted as top-level comments on each Reddit thread. The issue is
-automatically closed once all drafts are handled.
 
 ---
 
@@ -101,46 +76,3 @@ units; fetching comments costs 1 unit per request. A full run uses roughly
 - Search queries: the `QUERIES` array in `youtube-comments.mjs`
 - Comment filter keywords: the `COMMENT_KEYWORDS` array in `youtube-comments.mjs`
 - Frequency: the `cron` in `youtube-comments.yml`
-
-## One-click posting — YouTube
-
-Once you've reviewed the draft issue, post all replies with a single workflow run.
-
-### Required setup (one time)
-
-You need OAuth2 credentials so the script can post comments as your YouTube account.
-
-**Step 1 — Create OAuth2 credentials in Google Cloud Console:**
-1. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
-2. Choose application type **Desktop app**
-3. Under **Authorized redirect URIs** add `http://localhost:3000`
-4. Download or copy the **Client ID** and **Client Secret**
-
-**Step 2 — Get a refresh token (run locally once):**
-```bash
-YOUTUBE_OAUTH_CLIENT_ID=<your-client-id> \
-YOUTUBE_OAUTH_CLIENT_SECRET=<your-client-secret> \
-node promo/youtube-oauth.mjs
-```
-Open the printed URL in your browser, log in with the YouTube account you want
-to post from, and grant permission. The script prints your refresh token.
-
-**Step 3 — Add three repository secrets:**
-
-| Secret | Value |
-|--------|-------|
-| `YOUTUBE_OAUTH_CLIENT_ID` | OAuth2 client ID |
-| `YOUTUBE_OAUTH_CLIENT_SECRET` | OAuth2 client secret |
-| `YOUTUBE_OAUTH_REFRESH_TOKEN` | refresh token from step 2 |
-
-### How to post
-
-1. Go to **Actions → Post YouTube Drafts → Run workflow**
-2. Optionally enter the issue number and any draft numbers to skip
-3. Click **Run workflow** — done
-
-Each draft is posted as a reply to the original YouTube comment. The issue is
-automatically closed once all drafts are handled.
-
-> **Note:** posting `comments.insert` costs 50 API quota units per reply. Eight
-> replies = 400 units — well within the 10,000-unit free daily limit.
