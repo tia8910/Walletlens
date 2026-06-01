@@ -144,6 +144,49 @@ write('/', buildPage({
   bodyHtml: homeBody,
 }))
 
+// ── Free Net Worth Tracker (comparison landing) ──────────────────────────────
+const compareRow = (feat, cells) =>
+  `<tr><th scope="row">${esc(feat)}</th>${cells.map((c, i) => `<td${i === 0 ? ' class="us"' : ''}>${esc(c)}</td>`).join('')}</tr>`
+const fnwtBody = `
+<h1>Free Net Worth Tracker — Track All Your Investments in One Place</h1>
+<p>WalletLens is a <strong>free net worth tracker</strong> for managing every asset you own — crypto, US stocks &amp; ETFs, gold, silver, cash and FX — in one private dashboard. No account, no subscription, and no bank logins. Your data stays on your device.</p>
+<p><a href="/dashboard">Track your net worth free →</a></p>
+<h2>WalletLens vs the popular net worth trackers</h2>
+<table>
+<thead><tr><th>Feature</th><th>WalletLens</th><th>Empower (Personal Capital)</th><th>Kubera</th><th>CoinStats</th><th>Spreadsheet</th></tr></thead>
+<tbody>
+${compareRow('Price', ['Free forever', 'Free*', '$199/yr', 'Freemium', 'Free'])}
+${compareRow('No account required', ['Yes', 'No', 'No', 'No', 'Yes'])}
+${compareRow('Crypto + stocks + metals + cash', ['Yes', 'Yes', 'Yes', 'Crypto-led', 'Manual'])}
+${compareRow('Data stays on your device', ['Yes', 'No', 'No', 'No', 'Yes'])}
+${compareRow('No bank / exchange login required', ['Yes', 'No', 'Optional', 'No', 'Yes'])}
+${compareRow('Built-in AI analysis', ['Yes', 'Limited', 'No', 'Limited', 'No'])}
+${compareRow('Live prices & auto-update', ['Yes', 'Yes', 'Yes', 'Yes', 'No'])}
+${compareRow('Installable app (PWA)', ['Yes', 'Yes', 'Web', 'Yes', 'No'])}
+</tbody>
+</table>
+<p><small>*Empower (formerly Personal Capital) is free to use but markets paid wealth-management services. Comparison reflects publicly documented features and is for general guidance, not endorsement.</small></p>
+<h2>Why choose a free, local-first net worth tracker?</h2>
+<ul>
+<li><strong>It is genuinely free</strong> — no paid tier, no upsells, no ads on the app.</li>
+<li><strong>Every asset class</strong> — crypto, stocks, precious metals, cash and FX combine into one live net-worth total.</li>
+<li><strong>Private by design</strong> — holdings are stored only in your browser; nothing is sent to a server and no bank credentials are linked.</li>
+<li><strong>AI analysis included</strong> — a portfolio health score, risk scan and the Magic Indicator, computed on your device.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+<h3>What is the best free net worth tracker?</h3>
+<p>WalletLens is a strong choice: it tracks your entire net worth across crypto, stocks, gold, cash and FX, needs no account, and keeps data private on your device — all for free.</p>
+<h3>Can I manage all my investments in one app for free?</h3>
+<p>Yes. WalletLens combines every asset class into a single free dashboard with a live net-worth total, allocation breakdown and AI analysis, with no account or subscription.</p>
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/about">About</a> · <a href="/blog/best-free-net-worth-tracker">Read the full guide</a></p>
+`
+write('/free-net-worth-tracker', buildPage({
+  path: '/free-net-worth-tracker',
+  title: 'Free Net Worth Tracker — Manage All Your Investments | WalletLens',
+  description: 'A free net worth tracker to manage all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
+  bodyHtml: fnwtBody,
+}))
+
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
 <h1>WalletLens Blog</h1>
@@ -279,7 +322,7 @@ write('/terms', buildPage({
 `,
 }))
 
-console.log(`\nPrerendered ${POSTS.length + 5} content pages into dist/.`)
+console.log(`\nPrerendered ${POSTS.length + 6} content pages into dist/.`)
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
@@ -288,6 +331,7 @@ console.log(`\nPrerendered ${POSTS.length + 5} content pages into dist/.`)
 // "Duplicate, Google chose different canonical than user".
 const STATIC_ROUTES = [
   { path: '/',        changefreq: 'weekly',  priority: '1.0' },
+  { path: '/free-net-worth-tracker', changefreq: 'weekly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
