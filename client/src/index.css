@@ -3458,6 +3458,7 @@ tr:last-child td { border-bottom: none; }
   z-index: -3;
   pointer-events: none;
   display: block;
+  will-change: contents;
 }
 
 /* ═══ Lens glow — sharper, more dramatic premium pulse ═══ */
@@ -4587,6 +4588,7 @@ tr:last-child td { border-bottom: none; }
   background: rgba(8,15,12,0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.07);
+  will-change: transform;
 }
 /* Ticker inside topbar — flush, no rounded corners, no extra margin */
 .wl-topbar .ticker-strip {
@@ -4659,6 +4661,7 @@ tr:last-child td { border-bottom: none; }
   max-width: 100vw;
   padding-top: 100px; /* topbar height + ticker */
   padding-bottom: 4.5rem; /* bottom nav */
+  contain: layout;
 }
 
 /* Bottom nav */

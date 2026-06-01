@@ -37,7 +37,7 @@ const STATIC_CDN_PATTERNS = [
 const API_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 function isPriceApi(url) {
-  return PRICE_API_PATTERNS.some(p => url.hostname.includes(p) || url.href.includes(p))
+  return PRICE_API_PATTERNS.some(p => url.hostname === p || url.hostname.endsWith('.' + p))
 }
 
 function isStaticCdn(url) {

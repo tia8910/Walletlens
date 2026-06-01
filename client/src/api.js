@@ -1128,7 +1128,9 @@ export const api = {
       if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
     }
 
-    const promise = Promise.all(tasks).then(() => { _inFlight.delete(key); return result; });
+    const promise = Promise.all(tasks)
+      .then(() => result)
+      .finally(() => _inFlight.delete(key));
     _inFlight.set(key, promise);
     return promise;
   };
