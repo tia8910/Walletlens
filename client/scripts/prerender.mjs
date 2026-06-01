@@ -49,6 +49,43 @@ function inline(text) {
   return out
 }
 
+// Strip the markdown subset to plain text (for JSON-LD answer text).
+function stripMd(s) {
+  return s
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/[*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Extract FAQ pairs from a post: any ## / ### heading ending in "?" plus the
+// first answer block beneath it. Powers per-post FAQPage structured data, which
+// answer engines (Google AI Overviews, ChatGPT, Perplexity) lift directly.
+function extractFaqs(content) {
+  const lines = content.trim().split('\n')
+  const faqs = []
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^#{2,3}\s+(.*\?)\s*$/)
+    if (!m) continue
+    const q = stripMd(m[1])
+    let j = i + 1
+    while (j < lines.length && lines[j].trim() === '') j++
+    const ansParts = []
+    while (j < lines.length) {
+      const l = lines[j]
+      if (l.trim() === '') break
+      if (/^#{2,3}\s/.test(l) || l.startsWith('|')) break
+      if (l.startsWith('- ')) ansParts.push(stripMd(l.slice(2)))
+      else ansParts.push(stripMd(l))
+      j++
+    }
+    const a = ansParts.join(' ').trim()
+    if (q && a.length > 25) faqs.push({ q, a: a.length > 320 ? a.slice(0, 317).trimEnd() + '…' : a })
+  }
+  return faqs
+}
+
 // Convert the post markdown subset (## h2, **bold** lines, - lists, | tables)
 // into an HTML string — mirrors renderMarkdown() in Blog.jsx.
 function mdToHtml(text) {
@@ -57,7 +94,9 @@ function mdToHtml(text) {
   let i = 0
   while (i < lines.length) {
     const line = lines[i]
-    if (line.startsWith('## ')) {
+    if (line.startsWith('### ')) {
+      out.push(`<h3>${inline(line.slice(4))}</h3>`)
+    } else if (line.startsWith('## ')) {
       out.push(`<h2>${inline(line.slice(3))}</h2>`)
     } else if (line.startsWith('- ')) {
       const items = []
@@ -185,6 +224,26 @@ write('/free-net-worth-tracker', buildPage({
   title: 'Free Net Worth Tracker — Manage All Your Investments | WalletLens',
   description: 'A free net worth tracker to manage all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
   bodyHtml: fnwtBody,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'What is the best free net worth tracker?',
+          acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a strong choice: it tracks your entire net worth across crypto, stocks, gold, cash and FX, needs no account, and keeps data private on your device — all for free.' } },
+        { '@type': 'Question', name: 'Can I manage all my investments in one app for free?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens combines every asset class into a single free dashboard with a live net-worth total, allocation breakdown and AI analysis, with no account or subscription.' } },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Free Net Worth Tracker', item: ORIGIN + '/free-net-worth-tracker' },
+      ],
+    },
+  ],
 }))
 
 // ── Blog index ───────────────────────────────────────────────────────────────
@@ -223,40 +282,56 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
   <p><a href="/blog">← All articles</a></p>
 </article>`
   const iso = postIsoDate(p.date)
+  const faqs = extractFaqs(p.content)
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: p.title,
+      description: p.summary,
+      image: OG_IMAGE,
+      datePublished: iso,
+      dateModified: TODAY,
+      author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
+      publisher: {
+        '@type': 'Organization',
+        name: 'WalletLens',
+        url: ORIGIN,
+        logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
+      },
+      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
+      url: `${ORIGIN}/blog/${p.slug}`,
+      // Speakable: lets voice assistants read the headline + lead paragraph aloud.
+      speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', 'article > p:nth-of-type(1)'] },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog' },
+        { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}` },
+      ],
+    },
+  ]
+  // Per-post FAQ structured data — only when the article genuinely has ≥2 Q&As.
+  if (faqs.length >= 2) {
+    jsonLd.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    })
+  }
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
     title: `${p.title} | WalletLens`,
     description: p.summary,
     bodyHtml: articleHtml,
-    jsonLd: [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: p.title,
-        description: p.summary,
-        image: OG_IMAGE,
-        datePublished: iso,
-        dateModified: TODAY,
-        author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
-        publisher: {
-          '@type': 'Organization',
-          name: 'WalletLens',
-          url: ORIGIN,
-          logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
-        },
-        mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
-        url: `${ORIGIN}/blog/${p.slug}`,
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog' },
-          { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}` },
-        ],
-      },
-    ],
+    jsonLd,
   }))
 }
 
@@ -362,6 +437,18 @@ try {
   )
   writeFileSync(resolve(DIST, 'llms.txt'), llms, 'utf8')
   console.log(`Wrote llms.txt (${POSTS.length} articles).`)
+
+  // ── llms-full.txt ──────────────────────────────────────────────────────────
+  // The llmstxt.org "full" companion: the curated llms.txt followed by the
+  // complete plain-text body of every article, so AI ingestion tools get the
+  // entire corpus in one fetch instead of crawling each page.
+  const llmsBase = llms.replace(/## Blog articles[\s\S]*$/, '').trimEnd()
+  const fullArticles = POSTS.map(p =>
+    `## ${p.title}\n${ORIGIN}/blog/${p.slug}\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
+  ).join('\n\n---\n\n')
+  const llmsFull = `${llmsBase}\n\n# Full article corpus\n\n${fullArticles}\n`
+  writeFileSync(resolve(DIST, 'llms-full.txt'), llmsFull, 'utf8')
+  console.log(`Wrote llms-full.txt (${POSTS.length} full articles).`)
 } catch (e) {
   console.warn('llms.txt generation skipped:', e.message)
 }
