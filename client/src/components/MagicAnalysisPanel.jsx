@@ -90,12 +90,30 @@ async function loadCoinLogo(item) {
   return null
 }
 
-// Render a single asset's analysis card to a square PNG canvas. Draws the real
-// coin logo when it loads cross-origin; otherwise a lettered badge fallback.
-async function drawShareCard(canvas, item) {
+// Word-wrap helper — draws text and returns the Y after the last line.
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 99) {
+  const words = text.split(' ')
+  let line = '', curY = y, lines = 0
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word
+    if (ctx.measureText(test).width > maxWidth && line) {
+      if (lines >= maxLines - 1) { ctx.fillText(line + '…', x, curY); return curY + lineHeight }
+      ctx.fillText(line, x, curY); line = word; curY += lineHeight; lines++
+    } else { line = test }
+  }
+  if (line) ctx.fillText(line, x, curY)
+  return curY + lineHeight
+}
+
+// Render a single asset's analysis card to a PNG canvas. When verdict
+// (AI Detailed Analysis) is available it extends the canvas to 1080×1440
+// and adds a one-liner + bull/bear section below the pillar bars.
+async function drawShareCard(canvas, item, verdict) {
   const m = item.magic
   const logo = await loadCoinLogo(item)
-  const W = 1080, H = 1080, dpr = 2
+  const W = 1080
+  const H = verdict ? 1440 : 1080
+  const dpr = 2
   canvas.width = W * dpr; canvas.height = H * dpr
   const ctx = canvas.getContext('2d')
   ctx.scale(dpr, dpr)
@@ -117,7 +135,7 @@ async function drawShareCard(canvas, item) {
   if (logo) {
     ctx.save()
     ctx.beginPath(); ctx.arc(LX + LS / 2, LY + LS / 2, LS / 2, 0, Math.PI * 2); ctx.closePath()
-    ctx.fillStyle = '#fff'; ctx.fill() // white disc behind transparent logos
+    ctx.fillStyle = '#fff'; ctx.fill()
     ctx.clip()
     try { ctx.drawImage(logo, LX, LY, LS, LS) } catch {}
     ctx.restore()
@@ -191,9 +209,7 @@ async function drawShareCard(canvas, item) {
       : s >= 0 ? up : down
     ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '600 30px Inter, system-ui, sans-serif'
     ctx.fillText(p.label, PAD, py + 8)
-    // track
     rr(ctx, barX, py - 14, barW, 14, 7); ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fill()
-    // zero tick
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(barX + barW / 2 - 1, py - 18, 2, 22)
     if (!est && s !== 0) {
       const wpct = Math.min(0.5, Math.abs(s) / 200)
@@ -207,6 +223,64 @@ async function drawShareCard(canvas, item) {
     py += 66
   }
 
+  // ── Detailed Analysis section (only when verdict is available) ──
+  if (verdict) {
+    const divY = py + 20
+    // Divider + section header
+    ctx.fillStyle = 'rgba(0,230,118,0.2)'; ctx.fillRect(PAD, divY, W - PAD * 2, 1)
+    ctx.fillStyle = accent; ctx.font = '700 28px Inter, system-ui, sans-serif'
+    ctx.fillText('Detailed Analysis', PAD, divY + 46)
+    if (verdict.direction) {
+      const labelX = PAD + ctx.measureText('Detailed Analysis').width + 24
+      rr(ctx, labelX, divY + 22, ctx.measureText(verdict.direction).width + 28, 30, 8)
+      ctx.fillStyle = 'rgba(0,230,118,0.18)'; ctx.fill()
+      ctx.fillStyle = accent; ctx.font = '600 22px Inter, system-ui, sans-serif'
+      ctx.fillText(verdict.direction, labelX + 14, divY + 43)
+    }
+
+    let vy = divY + 90
+    // One-liner summary
+    if (verdict.oneLiner) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = '500 30px Inter, system-ui, sans-serif'
+      vy = wrapText(ctx, verdict.oneLiner, PAD, vy, W - PAD * 2, 42, 3)
+      vy += 14
+    }
+
+    // Bull / Bear two-column layout
+    const colW = (W - PAD * 2 - 32) / 2
+    const bullBullets = (verdict.bull || []).slice(0, 3)
+    const bearBullets = (verdict.bear || []).slice(0, 3)
+    if (bullBullets.length || bearBullets.length) {
+      const colStartY = vy
+      // Bull column
+      ctx.fillStyle = up; ctx.font = '700 26px Inter, system-ui, sans-serif'
+      ctx.fillText('BULL', PAD, colStartY)
+      let bullY = colStartY + 36
+      for (const b of bullBullets) {
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = '400 24px Inter, system-ui, sans-serif'
+        bullY = wrapText(ctx, '• ' + b, PAD, bullY, colW - 16, 34, 3)
+        bullY += 4
+      }
+      // Bear column
+      const bearX = PAD + colW + 32
+      ctx.fillStyle = down; ctx.font = '700 26px Inter, system-ui, sans-serif'
+      ctx.fillText('BEAR', bearX, colStartY)
+      let bearY = colStartY + 36
+      for (const b of bearBullets) {
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = '400 24px Inter, system-ui, sans-serif'
+        bearY = wrapText(ctx, '• ' + b, bearX, bearY, colW - 16, 34, 3)
+        bearY += 4
+      }
+      vy = Math.max(bullY, bearY) + 16
+    }
+
+    // Action line
+    if (verdict.action) {
+      ctx.fillStyle = 'rgba(0,230,118,0.7)'; ctx.font = '600 26px Inter, system-ui, sans-serif'
+      vy = wrapText(ctx, '→ ' + verdict.action, PAD, vy, W - PAD * 2, 38, 2)
+    }
+  }
+
   // ── Footer brand ──
   ctx.fillStyle = accent; ctx.font = '800 36px Inter, system-ui, sans-serif'
   ctx.fillText('WalletLens', PAD, H - 96)
@@ -217,31 +291,34 @@ async function drawShareCard(canvas, item) {
   ctx.textAlign = 'left'
 }
 
-function tweetTextFor(item) {
+function tweetTextFor(item, verdict) {
   const m = item.magic
   const sym = (item.coin_symbol || '').toUpperCase()
   const pills = m.pillars
     .filter(p => !p.estimated)
     .map(p => `${p.label} ${p.score > 0 ? '+' : ''}${p.score}`)
     .join(' · ')
+  const verdictLine = verdict?.oneLiner ? `\n${verdict.oneLiner}` : ''
+  const actionLine = verdict?.action ? `\n→ ${verdict.action}` : ''
   return encodeURIComponent(
     `$${sym} ${item.coin_name ? '— ' + item.coin_name : ''}\n` +
     `Magic Indicator: ${m.direction.label} (${m.score > 0 ? '+' : ''}${m.score}) · ${m.confidence}% confidence\n\n` +
-    (pills ? pills + '\n\n' : '') +
+    (pills ? pills + '\n' : '') +
+    verdictLine + actionLine + '\n\n' +
     `Tracked free & private with WalletLens → walletlens.live/?ref=share`
   )
 }
 
 // ── Per-card "Share to X" button ───────────────────────────────────────────
-function ShareCardButton({ item }) {
+function ShareCardButton({ item, verdict }) {
   const [sharing, setSharing] = useState(false)
 
   async function share() {
     if (sharing) return
     setSharing(true)
-    track('magic_card_share_x', { symbol: item.coin_symbol })
+    track('magic_card_share_x', { symbol: item.coin_symbol, hasVerdict: !!verdict })
     const canvas = document.createElement('canvas')
-    try { await drawShareCard(canvas, item) } catch { setSharing(false); return }
+    try { await drawShareCard(canvas, item, verdict) } catch { setSharing(false); return }
 
     const sym = (item.coin_symbol || 'asset').toLowerCase()
     const filename = `walletlens-${sym}.png`
@@ -252,7 +329,7 @@ function ShareCardButton({ item }) {
         if (blob) {
           const file = new File([blob], filename, { type: 'image/png' })
           if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item)) })
+            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item, verdict)) })
             usedWebShare = true
           }
         }
@@ -267,7 +344,7 @@ function ShareCardButton({ item }) {
         const a = document.createElement('a')
         a.href = dataUrl; a.download = filename; a.click()
       } catch {}
-      setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item)}`, '_blank', 'noopener'), 400)
+      setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item, verdict)}`, '_blank', 'noopener'), 400)
     }
     setSharing(false)
   }
@@ -351,7 +428,7 @@ function PillarBars({ pillars }) {
 }
 
 // ── AI verdict (optional, uses the Anthropic key via the Deno endpoint) ────
-function AiVerdict({ item }) {
+function AiVerdict({ item, onVerdictReady }) {
   const [state, setState] = useState('idle') // idle | loading | done | error
   const [verdict, setVerdict] = useState(null)
 
@@ -375,8 +452,13 @@ function AiVerdict({ item }) {
       },
     }
     const v = await getAiVerdict(item.coin_id, payload)
-    if (v) { setVerdict(v); setState('done') }
-    else setState('error')
+    if (v) {
+      setVerdict(v)
+      setState('done')
+      onVerdictReady?.(v)
+    } else {
+      setState('error')
+    }
   }
 
   if (state === 'idle') return (
@@ -424,6 +506,7 @@ function AssetCard({ item, onOpen }) {
   const m = item.magic
   const chg = item.fundamental?.change24h
   const ta = item.ta
+  const [verdict, setVerdict] = useState(null)
   return (
     <div className="glass-card magic-card">
       <div className="magic-card-head" onClick={onOpen} style={{ cursor: 'pointer' }}>
@@ -458,9 +541,9 @@ function AssetCard({ item, onOpen }) {
       )}
 
       <div className="magic-card-foot">
-        <AiVerdict item={item} />
+        <AiVerdict item={item} onVerdictReady={setVerdict} />
         <div className="magic-foot-actions">
-          <ShareCardButton item={item} />
+          <ShareCardButton item={item} verdict={verdict} />
           <button className="magic-detail-link" onClick={onOpen}>Full chart →</button>
         </div>
       </div>
