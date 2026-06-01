@@ -41,9 +41,10 @@
 
 - [Home / Landing](https://walletlens.live/): Overview of features and call-to-action.
 - [Dashboard](https://walletlens.live/dashboard): Main portfolio overview (the app itself — requires no account).
-- [Market](https://walletlens.live/market): Live market data across crypto, stocks, metals, FX.
-- [Coach](https://walletlens.live/coach): AI Coach, Alpha signals, risk analysis.
+- [Coach](https://walletlens.live/coach): AI Coach, risk analysis, portfolio health score.
+- [Alpha](https://walletlens.live/alpha): AI-generated alpha signals and trade ideas.
 - [Analysis](https://walletlens.live/technicals): Technical & on-chain analysis with the Magic Indicator direction per crypto holding.
+- [Whales](https://walletlens.live/whales): Live feed of large on-chain Bitcoin whale transactions.
 - [Academy](https://walletlens.live/academy): Investing & crypto education content.
 - [About](https://walletlens.live/about): About the project, mission, contact.
 - [Privacy](https://walletlens.live/privacy): Privacy policy (TL;DR: all data is local; nothing is collected).
