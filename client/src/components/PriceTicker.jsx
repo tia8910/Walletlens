@@ -63,11 +63,12 @@ function PriceTicker() {
     }
   }, [])
 
-  if (items.length === 0) return null
-
-  // Duplicate the list so the marquee loops seamlessly
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Duplicate the list so the marquee loops seamlessly.
+  // NOTE: must run before any early return — hooks cannot be called
+  // conditionally (React: "Rendered more hooks than during the previous render").
   const doubled = useMemo(() => [...items, ...items], [items])
+
+  if (items.length === 0) return null
 
   return (
     <div className="ticker-strip" aria-hidden="true">
