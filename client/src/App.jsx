@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
+const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -283,7 +284,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -321,6 +322,7 @@ export default function App() {
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
+          <Route path="/track/:slug" element={<TrackCoin />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />

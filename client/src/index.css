@@ -6248,6 +6248,26 @@ select.bs-input option { background: var(--bg3); }
   margin-left: auto; margin-right: auto; line-height: 1.5;
 }
 
+/* ── Per-coin /track landing pages ── */
+.tc-page { max-width: 760px; margin: 0 auto; padding: 1.4rem 1.1rem 3rem; }
+.tc-head { padding: 0.6rem 0 1.4rem; }
+.tc-brand { display: inline-flex; align-items: center; gap: 0.5rem; color: #fff; text-decoration: none; font-weight: 800; }
+.tc-hero { text-align: center; padding: 1.2rem 0 1.6rem; }
+.tc-coin-logo { margin: 0 auto 1rem; display: block; }
+.tc-h1 { font-size: clamp(1.6rem, 4.5vw, 2.5rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.12; }
+.tc-sub { color: rgba(255,255,255,0.62); font-size: 1.02rem; max-width: 620px; margin: 1rem auto 0; line-height: 1.55; }
+.tc-cta-row { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin-top: 1.6rem; }
+.tc-section { margin-top: 2.2rem; }
+.tc-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.7rem; }
+.tc-section p { color: rgba(255,255,255,0.7); line-height: 1.6; }
+.tc-list, .tc-steps { color: rgba(255,255,255,0.7); line-height: 1.7; padding-left: 1.2rem; margin-top: 0.4rem; }
+.tc-list li, .tc-steps li { margin-bottom: 0.4rem; }
+.tc-section .lp-cta-primary { margin-top: 1.3rem; }
+.tc-foot { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center;
+  margin-top: 2.6rem; color: rgba(255,255,255,0.35); font-size: 0.85rem; }
+.tc-foot a { color: var(--g); text-decoration: none; }
+.tc-foot a:hover { text-decoration: underline; }
+
 /* ── Final CTA ── */
 .lp-final {
   position: relative;

@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
+import { TRACK_COINS } from '../src/data/trackCoins.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -170,6 +171,10 @@ const homeBody = `
 <li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
 <li><strong>Private by design</strong> — manual entry with local-first storage; no exchange API keys required.</li>
 </ul>
+<h2>Track popular coins free</h2>
+<ul>
+${TRACK_COINS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
 <h2>Guides &amp; articles</h2>
 <ul>
 ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.summary)}</li>`).join('\n')}
@@ -245,6 +250,62 @@ write('/free-net-worth-tracker', buildPage({
     },
   ],
 }))
+
+// ── Per-coin landing pages (/track/:slug) ────────────────────────────────────
+// Programmatic SEO: one focused page per top coin targeting "[coin] portfolio
+// tracker" / "track [coin] free" searches. Each is distinct (unique blurb, FAQ,
+// title) to avoid thin/doorway-content penalties.
+for (const c of TRACK_COINS) {
+  const coinBody = `
+<h1>Track ${esc(c.name)} (${esc(c.symbol)}) — Free, No Account</h1>
+<p>Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.</p>
+<p><a href="/dashboard">Track ${esc(c.symbol)} free →</a> · <a href="/asset/${esc(c.id)}">View ${esc(c.symbol)} analysis</a></p>
+<h2>What is ${esc(c.name)}?</h2>
+<p>${esc(c.name)} (${esc(c.symbol)}) is ${esc(c.blurb)}</p>
+<h2>Why track ${esc(c.symbol)} with WalletLens?</h2>
+<ul>
+<li><strong>100% free</strong> — no account, no subscription, no ads.</li>
+<li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every trade you log.</li>
+<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your other crypto, stocks, gold and cash in a single net-worth view.</li>
+<li><strong>Private by design</strong> — your holdings never leave your device; no exchange API keys required.</li>
+<li><strong>AI analysis</strong> — a health score, risk scan and the Magic Indicator direction for ${esc(c.symbol)}.</li>
+</ul>
+<h2>How to track ${esc(c.name)} for free</h2>
+<ol>
+<li>Open WalletLens — no account or email needed.</li>
+<li>Add a ${esc(c.symbol)} trade with the amount and price you paid.</li>
+<li>Watch your ${esc(c.name)} value, P&amp;L and allocation update with live prices.</li>
+</ol>
+<p><a href="/dashboard">Add ${esc(c.symbol)} to your portfolio →</a></p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a></p>`
+  write('/track/' + c.slug, buildPage({
+    path: '/track/' + c.slug,
+    title: `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`,
+    description: `Track ${c.name} (${c.symbol}) for free with WalletLens — live price, cost basis and profit/loss, alongside your whole net worth. No account, no wallet connection, data stays on your device.`,
+    bodyHtml: coinBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: `How can I track ${c.name} for free?`,
+            acceptedAnswer: { '@type': 'Answer', text: `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker that needs no account. Enter your ${c.symbol} trades and it tracks live price, cost basis and profit/loss automatically, with your data stored privately on your device.` } },
+          { '@type': 'Question', name: `Can I track ${c.symbol} without connecting my wallet or exchange?`,
+            acceptedAnswer: { '@type': 'Answer', text: `Yes. WalletLens uses manual or imported entry, so you never connect a wallet or share exchange API keys. You add your ${c.symbol} holdings and it values them with live prices.` } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `Track ${c.name}`, item: `${ORIGIN}/track/${c.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${TRACK_COINS.length} /track coin pages.`)
 
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
@@ -417,11 +478,12 @@ function urlEntry({ loc, lastmod, changefreq, priority }) {
 }
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
+  ...TRACK_COINS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + POSTS.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + TRACK_COINS.length + POSTS.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
