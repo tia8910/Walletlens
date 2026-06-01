@@ -1451,4 +1451,172 @@ The friction with manual trackers is data entry. WalletLens reduces it three way
 Your net worth is not "my crypto" plus a vague sense of "some stocks somewhere." It is one number, made of several asset classes, with a real allocation you should be able to see at a glance. Tracking crypto and stocks — and gold and cash — together is the only way to know whether you are actually diversified, actually taking the risk you intend, and actually on track. Pick a tool that handles every asset class you own, put them all in one place, and check the combined view regularly. The clarity is worth far more than the few minutes it takes to set up.
     `
   },
+  {
+    slug: 'crypto-tax-basics-for-beginners',
+    title: 'Crypto Tax Basics: What Beginners Need to Know',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'A plain-English introduction to how crypto is taxed in most countries — taxable events, cost basis, holding periods, and why good record-keeping matters long before tax season.',
+    content: `
+For most people, the scariest part of owning crypto is not volatility — it is the vague fear of getting taxes wrong. The rules feel opaque, the records are scattered across exchanges and wallets, and the deadline arrives long after the trades that triggered the bill. This guide demystifies the fundamentals so you understand what is taxed, what is not, and why the habits you build today determine how painful next April will be.
+
+> **Important:** This is general educational information, not tax advice. Crypto tax rules vary significantly by country and change frequently. Always confirm with a qualified tax professional in your jurisdiction before filing.
+
+## The Core Idea: Crypto Is Usually Property
+
+In many countries — including the US, UK, Canada, and Australia — cryptocurrency is treated as **property or an asset**, not as currency. That single classification drives almost everything else. It means that disposing of crypto can create a **capital gain or loss**, calculated as the difference between what you received and your **cost basis** (what you originally paid, including fees).
+
+## What Counts as a Taxable Event
+
+The common misconception is that you are only taxed when you cash out to your bank. In most property-based systems, far more triggers a taxable event:
+
+- **Selling crypto for fiat** (e.g. BTC → USD). Taxable.
+- **Trading one crypto for another** (e.g. BTC → ETH). Usually taxable — you "disposed of" the first asset, even though no cash was involved. This surprises many beginners.
+- **Spending crypto** on goods or services. Usually a disposal at the asset's value that day.
+- **Earning crypto** — staking rewards, mining, interest, or payment for work — is often taxed as **income** at its value when received, and then has its own cost basis for later disposal.
+
+## What Is Usually *Not* a Taxable Event
+
+- **Buying crypto with fiat and holding it.** Acquisition alone is not taxable; it just sets your cost basis.
+- **Moving crypto between your own wallets.** Transferring BTC from an exchange to your hardware wallet is not a disposal — but keep records, because exchanges may report the outflow.
+- **Holding through volatility.** Unrealised gains (paper profits) are generally not taxed until you actually dispose of the asset.
+
+## Cost Basis and Holding Period
+
+Two numbers determine your tax on a disposal:
+
+**Cost basis** — what you paid, including fees. If you bought 1 ETH at $2,000 with a $10 fee, your basis is $2,010. When you sell at $3,000, your gain is roughly $990, not $1,000.
+
+**Holding period** — how long you held before disposing. Many countries tax **long-term** holdings (often over 12 months) at lower rates than **short-term** ones. In some jurisdictions, holding past a threshold reduces or even eliminates the gain. This is why the *date* of every trade matters, not just the price.
+
+When you have bought the same coin many times at different prices, you also need a method to decide *which* units you sold — commonly FIFO (first-in, first-out) or specific identification. Your jurisdiction may mandate one.
+
+## Why Record-Keeping Is the Real Work
+
+The tax math is simple; the data is the problem. By the time you file, you may need the price, quantity, date, and fee of dozens or hundreds of trades scattered across exchanges that may no longer give you history. The people who dread tax season are almost always the ones who never kept a running log.
+
+The fix is to record every trade *as it happens*, with its cost basis, in one place you control. A portfolio tracker that stores each buy and sell — with date and fee — turns tax season from an archaeology project into an export.
+
+[WalletLens](https://walletlens.live) helps here by keeping a complete, timestamped record of every trade you log, with cost basis and realised/unrealised P&L per holding, stored privately in your browser. It is not tax software and does not file for you, but it gives you the organised transaction history that tax software (or your accountant) needs — and you can import from CSV or log trades by voice so the record stays current with minimal effort.
+
+## A Simple Habit That Saves Hours
+
+1. Log every buy with the price, quantity, date, and fee.
+2. Log every sell and every crypto-to-crypto trade the same way.
+3. Note income events (staking, rewards) separately, with their value on the day received.
+4. Keep one backup of this history that does not depend on any exchange staying online.
+5. Before filing, export the full record and hand it to your tax tool or professional.
+
+## Conclusion
+
+Crypto tax feels intimidating because the records are messy, not because the rules are impossible. Once you internalise that most disposals — including crypto-to-crypto trades — are taxable events measured against your cost basis and holding period, the rest is bookkeeping. Build the habit of logging trades as they happen, keep your own durable record, and confirm the specifics with a professional in your country. Do that, and the deadline stops being a source of dread and becomes a five-minute export.
+    `
+  },
+  {
+    slug: 'rsi-macd-explained-for-crypto',
+    title: 'RSI and MACD Explained: Reading Two Core Crypto Indicators',
+    date: 'June 2026',
+    readTime: '8 min read',
+    summary: 'A beginner-friendly guide to the two most-cited technical indicators — RSI and MACD — what they measure, how to read them, and the traps that catch new traders.',
+    content: `
+Open any crypto chart tool and you will see two indicators more than any other: **RSI** and **MACD**. They show up in every YouTube analysis and every trading thread. But most beginners use them as vague "buy/sell" lights without understanding what they actually measure — which is exactly how people get burned. This guide explains both from first principles so you can read them with judgement instead of superstition.
+
+> **Educational note:** Indicators describe price history; they do not predict the future. Nothing here is financial advice. Treat indicators as one input among many, never as a signal to act on blindly.
+
+## RSI: The Relative Strength Index
+
+RSI measures the **speed and magnitude of recent price changes** on a scale of 0 to 100. It answers a single question: *relative to its own recent behaviour, is this asset's price rising or falling unusually fast?*
+
+The standard reading uses a 14-period lookback:
+
+- **RSI above 70** is traditionally called "overbought" — price has risen fast and may be due for a pause or pullback.
+- **RSI below 30** is "oversold" — price has fallen fast and may be due for a bounce.
+- **RSI around 50** is neutral momentum.
+
+### The Trap With RSI
+
+The biggest beginner mistake is treating "overbought" as "sell now." In a **strong uptrend, RSI can stay above 70 for weeks** while price keeps climbing. Selling every time RSI hits 70 in a bull market means selling far too early. "Overbought" means *strong*, not *doomed*.
+
+The more useful RSI signal for many traders is **divergence**: when price makes a new high but RSI makes a *lower* high, the momentum behind the move is weakening — a possible warning. The same in reverse (price makes a new low, RSI makes a higher low) can hint at a fading downtrend.
+
+## MACD: Moving Average Convergence Divergence
+
+MACD tracks the **relationship between two moving averages** of price — typically the 12-period and 26-period exponential moving averages (EMAs). It has three parts:
+
+- **The MACD line** — the 12 EMA minus the 26 EMA. When it is positive, short-term price is above the longer-term average (bullish lean).
+- **The signal line** — a 9-period EMA of the MACD line, used as a trigger.
+- **The histogram** — the gap between the MACD line and signal line, showing momentum building or fading.
+
+### How to Read MACD
+
+- A **bullish crossover** (MACD line crossing above the signal line) suggests upward momentum is building.
+- A **bearish crossover** (MACD line crossing below the signal line) suggests momentum is fading.
+- The **histogram growing** means the move is accelerating; **shrinking** means it is losing steam, often before the crossover happens.
+- The **zero line** matters too: MACD above zero is a broadly bullish regime, below zero broadly bearish.
+
+### The Trap With MACD
+
+MACD is a **lagging** indicator — it is built from moving averages, so it confirms moves after they have begun. In choppy, sideways markets it produces frequent false crossovers ("whipsaws") that lose money. MACD shines in trending markets and struggles in flat ones.
+
+## Why You Should Never Use One Indicator Alone
+
+RSI and MACD measure related but different things — RSI the *speed* of a move, MACD the *trend relationship* of averages. Used together they are more robust: a bullish MACD crossover while RSI is rising out of oversold territory is a stronger picture than either alone. But even two indicators are not enough. Volume, trend, support and resistance, and the broader market context all matter. Indicators are a flashlight, not a map.
+
+## Seeing These in Context
+
+You do not have to compute any of this by hand. [WalletLens](https://walletlens.live) calculates RSI, MACD, Bollinger Bands, moving averages and trend for each crypto holding from daily candles, and folds them — along with on-chain flow, volume, whale activity and fundamentals — into a single [Magic Indicator](https://walletlens.live/technicals) direction with a confidence score. That way you see what each indicator says *and* a synthesised read, instead of staring at five separate charts and guessing how to weight them.
+
+## Conclusion
+
+RSI tells you how fast price is moving relative to its own history; MACD tells you how short-term momentum relates to the longer trend. Both are useful, both are widely misread, and both are dangerous in isolation — RSI because "overbought" can stay overbought, MACD because it lags and whipsaws in flat markets. Learn what they measure, watch for divergence and crossovers as *hints* rather than commands, and always confirm with trend, volume, and context. Used with judgement, they sharpen your reading of a chart. Used as blinking buy/sell lights, they will eventually cost you.
+    `
+  },
+  {
+    slug: 'what-is-the-magic-indicator-walletlens',
+    title: 'What Is the Magic Indicator? Five Signals in One Direction',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'How WalletLens condenses technical analysis, on-chain flow, volume, whale activity, and fundamentals into a single direction and confidence score per crypto holding.',
+    content: `
+Analysing a single crypto asset properly means looking at a dozen different things: its RSI and MACD, whether volume is confirming the move, what large holders are doing, how diluted the supply is, how far it sits from its all-time high. Doing that for one coin is a chore. Doing it for an entire portfolio, every day, is impossible by hand. The **Magic Indicator** in WalletLens exists to solve exactly that problem — it merges five independent angles of analysis into one readable direction per holding.
+
+> **Educational note:** The Magic Indicator is an analytical tool, not financial advice or a price prediction. It summarises current data; it cannot foresee the future. Always do your own research before acting.
+
+## The Problem It Solves
+
+Most indicators look at price alone. But price is only one dimension. An asset can have bullish momentum while whales quietly distribute into the rally; it can look "oversold" while its fundamentals quietly rot. Relying on any single signal gives you a narrow, often misleading view. The Magic Indicator's premise is that a **blend of independent signals** is more reliable than any one of them — and that the blend should be shown as one number you can actually act on.
+
+## The Five Pillars
+
+Each crypto holding is scored across five pillars, each contributing to the final direction:
+
+**1. Technical analysis.** RSI, MACD, Bollinger Bands, moving averages, and trend computed from daily candles — the momentum and structure of price itself.
+
+**2. On-chain flow & supply.** Network turnover (volume relative to market cap) and supply-dilution proxies — is the asset being used, and is its supply working for or against holders?
+
+**3. Volume confirmation.** Whether trading volume is actually backing the current price move, or whether price is drifting on thin, unconvincing volume.
+
+**4. Whale accumulation.** Volume-weighted flow that estimates whether large holders are accumulating or distributing — the "smart money" angle.
+
+**5. Fundamentals.** Market-cap rank, FDV-to-market-cap dilution, and distance from the all-time high — the longer-term quality and positioning of the asset.
+
+## From Five Scores to One Direction
+
+Each pillar produces a score, and the pillars are combined into a single reading on a scale from strong distribution to strong accumulation — labelled as a clear direction (for example, **Strong Buy → Accumulate → Neutral → Distribute**) rather than a bare number. Alongside it sits a **confidence score**, which reflects how much *live* data was available and how strongly the pillars agree. When several pillars point the same way on fresh data, confidence is high; when data is sparse or the signals conflict, confidence is lower and the indicator says so honestly.
+
+## Why Confidence Matters
+
+A direction without a confidence level is dangerous, because it hides uncertainty. The Magic Indicator deliberately surfaces it. If a feed is rate-limited or an asset is too small for reliable on-chain data, the affected pillar is shown as estimated or neutral and weighted down — so the headline reading stays driven by the signals that *do* have live data. You always know how much to trust the number.
+
+## How It Fits a Whole Portfolio
+
+Because every crypto holding gets its own Magic Indicator, WalletLens can also roll them up into a **portfolio compass** — a value-weighted blend across your entire crypto book, so you see not just "is this one coin strong" but "is my crypto allocation, as a whole, leaning toward accumulation or distribution right now." For a deeper look, each holding also offers an optional AI verdict that explains the reading in plain language with bull and bear points.
+
+You can explore it on the [Analysis tab](https://walletlens.live/technicals) — it runs on your holdings without sending them to a server.
+
+## Conclusion
+
+The Magic Indicator is not magic, and it does not claim to be. It is a disciplined way of doing what a careful analyst would do — weigh technicals, on-chain activity, volume, whale behaviour, and fundamentals together — but automated across every holding and condensed into one direction plus an honest confidence score. It will not tell you the future. What it will do is replace the impossible task of manually juggling five kinds of analysis per coin with a single, transparent reading you can use as one informed input into your own decisions.
+    `
+  },
 ]
