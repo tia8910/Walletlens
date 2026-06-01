@@ -20,6 +20,11 @@ export default function DynamicBackground({
   const reduceMotion = typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const effectiveCount = getParticleCount(particleCount)
+  // shadowBlur is expensive (GPU composite step per-particle). Skip it on
+  // mobile and low-power CPUs where it measurably drops frame rate.
+  const useShadow = typeof window !== 'undefined'
+    && !window.matchMedia?.('(max-width: 768px)').matches
+    && !(navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4)
 
   useEffect(() => {
     if (reduceMotion) return
@@ -92,8 +97,7 @@ export default function DynamicBackground({
 
       // Particles
       ctx.fillStyle = col
-      ctx.shadowBlur = 18
-      ctx.shadowColor = col
+      if (useShadow) { ctx.shadowBlur = 18; ctx.shadowColor = col }
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
@@ -103,7 +107,7 @@ export default function DynamicBackground({
         if (p.y > h + 10) p.y = -10
         ctx.fillRect(p.x, p.y, p.size, p.size)
       }
-      ctx.shadowBlur = 0
+      if (useShadow) ctx.shadowBlur = 0
 
       raf = requestAnimationFrame(step)
     }
@@ -132,7 +136,7 @@ export default function DynamicBackground({
       document.removeEventListener('wl-theme', readColors)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [effectiveCount, linkDistance, color, reduceMotion])
+  }, [effectiveCount, linkDistance, color, reduceMotion, useShadow])
 
   return <canvas ref={canvasRef} className="dynamic-bg" aria-hidden="true" />
 }

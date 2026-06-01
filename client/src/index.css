@@ -113,6 +113,12 @@ input, select, textarea {
   --glass: blur(10px) saturate(140%);
 }
 
+/* On mobile, backdrop-filter compositing is expensive — halve the blur radius
+   so the GPU layer is faster to composite on every scroll or DOM change. */
+@media (max-width: 768px) {
+  :root { --glass: blur(4px) saturate(120%); }
+}
+
 /* ══════════════════════════════════════════
    THEME OVERRIDES — applied via data-theme
    ══════════════════════════════════════════ */
@@ -1282,7 +1288,8 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 .tick-val  { color: rgba(255, 255, 255, 0.5); }
 .tick-up   { color: var(--g); }
 .tick-dn   { color: #ff6b6b; }
-/* Dark emerald radial wash */
+/* Dark emerald radial wash — promoted to its own GPU layer so DOM changes
+   elsewhere don't trigger a repaint of this expensive blur. */
 body::before {
   content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
   background:
@@ -1290,6 +1297,7 @@ body::before {
     radial-gradient(40% 35% at 80% 90%, rgba(var(--gd-rgb),0.06) 0%, transparent 70%);
   filter: blur(60px);
   opacity: 1;
+  will-change: transform;
 }
 /* Subtle top glow on black */
 body::after {
@@ -3442,6 +3450,8 @@ tr:last-child td { border-bottom: none; }
   z-index: -3;
   pointer-events: none;
   display: block;
+  /* Own composited layer — isolates canvas repaints from the rest of the DOM */
+  will-change: transform;
 }
 
 /* ═══ Lens glow — sharper, more dramatic premium pulse ═══ */

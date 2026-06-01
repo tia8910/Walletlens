@@ -18,6 +18,8 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 
+const CURRENT_YEAR = new Date().getFullYear()
+
 // Module-level cycling state shared between App topbar and Drawer.
 // A single setInterval drives both so we avoid two redundant timers.
 let _cycleListeners = []
@@ -411,7 +413,7 @@ export default function App() {
       <footer className="wl-app-footer">
         <div className="wl-app-footer-brand">
           <Logo size={22} />
-          <span>WalletLens © {new Date().getFullYear()}</span>
+          <span>WalletLens © {CURRENT_YEAR}</span>
         </div>
         <nav className="wl-app-footer-links">
           <button onClick={() => navigate('/about')}>{t('about')}</button>
