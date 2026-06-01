@@ -7,6 +7,7 @@ import Icon from './Icon'
 import { computeMagic, aggregateMagic } from '../magicIndicator'
 import { getAiVerdict } from '../magicAi'
 import { isStablecoin } from '../stablecoins'
+import { getCachedCoinImage } from '../api'
 
 const PILLAR_INFO = {
   technical:   'RSI, MACD, Bollinger Bands and trend from daily candles.',
@@ -61,17 +62,29 @@ function loadCorsImage(src) {
   })
 }
 
-// Try the asset's own image, then CORS-friendly icon CDNs, returning the first
-// that loads. All are served with permissive CORS so the canvas stays clean.
+// Resolve the asset's logo as a canvas-safe image. Most logo hosts (CoinGecko)
+// don't send CORS headers, which would taint the canvas, so we (1) try a direct
+// CORS load for hosts that do (jsDelivr), then (2) re-serve every candidate
+// through the wsrv.nl image proxy, which always adds `Access-Control-Allow-Origin`
+// — making any logo exportable. Falls back to the lettered badge only if all fail.
 async function loadCoinLogo(item) {
   const sym = (item.coin_symbol || '').toLowerCase()
-  const candidates = [
+  const cached = item.coin_id ? getCachedCoinImage(item.coin_id) : null
+  const originals = [
     item.coin_image,
+    cached && cached !== item.coin_image ? cached : null,
     sym && `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`,
-    sym && `https://assets.coincap.io/assets/icons/${sym}@2x.png`,
   ].filter(Boolean)
-  for (const url of candidates) {
+
+  // 1) Direct (works for already-CORS hosts like jsDelivr).
+  for (const url of originals) {
     const img = await loadCorsImage(url)
+    if (img) return img
+  }
+  // 2) CORS proxy fallback — reliable for CoinGecko & everything else.
+  for (const url of originals) {
+    const proxied = `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=128&h=128&output=png`
+    const img = await loadCorsImage(proxied)
     if (img) return img
   }
   return null
