@@ -1688,4 +1688,175 @@ The reason most people abandon net worth tracking is the upkeep. WalletLens mini
 The best free net worth tracker is the one that covers every asset class you own, costs nothing, and respects your privacy. If you want automatic bank linking and do not mind paying, the subscription tools deliver that. But if you want to see your complete net worth — crypto, stocks, gold, and cash — in one free app that needs no account and keeps your financial life on your own device, a local-first tracker like WalletLens is built exactly for that. Start by listing what you own, put it all in one place, and check the trend each month. The clarity of knowing your real number, and watching it grow, is the foundation of every other financial decision you will make.
     `
   },
+  {
+    slug: 'how-to-calculate-your-net-worth',
+    title: 'How to Calculate Your Net Worth (Step by Step)',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'A clear, step-by-step method for calculating your net worth — what counts as an asset, what counts as a liability, and how to track the number over time.',
+    content: `
+Net worth is the single clearest measure of your financial position: everything you own minus everything you owe. It cuts through income, lifestyle, and appearances to a single honest number. This guide walks through exactly how to calculate yours, what to include, and how to keep it updated so you can watch it grow.
+
+## The Formula
+
+Net worth is simple arithmetic:
+
+**Net worth = Total assets − Total liabilities**
+
+The work is not the maths — it is gathering an accurate, complete picture of both sides. Most people underestimate their net worth because they forget assets, or overestimate it because they forget debts. Precision comes from being thorough.
+
+## Step 1: List Every Asset
+
+An asset is anything you own that has monetary value. Group them so nothing is missed:
+
+- **Cash & equivalents** — checking, savings, money-market balances, physical cash.
+- **Investments** — brokerage holdings (stocks, ETFs, bonds), retirement accounts (401k, IRA, ISA, pension).
+- **Cryptocurrency** — coins on exchanges and in self-custody wallets, at current market value.
+- **Precious metals** — gold, silver, platinum, valued at the current spot price.
+- **Real estate** — your home and any other property, at realistic market value.
+- **Vehicles & valuables** — cars, collectibles, and other resellable items, at honest resale value (not what you paid).
+
+Use current market values, not purchase prices. A stock you bought at $50 that now trades at $80 is an $80 asset.
+
+## Step 2: List Every Liability
+
+A liability is anything you owe:
+
+- **Mortgages** — the outstanding balance, not the original loan.
+- **Loans** — car loans, student loans, personal loans.
+- **Credit cards** — current balances.
+- **Any other debt** — medical bills, money owed to family, tax owed.
+
+## Step 3: Subtract
+
+Add up all assets, add up all liabilities, and subtract. The result is your net worth. It can be negative — common for those early in a career or carrying student debt — and that is fine. The number is a starting point, not a verdict.
+
+## Step 4: Track It Over Time
+
+A single net-worth figure is a snapshot. The value comes from watching the **trend**. Calculate it on a regular cadence — monthly is ideal, quarterly at minimum — and record each result. Over a year you will see whether your decisions are compounding in the right direction.
+
+The friction is that asset values move constantly: crypto and stocks change every second, metals daily. Recomputing by hand each month is tedious, which is why most people abandon the habit.
+
+## Automating the Asset Side
+
+A net worth tracker removes the manual recalculation. You enter each holding once; the tool fetches live prices and keeps the total current. [WalletLens](https://walletlens.live) does this across every asset class — crypto, stocks, gold, silver, cash and FX — in one free dashboard, with no account and all data stored privately in your browser. You add your assets, and it maintains a live net-worth figure and allocation breakdown so the monthly check becomes a glance rather than a chore. You can also log holdings by voice or CSV import, and export a backup code to carry your data between devices.
+
+> **Educational note:** Net worth is an informational measure, not financial advice. Use realistic, current values, and treat the trend as a guide rather than a scoreboard to obsess over.
+
+## Conclusion
+
+Calculating your net worth is straightforward: list what you own at current value, list what you owe, and subtract. The discipline that actually builds wealth is doing it consistently and watching the trend. Be thorough on both sides, use live values, and lean on a tracker to keep the asset side current so the habit sticks. Knowing your real number — and seeing it move in the right direction — is the foundation every other financial decision rests on.
+    `
+  },
+  {
+    slug: 'net-worth-tracker-vs-spreadsheet',
+    title: 'Net Worth Tracker vs Spreadsheet: Which Should You Use?',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'Spreadsheets are free and flexible, but they go stale. Here is an honest comparison of tracking your net worth in a spreadsheet versus a dedicated tracker.',
+    content: `
+For years, the spreadsheet was the only free way to track your net worth. It still works, and millions of people rely on one. But a dedicated net worth tracker now does the same job with far less upkeep — and many are also free. This is an honest comparison so you can pick the right tool for how you actually behave, not how you wish you behaved.
+
+## The Case for a Spreadsheet
+
+Spreadsheets have real strengths:
+
+- **Total flexibility.** You can model anything — custom categories, formulas, projections, scenarios.
+- **Free and universal.** Google Sheets and Excel are everywhere, and you fully own the file.
+- **No dependencies.** Nothing can shut down or change pricing on you.
+
+For someone who enjoys building systems and only checks occasionally, a well-made spreadsheet is genuinely good.
+
+## The Hidden Cost of a Spreadsheet
+
+The problem is not capability — it is **maintenance**. A net worth spreadsheet is only as accurate as the last time you manually updated every value. And asset values never stop moving:
+
+- Crypto prices change every second.
+- Stocks move all day, every trading day.
+- Gold and silver shift daily.
+
+So your spreadsheet is correct the moment you finish updating it and slowly drifts out of date every minute after. Keeping it accurate means manually re-entering dozens of prices on every check — which is exactly why most net-worth spreadsheets are abandoned within a few months. The flexibility is real, but so is the friction.
+
+There are formula tricks to pull live prices (GOOGLEFINANCE, third-party add-ons), but they are fiddly, often break, rarely cover crypto and metals well, and require ongoing upkeep of their own.
+
+## What a Dedicated Tracker Does Differently
+
+A net worth tracker automates the part that makes spreadsheets fail: **live valuation**. You enter each holding once, and the tool keeps its value current automatically. The trade-off is less open-ended flexibility — you work within the tool's structure rather than a blank grid.
+
+A good tracker also adds things a spreadsheet cannot easily do: allocation visualisations, performance over time, and analysis like risk and diversification scoring.
+
+## A Free Tracker That Keeps Spreadsheet-Style Ownership
+
+The usual objection to trackers is that they cost money or require an account. [WalletLens](https://walletlens.live) avoids both: it is free, needs no account, and — like a spreadsheet file — stores everything **locally on your device** rather than on a company's servers. You get automatic live pricing across crypto, stocks, gold, cash and FX, plus allocation and AI analysis, while keeping the privacy and ownership that make spreadsheets appealing. You can import an existing spreadsheet via CSV to get started, and export a backup code at any time, so you are never locked in.
+
+## Which Should You Choose?
+
+- **Choose a spreadsheet** if you value total customisation, enjoy maintaining it, hold only a few slow-moving assets, and check infrequently.
+- **Choose a dedicated tracker** if you hold assets whose prices move constantly (crypto, stocks, metals), want an always-current number without manual updates, and value built-in allocation and analysis.
+
+Many people end up using a free local-first tracker for the day-to-day live picture and a spreadsheet only for long-term projections or scenarios the tracker does not model.
+
+> **Educational note:** Both approaches are informational tools, not financial advice. Whatever you choose, keep one durable backup so a lost file or cleared browser never erases your records.
+
+## Conclusion
+
+A spreadsheet is free and infinitely flexible, but it goes stale the instant prices move and dies by manual upkeep. A dedicated tracker trades some flexibility for an always-accurate number and built-in analysis. The old reason to prefer a spreadsheet — privacy and ownership — no longer requires the trade-off, because a free, local-first tracker like WalletLens keeps your data on your device while updating values automatically. Pick the tool that matches how often you will actually maintain it; the best net worth tracker is the one you will still be using a year from now.
+    `
+  },
+  {
+    slug: 'free-alternatives-to-empower-kubera-personal-capital',
+    title: 'Free Alternatives to Empower, Kubera & Personal Capital',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Empower (Personal Capital) and Kubera are popular net worth trackers, but they come with accounts, account-linking, or subscription fees. Here are the free, private alternatives and how to choose.',
+    content: `
+Empower (formerly Personal Capital) and Kubera are among the best-known net worth trackers, and both are genuinely capable. But they share characteristics not everyone wants: they require accounts, they centre on linking your bank and brokerage credentials, and Kubera charges an annual subscription while Empower monetises through paid wealth-management services. If you want to track your net worth without those trade-offs, here are the alternatives and how to weigh them.
+
+## What People Actually Want From an Alternative
+
+When someone searches for an alternative to these tools, they are usually after one or more of:
+
+- **No subscription fee** — a genuinely free option.
+- **No account or bank-linking** — privacy, and no credentials handed to a third party.
+- **Crypto support** — many traditional trackers handle crypto poorly or not at all.
+- **Data ownership** — financial data that stays under their control.
+
+Keep your own priority in mind as you read — the "best" alternative depends entirely on which of these matters most to you.
+
+## The Main Free Alternatives
+
+**Spreadsheets (Google Sheets / Excel).** The original free alternative. Total control and zero cost, but you manually update every value, and live prices for crypto and metals are awkward. Best for infrequent checks and slow-moving assets.
+
+**Brokerage and bank dashboards.** Free, but each only shows the assets held there — no unified picture across institutions, crypto, or physical assets.
+
+**Crypto-first trackers (CoinStats, Delta).** Free tiers exist, but they are built around crypto, with stocks and other assets as secondary, and the convenient features usually require an account and often a subscription.
+
+**Local-first all-asset trackers (e.g. WalletLens).** Free, no account, and store data on your device rather than a server — closest to "all the coverage, none of the trade-offs."
+
+## WalletLens as a Free, Private Alternative
+
+[WalletLens](https://walletlens.live) was built specifically for people who want what Empower and Kubera do — a complete net-worth view across every asset class — without the account, the bank-linking, or the cost. How it compares:
+
+- **Free, with no paid tier** — versus Kubera's annual fee or Empower's paid advisory model.
+- **No account and no bank login** — you add holdings by typing, voice, or CSV import, so no credentials are ever shared, versus the credential-linking both rely on.
+- **Every asset class** — crypto, US stocks and ETFs, gold, silver, cash and FX in one live net-worth total.
+- **Private by design** — data is stored only in your browser; nothing is sent to a server.
+- **AI analysis included** — a portfolio health score, risk scan and the Magic Indicator, computed on-device.
+
+The honest trade-off: because WalletLens does not link your accounts, balances do not sync automatically — you update holdings yourself, which is also what makes it private. For many people that is a worthwhile exchange; for someone who wants fully automatic bank syncing above all, a linked tool like Empower may fit better.
+
+## How to Choose
+
+- **Want it free, private, and crypto-inclusive?** A local-first tracker like WalletLens.
+- **Want automatic bank/brokerage syncing and don't mind an account?** Empower (free) or Kubera (paid).
+- **Want maximum flexibility and only check occasionally?** A spreadsheet.
+- **Only hold crypto?** A crypto-first tracker may suffice.
+
+> **Educational note:** This comparison reflects publicly documented features and is for general guidance, not endorsement or financial advice. Verify current pricing and features with each provider before deciding.
+
+## Conclusion
+
+Empower, Kubera, and Personal Capital are solid tools, but they ask for accounts, account-linking, or fees that not everyone wants to accept just to see their net worth. The free alternatives each make a different trade: spreadsheets trade convenience for control, crypto trackers trade breadth for depth, and local-first all-asset trackers like WalletLens trade automatic syncing for being free, private, and complete. Decide which trade-off you are happy to make, and the right alternative becomes obvious.
+    `
+  },
 ]
