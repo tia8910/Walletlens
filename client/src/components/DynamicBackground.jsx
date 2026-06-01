@@ -20,6 +20,11 @@ export default function DynamicBackground({
   const reduceMotion = typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const effectiveCount = getParticleCount(particleCount)
+  // shadowBlur is expensive (GPU composite step per-particle). Skip it on
+  // mobile and low-power CPUs where it measurably drops frame rate.
+  const useShadow = typeof window !== 'undefined'
+    && !window.matchMedia?.('(max-width: 768px)').matches
+    && !(navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4)
 
   useEffect(() => {
     if (reduceMotion) return
@@ -129,7 +134,7 @@ export default function DynamicBackground({
       document.removeEventListener('wl-theme', readColors)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [effectiveCount, linkDistance, color, reduceMotion])
+  }, [effectiveCount, linkDistance, color, reduceMotion, useShadow])
 
   return <canvas ref={canvasRef} className="dynamic-bg" aria-hidden="true" />
 }

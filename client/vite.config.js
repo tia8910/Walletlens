@@ -49,7 +49,7 @@ export default defineConfig({
   },
   esbuild: {
     drop: ['debugger'],
-    pure: ['console.log', 'console.debug', 'console.info'],
+    pure: ['console.log', 'console.debug', 'console.info', 'console.warn'],
     // Mangle private class members for smaller output
     legalComments: 'none',
   },
