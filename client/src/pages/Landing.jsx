@@ -650,11 +650,6 @@ export default function Landing() {
           <button className="lp-link" onClick={() => navigate('/academy')}>Academy</button>
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>AI Advisor</button>
-          <span>·</span>
-          <a className="lp-link lp-x-link" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" onClick={() => track('landing_x_follow')}>
-            <svg className="lp-x-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            @walletlenss
-          </a>
         </div>
       </section>
 
@@ -667,10 +662,6 @@ export default function Landing() {
           <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
           <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
           <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
-          <a className="lp-footer-x" href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" title="Follow @walletlenss on X" onClick={() => track('landing_x_follow')}>
-            <svg className="lp-x-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            @walletlenss
-          </a>
         </nav>
       </footer>
     </div>

@@ -244,7 +244,6 @@ export default function Settings() {
           <div className="settings-divider"/>
           <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>
             <a href="/privacy" style={{ color:'var(--g)', textDecoration:'none' }}>Privacy Policy</a>
-            <a href="https://x.com/walletlenss" target="_blank" rel="noopener noreferrer" style={{ color:'var(--g)', textDecoration:'none' }}>@walletlenss</a>
           </div>
         </div>
       </div>
