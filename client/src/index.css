@@ -6215,6 +6215,39 @@ select.bs-input option { background: var(--bg3); }
 .lp-asset-name { font-size: 0.9rem; font-weight: 800; color: #fff; }
 .lp-asset-desc { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem; }
 
+/* ── Comparison table ── */
+.lp-compare-card {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(var(--g-rgb),0.18);
+  border-radius: 20px; overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+.lp-compare-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.lp-compare-table { width: 100%; border-collapse: collapse; min-width: 660px; }
+.lp-compare-table th, .lp-compare-table td {
+  padding: 0.9rem 0.7rem; text-align: center; font-size: 0.88rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.lp-compare-table thead th { font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 700; }
+.lp-compare-table thead th.lp-compare-us { color: var(--g); font-size: 0.98rem; font-weight: 900; background: rgba(var(--g-rgb),0.09); }
+.lp-compare-table tbody td:first-child,
+.lp-compare-table thead th:first-child {
+  text-align: left; min-width: 180px; position: sticky; left: 0;
+  background: #04130b; font-weight: 600;
+}
+.lp-compare-feat { color: #fff; }
+.lp-compare-uscell { background: rgba(var(--g-rgb),0.06); }
+.lp-c-yes { color: #22c55e; font-weight: 800; }
+.lp-c-no { color: #ef4444; font-weight: 800; }
+.lp-c-part { color: #eab308; font-weight: 700; font-size: 0.8rem; }
+.lp-c-free { color: var(--g); font-weight: 800; }
+.lp-c-muted { color: rgba(255,255,255,0.55); font-size: 0.82rem; }
+.lp-compare-note {
+  text-align: center; color: rgba(255,255,255,0.4);
+  font-size: 0.74rem; margin-top: 0.8rem; max-width: 680px;
+  margin-left: auto; margin-right: auto; line-height: 1.5;
+}
+
 /* ── Final CTA ── */
 .lp-final {
   position: relative;

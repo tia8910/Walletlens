@@ -283,7 +283,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -320,6 +320,7 @@ export default function App() {
       <div className="wl-app wl-app-landing">
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />

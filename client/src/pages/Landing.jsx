@@ -608,6 +608,65 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ COMPARISON ═════════════════════════════════════════════════ */}
+      <section className="lp-section" id="free-net-worth-tracker">
+        <div className="lp-section-label">Free net worth tracker</div>
+        <h2 className="lp-section-h2">WalletLens vs the popular trackers</h2>
+        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
+          How a free, local-first net worth tracker compares to the well-known paid and account-based options.
+        </p>
+        <div className="lp-compare-card">
+          <div className="lp-compare-scroll">
+            <table className="lp-compare-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th className="lp-compare-us">WalletLens</th>
+                  <th>Empower</th>
+                  <th>Kubera</th>
+                  <th>CoinStats</th>
+                  <th>Spreadsheet</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Price', ['free', 'Free forever'], ['muted', 'Free*'], ['muted', '$199/yr'], ['muted', 'Freemium'], ['free', 'Free']],
+                  ['No account required', ['yes'], ['no'], ['no'], ['no'], ['yes']],
+                  ['Crypto + stocks + metals + cash', ['yes'], ['yes'], ['yes'], ['part', 'Crypto-led'], ['part', 'Manual']],
+                  ['Data stays on your device', ['yes'], ['no'], ['no'], ['no'], ['yes']],
+                  ['No bank / exchange login', ['yes'], ['no'], ['part', 'Optional'], ['no'], ['yes']],
+                  ['Built-in AI analysis', ['yes'], ['part', 'Limited'], ['no'], ['part', 'Limited'], ['no']],
+                  ['Live prices & auto-update', ['yes'], ['yes'], ['yes'], ['yes'], ['no']],
+                  ['Installable app (PWA)', ['yes'], ['yes'], ['part', 'Web'], ['yes'], ['no']],
+                ].map((row, i) => (
+                  <tr key={i}>
+                    <td className="lp-compare-feat">{row[0]}</td>
+                    {row.slice(1).map((cell, j) => {
+                      const [kind, label] = cell
+                      const mark = kind === 'yes' ? '✓' : kind === 'no' ? '✕' : label
+                      return (
+                        <td key={j} className={`lp-compare-cell${j === 0 ? ' lp-compare-uscell' : ''} lp-c-${kind}`}>
+                          {kind === 'free' || kind === 'muted' || kind === 'part' ? label : mark}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p className="lp-compare-note">
+          *Empower (formerly Personal Capital) is free to use but markets paid wealth-management services. Comparison reflects publicly documented features and is for general guidance, not endorsement.
+        </p>
+        <div style={{ textAlign: 'center', marginTop: '1.6rem' }}>
+          <button className="lp-cta-primary" onClick={() => { track('landing_cta_compare'); navigate('/dashboard') }}>
+            Track your net worth free
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+
       {/* ══ FINAL CTA ══════════════════════════════════════════════════ */}
       <section className="lp-final">
         <div className="lp-final-glow" />
