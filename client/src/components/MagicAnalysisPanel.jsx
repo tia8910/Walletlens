@@ -127,23 +127,23 @@ function drawShareCard(canvas, item) {
   let py = 600
   const barX = PAD + 220, barW = W - PAD * 2 - 220 - 110
   for (const p of m.pillars) {
-    const avail = p.available
-    const s = avail ? p.score : 0
-    const color = !avail ? 'rgba(255,255,255,0.3)' : s >= 0 ? up : down
+    const est = p.estimated
+    const s = p.score ?? 0
+    const color = est ? 'rgba(255,255,255,0.35)' : s >= 0 ? up : down
     ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '600 30px Inter, system-ui, sans-serif'
     ctx.fillText(p.label, PAD, py + 8)
     // track
     rr(ctx, barX, py - 14, barW, 14, 7); ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fill()
     // zero tick
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(barX + barW / 2 - 1, py - 18, 2, 22)
-    if (avail) {
+    if (!est && s !== 0) {
       const wpct = Math.min(0.5, Math.abs(s) / 200)
       const fillW = wpct * barW
       const fillL = s >= 0 ? barX + barW / 2 : barX + barW / 2 - fillW
       rr(ctx, fillL, py - 14, Math.max(fillW, 4), 14, 7); ctx.fillStyle = color; ctx.fill()
     }
     ctx.textAlign = 'right'; ctx.fillStyle = color; ctx.font = '700 30px Inter, system-ui, sans-serif'
-    ctx.fillText(avail ? (s > 0 ? '+' + s : '' + s) : 'n/a', W - PAD, py + 8)
+    ctx.fillText(`${s > 0 ? '+' + s : s}${est ? '*' : ''}`, W - PAD, py + 8)
     ctx.textAlign = 'left'
     py += 66
   }
@@ -162,7 +162,7 @@ function tweetTextFor(item) {
   const m = item.magic
   const sym = (item.coin_symbol || '').toUpperCase()
   const pills = m.pillars
-    .filter(p => p.available)
+    .filter(p => !p.estimated)
     .map(p => `${p.label} ${p.score > 0 ? '+' : ''}${p.score}`)
     .join(' · ')
   return encodeURIComponent(
@@ -260,23 +260,24 @@ function PillarBars({ pillars }) {
   return (
     <div className="pillar-list">
       {pillars.map((p) => {
-        const avail = p.available
-        const s = avail ? p.score : 0
-        const color = !avail ? 'var(--text2)' : s >= 0 ? '#22c55e' : '#ef4444'
+        const est = p.estimated
+        const s = p.score ?? 0
+        const color = est ? 'var(--text2)' : s >= 0 ? '#22c55e' : '#ef4444'
         const widthPct = Math.min(50, Math.abs(s) / 2)
+        const title = est ? `${PILLAR_INFO[p.key]} (estimated — live feed unavailable)` : PILLAR_INFO[p.key]
         return (
-          <div key={p.key} className="pillar-row" title={PILLAR_INFO[p.key]}>
+          <div key={p.key} className="pillar-row" title={title}>
             <div className="pillar-name">{p.label}</div>
             <div className="pillar-track">
               <div className="pillar-zero" />
-              {avail && (
+              {!est && s !== 0 && (
                 <div
                   className="pillar-fill"
                   style={{ background: color, width: `${widthPct}%`, left: s >= 0 ? '50%' : `${50 - widthPct}%` }}
                 />
               )}
             </div>
-            <div className="pillar-val" style={{ color }}>{avail ? (s > 0 ? '+' + s : s) : 'n/a'}</div>
+            <div className="pillar-val" style={{ color }}>{s > 0 ? '+' + s : s}{est ? '*' : ''}</div>
           </div>
         )
       })}
@@ -296,7 +297,7 @@ function AiVerdict({ item }) {
     const payload = {
       asset: { symbol: item.coin_symbol?.toUpperCase(), name: item.coin_name },
       magic: { score: item.magic.score, direction: item.magic.direction.label, confidence: item.magic.confidence },
-      pillars: item.magic.pillars.filter(p => p.available).map(p => ({ label: p.label, score: p.score, note: p.note })),
+      pillars: item.magic.pillars.filter(p => !p.estimated).map(p => ({ label: p.label, score: p.score, note: p.note })),
       stats: {
         rsi: item.ta?.rsi != null ? Math.round(item.ta.rsi) : undefined,
         trend: item.ta?.trend,

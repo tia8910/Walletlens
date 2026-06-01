@@ -212,7 +212,9 @@ const PILLAR_DEFS = [
 
 // Merge the pillars into a single direction.
 // Inputs: { ta, signals, fundamental } — any may be null/undefined.
-// Returns null only when no pillar has data.
+// Every pillar always renders a value: when a feed is rate-limited we fall
+// back to data-backed proxies (see the pillar fns) and, as a last resort,
+// to a neutral 0 (flagged `estimated`) so nothing ever shows "n/a".
 export function computeMagic({ ta, signals, fundamental } = {}) {
   const raw = {
     technical: pillarTechnical(ta, fundamental),
@@ -222,27 +224,32 @@ export function computeMagic({ ta, signals, fundamental } = {}) {
     fundamental: pillarFundamental(fundamental),
   }
 
-  const pillars = PILLAR_DEFS.map((d) => ({
-    key: d.key,
-    label: d.label,
-    weight: d.weight,
-    available: !!raw[d.key].available,
-    score: raw[d.key].available ? raw[d.key].score : null,
-    note: raw[d.key].available ? raw[d.key].note : 'no data',
-  }))
+  const pillars = PILLAR_DEFS.map((d) => {
+    const r = raw[d.key]
+    if (r.available) {
+      return { key: d.key, label: d.label, weight: d.weight, available: true, score: r.score, note: r.note, estimated: false }
+    }
+    // Last-resort neutral so the row reads "0" instead of "n/a". Marked
+    // `estimated` so it's excluded from the composite score & confidence.
+    return { key: d.key, label: d.label, weight: d.weight, available: true, score: 0, note: 'limited data — neutral', estimated: true }
+  })
 
-  const avail = pillars.filter((p) => p.available)
-  if (!avail.length) return null
+  // Composite is built only from data-backed pillars (real + proxy), never
+  // from the neutral fillers, so confidence isn't inflated by missing feeds.
+  const basis = pillars.filter((p) => !p.estimated)
+  if (!basis.length) {
+    return { score: 0, direction: directionMeta(0), confidence: 0, coverage: 0, pillars }
+  }
 
-  const wsum = avail.reduce((s, p) => s + p.weight, 0)
-  const score = clamp(avail.reduce((s, p) => s + p.score * p.weight, 0) / wsum)
+  const wsum = basis.reduce((s, p) => s + p.weight, 0)
+  const score = clamp(basis.reduce((s, p) => s + p.score * p.weight, 0) / wsum)
 
   // Confidence: how much of the model is covered + how much the pillars agree
   // with the composite direction.
-  const coverage = avail.length / PILLAR_DEFS.length
+  const coverage = basis.length / PILLAR_DEFS.length
   const compSign = Math.sign(score) || 1
   let agreeW = 0
-  for (const p of avail) {
+  for (const p of basis) {
     const ps = Math.sign(p.score)
     if (Math.abs(p.score) < 8) agreeW += 0.5 * p.weight     // ~neutral: half credit
     else if (ps === compSign) agreeW += p.weight
