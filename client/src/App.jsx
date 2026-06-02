@@ -288,7 +288,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -332,6 +332,8 @@ export default function App() {
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
+          <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
+          <Route path="/add-holdings-by-voice" element={<Landing />} />
           <Route path="/track/:slug" element={<TrackCoin />} />
           <Route path="/calculator/:slug" element={<Calculator />} />
           <Route path="/learn/:slug" element={<Learn />} />

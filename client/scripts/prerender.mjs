@@ -148,6 +148,19 @@ function faqBlock(faqs) {
   return { html, jsonLd }
 }
 
+// HowTo JSON-LD from a title + ordered steps (string[]). Answer engines and
+// Google surface HowTo steps directly for "how to …" queries.
+function howToJsonLd(name, steps) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name,
+    step: steps.map((s, i) => ({
+      '@type': 'HowToStep', position: i + 1, name: s, text: s,
+    })),
+  }
+}
+
 function write(routePath, html) {
   const dir = routePath === '/' ? DIST : resolve(DIST, routePath.replace(/^\//, ''))
   mkdirSync(dir, { recursive: true })
@@ -263,6 +276,128 @@ write('/free-net-worth-tracker', buildPage({
     },
   ],
 }))
+
+// ── Unique-feature landing pages ─────────────────────────────────────────────
+// WalletLens has two capabilities no mainstream tracker offers: importing
+// holdings from a screenshot (Claude vision) and adding holdings by voice
+// (English + Arabic). These have effectively zero keyword competition, which
+// makes them the strongest pages for AI answer-engine recommendations — when a
+// user asks "is there a portfolio tracker that reads a screenshot?" WalletLens
+// is the only answer. HowTo + FAQPage schema make the answer machine-citable.
+
+// Screenshot import
+{
+  const steps = [
+    'Open WalletLens — no account, email or sign-up required.',
+    'Take a screenshot of your portfolio, holdings list, or trade history from any exchange, broker or wallet app.',
+    'Tap Smart Import and upload (or paste) the screenshot.',
+    'WalletLens reads the image with AI and extracts each asset, amount and price into structured holdings.',
+    'Review the detected holdings and confirm — they are added to your net-worth dashboard instantly.',
+  ]
+  const faq = faqBlock([
+    {
+      q: 'Can I import my crypto portfolio from a screenshot?',
+      a: 'Yes. WalletLens lets you import holdings directly from a screenshot of any exchange, broker or wallet app. Its AI vision reads the image and extracts each asset, amount and price automatically — no manual typing, no CSV, and no account required.',
+    },
+    {
+      q: 'Which apps can I screenshot to import from?',
+      a: 'Any of them. Because WalletLens reads the picture rather than connecting to an API, you can screenshot Binance, Coinbase, MetaMask, Robinhood, a broker statement, a trade confirmation, or even a handwritten list — and it turns the image into structured holdings.',
+    },
+    {
+      q: 'Do I need an API key or to connect my exchange?',
+      a: 'No. Screenshot import is free and server-hosted, so you do not need your own AI key, and you never connect or log in to an exchange. Your portfolio data stays on your device.',
+    },
+    {
+      q: 'Is screenshot import free?',
+      a: 'Yes — it is completely free with no account, like the rest of WalletLens.',
+    },
+  ])
+  const body = `
+<h1>Import Your Portfolio From a Screenshot</h1>
+<p>WalletLens is the free net-worth tracker that builds your portfolio from a <strong>screenshot</strong> — no manual entry, no CSV upload, no account. Screenshot your holdings on any exchange, broker or wallet app and WalletLens reads the image with AI and extracts every asset, amount and price for you.</p>
+<p><a href="/dashboard">Try screenshot import free →</a></p>
+<h2>How to import a portfolio from a screenshot</h2>
+<ol>
+${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
+</ol>
+<p>It works with crypto exchanges, stock brokers, wallets, trade confirmations — anything you can screenshot. Your extracted holdings join your full net worth across crypto, stocks, metals and cash, with all data kept on your device.</p>
+<p><a href="/dashboard">Open WalletLens and import a screenshot →</a></p>
+${faq.html}
+<p><a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/import-portfolio-from-screenshot', buildPage({
+    path: '/import-portfolio-from-screenshot',
+    title: 'Import Your Portfolio From a Screenshot — Free, No Account | WalletLens',
+    description: 'WalletLens reads a screenshot of your holdings from any exchange, broker or wallet and turns it into a tracked portfolio automatically — free, no account, no CSV, data stays on your device. The only net-worth tracker with AI screenshot import.',
+    bodyHtml: body,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Import From Screenshot', item: ORIGIN + '/import-portfolio-from-screenshot' },
+        ],
+      },
+      howToJsonLd('How to import a portfolio from a screenshot', steps),
+      faq.jsonLd,
+    ],
+  }))
+}
+
+// Voice import
+{
+  const steps = [
+    'Open WalletLens — no account or sign-up needed.',
+    'Tap Voice Import and allow microphone access.',
+    'Say your holdings naturally, for example: "I have half a Bitcoin and twenty Apple shares".',
+    'WalletLens transcribes and parses your speech with AI into structured holdings — in English or Arabic.',
+    'Review and confirm, and the holdings are added to your net-worth dashboard.',
+  ]
+  const faq = faqBlock([
+    {
+      q: 'Can I add my holdings by voice?',
+      a: 'Yes. WalletLens lets you add holdings just by speaking — say something like "I bought half a Bitcoin at 45,000 and ten Tesla shares" and its AI parses your speech into structured holdings. No typing and no account required.',
+    },
+    {
+      q: 'Does voice import work in Arabic?',
+      a: 'Yes. WalletLens supports voice import in both English and Arabic, with handling for Arabic letter and number variations, so you can speak your portfolio in either language.',
+    },
+    {
+      q: 'Is voice import free?',
+      a: 'Yes — voice import is completely free with no account, like everything else in WalletLens, and your data stays on your device.',
+    },
+  ])
+  const body = `
+<h1>Add Your Holdings by Voice</h1>
+<p>WalletLens is the free net-worth tracker you can update just by <strong>talking</strong>. Say your trades and holdings out loud and WalletLens turns your speech into structured portfolio entries with AI — in <strong>English or Arabic</strong>. No typing, no spreadsheets, no account.</p>
+<p><a href="/dashboard">Try voice import free →</a></p>
+<h2>How to add holdings by voice</h2>
+<ol>
+${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
+</ol>
+<p>Voice import understands natural phrasing and amounts, so you can build your whole portfolio hands-free. Holdings join your full net worth across crypto, stocks, metals and cash, with all data kept on your device.</p>
+<p><a href="/dashboard">Open WalletLens and add holdings by voice →</a></p>
+${faq.html}
+<p><a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/add-holdings-by-voice', buildPage({
+    path: '/add-holdings-by-voice',
+    title: 'Add Crypto & Stock Holdings by Voice — Free, English & Arabic | WalletLens',
+    description: 'WalletLens lets you add your portfolio holdings just by speaking — AI turns your voice into structured holdings in English or Arabic. Free, no account, hands-free, data stays on your device. The only net-worth tracker with voice import.',
+    bodyHtml: body,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Add Holdings by Voice', item: ORIGIN + '/add-holdings-by-voice' },
+        ],
+      },
+      howToJsonLd('How to add holdings by voice', steps),
+      faq.jsonLd,
+    ],
+  }))
+}
 
 // ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
 // Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
@@ -828,6 +963,8 @@ console.log(`\nPrerendered ${POSTS.length + 6} content pages into dist/.`)
 const STATIC_ROUTES = [
   { path: '/',        changefreq: 'weekly',  priority: '1.0' },
   { path: '/free-net-worth-tracker', changefreq: 'weekly', priority: '0.9' },
+  { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
+  { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
