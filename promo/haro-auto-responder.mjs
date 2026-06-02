@@ -14,6 +14,7 @@
  *   GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx" \
  *   ANTHROPIC_API_KEY=sk-ant-... \
  *   SENDER_NAME="Your Name" \
+ *   REPLY_FROM=contact@walletlens.live \
  *   node promo/haro-auto-responder.mjs
  *
  * ── Flags ─────────────────────────────────────────────────────────────────────
@@ -27,6 +28,14 @@
  *   2. App Passwords: myaccount.google.com/apppasswords
  *      → Select app: Mail → Select device: Other → name it "HARO bot" → Create
  *   3. Copy the 16-char password (spaces included is fine)
+ *
+ * ── Send from contact@walletlens.live ────────────────────────────────────────
+ *   To send as contact@walletlens.live via Gmail:
+ *   1. Gmail → Settings → See all settings → Accounts → Send mail as
+ *   2. Add another email address → enter contact@walletlens.live
+ *   3. Gmail will send a verification email to contact@walletlens.live — click it
+ *   4. Set REPLY_FROM=contact@walletlens.live in your env vars
+ *   Responses will then show "From: contact@walletlens.live" to journalists.
  */
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -41,6 +50,7 @@ const GMAIL_USER         = process.env.GMAIL_USER         || ''
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || ''
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || ''
 const SENDER_NAME        = process.env.SENDER_NAME        || 'WalletLens'
+const REPLY_FROM         = process.env.REPLY_FROM         || 'contact@walletlens.live'
 
 const AUTO_SEND = process.argv.includes('--auto-send')
 const WATCH     = process.argv.includes('--watch')
@@ -283,7 +293,7 @@ async function saveDraft(to, subject, body) {
   })
 
   const raw = [
-    `From: ${SENDER_NAME} <${GMAIL_USER}>`,
+    `From: ${SENDER_NAME} <${REPLY_FROM}>`,
     `To: ${to}`,
     `Subject: ${subject}`,
     `Content-Type: text/plain; charset=utf-8`,
@@ -314,7 +324,7 @@ async function saveDraft(to, subject, body) {
 async function sendEmail(to, subject, body) {
   const transport = createTransport()
   await transport.sendMail({
-    from: `${SENDER_NAME} <${GMAIL_USER}>`,
+    from: `${SENDER_NAME} <${REPLY_FROM}>`,
     to,
     subject,
     text: body,
