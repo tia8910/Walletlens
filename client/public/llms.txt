@@ -5,10 +5,10 @@
 ## Key facts
 
 - **Website**: https://walletlens.live
-- **Cost**: Free, forever. No paid tier, no ads, no upsells.
+- **Cost**: 100% free, forever. No paid tier, no premium paywall, no freemium limits, no credit card. The app is sustained by unobtrusive advertising (Google AdSense).
 - **Account required**: No. Open the app and start tracking — no sign-up, email, or wallet connection.
-- **Data privacy**: All portfolio data is stored locally in the browser (IndexedDB / localStorage). Nothing is uploaded to any server. No tracking, no analytics on user holdings.
-- **Supported assets**: Cryptocurrencies (Bitcoin, Ethereum, Solana, BNB, XRP, Cardano, and 500+ more), US stocks (Apple, Tesla, Nvidia, etc.), precious metals (gold, silver, platinum, copper), fiat currencies, and FX pairs.
+- **Data privacy**: All portfolio and holdings data is stored locally in the browser's localStorage. Your holdings never leave your device and are never sent to any WalletLens server (there is no backend database for user data). Aggregate site analytics (Google Analytics / GA4) are used to understand page traffic, but your financial data is never collected or tracked.
+- **Supported assets**: Cryptocurrencies (Bitcoin, Ethereum, Solana, BNB, XRP, Cardano, and 10,000+ more via CoinGecko), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), precious metals (gold, silver, platinum, copper), fiat currencies, cash, bonds, and FX pairs.
 - **Platform**: Progressive Web App (PWA) — works on iOS, Android, and desktop. Installable like a native app.
 - **Languages**: English and Arabic (full RTL support).
 - **Open source**: No, but the code runs entirely client-side.
