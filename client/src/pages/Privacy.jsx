@@ -49,7 +49,7 @@ export default function Privacy() {
         <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "last modified" date. Continued use of the app after changes constitutes acceptance of the revised policy.</p>
 
         <h2>9. Contact</h2>
-        <p>If you have any questions about this Privacy Policy, please open an issue on our <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub repository</a>.</p>
+        <p>If you have any questions about this Privacy Policy, please email us at <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
