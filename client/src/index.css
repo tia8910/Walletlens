@@ -6847,17 +6847,17 @@ input[type="date"] { color-scheme: dark; }
 
 .blog-share-bar {
   display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
-  margin: 1.75rem 0 0.25rem;
+  margin: 2rem 0 .5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
-.blog-share-label { font-size: .75rem; font-weight: 700; letter-spacing: .06em; color: var(--text-muted); text-transform: uppercase; margin-right: .25rem; }
+.blog-share-label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; margin-right: .35rem; }
 .blog-share-btn {
-  display: inline-flex; align-items: center; gap: .38rem;
-  padding: .42rem .95rem;
+  display: inline-flex; align-items: center; gap: .42rem;
+  padding: .46rem 1.05rem;
   border-radius: 999px;
   font-size: .82rem; font-weight: 600;
-  cursor: pointer; transition: background .15s, border-color .15s, color .15s, transform .15s;
+  cursor: pointer; transition: background .15s, border-color .15s, color .15s, transform .15s, box-shadow .15s;
   text-decoration: none;
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.05);
@@ -6866,25 +6866,31 @@ input[type="date"] { color-scheme: dark; }
 }
 .blog-share-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.28); color: #fff; transform: translateY(-1px); }
 .blog-share-btn:active { transform: scale(0.96); }
-.blog-share-x { border-color: rgba(255,255,255,0.18); }
-.blog-share-x:hover { border-color: rgba(255,255,255,0.38); }
-.blog-share-article { border-color: rgba(0,230,118,0.35); color: var(--g-ink); }
-.blog-share-article:hover { background: rgba(0,230,118,0.12); border-color: var(--g-ink); color: var(--g-ink); transform: translateY(-1px); }
+/* X button: solid brand black */
+.blog-share-x { background: #0f0f0f; color: #fff; border-color: transparent; }
+.blog-share-x:hover { background: #000; border-color: transparent; color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.5); transform: translateY(-1px); }
+/* Copy article button: green-tinted */
+.blog-share-article { background: rgba(0,230,118,0.09); border-color: rgba(0,230,118,0.38); color: var(--g-ink); }
+.blog-share-article:hover { background: rgba(0,230,118,0.17); border-color: var(--g-ink); color: var(--g-ink); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,230,118,0.12); }
 .blog-share-hint {
   flex-basis: 100%;
-  margin: .35rem 0 0;
-  font-size: .8rem; line-height: 1.5;
+  margin: .4rem 0 0;
+  font-size: .8rem; line-height: 1.55;
   color: var(--text-muted);
   background: rgba(0,230,118,0.07);
-  border: 1px solid rgba(0,230,118,0.18);
+  border: 1px solid rgba(0,230,118,0.2);
   border-radius: 10px;
-  padding: .6rem .8rem;
+  padding: .65rem .9rem;
 }
 .blog-share-hint strong { color: var(--g-ink); font-weight: 700; }
-[data-wl-light] .blog-share-btn { color: rgba(0,0,0,0.75); background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.18); }
-[data-wl-light] .blog-share-btn:hover { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.35); color: #000; }
-[data-wl-light] .blog-share-x { border-color: rgba(0,0,0,0.22); }
-[data-wl-light] .blog-share-x:hover { border-color: rgba(0,0,0,0.45); }
+/* Light mode */
+[data-wl-light] .blog-share-bar { border-top-color: rgba(0,0,0,0.09); }
+[data-wl-light] .blog-share-x { background: #000; color: #fff; border-color: transparent; }
+[data-wl-light] .blog-share-x:hover { background: #111; border-color: transparent; color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.22); }
+[data-wl-light] .blog-share-article { background: rgba(0,160,80,0.07); border-color: rgba(0,160,80,0.32); color: #007038; }
+[data-wl-light] .blog-share-article:hover { background: rgba(0,160,80,0.13); border-color: #007038; color: #005a2c; box-shadow: 0 3px 10px rgba(0,160,80,0.1); }
+[data-wl-light] .blog-share-hint { background: rgba(0,160,80,0.06); border-color: rgba(0,160,80,0.18); }
+[data-wl-light] .blog-share-hint strong { color: #006030; }
 
 /* Landing footer update */
 .lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: 2rem 1.25rem; background: rgba(2,10,5,0.92); }
