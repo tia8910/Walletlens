@@ -14,7 +14,11 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
-import { TRACK_COINS } from '../src/data/trackCoins.js'
+import { TRACK_COINS, TRACK_STOCKS, TRACK_METALS, ALL_TRACK_ASSETS } from '../src/data/trackCoins.js'
+import { CALCULATORS } from '../src/data/calculators.js'
+import { GLOSSARY } from '../src/data/glossary.js'
+import { COMPARISONS } from '../src/data/comparisons.js'
+import { PRICE_ASSETS } from '../src/data/priceAssets.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -171,9 +175,35 @@ const homeBody = `
 <li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
 <li><strong>Private by design</strong> — manual entry with local-first storage; no exchange API keys required.</li>
 </ul>
-<h2>Track popular coins free</h2>
+<h2>Track popular cryptocurrencies free</h2>
 <ul>
 ${TRACK_COINS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Track US stocks &amp; ETFs free</h2>
+<ul>
+${TRACK_STOCKS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Track precious metals free</h2>
+<ul>
+${TRACK_METALS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Free profit &amp; ROI calculators</h2>
+<ul>
+${CALCULATORS.filter(c => c.type !== 'general').map(c => `<li><a href="/calculator/${c.slug}">${esc(c.name)}${c.type === 'stock' ? ' stock' : ''} profit calculator</a></li>`).join('\n')}
+<li><a href="/calculator/crypto-profit-calculator">Crypto profit calculator (any coin)</a></li>
+<li><a href="/calculator/investment-profit-calculator">Investment profit calculator (any asset)</a></li>
+</ul>
+<h2>Live prices</h2>
+<ul>
+${PRICE_ASSETS.map(a => `<li><a href="/price/${a.slug}">${esc(a.name)} price today (${esc(a.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Compare WalletLens</h2>
+<ul>
+${COMPARISONS.map(c => `<li><a href="/vs/${c.slug}">WalletLens vs ${esc(c.competitor)}</a></li>`).join('\n')}
+</ul>
+<h2>Investing &amp; crypto glossary</h2>
+<ul>
+${GLOSSARY.map(t => `<li><a href="/learn/${t.slug}">What is ${esc(t.term)}?</a></li>`).join('\n')}
 </ul>
 <h2>Guides &amp; articles</h2>
 <ul>
@@ -251,47 +281,127 @@ write('/free-net-worth-tracker', buildPage({
   ],
 }))
 
-// ── Per-coin landing pages (/track/:slug) ────────────────────────────────────
-// Programmatic SEO: one focused page per top coin targeting "[coin] portfolio
-// tracker" / "track [coin] free" searches. Each is distinct (unique blurb, FAQ,
-// title) to avoid thin/doorway-content penalties.
-for (const c of TRACK_COINS) {
-  const coinBody = `
-<h1>Track ${esc(c.name)} (${esc(c.symbol)}) — Free, No Account</h1>
-<p>Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.</p>
+// ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
+// Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
+// tracker" / "track [asset] free" searches. Covers crypto, US stocks/ETFs, and
+// precious metals. Each is distinct (unique blurb, FAQ, title) to avoid
+// thin/doorway-content penalties.
+for (const c of ALL_TRACK_ASSETS) {
+  const isStock = c.type === 'stock'
+  const isMetal = c.type === 'metal'
+  const isCrypto = !isStock && !isMetal
+
+  const heroTitle = isStock
+    ? `Track ${esc(c.name)} Stock (${esc(c.symbol)}) — Free, No Account`
+    : isMetal
+    ? `Track ${esc(c.name)} Price (${esc(c.symbol)}) — Free, No Account`
+    : `Track ${esc(c.name)} (${esc(c.symbol)}) — Free, No Account`
+
+  const heroPara = isStock
+    ? `Add ${esc(c.name)} shares to your free WalletLens portfolio and watch the live price, your cost basis, and your profit/loss update automatically — alongside your crypto and other investments. No sign-up needed and your data stays on your device.`
+    : isMetal
+    ? `Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price per ounce, your cost basis, and your profit/loss update automatically — alongside your crypto, stocks and other assets. No sign-up needed and your data stays on your device.`
+    : `Add ${esc(c.name)} to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.`
+
+  const whatHeading = isStock ? `What is ${esc(c.name)} stock?` : `What is ${esc(c.name)}?`
+
+  const tradeWord = isStock ? 'position' : isMetal ? 'holding' : 'trade'
+
+  const sideByBullet = isStock
+    ? `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your crypto, gold and cash in a single net-worth view.</li>`
+    : isMetal
+    ? `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your crypto, stocks and cash in a single net-worth view.</li>`
+    : `<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your other crypto, stocks, gold and cash in a single net-worth view.</li>`
+
+  const privacyBullet = isStock
+    ? `<li><strong>No brokerage login needed</strong> — enter holdings manually; your data stays on your device.</li>`
+    : isMetal
+    ? `<li><strong>No dealer login needed</strong> — enter your holdings manually; your data stays on your device.</li>`
+    : `<li><strong>Private by design</strong> — your holdings never leave your device; no exchange API keys required.</li>`
+
+  const aiBullet = isCrypto
+    ? `<li><strong>AI analysis</strong> — a health score, risk scan and the Magic Indicator direction for ${esc(c.symbol)}.</li>`
+    : `<li><strong>AI portfolio health score</strong> — see how your ${esc(c.symbol)} position affects your overall portfolio.</li>`
+
+  const addStep = isStock
+    ? `Add ${esc(c.symbol)} shares with the quantity and your average cost per share.`
+    : isMetal
+    ? `Add ${esc(c.symbol)} with your quantity in ounces and the price you paid.`
+    : `Add a ${esc(c.symbol)} trade with the amount and price you paid.`
+
+  const pageTitle = isStock
+    ? `Track ${c.name} Stock (${c.symbol}) Free — No Account | WalletLens`
+    : isMetal
+    ? `Track ${c.name} (${c.symbol}) Price Free — No Account | WalletLens`
+    : `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`
+
+  const pageDesc = isStock
+    ? `Track your ${c.name} (${c.symbol}) shares free on WalletLens — live price, cost basis and P&L alongside your whole net worth. No account, no brokerage login, data stays on your device.`
+    : isMetal
+    ? `Track your ${c.name} (${c.symbol}) holdings free on WalletLens — live price per ounce, cost basis and P&L alongside your whole net worth. No account needed, data stays on your device.`
+    : `Track ${c.name} (${c.symbol}) for free with WalletLens — live price, cost basis and profit/loss, alongside your whole net worth. No account, no wallet connection, data stays on your device.`
+
+  const faq1q = isStock
+    ? `How can I track ${c.name} stock for free?`
+    : isMetal
+    ? `How can I track my ${c.name} holdings for free?`
+    : `How can I track ${c.name} for free?`
+
+  const faq1a = isStock
+    ? `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker with no account needed. Enter your share count and cost basis and it tracks the live price, your P&L, and your position's weight in your net worth automatically.`
+    : isMetal
+    ? `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker with no account needed. Enter your ounces and the price you paid, and it tracks the live price per ounce, your cost basis and P&L automatically, stored privately on your device.`
+    : `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker that needs no account. Enter your ${c.symbol} trades and it tracks live price, cost basis and profit/loss automatically, with your data stored privately on your device.`
+
+  const faq2q = isStock
+    ? `Can I see my ${c.symbol} shares alongside my crypto holdings?`
+    : isMetal
+    ? `Can I track ${c.name} alongside my crypto and stocks?`
+    : `Can I track ${c.symbol} without connecting my wallet or exchange?`
+
+  const faq2a = isStock
+    ? `Yes. WalletLens is a full net worth tracker — it shows ${c.symbol} shares alongside your crypto, gold, cash and other assets in a single live dashboard, with no brokerage connection required.`
+    : isMetal
+    ? `Yes. WalletLens combines every asset class — crypto, stocks, precious metals, cash and FX — in one free dashboard. Your ${c.name} holdings appear next to your other assets with a live net-worth total.`
+    : `Yes. WalletLens uses manual or imported entry, so you never connect a wallet or share exchange API keys. You add your ${c.symbol} holdings and it values them with live prices.`
+
+  const assetBody = `
+<h1>${heroTitle}</h1>
+<p>${heroPara}</p>
 <p><a href="/dashboard">Track ${esc(c.symbol)} free →</a> · <a href="/asset/${esc(c.id)}">View ${esc(c.symbol)} analysis</a></p>
-<h2>What is ${esc(c.name)}?</h2>
+<h2>${whatHeading}</h2>
 <p>${esc(c.name)} (${esc(c.symbol)}) is ${esc(c.blurb)}</p>
 <h2>Why track ${esc(c.symbol)} with WalletLens?</h2>
 <ul>
 <li><strong>100% free</strong> — no account, no subscription, no ads.</li>
-<li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every trade you log.</li>
-<li><strong>All in one place</strong> — see ${esc(c.symbol)} next to your other crypto, stocks, gold and cash in a single net-worth view.</li>
-<li><strong>Private by design</strong> — your holdings never leave your device; no exchange API keys required.</li>
-<li><strong>AI analysis</strong> — a health score, risk scan and the Magic Indicator direction for ${esc(c.symbol)}.</li>
+<li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every ${tradeWord} you log.</li>
+${sideByBullet}
+${privacyBullet}
+${aiBullet}
 </ul>
 <h2>How to track ${esc(c.name)} for free</h2>
 <ol>
 <li>Open WalletLens — no account or email needed.</li>
-<li>Add a ${esc(c.symbol)} trade with the amount and price you paid.</li>
+<li>${addStep}</li>
 <li>Watch your ${esc(c.name)} value, P&amp;L and allocation update with live prices.</li>
 </ol>
 <p><a href="/dashboard">Add ${esc(c.symbol)} to your portfolio →</a></p>
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a></p>`
+
   write('/track/' + c.slug, buildPage({
     path: '/track/' + c.slug,
-    title: `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`,
-    description: `Track ${c.name} (${c.symbol}) for free with WalletLens — live price, cost basis and profit/loss, alongside your whole net worth. No account, no wallet connection, data stays on your device.`,
-    bodyHtml: coinBody,
+    title: pageTitle,
+    description: pageDesc,
+    bodyHtml: assetBody,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
         mainEntity: [
-          { '@type': 'Question', name: `How can I track ${c.name} for free?`,
-            acceptedAnswer: { '@type': 'Answer', text: `Add ${c.name} (${c.symbol}) to WalletLens, a free portfolio tracker that needs no account. Enter your ${c.symbol} trades and it tracks live price, cost basis and profit/loss automatically, with your data stored privately on your device.` } },
-          { '@type': 'Question', name: `Can I track ${c.symbol} without connecting my wallet or exchange?`,
-            acceptedAnswer: { '@type': 'Answer', text: `Yes. WalletLens uses manual or imported entry, so you never connect a wallet or share exchange API keys. You add your ${c.symbol} holdings and it values them with live prices.` } },
+          { '@type': 'Question', name: faq1q,
+            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
+          { '@type': 'Question', name: faq2q,
+            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
         ],
       },
       {
@@ -305,7 +415,254 @@ for (const c of TRACK_COINS) {
     ],
   }))
 }
-console.log(`Prerendered ${TRACK_COINS.length} /track coin pages.`)
+console.log(`Prerendered ${ALL_TRACK_ASSETS.length} /track asset pages (${TRACK_COINS.length} crypto, ${TRACK_STOCKS.length} stocks, ${TRACK_METALS.length} metals).`)
+
+// ── Calculator landing pages (/calculator/:slug) ──────────────────────────
+// Targets "[asset] profit calculator" searches. Each page has a working
+// interactive widget in SPA mode; prerender provides unique title/meta/body.
+for (const c of CALCULATORS) {
+  const isStock = c.type === 'stock'
+  const isMetal = c.type === 'metal'
+  const isGeneral = c.type === 'general'
+  const unitWord = c.unit === 'oz' ? 'ounces' : c.unit === 'shares' ? 'shares' : c.unit
+
+  const pageTitle = isGeneral
+    ? `${c.name} Profit & ROI Calculator — Free | WalletLens`
+    : isStock
+    ? `${c.name} Profit Calculator — Free ${c.symbol} Stock ROI | WalletLens`
+    : `${c.name} Profit Calculator (${c.symbol}) — Free ROI Calculator | WalletLens`
+
+  const pageDesc = isGeneral
+    ? `Free ${c.name.toLowerCase()} profit and ROI calculator — works for any asset. Enter buy price, quantity, and target to see P&L, ROI, and break-even instantly.`
+    : `Free ${c.name} (${c.symbol}) profit calculator — enter your buy price, ${unitWord}, and target price to see P&L, ROI, and break-even instantly. No account needed.`
+
+  const h1 = `${c.name}${isStock ? ' Stock' : ''} Profit Calculator — Free & Instant`
+
+  const heroPara = isGeneral
+    ? `${c.blurb} No account needed and results update instantly.`
+    : `${c.blurb} Free, instant, no account required.`
+
+  const faq1q = isGeneral
+    ? `How do I calculate investment profit and ROI?`
+    : `How do I calculate ${c.name} profit and ROI?`
+
+  const faq1a = isGeneral
+    ? `Profit = (Sell Price − Buy Price) × Quantity. ROI = (Profit ÷ Amount Invested) × 100. Enter your numbers in the calculator above for an instant result.`
+    : `Profit = (Sell Price − Buy Price) × ${unitWord}. ROI = (Profit ÷ Invested) × 100. Enter your ${c.symbol} buy price, ${unitWord} held, and target price in the calculator above for an instant result.`
+
+  const faq2q = isGeneral
+    ? `What is a break-even price?`
+    : `Can I track ${c.name} live instead of calculating manually?`
+
+  const faq2a = isGeneral
+    ? `Your break-even price is where you recover exactly what you invested — no profit or loss. It equals your buy price (before fees).`
+    : `Yes — WalletLens tracks your ${c.name} P&L in real time with live prices. Add your position once and it updates automatically, alongside your entire net worth.`
+
+  const calcBody = `
+<h1>${esc(h1)}</h1>
+<p>${esc(heroPara)}</p>
+<p><strong>To use:</strong> Enter your ${esc(unitWord)}, buy price, and target price. Profit/loss, ROI %, and break-even appear instantly.</p>
+<p><a href="/dashboard">Track ${isGeneral ? 'all assets' : esc(c.symbol)} live in WalletLens →</a></p>
+<h2>How to calculate ${isGeneral ? 'profit and ROI' : `${esc(c.name)} profit`}</h2>
+<ul>
+<li><strong>Profit / Loss</strong> = (Sell Price − Buy Price) × Quantity</li>
+<li><strong>ROI %</strong> = (Profit ÷ Amount Invested) × 100</li>
+<li><strong>Break-even price</strong> = your buy price (the price at which you neither gain nor lose)</li>
+</ul>
+<h2>Track ${isGeneral ? 'all assets' : esc(c.name)} live — beyond the calculator</h2>
+<p>The calculator gives you quick estimates. WalletLens updates your P&amp;L in real time with live prices — no manual entry needed after your first setup. Log every buy and it blends your cost basis automatically, showing your true gain or loss alongside all your other investments.</p>
+<ul>
+<li><strong>Live price updates</strong> — P&amp;L refreshes automatically.</li>
+<li><strong>Multiple buy entries</strong> — blended cost basis across all trades.</li>
+<li><strong>All assets in one dashboard</strong> — crypto, stocks, gold and cash together.</li>
+<li><strong>100% free, no account</strong> — open the dashboard and start in under a minute.</li>
+</ul>
+<p><a href="/dashboard">Open free portfolio tracker →</a></p>
+<h2>Frequently asked questions</h2>
+<h3>${esc(faq1q)}</h3>
+<p>${esc(faq1a)}</p>
+<h3>${esc(faq2q)}</h3>
+<p>${esc(faq2a)}</p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+
+  write('/calculator/' + c.slug, buildPage({
+    path: '/calculator/' + c.slug,
+    title: pageTitle,
+    description: pageDesc,
+    bodyHtml: calcBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: faq1q,
+            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
+          { '@type': 'Question', name: faq2q,
+            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: `${c.name} Profit Calculator`,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        url: `${ORIGIN}/calculator/${c.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${CALCULATORS.length} /calculator pages.`)
+
+// ── Glossary pages (/learn/:slug) ────────────────────────────────────────────
+// Schema-rich definitions designed to be cited by answer engines (AEO).
+for (const t of GLOSSARY) {
+  const paras = t.body.split('\n\n')
+  const related = (t.related || []).map(s => GLOSSARY.find(g => g.slug === s)).filter(Boolean)
+  const learnBody = `
+<h1>What Is ${esc(t.term)}?</h1>
+<p>${esc(t.short)}</p>
+<h2>Definition</h2>
+${paras.map(p => `<p>${esc(p)}</p>`).join('\n')}
+<h2>Track it in WalletLens</h2>
+<p>WalletLens is a free, private net-worth tracker that puts concepts like this into practice — it tracks your crypto, stocks, gold and cash in one dashboard, computing cost basis, P&amp;L and allocation automatically with live prices. No account, and your data stays on your device.</p>
+<p><a href="/dashboard">Open the free tracker →</a></p>
+${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a href="/learn/${r.slug}">${esc(r.term)}</a></li>`).join('\n')}\n</ul>` : ''}
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/learn/' + t.slug, buildPage({
+    path: '/learn/' + t.slug,
+    title: `What Is ${t.term}? Definition & Example | WalletLens`,
+    description: t.short,
+    bodyHtml: learnBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'DefinedTerm',
+        name: t.term,
+        description: t.short,
+        inDefinedTermSet: `${ORIGIN}/learn`,
+        url: `${ORIGIN}/learn/${t.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: `What is ${t.term}?`,
+            acceptedAnswer: { '@type': 'Answer', text: t.short } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${GLOSSARY.length} /learn glossary pages.`)
+
+// ── Comparison pages (/vs/:slug) ─────────────────────────────────────────────
+// High commercial-intent "WalletLens vs <competitor>" pages.
+for (const c of COMPARISONS) {
+  const rowsHtml = c.rows.map(r =>
+    `<tr><th scope="row">${esc(r.feature)}</th><td>${esc(r.walletlens)}</td><td>${esc(r.them)}</td></tr>`
+  ).join('\n')
+  const vsBody = `
+<h1>WalletLens vs ${esc(c.competitor)}</h1>
+<p>${esc(c.tagline)}</p>
+<p><a href="/dashboard">Try WalletLens free →</a></p>
+<h2>Feature comparison</h2>
+<table>
+<thead><tr><th>Feature</th><th>WalletLens</th><th>${esc(c.competitor)}</th></tr></thead>
+<tbody>
+${rowsHtml}
+</tbody>
+</table>
+<h2>The verdict</h2>
+<p>${esc(c.verdict)}</p>
+<p><a href="/dashboard">Open WalletLens free →</a></p>
+<p><small>Comparison reflects publicly documented features and is for general guidance, not endorsement or financial advice.</small></p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/vs/' + c.slug, buildPage({
+    path: '/vs/' + c.slug,
+    title: `WalletLens vs ${c.competitor} — Free Net Worth Tracker Compared`,
+    description: c.summary,
+    bodyHtml: vsBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${COMPARISONS.length} /vs comparison pages.`)
+
+// ── Live-price pages (/price/:slug) ──────────────────────────────────────────
+// "X price today" — very high recurring volume. Price is fetched live in the
+// SPA; the prerender provides crawlable evergreen context (no stale numbers).
+for (const a of PRICE_ASSETS) {
+  const priceBody = `
+<h1>${esc(a.name)} Price Today (${esc(a.symbol)})</h1>
+<p>Live ${esc(a.name)} (${esc(a.symbol)}) price and your personal profit/loss — free in WalletLens, no account required. ${esc(a.name)} is ${esc(a.blurb)}</p>
+<p><a href="/dashboard">Track ${esc(a.symbol)} free →</a> · <a href="/asset/${esc(a.id)}">${esc(a.symbol)} analysis</a></p>
+<h2>How to track ${esc(a.name)} live</h2>
+<ol>
+<li>Open WalletLens — no account or email needed.</li>
+<li>Add your ${esc(a.symbol)} holding with the amount and price you paid.</li>
+<li>Watch the live ${esc(a.name)} price, your P&amp;L and allocation update automatically.</li>
+</ol>
+<p><a href="/dashboard">Track ${esc(a.symbol)} in your portfolio →</a></p>
+<h2>Frequently asked questions</h2>
+<h3>How much is ${esc(a.name)} worth today?</h3>
+<p>The live ${esc(a.name)} (${esc(a.symbol)}) price updates from market data when you open the page. For continuously updating prices and your own profit/loss, track ${esc(a.symbol)} in WalletLens.</p>
+<h3>Where can I track ${esc(a.name)} for free?</h3>
+<p>WalletLens tracks ${esc(a.name)} for free with no account — add your holding once and it values it with live prices alongside your entire net worth, with data kept on your device.</p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/price/' + a.slug, buildPage({
+    path: '/price/' + a.slug,
+    title: `${a.name} Price Today (${a.symbol}) — Live Price & Free Tracker | WalletLens`,
+    description: `Live ${a.name} (${a.symbol}) price today, plus a free way to track your ${a.symbol} profit and loss in WalletLens — no account, data stays on your device.`,
+    bodyHtml: priceBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: `How much is ${a.name} worth today?`,
+            acceptedAnswer: { '@type': 'Answer', text: `The live ${a.name} (${a.symbol}) price updates from market data when you open the page. For continuously updating prices and your own profit/loss, track ${a.symbol} in WalletLens for free.` } },
+          { '@type': 'Question', name: `Where can I track ${a.name} for free?`,
+            acceptedAnswer: { '@type': 'Answer', text: `WalletLens tracks ${a.name} for free with no account — add your holding once and it values it with live prices alongside your entire net worth, with data kept on your device.` } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${PRICE_ASSETS.length} /price pages.`)
 
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
@@ -478,12 +835,16 @@ function urlEntry({ loc, lastmod, changefreq, priority }) {
 }
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
-  ...TRACK_COINS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
+  ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
+  ...CALCULATORS.map(c => urlEntry({ loc: `${ORIGIN}/calculator/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.8' })),
+  ...PRICE_ASSETS.map(a => urlEntry({ loc: `${ORIGIN}/price/${a.slug}`, lastmod: TODAY, changefreq: 'daily', priority: '0.8' })),
+  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
+  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + TRACK_COINS.length + POSTS.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list

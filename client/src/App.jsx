@@ -2,6 +2,10 @@ import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
+const Calculator    = lazy(() => import('./pages/Calculator'))
+const Learn         = lazy(() => import('./pages/Learn'))
+const Compare       = lazy(() => import('./pages/Compare'))
+const PricePage     = lazy(() => import('./pages/PricePage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -284,7 +288,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -305,12 +309,18 @@ export default function App() {
     return () => (requestIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
   }, [location.pathname])
 
-  // Fire GA page_view on every SPA route change
+  // Fire GA page_view on every SPA route change so every page in the sitemap
+  // (/, /track, /calculator, /learn, /vs, /price, /blog …) is measured in GA4.
+  // page_location carries the full URL; the rAF defers the read so per-page
+  // components have a chance to set document.title first.
   useEffect(() => {
     if (typeof window.gtag !== 'function') return
-    window.gtag('event', 'page_view', {
-      page_path: location.pathname + location.search,
-      page_title: document.title,
+    requestAnimationFrame(() => {
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title,
+      })
     })
   }, [location.pathname, location.search])
 
@@ -323,6 +333,10 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/track/:slug" element={<TrackCoin />} />
+          <Route path="/calculator/:slug" element={<Calculator />} />
+          <Route path="/learn/:slug" element={<Learn />} />
+          <Route path="/vs/:slug" element={<Compare />} />
+          <Route path="/price/:slug" element={<PricePage />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
