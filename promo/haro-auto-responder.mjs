@@ -18,11 +18,16 @@
  *   node promo/haro-auto-responder.mjs
  *
  * ── Spaceship mail IMAP/SMTP settings ────────────────────────────────────────
- *   IMAP host: imap.spaceship.com  port: 993  SSL: yes
- *   SMTP host: smtp.spaceship.com  port: 465  SSL: yes
+ *   IMAP host: imap.spacemail.com  port: 993  SSL: yes
+ *   SMTP host: smtp.spacemail.com  port: 465  SSL: yes
  *   Username:  your full email address (contact@walletlens.live)
  *   Password:  your Spaceship email password
- *   (These are the defaults — no extra env vars needed for Spaceship)
+ *
+ *   Find your exact hostnames at:
+ *   Spaceship dashboard → Email → your mailbox → "Email client settings"
+ *
+ *   If imap.spacemail.com also fails, pass the correct host explicitly:
+ *   IMAP_HOST=mail.yourdomain.com SMTP_HOST=mail.yourdomain.com node ...
  *
  * ── Override for a different provider ────────────────────────────────────────
  *   IMAP_HOST=imap.example.com IMAP_PORT=993 \
@@ -48,9 +53,9 @@ import { setTimeout as sleep } from 'timers/promises'
 // Mail credentials (Spaceship defaults)
 const MAIL_USER  = process.env.MAIL_USER  || ''
 const MAIL_PASS  = process.env.MAIL_PASS  || ''
-const IMAP_HOST  = process.env.IMAP_HOST  || 'imap.spaceship.com'
+const IMAP_HOST  = process.env.IMAP_HOST  || 'imap.spacemail.com'
 const IMAP_PORT  = parseInt(process.env.IMAP_PORT  || '993', 10)
-const SMTP_HOST  = process.env.SMTP_HOST  || 'smtp.spaceship.com'
+const SMTP_HOST  = process.env.SMTP_HOST  || 'smtp.spacemail.com'
 const SMTP_PORT  = parseInt(process.env.SMTP_PORT  || '465', 10)
 
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || ''
@@ -333,13 +338,13 @@ async function sendEmail(to, subject, body) {
 // ── Main loop ─────────────────────────────────────────────────────────────────
 
 async function processOnce() {
-  console.log(`\n🔍 Checking Gmail for HARO queries... (${new Date().toLocaleTimeString()})`)
+  console.log(`\n🔍 Checking email for HARO queries... (${new Date().toLocaleTimeString()})`)
 
   if (DRY_RUN) {
-    console.log('  [dry-run] Would connect to Gmail and fetch unread HARO emails')
+    console.log('  [dry-run] Would connect to IMAP and fetch unread HARO emails')
     console.log('  [dry-run] Would check queries against WalletLens keywords')
     console.log('  [dry-run] Would use Claude to draft responses')
-    console.log('  [dry-run] Would save drafts to Gmail')
+    console.log('  [dry-run] Would save drafts to Drafts folder')
     return
   }
 
@@ -347,8 +352,8 @@ async function processOnce() {
   try {
     emails = await fetchUnreadHaroEmails()
   } catch (err) {
-    console.error(`  ❌ Gmail connection failed: ${err.message}`)
-    console.error('  Check GMAIL_USER and GMAIL_APP_PASSWORD env vars.')
+    console.error(`  ❌ IMAP connection failed: ${err.message}`)
+    console.error(`  Check MAIL_USER, MAIL_PASS, IMAP_HOST (${IMAP_HOST}:${IMAP_PORT}) env vars.`)
     return
   }
 
@@ -401,7 +406,7 @@ async function processOnce() {
         try {
           const saved = await saveDraft(to, subject, responseBody)
           if (saved) {
-            console.log(`        💾 Draft saved (review in Gmail before sending)`)
+            console.log(`        💾 Draft saved (review in your mail client before sending)`)
           } else {
             console.log(`        ⚠️  Could not save draft — printing response:`)
             console.log('---')
