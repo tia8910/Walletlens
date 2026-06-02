@@ -16,6 +16,9 @@ import { fileURLToPath } from 'node:url'
 import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
 import { TRACK_COINS, TRACK_STOCKS, TRACK_METALS, ALL_TRACK_ASSETS } from '../src/data/trackCoins.js'
 import { CALCULATORS } from '../src/data/calculators.js'
+import { GLOSSARY } from '../src/data/glossary.js'
+import { COMPARISONS } from '../src/data/comparisons.js'
+import { PRICE_ASSETS } from '../src/data/priceAssets.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -189,6 +192,18 @@ ${TRACK_METALS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${
 ${CALCULATORS.filter(c => c.type !== 'general').map(c => `<li><a href="/calculator/${c.slug}">${esc(c.name)}${c.type === 'stock' ? ' stock' : ''} profit calculator</a></li>`).join('\n')}
 <li><a href="/calculator/crypto-profit-calculator">Crypto profit calculator (any coin)</a></li>
 <li><a href="/calculator/investment-profit-calculator">Investment profit calculator (any asset)</a></li>
+</ul>
+<h2>Live prices</h2>
+<ul>
+${PRICE_ASSETS.map(a => `<li><a href="/price/${a.slug}">${esc(a.name)} price today (${esc(a.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Compare WalletLens</h2>
+<ul>
+${COMPARISONS.map(c => `<li><a href="/vs/${c.slug}">WalletLens vs ${esc(c.competitor)}</a></li>`).join('\n')}
+</ul>
+<h2>Investing &amp; crypto glossary</h2>
+<ul>
+${GLOSSARY.map(t => `<li><a href="/learn/${t.slug}">What is ${esc(t.term)}?</a></li>`).join('\n')}
 </ul>
 <h2>Guides &amp; articles</h2>
 <ul>
@@ -508,6 +523,147 @@ for (const c of CALCULATORS) {
 }
 console.log(`Prerendered ${CALCULATORS.length} /calculator pages.`)
 
+// ── Glossary pages (/learn/:slug) ────────────────────────────────────────────
+// Schema-rich definitions designed to be cited by answer engines (AEO).
+for (const t of GLOSSARY) {
+  const paras = t.body.split('\n\n')
+  const related = (t.related || []).map(s => GLOSSARY.find(g => g.slug === s)).filter(Boolean)
+  const learnBody = `
+<h1>What Is ${esc(t.term)}?</h1>
+<p>${esc(t.short)}</p>
+<h2>Definition</h2>
+${paras.map(p => `<p>${esc(p)}</p>`).join('\n')}
+<h2>Track it in WalletLens</h2>
+<p>WalletLens is a free, private net-worth tracker that puts concepts like this into practice — it tracks your crypto, stocks, gold and cash in one dashboard, computing cost basis, P&amp;L and allocation automatically with live prices. No account, and your data stays on your device.</p>
+<p><a href="/dashboard">Open the free tracker →</a></p>
+${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a href="/learn/${r.slug}">${esc(r.term)}</a></li>`).join('\n')}\n</ul>` : ''}
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/learn/' + t.slug, buildPage({
+    path: '/learn/' + t.slug,
+    title: `What Is ${t.term}? Definition & Example | WalletLens`,
+    description: t.short,
+    bodyHtml: learnBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'DefinedTerm',
+        name: t.term,
+        description: t.short,
+        inDefinedTermSet: `${ORIGIN}/learn`,
+        url: `${ORIGIN}/learn/${t.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: `What is ${t.term}?`,
+            acceptedAnswer: { '@type': 'Answer', text: t.short } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${GLOSSARY.length} /learn glossary pages.`)
+
+// ── Comparison pages (/vs/:slug) ─────────────────────────────────────────────
+// High commercial-intent "WalletLens vs <competitor>" pages.
+for (const c of COMPARISONS) {
+  const rowsHtml = c.rows.map(r =>
+    `<tr><th scope="row">${esc(r.feature)}</th><td>${esc(r.walletlens)}</td><td>${esc(r.them)}</td></tr>`
+  ).join('\n')
+  const vsBody = `
+<h1>WalletLens vs ${esc(c.competitor)}</h1>
+<p>${esc(c.tagline)}</p>
+<p><a href="/dashboard">Try WalletLens free →</a></p>
+<h2>Feature comparison</h2>
+<table>
+<thead><tr><th>Feature</th><th>WalletLens</th><th>${esc(c.competitor)}</th></tr></thead>
+<tbody>
+${rowsHtml}
+</tbody>
+</table>
+<h2>The verdict</h2>
+<p>${esc(c.verdict)}</p>
+<p><a href="/dashboard">Open WalletLens free →</a></p>
+<p><small>Comparison reflects publicly documented features and is for general guidance, not endorsement or financial advice.</small></p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/vs/' + c.slug, buildPage({
+    path: '/vs/' + c.slug,
+    title: `WalletLens vs ${c.competitor} — Free Net Worth Tracker Compared`,
+    description: c.summary,
+    bodyHtml: vsBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${COMPARISONS.length} /vs comparison pages.`)
+
+// ── Live-price pages (/price/:slug) ──────────────────────────────────────────
+// "X price today" — very high recurring volume. Price is fetched live in the
+// SPA; the prerender provides crawlable evergreen context (no stale numbers).
+for (const a of PRICE_ASSETS) {
+  const priceBody = `
+<h1>${esc(a.name)} Price Today (${esc(a.symbol)})</h1>
+<p>Live ${esc(a.name)} (${esc(a.symbol)}) price and your personal profit/loss — free in WalletLens, no account required. ${esc(a.name)} is ${esc(a.blurb)}</p>
+<p><a href="/dashboard">Track ${esc(a.symbol)} free →</a> · <a href="/asset/${esc(a.id)}">${esc(a.symbol)} analysis</a></p>
+<h2>How to track ${esc(a.name)} live</h2>
+<ol>
+<li>Open WalletLens — no account or email needed.</li>
+<li>Add your ${esc(a.symbol)} holding with the amount and price you paid.</li>
+<li>Watch the live ${esc(a.name)} price, your P&amp;L and allocation update automatically.</li>
+</ol>
+<p><a href="/dashboard">Track ${esc(a.symbol)} in your portfolio →</a></p>
+<h2>Frequently asked questions</h2>
+<h3>How much is ${esc(a.name)} worth today?</h3>
+<p>The live ${esc(a.name)} (${esc(a.symbol)}) price updates from market data when you open the page. For continuously updating prices and your own profit/loss, track ${esc(a.symbol)} in WalletLens.</p>
+<h3>Where can I track ${esc(a.name)} for free?</h3>
+<p>WalletLens tracks ${esc(a.name)} for free with no account — add your holding once and it values it with live prices alongside your entire net worth, with data kept on your device.</p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  write('/price/' + a.slug, buildPage({
+    path: '/price/' + a.slug,
+    title: `${a.name} Price Today (${a.symbol}) — Live Price & Free Tracker | WalletLens`,
+    description: `Live ${a.name} (${a.symbol}) price today, plus a free way to track your ${a.symbol} profit and loss in WalletLens — no account, data stays on your device.`,
+    bodyHtml: priceBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: `How much is ${a.name} worth today?`,
+            acceptedAnswer: { '@type': 'Answer', text: `The live ${a.name} (${a.symbol}) price updates from market data when you open the page. For continuously updating prices and your own profit/loss, track ${a.symbol} in WalletLens for free.` } },
+          { '@type': 'Question', name: `Where can I track ${a.name} for free?`,
+            acceptedAnswer: { '@type': 'Answer', text: `WalletLens tracks ${a.name} for free with no account — add your holding once and it values it with live prices alongside your entire net worth, with data kept on your device.` } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${PRICE_ASSETS.length} /price pages.`)
+
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
 <h1>WalletLens Blog</h1>
@@ -682,10 +838,13 @@ const sitemapUrls = [
   ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
   ...CALCULATORS.map(c => urlEntry({ loc: `${ORIGIN}/calculator/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.8' })),
+  ...PRICE_ASSETS.map(a => urlEntry({ loc: `${ORIGIN}/price/${a.slug}`, lastmod: TODAY, changefreq: 'daily', priority: '0.8' })),
+  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
+  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
