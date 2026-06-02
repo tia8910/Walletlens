@@ -42,10 +42,23 @@ function useBlogHead(post) {
   }, [post])
 }
 
+function getArticleExcerpt(content, maxLen) {
+  const lines = content.trim().split('\n')
+  for (const line of lines) {
+    const t = line.trim()
+    if (t && !t.startsWith('#') && !t.startsWith('-') && !t.startsWith('|') && !t.startsWith('>') && t.length > 40) {
+      const clean = t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      return clean.length > maxLen ? clean.slice(0, maxLen - 1) + '…' : clean
+    }
+  }
+  return ''
+}
+
 function ShareBar({ post }) {
   const [copied, setCopied] = useState(false)
   const url = `https://walletlens.live/blog/${post.slug}`
-  const tweetText = encodeURIComponent(`${post.title}\n\n${post.summary}\n\n${url}`)
+  const excerpt = getArticleExcerpt(post.content, 180 - post.title.length)
+  const tweetText = encodeURIComponent(`${post.title}\n\n${excerpt}\n\n${url}`)
 
   function copyLink() {
     navigator.clipboard.writeText(url).then(() => {
@@ -59,12 +72,12 @@ function ShareBar({ post }) {
       <span className="blog-share-label">Share</span>
       <a
         className="blog-share-btn blog-share-x"
-        href={`https://twitter.com/intent/tweet?text=${tweetText}`}
+        href={`https://x.com/intent/post?text=${tweetText}`}
         target="_blank" rel="noopener noreferrer"
-        aria-label="Share on X"
+        aria-label="Share article on X"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        Post on X
+        Share article on X
       </a>
       <button className="blog-share-btn blog-share-copy" onClick={copyLink} aria-label="Copy link">
         {copied ? (
@@ -108,6 +121,25 @@ function RelatedPosts({ slug }) {
   )
 }
 
+function parseInline(text) {
+  const segments = []
+  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]*)\)/g
+  let last = 0, m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) segments.push(text.slice(last, m.index))
+    if (m[1] != null) {
+      segments.push(<strong key={m.index}>{m[1]}</strong>)
+    } else if (m[3].startsWith('http')) {
+      segments.push(<a key={m.index} href={m[3]} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--g-ink)' }}>{m[2]}</a>)
+    } else {
+      segments.push(<Link key={m.index} to={m[3]} style={{ color: 'var(--g-ink)' }}>{m[2]}</Link>)
+    }
+    last = m.index + m[0].length
+  }
+  if (last < text.length) segments.push(text.slice(last))
+  return segments
+}
+
 function renderMarkdown(text) {
   const lines = text.trim().split('\n')
   const result = []
@@ -115,18 +147,28 @@ function renderMarkdown(text) {
   while (i < lines.length) {
     const line = lines[i]
     if (line.startsWith('## ')) {
-      result.push(<h2 key={i}>{line.slice(3)}</h2>)
+      result.push(<h2 key={i}>{parseInline(line.slice(3))}</h2>)
+    } else if (line.startsWith('### ')) {
+      result.push(<h3 key={i}>{parseInline(line.slice(4))}</h3>)
     } else if (line.startsWith('**') && line.endsWith('**')) {
       result.push(<p key={i}><strong>{line.slice(2, -2)}</strong></p>)
+    } else if (line.startsWith('> ')) {
+      result.push(<blockquote key={i} style={{ borderLeft: '3px solid var(--g-ink)', paddingLeft: '1rem', margin: '1rem 0', opacity: 0.8 }}>{parseInline(line.slice(2))}</blockquote>)
     } else if (line.startsWith('- ')) {
       const items = []
       while (i < lines.length && lines[i].startsWith('- ')) {
-        const raw = lines[i].slice(2)
-        const parts = raw.split(/\*\*([^*]+)\*\*/)
-        items.push(<li key={i}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}</li>)
+        items.push(<li key={i}>{parseInline(lines[i].slice(2))}</li>)
         i++
       }
       result.push(<ul key={'ul' + i}>{items}</ul>)
+      continue
+    } else if (/^\d+\. /.test(line)) {
+      const items = []
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        items.push(<li key={i}>{parseInline(lines[i].replace(/^\d+\. /, ''))}</li>)
+        i++
+      }
+      result.push(<ol key={'ol' + i}>{items}</ol>)
       continue
     } else if (line.startsWith('| ')) {
       const rows = []
@@ -145,8 +187,7 @@ function renderMarkdown(text) {
       )
       continue
     } else if (line.trim() !== '') {
-      const parts = line.split(/\*\*([^*]+)\*\*/)
-      result.push(<p key={i}>{parts.map((p, j) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}</p>)
+      result.push(<p key={i}>{parseInline(line)}</p>)
     }
     i++
   }
