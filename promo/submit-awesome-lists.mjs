@@ -92,7 +92,7 @@ const TARGETS = [
 // ── GitHub API helpers ────────────────────────────────────────────────────────
 
 async function gh(method, path, body) {
-  if (DRY_RUN && method !== 'GET') {
+  if (DRY_RUN) {
     console.log(`  [dry-run] ${method} https://api.github.com${path}`)
     if (body) console.log('  body:', JSON.stringify(body).slice(0, 200))
     return { dry: true }
@@ -137,7 +137,9 @@ async function forkRepo(owner, repo) {
 
 async function getFile(owner, repo, path, branch) {
   const data = await gh('GET', `/repos/${owner}/${repo}/contents/${path}?ref=${branch}`)
-  if (data.dry) return { content: '', sha: 'dry-sha' }
+  // In dry-run mode return a fake README that includes the section heading
+  // so the insertion logic can show what would be added
+  if (data.dry) return { content: `## Finance\n\n- [SomeOtherTool](https://example.com) — Example tool.\n`, sha: 'dry-sha' }
   const content = Buffer.from(data.content, 'base64').toString('utf8')
   return { content, sha: data.sha }
 }
