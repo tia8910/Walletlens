@@ -117,7 +117,7 @@ function ShareBar({ post }) {
       </a>
       <button className="blog-share-btn blog-share-article" onClick={copyForArticle} aria-label="Share as X Article">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/><circle cx="19" cy="17" r="3"/><path d="m21.5 19.5-1.5-1.5"/></svg>
-        {articleCopied ? 'Copied! Paste in X ✓' : 'X Article (copy + open)'}
+        {articleCopied ? 'Copied! Paste in X ✓' : 'Post as X Article'}
       </button>
       <button className="blog-share-btn blog-share-copy" onClick={copyLink} aria-label="Copy link">
         {copied ? (
