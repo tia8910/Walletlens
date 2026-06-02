@@ -81,25 +81,16 @@ function toArticleText(post, url) {
 }
 
 function ShareBar({ post }) {
-  const [copied, setCopied] = useState(false)
   const [articleCopied, setArticleCopied] = useState(false)
   const url = `https://walletlens.live/blog/${post.slug}`
   const excerpt = getArticleExcerpt(post.content, 180 - post.title.length)
   const tweetText = encodeURIComponent(`${post.title}\n\n${excerpt}\n\n${url}`)
 
-  function copyLink() {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   function copyForArticle() {
     const text = toArticleText(post, url)
     navigator.clipboard.writeText(text).then(() => {
       setArticleCopied(true)
-      setTimeout(() => setArticleCopied(false), 3000)
-      window.open('https://x.com/i/articles/new', '_blank', 'noopener,noreferrer')
+      setTimeout(() => setArticleCopied(false), 8000)
     })
   }
 
@@ -115,18 +106,17 @@ function ShareBar({ post }) {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
         Post on X
       </a>
-      <button className="blog-share-btn blog-share-article" onClick={copyForArticle} aria-label="Share as X Article">
+      <button className="blog-share-btn blog-share-article" onClick={copyForArticle} aria-label="Copy full article text for an X Article">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/><circle cx="19" cy="17" r="3"/><path d="m21.5 19.5-1.5-1.5"/></svg>
-        {articleCopied ? 'Copied! Paste in X ✓' : 'Post as X Article'}
+        {articleCopied ? 'Article copied ✓' : 'Copy full article'}
       </button>
-      <button className="blog-share-btn blog-share-copy" onClick={copyLink} aria-label="Copy link">
-        {copied ? (
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        ) : (
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        )}
-        {copied ? 'Copied!' : 'Copy link'}
-      </button>
+      {articleCopied && (
+        <p className="blog-share-hint">
+          Full article copied. On X (desktop, Premium+ required): open the
+          {' '}<strong>Articles</strong> tab in the sidebar → <strong>Write</strong> → paste with Ctrl/⌘+V.
+          {' '}X Articles can't be created in the mobile app.
+        </p>
+      )}
     </div>
   )
 }
