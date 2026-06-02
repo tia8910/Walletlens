@@ -158,6 +158,8 @@ Whale signals are one data point, not a complete strategy. Large transactions ar
 3. Watch for confirmation in price action — does the whale move coincide with a spike in sell pressure?
 
 The Whale Tracker in WalletLens is designed to give you this raw signal quickly and clearly, so you can form your own view.
+
+Track your Bitcoin portfolio and whale signals free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -213,6 +215,8 @@ The resulting number appears on the AI tab as a live arc gauge with a needle, co
 - **Rebalancing trigger:** If your personal gauge hits Extreme Greed (above 75), consider whether you should take some profit and rebalance toward your target allocation.
 - **Buying opportunity check:** If it drops below 25, review which positions have the best entry quality (see the Entry Quality card) — the fear may be creating a buying opportunity.
 - **Emotional circuit breaker:** When you feel the urge to make a panic sell or a FOMO buy, look at the gauge first. It forces a moment of data-driven reflection.
+
+See your personalised Fear & Greed gauge and portfolio analytics at [walletlens.live](https://walletlens.live) — free, no sign-up required.
     `
   },
   {
@@ -284,7 +288,7 @@ The WalletLens Rebalance Planner (in the AI tab) calculates exactly how many dol
 
 ## Tracking a Multi-Asset Portfolio
 
-Most portfolio trackers only cover one asset class. WalletLens was specifically built to track crypto, stocks, gold, silver, bonds, and fiat currencies in a single unified dashboard with live prices — giving you a complete picture of your total net worth across every asset class.
+Most portfolio trackers only cover one asset class. WalletLens was specifically built to track crypto, stocks, gold, silver, bonds, and fiat currencies in a single unified dashboard with live prices — giving you a complete picture of your total net worth across every asset class. Start free at [walletlens.live](https://walletlens.live).
     `
   },
   {
@@ -356,6 +360,8 @@ WalletLens does not currently generate tax reports, but tracking every trade acc
 ## Conclusion
 
 Profit targets don't remove all the difficulty of selling — you'll still feel the sting if an asset runs past your final target. But they ensure that no matter what happens, you come away with something. In crypto, where 80–90% drawdowns are routine, "coming away with something" beats holding to zero every time.
+
+Set your sell targets and track live P&L free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -442,6 +448,8 @@ DCA is an accumulation strategy. At some point you shift from accumulating to ma
 ## Conclusion
 
 Dollar-cost averaging will not make you rich overnight, and it will not perfectly optimize every dollar. What it does is keep you invested, remove paralysing timing decisions, and build the discipline that actually compounds wealth over years. Pair it with accurate trade tracking so you always know your true average cost, and it becomes one of the most reliable strategies available to an ordinary investor.
+
+Track your DCA average cost and live P&L free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -530,6 +538,8 @@ A simple discipline: every time you buy or sell, log the asset, quantity, price,
 ## Conclusion
 
 Cost basis is the foundation of understanding your portfolio. Without it, "how much am I up?" is unanswerable. Track every trade, understand the difference between average cost and tax lot methods, separate stablecoins from invested assets, and you will always know your true break-even and real profit — not just today's market value.
+
+Track your cost basis and realized P&L free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -599,6 +609,8 @@ Stablecoins are not risk-free:
 ## Conclusion
 
 Stablecoins make crypto usable, but they are a fundamentally different instrument from the assets they help you buy. Think of them as dollars with superpowers — fast, global, programmable cash — and account for them as the dry powder they are. Your portfolio's real performance becomes far clearer once stablecoins are in their own bucket.
+
+Track crypto, stablecoins, and your full net worth free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -674,6 +686,8 @@ WalletLens was built specifically to track crypto and precious metals (and stock
 ## Conclusion
 
 Gold and Bitcoin are not really rivals — they are two answers to the same question: where do you store value outside the traditional financial system? Gold offers millennia of stability; Bitcoin offers provable scarcity, portability, and asymmetric upside at the cost of volatility and youth. For many investors, the smartest position is not choosing one, but holding a deliberate mix of both and tracking them together.
+
+Track gold, Bitcoin, and every asset class in one free dashboard at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -737,6 +751,8 @@ WalletLens supports this discipline directly: a personalised Fear & Greed gauge 
 ## Conclusion
 
 Markets are cyclical because human emotion is cyclical — greed and fear repeat regardless of the asset. You will never perfectly time the top or bottom, and you should not try. But by understanding the four phases, respecting the rough rhythm of the halving without treating it as gospel, and pre-committing to accumulate in fear and take profit in greed, you put the cycle to work for you instead of becoming its latest victim.
+
+Track your portfolio through every market cycle free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -813,6 +829,8 @@ The best framework fails if you abandon it under stress. A few habits help:
 ## Conclusion
 
 You cannot control whether any individual bet works out. You can control how much it can hurt you. Size positions so no single loss is fatal, cap concentration, rebalance to enforce your limits, and plan exits before you need them. Do that consistently and you give yourself the one thing that compounds returns over a lifetime: survival.
+
+Track your position sizes and portfolio allocation free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -920,6 +938,8 @@ Start with your investment assets. Add your cash and savings manually. Then subt
 ## Conclusion
 
 Net worth is the honest measure of your financial life. Assets minus liabilities — calculate it today, even roughly, and you have a baseline to improve from. Track it regularly and you have one of the most powerful tools in personal finance: a single number that tells you whether you are moving forward.
+
+Calculate and track your net worth free at [walletlens.live](https://walletlens.live) — crypto, stocks, gold, and cash all in one place, no account needed.
     `
   },
   {
@@ -1020,6 +1040,8 @@ Net worth growth is not linear — there are thresholds where your financial pos
 ## Conclusion
 
 Growing net worth is a system, not a secret. Grow assets, shrink liabilities, let compounding run. Prioritise high-rate debt, invest the surplus, and track the number regularly so progress is visible and setbacks are caught early. The framework is simple. The discipline to apply it consistently is the work.
+
+Track every asset and watch your net worth grow at [walletlens.live](https://walletlens.live) — free, no account needed.
     `
   },
   {
@@ -1110,7 +1132,7 @@ Because your data lives in the browser, backing up is important. The WalletLens 
 
 ## Conclusion
 
-Your net worth is the sum of everything across all the accounts and assets you hold. Seeing it clearly — categorised, live-priced, allocation-weighted — takes no more than fifteen minutes to set up and dramatically improves every subsequent financial decision you make. Stop guessing at the total and start tracking it in one place.
+Your net worth is the sum of everything across all the accounts and assets you hold. Seeing it clearly — categorised, live-priced, allocation-weighted — takes no more than fifteen minutes to set up and dramatically improves every subsequent financial decision you make. Stop guessing at the total and start tracking it in one place at [walletlens.live](https://walletlens.live) — free, no account needed.
     `
   },
   {
@@ -1932,7 +1954,9 @@ The calculator is useful for quick "what if" scenarios. But once you have real h
 - **ROI** = (Profit ÷ Invested) × 100
 - **Break-even** = Cost Basis ÷ Quantity
 - **DCA** lowers average cost; always use your blended average, not just the most recent buy price
-- Use the [crypto profit calculator](/calculator/crypto-profit-calculator) for instant results, or WalletLens for live tracking
+- Use the [crypto profit calculator](/calculator/crypto-profit-calculator) for instant results, or [WalletLens](https://walletlens.live) for live tracking
+
+Calculate crypto profit and track your portfolio free at [walletlens.live](https://walletlens.live).
     `
   },
   {
@@ -1986,7 +2010,7 @@ The real advantage of WalletLens over an exchange app is the **full net-worth vi
 
 WalletLens stores all your data in your browser's local storage. Nothing is sent to a server, and no account is ever created. If you clear your browser data you lose your entries, so use the CSV export to keep a backup.
 
-To get started, visit the [Bitcoin tracker page](/track/bitcoin) or open the [dashboard](/dashboard) directly.
+To get started, visit [walletlens.live](https://walletlens.live) or open the [Bitcoin tracker page](/track/bitcoin) directly — free, no account needed.
     `
   },
   {
@@ -2039,7 +2063,7 @@ If you want to run a quick "what if" before adding your position, use the [Apple
 
 ## Getting Started
 
-Visit [walletlens.live/track/apple-stock](/track/apple-stock) for the dedicated AAPL tracking page, or open the [dashboard](/dashboard) directly to add your first position. The whole setup takes under a minute.
+Visit [walletlens.live](https://walletlens.live) to track AAPL alongside your entire portfolio — free, no account needed. Open the [Apple stock tracker](/track/apple-stock) page or the [dashboard](/dashboard) directly.
     `
   },
   {
@@ -2094,7 +2118,7 @@ Before adding positions, you can use the [gold profit calculator](/calculator/go
 
 Historically, gold has maintained purchasing power across decades, even as currencies lose value to inflation. Silver has higher volatility but also higher potential upside. Holding a portion of your wealth in both provides a buffer that financial assets often can't.
 
-The key is seeing them together — use [WalletLens](/dashboard) to add your metals alongside everything else and get a true picture of your financial position.
+The key is seeing them together — use [walletlens.live](https://walletlens.live) to add your metals alongside everything else and get a true picture of your financial position. Free, no account needed.
     `
   },
   {
@@ -2157,6 +2181,8 @@ The simplest rebalancing trigger: rebalance when any asset class is more than 5 
 You can only manage what you measure. [WalletLens](/dashboard) tracks crypto, stocks, gold, and cash in one live dashboard and shows you the percentage breakdown automatically. No account needed — add your positions and see your actual allocation instantly.
 
 The goal is not to find the "perfect" crypto percentage. It is to choose a level you can hold through a major market downturn without panic-selling — because timing markets consistently is impossible even for professionals.
+
+Track your actual crypto allocation alongside stocks, gold, and cash at [walletlens.live](https://walletlens.live) — free, no account needed.
     `
   },
   {
@@ -2281,7 +2307,7 @@ The calculation is straightforward:
 - **Cost basis** = Shares × Your average purchase price
 - **P&L** = Current value − Cost basis
 
-This is the same method your brokerage uses. WalletLens just shows it alongside all your other assets in one place.
+This is the same method your brokerage uses. WalletLens just shows it alongside all your other assets in one place at [walletlens.live](https://walletlens.live) — free, no account needed.
     `
   },
   {
@@ -2346,6 +2372,8 @@ Whether you use a local-first tracker or a linked one:
 - **Audit your connected apps** — periodically review which apps have access to your financial accounts and revoke anything you no longer use.
 
 Financial privacy is not about having something to hide. It is about limiting the attack surface available to bad actors — and keeping your financial decisions yours alone.
+
+Track your investments privately at [walletlens.live](https://walletlens.live) — local-first, no account, no data ever leaves your device.
     `
   },
   {
@@ -2399,6 +2427,8 @@ Rebalancing is counterintuitive: it means trimming winners and adding to underpe
 4. **Set a schedule** — calendar-based rebalancing (quarterly or annually) is simpler than threshold-based for most investors.
 
 The goal is not to predict which asset will outperform. It is to systematically maintain the risk level you chose when you were thinking clearly — not in the heat of a bull or bear market.
+
+See your live allocation breakdown and rebalance signals free at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -2469,7 +2499,7 @@ Once you have positions, you need to see them together. [WalletLens](/dashboard)
 
 This is illustrative, not a recommendation. The right allocation depends on your circumstances. But it demonstrates the principle: diversify across asset classes with different risk and return characteristics, keep the structure simple, and invest consistently over time.
 
-The hardest part of building a first portfolio is starting. The second hardest is not touching it when markets get volatile. Track your progress with [WalletLens](/dashboard) and review it no more than monthly — checking daily is a proven path to poor decisions.
+The hardest part of building a first portfolio is starting. The second hardest is not touching it when markets get volatile. Track your progress at [walletlens.live](https://walletlens.live) and review it no more than monthly — checking daily is a proven path to poor decisions. Free, no account needed.
     `
   },
   {
@@ -2522,7 +2552,7 @@ Add each separately; WalletLens blends the cost basis correctly and shows your c
 
 ## Beyond Crypto: The Full Net Worth View
 
-The biggest advantage is seeing your crypto alongside everything else. Once your crypto is in WalletLens, add your stock ETFs, gold, and cash. The result is a live net-worth dashboard that no exchange app can provide — and you got there without connecting a single account.
+The biggest advantage is seeing your crypto alongside everything else. Once your crypto is in WalletLens, add your stock ETFs, gold, and cash. The result is a live net-worth dashboard that no exchange app can provide — and you got there without connecting a single account. Start at [walletlens.live](https://walletlens.live), free.
     `
   },
   {
@@ -2591,7 +2621,7 @@ Holding 5–10% physical gold alongside 5–10% crypto gives you:
 
 If you hold gold ounces and Bitcoin, you need both in one portfolio view to see your actual net worth. [WalletLens](/dashboard) tracks gold (XAU), silver (XAG), Bitcoin, Ethereum, and every other major asset class in one free dashboard.
 
-Use the [gold profit calculator](/calculator/gold-profit-calculator) or [silver profit calculator](/calculator/silver-profit-calculator) for quick estimates, or add your holdings to WalletLens for live, automatic P&L tracking alongside everything else you own.
+Use the [gold profit calculator](/calculator/gold-profit-calculator) or [silver profit calculator](/calculator/silver-profit-calculator) for quick estimates, or add your holdings to [walletlens.live](https://walletlens.live) for live, automatic P&L tracking alongside everything else you own — free, no account needed.
     `
   },
   {
@@ -2655,6 +2685,8 @@ Once you can see your full portfolio in WalletLens, you can identify where you h
 - Increase cash reserves — reduces volatility and provides dry powder for market downturns
 
 The goal is not to eliminate risk. It is to take diversified risk — where your holdings don't all fall at the same time for the same reason.
+
+Track NVIDIA, Apple, Bitcoin, and every asset in one free dashboard at [walletlens.live](https://walletlens.live) — no account needed.
     `
   },
   {
@@ -2719,7 +2751,7 @@ Each shows your profit, ROI, and break-even price instantly.
 
 ## From Calculator to Live Tracking
 
-Once your position is live (you've already bought), tracking ROI in real time with live prices is more useful than manually entering prices into a calculator. [WalletLens](/dashboard) tracks your ROI automatically for every asset you hold — updating live as prices change. Add your positions once, and your returns are always current, no recalculation needed.
+Once your position is live (you've already bought), tracking ROI in real time with live prices is more useful than manually entering prices into a calculator. [walletlens.live](https://walletlens.live) tracks your ROI automatically for every asset you hold — updating live as prices change. Add your positions once, and your returns are always current, no recalculation needed. Free, no account needed.
     `
   },
   {
@@ -2781,7 +2813,7 @@ The entire setup takes 5–15 minutes for a typical portfolio. After that, you o
 
 **Stock watchlist apps:** Good for stocks, no crypto. Usually limited to watchlists rather than true cost-basis P&L.
 
-For a complete multi-asset net worth view without connecting any accounts, [WalletLens](/dashboard) remains the best free option — covering every asset class in one place, with your data stored only on your device.
+For a complete multi-asset net worth view without connecting any accounts, [walletlens.live](https://walletlens.live) remains the best free option — covering every asset class in one place, with your data stored only on your device. No account, no bank login, no sign-up.
     `
   },
 ]
