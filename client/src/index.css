@@ -6777,6 +6777,24 @@ input[type="date"] { color-scheme: dark; }
 .doc-article a { color: var(--gd); }
 .doc-article code { background: rgba(var(--g-rgb),0.1); padding: .1em .4em; border-radius: 4px; font-size: .88em; }
 .doc-meta { color: var(--text-muted); font-size: .88rem; margin: 0 0 1.5rem; }
+.doc-faq { display: flex; flex-direction: column; gap: .6rem; margin: .5rem 0 1rem; }
+.doc-faq-item {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  padding: 0 1.1rem;
+}
+.doc-faq-item summary {
+  cursor: pointer; list-style: none;
+  padding: .95rem 0;
+  font-weight: 600; color: var(--text);
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+}
+.doc-faq-item summary::-webkit-details-marker { display: none; }
+.doc-faq-item summary::after { content: '+'; color: var(--gd); font-size: 1.3rem; font-weight: 700; flex-shrink: 0; }
+.doc-faq-item[open] summary::after { content: '−'; }
+.doc-faq-item p { margin: 0 0 1rem; color: rgba(255,255,255,0.78); }
+[data-wl-light] .doc-faq-item p { color: var(--text-muted); }
 .doc-footer {
   display: flex; gap: 1.5rem; flex-wrap: wrap;
   padding: 1.2rem 2rem;
