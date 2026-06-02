@@ -6268,6 +6268,23 @@ select.bs-input option { background: var(--bg3); }
 .tc-foot a { color: var(--g); text-decoration: none; }
 .tc-foot a:hover { text-decoration: underline; }
 
+/* ── Calculator Widget (/calculator/:slug) ───────────────────────────────── */
+.calc-widget { width:100%; max-width:480px; margin:1.4rem auto 0; background:rgba(14,22,18,0.92); border:1px solid rgba(0,230,118,0.25); border-radius:14px; padding:1.4rem; }
+.calc-inputs { display:grid; gap:0.85rem; }
+.calc-label { display:flex; flex-direction:column; gap:0.3rem; font-size:0.82rem; color:rgba(255,255,255,0.55); font-weight:500; }
+.calc-input { background:rgba(255,255,255,0.04); border:1px solid rgba(0,230,118,0.2); border-radius:8px; padding:0.6rem 0.75rem; font-size:1rem; color:#fff; width:100%; outline:none; transition:border-color 0.15s; }
+.calc-input:focus { border-color:rgba(0,230,118,0.6); }
+.calc-input::placeholder { color:rgba(255,255,255,0.25); }
+.calc-results { margin-top:1.1rem; border-top:1px solid rgba(0,230,118,0.15); padding-top:1rem; display:flex; flex-direction:column; gap:0.55rem; }
+.calc-result-row { display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; color:rgba(255,255,255,0.55); }
+.calc-result-row strong { color:#fff; font-size:0.95rem; }
+.calc-pnl { margin-top:0.2rem; }
+.calc-pnl strong { font-size:1.1rem; font-weight:800; }
+.calc-pos strong { color:#00e676; }
+.calc-neg strong { color:#ef4444; }
+.calc-hint { text-align:center; color:rgba(255,255,255,0.4); font-size:0.84rem; margin-top:0.9rem; padding-top:0.75rem; border-top:1px solid rgba(0,230,118,0.12); }
+.tc-section h3 { font-size:1.05rem; font-weight:700; margin:1.2rem 0 0.4rem; color:#fff; }
+
 /* ── Final CTA ── */
 .lp-final {
   position: relative;
