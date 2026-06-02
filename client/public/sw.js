@@ -1,15 +1,16 @@
 // Service worker — tiered caching strategy:
 // • HTML: always network-first (never stale app shell)
-// • /assets/ (hashed JS/CSS): network-first, cache fallback
+// • /assets/ (hashed JS/CSS): cache-first (content-hash guarantees immutability)
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v138'
+const SW_VERSION = 'v139'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
-// Static files to pre-cache at install time for instant first-load
-const PRECACHE_URLS = ['/news.json']
+// Static files to pre-cache at install time for instant first-load.
+// manifest.webmanifest is included so the install prompt works offline.
+const PRECACHE_URLS = ['/news.json', '/manifest.webmanifest']
 
 // Price/market API origins we want to cache for offline fallback
 const PRICE_API_PATTERNS = [
