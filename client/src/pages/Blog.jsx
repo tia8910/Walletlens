@@ -86,6 +86,19 @@ function ShareBar({ post }) {
   const excerpt = getArticleExcerpt(post.content, 180 - post.title.length)
   const tweetText = encodeURIComponent(`${post.title}\n\n${excerpt}\n\n${url}`)
 
+  function openXPost(e) {
+    e.preventDefault()
+    const appUrl = `twitter://post?message=${tweetText}`
+    const webUrl = `https://x.com/intent/post?text=${tweetText}`
+    const fallback = setTimeout(() => {
+      window.open(webUrl, '_blank', 'noopener,noreferrer')
+    }, 1500)
+    const cancel = () => clearTimeout(fallback)
+    window.addEventListener('blur', cancel, { once: true })
+    window.addEventListener('pagehide', cancel, { once: true })
+    window.location.href = appUrl
+  }
+
   function copyForArticle() {
     const text = toArticleText(post, url)
     navigator.clipboard.writeText(text).then(() => {
@@ -100,7 +113,7 @@ function ShareBar({ post }) {
       <a
         className="blog-share-btn blog-share-x"
         href={`https://x.com/intent/post?text=${tweetText}`}
-        target="_blank" rel="noopener noreferrer"
+        onClick={openXPost}
         aria-label="Share on X"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
