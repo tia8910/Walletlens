@@ -2,40 +2,39 @@
 /**
  * WalletLens — HARO / Connectively Auto-Responder
  *
- * Monitors Gmail for Connectively/HARO query emails, identifies relevant
- * queries (portfolio tracking, net worth, crypto, investing tools), uses
- * Claude to draft a personalized response, and saves it to Gmail Drafts.
+ * Monitors your email (Spaceship mail or any IMAP provider) for
+ * Connectively/HARO query emails, identifies relevant queries
+ * (portfolio tracking, net worth, crypto, investing tools), uses
+ * Claude to draft a personalized response, and saves it to Drafts.
  *
- * ── Quick start ──────────────────────────────────────────────────────────────
+ * ── Quick start (Spaceship mail) ─────────────────────────────────────────────
  *
  *   npm install imapflow mailparser nodemailer @anthropic-ai/sdk
  *
- *   GMAIL_USER=you@gmail.com \
- *   GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx" \
+ *   MAIL_USER=contact@walletlens.live \
+ *   MAIL_PASS=yourpassword \
  *   ANTHROPIC_API_KEY=sk-ant-... \
  *   SENDER_NAME="Your Name" \
- *   REPLY_FROM=contact@walletlens.live \
+ *   node promo/haro-auto-responder.mjs
+ *
+ * ── Spaceship mail IMAP/SMTP settings ────────────────────────────────────────
+ *   IMAP host: imap.spaceship.com  port: 993  SSL: yes
+ *   SMTP host: smtp.spaceship.com  port: 465  SSL: yes
+ *   Username:  your full email address (contact@walletlens.live)
+ *   Password:  your Spaceship email password
+ *   (These are the defaults — no extra env vars needed for Spaceship)
+ *
+ * ── Override for a different provider ────────────────────────────────────────
+ *   IMAP_HOST=imap.example.com IMAP_PORT=993 \
+ *   SMTP_HOST=smtp.example.com SMTP_PORT=465 \
+ *   MAIL_USER=you@example.com MAIL_PASS=yourpass \
  *   node promo/haro-auto-responder.mjs
  *
  * ── Flags ─────────────────────────────────────────────────────────────────────
- *   (none)          Check once, save matching queries as Gmail Drafts
+ *   (none)          Check once, save matching queries as Drafts
  *   --auto-send     Send responses immediately instead of saving drafts
- *   --watch         Poll every 30 minutes (good for cron-free Termux use)
- *   --dry-run       Print what would be done without touching Gmail or sending
- *
- * ── Gmail App Password setup (required) ──────────────────────────────────────
- *   1. Enable 2FA: myaccount.google.com/security
- *   2. App Passwords: myaccount.google.com/apppasswords
- *      → Select app: Mail → Select device: Other → name it "HARO bot" → Create
- *   3. Copy the 16-char password (spaces included is fine)
- *
- * ── Send from contact@walletlens.live ────────────────────────────────────────
- *   To send as contact@walletlens.live via Gmail:
- *   1. Gmail → Settings → See all settings → Accounts → Send mail as
- *   2. Add another email address → enter contact@walletlens.live
- *   3. Gmail will send a verification email to contact@walletlens.live — click it
- *   4. Set REPLY_FROM=contact@walletlens.live in your env vars
- *   Responses will then show "From: contact@walletlens.live" to journalists.
+ *   --watch         Poll every 30 minutes continuously
+ *   --dry-run       Print what would be done without touching email
  */
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -46,11 +45,17 @@ import { setTimeout as sleep } from 'timers/promises'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const GMAIL_USER         = process.env.GMAIL_USER         || ''
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || ''
+// Mail credentials (Spaceship defaults)
+const MAIL_USER  = process.env.MAIL_USER  || ''
+const MAIL_PASS  = process.env.MAIL_PASS  || ''
+const IMAP_HOST  = process.env.IMAP_HOST  || 'imap.spaceship.com'
+const IMAP_PORT  = parseInt(process.env.IMAP_PORT  || '993', 10)
+const SMTP_HOST  = process.env.SMTP_HOST  || 'smtp.spaceship.com'
+const SMTP_PORT  = parseInt(process.env.SMTP_PORT  || '465', 10)
+
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || ''
 const SENDER_NAME        = process.env.SENDER_NAME        || 'WalletLens'
-const REPLY_FROM         = process.env.REPLY_FROM         || 'contact@walletlens.live'
+const REPLY_FROM         = process.env.REPLY_FROM         || MAIL_USER || 'contact@walletlens.live'
 
 const AUTO_SEND = process.argv.includes('--auto-send')
 const WATCH     = process.argv.includes('--watch')
@@ -202,7 +207,17 @@ function isRelevant(query) {
   return RELEVANT_KEYWORDS.some(kw => haystack.includes(kw.toLowerCase()))
 }
 
-// ── Gmail IMAP ────────────────────────────────────────────────────────────────
+// ── IMAP helpers ──────────────────────────────────────────────────────────────
+
+function makeImapClient() {
+  return new ImapFlow({
+    host: IMAP_HOST,
+    port: IMAP_PORT,
+    secure: true,
+    auth: { user: MAIL_USER, pass: MAIL_PASS },
+    logger: false,
+  })
+}
 
 function isHaroSender(from) {
   if (!from) return false
@@ -210,13 +225,7 @@ function isHaroSender(from) {
 }
 
 async function fetchUnreadHaroEmails() {
-  const client = new ImapFlow({
-    host: 'imap.gmail.com',
-    port: 993,
-    secure: true,
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-    logger: false,
-  })
+  const client = makeImapClient()
 
   const emails = []
 
@@ -255,13 +264,7 @@ async function fetchUnreadHaroEmails() {
 }
 
 async function markAsRead(uid) {
-  const client = new ImapFlow({
-    host: 'imap.gmail.com',
-    port: 993,
-    secure: true,
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-    logger: false,
-  })
+  const client = makeImapClient()
 
   try {
     await client.connect()
@@ -273,24 +276,20 @@ async function markAsRead(uid) {
   }
 }
 
-// ── Gmail SMTP (send / save draft) ───────────────────────────────────────────
+// ── SMTP (send / save draft) ──────────────────────────────────────────────────
 
 function createTransport() {
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,  // true for 465 (SSL), false for 587 (STARTTLS)
+    auth: { user: MAIL_USER, pass: MAIL_PASS },
   })
 }
 
 async function saveDraft(to, subject, body) {
-  // Save to Gmail Drafts via IMAP APPEND
-  const client = new ImapFlow({
-    host: 'imap.gmail.com',
-    port: 993,
-    secure: true,
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-    logger: false,
-  })
+  // Save to Drafts folder via IMAP APPEND
+  const client = makeImapClient()
 
   const raw = [
     `From: ${SENDER_NAME} <${REPLY_FROM}>`,
@@ -303,8 +302,8 @@ async function saveDraft(to, subject, body) {
 
   try {
     await client.connect()
-    // Gmail Drafts folder is usually "[Gmail]/Drafts"
-    const folders = ['[Gmail]/Drafts', 'Drafts', '[Google Mail]/Drafts']
+    // Try common Drafts folder names across providers
+    const folders = ['Drafts', 'INBOX.Drafts', '[Gmail]/Drafts', 'Draft']
     let saved = false
     for (const folder of folders) {
       try {
@@ -423,15 +422,15 @@ async function processOnce() {
 
   console.log(`\n  Done. ${drafted} draft(s) created, ${skipped} irrelevant quer${skipped === 1 ? 'y' : 'ies'} skipped.`)
   if (drafted > 0 && !AUTO_SEND) {
-    console.log('  👉 Open Gmail Drafts, review each response, then send.')
+    console.log('  👉 Open your Drafts folder, review each response, then send.')
   }
 }
 
 async function main() {
   if (!DRY_RUN) {
-    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-      console.error('❌ Set GMAIL_USER and GMAIL_APP_PASSWORD env vars.')
-      console.error('   Get an App Password: myaccount.google.com/apppasswords')
+    if (!MAIL_USER || !MAIL_PASS) {
+      console.error('❌ Set MAIL_USER and MAIL_PASS env vars.')
+      console.error('   MAIL_USER=contact@walletlens.live MAIL_PASS=yourpassword')
       process.exit(1)
     }
     if (!ANTHROPIC_API_KEY) {
@@ -441,7 +440,7 @@ async function main() {
   }
 
   console.log('🤖 WalletLens HARO Auto-Responder')
-  console.log(`   Mode: ${DRY_RUN ? 'DRY RUN' : AUTO_SEND ? 'AUTO-SEND' : 'DRAFT (saves to Gmail Drafts)'}`)
+  console.log(`   Mode: ${DRY_RUN ? 'DRY RUN' : AUTO_SEND ? 'AUTO-SEND' : 'DRAFT (saves to Drafts folder)'}`)
   console.log(`   Watch: ${WATCH ? `every ${POLL_MS / 60000} min` : 'one-shot'}`)
 
   if (WATCH) {
