@@ -64,33 +64,6 @@ function stripMd(s) {
     .trim()
 }
 
-// Extract FAQ pairs from a post: any ## / ### heading ending in "?" plus the
-// first answer block beneath it. Powers per-post FAQPage structured data, which
-// answer engines (Google AI Overviews, ChatGPT, Perplexity) lift directly.
-function extractFaqs(content) {
-  const lines = content.trim().split('\n')
-  const faqs = []
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^#{2,3}\s+(.*\?)\s*$/)
-    if (!m) continue
-    const q = stripMd(m[1])
-    let j = i + 1
-    while (j < lines.length && lines[j].trim() === '') j++
-    const ansParts = []
-    while (j < lines.length) {
-      const l = lines[j]
-      if (l.trim() === '') break
-      if (/^#{2,3}\s/.test(l) || l.startsWith('|')) break
-      if (l.startsWith('- ')) ansParts.push(stripMd(l.slice(2)))
-      else ansParts.push(stripMd(l))
-      j++
-    }
-    const a = ansParts.join(' ').trim()
-    if (q && a.length > 25) faqs.push({ q, a: a.length > 320 ? a.slice(0, 317).trimEnd() + '…' : a })
-  }
-  return faqs
-}
-
 // Convert the post markdown subset (## h2, **bold** lines, - lists, | tables)
 // into an HTML string — mirrors renderMarkdown() in Blog.jsx.
 function mdToHtml(text) {
@@ -262,16 +235,6 @@ write('/free-net-worth-tracker', buildPage({
   jsonLd: [
     {
       '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: [
-        { '@type': 'Question', name: 'What is the best free net worth tracker?',
-          acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a strong choice: it tracks your entire net worth across crypto, stocks, gold, cash and FX, needs no account, and keeps data private on your device — all for free.' } },
-        { '@type': 'Question', name: 'Can I manage all my investments in one app for free?',
-          acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens combines every asset class into a single free dashboard with a live net-worth total, allocation breakdown and AI analysis, with no account or subscription.' } },
-      ],
-    },
-    {
-      '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
@@ -386,6 +349,11 @@ ${aiBullet}
 <li>Watch your ${esc(c.name)} value, P&amp;L and allocation update with live prices.</li>
 </ol>
 <p><a href="/dashboard">Add ${esc(c.symbol)} to your portfolio →</a></p>
+<h2>Frequently asked questions</h2>
+<h3>${esc(faq1q)}</h3>
+<p>${esc(faq1a)}</p>
+<h3>${esc(faq2q)}</h3>
+<p>${esc(faq2a)}</p>
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a></p>`
 
   write('/track/' + c.slug, buildPage({
@@ -394,16 +362,6 @@ ${aiBullet}
     description: pageDesc,
     bodyHtml: assetBody,
     jsonLd: [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: faq1q,
-            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
-          { '@type': 'Question', name: faq2q,
-            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
-        ],
-      },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -493,16 +451,6 @@ for (const c of CALCULATORS) {
     jsonLd: [
       {
         '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: faq1q,
-            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
-          { '@type': 'Question', name: faq2q,
-            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
-        ],
-      },
-      {
-        '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
         name: `${c.name} Profit Calculator`,
         applicationCategory: 'FinanceApplication',
@@ -551,14 +499,6 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
         description: t.short,
         inDefinedTermSet: `${ORIGIN}/learn`,
         url: `${ORIGIN}/learn/${t.slug}`,
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: `What is ${t.term}?`,
-            acceptedAnswer: { '@type': 'Answer', text: t.short } },
-        ],
       },
       {
         '@context': 'https://schema.org',
@@ -643,16 +583,6 @@ for (const a of PRICE_ASSETS) {
     jsonLd: [
       {
         '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: `How much is ${a.name} worth today?`,
-            acceptedAnswer: { '@type': 'Answer', text: `The live ${a.name} (${a.symbol}) price updates from market data when you open the page. For continuously updating prices and your own profit/loss, track ${a.symbol} in WalletLens for free.` } },
-          { '@type': 'Question', name: `Where can I track ${a.name} for free?`,
-            acceptedAnswer: { '@type': 'Answer', text: `WalletLens tracks ${a.name} for free with no account — add your holding once and it values it with live prices alongside your entire net worth, with data kept on your device.` } },
-        ],
-      },
-      {
-        '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
@@ -700,7 +630,6 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
   <p><a href="/blog">← All articles</a></p>
 </article>`
   const iso = postIsoDate(p.date)
-  const faqs = extractFaqs(p.content)
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -732,18 +661,6 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
       ],
     },
   ]
-  // Per-post FAQ structured data — only when the article genuinely has ≥2 Q&As.
-  if (faqs.length >= 2) {
-    jsonLd.push({
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faqs.map(f => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
-    })
-  }
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
     title: `${p.title} | WalletLens`,
@@ -793,14 +710,6 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 <p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="mailto:contact@walletlens.live">contact@walletlens.live</a></p>
 `,
   jsonLd: [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: aboutFaqs.map(f => ({
-        '@type': 'Question', name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
-    },
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',

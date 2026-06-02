@@ -33,19 +33,8 @@ const FAQS = [
 ]
 
 export default function About() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQS.map(f => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
-    })),
-  }
-
   return (
     <div className="doc-page">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <header className="doc-header">
         <Link to="/" className="doc-brand"><Logo size={26} /> WalletLens</Link>
       </header>
