@@ -57,6 +57,10 @@ input, select, textarea {
   /* Brand palette — neon mint on black */
   --g: #00e676;
   --gd: #00b856;
+  /* Green used as TEXT (links, table highlights). Bright green is fine on the
+     dark theme but fails contrast on light backgrounds — light mode overrides
+     this to a darker, readable green. */
+  --g-ink: #00e676;
   --g-rgb: 0, 230, 118;
   --gd-rgb: 0, 184, 86;
   --gl: rgba(0, 230, 118, 0.12);
@@ -332,6 +336,8 @@ input, select, textarea {
   --surface-3: rgba(15, 23, 42, 0.1);
   --card-bg: rgba(255, 255, 255, 0.7);
   --border: rgba(15, 23, 42, 0.12);
+  /* Darker green for text so links/highlights stay readable on the light page */
+  --g-ink: #047857;
   /* Tone down neon green backgrounds — #00ffaa is too vivid at full opacity on white */
   --gl: rgba(0, 255, 170, 0.06);
   --accent-bg: rgba(0, 255, 170, 0.07);
@@ -6265,7 +6271,7 @@ select.bs-input option { background: var(--bg3); }
 .tc-section .lp-cta-primary { margin-top: 1.3rem; }
 .tc-foot { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center;
   margin-top: 2.6rem; color: var(--text-sub); font-size: 0.85rem; }
-.tc-foot a { color: var(--g); text-decoration: none; }
+.tc-foot a { color: var(--g-ink); text-decoration: none; }
 .tc-foot a:hover { text-decoration: underline; }
 /* Ghost CTA inside content pages must stay readable in both light & dark themes
    (the global .lp-cta-ghost is tuned for the always-dark Landing hero). */
@@ -6274,7 +6280,7 @@ select.bs-input option { background: var(--bg3); }
 /* Prerendered crawler block (#prerender-content) also assumes a dark bg — make
    its text follow the theme so any flash before React mounts stays legible. */
 #prerender-content { color: var(--text) !important; }
-#prerender-content a { color: var(--g); }
+#prerender-content a { color: var(--g-ink); }
 
 /* ── Calculator Widget (/calculator/:slug) ───────────────────────────────── */
 .calc-widget { width:100%; max-width:480px; margin:1.4rem auto 0; background:rgba(14,22,18,0.92); border:1px solid rgba(0,230,118,0.25); border-radius:14px; padding:1.4rem; }

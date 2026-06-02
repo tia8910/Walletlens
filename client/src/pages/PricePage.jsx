@@ -80,7 +80,7 @@ export default function PricePage() {
             {status === 'ok' && price != null ? `$${fmtPrice(price)}` : status === 'loading' ? '…' : '—'}
           </div>
           {status === 'ok' && change != null && (
-            <div style={{ fontWeight: 700, color: changePos ? '#00e676' : '#ef4444', marginBottom: '0.2rem' }}>
+            <div style={{ fontWeight: 700, color: changePos ? 'var(--g-ink)' : '#ef4444', marginBottom: '0.2rem' }}>
               {changePos ? '+' : ''}{change.toFixed(2)}% (24h)
             </div>
           )}

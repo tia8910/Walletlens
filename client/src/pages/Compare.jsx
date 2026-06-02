@@ -10,7 +10,7 @@ const ARROW = (
 
 const TH = { padding: '0.55rem', borderBottom: '1px solid rgba(0,230,118,0.25)', textAlign: 'left', fontWeight: 700 }
 const TD = { padding: '0.55rem', borderBottom: '1px solid rgba(0,230,118,0.12)', textAlign: 'left', verticalAlign: 'top' }
-const TD_US = { ...TD, color: '#00e676', fontWeight: 600 }
+const TD_US = { ...TD, color: 'var(--g-ink)', fontWeight: 600 }
 
 // Programmatic comparison page: /vs/:slug — "WalletLens vs <competitor>".
 // High commercial-intent searches; prerendered to static HTML.
