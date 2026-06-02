@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "WalletLens Portfolio",
+  "short_name": "WalletLens",
+  "version": "1.0.0",
+  "description": "View your WalletLens crypto portfolio summary — total value, 24h change, and top holdings — directly from your browser toolbar.",
+  "icons": {
+    "16":  "icons/icon-16.svg",
+    "48":  "icons/icon-48.svg",
+    "128": "icons/icon-128.svg"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "WalletLens Portfolio",
+    "default_icon": {
+      "16":  "icons/icon-16.svg",
+      "48":  "icons/icon-48.svg",
+      "128": "icons/icon-128.svg"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://walletlens.live/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage", "alarms", "tabs"],
+  "host_permissions": ["https://walletlens.live/*", "https://api.coingecko.com/*"]
+}

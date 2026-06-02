@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg-grad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0d2a16"/>
+      <stop offset="100%" stop-color="#071a0c"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4ade80" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="url(#bg-grad)"/>
+  <!-- Subtle glow -->
+  <circle cx="64" cy="64" r="64" fill="url(#glow)"/>
+  <!-- Border ring -->
+  <circle cx="64" cy="64" r="60" stroke="#4ade80" stroke-width="2.5" fill="none" opacity="0.6"/>
+  <!-- Inner accent ring -->
+  <circle cx="64" cy="64" r="54" stroke="#4ade80" stroke-width="0.8" fill="none" opacity="0.2"/>
+  <!-- W letterform -->
+  <text x="64" y="90" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-weight="700" font-size="72" fill="#4ade80">W</text>
+</svg>
