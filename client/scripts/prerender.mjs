@@ -754,21 +754,62 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
 }
 
 // ── About ────────────────────────────────────────────────────────────────────
+const aboutFaqs = [
+  { q: 'Is WalletLens really free?',
+    a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. Track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.' },
+  { q: 'Do I need an account or email to use it?',
+    a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately, so there is nothing to hack, leak, or lock you out of.' },
+  { q: 'Where is my portfolio data stored?',
+    a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no server that receives your holdings; your data never leaves your device unless you export a backup code." },
+  { q: 'What assets can I track in one place?',
+    a: 'Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, and bonds — all in a single net worth dashboard with live prices, cost basis, and profit/loss.' },
+  { q: 'How is WalletLens different from CoinStats, Empower, or Kubera?',
+    a: 'Most trackers focus only on crypto, charge a subscription, require exchange or bank logins, or store your data on their servers. WalletLens covers every asset class, is free forever, needs no logins, and keeps all data on your device.' },
+  { q: 'Can I use WalletLens on my phone?',
+    a: 'Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline.' },
+]
 write('/about', buildPage({
   path: '/about',
-  title: 'About WalletLens — Free Net Worth & All-Asset Portfolio Tracker',
-  description: 'WalletLens is a free, private, browser-based net worth tracker for personal investment management. No account, no server, no data collection. Track your whole net worth — crypto, stocks, gold, silver, cash and FX — in one dashboard.',
+  title: 'About WalletLens — Free Net Worth Tracker for Crypto, Stocks & Gold',
+  description: 'WalletLens is a free, private net worth tracker for all your investments — crypto, stocks, gold, silver, cash & FX in one dashboard. No account, no server, no data collection. Learn what it does, who it is for, and how it compares.',
   bodyHtml: `
-<h1>About WalletLens</h1>
-<p>WalletLens is a free, private net worth tracker that runs entirely in your browser. It is a complete tool for personal investment management — track and manage every asset you own in one place — with no account, no email, and no server, so your holdings never leave your device.</p>
+<h1>About WalletLens — The Free, Private Net Worth Tracker</h1>
+<p>WalletLens is a free net worth tracker and all-asset portfolio manager that runs entirely in your browser. Track every investment you own — crypto, US stocks, ETFs, gold, silver, fiat currencies, cash, and bonds — in one unified dashboard, with no account, no email, and no server, so your holdings never leave your device.</p>
 <h2>What we built</h2>
-<p>A single dashboard for your entire net worth: crypto, US stocks &amp; ETFs, gold, silver, platinum, fiat currencies, bonds, and any other asset. Live prices, cost-basis tracking, P&amp;L, allocation donut, multi-target sell plans, and on-device AI analysis — all free, forever.</p>
+<p>A single dashboard for your entire net worth: crypto, US stocks &amp; ETFs, gold, silver, platinum, fiat currencies, bonds, and any other asset. Live prices, cost-basis tracking, profit &amp; loss, allocation donut, multi-target sell plans, a Bitcoin whale tracker, and on-device AI analysis — all free, forever.</p>
+<h2>Who WalletLens is for</h2>
+<ul>
+<li>Multi-asset investors who hold crypto and stocks and precious metals and are tired of juggling separate apps.</li>
+<li>Privacy-conscious people who don't want to connect bank logins or hand their holdings to a cloud server.</li>
+<li>Anyone who wants a free net worth tracker with no subscription, trial, or credit card.</li>
+<li>DIY investors who want cost-basis tracking, profit targets, and clear P&amp;L without a spreadsheet.</li>
+</ul>
 <h2>Why local-first?</h2>
-<p>Every portfolio tracker we tried asked us to hand over our holdings to a server, connect exchange API keys, or create an account. We didn't want to make that trade-off. WalletLens stores your data in your browser's localStorage and exports it as a single encrypted backup code you control.</p>
+<p>Every portfolio tracker we tried asked us to hand over our holdings to a server, connect exchange API keys, or create an account. We didn't want to make that trade-off. WalletLens stores your data in your browser's localStorage and exports it as a single backup code you control.</p>
 <h2>Privacy by design</h2>
-<p>There is no backend database. There is no login because there is nothing to log into. The only external calls are to public price APIs (CoinGecko, Binance, Stooq, Gold-API) and, optionally, the Anthropic API for AI analysis — both are called directly from your browser with no intermediary server.</p>
-<p><a href="/dashboard">Open the dashboard</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a></p>
+<p>There is no backend database. There is no login because there is nothing to log into. The only external calls are to public price APIs (CoinGecko, Binance, Stooq, Gold-API) and, optionally, the Anthropic API for AI analysis — both called directly from your browser with no intermediary server.</p>
+<h2>Frequently asked questions</h2>
+${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a></p>
 `,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: aboutFaqs.map(f => ({
+        '@type': 'Question', name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'WalletLens',
+      url: ORIGIN + '/',
+      logo: ORIGIN + '/icon-512.svg',
+      description: 'Free, private net worth tracker for crypto, stocks, gold, silver, cash and FX.',
+    },
+  ],
 }))
 
 // ── Privacy ──────────────────────────────────────────────────────────────────
