@@ -6881,6 +6881,10 @@ input[type="date"] { color-scheme: dark; }
   padding: .6rem .8rem;
 }
 .blog-share-hint strong { color: var(--g-ink); font-weight: 700; }
+[data-wl-light] .blog-share-btn { color: rgba(0,0,0,0.75); background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.18); }
+[data-wl-light] .blog-share-btn:hover { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.35); color: #000; }
+[data-wl-light] .blog-share-x { border-color: rgba(0,0,0,0.22); }
+[data-wl-light] .blog-share-x:hover { border-color: rgba(0,0,0,0.45); }
 
 /* Landing footer update */
 .lp-footer { display: flex; flex-direction: column; align-items: center; gap: .75rem; padding: 2rem 1.25rem; background: rgba(2,10,5,0.92); }
