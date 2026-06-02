@@ -54,8 +54,35 @@ function getArticleExcerpt(content, maxLen) {
   return ''
 }
 
+function toArticleText(post, url) {
+  const lines = post.content.trim().split('\n')
+  const out = []
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      out.push('\n' + line.slice(3).toUpperCase() + '\n')
+    } else if (line.startsWith('### ')) {
+      out.push('\n' + line.slice(4) + '\n')
+    } else if (line.startsWith('> ')) {
+      out.push(line.slice(2).replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'))
+    } else if (line.startsWith('- ')) {
+      out.push('• ' + line.slice(2).replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'))
+    } else if (/^\d+\. /.test(line)) {
+      out.push(line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'))
+    } else if (line.startsWith('| ') || line.startsWith('|---')) {
+      // skip table rows
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      out.push('\n' + line.slice(2, -2) + '\n')
+    } else {
+      const clean = line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      out.push(clean)
+    }
+  }
+  return `${post.title}\n\n${out.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n\n— Read on WalletLens: ${url}`
+}
+
 function ShareBar({ post }) {
   const [copied, setCopied] = useState(false)
+  const [articleCopied, setArticleCopied] = useState(false)
   const url = `https://walletlens.live/blog/${post.slug}`
   const excerpt = getArticleExcerpt(post.content, 180 - post.title.length)
   const tweetText = encodeURIComponent(`${post.title}\n\n${excerpt}\n\n${url}`)
@@ -67,6 +94,15 @@ function ShareBar({ post }) {
     })
   }
 
+  function copyForArticle() {
+    const text = toArticleText(post, url)
+    navigator.clipboard.writeText(text).then(() => {
+      setArticleCopied(true)
+      setTimeout(() => setArticleCopied(false), 3000)
+      window.open('https://x.com/i/articles/new', '_blank', 'noopener,noreferrer')
+    })
+  }
+
   return (
     <div className="blog-share-bar">
       <span className="blog-share-label">Share</span>
@@ -74,11 +110,15 @@ function ShareBar({ post }) {
         className="blog-share-btn blog-share-x"
         href={`https://x.com/intent/post?text=${tweetText}`}
         target="_blank" rel="noopener noreferrer"
-        aria-label="Share article on X"
+        aria-label="Share on X"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        Share article on X
+        Post on X
       </a>
+      <button className="blog-share-btn blog-share-article" onClick={copyForArticle} aria-label="Share as X Article">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/><circle cx="19" cy="17" r="3"/><path d="m21.5 19.5-1.5-1.5"/></svg>
+        {articleCopied ? 'Copied! Paste in X ✓' : 'X Article (copy + open)'}
+      </button>
       <button className="blog-share-btn blog-share-copy" onClick={copyLink} aria-label="Copy link">
         {copied ? (
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
