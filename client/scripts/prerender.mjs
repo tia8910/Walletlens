@@ -790,7 +790,7 @@ write('/about', buildPage({
 <p>There is no backend database. There is no login because there is nothing to log into. The only external calls are to public price APIs (CoinGecko, Binance, Stooq, Gold-API) and, optionally, the Anthropic API for AI analysis — both called directly from your browser with no intermediary server.</p>
 <h2>Frequently asked questions</h2>
 ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
-<p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a></p>
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="mailto:contact@walletlens.live">contact@walletlens.live</a></p>
 `,
   jsonLd: [
     {

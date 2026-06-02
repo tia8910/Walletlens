@@ -104,7 +104,7 @@ export default function About() {
         <p>WalletLens is open source. You can inspect the code, report issues, or contribute on <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub</a>.</p>
 
         <h2>Contact</h2>
-        <p>Have feedback, found a bug, or want to suggest a feature? Open an issue on <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub</a>. We read every issue.</p>
+        <p>Have feedback, found a bug, or want to suggest a feature? Email us at <a href="mailto:contact@walletlens.live">contact@walletlens.live</a> — we read everything.</p>
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
