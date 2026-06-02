@@ -26,9 +26,6 @@
  *   Find your exact hostnames at:
  *   Spaceship dashboard → Email → your mailbox → "Email client settings"
  *
- *   If imap.spacemail.com also fails, pass the correct host explicitly:
- *   IMAP_HOST=mail.yourdomain.com SMTP_HOST=mail.yourdomain.com node ...
- *
  * ── Override for a different provider ────────────────────────────────────────
  *   IMAP_HOST=imap.example.com IMAP_PORT=993 \
  *   SMTP_HOST=smtp.example.com SMTP_PORT=465 \
