@@ -60,7 +60,7 @@ export default function Terms() {
         <p>These Terms shall be governed by and construed in accordance with applicable law. Any disputes arising from these Terms or your use of the app shall be resolved through good-faith negotiation or, if necessary, binding arbitration.</p>
 
         <h2>14. Contact</h2>
-        <p>If you have any questions about these Terms, please open an issue on our <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub repository</a>.</p>
+        <p>If you have any questions about these Terms, please email us at <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>

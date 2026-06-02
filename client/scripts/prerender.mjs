@@ -830,6 +830,8 @@ write('/privacy', buildPage({
 <p>If you use the AI Portfolio Analysis feature, an anonymised snapshot of your holdings (no names, no account details) is sent to the Anthropic API for processing. This is opt-in, performed on demand, and subject to Anthropic's privacy policy.</p>
 <h2>Analytics</h2>
 <p>We use Google Analytics (anonymised, no ad conversion signals) to understand aggregate traffic. No personally identifiable information is collected.</p>
+<h2>Contact</h2>
+<p>If you have any questions about this Privacy Policy, please email us at <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
 <p><a href="/about">About WalletLens</a> · <a href="/terms">Terms of Service</a></p>
 `,
 }))
@@ -852,6 +854,8 @@ write('/terms', buildPage({
 <p>You may not use WalletLens for any unlawful purpose, attempt to reverse-engineer or scrape the service, or misuse the public price APIs it relies on.</p>
 <h2>Changes</h2>
 <p>We may update these terms at any time. Continued use of WalletLens after changes constitutes acceptance of the updated terms.</p>
+<h2>Contact</h2>
+<p>If you have any questions about these Terms, please email us at <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
 <p><a href="/about">About WalletLens</a> · <a href="/privacy">Privacy Policy</a></p>
 `,
 }))
