@@ -6251,22 +6251,30 @@ select.bs-input option { background: var(--bg3); }
 /* ── Per-coin /track landing pages ── */
 .tc-page { max-width: 760px; margin: 0 auto; padding: 1.4rem 1.1rem 3rem; }
 .tc-head { padding: 0.6rem 0 1.4rem; }
-.tc-brand { display: inline-flex; align-items: center; gap: 0.5rem; color: #fff; text-decoration: none; font-weight: 800; }
+.tc-brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text); text-decoration: none; font-weight: 800; }
 .tc-hero { text-align: center; padding: 1.2rem 0 1.6rem; }
 .tc-coin-logo { margin: 0 auto 1rem; display: block; }
-.tc-h1 { font-size: clamp(1.6rem, 4.5vw, 2.5rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.12; }
-.tc-sub { color: rgba(255,255,255,0.62); font-size: 1.02rem; max-width: 620px; margin: 1rem auto 0; line-height: 1.55; }
+.tc-h1 { font-size: clamp(1.6rem, 4.5vw, 2.5rem); font-weight: 900; letter-spacing: -0.02em; line-height: 1.12; color: var(--text); }
+.tc-sub { color: var(--text-muted); font-size: 1.02rem; max-width: 620px; margin: 1rem auto 0; line-height: 1.55; }
 .tc-cta-row { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin-top: 1.6rem; }
 .tc-section { margin-top: 2.2rem; }
-.tc-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.7rem; }
-.tc-section p { color: rgba(255,255,255,0.7); line-height: 1.6; }
-.tc-list, .tc-steps { color: rgba(255,255,255,0.7); line-height: 1.7; padding-left: 1.2rem; margin-top: 0.4rem; }
+.tc-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.7rem; color: var(--text); }
+.tc-section p { color: var(--text-muted); line-height: 1.6; }
+.tc-list, .tc-steps { color: var(--text-muted); line-height: 1.7; padding-left: 1.2rem; margin-top: 0.4rem; }
 .tc-list li, .tc-steps li { margin-bottom: 0.4rem; }
 .tc-section .lp-cta-primary { margin-top: 1.3rem; }
 .tc-foot { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center;
-  margin-top: 2.6rem; color: rgba(255,255,255,0.35); font-size: 0.85rem; }
+  margin-top: 2.6rem; color: var(--text-sub); font-size: 0.85rem; }
 .tc-foot a { color: var(--g); text-decoration: none; }
 .tc-foot a:hover { text-decoration: underline; }
+/* Ghost CTA inside content pages must stay readable in both light & dark themes
+   (the global .lp-cta-ghost is tuned for the always-dark Landing hero). */
+.tc-page .lp-cta-ghost { color: var(--text); background: var(--surface-1); border-color: var(--border); }
+.tc-page .lp-cta-ghost:hover { background: var(--surface-2); border-color: var(--border); }
+/* Prerendered crawler block (#prerender-content) also assumes a dark bg — make
+   its text follow the theme so any flash before React mounts stays legible. */
+#prerender-content { color: var(--text) !important; }
+#prerender-content a { color: var(--g); }
 
 /* ── Calculator Widget (/calculator/:slug) ───────────────────────────────── */
 .calc-widget { width:100%; max-width:480px; margin:1.4rem auto 0; background:rgba(14,22,18,0.92); border:1px solid rgba(0,230,118,0.25); border-radius:14px; padding:1.4rem; }
@@ -6283,7 +6291,7 @@ select.bs-input option { background: var(--bg3); }
 .calc-pos strong { color:#00e676; }
 .calc-neg strong { color:#ef4444; }
 .calc-hint { text-align:center; color:rgba(255,255,255,0.4); font-size:0.84rem; margin-top:0.9rem; padding-top:0.75rem; border-top:1px solid rgba(0,230,118,0.12); }
-.tc-section h3 { font-size:1.05rem; font-weight:700; margin:1.2rem 0 0.4rem; color:#fff; }
+.tc-section h3 { font-size:1.05rem; font-weight:700; margin:1.2rem 0 0.4rem; color: var(--text); }
 
 /* ── Final CTA ── */
 .lp-final {
