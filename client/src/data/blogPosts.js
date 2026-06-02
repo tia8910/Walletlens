@@ -1859,4 +1859,929 @@ The honest trade-off: because WalletLens does not link your accounts, balances d
 Empower, Kubera, and Personal Capital are solid tools, but they ask for accounts, account-linking, or fees that not everyone wants to accept just to see their net worth. The free alternatives each make a different trade: spreadsheets trade convenience for control, crypto trackers trade breadth for depth, and local-first all-asset trackers like WalletLens trade automatic syncing for being free, private, and complete. Decide which trade-off you are happy to make, and the right alternative becomes obvious.
     `
   },
+  {
+    slug: 'crypto-profit-calculator-guide',
+    title: 'How to Calculate Crypto Profit and ROI (The Simple Formula)',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'Learn the exact formulas for crypto profit, ROI, and break-even — plus how cost basis and DCA affect your real returns.',
+    content: `
+Whether you bought Bitcoin at $20,000 or Ethereum at $1,500, knowing exactly how much you've made or lost requires a few straightforward calculations. This guide covers the formulas, the concepts, and a free tool that does it all instantly.
+
+## The Core Profit Formula
+
+Profit is the simplest calculation in investing:
+
+**Profit / Loss = (Sell Price − Buy Price) × Quantity**
+
+If you bought 2 BTC at $30,000 and the price is now $65,000:
+
+- Profit = ($65,000 − $30,000) × 2 = **$70,000**
+
+If the price dropped to $25,000 instead:
+
+- Loss = ($25,000 − $30,000) × 2 = **−$10,000**
+
+## Return on Investment (ROI)
+
+ROI tells you how much you made relative to what you put in, expressed as a percentage:
+
+**ROI % = (Profit ÷ Amount Invested) × 100**
+
+Using the first example above:
+- Amount invested = 2 × $30,000 = $60,000
+- ROI = ($70,000 ÷ $60,000) × 100 = **116.7%**
+
+A positive ROI means you're ahead; a negative ROI means you're underwater.
+
+## Cost Basis and Why It Matters
+
+Your **cost basis** is the total amount you paid for an asset, including any fees. If you paid $60,000 for 2 BTC plus a $60 exchange fee, your true cost basis is $60,060 — not $60,000. This shifts your break-even price slightly higher.
+
+Cost basis becomes more complex when you buy in multiple tranches. If you bought 1 BTC at $40,000 and then another 1 BTC at $20,000, your **average cost basis** is $30,000 per BTC. This blended number is what you should use for your ROI calculation.
+
+## Dollar-Cost Averaging (DCA)
+
+DCA means buying a fixed dollar amount at regular intervals rather than all at once. It lowers your average cost when prices drop and prevents you from perfectly timing the top — or the bottom.
+
+**Average cost for DCA:**
+
+Average Price = Total Spent ÷ Total Coins Acquired
+
+Tracking DCA manually is tedious. A portfolio tracker like [WalletLens](/dashboard) logs every purchase separately and blends the average automatically.
+
+## Break-Even Price
+
+Your break-even is the price at which your position is exactly at zero profit:
+
+**Break-even = Total Cost Basis ÷ Quantity**
+
+For a simple position with no fees, this is just your buy price. With fees, it's slightly higher.
+
+## Use the Free Calculator
+
+If you'd rather skip the arithmetic, use the [free crypto profit calculator](/calculator/crypto-profit-calculator) — enter your quantity, buy price, and target price, and it shows your P&L, ROI, and break-even instantly. It works for any coin.
+
+## From Calculator to Live Tracker
+
+The calculator is useful for quick "what if" scenarios. But once you have real holdings, you want your P&L updating automatically as prices move. [WalletLens](/dashboard) does this for free — add your position once, and your profit and loss updates in real time alongside everything else you own, with no account or sign-up required.
+
+## Summary
+
+- **Profit** = (Sell − Buy) × Quantity
+- **ROI** = (Profit ÷ Invested) × 100
+- **Break-even** = Cost Basis ÷ Quantity
+- **DCA** lowers average cost; always use your blended average, not just the most recent buy price
+- Use the [crypto profit calculator](/calculator/crypto-profit-calculator) for instant results, or WalletLens for live tracking
+    `
+  },
+  {
+    slug: 'bitcoin-portfolio-tracker-free',
+    title: 'Bitcoin Portfolio Tracker — Track BTC Free, No Sign-Up',
+    date: 'June 2026',
+    readTime: '4 min read',
+    summary: 'How to track your Bitcoin holdings for free without connecting a wallet or exchange — see live P&L alongside your entire net worth.',
+    content: `
+Bitcoin is the dominant asset in most crypto portfolios. But tracking it well means more than glancing at the BTC price on an exchange app. You need your actual cost basis, your real profit or loss in dollars, and how BTC fits into your total financial picture. Here is how to do that for free.
+
+## The Problem With Exchange Apps for BTC Tracking
+
+If you use Coinbase, Binance, or Kraken, their apps show your BTC balance and current value. But they have significant blind spots:
+
+- **Only one exchange** — if you hold BTC across multiple platforms, no single app shows the complete picture.
+- **No net worth view** — your BTC is shown in isolation, not alongside your stocks, gold, or cash.
+- **No cost basis across multiple purchases** — most exchange apps don't blend your average cost across all your buys over time.
+- **Privacy concerns** — linking your exchange account to a third-party tracker means sharing API keys and transaction history.
+
+## What You Actually Want
+
+A good Bitcoin tracker should:
+
+- Show your **current BTC value in USD** with a live price feed
+- Calculate your **profit or loss** based on your actual purchase cost
+- Display BTC as part of your **total portfolio** — not in isolation
+- Work **without connecting your wallet or exchange**
+- Be **free**, with no account required
+
+## How to Track BTC in WalletLens
+
+[WalletLens](/track/bitcoin) is a free, browser-based portfolio tracker that covers exactly these needs. Here is how to set it up:
+
+1. Open [walletlens.live/dashboard](/dashboard) — no account or login needed.
+2. Tap **Add asset** and search for Bitcoin (BTC).
+3. Enter your quantity and the price you paid (your cost basis).
+4. If you bought at multiple prices, add each purchase separately — the app blends your average automatically.
+
+Your BTC position then appears in your portfolio with a live price, your P&L in dollars and percentage, and BTC's weight as a share of your total net worth.
+
+## Tracking Multiple BTC Purchases
+
+If you dollar-cost averaged into Bitcoin, add each buy as a separate entry. WalletLens calculates a blended average cost across all entries, so your displayed profit or loss reflects your true position — not just your most recent buy.
+
+## See BTC Alongside Everything Else
+
+The real advantage of WalletLens over an exchange app is the **full net-worth view**. Once you add Bitcoin, you can also add your Ethereum, stocks like AAPL or NVDA, gold, and cash. The dashboard shows your total wealth across all asset classes with live prices — something no single exchange app can provide.
+
+## Privacy and No Account Required
+
+WalletLens stores all your data in your browser's local storage. Nothing is sent to a server, and no account is ever created. If you clear your browser data you lose your entries, so use the CSV export to keep a backup.
+
+To get started, visit the [Bitcoin tracker page](/track/bitcoin) or open the [dashboard](/dashboard) directly.
+    `
+  },
+  {
+    slug: 'track-apple-stock-free',
+    title: 'How to Track Apple (AAPL) Stock for Free in Your Portfolio',
+    date: 'June 2026',
+    readTime: '4 min read',
+    summary: 'Track your Apple stock position for free alongside crypto, gold, and other assets — no brokerage login required.',
+    content: `
+Apple (AAPL) is one of the most widely held stocks in individual investor portfolios. Tracking it properly means knowing your actual cost basis, your unrealised gain or loss in dollars, and how AAPL fits into your total financial picture. Here is how to do it for free without logging in to your brokerage.
+
+## Why Track AAPL Outside Your Brokerage App
+
+Your brokerage app (Robinhood, Fidelity, Schwab) shows your AAPL shares and current value. But it has limitations if you hold a diversified portfolio:
+
+- **Single brokerage view** — if you hold AAPL across two accounts or brokerages, no single app combines them.
+- **No crypto or gold alongside stocks** — brokerage apps don't show your Bitcoin or gold holdings.
+- **Privacy trade-off** — most "all-in-one" trackers require you to link your brokerage credentials.
+
+A separate, manual tracker solves all three problems.
+
+## Setting Up AAPL Tracking in WalletLens
+
+[WalletLens](/track/apple-stock) lets you add Apple stock manually in about 30 seconds:
+
+1. Open [walletlens.live/dashboard](/dashboard) — no account needed.
+2. Tap **Add asset** and search for Apple or AAPL.
+3. Enter your number of shares and your average purchase price.
+4. Your position appears immediately with the live AAPL price, your P&L, and your cost basis.
+
+If you bought shares at different times, add each lot separately — the app blends your average cost automatically.
+
+## Tracking AAPL Cost Basis for Multiple Lots
+
+Tax-aware investing often involves tracking multiple "lots" — shares bought at different prices at different times. WalletLens lets you add each lot as a separate entry. The blended average shows your true cost basis for P&L purposes, even if individual lots have different tax treatments.
+
+## AAPL in a Mixed Portfolio
+
+The most powerful use case is seeing AAPL next to your other assets. If you hold Bitcoin, Ethereum, and AAPL, WalletLens shows all three in one live dashboard. You can see:
+
+- How much each position is worth right now
+- Your gain or loss in dollars and percentage for each
+- The allocation breakdown — what percentage of your net worth each asset represents
+
+This view is much harder to get from individual brokerage or exchange apps.
+
+## Calculate AAPL Profit First
+
+If you want to run a quick "what if" before adding your position, use the [Apple stock profit calculator](/calculator/apple-stock-profit-calculator) — enter your shares, cost, and target price to see your P&L and ROI instantly.
+
+## Getting Started
+
+Visit [walletlens.live/track/apple-stock](/track/apple-stock) for the dedicated AAPL tracking page, or open the [dashboard](/dashboard) directly to add your first position. The whole setup takes under a minute.
+    `
+  },
+  {
+    slug: 'gold-silver-portfolio-tracker',
+    title: 'Gold and Silver Portfolio Tracker — Track Precious Metals for Free',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'Track your gold and silver holdings for free alongside crypto and stocks — see your precious metals P&L with live prices.',
+    content: `
+Gold and silver have been stores of value for millennia. In a modern investment portfolio they play specific roles: inflation hedge, safe-haven asset during equity downturns, and diversifier with low correlation to stocks and crypto. Tracking them properly means knowing your ounces held, your cost basis, and how they fit into your total net worth.
+
+## The Challenge of Tracking Physical Metals
+
+Physical gold and silver are not tracked by brokerage apps. If you hold:
+
+- **Gold coins or bars** — no app automatically knows what you own.
+- **Silver rounds or ETFs like SLV** — you might see the ETF in a brokerage, but not alongside your physical metal.
+- **Both alongside crypto and stocks** — no single brokerage or exchange shows the complete picture.
+
+Manual tracking with live price feeds is the most practical solution.
+
+## Track Gold (XAU) in WalletLens
+
+[WalletLens](/track/gold) supports gold tracking with the spot gold price (XAU/USD). To set it up:
+
+1. Open [walletlens.live/dashboard](/dashboard) — no account needed.
+2. Add an asset and search for Gold or XAU.
+3. Enter your total ounces and the price per ounce you paid.
+4. Your gold position appears with the live gold price, your P&L in dollars, and your percentage gain or loss.
+
+The live gold spot price updates automatically, so you can see your real gold P&L at any time without manual price lookup.
+
+## Track Silver (XAG) in WalletLens
+
+Silver works identically. Visit [walletlens.live/track/silver](/track/silver) and add your ounces and purchase price. The app uses the live silver spot price (XAG/USD) to calculate your current value and P&L.
+
+## Why Metals Belong in a Net Worth View
+
+Gold and silver are not liquid assets you trade daily. Their value is most meaningful when you see them as part of your total net worth:
+
+- **As a percentage of net worth** — most financial planners suggest 5–15% in metals as a hedge.
+- **Offsetting crypto and stock volatility** — metals often hold value when risk assets sell off.
+- **Total wealth picture** — your actual financial position includes metals, not just what's in a brokerage account.
+
+WalletLens shows gold and silver alongside your crypto, stocks, and cash in one live dashboard — giving you the complete view.
+
+## Calculate Metal P&L First
+
+Before adding positions, you can use the [gold profit calculator](/calculator/gold-profit-calculator) or [silver profit calculator](/calculator/silver-profit-calculator) to see what your holdings would be worth at different price targets.
+
+## Precious Metals as Inflation Hedge
+
+Historically, gold has maintained purchasing power across decades, even as currencies lose value to inflation. Silver has higher volatility but also higher potential upside. Holding a portion of your wealth in both provides a buffer that financial assets often can't.
+
+The key is seeing them together — use [WalletLens](/dashboard) to add your metals alongside everything else and get a true picture of your financial position.
+    `
+  },
+  {
+    slug: 'portfolio-allocation-guide',
+    title: 'What Percentage of Your Portfolio Should Be Crypto?',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'How much crypto to hold in your investment portfolio — frameworks from conservative to aggressive, and how risk tolerance shapes the answer.',
+    content: `
+There is no universally correct answer to how much of your portfolio should be in cryptocurrency. The right allocation depends on your age, income stability, existing financial cushion, time horizon, and — most importantly — how you would feel watching the value drop 60% overnight. This guide covers common frameworks to help you think it through.
+
+## The Conservative Approach: 1–5% in Crypto
+
+Many traditional financial advisors recommend treating crypto as a "satellite" holding — a small position that can either contribute meaningfully to returns or be lost without derailing your financial plan.
+
+**Who this suits:**
+- Investors within 5–10 years of retirement
+- People with significant fixed obligations (mortgage, dependents)
+- Those who would panic-sell during a major drawdown
+
+At 2–5%, a 70% crypto crash costs you 1.4–3.5% of total portfolio value — painful but not catastrophic. Meanwhile, a 10x return adds 10–30% to overall wealth.
+
+## The Moderate Approach: 5–20% in Crypto
+
+Many retail investors who actively follow crypto markets land somewhere in this range. It reflects genuine belief in the long-term value of crypto assets while maintaining a meaningful allocation to stocks, bonds, and other assets.
+
+**Portfolio structure example:**
+- 60% US and international stocks (index funds)
+- 15% bonds and cash equivalents
+- 15% crypto (Bitcoin-heavy, with small altcoin positions)
+- 10% alternatives (gold, REITs)
+
+## The Aggressive Approach: 20–50%+ in Crypto
+
+Some younger investors with high income, no dependents, and long time horizons choose a heavily crypto-weighted portfolio. This is high risk — crypto has experienced multiple 80–90% drawdowns. Only appropriate if you have genuine conviction, understand the technology, and have cash reserves outside your portfolio.
+
+## Balancing Crypto With Stocks and Gold
+
+A thoughtful portfolio considers correlation between assets:
+
+- **Crypto and tech stocks** are highly correlated — when risk sentiment turns negative, both sell off together.
+- **Gold and silver** have historically low correlation with crypto and stocks — they often hold value or appreciate when equities fall.
+- **Bonds** provide stability and income, especially valuable in portfolios with high crypto exposure.
+
+**A balanced mixed portfolio might look like:**
+- 50% index funds (S&P 500, total market)
+- 20% international stocks
+- 10% gold and silver
+- 10% crypto (BTC and ETH primarily)
+- 10% cash / bonds
+
+## Rebalancing as Prices Move
+
+If Bitcoin doubles, your crypto allocation might jump from 10% to 18% of your portfolio without you buying any more. **Rebalancing** means selling some winners to restore your target allocation.
+
+The simplest rebalancing trigger: rebalance when any asset class is more than 5 percentage points above or below your target.
+
+## How to Track Your Allocation
+
+You can only manage what you measure. [WalletLens](/dashboard) tracks crypto, stocks, gold, and cash in one live dashboard and shows you the percentage breakdown automatically. No account needed — add your positions and see your actual allocation instantly.
+
+The goal is not to find the "perfect" crypto percentage. It is to choose a level you can hold through a major market downturn without panic-selling — because timing markets consistently is impossible even for professionals.
+    `
+  },
+  {
+    slug: 'best-free-investment-tracker-2026',
+    title: 'The Best Free Investment Tracker for Stocks, Crypto, and Gold (2026)',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'What to look for in a free investment portfolio tracker and why most popular options still have significant trade-offs.',
+    content: `
+Finding a genuinely free investment tracker — one that covers stocks, crypto, gold, and shows your actual net worth without requiring an account or a bank login — is harder than it should be. This guide covers what to look for and how the main options compare in 2026.
+
+## What a Good Free Investment Tracker Needs
+
+**At minimum:**
+- Live prices for crypto, US stocks, and ideally metals
+- Profit/loss calculated against your cost basis
+- Portfolio allocation breakdown by asset class
+- No mandatory account or sign-up
+
+**Nice to have:**
+- AI-driven insights (health score, risk assessment)
+- Multiple asset classes in a single net-worth total
+- Privacy-first data storage (local, not server-side)
+- Sell-target planning and goal tracking
+
+## Why Most "Free" Trackers Have Catch
+
+**CoinGecko Portfolio / Delta / CoinStats:** Good for crypto, but don't handle US stocks or gold well. Most require accounts and some have paid tiers for features that should be free.
+
+**Empower (formerly Personal Capital):** Excellent for US investors with brokerage accounts, but requires linking financial accounts — which many investors prefer to avoid. The free tier is supported by their paid advisory business.
+
+**Google Finance:** Good for tracking a watchlist, but has no cost basis, no P&L, and no multi-asset net worth view.
+
+**Spreadsheets:** The ultimate "free" option, but require manual price lookups and significant maintenance. No live prices without workarounds.
+
+## WalletLens as a Modern Free Alternative
+
+[WalletLens](https://walletlens.live) was built to cover exactly the gap between "crypto-only tracker" and "account-linking net worth app."
+
+**Key features:**
+- **Crypto, US stocks, ETFs, gold, silver, cash, and FX** all in one dashboard
+- **Live prices** with automatic P&L calculation against your cost basis
+- **AI portfolio analysis** — health score, risk scan, Magic Indicator, stress tests
+- **Sell-target planning** — set price targets with percentage-of-holding rules
+- **No account, no bank link, no subscription** — entirely free
+- **Local-first storage** — your data lives in your browser, not on a server
+
+**The trade-off:** Because WalletLens doesn't connect to your brokerage or bank, your balances don't sync automatically — you enter them manually. This is also what makes it private. For investors who want automatic sync, a linked tool fits better; for those who prioritise privacy, WalletLens wins.
+
+## How to Choose
+
+- **Only hold crypto?** A crypto-first tracker like CoinGecko Portfolio works fine.
+- **Need automatic bank sync?** Empower is the best free linked option.
+- **Want privacy + all asset classes + free?** [WalletLens](/dashboard).
+- **Maximum control?** A spreadsheet, but expect manual maintenance.
+
+The honest answer is that the "best" tracker is the one you'll actually update. A tool you use consistently beats a perfect tool you ignore.
+    `
+  },
+  {
+    slug: 'track-etf-portfolio-free',
+    title: 'How to Track Your ETF Portfolio for Free (S&P 500, QQQ, VOO)',
+    date: 'June 2026',
+    readTime: '4 min read',
+    summary: 'How to track S&P 500 ETFs like SPY, QQQ, and VOO alongside crypto and other assets for a complete net-worth view.',
+    content: `
+ETFs like SPY (S&P 500), QQQ (Nasdaq 100), and VOO (Vanguard S&P 500) form the core of most index investing strategies. If you hold these alongside crypto or gold, tracking them in a single dashboard gives you a much clearer picture of your total financial position than checking each brokerage account separately.
+
+## Why ETF Tracking Matters Beyond Your Brokerage
+
+Your brokerage app shows your ETF holdings — but only within that brokerage. Problems arise when:
+
+- **You hold ETFs and crypto separately** — no single view of both.
+- **Multiple brokerage accounts** — e.g., a 401(k) with Fidelity and a taxable account with Schwab.
+- **No allocation breakdown** — you don't easily see what percentage of your wealth is in equities vs crypto vs cash.
+
+A separate portfolio tracker that accepts manual entries solves this without requiring you to connect your accounts.
+
+## Adding ETFs to WalletLens
+
+[WalletLens](/track/sp500-etf) supports US ETFs including SPY, QQQ, VOO, VTI, and many others. To set up ETF tracking:
+
+1. Open [walletlens.live/dashboard](/dashboard).
+2. Tap **Add asset** and search for the ticker (SPY, QQQ, VOO, etc.).
+3. Enter your share count and your average purchase price (cost basis).
+4. Your ETF appears in the dashboard with the live price, P&L, and allocation percentage.
+
+Repeat for each ETF you hold across different accounts. The dashboard blends them all into a single net-worth view.
+
+## Seeing ETFs Alongside Crypto and Gold
+
+The real value of WalletLens for ETF investors is the **mixed-asset view**. If your financial picture includes:
+
+- VOO shares from a brokerage account
+- Bitcoin from a Coinbase wallet
+- Gold coins stored at home
+
+...no single app from any of those providers shows the complete picture. WalletLens does, because it uses manual entry rather than account linking.
+
+## Common ETF Portfolios to Track
+
+**3-Fund Portfolio:**
+- US Total Market (VTI or FSKAX)
+- International (VXUS or SWISX)
+- Bonds (BND or FXNAX)
+
+**Simplified 2-Fund:**
+- VOO (S&P 500)
+- BND (Total Bond Market)
+
+**Tech-Heavy:**
+- QQQ (Nasdaq 100)
+- SOXX (Semiconductors)
+
+Add any of these by ticker in WalletLens to see your ETF portfolio alongside your other holdings.
+
+## How WalletLens Calculates ETF P&L
+
+The calculation is straightforward:
+
+- **Current value** = Shares × Live price
+- **Cost basis** = Shares × Your average purchase price
+- **P&L** = Current value − Cost basis
+
+This is the same method your brokerage uses. WalletLens just shows it alongside all your other assets in one place.
+    `
+  },
+  {
+    slug: 'financial-privacy-investing',
+    title: 'How to Track Investments Without Giving Up Your Privacy',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'Why linking your brokerage and bank to a tracker creates real risks — and how a local-first approach gives you the same visibility without the exposure.',
+    content: `
+Most popular investment portfolio trackers ask you to link your brokerage accounts, bank accounts, or exchange API keys. The pitch is convenience — automatic syncing so you never need to manually update your holdings. The reality involves meaningful privacy and security trade-offs that many investors don't think through carefully.
+
+## What Happens When You Link Your Financial Accounts
+
+When you connect a brokerage or bank account to a third-party tracker, you are typically:
+
+1. **Sharing read-only API access** — the tracker can see all your transactions, balances, and account details.
+2. **Storing credentials on external servers** — even "read-only" access means your financial institution data is held by a company whose security practices you cannot audit.
+3. **Agreeing to data use terms** — many trackers use aggregated or anonymised user data for product analytics, advertiser insights, or their own advisory products.
+4. **Creating a concentrated target** — a breach at a popular financial aggregator exposes data from all linked accounts simultaneously.
+
+This doesn't mean account-linking tools are bad. It means the trade-off is real and worth understanding before you make it.
+
+## The Risks of Exchange API Keys
+
+For crypto holders, the risks are more acute. Many trackers request exchange API keys. Even "read-only" API keys:
+
+- Are permanently valid until manually revoked
+- Can be used by anyone who obtains them — via breach, phishing, or insider access
+- Grant access to your full transaction history, balances, and sometimes withdrawal capabilities if the wrong permissions are set
+
+A data breach at a crypto tracker that holds API keys for millions of users is a serious security event.
+
+## The Local-First Alternative
+
+A local-first tracker stores your data on your device rather than a server. You enter holdings manually — a small trade-off in convenience for a large gain in privacy and security.
+
+**What you gain:**
+- No external server holds your financial data
+- No API keys are ever shared
+- A breach at the tracker company exposes nothing about you
+- Your holdings remain private even from the tracker itself
+
+**What you give up:**
+- Automatic syncing — you update holdings manually
+- Transaction history pulled from exchanges automatically
+
+For many investors — especially those holding crypto or who simply want their financial information to remain private — this is a worthwhile trade.
+
+## WalletLens as a Private Portfolio Tracker
+
+[WalletLens](/dashboard) is built on a local-first architecture. Your holdings are stored in your browser's local storage. The app never sends your portfolio data to any server. There is no account, no login, and nothing to breach on the server side.
+
+You enter assets manually by ticker or name, add your quantity and cost basis, and the app fetches only live public prices (no account data). The result is full portfolio visibility — crypto, stocks, gold, cash — with zero exposure of your actual holdings to any third party.
+
+## Practical Privacy Steps for Investors
+
+Whether you use a local-first tracker or a linked one:
+
+- **Use a password manager** — never reuse passwords across financial accounts.
+- **Enable 2FA everywhere** — especially on exchanges and brokerages.
+- **Review API key permissions** — if you use exchange APIs, restrict to read-only and set IP allowlists where possible.
+- **Audit your connected apps** — periodically review which apps have access to your financial accounts and revoke anything you no longer use.
+
+Financial privacy is not about having something to hide. It is about limiting the attack surface available to bad actors — and keeping your financial decisions yours alone.
+    `
+  },
+  {
+    slug: '5-signs-rebalance-portfolio',
+    title: '5 Signs Your Investment Portfolio Needs Rebalancing',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'How to tell when your portfolio has drifted too far from your targets — and what to do about it without timing the market.',
+    content: `
+Rebalancing is the discipline of periodically restoring your portfolio to its target allocation. Most investors set an allocation — say 60% stocks, 20% crypto, 10% gold, 10% cash — and then watch it drift as different assets grow or fall at different rates. Here are five signs it is time to rebalance.
+
+## Sign 1: One Asset Has Grown to Dominate Your Portfolio
+
+If you started with 15% crypto and Bitcoin has tripled while everything else held steady, your crypto allocation might now be 35% of your portfolio. This is called **allocation drift** — and it means you are taking on more risk than you originally intended, even without making any new investment decisions.
+
+**Rule of thumb:** Rebalance when any asset class is more than 5–10 percentage points above or below your target.
+
+## Sign 2: You Can't Sleep Because of Market Volatility
+
+If you're checking prices obsessively or feeling anxious during market swings, your risk allocation may be higher than your actual risk tolerance. That's not a psychological problem — it's a signal that your portfolio is too aggressive for your personality and circumstances.
+
+Rebalancing towards safer assets (bonds, cash, gold) until you feel comfortable is a valid and rational response.
+
+## Sign 3: Your Circumstances Have Changed
+
+A change in income, a major expense (house, child, career change), or approaching retirement all alter how much volatility you can absorb. A 25-year-old with stable income can hold a heavily crypto-weighted portfolio. The same person at 55 with retirement 5 years out probably shouldn't.
+
+**Life events that should trigger a portfolio review:**
+- New job or significant pay change
+- Marriage, divorce, or new dependents
+- Purchase of a home
+- Within 5 years of a major financial goal (retirement, education)
+
+## Sign 4: Your Crypto Has High Correlation With Your Tech Stocks
+
+If your portfolio holds both QQQ (Nasdaq 100) and Bitcoin, you may have more correlated risk than you realise. Both are "risk-on" assets — they tend to sell off together when investors get nervous. In a risk-off environment, you might have less diversification than your allocation percentages suggest.
+
+Adding genuinely uncorrelated assets — physical gold, bonds, or international equities — can reduce this hidden concentration.
+
+## Sign 5: You Bought More of a Winner Just Because It Was Going Up
+
+Recency bias leads many investors to chase performance — buying more of what's been rising. If you've overweighted a recent winner without adjusting the rest of your portfolio to compensate, you've implicitly rebalanced in the wrong direction.
+
+Rebalancing is counterintuitive: it means trimming winners and adding to underperformers. But over time, this "buy low, sell high" discipline adds real value.
+
+## How to Rebalance
+
+1. **Measure your current allocation** — use [WalletLens](/dashboard) to see the live percentage breakdown across all your assets.
+2. **Identify the gaps** — compare current percentages to your targets.
+3. **Sell overweighted positions, buy underweighted ones** — or direct new contributions toward underweighted assets to avoid selling and triggering taxable events.
+4. **Set a schedule** — calendar-based rebalancing (quarterly or annually) is simpler than threshold-based for most investors.
+
+The goal is not to predict which asset will outperform. It is to systematically maintain the risk level you chose when you were thinking clearly — not in the heat of a bull or bear market.
+    `
+  },
+  {
+    slug: 'build-first-investment-portfolio',
+    title: 'How to Build Your First Investment Portfolio and Track It Free',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'A beginner-friendly guide to building a diversified first portfolio with index funds, crypto, and a gold allocation — and how to track it all for free.',
+    content: `
+Building your first investment portfolio is less complicated than the financial industry makes it seem. The core principles fit on a single page. What matters is starting with a sensible structure, investing consistently, and tracking your progress — which you can do for free.
+
+## Step 1: Build Your Cash Foundation First
+
+Before investing, make sure you have:
+
+- **3–6 months of expenses in cash** — this is your emergency fund, not an investment. It prevents you from selling investments at bad times when unexpected costs arise.
+- **High-interest debt paid off** — a 20% APR credit card is a guaranteed −20% return on whatever you don't pay off. Pay it before investing.
+
+Once these are in place, you're ready to invest.
+
+## Step 2: Choose a Simple Core Structure
+
+The simplest evidence-based approach for beginners is the **three-fund portfolio**:
+
+1. **US Total Market ETF** (VTI, FSKAX) — exposure to the entire US stock market in one fund.
+2. **International ETF** (VXUS, SWISX) — exposure to developed and emerging markets outside the US.
+3. **Bond ETF** (BND, FXNAX) — stability and income; the percentage depends on your risk tolerance.
+
+A common starting split for a 30-year-old: 70% US stocks, 20% international, 10% bonds. Adjust the bond percentage higher as you age.
+
+## Step 3: Add Crypto If You Have High Risk Tolerance
+
+Crypto should be a **satellite allocation** — not the core of a first portfolio. A reasonable starting position:
+
+- **Bitcoin (BTC)** — the largest, most established cryptocurrency. A 5–10% allocation is common for moderate risk tolerance.
+- **Ethereum (ETH)** — the second-largest; adds exposure to the smart contract ecosystem.
+
+Avoid allocating more to crypto than you are comfortable losing entirely. Crypto has experienced multiple 80–90% drawdowns and will likely have more.
+
+## Step 4: Consider a Small Gold Allocation
+
+Gold has historically held value during inflationary periods and equity market downturns. A 5–10% gold allocation can reduce your portfolio's overall volatility. Options include:
+
+- **Gold ETFs** (GLD, IAU) — easy to buy and sell in a brokerage account.
+- **Physical gold** — coins or bars; tracked by ounce.
+
+## Step 5: Start Tracking Everything in One Place
+
+Once you have positions, you need to see them together. [WalletLens](/dashboard) is free, requires no account, and tracks crypto, stocks, ETFs, gold, and cash in one live dashboard. Here is how to set it up:
+
+1. Open [walletlens.live/dashboard](/dashboard).
+2. Add your ETF shares with your cost basis.
+3. Add your Bitcoin and Ethereum with quantity and average purchase price.
+4. Add gold holdings by ounce.
+5. The dashboard shows your full portfolio with live prices, P&L, and allocation breakdown.
+
+## A Simple Example First Portfolio
+
+**$10,000 starting investment at moderate risk tolerance:**
+- $5,000 VTI (US stocks)
+- $1,500 VXUS (international)
+- $1,000 BND (bonds)
+- $1,000 BTC (Bitcoin)
+- $500 ETH (Ethereum)
+- $1,000 GLD (gold ETF)
+
+**Total allocation:** 65% stocks, 10% bonds, 15% crypto, 10% gold.
+
+This is illustrative, not a recommendation. The right allocation depends on your circumstances. But it demonstrates the principle: diversify across asset classes with different risk and return characteristics, keep the structure simple, and invest consistently over time.
+
+The hardest part of building a first portfolio is starting. The second hardest is not touching it when markets get volatile. Track your progress with [WalletLens](/dashboard) and review it no more than monthly — checking daily is a proven path to poor decisions.
+    `
+  },
+  {
+    slug: 'crypto-portfolio-no-exchange',
+    title: 'How to Track Crypto Without Relying on Exchange Apps',
+    date: 'June 2026',
+    readTime: '4 min read',
+    summary: 'Why exchange apps are poor portfolio trackers — and how to get a complete crypto portfolio view without connecting your accounts.',
+    content: `
+Most crypto investors track their holdings through exchange apps — Coinbase, Binance, Kraken, or whichever platform they use to buy and sell. This works well when you have a single account with a single exchange. It breaks down almost immediately once your crypto life gets more complex.
+
+## The Exchange App Tracking Problem
+
+**Single exchange limitation.** If you hold Bitcoin on Coinbase and Ethereum on Kraken, neither app shows your complete crypto portfolio. You have to switch between apps and add the numbers yourself.
+
+**No hardware wallet support.** If you move crypto to a Ledger or Trezor for security — as you should for significant holdings — your exchange app can no longer see it. Your "portfolio" in the app becomes inaccurate the moment you withdraw.
+
+**No non-crypto assets.** If you hold crypto alongside stocks, gold, or cash, your exchange app shows only one slice of your net worth. Most exchange apps have no concept of your AAPL shares or your gold ETF.
+
+**P&L across multiple purchases.** Some exchange apps calculate P&L well; others show your current value but not your cost basis correctly, especially if you transferred coins in from another wallet.
+
+**Privacy risk with third-party aggregators.** Apps that promise to show "all your crypto in one place" by connecting to your exchanges typically require API keys — giving read access to your transaction history across all connected platforms to a third party.
+
+## A Better Approach: Manual Entry With Live Prices
+
+A portfolio tracker with manual entry solves all these problems:
+
+- You control what is recorded — hardware wallets, exchange holdings, and OTC purchases all count.
+- No API keys are shared with anyone.
+- You can add non-crypto assets in the same place.
+- Your data stays on your device.
+
+The cost is a few minutes of manual updates when you change positions.
+
+## Setting Up a Multi-Exchange Crypto View in WalletLens
+
+[WalletLens](/dashboard) uses manual entry to create a complete crypto portfolio view:
+
+1. For each exchange, note your balances (BTC, ETH, etc.) and your average purchase price.
+2. For hardware wallet holdings, note the amount and your cost basis.
+3. Open [walletlens.live/dashboard](/dashboard) and add each asset separately with its quantity and cost.
+4. The dashboard combines everything into one live view with current prices, P&L, and allocation percentages.
+
+**Example:**
+- 0.5 BTC on Coinbase at average $32,000
+- 0.3 BTC on Ledger at average $28,000
+- 3 ETH on Kraken at average $1,800
+
+Add each separately; WalletLens blends the cost basis correctly and shows your complete Bitcoin and Ethereum positions as a single combined view.
+
+## Beyond Crypto: The Full Net Worth View
+
+The biggest advantage is seeing your crypto alongside everything else. Once your crypto is in WalletLens, add your stock ETFs, gold, and cash. The result is a live net-worth dashboard that no exchange app can provide — and you got there without connecting a single account.
+    `
+  },
+  {
+    slug: 'precious-metals-vs-crypto',
+    title: 'Precious Metals vs Crypto: Which to Hold (and How to Track Both)',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'Gold, silver, Bitcoin, and Ethereum compared as store-of-value assets — different risk profiles, different roles, and why many investors hold both.',
+    content: `
+Gold and Bitcoin are often framed as rivals — "digital gold" versus the original inflation hedge. In practice, they are different assets with different risk profiles, different historical records, and different roles in a diversified portfolio. Many thoughtful investors hold both.
+
+## Gold and Silver: The Traditional Case
+
+Gold has a 5,000-year track record as a store of value. Silver has a similar history, with the addition of significant industrial demand that drives its price dynamics differently from gold.
+
+**The bull case for gold:**
+- Proven store of value across centuries and civilisations
+- Low correlation with stocks — tends to hold or appreciate when equities fall
+- No counterparty risk — physical gold is not anyone's liability
+- Central bank purchases provide structural demand
+- Inflation hedge with a long documented history
+
+**The bull case for silver:**
+- Industrial demand from solar panels, electronics, and EVs creates independent price support
+- Higher volatility than gold — more upside in bull markets, more downside in bear markets
+- Undervalued relative to gold by historical standards (gold/silver ratio above 80 is historically elevated)
+
+**The limitations:**
+- No yield — gold and silver produce no income
+- Storage and insurance costs for physical metal
+- Slower appreciation than equities in bull markets
+
+## Bitcoin and Ethereum: The Digital Alternative
+
+Bitcoin's thesis as digital gold rests on its fixed supply (21 million coins), decentralised issuance, and growing institutional acceptance. Ethereum's value proposition is different — it is a programmable blockchain that underpins a large portion of the crypto ecosystem.
+
+**The bull case for Bitcoin:**
+- Fixed supply — cannot be inflated away by any central authority
+- Growing institutional adoption (ETFs, corporate treasuries)
+- Portability and divisibility advantages over physical gold
+- High historical returns over 5–10 year timeframes
+
+**The bull case for Ethereum:**
+- Network effect from DeFi, NFTs, and smart contracts
+- Deflationary tokenomics since the Merge
+- High upside if smart contract adoption continues
+
+**The limitations:**
+- Extreme volatility — 80–90% drawdowns have occurred multiple times
+- Regulatory risk in multiple jurisdictions
+- No 5,000-year track record — crypto is barely a decade old as a mainstream asset
+
+## Why Many Investors Hold Both
+
+The assets are not mutually exclusive, and their risk profiles are genuinely different:
+
+- **Gold and silver** are stability and preservation assets — likely to hold value in geopolitical crises, recession, and financial system stress.
+- **Bitcoin and Ethereum** are high-risk, high-return assets — likely to underperform in genuine crises (they sell off with equities) but can dramatically outperform in risk-on environments.
+
+Holding 5–10% physical gold alongside 5–10% crypto gives you:
+- Inflation protection (gold)
+- Upside participation (crypto)
+- Partial hedges that move differently — reducing total portfolio volatility
+
+## Tracking Both in One Place
+
+If you hold gold ounces and Bitcoin, you need both in one portfolio view to see your actual net worth. [WalletLens](/dashboard) tracks gold (XAU), silver (XAG), Bitcoin, Ethereum, and every other major asset class in one free dashboard.
+
+Use the [gold profit calculator](/calculator/gold-profit-calculator) or [silver profit calculator](/calculator/silver-profit-calculator) for quick estimates, or add your holdings to WalletLens for live, automatic P&L tracking alongside everything else you own.
+    `
+  },
+  {
+    slug: 'track-nvidia-and-tech-stocks',
+    title: 'How to Track NVIDIA, Apple, and Tech Stocks Alongside Crypto',
+    date: 'June 2026',
+    readTime: '4 min read',
+    summary: 'Why a mixed tech-stock and crypto portfolio needs a single tracker — and how to set one up for free in under five minutes.',
+    content: `
+Many investors hold both tech stocks and crypto — NVIDIA (NVDA) and Bitcoin, Apple (AAPL) and Ethereum, or Tesla (TSLA) and Solana. These are different asset classes with different custodians (brokerages vs exchanges), and most apps only show one side of the picture.
+
+## The Mixed Portfolio Problem
+
+If you hold NVDA shares in a Fidelity account and Bitcoin in a Coinbase account, you have at least two separate apps to check. Neither shows your complete financial picture. You don't know:
+
+- What percentage of your wealth is in tech stocks vs crypto
+- How much you've made or lost across all positions combined
+- Whether your tech exposure and crypto exposure have drifted from your target allocation
+
+This matters because tech stocks and crypto have become significantly correlated — they often move together. If you're heavy in both, you may have less diversification than you think.
+
+## Tech Stocks and Crypto Correlation
+
+NVIDIA, Apple, Meta, and Microsoft are all growth stocks valued on future earnings expectations. Bitcoin and Ethereum are speculative assets priced on adoption and risk sentiment. Both categories tend to:
+
+- Sell off when interest rates rise or risk sentiment turns negative
+- Rally when liquidity conditions ease and investors seek growth
+- Underperform bonds and gold during genuine economic stress
+
+This correlation is not perfect, but it is meaningful. A portfolio with 30% tech stocks and 20% crypto has significant concentration in "risk-on" assets — more than the simple percentages suggest.
+
+## Adding Tech Stocks to WalletLens
+
+[WalletLens](/dashboard) supports all major US stocks and ETFs alongside crypto. Here is how to add your tech positions:
+
+1. Open [walletlens.live/dashboard](/dashboard) — no account needed.
+2. Add NVDA: search for NVIDIA, enter your shares and cost basis.
+3. Add AAPL: search for Apple, enter shares and cost basis.
+4. Add TSLA, META, MSFT, or any other ticker the same way.
+5. Add your crypto positions alongside the stocks.
+
+Within a few minutes, you have a live dashboard showing all your tech stocks and crypto together, with current prices, P&L, and allocation breakdown.
+
+## Calculating P&L Before You Add
+
+If you want to run quick calculations first:
+
+- [NVIDIA stock profit calculator](/calculator/nvidia-stock-profit-calculator)
+- [Apple stock profit calculator](/calculator/apple-stock-profit-calculator)
+- [Tesla stock profit calculator](/calculator/tesla-stock-profit-calculator)
+
+Enter your shares, cost, and target price to see your projected P&L and ROI for each position.
+
+## Managing the Correlation Risk
+
+Once you can see your full portfolio in WalletLens, you can identify where you have too much concentration in a single risk category. Common rebalancing moves for heavy tech+crypto portfolios:
+
+- Add gold (XAU) or silver (XAG) — historically lower correlation with equities and crypto
+- Add bond ETFs (BND, AGG) — provides income and stability
+- Add international equities — lower US tech concentration
+- Increase cash reserves — reduces volatility and provides dry powder for market downturns
+
+The goal is not to eliminate risk. It is to take diversified risk — where your holdings don't all fall at the same time for the same reason.
+    `
+  },
+  {
+    slug: 'what-is-roi-investing',
+    title: 'What Is ROI in Investing? (And How to Calculate It for Crypto, Stocks, and Gold)',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'ROI explained — the formula, what it means for different asset types, its limitations, and how to calculate it instantly.',
+    content: `
+Return on Investment (ROI) is one of the most useful and most misused numbers in personal finance. Understanding what it actually measures — and what it doesn't — helps you evaluate investments more clearly.
+
+## The ROI Formula
+
+**ROI = (Profit ÷ Amount Invested) × 100**
+
+Where:
+- **Profit** = Current Value − Amount Invested
+- **Amount Invested** = Total money you paid for the asset (including fees)
+
+**Example:** You bought 5 Ethereum at $1,600 each, investing $8,000 total. The current price is $3,200.
+
+- Current value = 5 × $3,200 = $16,000
+- Profit = $16,000 − $8,000 = $8,000
+- ROI = ($8,000 ÷ $8,000) × 100 = **100%**
+
+A 100% ROI means you doubled your money.
+
+## ROI for Different Asset Types
+
+**Crypto:** ROI is straightforward — (current price − buy price) / buy price × 100. If you bought at multiple prices, use your blended average cost as the "buy price."
+
+**Stocks:** Same formula, but remember to include dividends received in your total return. A stock with a 5% annual dividend and 0% price change has a 5% ROI — not 0%.
+
+**Gold:** Purely price-based, like crypto. Gold pays no dividends or interest, so ROI equals price appreciation only. Use the [gold profit calculator](/calculator/gold-profit-calculator) to compute it instantly.
+
+**Real estate:** More complex — include rental income, maintenance costs, property taxes, and mortgage interest to get true ROI.
+
+## What ROI Doesn't Tell You
+
+**Time horizon matters.** A 50% ROI over 10 years is less impressive than a 50% ROI over 6 months. Annualised ROI (CAGR) is more useful for comparing investments held over different periods.
+
+**Annualised ROI (CAGR) formula:**
+CAGR = (Ending Value / Beginning Value)^(1/Years) − 1
+
+**Risk is not included.** Two investments can have the same ROI with dramatically different risk. A 30% ROI from US Treasury bonds and a 30% ROI from Dogecoin represent very different propositions.
+
+**Taxes and fees reduce real ROI.** Your pre-tax ROI and your after-tax, after-fee ROI can differ substantially. Always calculate on your net proceeds if you are evaluating completed investments.
+
+**Dollar-cost averaging complicates the calculation.** If you invested $1,000/month for 12 months, simple ROI doesn't capture the timing of each contribution. Use time-weighted return (TWR) for DCA portfolios.
+
+## Quick ROI Calculation Tools
+
+For fast estimates without doing the math:
+
+- [Crypto profit calculator](/calculator/crypto-profit-calculator) — any cryptocurrency
+- [Bitcoin profit calculator](/calculator/bitcoin-profit-calculator) — BTC-specific
+- [NVIDIA stock profit calculator](/calculator/nvidia-stock-profit-calculator) — NVDA positions
+- [Gold profit calculator](/calculator/gold-profit-calculator) — gold in ounces
+- [Investment profit calculator](/calculator/investment-profit-calculator) — any asset
+
+Each shows your profit, ROI, and break-even price instantly.
+
+## From Calculator to Live Tracking
+
+Once your position is live (you've already bought), tracking ROI in real time with live prices is more useful than manually entering prices into a calculator. [WalletLens](/dashboard) tracks your ROI automatically for every asset you hold — updating live as prices change. Add your positions once, and your returns are always current, no recalculation needed.
+    `
+  },
+  {
+    slug: 'portfolio-tracker-no-bank-login',
+    title: 'Best Portfolio Tracker That Doesn\'t Require a Bank Login',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'Why some investors avoid bank-linked portfolio trackers — and which free alternatives give you the same visibility without the security and privacy trade-offs.',
+    content: `
+Many popular portfolio trackers — Empower, Kubera, Copilot, Quicken Simplifi — advertise automatic syncing by connecting your bank and brokerage accounts. The appeal is obvious: everything updates automatically with no manual effort. But the approach involves real trade-offs that a significant number of investors prefer to avoid.
+
+## Why Some Investors Won't Link Their Bank
+
+**Security concerns.** Linking a bank account to a third-party app means storing access credentials (directly or via a service like Plaid) with a company whose security you cannot audit. Major data breaches at financial aggregators have exposed millions of users' account data.
+
+**Privacy preferences.** Once you link accounts, the tracker has access to your full transaction history — every purchase, bill payment, and financial decision. This data is often used for product improvement, and sometimes shared with partners or used to market financial products.
+
+**Incomplete coverage anyway.** Bank-linked trackers handle traditional brokerage accounts well, but often fail on crypto holdings, physical metals, foreign assets, or alternative investments. You still end up with a partial view that needs manual supplementation.
+
+**No crypto-to-stocks integration.** Most bank-linked trackers are designed for traditional finance. Adding your Bitcoin portfolio alongside your stock account is an afterthought, if supported at all.
+
+## Manual-Entry Trackers: The Privacy-First Alternative
+
+A manual-entry tracker breaks the connection between account access and portfolio visibility. You enter your holdings yourself — the app shows you prices and calculates P&L using public market data, but never touches your financial accounts.
+
+**What you gain:**
+- Complete privacy — no external party can see your holdings
+- No security exposure — no credentials to breach
+- Full asset coverage — enter anything: stocks, crypto, gold, cash, foreign assets
+- No account required — nothing to register or log in to
+
+**What you give up:**
+- Automatic syncing — you update balances manually when you make changes
+- Transaction history — no automatic import of past trades (though CSV import can help)
+
+## WalletLens: Free, No Bank Login, All Asset Classes
+
+[WalletLens](/dashboard) is the most complete free manual-entry portfolio tracker available in 2026. It covers:
+
+- **Crypto** — Bitcoin, Ethereum, Solana, and hundreds of altcoins
+- **US stocks and ETFs** — AAPL, NVDA, SPY, VOO, QQQ, and more
+- **Precious metals** — gold (XAU) and silver (XAG) by ounce
+- **Cash and FX** — track balances in any currency
+- **Total net worth view** — all asset classes together with live prices
+
+**How to start:**
+1. Open [walletlens.live/dashboard](/dashboard) — no account, no login.
+2. Add your first asset by searching for its ticker or name.
+3. Enter your quantity and cost basis.
+4. Repeat for each holding across all your accounts and platforms.
+
+The entire setup takes 5–15 minutes for a typical portfolio. After that, you only need to update when you buy, sell, or receive dividends.
+
+## Other No-Login Tracker Options
+
+**Spreadsheets (Google Sheets, Excel):** Maximum control and privacy, but no live prices without GOOGLEFINANCE formulas or manual updates. Works well for simple portfolios.
+
+**CoinGecko Portfolio:** Good for crypto-only tracking with no account required. No stock or gold support.
+
+**Stock watchlist apps:** Good for stocks, no crypto. Usually limited to watchlists rather than true cost-basis P&L.
+
+For a complete multi-asset net worth view without connecting any accounts, [WalletLens](/dashboard) remains the best free option — covering every asset class in one place, with your data stored only on your device.
+    `
+  },
 ]

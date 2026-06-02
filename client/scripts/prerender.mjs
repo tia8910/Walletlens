@@ -15,6 +15,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { POSTS, relatedPosts } from '../src/data/blogPosts.js'
 import { TRACK_COINS, TRACK_STOCKS, TRACK_METALS, ALL_TRACK_ASSETS } from '../src/data/trackCoins.js'
+import { CALCULATORS } from '../src/data/calculators.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -182,6 +183,12 @@ ${TRACK_STOCKS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${
 <h2>Track precious metals free</h2>
 <ul>
 ${TRACK_METALS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${esc(c.symbol)})</a></li>`).join('\n')}
+</ul>
+<h2>Free profit &amp; ROI calculators</h2>
+<ul>
+${CALCULATORS.filter(c => c.type !== 'general').map(c => `<li><a href="/calculator/${c.slug}">${esc(c.name)}${c.type === 'stock' ? ' stock' : ''} profit calculator</a></li>`).join('\n')}
+<li><a href="/calculator/crypto-profit-calculator">Crypto profit calculator (any coin)</a></li>
+<li><a href="/calculator/investment-profit-calculator">Investment profit calculator (any asset)</a></li>
 </ul>
 <h2>Guides &amp; articles</h2>
 <ul>
@@ -395,6 +402,112 @@ ${aiBullet}
 }
 console.log(`Prerendered ${ALL_TRACK_ASSETS.length} /track asset pages (${TRACK_COINS.length} crypto, ${TRACK_STOCKS.length} stocks, ${TRACK_METALS.length} metals).`)
 
+// ── Calculator landing pages (/calculator/:slug) ──────────────────────────
+// Targets "[asset] profit calculator" searches. Each page has a working
+// interactive widget in SPA mode; prerender provides unique title/meta/body.
+for (const c of CALCULATORS) {
+  const isStock = c.type === 'stock'
+  const isMetal = c.type === 'metal'
+  const isGeneral = c.type === 'general'
+  const unitWord = c.unit === 'oz' ? 'ounces' : c.unit === 'shares' ? 'shares' : c.unit
+
+  const pageTitle = isGeneral
+    ? `${c.name} Profit & ROI Calculator — Free | WalletLens`
+    : isStock
+    ? `${c.name} Profit Calculator — Free ${c.symbol} Stock ROI | WalletLens`
+    : `${c.name} Profit Calculator (${c.symbol}) — Free ROI Calculator | WalletLens`
+
+  const pageDesc = isGeneral
+    ? `Free ${c.name.toLowerCase()} profit and ROI calculator — works for any asset. Enter buy price, quantity, and target to see P&L, ROI, and break-even instantly.`
+    : `Free ${c.name} (${c.symbol}) profit calculator — enter your buy price, ${unitWord}, and target price to see P&L, ROI, and break-even instantly. No account needed.`
+
+  const h1 = `${c.name}${isStock ? ' Stock' : ''} Profit Calculator — Free & Instant`
+
+  const heroPara = isGeneral
+    ? `${c.blurb} No account needed and results update instantly.`
+    : `${c.blurb} Free, instant, no account required.`
+
+  const faq1q = isGeneral
+    ? `How do I calculate investment profit and ROI?`
+    : `How do I calculate ${c.name} profit and ROI?`
+
+  const faq1a = isGeneral
+    ? `Profit = (Sell Price − Buy Price) × Quantity. ROI = (Profit ÷ Amount Invested) × 100. Enter your numbers in the calculator above for an instant result.`
+    : `Profit = (Sell Price − Buy Price) × ${unitWord}. ROI = (Profit ÷ Invested) × 100. Enter your ${c.symbol} buy price, ${unitWord} held, and target price in the calculator above for an instant result.`
+
+  const faq2q = isGeneral
+    ? `What is a break-even price?`
+    : `Can I track ${c.name} live instead of calculating manually?`
+
+  const faq2a = isGeneral
+    ? `Your break-even price is where you recover exactly what you invested — no profit or loss. It equals your buy price (before fees).`
+    : `Yes — WalletLens tracks your ${c.name} P&L in real time with live prices. Add your position once and it updates automatically, alongside your entire net worth.`
+
+  const calcBody = `
+<h1>${esc(h1)}</h1>
+<p>${esc(heroPara)}</p>
+<p><strong>To use:</strong> Enter your ${esc(unitWord)}, buy price, and target price. Profit/loss, ROI %, and break-even appear instantly.</p>
+<p><a href="/dashboard">Track ${isGeneral ? 'all assets' : esc(c.symbol)} live in WalletLens →</a></p>
+<h2>How to calculate ${isGeneral ? 'profit and ROI' : `${esc(c.name)} profit`}</h2>
+<ul>
+<li><strong>Profit / Loss</strong> = (Sell Price − Buy Price) × Quantity</li>
+<li><strong>ROI %</strong> = (Profit ÷ Amount Invested) × 100</li>
+<li><strong>Break-even price</strong> = your buy price (the price at which you neither gain nor lose)</li>
+</ul>
+<h2>Track ${isGeneral ? 'all assets' : esc(c.name)} live — beyond the calculator</h2>
+<p>The calculator gives you quick estimates. WalletLens updates your P&amp;L in real time with live prices — no manual entry needed after your first setup. Log every buy and it blends your cost basis automatically, showing your true gain or loss alongside all your other investments.</p>
+<ul>
+<li><strong>Live price updates</strong> — P&amp;L refreshes automatically.</li>
+<li><strong>Multiple buy entries</strong> — blended cost basis across all trades.</li>
+<li><strong>All assets in one dashboard</strong> — crypto, stocks, gold and cash together.</li>
+<li><strong>100% free, no account</strong> — open the dashboard and start in under a minute.</li>
+</ul>
+<p><a href="/dashboard">Open free portfolio tracker →</a></p>
+<h2>Frequently asked questions</h2>
+<h3>${esc(faq1q)}</h3>
+<p>${esc(faq1a)}</p>
+<h3>${esc(faq2q)}</h3>
+<p>${esc(faq2a)}</p>
+<p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+
+  write('/calculator/' + c.slug, buildPage({
+    path: '/calculator/' + c.slug,
+    title: pageTitle,
+    description: pageDesc,
+    bodyHtml: calcBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: faq1q,
+            acceptedAnswer: { '@type': 'Answer', text: faq1a } },
+          { '@type': 'Question', name: faq2q,
+            acceptedAnswer: { '@type': 'Answer', text: faq2a } },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: `${c.name} Profit Calculator`,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        url: `${ORIGIN}/calculator/${c.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}` },
+        ],
+      },
+    ],
+  }))
+}
+console.log(`Prerendered ${CALCULATORS.length} /calculator pages.`)
+
 // ── Blog index ───────────────────────────────────────────────────────────────
 const blogBody = `
 <h1>WalletLens Blog</h1>
@@ -568,10 +681,11 @@ const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
   ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
+  ...CALCULATORS.map(c => urlEntry({ loc: `${ORIGIN}/calculator/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.8' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
