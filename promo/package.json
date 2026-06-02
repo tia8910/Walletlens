@@ -1,0 +1,13 @@
+{
+  "name": "walletlens-promo-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "WalletLens promotion and outreach automation scripts",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "imapflow": "^1.0.169",
+    "mailparser": "^3.7.1",
+    "nodemailer": "^6.9.16"
+  }
+}
