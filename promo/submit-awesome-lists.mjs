@@ -35,7 +35,7 @@ const TARGETS = [
   {
     slug: 'awesome-privacy',
     repo: 'pluja/awesome-privacy',
-    branch: 'master',
+    branch: 'main',
     file: 'README.md',
     // Find this exact heading line in the file, insert our entry after it
     insertAfterPattern: /#{2,4}\s+Finance/i,
@@ -49,7 +49,7 @@ const TARGETS = [
     slug: 'awesome-pwa',
     repo: 'hemanth/awesome-pwa',
     branch: 'master',
-    file: 'readme.md',
+    file: 'README.md',
     insertAfterPatternAlt: /Finance/i,
     insertAfterPattern: /Finance/i,
     entry: '- [WalletLens](https://walletlens.live) — Net worth tracker PWA — crypto, stocks, gold, fiat, cash. Installable, works offline, no account required.',
@@ -80,7 +80,7 @@ const TARGETS = [
   {
     slug: 'awesome-ai-in-finance',
     repo: 'georgezouq/awesome-ai-in-finance',
-    branch: 'master',
+    branch: 'main',
     file: 'README.md',
     insertAfterPattern: /Portfolio|Tools/i,
     entry: '- [WalletLens](https://walletlens.live) — Free multi-asset portfolio tracker with built-in AI analysis (portfolio health score, sell plans, risk scoring). No account required.',
@@ -164,12 +164,12 @@ async function createBranch(owner, repo, newBranch, fromBranch) {
   })
 }
 
-async function createPR(upstreamOwner, upstreamRepo, head, title, body) {
+async function createPR(upstreamOwner, upstreamRepo, head, base, title, body) {
   return gh('POST', `/repos/${upstreamOwner}/${upstreamRepo}/pulls`, {
     title,
     body,
     head,   // e.g. "youruser:add-walletlens"
-    base: 'master',
+    base,
     maintainer_can_modify: true,
   })
 }
@@ -268,6 +268,7 @@ async function processTarget(t, myUsername) {
     upstreamOwner,
     upstreamRepoName,
     `${fork.owner}:${branchName}`,
+    t.branch,
     t.prTitle,
     t.prBody,
   )
