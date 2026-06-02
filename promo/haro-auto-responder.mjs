@@ -18,8 +18,8 @@
  *   node promo/haro-auto-responder.mjs
  *
  * ── Spaceship mail IMAP/SMTP settings ────────────────────────────────────────
- *   IMAP host: imap.spacemail.com  port: 993  SSL: yes
- *   SMTP host: smtp.spacemail.com  port: 465  SSL: yes
+ *   IMAP host: mail.spacemail.com  port: 993  SSL: yes
+ *   SMTP host: mail.spacemail.com  port: 465  SSL: yes
  *   Username:  your full email address (contact@walletlens.live)
  *   Password:  your Spaceship email password
  *
@@ -53,9 +53,9 @@ import { setTimeout as sleep } from 'timers/promises'
 // Mail credentials (Spaceship defaults)
 const MAIL_USER  = process.env.MAIL_USER  || ''
 const MAIL_PASS  = process.env.MAIL_PASS  || ''
-const IMAP_HOST  = process.env.IMAP_HOST  || 'imap.spacemail.com'
+const IMAP_HOST  = process.env.IMAP_HOST  || 'mail.spacemail.com'
 const IMAP_PORT  = parseInt(process.env.IMAP_PORT  || '993', 10)
-const SMTP_HOST  = process.env.SMTP_HOST  || 'smtp.spacemail.com'
+const SMTP_HOST  = process.env.SMTP_HOST  || 'mail.spacemail.com'
 const SMTP_PORT  = parseInt(process.env.SMTP_PORT  || '465', 10)
 
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || ''
