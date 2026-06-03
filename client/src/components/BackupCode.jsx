@@ -173,17 +173,18 @@ export default function BackupCode({ hideTrigger = false }) {
     return parts
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (openQr = false) => {
     setGenerating(true)
     try {
       const { code, keyCount } = await generateBackupCode()
       setExportCode(code)
       setExportInfo({ ...getStats(), keyCount, size: code.length })
       setCopied(false)
-      // Auto-show the QR so it's instantly scannable (multi-part if needed).
+      // Build QR part(s) up front so the QR toggle is instant; open it now
+      // only when the user explicitly asked to generate the QR.
       const parts = await makeQrParts(code)
       setQrParts(parts)
-      setShowQr(parts.length > 0)
+      setShowQr(openQr && parts.length > 0)
     } finally { setGenerating(false) }
   }
 
@@ -393,13 +394,23 @@ export default function BackupCode({ hideTrigger = false }) {
                 Generates a compressed code containing all your trades, wallets and settings. Save it to restore later or move to another device.
               </p>
               {!exportCode ? (
-                <button onClick={handleGenerate} disabled={generating} style={btn({
-                  width:'100%', background:'linear-gradient(135deg, #3b82f6, #0ea5e9)', color:'#fff',
-                  padding:'0.65rem', fontSize:'0.88rem', fontWeight:800,
-                  boxShadow:'0 4px 14px rgba(59,130,246,0.35)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem',
-                })}>
-                  <BackupIcon /> {generating ? 'Generating…' : 'Generate backup code'}
-                </button>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                  <button onClick={() => handleGenerate(false)} disabled={generating} style={btn({
+                    width:'100%', background:'linear-gradient(135deg, #3b82f6, #0ea5e9)', color:'#fff',
+                    padding:'0.65rem', fontSize:'0.88rem', fontWeight:800,
+                    boxShadow:'0 4px 14px rgba(59,130,246,0.35)', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem',
+                  })}>
+                    <BackupIcon /> {generating ? 'Generating…' : 'Generate backup code'}
+                  </button>
+                  <button onClick={() => handleGenerate(true)} disabled={generating} style={btn({
+                    width:'100%', background:'rgba(167,139,250,0.14)', color:'#a78bfa',
+                    border:'1px solid rgba(167,139,250,0.4)',
+                    padding:'0.65rem', fontSize:'0.88rem', fontWeight:800,
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem',
+                  })}>
+                    <QrIcon /> {generating ? 'Generating…' : 'Generate QR code'}
+                  </button>
+                </div>
               ) : (
                 <>
                   <div style={{
