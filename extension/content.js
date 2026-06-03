@@ -69,6 +69,9 @@ ext.runtime.onMessage.addListener((message) => {
   }
 });
 
+// Sync before the tab closes so trades added just before closing aren't lost.
+window.addEventListener('beforeunload', syncPortfolio);
+
 // Also observe localStorage mutation from within the same tab via a
 // MutationObserver on storage isn't possible, but we can poll using
 // a lightweight interval when the page is visible (paused when hidden)
