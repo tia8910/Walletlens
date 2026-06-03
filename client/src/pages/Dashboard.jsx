@@ -22,6 +22,7 @@ import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
 import BackupCode from '../components/BackupCode'
+import { makeQrParts, createPartCollector, scanImageData, decodeQrFromImageFile } from '../utils/qrBackup'
 
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
 const TradeSheet     = lazy(() => import('../components/TradeSheet'))
@@ -60,6 +61,7 @@ const Ico = {
   close:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   search:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   ai:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2M3 17h2M19 17h2"/></svg>,
+  qr:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 20h3v1h-3z"/></svg>,
 }
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
@@ -1149,13 +1151,87 @@ function DataPanel({ onRefresh }) {
   const [preview, setPreview] = useState(null)
   const [busy, setBusy]     = useState(false)
 
+  // QR export
+  const [showQr, setShowQr] = useState(false)
+  const [qrParts, setQrParts] = useState([])
+  // QR scan/import
+  const [scanning, setScanning] = useState(false)
+  const [scanMsg, setScanMsg] = useState('')
+  const videoRef = useRef(null)
+  const scanCanvasRef = useRef(null)
+  const animRef = useRef(null)
+  const streamRef = useRef(null)
+  const collectorRef = useRef(null)
+
+  const stopCamera = useCallback(() => {
+    if (animRef.current) cancelAnimationFrame(animRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach(tr => tr.stop())
+    streamRef.current = null
+    setScanning(false)
+  }, [])
+  useEffect(() => () => stopCamera(), [stopCamera])
+
   async function doExport() {
     setBusy(true)
     try {
       const result = await api.exportCode()
-      if (result) { setCode(result); setMsg('') }
+      if (result) {
+        setCode(result); setMsg('')
+        const parts = await makeQrParts(result)
+        setQrParts(parts); setShowQr(false)
+      }
       else setMsg('Export failed.')
     } finally { setBusy(false) }
+  }
+
+  async function toggleExportQr() {
+    if (showQr) { setShowQr(false); return }
+    let parts = qrParts
+    if (!parts.length && code) { parts = await makeQrParts(code); setQrParts(parts) }
+    setShowQr(parts.length > 0)
+  }
+
+  function ingest(data) {
+    if (!collectorRef.current) collectorRef.current = createPartCollector()
+    return collectorRef.current(data)
+  }
+
+  async function startScan() {
+    setMsg(''); setScanMsg(''); collectorRef.current = createPartCollector()
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream; setScanning(true)
+      setTimeout(() => {
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); scanFrame() }
+      }, 80)
+    } catch { setMsg('Camera access denied. Allow camera permission and try again.') }
+  }
+
+  function scanFrame() {
+    const video = videoRef.current, canvas = scanCanvasRef.current
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animRef.current = requestAnimationFrame(scanFrame); return
+    }
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const data = scanImageData(ctx.getImageData(0, 0, canvas.width, canvas.height))
+    if (data) {
+      const r = ingest(data)
+      if (r.complete) { stopCamera(); setScanMsg(''); setCode(r.text); setPreview(null) }
+      else { setScanMsg(`Scanned ${r.got} of ${r.total} — point at the next QR code`); animRef.current = requestAnimationFrame(scanFrame) }
+    } else { animRef.current = requestAnimationFrame(scanFrame) }
+  }
+
+  function onQrImage(e) {
+    const file = e.target.files?.[0]; if (!file) return
+    setMsg('')
+    decodeQrFromImageFile(file, (data) => {
+      const r = ingest(data)
+      if (r.complete) { setCode(r.text); setPreview(null); setScanMsg(''); collectorRef.current = null }
+      else setScanMsg(`Loaded part ${r.got} of ${r.total} — upload the next QR image`)
+    }, (err) => setMsg(err))
+    e.target.value = ''
   }
 
   async function copyCode() {
@@ -1197,9 +1273,37 @@ function DataPanel({ onRefresh }) {
       {code && (
         <div className="dvx-code-box">
           <div className="dvx-code-text">{code}</div>
-          <button className="dvx-code-copy" onClick={copyCode}>
-            {copied ? <>{Ico.check} Copied!</> : <>{Ico.copy} Copy</>}
-          </button>
+          <div style={{ display:'flex', gap:'0.5rem' }}>
+            <button className="dvx-code-copy" onClick={copyCode}>
+              {copied ? <>{Ico.check} Copied!</> : <>{Ico.copy} Copy</>}
+            </button>
+            <button className="dvx-code-copy" onClick={toggleExportQr}>
+              {Ico.qr} {showQr ? 'Hide QR' : 'Show QR'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {code && showQr && qrParts.length > 0 && (
+        <div style={{ textAlign:'center', margin:'0.5rem 0' }}>
+          {qrParts.length > 1 && (
+            <p style={{ fontSize:'0.78rem', color:'var(--g)', margin:'0 0 0.5rem', fontWeight:700 }}>
+              📲 {qrParts.length}-part QR — scan each in order on the other device
+            </p>
+          )}
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.9rem', alignItems:'center' }}>
+            {qrParts.map(part => (
+              <div key={part.idx}>
+                {part.total > 1 && (
+                  <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.25rem', fontWeight:600 }}>
+                    Part {part.idx} of {part.total}
+                  </p>
+                )}
+                <img src={part.url} alt={`Backup QR ${part.idx} of ${part.total}`}
+                  style={{ borderRadius:'8px', maxWidth:'100%', width:'220px', display:'block', margin:'0 auto' }} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1209,6 +1313,30 @@ function DataPanel({ onRefresh }) {
         placeholder="Paste your WLZ backup code here…"
         value={code} onChange={e => { setCode(e.target.value); setPreview(null); setMsg('') }}
         rows={4} />
+
+      <div className="dvx-panel-row" style={{ marginTop: '0.5rem' }}>
+        <label className="dvx-btn dvx-btn-full" style={{ cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+          {Ico.qr} QR image
+          <input type="file" accept="image/*" onChange={onQrImage} style={{ display:'none' }} />
+        </label>
+        <button className="dvx-btn dvx-btn-full" onClick={scanning ? stopCamera : startScan}
+          style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+          {Ico.qr} {scanning ? 'Stop scan' : 'Scan QR'}
+        </button>
+      </div>
+
+      {scanning && (
+        <div style={{ position:'relative', borderRadius:'10px', overflow:'hidden', margin:'0.5rem 0', background:'#000' }}>
+          <video ref={videoRef} muted playsInline style={{ width:'100%', display:'block', borderRadius:'10px' }} />
+          <canvas ref={scanCanvasRef} style={{ display:'none' }} />
+          <div style={{ position:'absolute', bottom:'0.5rem', left:0, right:0, textAlign:'center', color:'#fff', fontSize:'0.72rem', fontWeight:600, textShadow:'0 1px 3px #000' }}>
+            {scanMsg || 'Point camera at a WalletLens QR code'}
+          </div>
+        </div>
+      )}
+      {!scanning && scanMsg && (
+        <p className="dvx-msg" style={{ color:'var(--g)', fontWeight:600 }}>📲 {scanMsg}</p>
+      )}
 
       {preview && (
         <div className="dvx-preview-box">
