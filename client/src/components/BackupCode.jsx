@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import QRCode from 'qrcode'
+import jsQR from 'jsqr'
 
 const BACKUP_KEYS = [
   'crypto_tracker_transactions',
@@ -99,6 +101,9 @@ function getStats() {
 
 // ── Component ─────────────────────────────────────────────────────────────
 
+// QR code size limit: ~2900 bytes fits in a version-40 QR code at low error correction
+const QR_MAX_BYTES = 2900
+
 export default function BackupCode({ hideTrigger = false }) {
   const [open, setOpen] = useState(hideTrigger)
   const [mode, setMode] = useState('export')
@@ -112,6 +117,29 @@ export default function BackupCode({ hideTrigger = false }) {
   const [generating, setGenerating] = useState(false)
   const [importing, setImporting] = useState(false)
 
+  // QR export
+  const [showQr, setShowQr] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const qrCanvasRef = useRef(null)
+
+  // QR scan (import)
+  const [scanning, setScanning] = useState(false)
+  const videoRef = useRef(null)
+  const scanCanvasRef = useRef(null)
+  const animFrameRef = useRef(null)
+  const streamRef = useRef(null)
+
+  const stopCamera = useCallback(() => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    setScanning(false)
+  }, [])
+
+  // Stop camera when component unmounts or panel closes
+  useEffect(() => () => stopCamera(), [stopCamera])
+  useEffect(() => { if (!open) stopCamera() }, [open, stopCamera])
+
   const handleGenerate = async () => {
     setGenerating(true)
     try {
@@ -119,7 +147,61 @@ export default function BackupCode({ hideTrigger = false }) {
       setExportCode(code)
       setExportInfo({ ...getStats(), keyCount, size: code.length })
       setCopied(false)
+      setShowQr(false)
+      setQrDataUrl('')
     } finally { setGenerating(false) }
+  }
+
+  const handleShowQr = async () => {
+    if (showQr) { setShowQr(false); return }
+    try {
+      const url = await QRCode.toDataURL(exportCode, {
+        errorCorrectionLevel: 'L', margin: 1, width: 260,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+      setQrDataUrl(url)
+      setShowQr(true)
+    } catch { /* code too large — QR_MAX_BYTES check handles messaging */ }
+  }
+
+  const startScan = async () => {
+    setError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream
+      setScanning(true)
+      // Attach stream to video after state update
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.play()
+          scanFrame()
+        }
+      }, 80)
+    } catch {
+      setError('Camera access denied. Allow camera permission and try again.')
+    }
+  }
+
+  const scanFrame = () => {
+    const video = videoRef.current
+    const canvas = scanCanvasRef.current
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animFrameRef.current = requestAnimationFrame(scanFrame)
+      return
+    }
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
+    if (code?.data) {
+      stopCamera()
+      setImportText(code.data)
+    } else {
+      animFrameRef.current = requestAnimationFrame(scanFrame)
+    }
   }
 
   const handleCopy = async () => {
@@ -248,7 +330,30 @@ export default function BackupCode({ hideTrigger = false }) {
                     })}>
                       <ArrowDown /> .txt
                     </button>
+                    {exportCode.length <= QR_MAX_BYTES && (
+                      <button onClick={handleShowQr} style={btn({
+                        background: showQr ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)',
+                        border:`1px solid ${showQr ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                        color: showQr ? '#a78bfa' : 'var(--text-muted)',
+                        display:'flex', alignItems:'center', gap:'0.4rem',
+                      })}>
+                        <QrIcon /> QR
+                      </button>
+                    )}
                   </div>
+                  {exportCode.length > QR_MAX_BYTES && (
+                    <p style={{ fontSize:'0.7rem', color:'rgba(251,191,36,0.8)', margin:'0.5rem 0 0', lineHeight:1.5 }}>
+                      ⚠️ Portfolio too large for a QR code ({(exportCode.length/1024).toFixed(1)} KB). Use copy or .txt instead.
+                    </p>
+                  )}
+                  {showQr && qrDataUrl && (
+                    <div style={{ textAlign:'center', marginTop:'0.75rem' }}>
+                      <img src={qrDataUrl} alt="Backup QR code" style={{ borderRadius:'8px', maxWidth:'100%', display:'block', margin:'0 auto' }} />
+                      <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.5rem 0 0' }}>
+                        Scan this with WalletLens on another device to restore your portfolio.
+                      </p>
+                    </div>
+                  )}
                   <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.7rem 0 0', textAlign:'center', fontStyle:'italic' }}>
                     🔒 Keep this code private — anyone with it can restore your portfolio.
                   </p>
@@ -270,15 +375,48 @@ export default function BackupCode({ hideTrigger = false }) {
                   padding:'0.6rem', fontSize:'0.72rem', fontFamily:'monospace',
                   resize:'vertical', wordBreak:'break-all', boxSizing:'border-box', marginBottom:'0.6rem',
                 }} />
-              <label style={{
-                display:'block', textAlign:'center', background:'rgba(255,255,255,0.04)',
-                border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px',
-                color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem',
-                cursor:'pointer', fontWeight:600, marginBottom:'0.6rem',
-              }}>
-                📂 Load from file
-                <input type="file" accept=".txt,text/plain" onChange={handleFileUpload} style={{ display:'none' }} />
-              </label>
+              <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.6rem' }}>
+                <label style={{
+                  flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
+                  textAlign:'center', background:'rgba(255,255,255,0.04)',
+                  border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px',
+                  color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem',
+                  cursor:'pointer', fontWeight:600,
+                }}>
+                  📂 Load from file
+                  <input type="file" accept=".txt,text/plain" onChange={handleFileUpload} style={{ display:'none' }} />
+                </label>
+                <button onClick={scanning ? stopCamera : startScan} style={btn({
+                  flex:1, background: scanning ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.04)',
+                  border:`1px solid ${scanning ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                  color: scanning ? '#a78bfa' : 'var(--text-muted)',
+                  display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
+                })}>
+                  <QrIcon /> {scanning ? 'Stop scan' : 'Scan QR'}
+                </button>
+              </div>
+              {scanning && (
+                <div style={{ position:'relative', borderRadius:'10px', overflow:'hidden', marginBottom:'0.6rem', background:'#000' }}>
+                  <video ref={videoRef} muted playsInline style={{ width:'100%', display:'block', borderRadius:'10px' }} />
+                  <canvas ref={scanCanvasRef} style={{ display:'none' }} />
+                  <div style={{
+                    position:'absolute', inset:0, border:'2px solid rgba(167,139,250,0.7)',
+                    borderRadius:'10px', pointerEvents:'none',
+                    boxShadow:'inset 0 0 0 40px rgba(0,0,0,0.35)',
+                  }}>
+                    <div style={{
+                      position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
+                      width:'55%', aspectRatio:'1', border:'2px solid #a78bfa', borderRadius:'8px',
+                    }} />
+                  </div>
+                  <div style={{
+                    position:'absolute', bottom:'0.5rem', left:0, right:0, textAlign:'center',
+                    color:'#fff', fontSize:'0.72rem', fontWeight:600, textShadow:'0 1px 3px #000',
+                  }}>
+                    Point camera at a WalletLens QR code
+                  </div>
+                </div>
+              )}
               {error && (
                 <div style={{
                   background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)',
@@ -347,4 +485,13 @@ function ArrowUp() {
 }
 function CopyIcon() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+}
+function QrIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 20h3v1h-3z"/>
+    </svg>
+  )
 }
