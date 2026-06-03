@@ -139,6 +139,55 @@ async function fetchFearGreed() {
   } catch { return null; }
 }
 
+// ── Backup-code import ────────────────────────────────────────────────────────
+
+async function gunzipB64(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const ds = new DecompressionStream('gzip');
+  const writer = ds.writable.getWriter();
+  writer.write(bytes); writer.close();
+  const chunks = []; const reader = ds.readable.getReader();
+  while (true) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); }
+  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length; }
+  return new TextDecoder().decode(out);
+}
+
+function b64decode(str) { return decodeURIComponent(escape(atob(str))); }
+
+async function importFromBackupCode(raw) {
+  const code = (raw || '').trim().replace(/\s+/g, '');
+  if (!code) throw new Error('Paste a backup code first.');
+  let json;
+  if (code.startsWith('WL2-')) {
+    try { json = await gunzipB64(code.slice(4)); }
+    catch { throw new Error('Could not decompress — make sure you copied the full code.'); }
+  } else {
+    const b64 = code.startsWith('WL1-') ? code.slice(4) : code;
+    try { json = b64decode(b64); }
+    catch { throw new Error('Could not decode — make sure you copied the full code.'); }
+  }
+  let parsed;
+  try { parsed = JSON.parse(json); }
+  catch { throw new Error('Backup data is corrupted or incomplete.'); }
+  if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.');
+  let transactions, wallets = [], settings = {};
+  try {
+    const txRaw = parsed.data['crypto_tracker_transactions'];
+    const wRaw  = parsed.data['crypto_tracker_wallets'];
+    const sRaw  = parsed.data['wl_settings'];
+    transactions = txRaw ? JSON.parse(txRaw) : [];
+    if (wRaw) wallets  = JSON.parse(wRaw);
+    if (sRaw) settings = JSON.parse(sRaw);
+  } catch { throw new Error('Transaction data is malformed.'); }
+  if (!Array.isArray(transactions)) throw new Error('No valid transaction data found.');
+  const payload = { transactions, wallets, settings, syncedAt: Date.now() };
+  await new Promise(r => ext.storage.local.set({ [STORAGE_KEY]: payload }, r));
+  return { txCount: transactions.length, walletCount: wallets.length };
+}
+
 // ── DOM helpers ───────────────────────────────────────────────────────────────
 
 const $ = id => document.getElementById(id);
@@ -146,7 +195,7 @@ function show(id) { $(id).hidden = false; }
 function hide(id) { $(id).hidden = true; }
 function setText(id, t) { $(id).textContent = t; }
 
-function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl = false) {
+function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl = false, signalInfo = null) {
   const row = document.createElement('div');
   row.className = 'holding-row';
 
@@ -181,6 +230,13 @@ function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl
     pnl.className = 'holding-pnl' + (pnlGain >= 0 ? ' pos' : ' neg');
     pnl.textContent = hideValues ? '••' : (pnlGain >= 0 ? '+' : '') + fmtUSD(pnlGain, true);
     right.appendChild(pnl);
+  }
+
+  if (signalInfo) {
+    const sig = document.createElement('span');
+    sig.className = 'holding-signal ' + signalInfo.sigClass;
+    sig.textContent = signalInfo.signal;
+    right.appendChild(sig);
   }
 
   row.append(left, right);
@@ -377,6 +433,31 @@ async function loadTAForCoin(coinId) {
   content.appendChild(sigEl);
 }
 
+// ── Per-holding signal badge ──────────────────────────────────────────────────
+
+const signalCache = new Map(); // coinId → { signal, sigClass }
+
+async function fetchSignalForCoin(coinId) {
+  if (signalCache.has(coinId)) return signalCache.get(coinId);
+  const ohlc = await fetchOHLC(coinId);
+  if (!ohlc || ohlc.length < 15) { const r = { signal:'—', sigClass:'neutral' }; signalCache.set(coinId, r); return r; }
+  const closes = ohlc.map(c => c[4]);
+  const last = closes[closes.length - 1];
+  const rsi  = calcRSI(closes, 14);
+  const sma  = calcSMA(closes, Math.min(20, closes.length));
+  const chg7 = closes.length >= 7 ? (last - closes[closes.length - 7]) / closes[closes.length - 7] * 100 : null;
+  let signal = '—', sigClass = 'neutral';
+  if (rsi !== null && sma) {
+    const bull = (rsi < 50 ? 1 : 0) + (last > sma ? 1 : 0) + (isFinite(chg7) && chg7 > 0 ? 1 : 0);
+    if (bull >= 2)   { signal = 'Buy';  sigClass = 'buy'; }
+    else if (bull === 0) { signal = 'Sell'; sigClass = 'sell'; }
+    else                 { signal = 'Hold'; sigClass = 'neutral'; }
+  }
+  const result = { signal, sigClass };
+  signalCache.set(coinId, result);
+  return result;
+}
+
 // ── Tab state ─────────────────────────────────────────────────────────────────
 
 let currentTab = 'overview';
@@ -492,7 +573,22 @@ function renderHoldingsTab() {
   } else {
     for (const { holding, value, change24h } of holdingsArr) {
       const pnlGain = isFinite(value) && holding.totalCost > 0 ? value - holding.totalCost : null;
-      listEl.appendChild(buildHoldingRow(holding, value, change24h, pnlGain, hideValues, true));
+      const row = buildHoldingRow(holding, value, change24h, pnlGain, hideValues, true);
+      row.dataset.coinId = holding.coin_id;
+      listEl.appendChild(row);
+    }
+    // Fetch signals lazily and inject badges without blocking render
+    const isCrypto = id => !id.startsWith('stock:') && !id.startsWith('metal:');
+    for (const { holding } of holdingsArr) {
+      if (!isCrypto(holding.coin_id)) continue;
+      fetchSignalForCoin(holding.coin_id).then(sig => {
+        const row = listEl.querySelector(`[data-coin-id="${holding.coin_id}"]`);
+        if (!row) return;
+        let badge = row.querySelector('.holding-signal');
+        if (!badge) { badge = document.createElement('span'); row.querySelector('.holding-right').appendChild(badge); }
+        badge.className = 'holding-signal ' + sig.sigClass;
+        badge.textContent = sig.signal;
+      }).catch(() => {});
     }
   }
   setText('last-synced-h', syncedAt ? 'Synced ' + timeAgo(syncedAt) : '—');
@@ -597,7 +693,7 @@ async function render() {
 const refreshBtn = $('btn-refresh');
 refreshBtn.addEventListener('click', async () => {
   refreshBtn.classList.add('spinning'); refreshBtn.disabled = true;
-  marketLoaded = false; newsLoaded = false;
+  marketLoaded = false; newsLoaded = false; signalCache.clear();
   try {
     await new Promise(r => {
       ext.tabs.query({ url:'https://walletlens.live/*' }, tabs => {
@@ -609,6 +705,46 @@ refreshBtn.addEventListener('click', async () => {
   await render();
   if (currentTab === 'market') loadMarketTab();
   refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false;
+});
+
+// ── Import panel ─────────────────────────────────────────────────────────────
+
+function showImportPanel() {
+  $('import-code-input').value = '';
+  $('import-error').hidden   = true;
+  $('import-success').hidden = true;
+  $('btn-import-apply').textContent = 'Import portfolio';
+  $('btn-import-apply').disabled = false;
+  $('import-panel').hidden = false;
+}
+
+function hideImportPanel() { $('import-panel').hidden = true; }
+
+$('btn-import').addEventListener('click', showImportPanel);
+$('btn-import-from-nodata').addEventListener('click', showImportPanel);
+$('btn-import-back').addEventListener('click', hideImportPanel);
+
+$('btn-import-apply').addEventListener('click', async () => {
+  const btn = $('btn-import-apply');
+  $('import-error').hidden   = true;
+  $('import-success').hidden = true;
+  btn.textContent = 'Importing…';
+  btn.disabled = true;
+  try {
+    const { txCount, walletCount } = await importFromBackupCode($('import-code-input').value);
+    $('import-success').textContent = `✅ Imported ${txCount} transactions · ${walletCount} wallets`;
+    $('import-success').hidden = false;
+    setTimeout(async () => {
+      hideImportPanel();
+      cachedData = null; cachedPrices = {}; marketLoaded = false; newsLoaded = false; signalCache.clear();
+      await render();
+    }, 1200);
+  } catch (err) {
+    $('import-error').textContent = '⚠️ ' + err.message;
+    $('import-error').hidden = false;
+    btn.textContent = 'Import portfolio';
+    btn.disabled = false;
+  }
 });
 
 // ── Open site buttons ─────────────────────────────────────────────────────────

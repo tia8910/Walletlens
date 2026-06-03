@@ -28,11 +28,19 @@
       </svg>
       <span class="logo-text">WalletLens</span>
     </div>
-    <button id="btn-refresh" class="btn-icon" title="Refresh">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
-      </svg>
-    </button>
+    <div style="display:flex;align-items:center;gap:2px">
+      <button id="btn-import" class="btn-icon" title="Import backup code">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
+      <button id="btn-refresh" class="btn-icon" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <!-- ── Tabs ── -->
@@ -58,8 +66,9 @@
       <circle cx="30" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
     </svg>
     <p class="no-data-title">No portfolio data yet</p>
-    <p class="no-data-sub">Open WalletLens, add your holdings, then come back here.</p>
+    <p class="no-data-sub">Open WalletLens to sync, or import a backup code directly.</p>
     <button id="btn-open-site" class="btn-primary">Open walletlens.live</button>
+    <button id="btn-import-from-nodata" class="btn-secondary">Import backup code</button>
   </div>
 
   <!-- ══════════════════════════════════════════
@@ -172,6 +181,27 @@
     </div>
     <div id="ta-content" class="ta-content">
       <p class="holdings-empty" style="padding:20px 0">Select a coin to see analysis</p>
+    </div>
+  </div>
+
+  <!-- ── Import Panel (full-screen overlay) ── -->
+  <div id="import-panel" hidden>
+    <div class="import-panel-hdr">
+      <button id="btn-import-back" class="btn-icon" title="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <span class="import-panel-title">Import Portfolio</span>
+    </div>
+    <div class="import-panel-body">
+      <p class="import-hint">
+        Paste a WalletLens backup code to load your portfolio into the extension — no need to open the website.
+      </p>
+      <textarea id="import-code-input" class="import-textarea" placeholder="WL2-H4sI… or WL1-…" spellcheck="false"></textarea>
+      <div id="import-error"   class="import-msg import-msg-error" hidden></div>
+      <div id="import-success" class="import-msg import-msg-ok"    hidden></div>
+      <button id="btn-import-apply" class="btn-primary">Import portfolio</button>
     </div>
   </div>
 
