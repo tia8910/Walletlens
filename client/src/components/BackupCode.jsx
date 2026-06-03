@@ -103,6 +103,9 @@ function getStats() {
 
 // QR code size limit: ~2900 bytes fits in a version-40 QR code at low error correction
 const QR_MAX_BYTES = 2900
+// Payload chars per QR when a backup is split across multiple codes. Kept well
+// under capacity so the header fits and the codes stay easy to scan on screen.
+const QR_CHUNK = 2000
 
 export default function BackupCode({ hideTrigger = false }) {
   const [open, setOpen] = useState(hideTrigger)
@@ -117,17 +120,19 @@ export default function BackupCode({ hideTrigger = false }) {
   const [generating, setGenerating] = useState(false)
   const [importing, setImporting] = useState(false)
 
-  // QR export
+  // QR export — qrParts is an array of { idx, total, url }. A single QR is
+  // [{idx:1,total:1,...}]; larger portfolios produce a multi-part sequence.
   const [showQr, setShowQr] = useState(false)
-  const [qrDataUrl, setQrDataUrl] = useState('')
-  const qrCanvasRef = useRef(null)
+  const [qrParts, setQrParts] = useState([])
 
   // QR scan (import)
   const [scanning, setScanning] = useState(false)
+  const [scanMsg, setScanMsg] = useState('')
   const videoRef = useRef(null)
   const scanCanvasRef = useRef(null)
   const animFrameRef = useRef(null)
   const streamRef = useRef(null)
+  const partsRef = useRef({}) // collected multi-part chunks, keyed by index
 
   const stopCamera = useCallback(() => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
@@ -140,13 +145,32 @@ export default function BackupCode({ hideTrigger = false }) {
   useEffect(() => () => stopCamera(), [stopCamera])
   useEffect(() => { if (!open) stopCamera() }, [open, stopCamera])
 
-  const makeQr = async (code) => {
+  const makeQr = async (data) => {
     try {
-      return await QRCode.toDataURL(code, {
+      return await QRCode.toDataURL(data, {
         errorCorrectionLevel: 'L', margin: 1, width: 260,
         color: { dark: '#000000', light: '#ffffff' },
       })
-    } catch { return '' /* code too large — QR_MAX_BYTES check handles messaging */ }
+    } catch { return '' }
+  }
+
+  // Build QR image(s) for a backup code. Small codes → one plain QR.
+  // Larger codes → a sequence of `WQ<i>/<n>:<chunk>` QR codes that the
+  // importer reassembles after scanning every part.
+  const makeQrParts = async (code) => {
+    if (code.length <= QR_MAX_BYTES) {
+      const url = await makeQr(code)
+      return url ? [{ idx: 1, total: 1, url }] : []
+    }
+    const total = Math.ceil(code.length / QR_CHUNK)
+    const parts = []
+    for (let i = 0; i < total; i++) {
+      const chunk = code.slice(i * QR_CHUNK, (i + 1) * QR_CHUNK)
+      const url = await makeQr(`WQ${i + 1}/${total}:${chunk}`)
+      if (!url) return [] // unexpected — chunk is well under QR capacity
+      parts.push({ idx: i + 1, total, url })
+    }
+    return parts
   }
 
   const handleGenerate = async () => {
@@ -156,26 +180,41 @@ export default function BackupCode({ hideTrigger = false }) {
       setExportCode(code)
       setExportInfo({ ...getStats(), keyCount, size: code.length })
       setCopied(false)
-      // Auto-show the QR so it's instantly scannable (when it fits in a QR).
-      if (code.length <= QR_MAX_BYTES) {
-        const url = await makeQr(code)
-        setQrDataUrl(url)
-        setShowQr(!!url)
-      } else {
-        setShowQr(false)
-        setQrDataUrl('')
-      }
+      // Auto-show the QR so it's instantly scannable (multi-part if needed).
+      const parts = await makeQrParts(code)
+      setQrParts(parts)
+      setShowQr(parts.length > 0)
     } finally { setGenerating(false) }
   }
 
   const handleShowQr = async () => {
     if (showQr) { setShowQr(false); return }
-    const url = qrDataUrl || await makeQr(exportCode)
-    if (url) { setQrDataUrl(url); setShowQr(true) }
+    let parts = qrParts
+    if (!parts.length) { parts = await makeQrParts(exportCode); setQrParts(parts) }
+    setShowQr(parts.length > 0)
+  }
+
+  // Process one scanned/decoded QR string. Returns either the complete backup
+  // code, or progress info for a still-incomplete multi-part scan.
+  const ingestScannedData = (data) => {
+    const m = /^WQ(\d+)\/(\d+):([\s\S]*)$/.exec(data)
+    if (!m) return { complete: true, text: data } // plain single QR
+    const idx = +m[1], total = +m[2], chunk = m[3]
+    partsRef.current[idx] = chunk
+    for (let i = 1; i <= total; i++) {
+      if (partsRef.current[i] == null) {
+        return { complete: false, got: Object.keys(partsRef.current).length, total }
+      }
+    }
+    let full = ''
+    for (let i = 1; i <= total; i++) full += partsRef.current[i]
+    return { complete: true, text: full }
   }
 
   const startScan = async () => {
     setError('')
+    partsRef.current = {}
+    setScanMsg('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
@@ -207,8 +246,17 @@ export default function BackupCode({ hideTrigger = false }) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
     if (code?.data) {
-      stopCamera()
-      setImportText(code.data)
+      const r = ingestScannedData(code.data)
+      if (r.complete) {
+        stopCamera()
+        partsRef.current = {}
+        setScanMsg('')
+        setImportText(r.text)
+      } else {
+        // Keep scanning until every part of the multi-part code is captured.
+        setScanMsg(`Scanned ${r.got} of ${r.total} — point at the next QR code`)
+        animFrameRef.current = requestAnimationFrame(scanFrame)
+      }
     } else {
       animFrameRef.current = requestAnimationFrame(scanFrame)
     }
@@ -264,7 +312,17 @@ export default function BackupCode({ hideTrigger = false }) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const code = jsQR(imageData.data, imageData.width, imageData.height)
-        if (code?.data) { setImportText(code.data); setError('') }
+        if (code?.data) {
+          const r = ingestScannedData(code.data)
+          setError('')
+          if (r.complete) {
+            partsRef.current = {}
+            setScanMsg('')
+            setImportText(r.text)
+          } else {
+            setScanMsg(`Loaded part ${r.got} of ${r.total} — upload the next QR image`)
+          }
+        }
         else { setError('No QR code found in that image. Try a clearer, more cropped image — or paste the backup code instead.') }
       } catch {
         setError('Could not read that image. Try pasting the backup code instead.')
@@ -374,27 +432,39 @@ export default function BackupCode({ hideTrigger = false }) {
                     })}>
                       <ArrowDown /> .txt
                     </button>
-                    {exportCode.length <= QR_MAX_BYTES && (
-                      <button onClick={handleShowQr} style={btn({
-                        background: showQr ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)',
-                        border:`1px solid ${showQr ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.12)'}`,
-                        color: showQr ? '#a78bfa' : 'var(--text-muted)',
-                        display:'flex', alignItems:'center', gap:'0.4rem',
-                      })}>
-                        <QrIcon /> QR
-                      </button>
-                    )}
+                    <button onClick={handleShowQr} style={btn({
+                      background: showQr ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)',
+                      border:`1px solid ${showQr ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                      color: showQr ? '#a78bfa' : 'var(--text-muted)',
+                      display:'flex', alignItems:'center', gap:'0.4rem',
+                    })}>
+                      <QrIcon /> QR
+                    </button>
                   </div>
-                  {exportCode.length > QR_MAX_BYTES && (
-                    <p style={{ fontSize:'0.7rem', color:'rgba(251,191,36,0.8)', margin:'0.5rem 0 0', lineHeight:1.5 }}>
-                      ⚠️ Portfolio too large for a QR code ({(exportCode.length/1024).toFixed(1)} KB). Use copy or .txt instead.
-                    </p>
-                  )}
-                  {showQr && qrDataUrl && (
+                  {showQr && qrParts.length > 0 && (
                     <div style={{ textAlign:'center', marginTop:'0.75rem' }}>
-                      <img src={qrDataUrl} alt="Backup QR code" style={{ borderRadius:'8px', maxWidth:'100%', display:'block', margin:'0 auto' }} />
+                      {qrParts.length > 1 && (
+                        <p style={{ fontSize:'0.72rem', color:'#a78bfa', margin:'0 0 0.5rem', fontWeight:700 }}>
+                          📲 {qrParts.length}-part QR — scan each code in order on the other device
+                        </p>
+                      )}
+                      <div style={{ display:'flex', flexDirection:'column', gap:'0.9rem', alignItems:'center' }}>
+                        {qrParts.map(part => (
+                          <div key={part.idx}>
+                            {part.total > 1 && (
+                              <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0 0 0.25rem', fontWeight:600 }}>
+                                Part {part.idx} of {part.total}
+                              </p>
+                            )}
+                            <img src={part.url} alt={`Backup QR ${part.idx} of ${part.total}`}
+                              style={{ borderRadius:'8px', maxWidth:'100%', display:'block', margin:'0 auto' }} />
+                          </div>
+                        ))}
+                      </div>
                       <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.5rem 0 0' }}>
-                        Scan this with WalletLens on another device to restore your portfolio.
+                        {qrParts.length > 1
+                          ? 'Open WalletLens → Import → Scan QR, and scan every part — they reassemble automatically.'
+                          : 'Scan this with WalletLens on another device to restore your portfolio.'}
                       </p>
                     </div>
                   )}
@@ -457,8 +527,17 @@ export default function BackupCode({ hideTrigger = false }) {
                     position:'absolute', bottom:'0.5rem', left:0, right:0, textAlign:'center',
                     color:'#fff', fontSize:'0.72rem', fontWeight:600, textShadow:'0 1px 3px #000',
                   }}>
-                    Point camera at a WalletLens QR code
+                    {scanMsg || 'Point camera at a WalletLens QR code'}
                   </div>
+                </div>
+              )}
+              {!scanning && scanMsg && (
+                <div style={{
+                  background:'rgba(167,139,250,0.12)', border:'1px solid rgba(167,139,250,0.35)',
+                  borderRadius:'8px', color:'#a78bfa', padding:'0.5rem 0.75rem',
+                  fontSize:'0.78rem', marginBottom:'0.6rem', textAlign:'center', fontWeight:600,
+                }}>
+                  📲 {scanMsg}
                 </div>
               )}
               {error && (
