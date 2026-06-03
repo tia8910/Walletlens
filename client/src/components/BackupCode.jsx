@@ -147,7 +147,9 @@ export default function BackupCode({ hideTrigger = false }) {
     try {
       const result = await applyBackupCode(importText)
       setImportResult(result); setConfirmImport(false)
-      setTimeout(() => window.location.reload(), 1200)
+      // Full navigation to the dashboard re-reads the restored localStorage and
+      // lands on the overview tab (Dashboard defaults to 'overview' on load).
+      setTimeout(() => { window.location.href = '/dashboard' }, 1200)
     } catch (e) {
       setError(e.message)
     } finally { setImporting(false) }
@@ -293,7 +295,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   fontSize:'0.85rem', textAlign:'center', fontWeight:600,
                 }}>
                   ✅ Restored {importResult.restored} data set{importResult.restored !== 1 ? 's' : ''}!
-                  <div style={{ fontSize:'0.72rem', fontWeight:400, marginTop:'0.2rem', opacity:0.85 }}>Reloading…</div>
+                  <div style={{ fontSize:'0.72rem', fontWeight:400, marginTop:'0.2rem', opacity:0.85 }}>Opening your overview…</div>
                 </div>
               ) : confirmImport ? (
                 <div style={{ display:'flex', gap:'0.5rem' }}>
