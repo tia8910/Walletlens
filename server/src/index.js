@@ -11,8 +11,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(compression());
-app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: false }));
+app.use(express.json({ limit: '100kb' }));
 
 // Security + performance headers on all API responses
 app.use((_req, res, next) => {
