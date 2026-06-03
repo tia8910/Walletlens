@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <circle cx="24" cy="24" r="24" fill="#071a0c"/>
+  <circle cx="24" cy="24" r="22.5" stroke="#4ade80" stroke-width="1.5" fill="none"/>
+  <!-- Stylised "W" letterform built from paths for crispness at 48px -->
+  <text x="24" y="33" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-weight="700" font-size="28" fill="#4ade80">W</text>
+</svg>

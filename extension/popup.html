@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WalletLens Portfolio</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+        <circle cx="11" cy="11" r="11" fill="#4ade80"/>
+        <text x="11" y="16" text-anchor="middle" font-family="system-ui,sans-serif"
+              font-weight="700" font-size="13" fill="#071a0c">W</text>
+      </svg>
+      <span class="logo-text">WalletLens</span>
+    </div>
+    <span class="badge">Portfolio</span>
+  </header>
+
+  <!-- ── No-data state ── -->
+  <div id="no-data" class="state-panel" hidden>
+    <svg class="no-data-icon" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+      <circle cx="24" cy="24" r="23" stroke="#4ade80" stroke-width="1.5" fill="none" opacity="0.3"/>
+      <path d="M14 28 Q24 18 34 28" stroke="#4ade80" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="18" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
+      <circle cx="30" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
+    </svg>
+    <p class="no-data-title">No portfolio data yet</p>
+    <p class="no-data-sub">Open WalletLens to sync your portfolio to this extension.</p>
+    <button id="btn-open-site" class="btn-primary">Open walletlens.live</button>
+  </div>
+
+  <!-- ── Portfolio data state ── -->
+  <div id="portfolio" class="state-panel" hidden>
+    <!-- Total value -->
+    <section class="total-section">
+      <p class="total-label">Total Value</p>
+      <p id="total-value" class="total-value">—</p>
+      <div id="change-row" class="change-row">
+        <span id="change-badge" class="change-badge">—</span>
+        <span class="change-label">24h</span>
+      </div>
+    </section>
+
+    <!-- Divider -->
+    <div class="divider"></div>
+
+    <!-- Top holdings -->
+    <section class="holdings-section">
+      <p class="section-title">Top Holdings</p>
+      <div id="holdings-list" class="holdings-list">
+        <!-- Populated by popup.js -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <p id="last-synced" class="last-synced">—</p>
+      <button id="btn-open-app" class="btn-primary">Open WalletLens</button>
+    </footer>
+  </div>
+
+  <!-- ── Loading state ── -->
+  <div id="loading" class="state-panel">
+    <div class="spinner" aria-label="Loading…"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
