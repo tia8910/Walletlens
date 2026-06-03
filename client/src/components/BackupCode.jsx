@@ -140,6 +140,15 @@ export default function BackupCode({ hideTrigger = false }) {
   useEffect(() => () => stopCamera(), [stopCamera])
   useEffect(() => { if (!open) stopCamera() }, [open, stopCamera])
 
+  const makeQr = async (code) => {
+    try {
+      return await QRCode.toDataURL(code, {
+        errorCorrectionLevel: 'L', margin: 1, width: 260,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+    } catch { return '' /* code too large — QR_MAX_BYTES check handles messaging */ }
+  }
+
   const handleGenerate = async () => {
     setGenerating(true)
     try {
@@ -147,21 +156,22 @@ export default function BackupCode({ hideTrigger = false }) {
       setExportCode(code)
       setExportInfo({ ...getStats(), keyCount, size: code.length })
       setCopied(false)
-      setShowQr(false)
-      setQrDataUrl('')
+      // Auto-show the QR so it's instantly scannable (when it fits in a QR).
+      if (code.length <= QR_MAX_BYTES) {
+        const url = await makeQr(code)
+        setQrDataUrl(url)
+        setShowQr(!!url)
+      } else {
+        setShowQr(false)
+        setQrDataUrl('')
+      }
     } finally { setGenerating(false) }
   }
 
   const handleShowQr = async () => {
     if (showQr) { setShowQr(false); return }
-    try {
-      const url = await QRCode.toDataURL(exportCode, {
-        errorCorrectionLevel: 'L', margin: 1, width: 260,
-        color: { dark: '#000000', light: '#ffffff' },
-      })
-      setQrDataUrl(url)
-      setShowQr(true)
-    } catch { /* code too large — QR_MAX_BYTES check handles messaging */ }
+    const url = qrDataUrl || await makeQr(exportCode)
+    if (url) { setQrDataUrl(url); setShowQr(true) }
   }
 
   const startScan = async () => {
