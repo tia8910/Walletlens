@@ -48,6 +48,33 @@ function syncPortfolio() {
   }
 }
 
+/**
+ * Relay a portfolio pushed directly by the web app via window.postMessage.
+ * This makes the extension import automatically the moment the dashboard has
+ * data — independent of localStorage load-order or where the app stores data.
+ */
+function handleAppMessage(event) {
+  // Only trust messages from this same page (same window, same origin).
+  if (event.source !== window) return;
+  const msg = event.data;
+  if (!msg || msg.source !== 'walletlens-app' || msg.type !== 'WL_PORTFOLIO') return;
+
+  const payload = msg.payload || {};
+  if (!Array.isArray(payload.transactions)) return;
+
+  ext.runtime.sendMessage({
+    type: 'SYNC_PORTFOLIO',
+    data: {
+      transactions: payload.transactions,
+      wallets:      Array.isArray(payload.wallets) ? payload.wallets : [],
+      settings:     (payload.settings && typeof payload.settings === 'object') ? payload.settings : {},
+      syncedAt:     payload.syncedAt || Date.now(),
+    },
+  }).catch(() => {});
+}
+
+window.addEventListener('message', handleAppMessage);
+
 // Initial sync when the content script loads
 syncPortfolio();
 

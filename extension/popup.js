@@ -116,7 +116,9 @@ async function fetchNews() {
     const res = await fetch(NEWS_URL, { signal:AbortSignal.timeout(6000) });
     if (!res.ok) return [];
     const json = await res.json();
-    return Array.isArray(json) ? json.slice(0, 12) : [];
+    // news.json is { updated, count, articles: [...] }; older builds returned a bare array.
+    const list = Array.isArray(json) ? json : (Array.isArray(json?.articles) ? json.articles : []);
+    return list.slice(0, 12);
   } catch { return []; }
 }
 
@@ -340,7 +342,7 @@ async function loadNewsTab() {
     src.textContent = a.source || a.publisher || '';
     const time = document.createElement('span');
     time.className = 'news-time';
-    const ts = a.publishedAt || a.date || a.published_at;
+    const ts = a.publishedAt || a.date || a.published_at || a.pubDate;
     time.textContent = ts ? timeAgo(new Date(ts).getTime()) : '';
     meta.append(src, time);
     item.append(title, meta);
