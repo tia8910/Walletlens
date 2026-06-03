@@ -397,6 +397,22 @@ export default function App() {
             </div>
           </div>
           <div className="wl-topbar-right">
+            <a
+              className="wl-topbar-install"
+              href="https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn"
+              target="_blank" rel="noopener noreferrer"
+              title="Add WalletLens to Chrome"
+              onClick={() => track('extension_install_click', { source: 'app_header' })}
+            >
+              <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+                <circle cx="24" cy="24" r="11" fill="#fff" />
+                <path fill="#4caf50" d="M24 13h17.6A23.9 23.9 0 0 0 24 0 24 24 0 0 0 3.4 11.8L12 26.7A12 12 0 0 1 24 13z" />
+                <path fill="#ffc107" d="M41.6 13H24a12 12 0 0 1 10.4 18l-8.6 14.9A24 24 0 0 0 41.6 13z" />
+                <path fill="#f44336" d="M12 26.7 3.4 11.8A24 24 0 0 0 25.8 47.9L34.4 33A12 12 0 0 1 12 26.7z" />
+                <circle cx="24" cy="24" r="6" fill="#2196f3" />
+              </svg>
+              <span className="wl-topbar-install-label">Add to Chrome</span>
+            </a>
             <PWATopbarButton />
             <a className="wl-topbar-x" href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" title="Telegram community">
               <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
