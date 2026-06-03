@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { track } from '../analytics'
 import { useTheme } from '../ThemeContext'
+import { POSTS } from '../data/blogPosts'
 
 // ── Persistence helpers ───────────────────────────────────────────────────
 const STORE_KEY = 'wl_academy_v1'
@@ -469,6 +471,25 @@ async function shareHackToX(hack, color) {
   setTimeout(() => window.open(xUrl, '_blank'), 400)
 }
 
+// ── Article helpers ───────────────────────────────────────────────────────
+const ARTICLE_CATS = ['All', 'Crypto', 'Strategy', 'Net Worth', 'Tracking', 'Tax & P&L']
+
+function getArticleCat(slug) {
+  if (/net-worth|grow-your-net|calculate-your-net|tracker-vs-spread|best-free-net-worth/.test(slug)) return 'Net Worth'
+  if (/tax|profit-calculator|cost-basis/.test(slug)) return 'Tax & P&L'
+  if (/diversif|profit-target|dca|dollar-cost|position-sizing|rebalance|portfolio-allocation/.test(slug)) return 'Strategy'
+  if (/track|portfolio-tracker|alternatives|apple-stock|gold-silver|bitcoin-portfolio/.test(slug)) return 'Tracking'
+  return 'Crypto'
+}
+
+const ARTICLE_CAT_COLORS = {
+  Crypto:     { dark: '#60a5fa', light: '#1d4ed8' },
+  Strategy:   { dark: '#a78bfa', light: '#6d28d9' },
+  'Net Worth': { dark: 'var(--g)', light: '#15803d' },
+  Tracking:   { dark: '#fbbf24', light: '#b45309' },
+  'Tax & P&L': { dark: '#f87171', light: '#dc2626' },
+}
+
 // ── HackCard ──────────────────────────────────────────────────────────────
 function HackCard({ hack, color }) {
   const [open, setOpen] = useState(false)
@@ -516,7 +537,8 @@ export default function Academy() {
   const [selected, setSelected]   = useState(null)
   const [timeLeft, setTimeLeft]   = useState(10)
   const [newBadges, setNewBadges] = useState([])
-  const [activeTab, setActiveTab] = useState('challenge') // challenge | badges | game
+  const [activeTab, setActiveTab] = useState('challenge') // challenge | badges | game | hacks | articles
+  const [articleFilter, setArticleFilter] = useState('All')
   const timerRef = useRef(null)
   const startTime = useRef(null)
 
@@ -701,6 +723,7 @@ export default function Academy() {
           { id: 'badges',    label: `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})` },
           { id: 'game',      label: '🕵️ Crypto Guessr' },
           { id: 'hacks',     label: '💡 Investment Hacks' },
+          { id: 'articles',  label: `📚 Articles (${POSTS.length})` },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
             onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
@@ -829,6 +852,49 @@ export default function Academy() {
               <HackCard key={i} hack={h} color={color} />
             )
           })}
+        </div>
+      )}
+
+      {/* ── ARTICLES TAB ── */}
+      {activeTab === 'articles' && (
+        <div className="acad-articles-wrap">
+          <div className="acad-articles-filters">
+            {ARTICLE_CATS.map(cat => (
+              <button
+                key={cat}
+                className={`acad-articles-filter-btn ${articleFilter === cat ? 'acad-articles-filter-active' : ''}`}
+                onClick={() => { setArticleFilter(cat); track('academy_article_filter', { cat }) }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="acad-articles-list">
+            {POSTS
+              .filter(p => articleFilter === 'All' || getArticleCat(p.slug) === articleFilter)
+              .map(post => {
+                const cat = getArticleCat(post.slug)
+                const catColor = isLight
+                  ? (ARTICLE_CAT_COLORS[cat]?.light || '#15803d')
+                  : (ARTICLE_CAT_COLORS[cat]?.dark || 'var(--g)')
+                return (
+                  <Link
+                    key={post.slug}
+                    to={`/blog/${post.slug}`}
+                    className="acad-article-card"
+                    onClick={() => track('academy_article_click', { slug: post.slug, cat })}
+                  >
+                    <div className="acad-article-top">
+                      <span className="acad-article-cat" style={{ color: catColor, borderColor: catColor + '44', background: catColor + '12' }}>{cat}</span>
+                      <span className="acad-article-time muted">{post.readTime}</span>
+                    </div>
+                    <div className="acad-article-title">{post.title}</div>
+                    <div className="acad-article-summary muted">{post.summary.length > 120 ? post.summary.slice(0, 120) + '…' : post.summary}</div>
+                    <div className="acad-article-cta">Read article →</div>
+                  </Link>
+                )
+              })}
+          </div>
         </div>
       )}
 
