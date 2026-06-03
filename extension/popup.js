@@ -116,7 +116,9 @@ async function fetchNews() {
     const res = await fetch(NEWS_URL, { signal:AbortSignal.timeout(6000) });
     if (!res.ok) return [];
     const json = await res.json();
-    return Array.isArray(json) ? json.slice(0, 12) : [];
+    // news.json is { updated, count, articles: [...] }; older builds returned a bare array.
+    const list = Array.isArray(json) ? json : (Array.isArray(json?.articles) ? json.articles : []);
+    return list.slice(0, 12);
   } catch { return []; }
 }
 
@@ -161,7 +163,7 @@ async function importFromBackupCode(raw) {
   const code = (raw || '').trim().replace(/\s+/g, '');
   if (!code) throw new Error('Paste a backup code first.');
   let json;
-  if (code.startsWith('WL2-')) {
+  if (code.startsWith('WL3-') || code.startsWith('WL2-')) {
     try { json = await gunzipB64(code.slice(4)); }
     catch { throw new Error('Could not decompress — make sure you copied the full code.'); }
   } else {
@@ -172,16 +174,28 @@ async function importFromBackupCode(raw) {
   let parsed;
   try { parsed = JSON.parse(json); }
   catch { throw new Error('Backup data is corrupted or incomplete.'); }
-  if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.');
+
   let transactions, wallets = [], settings = {};
-  try {
-    const txRaw = parsed.data['crypto_tracker_transactions'];
-    const wRaw  = parsed.data['crypto_tracker_wallets'];
-    const sRaw  = parsed.data['wl_settings'];
-    transactions = txRaw ? JSON.parse(txRaw) : [];
-    if (wRaw) wallets  = JSON.parse(wRaw);
-    if (sRaw) settings = JSON.parse(sRaw);
-  } catch { throw new Error('Transaction data is malformed.'); }
+
+  if (parsed?.v === 3) {
+    // WL3: compact parsed format — txs/ws are already objects
+    if (!Array.isArray(parsed.txs)) throw new Error('No valid transaction data found.');
+    transactions = parsed.txs.map(tx => ({ coin_image: '', category: 'crypto', ...tx }));
+    wallets  = Array.isArray(parsed.ws) ? parsed.ws : [];
+    if (parsed.st && typeof parsed.st === 'object') settings = parsed.st;
+  } else {
+    // WL1/WL2: legacy data-bag of raw localStorage strings
+    if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.');
+    try {
+      const txRaw = parsed.data['crypto_tracker_transactions'];
+      const wRaw  = parsed.data['crypto_tracker_wallets'];
+      const sRaw  = parsed.data['wl_settings'];
+      transactions = txRaw ? JSON.parse(txRaw) : [];
+      if (wRaw) wallets  = JSON.parse(wRaw);
+      if (sRaw) settings = JSON.parse(sRaw);
+    } catch { throw new Error('Transaction data is malformed.'); }
+  }
+
   if (!Array.isArray(transactions)) throw new Error('No valid transaction data found.');
   const payload = { transactions, wallets, settings, syncedAt: Date.now() };
   await new Promise(r => ext.storage.local.set({ [STORAGE_KEY]: payload }, r));
@@ -340,7 +354,7 @@ async function loadNewsTab() {
     src.textContent = a.source || a.publisher || '';
     const time = document.createElement('span');
     time.className = 'news-time';
-    const ts = a.publishedAt || a.date || a.published_at;
+    const ts = a.publishedAt || a.date || a.published_at || a.pubDate;
     time.textContent = ts ? timeAgo(new Date(ts).getTime()) : '';
     meta.append(src, time);
     item.append(title, meta);

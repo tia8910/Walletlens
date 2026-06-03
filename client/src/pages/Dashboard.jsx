@@ -22,6 +22,7 @@ import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
 import BackupCode from '../components/BackupCode'
+import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import { makeQrParts, createPartCollector, scanImageData, decodeQrFromImageFile } from '../utils/qrBackup'
 
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
@@ -2622,6 +2623,8 @@ export default function Dashboard() {
       setWallets(ws)
     }
     setPortfolio(p); setTransactions(txs); setCoinTargets(ct || {})
+    // Auto-sync the live portfolio to the browser extension (no manual paste).
+    pushPortfolioToExtension({ transactions: txs, wallets: ws })
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
