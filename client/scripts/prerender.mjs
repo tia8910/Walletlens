@@ -19,6 +19,7 @@ import { CALCULATORS } from '../src/data/calculators.js'
 import { GLOSSARY } from '../src/data/glossary.js'
 import { COMPARISONS } from '../src/data/comparisons.js'
 import { PRICE_ASSETS } from '../src/data/priceAssets.js'
+import { AR_FEATURES, AR_LANDING, AR_COMPARISONS, AR_VS } from '../src/data/arabic.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -103,9 +104,15 @@ function mdToHtml(text) {
 // Build a page from the template: swap title/description/canonical/OG/Twitter
 // and inject the static content as the first child of #root (React wipes it on
 // mount, so it's purely for crawlers / no-JS fetches).
-function buildPage({ path, title, description, bodyHtml, jsonLd }) {
+// alternates: [{ hreflang, path }] — emits <link rel="alternate" hreflang>
+// for international SEO (tells Google which URLs are language variants of each
+// other). Pass for any page that has an English↔Arabic counterpart.
+function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates }) {
   const url = ORIGIN + path
   let html = template
+  if (lang !== 'en' || dir !== 'ltr') {
+    html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
+  }
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
   html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
   html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         `$1${esc(url)}$2`)
@@ -114,6 +121,12 @@ function buildPage({ path, title, description, bodyHtml, jsonLd }) {
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    `$1${esc(url)}$2`)
   html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
+  if (alternates && alternates.length) {
+    const links = alternates.map(a =>
+      `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + a.path)}" />`
+    ).join('\n')
+    html = html.replace('</head>', `${links}\n  </head>`)
+  }
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
     const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>`).join('\n')
@@ -123,9 +136,18 @@ function buildPage({ path, title, description, bodyHtml, jsonLd }) {
   // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
   // DOM) paints over this for real users, while crawlers/no-JS fetches still
   // read the full text. React wipes #root (and this block) on mount.
-  const seo = `<div id="prerender-content" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${bodyHtml}</div>`
+  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${bodyHtml}</div>`
   html = html.replace('<div id="root">', `<div id="root">${seo}`)
   return html
+}
+
+// Convenience: hreflang set for an EN/AR pair (+ x-default → English).
+function hreflangPair(enPath, arPath) {
+  return [
+    { hreflang: 'en', path: enPath },
+    { hreflang: 'ar', path: arPath },
+    { hreflang: 'x-default', path: enPath },
+  ]
 }
 
 // Build a visible FAQ section + matching FAQPage JSON-LD from one source, so
@@ -275,6 +297,7 @@ write('/free-net-worth-tracker', buildPage({
       ],
     },
   ],
+  alternates: hreflangPair('/free-net-worth-tracker', '/ar/free-net-worth-tracker'),
 }))
 
 // ── Unique-feature landing pages ─────────────────────────────────────────────
@@ -341,6 +364,7 @@ ${faq.html}
       howToJsonLd('How to import a portfolio from a screenshot', steps),
       faq.jsonLd,
     ],
+    alternates: hreflangPair('/import-portfolio-from-screenshot', '/ar/import-portfolio-from-screenshot'),
   }))
 }
 
@@ -396,8 +420,106 @@ ${faq.html}
       howToJsonLd('How to add holdings by voice', steps),
       faq.jsonLd,
     ],
+    alternates: hreflangPair('/add-holdings-by-voice', '/ar/add-holdings-by-voice'),
   }))
 }
+
+// ── Arabic pages (/ar/...) ───────────────────────────────────────────────────
+// High-value, low-competition Arabic versions for the Arabic community and for
+// AI answer engines responding in Arabic. RTL + hreflang-paired to English.
+for (const key of ['screenshot', 'voice']) {
+  const f = AR_FEATURES[key]
+  const arFaq = faqBlock(f.faq)
+  const body = `
+<h1>${esc(f.h1)}</h1>
+<p>${f.intro}</p>
+<p><a href="/dashboard">${esc(f.cta)}</a></p>
+<h2>${esc(f.howToName)}</h2>
+<ol>
+${f.steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
+</ol>
+<p>${esc(f.outro)}</p>
+<p><a href="/dashboard">${esc(f.cta)}</a></p>
+${arFaq.html}
+<p><a href="/ar/${key === 'screenshot' ? AR_FEATURES.voice.slug : AR_FEATURES.screenshot.slug}">${key === 'screenshot' ? 'إضافة الأصول بالصوت' : 'الاستيراد من لقطة شاشة'}</a> · <a href="/ar/free-net-worth-tracker">متتبّع الثروة المجاني</a> · <a href="/">English</a></p>`
+  write('/ar/' + f.slug, buildPage({
+    path: '/ar/' + f.slug,
+    title: f.title,
+    description: f.description,
+    bodyHtml: body,
+    lang: 'ar',
+    dir: 'rtl',
+    jsonLd: [
+      howToJsonLd(f.howToName, f.steps),
+      arFaq.jsonLd,
+    ],
+    alternates: hreflangPair('/' + f.slug, '/ar/' + f.slug),
+  }))
+}
+
+// Arabic free-net-worth-tracker landing
+{
+  const arFaq = faqBlock(AR_LANDING.faq)
+  const body = `${AR_LANDING.bodyHtml}\n${arFaq.html}\n<p><a href="/ar/import-portfolio-from-screenshot">الاستيراد من لقطة شاشة</a> · <a href="/ar/add-holdings-by-voice">الإضافة بالصوت</a> · <a href="/free-net-worth-tracker">English</a></p>`
+  write('/ar/free-net-worth-tracker', buildPage({
+    path: '/ar/free-net-worth-tracker',
+    title: AR_LANDING.title,
+    description: AR_LANDING.description,
+    bodyHtml: body,
+    lang: 'ar',
+    dir: 'rtl',
+    jsonLd: [arFaq.jsonLd],
+    alternates: hreflangPair('/free-net-worth-tracker', '/ar/free-net-worth-tracker'),
+  }))
+}
+
+// Arabic comparison pages (/ar/vs/:slug)
+for (const c of COMPARISONS) {
+  const ar = AR_COMPARISONS[c.slug]
+  if (!ar) continue
+  const rowsHtml = AR_VS.rows.map(r =>
+    `<tr><th scope="row">${esc(r.feature)}</th><td>${esc(r.walletlens)}</td><td>${esc(r.them)}</td></tr>`
+  ).join('\n')
+  const arFaq = faqBlock(AR_VS.faq(ar.name))
+  const body = `
+<h1>WalletLens مقابل ${esc(ar.name)}</h1>
+<p>${esc(AR_VS.tagline)}</p>
+<p><a href="/dashboard">${esc(AR_VS.tryFree)}</a></p>
+<h2>${esc(AR_VS.featureComparison)}</h2>
+<table>
+<thead><tr><th>${esc(AR_VS.thFeature)}</th><th>WalletLens</th><th>${esc(ar.name)}</th></tr></thead>
+<tbody>
+${rowsHtml}
+</tbody>
+</table>
+<h2>${esc(AR_VS.verdictHeading)}</h2>
+<p>${esc(ar.verdict)}</p>
+<p><a href="/dashboard">${esc(AR_VS.openFree)}</a></p>
+${arFaq.html}
+<p><small>${esc(AR_VS.disclaimer)}</small></p>
+<p><a href="/ar/free-net-worth-tracker">متتبّع الثروة المجاني</a> · <a href="/vs/${c.slug}">English</a></p>`
+  write('/ar/vs/' + c.slug, buildPage({
+    path: '/ar/vs/' + c.slug,
+    title: `WalletLens مقابل ${ar.name} — متتبّع صافي ثروة مجاني`,
+    description: `مقارنة بين WalletLens و${ar.name}: بديل مجاني وبلا حساب لتتبّع صافي ثروتك عبر العملات الرقمية والأسهم والمعادن والنقد، مع بقاء بياناتك على جهازك.`,
+    bodyHtml: body,
+    lang: 'ar',
+    dir: 'rtl',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
+          { '@type': 'ListItem', position: 2, name: `WalletLens مقابل ${ar.name}`, item: `${ORIGIN}/ar/vs/${c.slug}` },
+        ],
+      },
+      arFaq.jsonLd,
+    ],
+    alternates: hreflangPair('/vs/' + c.slug, '/ar/vs/' + c.slug),
+  }))
+}
+console.log(`Prerendered Arabic pages (features + landing + ${Object.keys(AR_COMPARISONS).length} /vs).`)
 
 // ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
 // Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
@@ -727,6 +849,7 @@ ${vsFaq.html}
       },
       vsFaq.jsonLd,
     ],
+    alternates: AR_COMPARISONS[c.slug] ? hreflangPair('/vs/' + c.slug, '/ar/vs/' + c.slug) : undefined,
   }))
 }
 console.log(`Prerendered ${COMPARISONS.length} /vs comparison pages.`)
@@ -973,6 +1096,13 @@ const STATIC_ROUTES = [
 function urlEntry({ loc, lastmod, changefreq, priority }) {
   return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
 }
+// Arabic routes (hreflang relationships are declared in each page's <head>).
+const AR_ROUTES = [
+  '/ar/free-net-worth-tracker',
+  '/ar/import-portfolio-from-screenshot',
+  '/ar/add-holdings-by-voice',
+  ...Object.keys(AR_COMPARISONS).map(slug => `/ar/vs/${slug}`),
+]
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
   ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
@@ -981,10 +1111,11 @@ const sitemapUrls = [
   ...PRICE_ASSETS.map(a => urlEntry({ loc: `${ORIGIN}/price/${a.slug}`, lastmod: TODAY, changefreq: 'daily', priority: '0.8' })),
   ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
   ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
+  ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + p, lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length} urls).`)
+console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length + AR_ROUTES.length} urls).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
