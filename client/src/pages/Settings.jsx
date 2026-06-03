@@ -6,6 +6,7 @@ import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import { requestPortfolioNotifPermission } from '../portfolioNotify'
+import InstallExtension from '../components/InstallExtension'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -77,6 +78,9 @@ export default function Settings() {
         </button>
         <h2 style={{ margin:0, fontSize:'1.2rem' }}>⚙️ Settings</h2>
       </div>
+
+      {/* ── Browser extension ── */}
+      <InstallExtension variant="banner" source="settings" style={{ marginBottom: '1rem' }} />
 
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">

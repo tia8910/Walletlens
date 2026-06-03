@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
+import InstallExtension from '../components/InstallExtension'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -284,6 +285,12 @@ export default function Landing() {
             </button>
           </div>
 
+          <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)' }}>
+            <span>or</span>
+            <InstallExtension variant="link" source="landing_hero" />
+            <span>— free Chrome &amp; Edge extension, no signup</span>
+          </div>
+
           <div className="lp-trust-strip">
             <span className="lp-trust-pill">🔒 No wallet connection</span>
             <span className="lp-trust-pill">🖥️ No server — 100% local</span>
@@ -341,6 +348,49 @@ export default function Landing() {
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={4} /></div>
           <div className="lp-stat-lbl">{t('statClassesLbl')}</div>
+        </div>
+      </section>
+
+      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
+      <section className="lp-section lp-section-alt" id="browser-extension">
+        <div className="lp-section-label">Browser Extension</div>
+        <h2 className="lp-section-h2">
+          Your crypto portfolio,<br />
+          <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
+          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
+          24h change, holdings, market movers and buy/sell signals — right from your browser,
+          without opening the site. It syncs automatically and your data stays on your device.
+        </p>
+
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1rem', maxWidth: 860, margin: '0 auto 2rem', textAlign: 'left',
+        }}>
+          {[
+            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
+            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
+            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
+            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
+          ].map((b, i) => (
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)',
+              borderRadius: '14px', padding: '1rem 1.1rem',
+            }}>
+              <div style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{b.e}</div>
+              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{b.t}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5 }}>{b.d}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
+          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
+            Free · Works in Chrome, Edge, Brave &amp; Opera
+          </span>
         </div>
       </section>
 
@@ -710,6 +760,10 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>AI Advisor</button>
         </div>
+      </section>
+
+      <section style={{ display:'flex', justifyContent:'center', padding:'1.5rem 1rem 0' }}>
+        <InstallExtension variant="badge" source="landing_footer" />
       </section>
 
       <footer className="lp-footer">
