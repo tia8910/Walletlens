@@ -987,20 +987,24 @@ function buildPerfSeries(base, tf = '30D', transactions = []) {
     // Scale factor: stretch cost-basis curve to current market value
     const scale = currentCostBasis > 0 ? b / currentCostBasis : 1
 
+    // Pre-parse tx timestamps once, then advance a pointer linearly (O(n+pts)).
+    const txTimes = validTxs.map(tx => new Date(tx.date).getTime())
+    let ptr = 0
+    let runningCost = 0
     return Array.from({ length: pts }, (_, i) => {
       const t = i / (pts - 1)
       const pointTime = startTime + t * (now - startTime)
 
-      const costAtPoint = validTxs
-        .filter(tx => new Date(tx.date).getTime() <= pointTime)
-        .reduce((s, tx) => {
-          const qty = tx.amount || tx.quantity || 0
-          const val = qty * tx.price_per_unit
-          return tx.type === 'buy' ? s + val : Math.max(s - val, 0)
-        }, 0)
+      while (ptr < validTxs.length && txTimes[ptr] <= pointTime) {
+        const tx = validTxs[ptr]
+        const qty = tx.amount || tx.quantity || 0
+        const val = qty * tx.price_per_unit
+        runningCost = tx.type === 'buy' ? runningCost + val : Math.max(runningCost - val, 0)
+        ptr++
+      }
 
       // Final point always equals current market value exactly
-      const v = i === pts - 1 ? b : Math.max(costAtPoint * scale, 0)
+      const v = i === pts - 1 ? b : Math.max(runningCost * scale, 0)
       return { i, v }
     })
   }
@@ -1652,20 +1656,21 @@ function ConstellationMap() {
       speed: 0.008 + Math.random() * 0.014,
     }))
 
-    function getColor() {
-      return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
-    }
-    function getRgb() {
-      return getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
-    }
+    // Cache theme-derived values; refresh only when the theme attribute changes.
+    let col = getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
+    let rgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
+    let isLight = document.documentElement.hasAttribute('data-wl-light')
+
+    const themeObserver = new MutationObserver(() => {
+      col = getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#34d399'
+      rgb = getComputedStyle(document.documentElement).getPropertyValue('--g-rgb').trim() || '52,211,153'
+      isLight = document.documentElement.hasAttribute('data-wl-light')
+    })
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-wl-light', 'class'] })
 
     function draw() {
       t += 0.016
       ctx.clearRect(0, 0, w, h)
-
-      const col = getColor()
-      const rgb = getRgb()
-      const isLight = document.documentElement.hasAttribute('data-wl-light')
 
       // Twinkle stars / dots
       for (const s of STARS) {
@@ -1712,7 +1717,7 @@ function ConstellationMap() {
     const ro = new ResizeObserver(resize)
     ro.observe(canvas)
     draw()
-    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); themeObserver.disconnect() }
   }, [])
 
   return (
@@ -2531,10 +2536,11 @@ export default function Dashboard() {
     //   • dataInterval  (5min) — full reload (portfolio, txs, wallets, prices)
     let priceInterval = null
     let dataInterval  = null
+    let lastLoadAll = 0
 
     function startPolling() {
       if (!priceInterval) priceInterval = setInterval(refreshPrices, 60_000)
-      if (!dataInterval)  dataInterval  = setInterval(loadAll, 5 * 60_000)
+      if (!dataInterval)  dataInterval  = setInterval(() => { lastLoadAll = Date.now(); loadAll() }, 5 * 60_000)
     }
 
     function stopPolling() {
@@ -2546,12 +2552,13 @@ export default function Dashboard() {
       if (document.hidden) {
         stopPolling()
       } else {
-        loadAll()
+        // Only call loadAll on focus if the data is stale (>60 s since last full load).
+        if (Date.now() - lastLoadAll > 60_000) { lastLoadAll = Date.now(); loadAll() }
         startPolling()
       }
     }
 
-    loadAll()
+    lastLoadAll = Date.now(); loadAll()
     if (!document.hidden) startPolling()
     document.addEventListener('visibilitychange', handleVisibility)
 

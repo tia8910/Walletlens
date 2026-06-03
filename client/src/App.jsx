@@ -193,7 +193,7 @@ function Drawer({ open, onClose }) {
           <button className={active('/academy')} onClick={() => go('/academy')}>
             <IconAcademy /><span style={{ color: '#fbbf24' }}>Academy</span>
           </button>
-          <button className={active('/coach')} onClick={() => { go('/coach'); }} style={{ opacity: location.pathname === '/coach' ? 1 : undefined }}>
+          <button className={active('/alpha')} onClick={() => go('/alpha')}>
             <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
           </button>
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
@@ -288,7 +288,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -300,13 +300,20 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
-  // Prefetch the Dashboard chunk after landing-page idle so the first navigation is instant
+  // Prefetch the highest-traffic app chunks during idle on the landing page
+  // so the first navigation to any of them is instant.
   useEffect(() => {
     if (location.pathname !== '/') return
-    const id = requestIdleCallback
-      ? requestIdleCallback(() => import('./pages/Dashboard'), { timeout: 3000 })
-      : setTimeout(() => import('./pages/Dashboard'), 2000)
-    return () => (requestIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
+    const schedule = requestIdleCallback
+      ? (fn, opts) => requestIdleCallback(fn, opts)
+      : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
+    const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
+    // Dashboard first (most common destination), then Transactions and Coach
+    // at lower priority so they don't compete with the critical render path.
+    const id1 = schedule(() => import('./pages/Dashboard'),    { timeout: 3000 })
+    const id2 = schedule(() => import('./pages/Transactions'), { timeout: 5000 })
+    const id3 = schedule(() => import('./pages/Coach'),        { timeout: 7000 })
+    return () => { cancel(id1); cancel(id2); cancel(id3) }
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap
@@ -334,6 +341,11 @@ export default function App() {
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/add-holdings-by-voice" element={<Landing />} />
+          <Route path="/ar/free-net-worth-tracker" element={<Landing />} />
+          <Route path="/ar/import-portfolio-from-screenshot" element={<Landing />} />
+          <Route path="/ar/add-holdings-by-voice" element={<Landing />} />
+          <Route path="/ar/vs/:slug" element={<Compare />} />
+          <Route path="/ar/blog/:slug" element={<Blog />} />
           <Route path="/track/:slug" element={<TrackCoin />} />
           <Route path="/calculator/:slug" element={<Calculator />} />
           <Route path="/learn/:slug" element={<Learn />} />
