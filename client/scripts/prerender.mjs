@@ -20,6 +20,7 @@ import { GLOSSARY } from '../src/data/glossary.js'
 import { COMPARISONS } from '../src/data/comparisons.js'
 import { PRICE_ASSETS } from '../src/data/priceAssets.js'
 import { AR_FEATURES, AR_LANDING, AR_COMPARISONS, AR_VS } from '../src/data/arabic.js'
+import { AR_POSTS } from '../src/data/arabicBlog.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -83,7 +84,9 @@ function mdToHtml(text) {
       out.push(`<ul>${items.join('')}</ul>`); continue
     } else if (line.startsWith('| ')) {
       const rows = []
-      while (i < lines.length && lines[i].startsWith('| ')) {
+      // Match any pipe-led line so the |---| separator (which starts with "|-",
+      // not "| ") doesn't break the group; the separator row is skipped below.
+      while (i < lines.length && lines[i].trimStart().startsWith('|')) {
         if (!lines[i].includes('---')) rows.push(lines[i].split('|').filter(c => c.trim()).map(c => c.trim()))
         i++
       }
@@ -968,14 +971,70 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
       ],
     },
   ]
+  const hasAr = AR_POSTS.some(a => a.slug === p.slug)
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
     title: `${p.title} | WalletLens`,
     description: p.summary,
     bodyHtml: articleHtml,
     jsonLd,
+    alternates: hasAr ? hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug) : undefined,
   }))
 }
+
+// Arabic blog articles (/ar/blog/:slug) — net-worth guides translated to Arabic.
+for (const p of AR_POSTS) {
+  const articleHtml = `
+<article>
+  <p><em>${esc(p.date)} · ${esc(p.readTime)}</em></p>
+  <h1>${esc(p.title)}</h1>
+  <p>${esc(p.summary)}</p>
+  ${mdToHtml(p.content)}
+  <p><a href="/dashboard">ابدأ تتبّع محفظتك مجاناً مع WalletLens ←</a></p>
+  <p><a href="/ar/free-net-worth-tracker">متتبّع الثروة المجاني</a> · <a href="/blog/${p.slug}">English</a></p>
+</article>`
+  const iso = TODAY
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      inLanguage: 'ar',
+      headline: p.title,
+      description: p.summary,
+      image: OG_IMAGE,
+      datePublished: iso,
+      dateModified: TODAY,
+      author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
+      publisher: {
+        '@type': 'Organization',
+        name: 'WalletLens',
+        url: ORIGIN,
+        logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
+      },
+      mainEntityOfPage: `${ORIGIN}/ar/blog/${p.slug}`,
+      url: `${ORIGIN}/ar/blog/${p.slug}`,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
+        { '@type': 'ListItem', position: 2, name: p.title, item: `${ORIGIN}/ar/blog/${p.slug}` },
+      ],
+    },
+  ]
+  write('/ar/blog/' + p.slug, buildPage({
+    path: '/ar/blog/' + p.slug,
+    title: `${p.title} | WalletLens`,
+    description: p.summary,
+    bodyHtml: articleHtml,
+    lang: 'ar',
+    dir: 'rtl',
+    jsonLd,
+    alternates: hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug),
+  }))
+}
+console.log(`Prerendered ${AR_POSTS.length} Arabic blog articles.`)
 
 // ── About ────────────────────────────────────────────────────────────────────
 const aboutFaqs = [
@@ -1102,6 +1161,7 @@ const AR_ROUTES = [
   '/ar/import-portfolio-from-screenshot',
   '/ar/add-holdings-by-voice',
   ...Object.keys(AR_COMPARISONS).map(slug => `/ar/vs/${slug}`),
+  ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),

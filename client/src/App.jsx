@@ -338,6 +338,7 @@ export default function App() {
           <Route path="/ar/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/ar/add-holdings-by-voice" element={<Landing />} />
           <Route path="/ar/vs/:slug" element={<Compare />} />
+          <Route path="/ar/blog/:slug" element={<Blog />} />
           <Route path="/track/:slug" element={<TrackCoin />} />
           <Route path="/calculator/:slug" element={<Calculator />} />
           <Route path="/learn/:slug" element={<Learn />} />
