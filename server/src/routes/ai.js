@@ -80,13 +80,20 @@ router.post('/chat', async (req, res) => {
 
   const { messages: history, portfolioContext } = req.body;
   if (!history || !Array.isArray(history)) return res.status(400).json({ error: 'messages array required' });
+  if (history.length > 40) return res.status(400).json({ error: 'too many messages' });
+  const VALID_ROLES = new Set(['user', 'assistant']);
+  for (const m of history) {
+    if (!VALID_ROLES.has(m?.role)) return res.status(400).json({ error: 'invalid message role' });
+    if (typeof m.content !== 'string' || m.content.length > 8000) return res.status(400).json({ error: 'message content too long' });
+  }
+  const safeContext = typeof portfolioContext === 'string' ? portfolioContext.slice(0, 4000) : '';
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const systemWithPortfolio = `${SYSTEM_PROMPT}\n\nCurrent portfolio context:\n${portfolioContext || 'No portfolio data provided.'}`;
+  const systemWithPortfolio = `${SYSTEM_PROMPT}\n\nCurrent portfolio context:\n${safeContext || 'No portfolio data provided.'}`;
 
   try {
     const stream = client.messages.stream({

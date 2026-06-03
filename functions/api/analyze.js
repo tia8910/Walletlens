@@ -28,25 +28,39 @@ export async function onRequestPost(context) {
 
   const { holdings = [], totalValue = 0, totalInvested = 0, momentum = 0, sentiment = 'balanced' } = body
 
-  if (!holdings.length) {
+  if (!Array.isArray(holdings) || !holdings.length) {
     return new Response(JSON.stringify({ error: 'no_holdings' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     })
   }
 
-  const holdingLines = holdings.map(h =>
+  // Cap holdings count and sanitize each field to prevent prompt injection.
+  const safeHoldings = holdings.slice(0, 50).map(h => ({
+    sym:    String(h.sym    || '').replace(/[^\w./-]/g, '').slice(0, 10) || 'UNKNOWN',
+    w:      Math.max(0, Math.min(100, Number(h.w)     || 0)),
+    value:  Math.max(0, Number(h.value)   || 0),
+    pnlPct: Math.max(-999, Math.min(9999, Number(h.pnlPct) || 0)),
+    chg24h: Math.max(-999, Math.min(9999, Number(h.chg24h) || 0)),
+  }))
+
+  const holdingLines = safeHoldings.map(h =>
     `• ${h.sym}: ${h.w.toFixed(1)}% of portfolio ($${h.value.toLocaleString()}), P&L ${h.pnlPct >= 0 ? '+' : ''}${h.pnlPct.toFixed(1)}%, 24h change ${h.chg24h >= 0 ? '+' : ''}${h.chg24h.toFixed(1)}%`
   ).join('\n')
+
+  const safeTotal     = Math.max(0, Number(totalValue)    || 0)
+  const safeInvested  = Math.max(0, Number(totalInvested) || 0)
+  const safeMomentum  = Math.max(-999, Math.min(999, Number(momentum) || 0))
+  const safeSentiment = ['bullish', 'bearish', 'balanced', 'fearful', 'greedy'].includes(sentiment) ? sentiment : 'balanced'
 
   const prompt = `You are WalletLens AI, a sharp crypto portfolio advisor. Analyse this user's portfolio and give direct, specific, actionable advice for TODAY.
 
 Portfolio overview:
-- Total value: $${totalValue.toLocaleString()}
-- Total invested: $${totalInvested.toLocaleString()}
-- Overall P&L: ${totalValue >= totalInvested ? '+' : ''}${((totalValue - totalInvested) / Math.max(totalInvested, 1) * 100).toFixed(1)}%
-- Weighted 24h momentum: ${momentum >= 0 ? '+' : ''}${momentum.toFixed(1)}%
-- Trading sentiment: ${sentiment}
+- Total value: $${safeTotal.toLocaleString()}
+- Total invested: $${safeInvested.toLocaleString()}
+- Overall P&L: ${safeTotal >= safeInvested ? '+' : ''}${((safeTotal - safeInvested) / Math.max(safeInvested, 1) * 100).toFixed(1)}%
+- Weighted 24h momentum: ${safeMomentum >= 0 ? '+' : ''}${safeMomentum.toFixed(1)}%
+- Trading sentiment: ${safeSentiment}
 
 Holdings:
 ${holdingLines}
@@ -102,10 +116,10 @@ Respond with a JSON object ONLY (no markdown, no explanation outside the JSON):
 
     const analysis = JSON.parse(jsonMatch[0])
 
-    // Merge in original asset data (weight, pnlPct, chg24h, coin_image)
+    // Merge safe original asset data (weight, pnlPct, chg24h) back in.
     if (Array.isArray(analysis.assetActions)) {
       analysis.assetActions = analysis.assetActions.map(a => {
-        const orig = holdings.find(h => h.sym === a.sym) || {}
+        const orig = safeHoldings.find(h => h.sym === a.sym) || {}
         return { ...orig, ...a }
       })
     }

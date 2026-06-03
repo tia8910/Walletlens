@@ -10,12 +10,12 @@ function fmtUsd(n) {
 }
 
 export function setPortfolioBaseline(value) {
-  if (!value || value <= 0) return
+  if (value == null || value < 0) return
   try { localStorage.setItem(BASELINE_KEY, JSON.stringify({ value, ts: Date.now() })) } catch {}
 }
 
 export function checkPortfolioMove(currentValue) {
-  if (!currentValue || currentValue <= 0) return
+  if (currentValue == null || currentValue < 0) return
   if (!('Notification' in window) || Notification.permission !== 'granted') return
 
   // Enforce cooldown
@@ -27,7 +27,7 @@ export function checkPortfolioMove(currentValue) {
   // Load baseline
   let baseline = null
   try { baseline = JSON.parse(localStorage.getItem(BASELINE_KEY) || 'null') } catch {}
-  if (!baseline?.value || baseline.value <= 0) {
+  if (baseline?.value == null || baseline.value < 0) {
     setPortfolioBaseline(currentValue)
     return
   }
