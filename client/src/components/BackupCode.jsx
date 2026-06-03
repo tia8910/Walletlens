@@ -237,11 +237,45 @@ export default function BackupCode({ hideTrigger = false }) {
     } finally { setImporting(false) }
   }
 
+  const decodeQrFromImageFile = (file) => {
+    setError('')
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        // Cap dimensions so very large photos don't blow up memory, but keep
+        // enough resolution for jsQR to find the finder patterns.
+        const maxDim = 1600
+        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight))
+        canvas.width = Math.round(img.naturalWidth * scale)
+        canvas.height = Math.round(img.naturalHeight * scale)
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const code = jsQR(imageData.data, imageData.width, imageData.height)
+        if (code?.data) { setImportText(code.data); setError('') }
+        else { setError('No QR code found in that image. Try a clearer, more cropped image — or paste the backup code instead.') }
+      } catch {
+        setError('Could not read that image. Try pasting the backup code instead.')
+      } finally { URL.revokeObjectURL(url) }
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); setError('Could not open that image file.') }
+    img.src = url
+  }
+
   const handleFileUpload = (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setImportText(String(reader.result || ''))
-    reader.readAsText(file)
+    const file = e.target.files?.[0]; if (!file) { return }
+    setError('')
+    if (file.type.startsWith('image/')) {
+      decodeQrFromImageFile(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = () => setImportText(String(reader.result || ''))
+      reader.readAsText(file)
+    }
+    // Allow selecting the same file again after an error
+    e.target.value = ''
   }
 
   const btn = (extra) => ({
@@ -365,7 +399,7 @@ export default function BackupCode({ hideTrigger = false }) {
           {mode === 'import' && (
             <>
               <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:'0 0 0.8rem', lineHeight:1.5 }}>
-                Paste your backup code to restore your portfolio. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
+                Paste your backup code, upload a saved <strong>QR image</strong>, or scan one with your camera to restore. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
               </p>
               <textarea value={importText}
                 onChange={e => { setImportText(e.target.value); setError(''); setImportResult(null) }}
@@ -383,8 +417,8 @@ export default function BackupCode({ hideTrigger = false }) {
                   color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem',
                   cursor:'pointer', fontWeight:600,
                 }}>
-                  📂 Load from file
-                  <input type="file" accept=".txt,text/plain" onChange={handleFileUpload} style={{ display:'none' }} />
+                  📂 File / QR image
+                  <input type="file" accept=".txt,text/plain,image/*" onChange={handleFileUpload} style={{ display:'none' }} />
                 </label>
                 <button onClick={scanning ? stopCamera : startScan} style={btn({
                   flex:1, background: scanning ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.04)',
