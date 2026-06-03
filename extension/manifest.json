@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WalletLens Portfolio",
   "short_name": "WalletLens",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "View your WalletLens crypto portfolio summary — total value, 24h change, and top holdings — directly from your browser toolbar.",
   "icons": {
     "16":  "icons/icon-16.png",

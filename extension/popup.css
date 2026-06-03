@@ -341,6 +341,21 @@ html, body {
   to { transform: rotate(360deg); }
 }
 
+/* ── Icon button (refresh) ── */
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.btn-icon:hover  { color: var(--green); background: var(--green-dim); }
+.btn-icon.spinning svg { animation: spin 0.7s linear infinite; }
+
 /* ── Price fetch error notice ── */
 .price-error {
   font-size: 11px;

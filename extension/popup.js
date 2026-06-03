@@ -426,6 +426,30 @@ function openSite() {
 document.getElementById('btn-open-site').addEventListener('click', openSite);
 document.getElementById('btn-open-app').addEventListener('click', openSite);
 
+const refreshBtn = document.getElementById('btn-refresh');
+refreshBtn.addEventListener('click', async () => {
+  refreshBtn.classList.add('spinning');
+  refreshBtn.disabled = true;
+  // Ask any open walletlens.live tabs to re-sync before re-rendering
+  try {
+    await new Promise((resolve) => {
+      ext.tabs.query({ url: 'https://walletlens.live/*' }, (tabs) => {
+        if (tabs && tabs.length > 0) {
+          const sends = tabs.map(tab =>
+            ext.tabs.sendMessage(tab.id, { type: 'REQUEST_SYNC' }).catch(() => {})
+          );
+          Promise.all(sends).then(() => setTimeout(resolve, 600))
+        } else {
+          resolve()
+        }
+      });
+    });
+  } catch {}
+  await render();
+  refreshBtn.classList.remove('spinning');
+  refreshBtn.disabled = false;
+});
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 render().catch((err) => {
