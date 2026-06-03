@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+
   <!-- ── Header ── -->
   <header class="header">
     <div class="logo">
@@ -27,62 +28,151 @@
       </svg>
       <span class="logo-text">WalletLens</span>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <button id="btn-refresh" class="btn-icon" title="Refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
-        </svg>
-      </button>
-      <span class="badge">Portfolio</span>
-    </div>
+    <button id="btn-refresh" class="btn-icon" title="Refresh">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
+      </svg>
+    </button>
   </header>
 
-  <!-- ── No-data state ── -->
-  <div id="no-data" class="state-panel" hidden>
-    <svg class="no-data-icon" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+  <!-- ── Tabs ── -->
+  <nav class="tabs">
+    <button class="tab-btn tab-active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="holdings">Holdings</button>
+    <button class="tab-btn" data-tab="market">Market</button>
+    <button class="tab-btn" data-tab="news">News</button>
+    <button class="tab-btn" data-tab="ta">TA</button>
+  </nav>
+
+  <!-- ── Loading ── -->
+  <div id="loading" class="state-panel center">
+    <div class="spinner" aria-label="Loading…"></div>
+  </div>
+
+  <!-- ── No-data ── -->
+  <div id="no-data" class="state-panel center" hidden>
+    <svg class="no-data-icon" viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
       <circle cx="24" cy="24" r="23" stroke="#4ade80" stroke-width="1.5" fill="none" opacity="0.3"/>
       <path d="M14 28 Q24 18 34 28" stroke="#4ade80" stroke-width="2" fill="none" stroke-linecap="round"/>
       <circle cx="18" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
       <circle cx="30" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
     </svg>
     <p class="no-data-title">No portfolio data yet</p>
-    <p class="no-data-sub">Open WalletLens to sync your portfolio to this extension.</p>
+    <p class="no-data-sub">Open WalletLens, add your holdings, then come back here.</p>
     <button id="btn-open-site" class="btn-primary">Open walletlens.live</button>
   </div>
 
-  <!-- ── Portfolio data state ── -->
-  <div id="portfolio" class="state-panel" hidden>
+  <!-- ══════════════════════════════════════════
+       TAB: OVERVIEW
+  ══════════════════════════════════════════ -->
+  <div id="tab-overview" class="tab-panel" hidden>
+
+    <!-- BTC / ETH ticker -->
+    <div id="ticker" class="ticker">
+      <span class="ticker-item"><span class="ticker-sym">BTC</span> <span id="btc-price" class="ticker-price">…</span> <span id="btc-chg" class="ticker-chg">—</span></span>
+      <span class="ticker-sep">·</span>
+      <span class="ticker-item"><span class="ticker-sym">ETH</span> <span id="eth-price" class="ticker-price">…</span> <span id="eth-chg" class="ticker-chg">—</span></span>
+    </div>
+
     <!-- Total value -->
     <section class="total-section">
-      <p class="total-label">Total Value</p>
+      <p class="total-label">Total Portfolio Value</p>
       <p id="total-value" class="total-value">—</p>
       <div id="change-row" class="change-row">
-        <span id="change-badge" class="change-badge">—</span>
-        <span class="change-label">24h</span>
+        <span id="change-badge" class="change-badge loading">—</span>
+        <span class="change-label">24h change</span>
       </div>
     </section>
 
-    <!-- Divider -->
-    <div class="divider"></div>
+    <!-- P&L card -->
+    <div id="pnl-card" class="pnl-card" hidden>
+      <div class="pnl-row">
+        <span class="pnl-label">Invested</span>
+        <span id="pnl-invested" class="pnl-val">—</span>
+      </div>
+      <div class="pnl-divider"></div>
+      <div class="pnl-row">
+        <span class="pnl-label">All-time gain / loss</span>
+        <span id="pnl-gain" class="pnl-val">—</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
 
     <!-- Top holdings -->
     <section class="holdings-section">
       <p class="section-title">Top Holdings</p>
-      <div id="holdings-list" class="holdings-list">
-        <!-- Populated by popup.js -->
-      </div>
+      <div id="overview-holdings-list" class="holdings-list"></div>
     </section>
 
-    <!-- Footer -->
-    <footer class="popup-footer">
-      <p id="last-synced" class="last-synced">—</p>
-      <button id="btn-open-app" class="btn-primary">Open WalletLens</button>
-    </footer>
+    <!-- Quick nav -->
+    <div class="quick-nav">
+      <button class="nav-btn" data-path="/dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-path="/coach">🤖 Coach</button>
+      <button class="nav-btn" data-path="/technicals">📈 Analysis</button>
+      <button class="nav-btn" data-path="/dashboard" data-tab-nav="targets">🎯 Targets</button>
+    </div>
+
+    <p id="last-synced-ov" class="last-synced">—</p>
   </div>
 
-  <!-- ── Loading state ── -->
-  <div id="loading" class="state-panel">
-    <div class="spinner" aria-label="Loading…"></div>
+  <!-- ══════════════════════════════════════════
+       TAB: HOLDINGS
+  ══════════════════════════════════════════ -->
+  <div id="tab-holdings" class="tab-panel" hidden>
+    <div class="holdings-toolbar">
+      <select id="wallet-filter" class="wallet-select">
+        <option value="all">All Wallets</option>
+      </select>
+      <span id="holdings-count" class="holdings-count">—</span>
+    </div>
+    <div id="all-holdings-list" class="holdings-list holdings-scroll"></div>
+    <p id="last-synced-h" class="last-synced" style="padding:8px 16px 12px">—</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: MARKET
+  ══════════════════════════════════════════ -->
+  <div id="tab-market" class="tab-panel" hidden>
+    <div id="fg-card" class="fg-card">
+      <div class="fg-label">Fear &amp; Greed Index</div>
+      <div class="fg-body">
+        <div id="fg-value" class="fg-value">—</div>
+        <div id="fg-label-text" class="fg-class">Loading…</div>
+      </div>
+      <div id="fg-bar-wrap" class="fg-bar-wrap">
+        <div id="fg-bar" class="fg-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="section-divider" style="margin:0"></div>
+    <div id="market-list" class="market-list">
+      <div class="market-loading">
+        <div class="spinner" style="width:20px;height:20px;border-width:2px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: NEWS
+  ══════════════════════════════════════════ -->
+  <div id="tab-news" class="tab-panel" hidden>
+    <div id="news-list" class="news-list">
+      <div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB: TA
+  ══════════════════════════════════════════ -->
+  <div id="tab-ta" class="tab-panel" hidden>
+    <div class="ta-toolbar">
+      <select id="ta-coin-select" class="wallet-select">
+        <option value="">Select a coin…</option>
+      </select>
+    </div>
+    <div id="ta-content" class="ta-content">
+      <p class="holdings-empty" style="padding:20px 0">Select a coin to see analysis</p>
+    </div>
   </div>
 
   <script src="popup.js"></script>

@@ -1,460 +1,632 @@
-/**
- * WalletLens Portfolio Extension — Popup Script
- *
- * 1. Reads cached portfolio data from chrome.storage.local (written by background.js).
- * 2. Computes net holdings from transactions using the same fold logic as the app.
- * 3. Fetches live prices from CoinGecko (with a 2-minute session cache).
- * 4. Renders the popup UI without using innerHTML or external CDN dependencies.
- */
-
 'use strict';
 
 const ext = typeof browser !== 'undefined' ? browser : chrome;
 
-const STORAGE_KEY        = 'wl_portfolio_cache';
-const PRICE_CACHE_KEY    = 'wl_price_cache';
-const PRICE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
-const TOP_HOLDINGS_COUNT = 3;
-const SITE_URL           = 'https://walletlens.live';
-const COINGECKO_URL      = 'https://api.coingecko.com/api/v3/simple/price';
+const STORAGE_KEY     = 'wl_portfolio_cache';
+const PRICE_CACHE_KEY = 'wl_price_cache';
+const PRICE_TTL       = 2 * 60 * 1000;
+const SITE            = 'https://walletlens.live';
+const CG_PRICE_URL    = 'https://api.coingecko.com/api/v3/simple/price';
+const CG_MARKET_URL   = 'https://api.coingecko.com/api/v3/coins/markets';
+const FG_URL          = 'https://api.alternative.me/fng/?limit=1';
 
-// ── Utility helpers ───────────────────────────────────────────────────────────
+const MARKET_COINS = ['bitcoin','ethereum','binancecoin','solana','ripple','cardano'];
+const NEWS_URL     = 'https://walletlens.live/news.json';
+const CG_OHLC_URL  = 'https://api.coingecko.com/api/v3/coins/{id}/ohlc';
 
-/**
- * Format a USD dollar amount.
- * @param {number} value
- * @param {boolean} compact  Use K/M abbreviation for large values
- */
-function formatUSD(value, compact = false) {
-  if (!isFinite(value)) return '—';
-  if (compact && Math.abs(value) >= 1_000_000) {
-    return '$' + (value / 1_000_000).toFixed(2) + 'M';
-  }
-  if (compact && Math.abs(value) >= 10_000) {
-    return '$' + (value / 1_000).toFixed(1) + 'K';
-  }
-  return value.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+// ── Formatters ────────────────────────────────────────────────────────────────
+
+function fmtUSD(v, compact = false) {
+  if (!isFinite(v)) return '—';
+  if (compact && Math.abs(v) >= 1_000_000) return '$' + (v/1_000_000).toFixed(2) + 'M';
+  if (compact && Math.abs(v) >= 10_000)    return '$' + (v/1_000).toFixed(1) + 'K';
+  return v.toLocaleString('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2, maximumFractionDigits:2 });
 }
 
-/**
- * Format a 24h change percentage.
- * @param {number} pct
- */
-function formatPct(pct) {
+function fmtPct(pct) {
   if (!isFinite(pct)) return '—';
-  const sign = pct >= 0 ? '+' : '';
-  return sign + pct.toFixed(2) + '%';
+  return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
 }
 
-/**
- * Relative time string, e.g. "2 minutes ago".
- * @param {number} ts  Unix ms timestamp
- */
+function fmtAmt(n) {
+  if (!isFinite(n)) return '—';
+  if (n >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits:2 });
+  if (n >= 1)    return n.toLocaleString('en-US', { maximumFractionDigits:4 });
+  return n.toPrecision(4).replace(/\.?0+$/, '');
+}
+
 function timeAgo(ts) {
   if (!ts) return 'never';
-  const diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 5)   return 'just now';
-  if (diff < 60)  return diff + 's ago';
-  if (diff < 3600) {
-    const m = Math.floor(diff / 60);
-    return m + ' minute' + (m === 1 ? '' : 's') + ' ago';
-  }
-  const h = Math.floor(diff / 3600);
-  return h + ' hour' + (h === 1 ? '' : 's') + ' ago';
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5)    return 'just now';
+  if (s < 60)   return s + 's ago';
+  if (s < 3600) { const m = Math.floor(s/60); return m + 'm ago'; }
+  const h = Math.floor(s/3600); return h + 'h ago';
 }
 
-/**
- * Abbreviate a coin symbol for the holding icon (max 4 chars).
- * @param {string} symbol
- */
-function abbrev(symbol) {
-  return (symbol || '?').toUpperCase().slice(0, 4);
-}
+function abbrev(sym) { return (sym||'?').toUpperCase().slice(0,4); }
 
 // ── Portfolio math ────────────────────────────────────────────────────────────
 
-/**
- * Fold a transactions array into a map of
- *   { [coin_id]: { coin_id, coin_symbol, coin_name, amount } }
- * Mirrors the logic in client/src/data/portfolio.js → foldBalances / aggregatePortfolio.
- *
- * @param {Array} transactions
- * @returns {Map<string, {coin_id:string, coin_symbol:string, coin_name:string, amount:number}>}
- */
 function computeHoldings(transactions) {
-  const holdings = new Map();
-
+  const map = new Map();
   for (const tx of transactions) {
     const id = String(tx.coin_id || '').trim();
     if (!id) continue;
-
-    const qty = Number(tx.amount ?? tx.quantity ?? 0);
+    const qty  = Number(tx.amount ?? tx.quantity ?? 0);
+    const cost = Number(tx.total_cost ?? (qty * (tx.price_per_unit ?? 0)));
     if (!isFinite(qty)) continue;
-
-    if (!holdings.has(id)) {
-      holdings.set(id, {
-        coin_id:     id,
-        coin_symbol: tx.coin_symbol || id,
-        coin_name:   tx.coin_name   || tx.coin_symbol || id,
-        amount:      0,
-      });
+    if (!map.has(id)) {
+      map.set(id, { coin_id:id, coin_symbol:tx.coin_symbol||id, coin_name:tx.coin_name||id, amount:0, totalCost:0 });
     }
-
-    const h = holdings.get(id);
-    // Keep the most recent symbol/name in case later txs have it
+    const h = map.get(id);
     if (tx.coin_symbol) h.coin_symbol = tx.coin_symbol;
     if (tx.coin_name)   h.coin_name   = tx.coin_name;
-
-    const type = (tx.type || '').toLowerCase();
-    if (type === 'buy' || type === 'deposit') {
-      h.amount += qty;
-    } else if (type === 'sell' || type === 'withdraw') {
-      h.amount -= qty;
-    }
+    const type = (tx.type||'').toLowerCase();
+    if (type === 'buy'  || type === 'deposit')  { h.amount += qty; h.totalCost += cost; }
+    if (type === 'sell' || type === 'withdraw') { h.amount -= qty; h.totalCost -= cost; }
   }
-
-  // Filter out dust / zero balances
-  for (const [id, h] of holdings) {
-    if (h.amount < 1e-9) holdings.delete(id);
-  }
-
-  return holdings;
+  for (const [id,h] of map) { if (h.amount < 1e-9) map.delete(id); }
+  return map;
 }
 
-// ── Price fetching ────────────────────────────────────────────────────────────
+// ── Prices ────────────────────────────────────────────────────────────────────
 
-/**
- * Fetch prices for all coin IDs from CoinGecko.
- * Results are cached in chrome.storage.session with a 2-minute TTL.
- * Returns a map: { [coin_id]: { usd: number, usd_24h_change: number } }
- * On any error returns an empty object (UI shows "—").
- *
- * @param {string[]} coinIds
- * @returns {Promise<Object>}
- */
 async function fetchPrices(coinIds) {
-  if (!coinIds || coinIds.length === 0) return {};
-
+  if (!coinIds?.length) return {};
   const ids = coinIds.join(',');
-
-  // Try session cache first (chrome.storage.session is ephemeral per browser session)
   try {
-    const sessionStorage = ext.storage.session;
-    if (sessionStorage) {
-      const cached = await new Promise((resolve) => {
-        sessionStorage.get(PRICE_CACHE_KEY, (r) => resolve(r[PRICE_CACHE_KEY] || null));
-      });
-      if (
-        cached &&
-        cached.ids === ids &&
-        cached.fetchedAt &&
-        Date.now() - cached.fetchedAt < PRICE_CACHE_TTL_MS
-      ) {
-        return cached.prices;
-      }
+    const sess = ext.storage.session;
+    if (sess) {
+      const c = await new Promise(r => sess.get(PRICE_CACHE_KEY, x => r(x[PRICE_CACHE_KEY]||null)));
+      if (c && c.ids === ids && Date.now()-c.fetchedAt < PRICE_TTL) return c.prices;
     }
-  } catch {
-    // chrome.storage.session not available (e.g. Firefox MV2 fallback) — proceed
-  }
-
-  // Live fetch
+  } catch {}
   try {
-    const url = new URL(COINGECKO_URL);
+    const url = new URL(CG_PRICE_URL);
     url.searchParams.set('ids', ids);
     url.searchParams.set('vs_currencies', 'usd');
     url.searchParams.set('include_24hr_change', 'true');
-
-    const res = await fetch(url.toString(), {
-      method:  'GET',
-      headers: { 'Accept': 'application/json' },
-      // 8-second timeout
-      signal:  AbortSignal.timeout(8000),
-    });
-
+    const res = await fetch(url, { signal:AbortSignal.timeout(8000) });
     if (!res.ok) return {};
-
     const json = await res.json();
-
-    // Persist to session cache
-    try {
-      const sessionStorage = ext.storage.session;
-      if (sessionStorage) {
-        sessionStorage.set({
-          [PRICE_CACHE_KEY]: { ids, prices: json, fetchedAt: Date.now() },
-        });
-      }
-    } catch {}
-
+    try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices:json, fetchedAt:Date.now() } }); } catch {}
     return json;
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
+}
+
+async function fetchMarketCoins() {
+  try {
+    const url = new URL(CG_MARKET_URL);
+    url.searchParams.set('vs_currency', 'usd');
+    url.searchParams.set('ids', MARKET_COINS.join(','));
+    url.searchParams.set('order', 'market_cap_desc');
+    url.searchParams.set('per_page', '6');
+    url.searchParams.set('page', '1');
+    url.searchParams.set('sparkline', 'false');
+    url.searchParams.set('price_change_percentage', '24h');
+    const res = await fetch(url, { signal:AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch { return []; }
+}
+
+async function fetchNews() {
+  try {
+    const res = await fetch(NEWS_URL, { signal:AbortSignal.timeout(6000) });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json) ? json.slice(0, 12) : [];
+  } catch { return []; }
+}
+
+async function fetchOHLC(coinId) {
+  try {
+    const url = CG_OHLC_URL.replace('{id}', coinId);
+    const full = url + '?vs_currency=usd&days=14';
+    const res = await fetch(full, { signal:AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    return await res.json(); // [[ts, open, high, low, close], ...]
+  } catch { return null; }
+}
+
+async function fetchFearGreed() {
+  try {
+    const res = await fetch(FG_URL, { signal:AbortSignal.timeout(6000) });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.data?.[0] || null;
+  } catch { return null; }
 }
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
 
-function show(id)    { document.getElementById(id).hidden = false; }
-function hide(id)    { document.getElementById(id).hidden = true;  }
-function setText(id, text) { document.getElementById(id).textContent = text; }
+const $ = id => document.getElementById(id);
+function show(id) { $(id).hidden = false; }
+function hide(id) { $(id).hidden = true; }
+function setText(id, t) { $(id).textContent = t; }
 
-/**
- * Build a single holding row DOM node without innerHTML.
- * @param {{coin_id, coin_symbol, coin_name, amount}} holding
- * @param {number} value   USD value
- * @param {number|null} change24h  Percentage
- * @param {boolean} hideValues
- */
-function buildHoldingRow(holding, value, change24h, hideValues) {
+function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl = false) {
   const row = document.createElement('div');
   row.className = 'holding-row';
 
-  // Left side
   const left = document.createElement('div');
   left.className = 'holding-left';
-
   const icon = document.createElement('div');
   icon.className = 'holding-icon';
   icon.textContent = abbrev(holding.coin_symbol);
-
   const info = document.createElement('div');
   info.className = 'holding-info';
-
   const sym = document.createElement('span');
   sym.className = 'holding-symbol';
-  sym.textContent = (holding.coin_symbol || '').toUpperCase();
-
+  sym.textContent = (holding.coin_symbol||'').toUpperCase();
   const amt = document.createElement('span');
   amt.className = 'holding-amount';
-  amt.textContent = hideValues
-    ? '••••'
-    : formatAmount(holding.amount);
+  amt.textContent = hideValues ? '••••' : fmtAmt(holding.amount) + ' ' + (holding.coin_symbol||'').toUpperCase();
+  info.append(sym, amt);
+  left.append(icon, info);
 
-  info.appendChild(sym);
-  info.appendChild(amt);
-  left.appendChild(icon);
-  left.appendChild(info);
-
-  // Right side
   const right = document.createElement('div');
   right.className = 'holding-right';
-
   const val = document.createElement('span');
   val.className = 'holding-value';
-  val.textContent = hideValues ? '••••' : formatUSD(value, true);
-
+  val.textContent = hideValues ? '••••' : fmtUSD(value??0, true);
   const chg = document.createElement('span');
-  if (change24h === null || change24h === undefined || !isFinite(change24h)) {
-    chg.className = 'holding-change neutral';
-    chg.textContent = '—';
-  } else {
-    chg.className = 'holding-change' + (change24h < 0 ? ' negative' : '');
-    chg.textContent = formatPct(change24h);
+  if (!isFinite(change24h)) { chg.className = 'holding-change neutral'; chg.textContent = '—'; }
+  else { chg.className = 'holding-change' + (change24h < 0 ? ' negative' : ''); chg.textContent = fmtPct(change24h); }
+  right.append(val, chg);
+
+  if (showPnl && isFinite(pnlGain) && pnlGain !== null) {
+    const pnl = document.createElement('span');
+    pnl.className = 'holding-pnl' + (pnlGain >= 0 ? ' pos' : ' neg');
+    pnl.textContent = hideValues ? '••' : (pnlGain >= 0 ? '+' : '') + fmtUSD(pnlGain, true);
+    right.appendChild(pnl);
   }
 
-  right.appendChild(val);
-  right.appendChild(chg);
-
-  row.appendChild(left);
-  row.appendChild(right);
+  row.append(left, right);
   return row;
 }
 
-/**
- * Format a coin amount — trim trailing zeros.
- * @param {number} amount
- */
-function formatAmount(amount) {
-  if (!isFinite(amount)) return '—';
-  if (amount >= 1000) {
-    return amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
+function buildMarketRow(coin) {
+  const chg = coin.price_change_percentage_24h ?? 0;
+  const row = document.createElement('div');
+  row.className = 'market-row';
+
+  const left = document.createElement('div');
+  left.className = 'market-left';
+  const icon = document.createElement('div');
+  icon.className = 'market-icon';
+  icon.textContent = abbrev(coin.symbol);
+  const info = document.createElement('div');
+  const sym = document.createElement('div');
+  sym.className = 'market-sym';
+  sym.textContent = (coin.symbol||'').toUpperCase();
+  const name = document.createElement('div');
+  name.className = 'market-name';
+  name.textContent = coin.name;
+  info.append(sym, name);
+  left.append(icon, info);
+
+  const right = document.createElement('div');
+  right.className = 'market-right';
+  const price = document.createElement('div');
+  price.className = 'market-price';
+  price.textContent = fmtUSD(coin.current_price);
+  const chgEl = document.createElement('div');
+  chgEl.className = 'market-chg' + (chg < 0 ? ' neg' : '');
+  chgEl.textContent = fmtPct(chg);
+  right.append(price, chgEl);
+
+  row.append(left, right);
+  return row;
+}
+
+// ── TA math ───────────────────────────────────────────────────────────────────
+
+function calcRSI(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i-1];
+    if (d >= 0) gains += d; else losses -= d;
   }
-  if (amount >= 1) {
-    return amount.toLocaleString('en-US', { maximumFractionDigits: 4 });
+  let avgGain = gains / period, avgLoss = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i-1];
+    avgGain = (avgGain * (period-1) + (d > 0 ? d : 0)) / period;
+    avgLoss = (avgLoss * (period-1) + (d < 0 ? -d : 0)) / period;
   }
-  // Small amounts — show up to 8 sig figs
-  return amount.toPrecision(4).replace(/\.?0+$/, '');
+  if (avgLoss === 0) return 100;
+  return 100 - 100 / (1 + avgGain / avgLoss);
+}
+
+function calcSMA(closes, period) {
+  if (closes.length < period) return null;
+  return closes.slice(-period).reduce((a,b) => a+b, 0) / period;
+}
+
+function calcMACD(closes) {
+  // EMA helper
+  function ema(arr, n) {
+    const k = 2/(n+1); let e = arr[0];
+    for (let i = 1; i < arr.length; i++) e = arr[i]*k + e*(1-k);
+    return e;
+  }
+  if (closes.length < 26) return null;
+  const ema12 = ema(closes.slice(-26), 12);
+  const ema26 = ema(closes.slice(-26), 26);
+  return { macd: ema12 - ema26, signal: ema12 - ema26 }; // simplified
+}
+
+// ── News render ───────────────────────────────────────────────────────────────
+
+async function loadNewsTab() {
+  const listEl = $('news-list');
+  listEl.innerHTML = '<div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>';
+  const articles = await fetchNews();
+  listEl.innerHTML = '';
+  if (!articles.length) {
+    listEl.innerHTML = '<p class="news-empty">No news available</p>'; return;
+  }
+  for (const a of articles) {
+    const item = document.createElement('div');
+    item.className = 'news-item';
+    item.addEventListener('click', () => { ext.tabs.create({ url: a.url || a.link }); window.close(); });
+
+    const title = document.createElement('div');
+    title.className = 'news-title';
+    title.textContent = a.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'news-meta';
+    const src = document.createElement('span');
+    src.className = 'news-source';
+    src.textContent = a.source || a.publisher || '';
+    const time = document.createElement('span');
+    time.className = 'news-time';
+    const ts = a.publishedAt || a.date || a.published_at;
+    time.textContent = ts ? timeAgo(new Date(ts).getTime()) : '';
+    meta.append(src, time);
+    item.append(title, meta);
+    listEl.appendChild(item);
+  }
+}
+
+// ── TA render ─────────────────────────────────────────────────────────────────
+
+async function loadTAForCoin(coinId) {
+  const content = $('ta-content');
+  content.innerHTML = '<div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>';
+
+  const ohlc = await fetchOHLC(coinId);
+  if (!ohlc || ohlc.length < 15) {
+    content.innerHTML = '<p class="holdings-empty">Not enough price data</p>'; return;
+  }
+
+  const closes = ohlc.map(c => c[4]);
+  const lastPrice = closes[closes.length - 1];
+  const rsi = calcRSI(closes, 14);
+  const sma20 = calcSMA(closes, Math.min(20, closes.length));
+  const sma50 = calcSMA(closes, Math.min(50, closes.length));
+  const change7d = closes.length >= 7 ? ((lastPrice - closes[closes.length-7]) / closes[closes.length-7]) * 100 : null;
+
+  // Trend
+  const trend = sma20 ? (lastPrice > sma20 ? 'Bullish' : 'Bearish') : '—';
+  const trendClass = trend === 'Bullish' ? 'bullish' : trend === 'Bearish' ? 'bearish' : 'neutral';
+
+  // RSI signal
+  let rsiSignal = 'Neutral', rsiClass = 'neutral';
+  if (rsi !== null) {
+    if (rsi < 30) { rsiSignal = 'Oversold'; rsiClass = 'bullish'; }
+    else if (rsi > 70) { rsiSignal = 'Overbought'; rsiClass = 'bearish'; }
+  }
+
+  // Overall signal
+  let signal = 'Neutral', sigClass = 'neutral';
+  if (rsi !== null && sma20) {
+    const bullPoints = (rsi < 50 ? 1 : 0) + (lastPrice > sma20 ? 1 : 0) + (isFinite(change7d) && change7d > 0 ? 1 : 0);
+    if (bullPoints >= 2) { signal = '🟢 Bullish'; sigClass = 'buy'; }
+    else if (bullPoints === 0) { signal = '🔴 Bearish'; sigClass = 'sell'; }
+    else { signal = '🟡 Neutral'; sigClass = 'neutral'; }
+  }
+
+  content.innerHTML = '';
+
+  // Price card
+  const priceCard = document.createElement('div');
+  priceCard.className = 'ta-card';
+  priceCard.innerHTML = `<div class="ta-card-title">Price</div>`;
+  const rows = [
+    ['Current',  fmtUSD(lastPrice), ''],
+    ['7d Change', isFinite(change7d) ? fmtPct(change7d) : '—', change7d >= 0 ? 'bullish' : 'bearish'],
+    ['SMA 20',   sma20 ? fmtUSD(sma20) : '—', ''],
+    ['Trend',    trend, trendClass],
+  ];
+  for (const [label, val, cls] of rows) {
+    const row = document.createElement('div');
+    row.className = 'ta-row';
+    row.innerHTML = `<span class="ta-row-label">${label}</span><span class="ta-row-val ${cls}">${val}</span>`;
+    priceCard.appendChild(row);
+  }
+  content.appendChild(priceCard);
+
+  // RSI card
+  const rsiCard = document.createElement('div');
+  rsiCard.className = 'ta-card';
+  rsiCard.innerHTML = `
+    <div class="ta-card-title">RSI (14)</div>
+    <div class="ta-row">
+      <span class="ta-row-label">Value</span>
+      <span class="ta-row-val ${rsiClass}">${rsi !== null ? rsi.toFixed(1) : '—'}</span>
+    </div>
+    <div class="ta-row">
+      <span class="ta-row-label">Signal</span>
+      <span class="ta-row-val ${rsiClass}">${rsiSignal}</span>
+    </div>
+    <div class="ta-rsi-bar-wrap">
+      <div class="ta-rsi-zones"><div class="ta-rsi-zone-os"></div><div class="ta-rsi-zone-ob"></div></div>
+      <div class="ta-rsi-bar" style="width:${rsi ?? 50}%;background:${rsiClass==='bullish'?'#4ade80':rsiClass==='bearish'?'#f87171':'#fbbf24'}"></div>
+    </div>
+  `;
+  content.appendChild(rsiCard);
+
+  // Signal
+  const sigEl = document.createElement('div');
+  sigEl.className = `ta-signal ${sigClass}`;
+  sigEl.textContent = signal;
+  content.appendChild(sigEl);
+}
+
+// ── Tab state ─────────────────────────────────────────────────────────────────
+
+let currentTab = 'overview';
+let cachedData = null;
+let cachedPrices = {};
+let marketLoaded = false;
+let newsLoaded   = false;
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    currentTab = btn.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
+    show('tab-' + currentTab);
+    if (currentTab === 'market'   && !marketLoaded) loadMarketTab();
+    if (currentTab === 'holdings') renderHoldingsTab();
+    if (currentTab === 'news'     && !newsLoaded) { newsLoaded = true; loadNewsTab(); }
+  });
+});
+
+// ── Overview tab ──────────────────────────────────────────────────────────────
+
+function renderOverviewTab(holdingsArr, hideValues, syncedAt) {
+  // Ticker
+  const btcData = cachedPrices['bitcoin'];
+  const ethData = cachedPrices['ethereum'];
+  if (btcData) {
+    setText('btc-price', fmtUSD(btcData.usd, true));
+    const chgEl = $('btc-chg');
+    chgEl.textContent = fmtPct(btcData.usd_24h_change);
+    chgEl.className = 'ticker-chg' + (btcData.usd_24h_change < 0 ? ' neg' : '');
+  }
+  if (ethData) {
+    setText('eth-price', fmtUSD(ethData.usd, true));
+    const chgEl = $('eth-chg');
+    chgEl.textContent = fmtPct(ethData.usd_24h_change);
+    chgEl.className = 'ticker-chg' + (ethData.usd_24h_change < 0 ? ' neg' : '');
+  }
+
+  // Total value + 24h change
+  let totalValue = 0, totalValuePrev = 0, totalInvested = 0;
+  for (const { holding, value, change24h } of holdingsArr) {
+    if (value !== null) {
+      totalValue += value;
+      totalInvested += holding.totalCost || 0;
+      if (isFinite(change24h)) totalValuePrev += value / (1 + change24h / 100);
+      else totalValuePrev += value;
+    }
+  }
+
+  const tvEl = $('total-value');
+  if (hideValues) { tvEl.textContent = '••••••'; tvEl.classList.add('hidden-values'); }
+  else { tvEl.textContent = fmtUSD(totalValue); tvEl.classList.remove('hidden-values'); }
+
+  const badge = $('change-badge');
+  if (totalValuePrev > 0) {
+    const pctChg = ((totalValue - totalValuePrev) / totalValuePrev) * 100;
+    badge.className = 'change-badge' + (pctChg < 0 ? ' negative' : '');
+    badge.textContent = hideValues ? '—' : fmtPct(pctChg);
+  } else {
+    badge.className = 'change-badge loading'; badge.textContent = '—';
+  }
+
+  // P&L
+  if (totalInvested > 0) {
+    const gain = totalValue - totalInvested;
+    const gainPct = (gain / totalInvested) * 100;
+    $('pnl-invested').textContent = hideValues ? '••••' : fmtUSD(totalInvested);
+    const gainEl = $('pnl-gain');
+    gainEl.textContent = hideValues ? '••••' : `${gain >= 0 ? '+' : ''}${fmtUSD(gain)} (${fmtPct(gainPct)})`;
+    gainEl.className = 'pnl-val' + (gain >= 0 ? ' pos' : ' neg');
+    $('pnl-card').hidden = false;
+  }
+
+  // Top 5 holdings
+  const listEl = $('overview-holdings-list');
+  listEl.innerHTML = '';
+  const top5 = holdingsArr.slice(0, 5);
+  if (!top5.length) {
+    const e = document.createElement('p'); e.className = 'holdings-empty';
+    e.textContent = 'No holdings'; listEl.appendChild(e);
+  } else {
+    for (const { holding, value, change24h } of top5) {
+      listEl.appendChild(buildHoldingRow(holding, value, change24h, null, hideValues));
+    }
+  }
+
+  setText('last-synced-ov', syncedAt ? 'Synced ' + timeAgo(syncedAt) : '—');
+}
+
+// ── Holdings tab ──────────────────────────────────────────────────────────────
+
+function renderHoldingsTab() {
+  if (!cachedData) return;
+  const { transactions, wallets, settings, syncedAt } = cachedData;
+  const hideValues = !!(settings?.hideValues);
+  const walletId = $('wallet-filter').value;
+
+  let txs = transactions;
+  if (walletId !== 'all') txs = transactions.filter(t => String(t.wallet_id) === walletId);
+
+  const map = computeHoldings(txs);
+  const holdingsArr = buildHoldingsArr(map);
+
+  const listEl = $('all-holdings-list');
+  listEl.innerHTML = '';
+  setText('holdings-count', holdingsArr.length + ' asset' + (holdingsArr.length !== 1 ? 's' : ''));
+
+  if (!holdingsArr.length) {
+    const e = document.createElement('p'); e.className = 'holdings-empty';
+    e.textContent = 'No holdings'; listEl.appendChild(e);
+  } else {
+    for (const { holding, value, change24h } of holdingsArr) {
+      const pnlGain = isFinite(value) && holding.totalCost > 0 ? value - holding.totalCost : null;
+      listEl.appendChild(buildHoldingRow(holding, value, change24h, pnlGain, hideValues, true));
+    }
+  }
+  setText('last-synced-h', syncedAt ? 'Synced ' + timeAgo(syncedAt) : '—');
+}
+
+function buildHoldingsArr(map) {
+  return Array.from(map.values()).map(holding => {
+    const p = cachedPrices[holding.coin_id];
+    const value = p?.usd != null ? holding.amount * p.usd : null;
+    return { holding, value, change24h: p?.usd_24h_change ?? null };
+  }).sort((a, b) => (b.value??-Infinity) - (a.value??-Infinity));
+}
+
+// ── Market tab ────────────────────────────────────────────────────────────────
+
+async function loadMarketTab() {
+  marketLoaded = true;
+  const [coins, fg] = await Promise.all([fetchMarketCoins(), fetchFearGreed()]);
+
+  // Fear & Greed
+  if (fg) {
+    const val = parseInt(fg.value, 10);
+    setText('fg-value', val);
+    setText('fg-label-text', fg.value_classification || '—');
+    $('fg-bar').style.width = val + '%';
+    $('fg-value').style.color = val < 30 ? '#f87171' : val < 50 ? '#fbbf24' : val < 75 ? '#4ade80' : '#00e676';
+  } else {
+    setText('fg-value', '—'); setText('fg-label-text', 'Unavailable');
+  }
+
+  // Coin list
+  const listEl = $('market-list');
+  listEl.innerHTML = '';
+  if (!coins.length) {
+    listEl.innerHTML = '<p class="holdings-empty">Unable to load market data</p>';
+    return;
+  }
+  for (const coin of coins) listEl.appendChild(buildMarketRow(coin));
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
 async function render() {
-  // Show loading spinner initially
   show('loading');
   hide('no-data');
-  hide('portfolio');
+  document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
 
-  // 1. Load cached portfolio from storage
-  const cached = await new Promise((resolve) => {
-    ext.storage.local.get(STORAGE_KEY, (result) => {
-      resolve(result[STORAGE_KEY] || null);
-    });
+  const stored = await new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY]||null)));
+
+  if (!stored || !Array.isArray(stored.transactions) || !stored.transactions.length) {
+    hide('loading'); show('no-data'); return;
+  }
+
+  cachedData = stored;
+  const { transactions, wallets, settings, syncedAt } = stored;
+  const hideValues = !!(settings?.hideValues);
+
+  const map = computeHoldings(transactions);
+  if (!map.size) { hide('loading'); show('no-data'); return; }
+
+  // Populate wallet filter
+  const wf = $('wallet-filter');
+  wf.innerHTML = '<option value="all">All Wallets</option>';
+  if (Array.isArray(wallets) && wallets.length > 1) {
+    for (const w of wallets) {
+      const opt = document.createElement('option');
+      opt.value = String(w.id); opt.textContent = w.name;
+      wf.appendChild(opt);
+    }
+  }
+
+  // Populate TA coin selector from holdings
+  const taSelect = $('ta-coin-select');
+  taSelect.innerHTML = '<option value="">Select a coin…</option>';
+  for (const [id, h] of map) {
+    // Only crypto coins (skip stocks/metals which have no CoinGecko OHLC)
+    if (id.startsWith('stock:') || id.startsWith('metal:')) continue;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = (h.coin_symbol||'').toUpperCase() + ' — ' + (h.coin_name||id);
+    taSelect.appendChild(opt);
+  }
+  taSelect.addEventListener('change', () => {
+    if (taSelect.value) loadTAForCoin(taSelect.value);
   });
 
-  if (!cached || !Array.isArray(cached.transactions) || cached.transactions.length === 0) {
-    hide('loading');
-    show('no-data');
-    return;
-  }
-
-  const { transactions, settings, syncedAt } = cached;
-  const hideValues = !!(settings && settings.hideValues);
-
-  // 2. Compute holdings from transactions
-  const holdingsMap = computeHoldings(transactions);
-
-  if (holdingsMap.size === 0) {
-    hide('loading');
-    show('no-data');
-    return;
-  }
-
-  // 3. Show portfolio skeleton while prices load
+  // Show overview tab
   hide('loading');
-  show('portfolio');
+  show('tab-' + currentTab);
 
-  // Set synced timestamp
-  setText('last-synced', 'Synced ' + timeAgo(syncedAt));
+  // Fetch prices
+  const allCoinIds = [...Array.from(map.keys()), 'bitcoin', 'ethereum'].filter((v,i,a)=>a.indexOf(v)===i);
+  cachedPrices = await fetchPrices(allCoinIds);
 
-  // Mark change badge as loading
-  const changeBadge = document.getElementById('change-badge');
-  changeBadge.className = 'change-badge loading';
-  changeBadge.textContent = 'loading…';
-
-  // Set total value as loading indicator
-  const totalValueEl = document.getElementById('total-value');
-  totalValueEl.textContent = '…';
-
-  // 4. Fetch live prices
-  const coinIds = Array.from(holdingsMap.keys());
-  const prices  = await fetchPrices(coinIds);
-  const pricesFailed = Object.keys(prices).length === 0;
-
-  // 5. Compute values per holding
-  const holdingsWithValue = [];
-  let totalValue = 0;
-  let totalValuePrev = 0;   // 24h-ago estimated value (for portfolio-level % change)
-
-  for (const [id, holding] of holdingsMap) {
-    const priceData = prices[id];
-    const price     = priceData?.usd       ?? null;
-    const change24h = priceData?.usd_24h_change ?? null;
-
-    const value = price !== null ? holding.amount * price : null;
-
-    if (value !== null) {
-      totalValue += value;
-      // Estimate previous value: v_prev = v / (1 + pct/100)
-      if (change24h !== null && isFinite(change24h)) {
-        totalValuePrev += value / (1 + change24h / 100);
-      } else {
-        totalValuePrev += value; // no change data → assume flat
-      }
-    }
-
-    holdingsWithValue.push({ holding, value, change24h });
-  }
-
-  // 6. Render total value
-  if (hideValues) {
-    totalValueEl.textContent = '••••••';
-    totalValueEl.classList.add('hidden-values');
-  } else if (pricesFailed || totalValue === 0) {
-    totalValueEl.textContent = pricesFailed ? '—' : formatUSD(0);
-  } else {
-    totalValueEl.textContent = formatUSD(totalValue);
-  }
-
-  // 7. Render 24h change
-  if (pricesFailed) {
-    changeBadge.className = 'change-badge loading';
-    changeBadge.textContent = '—';
-
-    // Show error notice only if it doesn't already exist
-    if (!document.querySelector('.price-error')) {
-      const notice = document.createElement('p');
-      notice.className = 'price-error';
-      notice.textContent = 'Live prices unavailable';
-      document.getElementById('change-row').appendChild(notice);
-    }
-  } else if (totalValuePrev > 0) {
-    const portfolioChange = ((totalValue - totalValuePrev) / totalValuePrev) * 100;
-    changeBadge.className = 'change-badge' + (portfolioChange < 0 ? ' negative' : '');
-    changeBadge.textContent = hideValues ? '—' : formatPct(portfolioChange);
-  } else {
-    changeBadge.className = 'change-badge loading';
-    changeBadge.textContent = '—';
-  }
-
-  // 8. Sort by value descending and render top holdings
-  holdingsWithValue.sort((a, b) => {
-    const va = a.value ?? -Infinity;
-    const vb = b.value ?? -Infinity;
-    return vb - va;
-  });
-
-  const listEl = document.getElementById('holdings-list');
-  // Clear any previous content using DOM (not innerHTML)
-  while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
-
-  const top = holdingsWithValue.slice(0, TOP_HOLDINGS_COUNT);
-
-  if (top.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'holdings-empty';
-    empty.textContent = 'No holdings to display';
-    listEl.appendChild(empty);
-  } else {
-    for (const { holding, value, change24h } of top) {
-      const row = buildHoldingRow(holding, value ?? 0, change24h, hideValues);
-      listEl.appendChild(row);
-    }
-  }
+  const holdingsArr = buildHoldingsArr(map);
+  renderOverviewTab(holdingsArr, hideValues, syncedAt);
+  if (currentTab === 'holdings') renderHoldingsTab();
 }
 
-// ── Button handlers ───────────────────────────────────────────────────────────
+// ── Refresh button ────────────────────────────────────────────────────────────
 
-function openSite() {
-  ext.tabs.create({ url: SITE_URL });
-  window.close();
-}
-
-document.getElementById('btn-open-site').addEventListener('click', openSite);
-document.getElementById('btn-open-app').addEventListener('click', openSite);
-
-const refreshBtn = document.getElementById('btn-refresh');
+const refreshBtn = $('btn-refresh');
 refreshBtn.addEventListener('click', async () => {
-  refreshBtn.classList.add('spinning');
-  refreshBtn.disabled = true;
-  // Ask any open walletlens.live tabs to re-sync before re-rendering
+  refreshBtn.classList.add('spinning'); refreshBtn.disabled = true;
+  marketLoaded = false; newsLoaded = false;
   try {
-    await new Promise((resolve) => {
-      ext.tabs.query({ url: 'https://walletlens.live/*' }, (tabs) => {
-        if (tabs && tabs.length > 0) {
-          const sends = tabs.map(tab =>
-            ext.tabs.sendMessage(tab.id, { type: 'REQUEST_SYNC' }).catch(() => {})
-          );
-          Promise.all(sends).then(() => setTimeout(resolve, 600))
-        } else {
-          resolve()
-        }
+    await new Promise(r => {
+      ext.tabs.query({ url:'https://walletlens.live/*' }, tabs => {
+        if (!tabs?.length) return r();
+        Promise.all(tabs.map(t => ext.tabs.sendMessage(t.id, { type:'REQUEST_SYNC' }).catch(()=>{}))).then(() => setTimeout(r, 600));
       });
     });
   } catch {}
   await render();
-  refreshBtn.classList.remove('spinning');
-  refreshBtn.disabled = false;
+  if (currentTab === 'market') loadMarketTab();
+  refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false;
 });
+
+// ── Open site buttons ─────────────────────────────────────────────────────────
+
+function openURL(url) { ext.tabs.create({ url }); window.close(); }
+
+$('btn-open-site').addEventListener('click', () => openURL(SITE));
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => openURL(SITE + btn.dataset.path));
+});
+
+// Wallet filter change
+$('wallet-filter').addEventListener('change', renderHoldingsTab);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
-render().catch((err) => {
-  // Fallback: show no-data state on unhandled errors
-  console.error('[WalletLens ext] popup render error:', err);
-  hide('loading');
-  show('no-data');
+render().catch(err => {
+  console.error('[WalletLens ext]', err);
+  hide('loading'); show('no-data');
 });
