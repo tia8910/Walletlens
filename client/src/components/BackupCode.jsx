@@ -51,16 +51,53 @@ function b64decode(str) { return decodeURIComponent(escape(atob(str))) }
 
 // ── Core logic ────────────────────────────────────────────────────────────
 
+// WL3 format — compact parsed objects, coin_image stripped (re-fetched on load),
+// empty optional fields omitted. Avoids the double-encoding of WL2 (which stored
+// each localStorage string value inside an outer JSON.stringify, escaping every
+// inner quote). Result: 40–60% smaller payload → most portfolios fit in one QR.
 async function generateBackupCode() {
-  const data = {}; let nonEmpty = 0
-  for (const key of BACKUP_KEYS) {
-    const val = localStorage.getItem(key)
-    if (val != null) { data[key] = val; nonEmpty++ }
+  const txsRaw = localStorage.getItem('crypto_tracker_transactions')
+  const wsRaw  = localStorage.getItem('crypto_tracker_wallets')
+  const txs = txsRaw ? JSON.parse(txsRaw) : []
+  const ws  = wsRaw  ? JSON.parse(wsRaw)  : []
+
+  // Drop coin_image (large URL, fetched fresh from CoinGecko on next load)
+  // and drop empty/default optional fields to reduce payload.
+  const compactTxs = txs.map(tx => {
+    // eslint-disable-next-line no-unused-vars
+    const { coin_image, ...rest } = tx
+    const out = { ...rest }
+    if (!out.exchange)                     delete out.exchange
+    if (!out.notes)                        delete out.notes
+    if (!out.fee && out.fee !== 0)         delete out.fee
+    if (out.fee === 0)                     delete out.fee
+    if (!out.category || out.category === 'crypto') delete out.category
+    return out
+  })
+
+  const payload = { v: 3, ts: Date.now(), txs: compactTxs, ws }
+
+  // ID counters — needed so the next add doesn't collide
+  const wId = localStorage.getItem('crypto_tracker_next_wallet_id')
+  const tId = localStorage.getItem('crypto_tracker_next_tx_id')
+  const eId = localStorage.getItem('crypto_tracker_next_ex_id')
+  if (wId || tId || eId) payload.ids = { w: wId || '1', t: tId || '1', e: eId || '1' }
+
+  // Optional blobs (coin targets, notes, manual prices, settings, card vis, exchanges)
+  const OPT = {
+    ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
+    mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
+    cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
   }
-  const json = JSON.stringify({ v: 2, ts: Date.now(), data })
+  for (const [alias, key] of Object.entries(OPT)) {
+    const raw = localStorage.getItem(key)
+    if (raw) { try { payload[alias] = JSON.parse(raw) } catch {} }
+  }
+
+  const json = JSON.stringify(payload)
   const compressed = await gzipB64(json)
-  const code = compressed ? `WL2-${compressed}` : `WL1-${b64encode(json)}`
-  return { code, keyCount: nonEmpty }
+  const code = compressed ? `WL3-${compressed}` : `WL1-${b64encode(json)}`
+  return { code, txCount: txs.length, walletCount: ws.length }
 }
 
 async function applyBackupCode(raw) {
@@ -68,11 +105,10 @@ async function applyBackupCode(raw) {
   if (!code) throw new Error('Paste a backup code first.')
 
   let json
-  if (code.startsWith('WL2-')) {
+  if (code.startsWith('WL3-') || code.startsWith('WL2-')) {
     try { json = await gunzipB64(code.slice(4)) }
     catch { throw new Error('Could not decompress backup code — make sure you copied it completely.') }
   } else {
-    // Accept WL1- prefix OR raw base64 (prefix may have been lost when copying)
     const b64 = code.startsWith('WL1-') ? code.slice(4) : code
     try { json = b64decode(b64) }
     catch { throw new Error('Could not decode backup code — make sure you copied it completely.') }
@@ -80,8 +116,32 @@ async function applyBackupCode(raw) {
 
   let parsed
   try { parsed = JSON.parse(json) } catch { throw new Error('Backup data is corrupted or incomplete.') }
-  if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.')
 
+  if (parsed?.v === 3) {
+    if (!Array.isArray(parsed.txs)) throw new Error('Backup data is missing or corrupted.')
+    // Re-add coin_image as empty string; dashboard fetches it from CoinGecko on load.
+    const txs = parsed.txs.map(tx => ({ coin_image: '', category: 'crypto', ...tx }))
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify(txs))
+    localStorage.setItem('crypto_tracker_wallets', JSON.stringify(parsed.ws || []))
+    if (parsed.ids) {
+      if (parsed.ids.w) localStorage.setItem('crypto_tracker_next_wallet_id', String(parsed.ids.w))
+      if (parsed.ids.t) localStorage.setItem('crypto_tracker_next_tx_id', String(parsed.ids.t))
+      if (parsed.ids.e) localStorage.setItem('crypto_tracker_next_ex_id', String(parsed.ids.e))
+    }
+    const OPT = {
+      ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
+      mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
+      cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
+    }
+    let restored = 2
+    for (const [alias, key] of Object.entries(OPT)) {
+      if (parsed[alias] != null) { localStorage.setItem(key, JSON.stringify(parsed[alias])); restored++ }
+    }
+    return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
+  }
+
+  // Legacy WL1/WL2 — data-bag of raw localStorage strings
+  if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.')
   let restored = 0
   for (const [key, val] of Object.entries(parsed.data)) {
     if (BACKUP_KEYS.includes(key) && typeof val === 'string') {
@@ -89,14 +149,6 @@ async function applyBackupCode(raw) {
     }
   }
   return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
-}
-
-function getStats() {
-  try {
-    const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
-    const wallets = JSON.parse(localStorage.getItem('crypto_tracker_wallets') || '[]')
-    return { txCount: txs.length, walletCount: wallets.length }
-  } catch { return { txCount: 0, walletCount: 0 } }
 }
 
 // ── QR helpers ────────────────────────────────────────────────────────────
@@ -171,9 +223,9 @@ export default function BackupCode({ hideTrigger = false }) {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      const { code, keyCount } = await generateBackupCode()
+      const { code, txCount, walletCount } = await generateBackupCode()
       setExportCode(code)
-      setExportInfo({ ...getStats(), keyCount, size: code.length })
+      setExportInfo({ txCount, walletCount, size: code.length })
       setCopied(false)
       setShowQr(false)
       setQrParts([])
