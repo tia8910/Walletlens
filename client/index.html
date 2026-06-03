@@ -44,6 +44,10 @@
 
     <!-- Brand / theme -->
     <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="WalletLens" />
@@ -51,9 +55,14 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='13' fill='%23071a0c'/><g fill='none' transform='translate(32 32) scale(0.82) translate(-25 -30.5)'><circle cx='27' cy='25' r='19' stroke='%2316a34a' stroke-width='5.5'/><circle cx='40.5' cy='11.5' r='3.8' fill='%234ade80'/><rect x='14.5' y='26.5' width='5' height='7.5' rx='1.2' fill='%2316a34a'/><rect x='21.5' y='21' width='5' height='13' rx='1.2' fill='%2316a34a'/><rect x='28.5' y='15.5' width='5' height='18.5' rx='1.2' fill='%2316a34a'/><line x1='13.5' y1='39' x2='4' y2='55' stroke='%2316a34a' stroke-width='5.5' stroke-linecap='round'/></g></svg>" />
 
-    <!-- Preconnect for analytics — resolves TLS before the script tag fires -->
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
@@ -71,9 +80,9 @@
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
-    <!-- X (Twitter) Pixel -->
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
     <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
       twq('config','rc7yj');
     </script>
 
@@ -281,6 +290,9 @@
     </script>
   </head>
   <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#071a0c;margin:0}</style>
     <div id="root">
       <!-- Brand-matching loading splash. React replaces #root on mount; this
            keeps the screen on-theme until then instead of flashing a white
@@ -313,9 +325,10 @@
     </div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- X conversion tracking event -->
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
     <script>
-      twq('event', 'tw-rc7yj-rccu7', {});
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
     </script>
   </body>
 </html>

@@ -300,13 +300,20 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
-  // Prefetch the Dashboard chunk after landing-page idle so the first navigation is instant
+  // Prefetch the highest-traffic app chunks during idle on the landing page
+  // so the first navigation to any of them is instant.
   useEffect(() => {
     if (location.pathname !== '/') return
-    const id = requestIdleCallback
-      ? requestIdleCallback(() => import('./pages/Dashboard'), { timeout: 3000 })
-      : setTimeout(() => import('./pages/Dashboard'), 2000)
-    return () => (requestIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
+    const schedule = requestIdleCallback
+      ? (fn, opts) => requestIdleCallback(fn, opts)
+      : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
+    const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
+    // Dashboard first (most common destination), then Transactions and Coach
+    // at lower priority so they don't compete with the critical render path.
+    const id1 = schedule(() => import('./pages/Dashboard'),    { timeout: 3000 })
+    const id2 = schedule(() => import('./pages/Transactions'), { timeout: 5000 })
+    const id3 = schedule(() => import('./pages/Coach'),        { timeout: 7000 })
+    return () => { cancel(id1); cancel(id2); cancel(id3) }
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap
