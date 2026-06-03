@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
+import InstallExtension from '../components/InstallExtension'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -710,6 +711,10 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>AI Advisor</button>
         </div>
+      </section>
+
+      <section style={{ display:'flex', justifyContent:'center', padding:'1.5rem 1rem 0' }}>
+        <InstallExtension variant="badge" source="landing_footer" />
       </section>
 
       <footer className="lp-footer">

@@ -23,6 +23,7 @@ import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
 import BackupCode from '../components/BackupCode'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
+import InstallExtension from '../components/InstallExtension'
 import { makeQrParts, createPartCollector, scanImageData, decodeQrFromImageFile } from '../utils/qrBackup'
 
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
@@ -3933,6 +3934,13 @@ export default function Dashboard() {
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
             <DataPanel onRefresh={loadAll} />
+          </div>
+          <div className="glass-card dvx-form-card">
+            <h3>Browser Extension</h3>
+            <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>
+              Track your portfolio from the toolbar in Chrome, Edge or Brave — it syncs automatically whenever this page is open.
+            </p>
+            <InstallExtension variant="badge" source="dashboard_data_tab" />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Smart Import</h3>
