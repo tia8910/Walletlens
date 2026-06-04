@@ -1,14 +1,14 @@
-import { memo, useId } from 'react'
+import { memo } from 'react'
 
-// ── TEST: new brand logo PNG ──────────────────────────────────────────────────
 function Logo({ size = 32, animated = false, className = '' }) {
   return (
     <img
-      src="/wl-logo-dark.png"
+      src="/wl-logo-transparent.png"
       width={size}
       height={size}
       alt="WalletLens"
-      style={{ borderRadius: size * 0.22, objectFit: 'cover', display: 'block' }}
+      draggable="false"
+      style={{ objectFit: 'contain', display: 'block', flexShrink: 0 }}
       className={className}
     />
   )
