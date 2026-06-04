@@ -919,7 +919,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const { lang: appLang } = useLanguage()
   const lang = appLang === 'ar' ? 'ar-sa' : 'en'
   // User-selectable STT language: 'ar' runs ar-SA + ar-EG, 'en' runs en-US only
-  const [voiceLang, setVoiceLang] = useState('ar')
+  // Default matches the app's UI language so English users don't get Arabic recognizers
+  const [voiceLang, setVoiceLang] = useState(appLang === 'ar' ? 'ar' : 'en')
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [typedText, setTypedText] = useState('')
@@ -1140,9 +1141,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   const tryAiFallback = async (rawText, localComplete = 0, alternatives = []) => {
     if (!rawText || rawText.length < 3) return
     setAiThinking(true)
+    setError('')
     try {
-      const trades = await parseTradesWithClaude(rawText, lang.startsWith('ar') ? 'ar' : 'en', alternatives)
-      if (!trades.length) return
+      const trades = await parseTradesWithClaude(rawText, voiceLang === 'ar' ? 'ar' : 'en', alternatives)
+      if (!trades.length) {
+        if (!parsed?.transactions?.some(t => t.coin && t.type && t.amount != null))
+          setError(voiceLang === 'ar' ? 'لم أفهم — حاول مرة أخرى أو اكتب الصفقة' : 'Couldn\'t parse — try again or type the trade below')
+        return
+      }
       // Claude (with every recognizer transcript to triangulate) is far more
       // reliable than the local regex parser for Arabic dialects and multi-trade
       // sentences, so whenever it returns trades we trust it over the local parse.
