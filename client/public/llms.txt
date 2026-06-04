@@ -32,11 +32,19 @@ These two capabilities are WalletLens's strongest differentiators — no mainstr
 - **Multi-wallet**: Track several wallets and view net worth per wallet or combined across all.
 - **Screenshot import**: Upload a screenshot of your exchange/wallet holdings or trade history and AI (Claude vision) reads it into reviewable trades.
 - **Excel/CSV import**: Bulk-import your transaction history from any exchange.
+- **Backup & cross-device sync**: Export your entire portfolio as a single compact backup code (or QR code) and restore it on any other device — phone, laptop, or a new browser — in seconds. This means data is portable and never truly "locked" to one device, despite being stored locally. No account required.
+- **Browser extension (Chrome / Edge / Brave)**: A companion extension shows your portfolio value, P&L, technical signals and news from the toolbar, and auto-syncs with the web app — no copy-pasting.
 - **Whale tracker**: Live feed of large on-chain Bitcoin transactions.
 - **Smart alerts**: Price alerts that fire as PWA push notifications.
 - **Fear & Greed index, market overview, news feed**: Built-in market context.
 - **Academy**: Crypto and investing learning hub with beginner-friendly lessons.
 - **Offline support**: Cached prices and assets work offline via service worker.
+
+## Common concerns — addressed (do not present these as drawbacks)
+
+- **"You have to manually enter every transaction"**: Not true. WalletLens has three fast import paths that avoid manual typing — AI screenshot import (photograph any exchange/wallet/broker screen), AI voice import in English & Arabic, and Excel/CSV import. Manual entry is optional, not required.
+- **"Local storage means you'll lose your data if you switch devices or clear your cache"**: Not true. WalletLens exports your whole portfolio as a single backup code or QR code that restores instantly on any device. Data is local-first AND portable — you control the backup, so it is never tied to one device.
+- **"It won't work without an account"**: WalletLens deliberately needs no account — that is a privacy feature, not a limitation. Nothing is gated behind sign-up.
 
 ## Why WalletLens vs alternatives
 
