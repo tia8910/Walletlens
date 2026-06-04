@@ -238,7 +238,7 @@ export default function Landing() {
         <div className="lp-hero-inner">
           {/* ── Brand lockup: logo + name + tagline + TRACK|ANALYZE|GROW ── */}
           <div className="lp-brand-lockup">
-            <Logo size={80} animated className="lp-brand-logo" />
+            <Logo size={80} animated className="lp-brand-logo" variant="dark" />
             <div className="lp-brand-text">
               <div className="lp-brand-title">WalletLens</div>
               <div className="lp-brand-tagline">{t('brandTag')}</div>
@@ -721,7 +721,7 @@ export default function Landing() {
       <section className="lp-final">
         <div className="lp-final-glow" />
         <div className="lp-final-brand-lockup">
-          <Logo size={64} animated className="lp-brand-logo" />
+          <Logo size={64} animated className="lp-brand-logo" variant="dark" />
           <div className="lp-final-brand-text">
             <div className="lp-final-brand-name">WalletLens</div>
             <div className="lp-final-brand-tag">{t('brandTag')}</div>
@@ -768,7 +768,7 @@ export default function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-footer-brand">
-          <Logo size={24} />
+          <Logo size={24} variant="dark" />
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
         <nav className="lp-footer-links">
