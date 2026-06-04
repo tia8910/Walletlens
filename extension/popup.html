@@ -55,6 +55,7 @@
   <!-- ── Loading ── -->
   <div id="loading" class="state-panel center">
     <div class="spinner" aria-label="Loading…"></div>
+    <p id="loading-caption" class="no-data-sub" hidden>Fetching your portfolio…</p>
   </div>
 
   <!-- ── No-data ── -->
@@ -66,7 +67,7 @@
       <circle cx="30" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
     </svg>
     <p class="no-data-title">No portfolio data yet</p>
-    <p class="no-data-sub">Open WalletLens to sync, or import a backup code directly.</p>
+    <p class="no-data-sub">We couldn't find a portfolio for walletlens.live on this device. If you track on another device, paste your backup code below to sync it here.</p>
     <button id="btn-open-site" class="btn-primary">Open walletlens.live</button>
     <button id="btn-import-from-nodata" class="btn-secondary">Import backup code</button>
   </div>
@@ -121,6 +122,19 @@
       <button class="nav-btn" data-path="/technicals">📈 Analysis</button>
       <button class="nav-btn" data-path="/dashboard" data-tab-nav="targets">🎯 Targets</button>
     </div>
+
+    <!-- Share -->
+    <section class="share-section">
+      <p class="section-title">Share your performance</p>
+      <p class="share-sub">Brag with percentages — never your balance. Your numbers stay private.</p>
+      <div class="share-row">
+        <button class="share-btn share-x"  data-share="x"        title="Share on X">𝕏</button>
+        <button class="share-btn share-wa" data-share="whatsapp" title="Share on WhatsApp">WhatsApp</button>
+        <button class="share-btn share-tg" data-share="telegram" title="Share on Telegram">Telegram</button>
+        <button class="share-btn share-cp" data-share="copy"     title="Copy link">Copy</button>
+      </div>
+      <p id="share-copied" class="share-copied" hidden>✅ Copied — paste it anywhere</p>
+    </section>
 
     <p id="last-synced-ov" class="last-synced">—</p>
   </div>
@@ -183,6 +197,12 @@
       <p class="holdings-empty" style="padding:20px 0">Select a coin to see analysis</p>
     </div>
   </div>
+
+  <!-- ── Marketing footer (always visible) ── -->
+  <footer class="promo-footer">
+    <span class="promo-tag">Free · Private · No account</span>
+    <button id="btn-tell-friend" class="promo-cta">Tell a friend →</button>
+  </footer>
 
   <!-- ── Import Panel (full-screen overlay) ── -->
   <div id="import-panel" hidden>

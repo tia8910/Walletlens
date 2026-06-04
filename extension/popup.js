@@ -46,6 +46,49 @@ function timeAgo(ts) {
 
 function abbrev(sym) { return (sym||'?').toUpperCase().slice(0,4); }
 
+// ── Asset icons ─────────────────────────────────────────────────────────────────
+
+// Deterministic gradient from a symbol so every letter-badge fallback has a
+// stable, distinct colour (mirrors the web app's CoinLogo fallback).
+function symbolGradient(sym) {
+  let h = 0;
+  const s = (sym || '?').toLowerCase();
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const h1 = h % 360, h2 = (h1 + 40) % 360;
+  return `linear-gradient(135deg, hsl(${h1},70%,48%), hsl(${h2},75%,34%))`;
+}
+
+function letterBadge(holding, cls) {
+  const d = document.createElement('div');
+  d.className = cls;
+  const id = holding.coin_id || '';
+  // Non-crypto (stock:/metal:/fiat:/bond:) → coloured initials, no CDN call
+  const isCrypto = !(id.startsWith('stock:') || id.startsWith('metal:') || id.startsWith('fiat:') || id.startsWith('bond:') || id.startsWith('other:'));
+  d.textContent = abbrev(holding.coin_symbol || id.replace(/^[a-z]+:/, ''));
+  d.style.background = symbolGradient(holding.coin_symbol || id);
+  d.style.color = '#fff';
+  d.style.border = 'none';
+  if (!isCrypto) d.style.borderRadius = '7px'; // squircle for non-crypto, circle for crypto
+  return d;
+}
+
+// Returns an <img> of the real asset logo, falling back to a letter badge on
+// missing/broken images. `cls` is the base class (holding-icon / market-icon).
+function assetIcon(holding, cls) {
+  const url = holding.coin_image;
+  if (url && /^https?:\/\//.test(url)) {
+    const img = document.createElement('img');
+    img.className = cls + ' ' + cls + '-img';
+    img.src = url;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', () => img.replaceWith(letterBadge(holding, cls)));
+    return img;
+  }
+  return letterBadge(holding, cls);
+}
+
 // ── Portfolio math ────────────────────────────────────────────────────────────
 
 function computeHoldings(transactions) {
@@ -57,11 +100,12 @@ function computeHoldings(transactions) {
     const cost = Number(tx.total_cost ?? (qty * (tx.price_per_unit ?? 0)));
     if (!isFinite(qty)) continue;
     if (!map.has(id)) {
-      map.set(id, { coin_id:id, coin_symbol:tx.coin_symbol||id, coin_name:tx.coin_name||id, amount:0, totalCost:0 });
+      map.set(id, { coin_id:id, coin_symbol:tx.coin_symbol||id, coin_name:tx.coin_name||id, coin_image:tx.coin_image||'', amount:0, totalCost:0 });
     }
     const h = map.get(id);
     if (tx.coin_symbol) h.coin_symbol = tx.coin_symbol;
     if (tx.coin_name)   h.coin_name   = tx.coin_name;
+    if (tx.coin_image && !h.coin_image) h.coin_image = tx.coin_image;
     const type = (tx.type||'').toLowerCase();
     if (type === 'buy'  || type === 'deposit')  { h.amount += qty; h.totalCost += cost; }
     if (type === 'sell' || type === 'withdraw') { h.amount -= qty; h.totalCost -= cost; }
@@ -215,9 +259,7 @@ function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl
 
   const left = document.createElement('div');
   left.className = 'holding-left';
-  const icon = document.createElement('div');
-  icon.className = 'holding-icon';
-  icon.textContent = abbrev(holding.coin_symbol);
+  const icon = assetIcon(holding, 'holding-icon');
   const info = document.createElement('div');
   info.className = 'holding-info';
   const sym = document.createElement('span');
@@ -264,9 +306,7 @@ function buildMarketRow(coin) {
 
   const left = document.createElement('div');
   left.className = 'market-left';
-  const icon = document.createElement('div');
-  icon.className = 'market-icon';
-  icon.textContent = abbrev(coin.symbol);
+  const icon = assetIcon({ coin_image: coin.image, coin_symbol: coin.symbol, coin_id: coin.id }, 'market-icon');
   const info = document.createElement('div');
   const sym = document.createElement('div');
   sym.className = 'market-sym';
@@ -479,6 +519,7 @@ let cachedData = null;
 let cachedPrices = {};
 let marketLoaded = false;
 let newsLoaded   = false;
+const shareStats = { change24h: null, allTimePct: null, assetCount: 0, topSymbol: '' };
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -532,14 +573,21 @@ function renderOverviewTab(holdingsArr, hideValues, syncedAt) {
     const pctChg = ((totalValue - totalValuePrev) / totalValuePrev) * 100;
     badge.className = 'change-badge' + (pctChg < 0 ? ' negative' : '');
     badge.textContent = hideValues ? '—' : fmtPct(pctChg);
+    shareStats.change24h = pctChg;
   } else {
     badge.className = 'change-badge loading'; badge.textContent = '—';
   }
+
+  // Privacy-safe stats for the share message (percentages + count only)
+  shareStats.assetCount = holdingsArr.length;
+  shareStats.topSymbol = holdingsArr[0]?.holding?.coin_symbol
+    ? holdingsArr[0].holding.coin_symbol.toUpperCase() : '';
 
   // P&L
   if (totalInvested > 0) {
     const gain = totalValue - totalInvested;
     const gainPct = (gain / totalInvested) * 100;
+    shareStats.allTimePct = gainPct;
     $('pnl-invested').textContent = hideValues ? '••••' : fmtUSD(totalInvested);
     const gainEl = $('pnl-gain');
     gainEl.textContent = hideValues ? '••••' : `${gain >= 0 ? '+' : ''}${fmtUSD(gain)} (${fmtPct(gainPct)})`;
@@ -645,14 +693,96 @@ async function loadMarketTab() {
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
+function readCache() {
+  return new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY] || null)));
+}
+
+function hasTransactions(d) {
+  return !!(d && Array.isArray(d.transactions) && d.transactions.length);
+}
+
+/**
+ * Ask any open walletlens.live tabs to push their localStorage into storage.
+ * Returns true if at least one tab was messaged, false if none were open.
+ */
+function syncFromOpenTabs() {
+  return new Promise(resolve => {
+    ext.tabs.query({ url: 'https://walletlens.live/*' }, tabs => {
+      if (!tabs?.length) return resolve(false);
+      Promise.all(
+        tabs.map(t => ext.tabs.sendMessage(t.id, { type: 'REQUEST_SYNC' }).catch(() => {}))
+      ).then(() => setTimeout(() => resolve(true), 700));
+    });
+  });
+}
+
+/**
+ * Last-resort sync when there's no cached data and no site tab is open:
+ * open walletlens.live in a background (inactive) tab so its content script
+ * reads localStorage and pushes it into storage, then close that tab.
+ * This is what lets the popup show the portfolio even when the user never
+ * manually opened the site on this device. Resolves true once real data lands.
+ */
+function fetchViaBackgroundTab(timeoutMs = 9000) {
+  return new Promise(resolve => {
+    let settled = false;
+    let createdTabId = null;
+    let timer = null;
+
+    const onChanged = (changes, area) => {
+      if (area === 'local' && changes[STORAGE_KEY] && hasTransactions(changes[STORAGE_KEY].newValue)) {
+        finish(true);
+      }
+    };
+    function cleanup() {
+      ext.storage.onChanged.removeListener(onChanged);
+      if (timer) clearTimeout(timer);
+      if (createdTabId != null) ext.tabs.remove(createdTabId).catch(() => {});
+    }
+    function finish(val) {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(val);
+    }
+
+    ext.storage.onChanged.addListener(onChanged);
+    timer = setTimeout(() => finish(false), timeoutMs);
+
+    try {
+      ext.tabs.create({ url: SITE + '/', active: false }, tab => {
+        createdTabId = tab?.id ?? null;
+        if (createdTabId == null) finish(false);
+      });
+    } catch {
+      finish(false);
+    }
+  });
+}
+
 async function render() {
   show('loading');
   hide('no-data');
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
 
-  const stored = await new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY]||null)));
+  // 1) Read whatever is already cached — this works fully offline / with the
+  //    site closed, as long as it has been synced at least once before.
+  let stored = await readCache();
 
-  if (!stored || !Array.isArray(stored.transactions) || !stored.transactions.length) {
+  // 2) If the site is open in a tab, refresh from it so the popup is current.
+  const siteOpen = await syncFromOpenTabs();
+  if (siteOpen) stored = await readCache();
+
+  // 3) Still nothing? The site has never synced on this device. Pull the data
+  //    ourselves by briefly opening walletlens.live in a background tab, so the
+  //    portfolio shows even when the user hasn't manually opened the site.
+  if (!hasTransactions(stored)) {
+    const cap = $('loading-caption'); if (cap) cap.hidden = false;
+    stored = await fetchViaBackgroundTab().then(ok => (ok ? readCache() : stored));
+    if (cap) cap.hidden = true;
+  }
+
+  if (!hasTransactions(stored)) {
     hide('loading'); show('no-data'); return;
   }
 
@@ -773,6 +903,63 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // Wallet filter change
 $('wallet-filter').addEventListener('change', renderHoldingsTab);
+
+// ── Share / marketing ─────────────────────────────────────────────────────────
+
+// Referral link — every shared link is attributed so growth is measurable.
+function shareLink(campaign) {
+  return `${SITE}/?ref=ext&utm_source=extension&utm_medium=share&utm_campaign=${campaign}`;
+}
+
+// Privacy-safe message: percentages and asset count only — never a balance.
+function buildShareText() {
+  const lines = [];
+  const a = shareStats.allTimePct, d = shareStats.change24h;
+  if (isFinite(a) && a !== null) {
+    lines.push(`My portfolio is ${a >= 0 ? 'up' : 'down'} ${Math.abs(a).toFixed(1)}% all-time 📊`);
+  } else if (isFinite(d) && d !== null) {
+    lines.push(`My portfolio moved ${d >= 0 ? '+' : ''}${d.toFixed(1)}% in 24h 📊`);
+  } else {
+    lines.push('I track my whole net worth — crypto, stocks & gold — in one place 📊');
+  }
+  lines.push('Free, private, no account — data never leaves my device. Tracked with WalletLens 👇');
+  return lines.join('\n');
+}
+
+function flashCopied() {
+  const el = $('share-copied');
+  if (!el) return;
+  el.hidden = false;
+  setTimeout(() => { el.hidden = true; }, 2200);
+}
+
+async function doShare(channel) {
+  const text = buildShareText();
+  const url  = shareLink('portfolio_share');
+  if (channel === 'copy') {
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); flashCopied(); }
+    catch { /* clipboard blocked — ignore */ }
+    return;
+  }
+  let target;
+  if (channel === 'x')        target = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  else if (channel === 'whatsapp') target = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`;
+  else if (channel === 'telegram') target = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  if (target) openURL(target);
+}
+
+document.querySelectorAll('.share-btn').forEach(btn => {
+  btn.addEventListener('click', () => doShare(btn.dataset.share));
+});
+
+// "Tell a friend" — promotes the free extension itself (top-of-funnel growth).
+$('btn-tell-friend')?.addEventListener('click', async () => {
+  const url = `${SITE}/?ref=ext&utm_source=extension&utm_medium=share&utm_campaign=tell_friend`;
+  const text = 'Found a free, private net-worth tracker — crypto, stocks, gold & cash in one dashboard, no account needed. There\'s a browser extension too 👇';
+  try { await navigator.clipboard.writeText(`${text}\n${url}`); flashCopied(); }
+  catch {}
+  openURL(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
