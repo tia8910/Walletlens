@@ -215,6 +215,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     buy_with_custom: '',   // ticker when buy_with === 'CUSTOM'
   })
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
+  const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
 
   useEffect(() => { loadData() }, [filterWallet])
@@ -429,8 +430,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     }).finally(() => setFetchingPrice(false))
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(e, force = false) {
+    if (e && e.preventDefault) e.preventDefault()
     if (!form.coin_id || !form.amount || !form.price_per_unit || !form.wallet_id) return
     if (form.category !== 'crypto' && !form.coin_symbol && !form.coin_name) return
 
@@ -448,6 +449,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       alert(`You only hold ${sellHoldings.amount} ${(sellHoldings.coin_symbol || '').toUpperCase()}. Reduce the amount.`)
       return
     }
+    // Buying with "None" / selling for "Remove" records no counter-asset —
+    // confirm that's intentional before recording.
+    if (!force && ((form.type === 'buy' && form.buy_with === 'NONE') || (form.type === 'sell' && form.sell_for === 'REMOVE'))) {
+      setConfirmNoneOpen(true)
+      return
+    }
+    setConfirmNoneOpen(false)
 
     // First-ever transaction = the user started their profile via manual entry.
     const isFirstHolding = transactions.length === 0
@@ -843,6 +851,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       </button>
                     ))}
                   </div>
+                  {form.amount && parseFloat(form.amount) > 0 && sellHoldings.amount > 0 && (
+                    <p className="bs-pct-live" style={{ marginTop: '0.5rem' }}>
+                      You're selling <strong>{(() => { const p = parseFloat(form.amount) / sellHoldings.amount * 100; return p >= 99.5 ? '100' : parseFloat(p.toFixed(p < 10 ? 1 : 0)) })()}%</strong> of your {(form.coin_symbol || '').toUpperCase()} position
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -981,6 +994,47 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 {form.type === 'buy' ? 'Record Buy' : 'Record Sell'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* "None / Remove" confirmation */}
+      {confirmNoneOpen && (
+        <div className="bs-confirm-overlay" style={{ position: 'fixed', zIndex: 1000 }} onClick={() => setConfirmNoneOpen(false)}>
+          <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+            <div className="bs-confirm-icon" style={{ color: form.type === 'buy' ? 'var(--g)' : '#f87171' }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
+              </svg>
+            </div>
+            {form.type === 'buy' ? (
+              <>
+                <h4 className="bs-confirm-title">Buy without spending anything?</h4>
+                <p className="bs-confirm-text">
+                  You chose <strong>None</strong>, so this just adds <strong>{(form.coin_symbol || '').toUpperCase()}</strong> to
+                  your holdings — no balance will be deducted. If you actually paid with cash or a coin you
+                  own, pick it so your other balances stay accurate.
+                </p>
+              </>
+            ) : (
+              <>
+                <h4 className="bs-confirm-title">Sell without receiving anything?</h4>
+                <p className="bs-confirm-text">
+                  You chose <strong>Remove</strong>, so this just takes <strong>{(form.coin_symbol || '').toUpperCase()}</strong> out
+                  of your holdings — nothing will be credited back. If you got cash or another asset in
+                  return, pick it so it lands in your portfolio.
+                </p>
+              </>
+            )}
+            <div className="bs-confirm-actions">
+              <button className="bs-confirm-switch" onClick={() => setConfirmNoneOpen(false)}>
+                {form.type === 'buy' ? 'Choose what I paid with' : 'Choose what I received'}
+              </button>
+              <button className="bs-confirm-go" style={{ background: form.type === 'buy' ? 'var(--g)' : '#f87171' }}
+                onClick={() => handleSubmit(null, true)}>
+                {form.type === 'buy' ? 'Yes, just add it' : 'Yes, just remove it'}
+              </button>
+            </div>
           </div>
         </div>
       )}
