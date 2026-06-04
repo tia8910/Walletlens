@@ -645,21 +645,71 @@ async function loadMarketTab() {
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
+function readCache() {
+  return new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY] || null)));
+}
+
+function hasTransactions(d) {
+  return !!(d && Array.isArray(d.transactions) && d.transactions.length);
+}
+
 /**
  * Ask any open walletlens.live tabs to push their localStorage into storage.
  * Returns true if at least one tab was messaged, false if none were open.
- * Awaiting this before reading storage ensures the popup always sees fresh
- * data when the site is open — the key fix for "no profile" on desktop Chrome.
  */
 function syncFromOpenTabs() {
   return new Promise(resolve => {
     ext.tabs.query({ url: 'https://walletlens.live/*' }, tabs => {
-      if (!tabs?.length) return resolve(false)
+      if (!tabs?.length) return resolve(false);
       Promise.all(
         tabs.map(t => ext.tabs.sendMessage(t.id, { type: 'REQUEST_SYNC' }).catch(() => {}))
-      ).then(() => setTimeout(() => resolve(true), 700))
-    })
-  })
+      ).then(() => setTimeout(() => resolve(true), 700));
+    });
+  });
+}
+
+/**
+ * Last-resort sync when there's no cached data and no site tab is open:
+ * open walletlens.live in a background (inactive) tab so its content script
+ * reads localStorage and pushes it into storage, then close that tab.
+ * This is what lets the popup show the portfolio even when the user never
+ * manually opened the site on this device. Resolves true once real data lands.
+ */
+function fetchViaBackgroundTab(timeoutMs = 9000) {
+  return new Promise(resolve => {
+    let settled = false;
+    let createdTabId = null;
+    let timer = null;
+
+    const onChanged = (changes, area) => {
+      if (area === 'local' && changes[STORAGE_KEY] && hasTransactions(changes[STORAGE_KEY].newValue)) {
+        finish(true);
+      }
+    };
+    function cleanup() {
+      ext.storage.onChanged.removeListener(onChanged);
+      if (timer) clearTimeout(timer);
+      if (createdTabId != null) ext.tabs.remove(createdTabId).catch(() => {});
+    }
+    function finish(val) {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(val);
+    }
+
+    ext.storage.onChanged.addListener(onChanged);
+    timer = setTimeout(() => finish(false), timeoutMs);
+
+    try {
+      ext.tabs.create({ url: SITE + '/', active: false }, tab => {
+        createdTabId = tab?.id ?? null;
+        if (createdTabId == null) finish(false);
+      });
+    } catch {
+      finish(false);
+    }
+  });
 }
 
 async function render() {
@@ -667,15 +717,24 @@ async function render() {
   hide('no-data');
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
 
-  // Pull fresh data from walletlens.live if it's already open in a tab.
-  // Without this, desktop Chrome shows "no data" on first popup open because
-  // the content script hasn't synced yet (Kiwi works because the site tab is
-  // always open there before the popup is clicked).
-  await syncFromOpenTabs();
+  // 1) Read whatever is already cached — this works fully offline / with the
+  //    site closed, as long as it has been synced at least once before.
+  let stored = await readCache();
 
-  const stored = await new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY]||null)));
+  // 2) If the site is open in a tab, refresh from it so the popup is current.
+  const siteOpen = await syncFromOpenTabs();
+  if (siteOpen) stored = await readCache();
 
-  if (!stored || !Array.isArray(stored.transactions) || !stored.transactions.length) {
+  // 3) Still nothing? The site has never synced on this device. Pull the data
+  //    ourselves by briefly opening walletlens.live in a background tab, so the
+  //    portfolio shows even when the user hasn't manually opened the site.
+  if (!hasTransactions(stored)) {
+    const cap = $('loading-caption'); if (cap) cap.hidden = false;
+    stored = await fetchViaBackgroundTab().then(ok => (ok ? readCache() : stored));
+    if (cap) cap.hidden = true;
+  }
+
+  if (!hasTransactions(stored)) {
     hide('loading'); show('no-data'); return;
   }
 
