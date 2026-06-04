@@ -1068,47 +1068,62 @@ body {
 
 h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 
-/* ── New logo image component ── */
+/* ── New logo image component (transparent, theme-aware, animated) ── */
 .wl-logo-new {
-  display: inline-block;
+  display: inline-flex;
   position: relative;
   vertical-align: middle;
   flex-shrink: 0;
-  background: rgba(255,255,255,0.93);
-  border-radius: 10px;
-  padding: 3px 8px;
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
+  background: transparent;
+  /* aspect ratio of the artwork (~2.94:1) so the box hugs the image */
+  width: auto;
 }
-.wl-logo-new img { display: block; height: var(--logo-h, 32px); width: auto; }
+.wl-logo-img { display: block; height: 100%; width: auto; }
+/* Theme swap: default (dark UI) shows light-text logo; light UI shows dark-text */
+.wl-logo-img-light { display: none; }
+[data-wl-light] .wl-logo-img-dark  { display: none; }
+[data-wl-light] .wl-logo-img-light { display: block; }
 
-.wl-logo-new.wl-logo-animated {
-  animation: wl-logo-float 4s ease-in-out infinite, wl-logo-glow 3.5s ease-in-out infinite;
+/* Animated logo: gentle rise (echoes the upward arrow) + green glow + shimmer */
+.wl-logo-new.wl-logo-animated .wl-logo-img {
+  animation: wl-logo-rise 4.5s ease-in-out infinite;
+  filter: drop-shadow(0 3px 10px rgba(34,197,94,0.0));
+  will-change: transform, filter;
 }
+.wl-logo-new.wl-logo-animated {
+  animation: wl-logo-glowpulse 3.6s ease-in-out infinite;
+}
+/* Diagonal light sweep across the artwork — masked to the logo via the span */
 .wl-logo-new.wl-logo-animated::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
-  transform: translateX(-110%);
-  animation: wl-logo-shimmer 4.5s ease-in-out infinite 2s;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%);
+  transform: translateX(-130%) skewX(-12deg);
+  animation: wl-logo-shimmer 5s ease-in-out infinite 1.5s;
   pointer-events: none;
+  mix-blend-mode: screen;
 }
 
-@keyframes wl-logo-float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-4px); }
+/* Subtle continuous rise + breathe, evoking the rising arrow/bars */
+@keyframes wl-logo-rise {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45%       { transform: translateY(-5px) scale(1.015); }
+  70%       { transform: translateY(-2px) scale(1.005); }
 }
-@keyframes wl-logo-glow {
-  0%, 100% { box-shadow: 0 2px 12px rgba(74,222,128,0.22), 0 0 0 0 rgba(74,222,128,0); }
-  50%       { box-shadow: 0 6px 28px rgba(74,222,128,0.55), 0 0 30px rgba(74,222,128,0.18); }
+/* Green halo that pulses, brightest at the peak of the rise */
+@keyframes wl-logo-glowpulse {
+  0%, 100% { filter: drop-shadow(0 2px 6px rgba(34,197,94,0.10)); }
+  45%       { filter: drop-shadow(0 8px 22px rgba(34,197,94,0.45)); }
 }
 @keyframes wl-logo-shimmer {
-  0%   { transform: translateX(-110%); }
-  100% { transform: translateX(210%); }
+  0%   { transform: translateX(-130%) skewX(-12deg); }
+  55%  { transform: translateX(230%)  skewX(-12deg); }
+  100% { transform: translateX(230%)  skewX(-12deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wl-logo-new.wl-logo-animated { animation: none; }
+  .wl-logo-new.wl-logo-animated,
+  .wl-logo-new.wl-logo-animated .wl-logo-img { animation: none; filter: none; }
   .wl-logo-new.wl-logo-animated::after { display: none; }
 }
 
@@ -5878,10 +5893,11 @@ select.bs-input option { background: var(--bg3); }
 .lp-brand-lockup {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.4rem;
   margin-bottom: 1.6rem;
 }
-.lp-brand-logo { flex-shrink: 0; }
+.lp-brand-logo { flex-shrink: 0; width: auto !important; }
 .lp-brand-text {
   display: flex;
   flex-direction: column;
@@ -7358,7 +7374,7 @@ input[type="date"] { color-scheme: dark; }
   .lp-brand-name { font-size: 1.35rem; }
   .lp-hero-h1 { font-size: clamp(1.8rem, 9vw, 2.6rem); text-align: center; }
   .lp-brand-lockup { gap: 0.9rem; }
-  .lp-brand-logo { width: 56px !important; height: 56px !important; }
+  .lp-brand-logo { width: auto !important; height: 64px !important; }
   .lp-brand-title { font-size: 1.8rem; }
   .lp-hero-sub { font-size: 0.88rem; text-align: center; padding: 0 0.5rem; }
   .lp-cta-row { flex-direction: column; align-items: stretch; gap: 0.6rem; width: 100%; max-width: 320px; }
