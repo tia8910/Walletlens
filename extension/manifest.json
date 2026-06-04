@@ -3,7 +3,7 @@
   "name": "WalletLens Portfolio",
   "short_name": "WalletLens",
   "version": "1.3.0",
-  "description": "View your WalletLens portfolio — total value, 24h change, P&L, asset logos, market data and signals — and share your performance, right from your toolbar.",
+  "description": "See your WalletLens portfolio — value, 24h change, P&L, asset logos & signals — and share your performance from your toolbar.",
   "icons": {
     "16":  "icons/icon-16.png",
     "48":  "icons/icon-48.png",
