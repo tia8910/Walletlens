@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 
 const GOLD_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23c49a08'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23f7d44a'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.18)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.55)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAu%3C/text%3E%3C/svg%3E`
 
@@ -297,22 +297,24 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
   const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'light')
 
-  const setTheme = (id) => {
+  const setTheme = useCallback((id) => {
     setThemeState(id)
     localStorage.setItem('wl_theme', id)
     applyTheme(id, mode)
-  }
+  }, [mode])
 
-  const setMode = (m) => {
+  const setMode = useCallback((m) => {
     setModeState(m)
     localStorage.setItem('wl_mode', m)
     applyTheme(theme, m)
-  }
+  }, [theme])
 
   useEffect(() => { applyTheme(theme, mode) }, []) // eslint-disable-line
 
+  const value = useMemo(() => ({ theme, mode, setTheme, setMode }), [theme, mode, setTheme, setMode])
+
   return (
-    <ThemeContext.Provider value={{ theme, mode, setTheme, setMode }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   )
