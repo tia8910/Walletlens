@@ -231,7 +231,7 @@ export default function Landing() {
         <div className="lp-hero-inner">
           {/* ── Brand lockup ── */}
           <div className="lp-brand-lockup">
-            <Logo size={80} animated className="lp-brand-logo" />
+            <Logo size={96} animated className="lp-brand-logo" />
           </div>
 
           <h1 className="lp-hero-h1">
@@ -694,7 +694,7 @@ export default function Landing() {
       <section className="lp-final">
         <div className="lp-final-glow" />
         <div className="lp-final-brand-lockup">
-          <Logo size={64} animated className="lp-brand-logo" />
+          <Logo size={72} animated className="lp-brand-logo" />
         </div>
         <h2 className="lp-final-h2">
           {t('finalH2a')}<br />{t('finalH2b')}
