@@ -238,7 +238,8 @@ export default function Landing() {
         <div className="lp-hero-inner">
           {/* ── Brand lockup: logo + name + tagline + TRACK|ANALYZE|GROW ── */}
           <div className="lp-brand-lockup">
-            <Logo size={80} animated className="lp-brand-logo" variant="dark" />
+            <Logo size={80} className="lp-brand-logo" variant="dark" />
+            <div className="lp-brand-text">
             <div className="lp-brand-title">WalletLens</div>
             <div className="lp-brand-subtext">
               <div className="lp-brand-tagline">{t('brandTag')}</div>
@@ -258,6 +259,7 @@ export default function Landing() {
                   {lang === 'ar' ? 'نمو' : 'GROW'}
                 </span>
               </div>
+            </div>
             </div>
           </div>
 
