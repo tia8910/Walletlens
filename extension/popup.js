@@ -645,10 +645,33 @@ async function loadMarketTab() {
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
+/**
+ * Ask any open walletlens.live tabs to push their localStorage into storage.
+ * Returns true if at least one tab was messaged, false if none were open.
+ * Awaiting this before reading storage ensures the popup always sees fresh
+ * data when the site is open — the key fix for "no profile" on desktop Chrome.
+ */
+function syncFromOpenTabs() {
+  return new Promise(resolve => {
+    ext.tabs.query({ url: 'https://walletlens.live/*' }, tabs => {
+      if (!tabs?.length) return resolve(false)
+      Promise.all(
+        tabs.map(t => ext.tabs.sendMessage(t.id, { type: 'REQUEST_SYNC' }).catch(() => {}))
+      ).then(() => setTimeout(() => resolve(true), 700))
+    })
+  })
+}
+
 async function render() {
   show('loading');
   hide('no-data');
   document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
+
+  // Pull fresh data from walletlens.live if it's already open in a tab.
+  // Without this, desktop Chrome shows "no data" on first popup open because
+  // the content script hasn't synced yet (Kiwi works because the site tab is
+  // always open there before the popup is clicked).
+  await syncFromOpenTabs();
 
   const stored = await new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY]||null)));
 
