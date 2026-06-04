@@ -5892,23 +5892,22 @@ select.bs-input option { background: var(--bg3); }
   100% { transform: scale(1); }
 }
 
-/* ── Brand lockup: logo centered on the WalletLens word, sub-text beneath ── */
+/* ── Brand lockup: logo beside WalletLens word ── */
 .lp-brand-lockup {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: center;
-  column-gap: 0.9rem;
-  row-gap: 0.3rem;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   margin-bottom: 1.6rem;
 }
-/* Logo lives in row 1 only so it vertically centers against the title word */
-.lp-brand-logo { flex-shrink: 0; grid-column: 1; grid-row: 1; align-self: center; }
-/* Title in row 1, sub-text (tagline + actions) in row 2 under the word */
-.lp-brand-title { grid-column: 2; grid-row: 1; align-self: center; }
+.lp-brand-logo { flex-shrink: 0; display: block; }
+.lp-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
 .lp-brand-subtext {
-  grid-column: 2;
-  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -7383,8 +7382,8 @@ input[type="date"] { color-scheme: dark; }
   .lp-logo-orb { transform: scale(0.8); margin-bottom: -0.5rem; }
   .lp-brand-name { font-size: 1.35rem; }
   .lp-hero-h1 { font-size: clamp(1.8rem, 9vw, 2.6rem); text-align: center; }
-  .lp-brand-lockup { column-gap: 0.7rem; }
-  .lp-brand-logo { height: 56px !important; width: auto !important; }
+  .lp-brand-lockup { gap: 0.5rem; }
+  .lp-brand-logo { flex-shrink: 0; }
   .lp-brand-title { font-size: 1.8rem; }
   .lp-hero-sub { font-size: 0.88rem; text-align: center; padding: 0 0.5rem; }
   .lp-cta-row { flex-direction: column; align-items: stretch; gap: 0.6rem; width: 100%; max-width: 320px; }
