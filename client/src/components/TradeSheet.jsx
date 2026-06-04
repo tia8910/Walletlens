@@ -194,6 +194,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [holdingsFilter, setHoldingsFilter] = useState('')
   const [spendPct, setSpendPct]         = useState(null)
   const [sellPct, setSellPct]           = useState(null)
+  const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const [mode, setMode]                 = useState(type)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
@@ -207,7 +208,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!open) return
     setMode(type)
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
-    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null); setSellPct(null)
+    setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null); setSellPct(null); setConfirmNoneOpen(false)
     setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput(''); setMetalUnit('oz')
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
@@ -311,6 +312,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const buyWithBalanceUsd = buyWithHolding?.value ?? 0
   const buyWithBalanceAmt = buyWithHolding?.amount ?? 0
 
+  // Live "% of balance" this trade represents — keeps the percentage in sync
+  // with whatever the user typed (USD value, quantity, or a % button). This is
+  // what makes the percentage reflect the entered USD value in real time.
+  const pctBalanceUsd = isBuy ? buyWithBalanceUsd : (holdingForCoin?.value ?? 0)
+  const livePct = (pctBalanceUsd > 0 && total > 0) ? (total / pctBalanceUsd) * 100 : null
+  const livePctLabel = livePct == null ? null
+    : livePct >= 99.5 ? '100' : parseFloat(livePct.toFixed(livePct < 10 ? 1 : 0)).toString()
+  // A discrete % button is "active" when the live percentage lands on it,
+  // regardless of whether the user clicked it or typed an equivalent amount.
+  const pctIsActive = (stored, pct) => stored === pct || (livePct != null && Math.abs(livePct - pct) < 0.5)
+
   // Recalculate amount when price arrives after a % pct is selected
   useEffect(() => {
     if (!spendPct || !buyWithBalanceUsd || !price || price === '…') return
@@ -348,7 +360,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   // Swipe-to-close disabled — use the × button only
 
-  async function submit() {
+  async function submit(force = false) {
     if (!asset || !amount || !price || price === '…') { setMsg('Fill all fields.'); return }
     if (isBuy && !buyWith) { setMsg('Choose what to buy with.'); return }
     if (!isBuy && !sellFor) { setMsg('Choose what to sell for.'); return }
@@ -361,6 +373,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     // A sell can never exceed the held balance (would create a negative position).
     if (!isBuy && holdingForCoin && isFinite(holdingForCoin.amount) && amtCheck > holdingForCoin.amount + 1e-9) {
       setMsg(`You only hold ${parseFloat(Number(holdingForCoin.amount).toFixed(8))} ${holdingForCoin.coin_symbol?.toUpperCase() || ''}.`); return
+    }
+    // Buying with "None" / selling for "Remove" records no counter-asset — make
+    // sure that's intentional rather than the user skipping past the selector.
+    if (!force && ((isBuy && buyWith === 'NONE') || (!isBuy && sellFor === 'REMOVE'))) {
+      setConfirmNoneOpen(true); return
     }
     setBusy(true); setMsg('')
     // Whether this is the very first holding — drives the "profile_created" event
@@ -534,7 +551,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="bs-pct-row">
                         {[25, 50, 75, 100].map(pct => (
                           <button key={pct} type="button"
-                            className={`bs-pct-btn ${spendPct === pct ? 'active' : ''}`}
+                            className={`bs-pct-btn ${pctIsActive(spendPct, pct) ? 'active' : ''}`}
                             onClick={() => {
                               setSpendPct(pct)
                               const spendUsd = buyWithBalanceUsd * pct / 100
@@ -545,6 +562,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                           </button>
                         ))}
                       </div>
+                      {livePctLabel != null && (
+                        <p className="bs-pct-live">
+                          This buy uses <strong>{livePctLabel}%</strong> of your {buyWith} balance
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <p className="bs-hint bs-buywith-warn">
@@ -770,7 +792,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   <div className="bs-pct-row">
                     {[25, 50, 75, 100].map(pct => (
                       <button key={pct} type="button"
-                        className={`bs-pct-btn ${sellPct === pct ? 'active' : ''}`}
+                        className={`bs-pct-btn ${pctIsActive(sellPct, pct) ? 'active' : ''}`}
                         onClick={() => {
                           setSellPct(pct)
                           const qty = Number(holdingForCoin.amount) * pct / 100
@@ -780,6 +802,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </button>
                     ))}
                   </div>
+                  {livePctLabel != null && (
+                    <p className="bs-pct-live">
+                      You're selling <strong>{livePctLabel}%</strong> of your {holdingForCoin.coin_symbol?.toUpperCase()} position
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -953,6 +980,47 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </button>
           </div>
           </>
+        )}
+
+        {/* ── "None / Remove" confirmation ── */}
+        {confirmNoneOpen && (
+          <div className="bs-confirm-overlay" onClick={() => setConfirmNoneOpen(false)}>
+            <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+              <div className="bs-confirm-icon" style={{ color: accent }}>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
+                </svg>
+              </div>
+              {isBuy ? (
+                <>
+                  <h4 className="bs-confirm-title">Buy without spending anything?</h4>
+                  <p className="bs-confirm-text">
+                    You chose <strong>None</strong>, so this just adds <strong>{asset?.symbol}</strong> to
+                    your holdings — no balance will be deducted. If you actually paid with cash or a coin
+                    you own, pick it so your other balances stay accurate.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h4 className="bs-confirm-title">Sell without receiving anything?</h4>
+                  <p className="bs-confirm-text">
+                    You chose <strong>Remove</strong>, so this just takes <strong>{asset?.symbol}</strong> out
+                    of your holdings — nothing will be credited back. If you got cash or another asset in
+                    return, pick it so it lands in your portfolio.
+                  </p>
+                </>
+              )}
+              <div className="bs-confirm-actions">
+                <button className="bs-confirm-switch" onClick={() => setConfirmNoneOpen(false)}>
+                  {isBuy ? 'Choose what I paid with' : 'Choose what I received'}
+                </button>
+                <button className="bs-confirm-go" style={{ background: accent }}
+                  onClick={() => { setConfirmNoneOpen(false); submit(true) }}>
+                  {isBuy ? 'Yes, just add it' : 'Yes, just remove it'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

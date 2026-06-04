@@ -5315,6 +5315,68 @@ tr:last-child td { border-bottom: none; }
 }
 .bs-backdrop-open { opacity: 1; pointer-events: all; }
 
+/* Live "% of balance" hint under the percentage quick-fill buttons */
+.bs-pct-live {
+  margin: 0.45rem 0 0;
+  font-size: 0.76rem;
+  color: var(--text-sub);
+  text-align: center;
+}
+.bs-pct-live strong { color: var(--g); font-weight: 800; }
+
+/* "None / Remove" confirmation — overlays the open sheet */
+.bs-confirm-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  border-radius: inherit;
+  animation: bsConfirmFade 0.18s ease;
+}
+@keyframes bsConfirmFade { from { opacity: 0; } to { opacity: 1; } }
+.bs-confirm-card {
+  width: 100%; max-width: 340px;
+  background: var(--card-bg);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 1.4rem 1.25rem 1.15rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  text-align: center;
+  animation: bsConfirmPop 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes bsConfirmPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.bs-confirm-icon {
+  width: 56px; height: 56px; margin: 0 auto 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(var(--g-rgb),0.12);
+}
+.bs-confirm-title {
+  margin: 0 0 0.5rem; font-size: 1.06rem; font-weight: 800; color: var(--text);
+}
+.bs-confirm-text {
+  margin: 0 0 1.15rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-sub);
+}
+.bs-confirm-text strong { color: var(--text); }
+.bs-confirm-actions { display: flex; flex-direction: column; gap: 0.55rem; }
+.bs-confirm-switch, .bs-confirm-go {
+  width: 100%; padding: 0.7rem 1rem;
+  border-radius: 12px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: filter 0.15s, transform 0.1s, background 0.15s;
+}
+.bs-confirm-go { border: none; color: #fff; }
+.bs-confirm-go:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.bs-confirm-go:active { transform: scale(0.99); }
+.bs-confirm-switch {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--text);
+}
+.bs-confirm-switch:hover { background: rgba(255,255,255,0.06); }
+[data-wl-light] .bs-confirm-switch { border-color: rgba(0,0,0,0.16); }
+[data-wl-light] .bs-confirm-switch:hover { background: rgba(0,0,0,0.04); }
+
 .bs-sheet {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
   background: var(--card-bg);
