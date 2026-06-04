@@ -149,6 +149,7 @@ html,body {
   display:flex; align-items:center; justify-content:center;
   font-size:9.5px; font-weight:700; color:var(--green); flex-shrink:0; letter-spacing:-0.3px;
 }
+.holding-icon-img { object-fit:cover; background:var(--surface) }
 .holding-info  { display:flex; flex-direction:column; gap:1px; min-width:0 }
 .holding-symbol { font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap }
 .holding-amount { font-size:10.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
@@ -184,6 +185,42 @@ html,body {
    on a near-white OS menu (illegible). Force a solid dark bg + readable text. */
 .wallet-select option { background:#0e2a16; color:#e2f5ea }
 .holdings-count { font-size:11px; color:var(--text-muted) }
+
+/* ── Share section ── */
+.share-section { padding:4px 14px 10px }
+.share-sub { font-size:10px; color:var(--text-muted); margin:-4px 0 8px }
+.share-row { display:grid; grid-template-columns:repeat(4,1fr); gap:5px }
+.share-btn {
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  color:var(--text-sub); font-family:inherit; font-size:11px; font-weight:600;
+  padding:7px 4px; cursor:pointer; text-align:center;
+  transition:background .15s,border-color .15s,color .15s,transform .1s;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.share-btn:hover  { transform:translateY(-1px) }
+.share-btn:active { transform:scale(.97) }
+.share-x:hover  { background:#111; border-color:#333; color:#fff }
+.share-wa:hover { background:rgba(37,211,102,.15); border-color:rgba(37,211,102,.5); color:#25d366 }
+.share-tg:hover { background:rgba(34,158,217,.15); border-color:rgba(34,158,217,.5); color:#229ed9 }
+.share-cp:hover { background:var(--green-dim); border-color:rgba(74,222,128,.4); color:var(--green) }
+.share-copied { font-size:10.5px; color:var(--green); text-align:center; margin-top:7px; font-weight:600 }
+
+/* ── Promo / marketing footer ── */
+.promo-footer {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; padding:8px 14px;
+  border-top:1px solid var(--border);
+  background:linear-gradient(90deg, rgba(74,222,128,.06), transparent);
+}
+.promo-tag { font-size:10px; font-weight:700; letter-spacing:.4px; color:var(--text-muted); text-transform:uppercase }
+.promo-cta {
+  background:var(--green-dim); border:1px solid rgba(74,222,128,.35); border-radius:8px;
+  color:var(--green); font-family:inherit; font-size:11.5px; font-weight:700;
+  padding:6px 12px; cursor:pointer; white-space:nowrap;
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.promo-cta:hover  { background:rgba(74,222,128,.24); border-color:rgba(74,222,128,.6) }
+.promo-cta:active { transform:scale(.97) }
 
 /* ── Quick nav ── */
 .quick-nav {
@@ -224,6 +261,7 @@ html,body {
   border:1px solid rgba(74,222,128,.2); display:flex; align-items:center;
   justify-content:center; font-size:9.5px; font-weight:700; color:var(--green); flex-shrink:0;
 }
+.market-icon-img { object-fit:cover; background:var(--surface) }
 .market-sym   { font-size:12.5px; font-weight:700; color:var(--text) }
 .market-name  { font-size:10.5px; color:var(--text-muted) }
 .market-right { text-align:right }

@@ -123,6 +123,19 @@
       <button class="nav-btn" data-path="/dashboard" data-tab-nav="targets">🎯 Targets</button>
     </div>
 
+    <!-- Share -->
+    <section class="share-section">
+      <p class="section-title">Share your performance</p>
+      <p class="share-sub">Brag with percentages — never your balance. Your numbers stay private.</p>
+      <div class="share-row">
+        <button class="share-btn share-x"  data-share="x"        title="Share on X">𝕏</button>
+        <button class="share-btn share-wa" data-share="whatsapp" title="Share on WhatsApp">WhatsApp</button>
+        <button class="share-btn share-tg" data-share="telegram" title="Share on Telegram">Telegram</button>
+        <button class="share-btn share-cp" data-share="copy"     title="Copy link">Copy</button>
+      </div>
+      <p id="share-copied" class="share-copied" hidden>✅ Copied — paste it anywhere</p>
+    </section>
+
     <p id="last-synced-ov" class="last-synced">—</p>
   </div>
 
@@ -184,6 +197,12 @@
       <p class="holdings-empty" style="padding:20px 0">Select a coin to see analysis</p>
     </div>
   </div>
+
+  <!-- ── Marketing footer (always visible) ── -->
+  <footer class="promo-footer">
+    <span class="promo-tag">Free · Private · No account</span>
+    <button id="btn-tell-friend" class="promo-cta">Tell a friend →</button>
+  </footer>
 
   <!-- ── Import Panel (full-screen overlay) ── -->
   <div id="import-panel" hidden>
