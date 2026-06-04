@@ -14,7 +14,7 @@ import Icon from '../components/Icon'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
-import { track, trackPortfolioLoaded } from '../analytics'
+import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
@@ -1093,6 +1093,9 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
     if (!walletId || !coin || !symbol || !amount || !price) { setMsg('Fill all fields.'); return }
     setBusy(true)
     try {
+      // First-ever transaction = the user started their profile via manual entry.
+      let isFirstHolding = false
+      try { isFirstHolding = (await api.getTransactions()).length === 0 } catch {}
       const amt = parseFloat(amount), ppu = parseFloat(price)
       await api.addTransaction({
         wallet_id: walletId, type,
@@ -1113,6 +1116,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
         source:         'manage_tab',
       })
       track('trade_submitted', { trade_type: type, asset_symbol: symbol.toUpperCase(), asset_category: 'crypto', trade_value_usd: valueUsd, source: 'manage_tab' })
+      if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'manage_tab' })
       setMsg('Trade added!'); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
     } finally { setBusy(false) }

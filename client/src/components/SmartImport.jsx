@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
-import { track } from '../analytics'
+import { track, trackProfileCreated } from '../analytics'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -250,6 +250,11 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
           date:          r.date || today,
         })
       }
+      trackProfileCreated({
+        method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet',
+        assetCount: valid.length,
+        source: 'smart_import',
+      })
       showMsg(`Imported ${valid.length} transaction(s) successfully!`, 'ok')
       setRows([])
       setPreview(null)

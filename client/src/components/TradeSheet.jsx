@@ -29,7 +29,7 @@ function playTradeSound(isBuy) {
   } catch {}
 }
 import CoinLogo from './CoinLogo'
-import { track } from '../analytics'
+import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
 
 
@@ -363,6 +363,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       setMsg(`You only hold ${parseFloat(Number(holdingForCoin.amount).toFixed(8))} ${holdingForCoin.coin_symbol?.toUpperCase() || ''}.`); return
     }
     setBusy(true); setMsg('')
+    // Whether this is the very first holding — drives the "profile_created" event
+    // so we learn the user STARTED their portfolio with a manual trade.
+    const isFirstHolding = !Array.isArray(holdings) || holdings.length === 0
     try {
       // Auto-create a default wallet if the user is trading before making one,
       // so they never have to set up a wallet first.
@@ -447,6 +450,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         asset_category: assetCat,
         trade_value_usd: valueUsd,
       })
+
+      // First manual trade = the user started their profile this way.
+      if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'trade_sheet' })
       setTimeout(() => { onClose(); onDone() }, 1200)
     } catch { setMsg('Failed. Try again.') }
     finally { setBusy(false) }

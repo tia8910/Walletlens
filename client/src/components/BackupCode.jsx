@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import QRCode from 'qrcode'
 import jsQR from 'jsqr'
+import { trackProfileCreated } from '../analytics'
 
 const BACKUP_KEYS = [
   'crypto_tracker_transactions',
@@ -195,6 +196,8 @@ export default function BackupCode({ hideTrigger = false }) {
   const [confirmImport, setConfirmImport] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [importing, setImporting] = useState(false)
+  // How the current importText was supplied — drives the analytics method tag.
+  const importSourceRef = useRef('backup_code')
 
   // QR export
   const [showQr, setShowQr] = useState(false)
@@ -293,6 +296,7 @@ export default function BackupCode({ hideTrigger = false }) {
       if (result.complete) {
         stopCamera()
         setScanMsg('')
+        importSourceRef.current = 'qr_scan'
         setImportText(result.text)
       } else {
         setScanMsg(`Part ${result.got}/${result.total} scanned — scan the next QR code`)
@@ -327,6 +331,7 @@ export default function BackupCode({ hideTrigger = false }) {
     setError(''); setImporting(true)
     try {
       const result = await applyBackupCode(importText)
+      trackProfileCreated({ method: importSourceRef.current, assetCount: result?.restored, source: 'backup_import' })
       setImportResult(result); setConfirmImport(false)
       // Full navigation to the dashboard re-reads the restored localStorage and
       // lands on the overview tab (Dashboard defaults to 'overview' on load).
@@ -353,7 +358,7 @@ export default function BackupCode({ hideTrigger = false }) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const code = jsQR(imageData.data, imageData.width, imageData.height)
-        if (code?.data) { setImportText(code.data); setError('') }
+        if (code?.data) { importSourceRef.current = 'qr_image'; setImportText(code.data); setError('') }
         else { setError('No QR code found in that image. Try a clearer, more cropped image — or paste the backup code instead.') }
       } catch {
         setError('Could not read that image. Try pasting the backup code instead.')
@@ -506,7 +511,7 @@ export default function BackupCode({ hideTrigger = false }) {
                 Paste your backup code, upload a saved <strong>QR image</strong>, or scan one with your camera to restore. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
               </p>
               <textarea value={importText}
-                onChange={e => { setImportText(e.target.value); setError(''); setImportResult(null) }}
+                onChange={e => { importSourceRef.current = 'backup_code'; setImportText(e.target.value); setError(''); setImportResult(null) }}
                 placeholder="Paste backup code here…" style={{
                   width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
                   border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'#e2e8f0',
