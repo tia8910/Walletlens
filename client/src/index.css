@@ -1068,6 +1068,50 @@ body {
 
 h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 
+/* ── New logo image component ── */
+.wl-logo-new {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.93);
+  border-radius: 10px;
+  padding: 3px 8px;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+.wl-logo-new img { display: block; height: var(--logo-h, 32px); width: auto; }
+
+.wl-logo-new.wl-logo-animated {
+  animation: wl-logo-float 4s ease-in-out infinite, wl-logo-glow 3.5s ease-in-out infinite;
+}
+.wl-logo-new.wl-logo-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
+  transform: translateX(-110%);
+  animation: wl-logo-shimmer 4.5s ease-in-out infinite 2s;
+  pointer-events: none;
+}
+
+@keyframes wl-logo-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+@keyframes wl-logo-glow {
+  0%, 100% { box-shadow: 0 2px 12px rgba(74,222,128,0.22), 0 0 0 0 rgba(74,222,128,0); }
+  50%       { box-shadow: 0 6px 28px rgba(74,222,128,0.55), 0 0 30px rgba(74,222,128,0.18); }
+}
+@keyframes wl-logo-shimmer {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(210%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-logo-new.wl-logo-animated { animation: none; }
+  .wl-logo-new.wl-logo-animated::after { display: none; }
+}
+
 /* ── Animated zooming-lens logo ── */
 .lens-ring {
   width: 38px; height: 38px;
