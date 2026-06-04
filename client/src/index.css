@@ -5892,15 +5892,22 @@ select.bs-input option { background: var(--bg3); }
   100% { transform: scale(1); }
 }
 
-/* ── Brand lockup (horizontal: logo + text block) ── */
+/* ── Brand lockup: logo centered on the WalletLens word, sub-text beneath ── */
 .lp-brand-lockup {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 1.4rem;
+  row-gap: 0.3rem;
   align-items: center;
-  gap: 1.4rem;
   margin-bottom: 1.6rem;
 }
-.lp-brand-logo { flex-shrink: 0; }
-.lp-brand-text {
+/* Logo lives in row 1 only so it vertically centers against the title word */
+.lp-brand-logo { flex-shrink: 0; grid-column: 1; grid-row: 1; align-self: center; }
+/* Title in row 1, sub-text (tagline + actions) in row 2 under the word */
+.lp-brand-title { grid-column: 2; grid-row: 1; align-self: center; }
+.lp-brand-subtext {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

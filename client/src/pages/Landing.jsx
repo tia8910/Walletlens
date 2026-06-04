@@ -239,8 +239,8 @@ export default function Landing() {
           {/* ── Brand lockup: logo + name + tagline + TRACK|ANALYZE|GROW ── */}
           <div className="lp-brand-lockup">
             <Logo size={80} animated className="lp-brand-logo" variant="dark" />
-            <div className="lp-brand-text">
-              <div className="lp-brand-title">WalletLens</div>
+            <div className="lp-brand-title">WalletLens</div>
+            <div className="lp-brand-subtext">
               <div className="lp-brand-tagline">{t('brandTag')}</div>
               <div className="lp-brand-actions">
                 <span className={`lp-brand-action${actionIdx === 0 ? ' lp-brand-action-active' : ''}`}>
