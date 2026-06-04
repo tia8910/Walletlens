@@ -1,9 +1,12 @@
 import { memo } from 'react'
+import { useTheme } from '../ThemeContext'
 
 function Logo({ size = 32, animated = false, className = '' }) {
+  const { mode } = useTheme()
+  const src = mode === 'light' ? '/wl-logo-light.png' : '/wl-logo-transparent.png'
   return (
     <img
-      src="/wl-logo-transparent.png"
+      src={src}
       width={size}
       height={size}
       alt="WalletLens"
