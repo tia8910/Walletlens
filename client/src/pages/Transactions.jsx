@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
-import { track } from '../analytics'
+import { track, trackProfileCreated } from '../analytics'
 
 // ─── Receive-leg resolver for sell proceeds ───
 // Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
@@ -449,6 +449,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       return
     }
 
+    // First-ever transaction = the user started their profile via manual entry.
+    const isFirstHolding = transactions.length === 0
+
     // Record the primary transaction (sell/buy)
     await api.addTransaction({
       ...form,
@@ -530,6 +533,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       source:         'transactions_page',
     })
     track('trade_submitted', { trade_type: form.type, asset_symbol: form.coin_symbol, trade_value_usd: valueUsd })
+    if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'transactions_page' })
 
     setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '', buy_with: 'NONE', buy_with_custom: '' })
     setCoinSearch('')

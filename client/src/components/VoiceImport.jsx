@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { loadData, saveData, bumpId } from '../data/storage'
-import { track } from '../analytics'
+import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import { parseTradesWithClaude } from '../voiceAi'
@@ -1311,6 +1311,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       }
     }
     saveData('transactions', txs)
+    trackProfileCreated({ method: 'voice', assetCount: ready.length, source: 'voice_import' })
     track('voice_import_saved', {
       lang,
       tx_count: ready.length,

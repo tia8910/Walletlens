@@ -109,6 +109,22 @@ export function trackFeatureEngagement(feature, depth = 1) {
   })
 }
 
+// ── Profile creation tracking ──────────────────────────────────────────────
+// Fires ONCE whenever a user populates their portfolio, tagged with the exact
+// METHOD they used. This is the single funnel-completion event to watch in GA4
+// Realtime to see HOW users build their profiles.
+//   method: 'backup_code' | 'qr_scan' | 'screenshot' | 'voice' |
+//           'manual_trade' | 'extension_sync' | 'demo'
+export function trackProfileCreated({ method, assetCount, source }) {
+  if (typeof window.gtag !== 'function') return
+  gtag('event', 'profile_created', {
+    page: window.location.pathname,
+    method,
+    asset_count: assetCount ?? 0,
+    source: source || method,
+  })
+}
+
 // Track referral link clicks with full context
 export function trackReferral({ exchange, source, assetContext }) {
   if (typeof window.gtag !== 'function') return
