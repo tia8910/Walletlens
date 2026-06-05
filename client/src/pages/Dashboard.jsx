@@ -2474,6 +2474,7 @@ export default function Dashboard() {
   const [holdingsCat,     setHoldingsCat]     = useState('all')
   const [holdingsSort,    setHoldingsSort]    = useState('value')
   const [holdingsSortDir, setHoldingsSortDir] = useState('desc')
+  const [holdingsBadge,   setHoldingsBadge]   = useState('all')
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
@@ -2935,11 +2936,27 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
+  // Badge labels available per main category (derived from unfiltered enriched for stable chip list)
+  const badgesByCategory = useMemo(() => {
+    const result = {}
+    enriched.forEach(h => {
+      const cat   = categorizeAsset(h)
+      const badge = getAssetCategoryBadge(h)?.label
+      if (badge) {
+        if (!result[cat]) result[cat] = new Set()
+        result[cat].add(badge)
+      }
+    })
+    return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]))
+  }, [enriched])
+
+
   const filteredHoldings = useMemo(() => {
     let list = [...enriched]
     const q = holdingsSearch.trim().toLowerCase()
     if (q) list = list.filter(h => h.coin_symbol?.toLowerCase().includes(q) || h.coin_name?.toLowerCase().includes(q))
     if (holdingsCat !== 'all') list = list.filter(h => categorizeAsset(h) === holdingsCat)
+    if (holdingsBadge !== 'all') list = list.filter(h => getAssetCategoryBadge(h)?.label === holdingsBadge)
     list.sort((a, b) => {
       if (holdingsSort === 'name') {
         const cmp = (a.coin_symbol ?? '').localeCompare(b.coin_symbol ?? '')
@@ -2950,9 +2967,9 @@ export default function Dashboard() {
       return holdingsSortDir === 'asc' ? va - vb : vb - va
     })
     return list
-  }, [enriched, holdingsSearch, holdingsCat, holdingsSort, holdingsSortDir])
+  }, [enriched, holdingsSearch, holdingsCat, holdingsBadge, holdingsSort, holdingsSortDir])
 
-  const isHoldingsFiltered = holdingsSearch.trim() !== '' || holdingsCat !== 'all'
+  const isHoldingsFiltered = holdingsSearch.trim() !== '' || holdingsCat !== 'all' || holdingsBadge !== 'all'
 
   const filteredStats = useMemo(() => {
     if (!isHoldingsFiltered || !filteredHoldings.length) return null
@@ -3693,7 +3710,7 @@ export default function Dashboard() {
                     {catBreakdown.length > 1 && (
                       <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
                         {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
-                          <button key={cat} onClick={() => setHoldingsCat(cat)} style={{ background: holdingsCat === cat ? 'var(--g)' : 'var(--surface-2)', color: holdingsCat === cat ? '#000' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'var(--g)' : 'var(--border)'}`, borderRadius:'20px', padding:'0.18rem 0.55rem', fontSize:'0.69rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'var(--g)' : 'var(--surface-2)', color: holdingsCat === cat ? '#000' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'var(--g)' : 'var(--border)'}`, borderRadius:'20px', padding:'0.18rem 0.55rem', fontSize:'0.69rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
                             {label}
                           </button>
                         ))}
@@ -3752,6 +3769,20 @@ export default function Dashboard() {
                                 </span>
                               )}
                             </div>
+                            {/* Sub-category badge chips — shown inside the group when >1 badge type exists */}
+                            {badgesByCategory[cat]?.length > 1 && (
+                              <div style={{ display:'flex', gap:'0.3rem', flexWrap:'wrap', padding:'0.3rem 0 0.4rem' }}>
+                                {['all', ...badgesByCategory[cat]].map(badge => {
+                                  const isActive = holdingsBadge === badge
+                                  const badgeColor = badge !== 'all' ? (CRYPTO_CATEGORY_COLORS[badge] || STOCK_SECTOR_COLORS[badge] || '#6366f1') : null
+                                  return (
+                                    <button key={badge} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                                      {badge === 'all' ? 'All' : badge}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
