@@ -19,6 +19,7 @@ import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
+import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
@@ -1177,18 +1178,6 @@ function DataPanel({ onRefresh, onImported }) {
     setScanning(false)
   }, [])
   useEffect(() => () => stopCamera(), [stopCamera])
-
-  // Auto-import when the user opened the app via a scanned QR deep-link URL.
-  useEffect(() => {
-    const pending = sessionStorage.getItem('wl_pending_import')
-    if (!pending) return
-    sessionStorage.removeItem('wl_pending_import')
-    setCode(pending)
-    api.previewImportCode(pending).then(result => {
-      if (result?.success) { setPreview(result); setMsg('') }
-      else setMsg('Could not read QR backup.')
-    }).catch(() => setMsg('Could not read QR backup.'))
-  }, [])
 
   async function doExport() {
     setBusy(true)
@@ -2471,7 +2460,14 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
+  const [activeTab, setActiveTab]         = useState(() => {
+    // If a QR deep-link import is waiting in sessionStorage, open the manage tab
+    // so DataPanel mounts and its auto-import effect fires immediately.
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
+      return 'manage'
+    }
+    return location.state?.tab || 'overview'
+  })
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
@@ -2751,6 +2747,18 @@ export default function Dashboard() {
       stopPolling()
       document.removeEventListener('visibilitychange', handleVisibility)
     }
+  }, [])
+
+  // QR deep-link auto-import: runs once on mount, no confirmation needed.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    api.importCode(pending).then(result => {
+      if (result?.success === false) return // silently ignore, user can import manually
+      loadAll()
+      setActiveTab('overview')
+    }).catch(() => {})
   }, [])
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
@@ -3278,7 +3286,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showBackupCode && (
-                  <BackupCode hideTrigger />
+                  <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
                 )}
               </>
             )
@@ -3303,6 +3311,15 @@ export default function Dashboard() {
               </>
             )
           })()}
+
+          {/* Sentiment + portfolio tips ticker */}
+          {enriched.length > 0 && (
+            <SentimentTicker
+              holdings={enriched}
+              totalValue={totalValue}
+              totalPnLPct={totalPnLPct}
+            />
+          )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
@@ -4039,7 +4056,7 @@ export default function Dashboard() {
           </div>
           {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
-          {showBackupCode && <BackupCode hideTrigger />}
+          {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
       )}
       {activeTab === 'tools' && enriched.length > 0 && (
@@ -4164,7 +4181,7 @@ export default function Dashboard() {
                 {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
-                {importMode === 'backup' && <BackupCode hideTrigger />}
+                {importMode === 'backup' && <DataPanel onRefresh={loadAll} onImported={() => { loadAll(); setImportChooser(false) }} />}
               </>
             )}
           </div>

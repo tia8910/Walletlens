@@ -379,6 +379,10 @@ input, select, textarea {
 [data-wl-light] body,
 [data-wl-light] .dvx  { color: var(--text); }
 
+/* SentimentTicker tip text — explicit override so Chrome picks up the light-mode variable */
+.wl-sentiment-tip { color: #ffffff; }
+[data-wl-light] .wl-sentiment-tip { color: #0f172a; }
+
 /* Theme strip */
 [data-wl-light] .theme-strip { border-bottom-color: rgba(0,0,0,0.08); }
 [data-wl-light] .theme-strip-divider { background: rgba(0,0,0,0.1); }
