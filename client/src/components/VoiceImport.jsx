@@ -1011,19 +1011,21 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       recsRef.current.forEach(r => { try { r.stop() } catch {} })
     }, 5 * 60 * 1000)
 
-    // Use only the recognizers for the selected language.
-    // Arabic: ar-SA (Gulf/MSA) + ar-EG (Egyptian) in parallel on non-iOS.
-    // English: en-US only.
+    // Always run Arabic + English recognizers in parallel on non-iOS so the
+    // user can speak either language regardless of the UI language selector.
+    // ar-SA covers Gulf/MSA, ar-EG covers Egyptian, en-US handles English +
+    // phonetic mis-hearings of Arabic words by English STT engines.
+    // On iOS only one mic recognizer is allowed — use the selected language.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : isAppArabic ? ['ar-SA', 'ar-EG'] : ['en-US']
+      : ['ar-SA', 'ar-EG', 'en-US']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
-      rec.maxAlternatives = isArabic ? 5 : 3
+      rec.maxAlternatives = isArabic ? 8 : 5
       rec.lang = langCode
 
       rec.onstart = () => {
@@ -1132,6 +1134,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
   const [aiThinking, setAiThinking] = useState(false)
 
+  // Detect whether a transcript is predominantly Arabic or English so the
+  // AI prompt uses the right language hint regardless of the UI toggle.
+  const detectHintLang = (text) => {
+    const arabicChars = (text.match(/[؀-ۿ]/g) || []).length
+    return arabicChars > text.length * 0.15 ? 'ar' : 'en'
+  }
+
   // Ask Claude to interpret a transcript the local regex parser couldn't fully
   // resolve. Runs DIRECTLY in the browser with the user's own key (falling back
   // to the serverless endpoint), so it handles multi-trade sentences, dialects,
@@ -1143,7 +1152,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setAiThinking(true)
     setError('')
     try {
-      const trades = await parseTradesWithClaude(rawText, voiceLang === 'ar' ? 'ar' : 'en', alternatives)
+      const trades = await parseTradesWithClaude(rawText, detectHintLang(rawText), alternatives)
       if (!trades.length) {
         if (!parsed?.transactions?.some(t => t.coin && t.type && t.amount != null))
           setError(voiceLang === 'ar' ? 'لم أفهم — أضف فعلاً وكمية، مثال: "اشتريت واحد بيتكوين"' : 'Couldn\'t parse — include a verb & amount, e.g. "I bought 1 Bitcoin"')
@@ -1202,9 +1211,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // "complete", so relying on incompleteness alone silently drops trades.
     // Claude is authoritative for multi-trade + dialects; if it returns
     // nothing (no key / offline) we keep whatever the local parser found.
-    // Send the longest transcript across all language channels for coverage.
+    // Pick the highest-scoring transcript as primary (tiebreak: length).
+    // A transcript that parsed 2 clean trades beats a longer garbled one.
     const candidates = Object.values(transcriptsRef.current).filter(Boolean)
-    const best = candidates.reduce((a, b) => b.length > a.length ? b : a, '') || transcript
+    const best = candidates.reduce((bestSoFar, t) => {
+      if (!bestSoFar) return t
+      const sT    = scoreParsed(parseVoiceCommand(t))
+      const sBest = scoreParsed(parseVoiceCommand(bestSoFar))
+      return sT > sBest || (sT === sBest && t.length > bestSoFar.length) ? t : bestSoFar
+    }, '') || transcript
     const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
     // Pass EVERY recognizer's transcript so Claude can triangulate the true
     // utterance — far more accurate than a single best-guess for accented or
