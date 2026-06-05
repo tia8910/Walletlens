@@ -1205,6 +1205,23 @@ function DataPanel({ onRefresh }) {
     if (qrCode) { const parts = await makeQrParts(qrCode); setQrParts(parts); setShowQr(parts.length > 0) }
   }
 
+  // Standalone QR generation — independent of the text backup code. Always
+  // produces a single compact holdings-only QR, even if the full backup fails.
+  async function generateQr() {
+    if (showQr) { setShowQr(false); return }
+    setBusy(true)
+    try {
+      const qrCode = await api.exportQrSnapshot().catch(() => null)
+      if (qrCode) {
+        const parts = await makeQrParts(qrCode)
+        setQrParts(parts); setShowQr(parts.length > 0)
+        setMsg(parts.length > 0 ? '' : 'QR generation failed.')
+      } else {
+        setMsg('QR generation failed.')
+      }
+    } finally { setBusy(false) }
+  }
+
   function ingest(data) {
     if (!collectorRef.current) collectorRef.current = createPartCollector()
     return collectorRef.current(data)
@@ -1280,9 +1297,15 @@ function DataPanel({ onRefresh }) {
         Your data is stored as a short backup code (WLZ format). Export it to save or transfer to another device. Paste a code to restore.
       </p>
 
-      <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
-        {Ico.export} {t('generateBackup')}
-      </button>
+      <div className="dvx-panel-row">
+        <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
+          {Ico.export} {t('generateBackup')}
+        </button>
+        <button className="dvx-btn dvx-btn-full" onClick={generateQr} disabled={busy}
+          style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+          {Ico.qr} {showQr ? 'Hide QR' : 'Generate QR'}
+        </button>
+      </div>
 
       {code && (
         <div className="dvx-code-box">
@@ -1298,7 +1321,7 @@ function DataPanel({ onRefresh }) {
         </div>
       )}
 
-      {code && showQr && qrParts.length > 0 && (
+      {showQr && qrParts.length > 0 && (
         <div style={{ textAlign:'center', margin:'0.5rem 0' }}>
           {qrParts.length > 1 && (
             <p style={{ fontSize:'0.78rem', color:'var(--g)', margin:'0 0 0.5rem', fontWeight:700 }}>
