@@ -1154,6 +1154,17 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     try {
       const trades = await parseTradesWithClaude(rawText, detectHintLang(rawText), alternatives)
       if (!trades.length) {
+        // AI returned nothing — fall back to the local parser. If it found coins
+        // (even without a verb or amount), show them as partial cards so the user
+        // can fill in the details, rather than showing a hard error. This handles
+        // bare coin names like "Bitcoin" without requiring a Deno redeploy.
+        const localParsed = parseVoiceCommand(rawText)
+        const hasCoins = localParsed.transactions.some(t => t.coin || t.suggestions?.length)
+        if (hasCoins) {
+          setParsed(localParsed)
+          setReaction(getReaction(rawText, localParsed.transactions[0] || {}))
+          return
+        }
         if (!parsed?.transactions?.some(t => t.coin && t.type && t.amount != null))
           setError(voiceLang === 'ar' ? 'لم أفهم — أضف فعلاً وكمية، مثال: "اشتريت واحد بيتكوين"' : 'Couldn\'t parse — include a verb & amount, e.g. "I bought 1 Bitcoin"')
         return
