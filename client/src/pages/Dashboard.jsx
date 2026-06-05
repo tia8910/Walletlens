@@ -3246,7 +3246,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showBackupCode && (
-                  <BackupCode hideTrigger />
+                  <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
                 )}
               </>
             )
@@ -3937,7 +3937,7 @@ export default function Dashboard() {
           </div>
           {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
-          {showBackupCode && <BackupCode hideTrigger />}
+          {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
       )}
       {activeTab === 'tools' && enriched.length > 0 && (
@@ -4062,7 +4062,7 @@ export default function Dashboard() {
                 {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
-                {importMode === 'backup' && <BackupCode hideTrigger />}
+                {importMode === 'backup' && <DataPanel onRefresh={loadAll} onImported={() => { loadAll(); setImportChooser(false) }} />}
               </>
             )}
           </div>
