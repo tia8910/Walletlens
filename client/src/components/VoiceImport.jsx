@@ -892,18 +892,18 @@ function fmtAmt(n) {
 
 // ── Example commands shown to user ─────────────────────────────────────────
 const EXAMPLES_EN = [
+  '"BTC" or "Bitcoin" — opens edit card to fill in details',
   '"I bought 0.5 Bitcoin at 60k"',
   '"Sold 10 Apple shares at 220"',
   '"Bought 100 Tesla at 280"',
   '"Bought 1 oz of gold"',
-  '"Sold 5000 USD at 1.1"',
 ]
 const EXAMPLES_AR = [
+  '"BTC" أو "بيتكوين" — يفتح بطاقة لتكملة التفاصيل',
   '"اشتريت بيتكوين 0.5 بسعر 60 ألف"',
   '"اشتريت 10 ابل بسعر 220"',
   '"اشتريت 100 تيسلا"',
   '"اشتريت 1 ذهب"',
-  '"بعت 5000 دولار"',
 ]
 
 // ── Web Speech API support check ───────────────────────────────────────────
@@ -1542,7 +1542,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 value={typedText}
                 onChange={e => setTypedText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && typedText.trim().length >= 3 && !aiThinking) { tryAiFallback(typedText.trim(), 0); } }}
-                placeholder={isAr ? 'مثال: اشتريت واحد بيتكوين وواحد ايثيريوم' : 'e.g. I bought 1 Bitcoin and 1 Ethereum'}
+                placeholder={isAr ? 'مثال: BTC · بيتكوين · اشتريت واحد بيتكوين' : 'e.g. BTC · Bitcoin · I bought 1 Bitcoin'}
                 dir={isAr ? 'rtl' : 'ltr'}
                 style={{
                   flex:1, minWidth:0, padding:'0.6rem 0.8rem', borderRadius:'10px',
