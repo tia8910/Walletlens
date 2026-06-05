@@ -1178,18 +1178,6 @@ function DataPanel({ onRefresh, onImported }) {
   }, [])
   useEffect(() => () => stopCamera(), [stopCamera])
 
-  // Auto-import when the user opened the app via a scanned QR deep-link URL.
-  useEffect(() => {
-    const pending = sessionStorage.getItem('wl_pending_import')
-    if (!pending) return
-    sessionStorage.removeItem('wl_pending_import')
-    setCode(pending)
-    api.previewImportCode(pending).then(result => {
-      if (result?.success) { setPreview(result); setMsg('') }
-      else setMsg('Could not read QR backup.')
-    }).catch(() => setMsg('Could not read QR backup.'))
-  }, [])
-
   async function doExport() {
     setBusy(true)
     try {
@@ -2754,6 +2742,18 @@ export default function Dashboard() {
       stopPolling()
       document.removeEventListener('visibilitychange', handleVisibility)
     }
+  }, [])
+
+  // QR deep-link auto-import: runs once on mount, no confirmation needed.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    api.importCode(pending).then(result => {
+      if (result?.success === false) return // silently ignore, user can import manually
+      loadAll()
+      setActiveTab('overview')
+    }).catch(() => {})
   }, [])
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
