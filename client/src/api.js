@@ -1768,21 +1768,98 @@ export const api = {
     }
   },
 
+  // Compact QR snapshot — only current holdings (no transaction history).
+  // Always fits in a single QR code regardless of how many transactions exist.
+  // Prefix 'WLQS:' distinguishes it from a full backup code on import.
+  exportQrSnapshot: async () => {
+    const wallets = loadData('wallets')
+    const holdings = await api.getPortfolio()
+    const manualPrices = loadData('manual_prices', {})
+    const snapshot = {
+      sv: 1,
+      w: wallets.map(w => ({ i: w.id, n: w.name })),
+      h: holdings.map(h => {
+        const avgPrice = h.amount > 0 ? (h.total_invested / h.amount) : 0
+        return {
+          w: h.wallet_id || (wallets[0]?.id ?? 1),
+          c: h.coin_id,
+          s: h.coin_symbol,
+          n: h.coin_name || '',
+          a: h.amount,
+          p: avgPrice,
+          ca: h.category || 'crypto',
+        }
+      }),
+      mp: manualPrices,
+    }
+    const json = JSON.stringify(snapshot)
+    try {
+      if (typeof CompressionStream !== 'undefined') {
+        const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))
+        const buf = await new Response(stream).arrayBuffer()
+        const bytes = new Uint8Array(buf)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+        return 'WLQS:' + btoa(bin)
+      }
+    } catch {}
+    return 'WLQS:' + btoa(unescape(encodeURIComponent(json)))
+  },
+
   // Parse a code without committing anything. Returns a summary the UI can display for confirmation.
   previewImportCode: async (code) => {
     try {
       const trimmed = (code || '').trim();
       let jsonString;
-      if (trimmed.startsWith('WLZ:')) {
-        const bin = atob(trimmed.slice(4));
+      const isSnapshot = trimmed.startsWith('WLQS:')
+      if (trimmed.startsWith('WLZ:') || isSnapshot) {
+        const payload = trimmed.slice(isSnapshot ? 5 : 4);
+        const bin = atob(payload);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-        jsonString = await new Response(stream).text();
+        try {
+          const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+          jsonString = await new Response(stream).text();
+        } catch {
+          jsonString = decodeURIComponent(escape(bin));
+        }
       } else {
         jsonString = decodeURIComponent(escape(atob(trimmed)));
       }
       const data = JSON.parse(jsonString);
+
+      // WLQS snapshot: convert compact holdings back to full wallet+transaction arrays
+      if (isSnapshot && data.sv) {
+        const today = new Date().toISOString().split('T')[0]
+        const wallets = (data.w || []).map(w => ({ id: w.i, name: w.n }))
+        const walletId = wallets[0]?.id ?? 1
+        let txId = 1
+        const transactions = (data.h || []).map(h => ({
+          id: txId++,
+          wallet_id: h.w ?? walletId,
+          type: 'buy',
+          category: h.ca || 'crypto',
+          coin_id: h.c,
+          coin_symbol: h.s,
+          coin_name: h.n || '',
+          coin_image: '',
+          amount: h.a,
+          price_per_unit: h.p,
+          total_cost: h.a * h.p,
+          exchange: '',
+          notes: '',
+          date: today,
+          created_at: new Date().toISOString(),
+        }))
+        const ids = { w: String((wallets.length || 0) + 1), t: String(txId + 1), e: '1' }
+        return {
+          success: true,
+          summary: { wallets: wallets.length, transactions: transactions.length, exchanges: 0, targets: 0, manualPrices: Object.keys(data.mp || {}).length, byCategory: {}, version: 'snapshot' },
+          diff: { txDelta: transactions.length, added: [], removed: [], changed: [], hasChanges: true },
+          _raw: { wallets, transactions, exchanges: [], targets: {}, manualPrices: data.mp || {}, ids },
+        }
+      }
+
       const wallets = Array.isArray(data.w || data.wallets) ? (data.w || data.wallets) : [];
       const transactions = Array.isArray(data.t || data.transactions) ? (data.t || data.transactions) : [];
       // Reconstruct fields stripped by the compact export (coin_image, total_cost, created_at).

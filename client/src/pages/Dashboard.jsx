@@ -1184,7 +1184,10 @@ function DataPanel({ onRefresh }) {
       const result = await api.exportCode()
       if (result) {
         setCode(result); setMsg('')
-        const parts = await makeQrParts(result)
+        // QR uses the compact snapshot (holdings only) so it always fits in 1 QR.
+        // The text code still contains full transaction history.
+        const qrCode = await api.exportQrSnapshot()
+        const parts = await makeQrParts(qrCode || result)
         setQrParts(parts); setShowQr(false)
       }
       else setMsg('Export failed.')
@@ -1193,9 +1196,10 @@ function DataPanel({ onRefresh }) {
 
   async function toggleExportQr() {
     if (showQr) { setShowQr(false); return }
-    let parts = qrParts
-    if (!parts.length && code) { parts = await makeQrParts(code); setQrParts(parts) }
-    setShowQr(parts.length > 0)
+    if (qrParts.length) { setShowQr(true); return }
+    // Generate QR on demand from snapshot
+    const qrCode = await api.exportQrSnapshot()
+    if (qrCode) { const parts = await makeQrParts(qrCode); setQrParts(parts); setShowQr(parts.length > 0) }
   }
 
   function ingest(data) {
