@@ -45,6 +45,24 @@ if ('serviceWorker' in navigator) {
   })
 }
 
+// Intercept QR deep-link import before React renders — no UI flash.
+// Scanning the exported QR with any camera app opens walletlens.live/?wqi=...
+// We stash the code in sessionStorage and redirect to /dashboard so the
+// DataPanel can auto-trigger the import preview on mount.
+;(function interceptQrImport() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const wqi = params.get('wqi')
+    if (!wqi) return
+    const b64 = wqi.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - wqi.length % 4) % 4)
+    sessionStorage.setItem('wl_pending_import', 'WLQS:' + b64)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('wqi')
+    // Redirect to dashboard data tab — replaceState keeps browser history clean
+    window.history.replaceState({}, '', '/dashboard')
+  } catch {}
+})()
+
 const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' : '/'
 
 // Auto-track every click / selection across the app in GA.
