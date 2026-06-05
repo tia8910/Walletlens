@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { isStablecoin } from '../stablecoins'
 
 const PROXIES = [
@@ -121,11 +121,17 @@ export default function CorrelationMatrix({ enriched = [] }) {
   const [error, setError]     = useState(null)
   const [open, setOpen]       = useState(true)
 
-  const cryptoHoldings = enriched
-    .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:') && !isStablecoin(h.coin_id, h.coin_symbol))
-    .slice(0, MAX_ASSETS)
+  const cryptoHoldings = useMemo(() =>
+    enriched
+      .filter(h => h.coin_id && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('cash:') && !h.coin_id.startsWith('fiat:') && !h.coin_id.startsWith('real:') && !isStablecoin(h.coin_id, h.coin_symbol))
+      .slice(0, MAX_ASSETS),
+  [enriched])
 
-  async function compute() {
+  // Stable key for the current set of coin IDs — used to detect portfolio changes.
+  const holdingsKey = cryptoHoldings.map(h => h.coin_id).join(',')
+
+  const computeRef = useRef(null)
+  computeRef.current = async function compute() {
     if (cryptoHoldings.length < 2) return
     setLoading(true); setError(null)
 
@@ -154,9 +160,11 @@ export default function CorrelationMatrix({ enriched = [] }) {
     setLoading(false)
   }
 
+  // Re-fetch when the panel opens or when the user's portfolio changes.
   useEffect(() => {
-    if (open && !matrix && !loading) compute()
-  }, [open])
+    if (open && !loading) computeRef.current()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, holdingsKey])
 
   if (cryptoHoldings.length < 2) return null
 

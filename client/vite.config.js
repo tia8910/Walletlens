@@ -49,6 +49,22 @@ export default defineConfig({
           if (id.includes('/src/data/assets') || id.includes('/src/data/trackCoins')) {
             return 'asset-data'
           }
+          // 42 KB glossary — only loaded on /learn/:term routes.
+          if (id.includes('/src/data/glossary')) {
+            return 'glossary-data'
+          }
+          // 14 KB comparisons — only loaded on /vs/:slug routes.
+          if (id.includes('/src/data/comparisons')) {
+            return 'comparisons-data'
+          }
+          // 46 KB Arabic blog content — loaded lazily for Arabic blog routes.
+          if (id.includes('/src/data/arabicBlog')) {
+            return 'arabic-blog-data'
+          }
+          // Price-page asset metadata — only loaded on /price/:slug routes.
+          if (id.includes('/src/data/priceAssets')) {
+            return 'price-assets-data'
+          }
         },
       },
       // Suppress false-positive circular-dependency warnings from recharts internals

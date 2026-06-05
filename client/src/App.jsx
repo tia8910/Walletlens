@@ -312,10 +312,13 @@ export default function App() {
     const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
     // Dashboard first (most common destination), then Transactions and Coach
     // at lower priority so they don't compete with the critical render path.
+    // Blog and Academy are prefetched last — they're content-heavy but popular.
     const id1 = schedule(() => import('./pages/Dashboard'),    { timeout: 3000 })
     const id2 = schedule(() => import('./pages/Transactions'), { timeout: 5000 })
     const id3 = schedule(() => import('./pages/Coach'),        { timeout: 7000 })
-    return () => { cancel(id1); cancel(id2); cancel(id3) }
+    const id4 = schedule(() => import('./pages/Blog'),         { timeout: 9000 })
+    const id5 = schedule(() => import('./pages/Academy'),      { timeout: 11000 })
+    return () => { cancel(id1); cancel(id2); cancel(id3); cancel(id4); cancel(id5) }
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap

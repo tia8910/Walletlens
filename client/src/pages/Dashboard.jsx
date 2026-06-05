@@ -2879,7 +2879,10 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
+  const displayHoldings = useMemo(
+    () => showAllHoldings ? enriched : enriched.slice(0, 6),
+    [enriched, showAllHoldings]
+  )
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {

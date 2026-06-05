@@ -35,11 +35,17 @@ export function initAutoTrack() {
   if (typeof document === 'undefined' || window.__wlAutoTrack) return
   window.__wlAutoTrack = true
 
+  // Throttle: skip events fired within 120 ms of the previous one on the same
+  // element to avoid double-counts from rapid taps or event bubbling.
+  let lastClickEl = null, lastClickTime = 0
   const CLICK_SEL = 'button, a, [role="button"], [role="tab"], [data-track], summary, label'
   document.addEventListener('click', (e) => {
     try {
       const el = e.target?.closest?.(CLICK_SEL)
       if (!el) return
+      const now = Date.now()
+      if (el === lastClickEl && now - lastClickTime < 120) return
+      lastClickEl = el; lastClickTime = now
       const name = actionLabel(el)
       track('button_click', {
         button_name: name || elementId(el),
