@@ -1150,7 +1150,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
 }
 
 // ── Data panel — short WLZ backup code ───────────────────────────────────
-function DataPanel({ onRefresh }) {
+function DataPanel({ onRefresh, onImported }) {
   const { t } = useLanguage()
   const [code, setCode]     = useState('')
   const [copied, setCopied] = useState(false)
@@ -1298,8 +1298,11 @@ function DataPanel({ onRefresh }) {
     const result = await api.importCode(code.trim())
     setBusy(false)
     if (result?.success === false) { setMsg('Import failed: ' + (result.error || 'unknown error')); return }
-    setMsg('Imported! Refreshing…'); setCode(''); setPreview(null)
-    onRefresh(); setTimeout(() => setMsg(''), 2500)
+    setMsg('Imported! Redirecting…'); setCode(''); setPreview(null)
+    onRefresh()
+    // Jump to the portfolio overview so the user sees their restored holdings.
+    if (onImported) setTimeout(() => onImported(), 300)
+    setTimeout(() => setMsg(''), 2500)
   }
 
   return (
@@ -3987,7 +3990,7 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
-            <DataPanel onRefresh={loadAll} />
+            <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Browser Extension</h3>
