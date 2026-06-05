@@ -1728,9 +1728,16 @@ export const api = {
   // New format: 'WLZ:' + base64(gzip(JSON)) — ~60-70% shorter than plain base64.
   // Legacy format: plain base64(JSON) — still accepted on import.
   exportCode: async () => {
+    // Strip large/redundant fields from each transaction before encoding.
+    // coin_image  — re-fetched from CoinGecko; often 70-100 chars per tx.
+    // total_cost  — always amount × price_per_unit; reconstructed on import.
+    // created_at  — precise timestamp; not needed for portfolio state.
+    // Dropping these typically reduces a 3-QR backup to a single QR code.
+    // eslint-disable-next-line no-unused-vars
+    const stripTx = ({ coin_image, total_cost, created_at, ...rest }) => rest
     const data = {
       w: loadData('wallets'),
-      t: loadData('transactions'),
+      t: loadData('transactions').map(stripTx),
       e: loadData('exchanges'),
       mp: loadData('manual_prices', {}),
       ct: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
@@ -1741,7 +1748,6 @@ export const api = {
       },
       v: 3,
     };
-    const json = JSON.stringify(data);
     try {
       if (typeof CompressionStream !== 'undefined') {
         const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
@@ -1779,6 +1785,13 @@ export const api = {
       const data = JSON.parse(jsonString);
       const wallets = Array.isArray(data.w || data.wallets) ? (data.w || data.wallets) : [];
       const transactions = Array.isArray(data.t || data.transactions) ? (data.t || data.transactions) : [];
+      // Reconstruct fields stripped by the compact export (coin_image, total_cost, created_at).
+      // Old full exports still include them; this is a no-op for those.
+      for (const tx of transactions) {
+        if (tx.total_cost == null) tx.total_cost = (tx.amount || 0) * (tx.price_per_unit || 0)
+        if (!tx.coin_image) tx.coin_image = ''
+        if (!tx.created_at) tx.created_at = tx.date || new Date().toISOString()
+      }
       const exchanges = Array.isArray(data.e || data.exchanges) ? (data.e || data.exchanges) : [];
       const targets = (data.ct || data.coin_targets || {});
       const manualPrices = data.mp || {};
