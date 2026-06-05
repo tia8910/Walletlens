@@ -2471,7 +2471,14 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
+  const [activeTab, setActiveTab]         = useState(() => {
+    // If a QR deep-link import is waiting in sessionStorage, open the manage tab
+    // so DataPanel mounts and its auto-import effect fires immediately.
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
+      return 'manage'
+    }
+    return location.state?.tab || 'overview'
+  })
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [sheetOpen, setSheetOpen]         = useState(false)
