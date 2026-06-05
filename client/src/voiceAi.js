@@ -58,10 +58,10 @@ Extract EVERY trade the user described. Return STRICT JSON ONLY — no markdown 
 {
   "trades": [
     {
-      "type": "buy" | "sell",
+      "type": "buy" | "sell" | null,
       "symbol": "BTC" | "ETH" | "SOL" | "AAPL" | "TSLA" | "XAU" | etc. (uppercase ticker the asset is commonly known by),
       "name": "Bitcoin" | "Solana" | "Apple" | etc. (full readable name),
-      "amount": <number, the QUANTITY of units bought/sold>,
+      "amount": <number or null — the QUANTITY of units bought/sold, null if not stated>,
       "price": <number or null — only if a unit price was explicitly stated>
     }
   ]
@@ -79,12 +79,19 @@ Rules:
 - Common STT mis-hearings of coins: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
 - Stocks: Apple = AAPL, Tesla = TSLA, Microsoft = MSFT, NVIDIA = NVDA, Google = GOOGL, Amazon = AMZN, Meta = META, Palantir = PLTR, Coinbase = COIN, Robinhood = HOOD.
 - Metals: gold = XAU, silver = XAG, platinum = XPT, copper = HG.
-- If the user only mentioned a coin without a clear buy/sell intent, do NOT invent one — skip that trade.`
+- If the user only mentioned a coin with no clear buy/sell intent or amount, still include it with "type": null and "amount": null — the user will fill in those details.`
 }
 
 function filterTrades(arr) {
   return Array.isArray(arr)
-    ? arr.filter(t => t && (t.type === 'buy' || t.type === 'sell') && t.symbol && typeof t.amount === 'number' && t.amount > 0)
+    ? arr.filter(t => {
+        if (!t || !t.symbol) return false
+        // Full trade: known type + positive amount
+        if ((t.type === 'buy' || t.type === 'sell') && typeof t.amount === 'number' && t.amount > 0) return true
+        // Partial: coin name only — user will fill in type + amount in the edit card
+        if (!t.type && t.amount == null) return true
+        return false
+      })
     : []
 }
 
