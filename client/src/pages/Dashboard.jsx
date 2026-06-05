@@ -2475,6 +2475,7 @@ export default function Dashboard() {
   const [holdingsSort,    setHoldingsSort]    = useState('value')
   const [holdingsSortDir, setHoldingsSortDir] = useState('desc')
   const [holdingsBadge,   setHoldingsBadge]   = useState('all')
+  const [selectedAssets,  setSelectedAssets]  = useState(() => new Set())
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
@@ -2979,6 +2980,17 @@ export default function Dashboard() {
     const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
     return { value, invested, pnl, pnlPct }
   }, [filteredHoldings, isHoldingsFiltered])
+
+  const selectedStats = useMemo(() => {
+    if (selectedAssets.size === 0) return null
+    const sel = filteredHoldings.filter(h => selectedAssets.has(h.coin_id))
+    if (!sel.length) return null
+    const value    = sel.reduce((s, h) => s + (h.value || 0), 0)
+    const invested = sel.reduce((s, h) => s + (h.total_invested || 0), 0)
+    const pnl      = sel.reduce((s, h) => s + (h.pnl || 0), 0)
+    const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
+    return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
+  }, [filteredHoldings, selectedAssets])
 
   const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
 
@@ -3718,7 +3730,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Filtered summary stats */}
-                    {filteredStats && (
+                    {filteredStats && !selectedStats && (
                       <div style={{ fontSize:'0.71rem', color:'var(--text-muted)', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center' }}>
                         <span>{filteredHoldings.length} asset{filteredHoldings.length !== 1 ? 's' : ''}</span>
                         <span style={{ opacity:0.4 }}>·</span>
@@ -3731,6 +3743,26 @@ export default function Dashboard() {
                             </span>
                           </>
                         )}
+                      </div>
+                    )}
+
+                    {/* Selected assets summary */}
+                    {selectedStats && (
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
+                        <div style={{ fontSize:'0.71rem', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center', background:'rgba(0,255,170,0.08)', border:'1px solid rgba(0,255,170,0.25)', borderRadius:'8px', padding:'0.25rem 0.6rem' }}>
+                          <span style={{ color:'var(--g)', fontWeight:700 }}>✓ {selectedAssets.size} selected</span>
+                          <span style={{ opacity:0.4 }}>·</span>
+                          <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(selectedStats.value)}</span>
+                          {selectedStats.pnl !== 0 && !pricesFailed && (
+                            <>
+                              <span style={{ opacity:0.4 }}>·</span>
+                              <span style={{ fontWeight:600, color: selectedStats.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
+                                {selectedStats.pnl >= 0 ? '+' : ''}{hidden ? '••' : cv(selectedStats.pnl)} ({selectedStats.pnlPct >= 0 ? '+' : ''}{selectedStats.pnlPct.toFixed(1)}%)
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => setSelectedAssets(new Set())} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.78rem', padding:'0.2rem 0.3rem', lineHeight:1 }} title="Clear selection">✕ Clear</button>
                       </div>
                     )}
                   </div>
@@ -3793,9 +3825,19 @@ export default function Dashboard() {
                                   ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
                                 const bePct = h.price > 0 && breakEvenPrice > 0
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
+                                const isSelected = selectedAssets.has(h.coin_id)
+                                const isDimmed   = selectedAssets.size > 0 && !isSelected
                                 return (
                                   <li key={h.coin_id} className="dvx-holding holo-card-v2"
+                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s' }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}
+                                      style={{ flexShrink:0, width:'20px', height:'20px', borderRadius:'50%', border:`2px solid ${isSelected ? 'var(--g)' : 'var(--border)'}`, background: isSelected ? 'var(--g)' : 'transparent', color:'#000', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:'0.65rem', fontWeight:900, padding:0, marginRight:'0.4rem', transition:'all 0.15s' }}
+                                      title={isSelected ? 'Deselect' : 'Select'}
+                                    >
+                                      {isSelected ? '✓' : ''}
+                                    </button>
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                                     <div className="dvx-holding-meta">
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
