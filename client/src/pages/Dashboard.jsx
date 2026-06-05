@@ -1233,23 +1233,6 @@ function DataPanel({ onRefresh }) {
     } finally { setBusy(false) }
   }
 
-  // Standalone QR generation — independent of the text backup code. Always
-  // produces a single compact holdings-only QR, even if the full backup fails.
-  async function generateQr() {
-    if (showQr) { setShowQr(false); return }
-    setBusy(true)
-    try {
-      const qrCode = await api.exportQrSnapshot().catch(() => null)
-      if (qrCode) {
-        const parts = await makeQrParts(qrCode)
-        setQrParts(parts); setShowQr(parts.length > 0)
-        setMsg(parts.length > 0 ? '' : 'QR generation failed.')
-      } else {
-        setMsg('QR generation failed.')
-      }
-    } finally { setBusy(false) }
-  }
-
   function ingest(data) {
     if (!collectorRef.current) collectorRef.current = createPartCollector()
     return collectorRef.current(data)
