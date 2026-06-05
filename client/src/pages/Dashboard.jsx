@@ -2950,6 +2950,7 @@ export default function Dashboard() {
     return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]))
   }, [enriched])
 
+
   const filteredHoldings = useMemo(() => {
     let list = [...enriched]
     const q = holdingsSearch.trim().toLowerCase()
