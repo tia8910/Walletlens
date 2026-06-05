@@ -1813,10 +1813,57 @@ export const api = {
     return 'WLQS:' + btoa(bin)
   },
 
+  // Deep-link QR: encodes a URL that opens walletlens.live and auto-imports.
+  // Uses URL-safe base64 (no +/=) so the ?wqi= param needs no percent-encoding.
+  exportQrDeepLink: async () => {
+    const wallets = loadData('wallets')
+    const holdings = await api.getPortfolio()
+    const manualPrices = loadData('manual_prices', {})
+    const snapshot = {
+      sv: 1,
+      w: wallets.map(w => ({ i: w.id, n: w.name })),
+      h: holdings.map(h => {
+        const avgPrice = h.amount > 0 ? (h.total_invested / h.amount) : 0
+        return {
+          w: h.wallet_id || (wallets[0]?.id ?? 1),
+          c: h.coin_id, s: h.coin_symbol, n: h.coin_name || '',
+          a: h.amount, p: avgPrice, ca: h.category || 'crypto',
+        }
+      }),
+      mp: manualPrices,
+    }
+    const json = JSON.stringify(snapshot)
+    let bin = ''
+    try {
+      if (typeof CompressionStream !== 'undefined') {
+        const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))
+        const buf = await new Response(stream).arrayBuffer()
+        const bytes = new Uint8Array(buf)
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+      } else {
+        const enc = new TextEncoder().encode(json)
+        for (let i = 0; i < enc.length; i++) bin += String.fromCharCode(enc[i])
+      }
+    } catch {
+      const enc = new TextEncoder().encode(json)
+      bin = ''
+      for (let i = 0; i < enc.length; i++) bin += String.fromCharCode(enc[i])
+    }
+    const b64url = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    return 'https://walletlens.live/?wqi=' + b64url
+  },
+
   // Parse a code without committing anything. Returns a summary the UI can display for confirmation.
   previewImportCode: async (code) => {
     try {
-      const trimmed = (code || '').trim();
+      let trimmed = (code || '').trim();
+      // Accept deep-link URL format produced by exportQrDeepLink
+      const wqiMatch = trimmed.match(/[?&]wqi=([A-Za-z0-9_-]+)/)
+      if (wqiMatch) {
+        const raw = wqiMatch[1]
+        const b64 = raw.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - raw.length % 4) % 4)
+        trimmed = 'WLQS:' + b64
+      }
       let jsonString;
       const isSnapshot = trimmed.startsWith('WLQS:')
       if (trimmed.startsWith('WLZ:') || isSnapshot) {

@@ -1178,15 +1178,27 @@ function DataPanel({ onRefresh }) {
   }, [])
   useEffect(() => () => stopCamera(), [stopCamera])
 
+  // Auto-import when the user opened the app via a scanned QR deep-link URL.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    setCode(pending)
+    api.previewImportCode(pending).then(result => {
+      if (result?.success) { setPreview(result); setMsg('') }
+      else setMsg('Could not read QR backup.')
+    }).catch(() => setMsg('Could not read QR backup.'))
+  }, [])
+
   async function doExport() {
     setBusy(true)
     try {
-      // QR snapshot (holdings-only, no images) runs independently of the full backup.
-      const [result, qrCode] = await Promise.all([
+      // QR deep-link and full backup run in parallel.
+      const [result, qrUrl] = await Promise.all([
         api.exportCode().catch(() => null),
-        api.exportQrSnapshot().catch(() => null),
+        api.exportQrDeepLink().catch(() => null),
       ])
-      const qrSource = qrCode || result
+      const qrSource = qrUrl || result
       if (result) { setCode(result); setMsg('') }
       else if (!qrSource) setMsg('Export failed.')
       else setMsg('')
@@ -1200,9 +1212,25 @@ function DataPanel({ onRefresh }) {
   async function toggleExportQr() {
     if (showQr) { setShowQr(false); return }
     if (qrParts.length) { setShowQr(true); return }
-    // Generate QR on demand from snapshot
-    const qrCode = await api.exportQrSnapshot()
-    if (qrCode) { const parts = await makeQrParts(qrCode); setQrParts(parts); setShowQr(parts.length > 0) }
+    const qrUrl = await api.exportQrDeepLink().catch(() => null)
+    if (qrUrl) { const parts = await makeQrParts(qrUrl); setQrParts(parts); setShowQr(parts.length > 0) }
+  }
+
+  // Standalone QR generation — independent of the text backup code. Always
+  // produces a single compact holdings-only QR, even if the full backup fails.
+  async function generateQr() {
+    if (showQr) { setShowQr(false); return }
+    setBusy(true)
+    try {
+      const qrUrl = await api.exportQrDeepLink().catch(() => null)
+      if (qrUrl) {
+        const parts = await makeQrParts(qrUrl)
+        setQrParts(parts); setShowQr(parts.length > 0)
+        setMsg(parts.length > 0 ? '' : 'QR generation failed.')
+      } else {
+        setMsg('QR generation failed.')
+      }
+    } finally { setBusy(false) }
   }
 
   // Standalone QR generation — independent of the text backup code. Always
