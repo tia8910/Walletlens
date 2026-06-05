@@ -3831,13 +3831,13 @@ export default function Dashboard() {
                                   <li key={h.coin_id} className="dvx-holding holo-card-v2"
                                     style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s' }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
-                                    <button
-                                      onClick={e => { e.stopPropagation(); setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}
-                                      style={{ flexShrink:0, width:'20px', height:'20px', borderRadius:'50%', border:`2px solid ${isSelected ? 'var(--g)' : 'var(--border)'}`, background: isSelected ? 'var(--g)' : 'transparent', color:'#000', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:'0.65rem', fontWeight:900, padding:0, marginRight:'0.4rem', transition:'all 0.15s' }}
-                                      title={isSelected ? 'Deselect' : 'Select'}
-                                    >
-                                      {isSelected ? '✓' : ''}
-                                    </button>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onClick={e => e.stopPropagation()}
+                                      onChange={() => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
+                                      style={{ flexShrink:0, width:'16px', height:'16px', marginRight:'0.5rem', cursor:'pointer', accentColor:'var(--g)' }}
+                                    />
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                                     <div className="dvx-holding-meta">
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
