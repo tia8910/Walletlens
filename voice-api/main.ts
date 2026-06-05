@@ -46,7 +46,7 @@ Extract EVERY trade. Return STRICT JSON ONLY — no markdown, no commentary:
 
 {
   "trades": [
-    { "type": "buy" | "sell", "symbol": "BTC", "name": "Bitcoin", "amount": <number>, "price": <number or null> }
+    { "type": "buy" | "sell" | null, "symbol": "BTC", "name": "Bitcoin", "amount": <number | null>, "price": <number or null> }
   ]
 }
 
@@ -62,7 +62,7 @@ Rules:
 - Coin mis-hearings: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
 - Stocks: Apple=AAPL, Tesla=TSLA, Microsoft=MSFT, NVIDIA=NVDA, Google=GOOGL, Amazon=AMZN, Meta=META, Palantir=PLTR, Coinbase=COIN, Robinhood=HOOD.
 - Metals: gold=XAU, silver=XAG, platinum=XPT, copper=HG.
-- A coin with no clear buy/sell intent → skip it, don't invent one.`
+- A coin with no clear buy/sell intent or amount → still include it with "type": null and "amount": null; the user will fill in the details.`
 }
 
 // ── In-app assistant ──────────────────────────────────────────────────────
@@ -111,10 +111,13 @@ You may include more than one marker if several features fit. Only use routes fr
 // deno-lint-ignore no-explicit-any
 function filterTrades(arr: any): any[] {
   return Array.isArray(arr)
-    ? arr.filter((t) =>
-      t && (t.type === "buy" || t.type === "sell") && t.symbol &&
-      typeof t.amount === "number" && t.amount > 0
-    )
+    ? arr.filter((t) => {
+      if (!t || !t.symbol) return false
+      if ((t.type === "buy" || t.type === "sell") && typeof t.amount === "number" && t.amount > 0) return true
+      // Partial: coin only — user fills in type + amount in the edit card
+      if (!t.type && t.amount == null) return true
+      return false
+    })
     : []
 }
 

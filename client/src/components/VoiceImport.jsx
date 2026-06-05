@@ -1163,14 +1163,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           coin,
           amount: typeof t.amount === 'number' ? t.amount : null,
           price: typeof t.price === 'number' ? t.price : null,
-          matchedWord: t.type === 'buy' ? 'bought' : 'sold',
+          matchedWord: t.type === 'buy' ? 'bought' : t.type === 'sell' ? 'sold' : '',
           // Keep unmatched symbols so the user can resolve them via search,
           // and remember the spoken name to seed that search box.
           coinSymbol: (t.symbol || '').toUpperCase(),
           coinName: t.name || '',
           suggestions: coin ? null : [],
         }
-      }).filter(t => t.amount != null && (t.coin || t.coinSymbol))
+      }).filter(t => t.coin || t.coinSymbol)
       if (!transactions.length) return
       const aiParsed = { original: rawText, transactions }
       setParsed(aiParsed)
