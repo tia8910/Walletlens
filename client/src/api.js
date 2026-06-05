@@ -1748,6 +1748,7 @@ export const api = {
       },
       v: 3,
     };
+    const json = JSON.stringify(data);
     try {
       if (typeof CompressionStream !== 'undefined') {
         const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
