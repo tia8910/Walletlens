@@ -19,6 +19,7 @@ import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
+import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
@@ -3278,6 +3279,15 @@ export default function Dashboard() {
               </>
             )
           })()}
+
+          {/* Sentiment + portfolio tips ticker */}
+          {enriched.length > 0 && (
+            <SentimentTicker
+              holdings={enriched}
+              totalValue={totalValue}
+              totalPnLPct={totalPnLPct}
+            />
+          )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
