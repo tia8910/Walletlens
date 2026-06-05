@@ -1178,18 +1178,6 @@ function DataPanel({ onRefresh, onImported }) {
   }, [])
   useEffect(() => () => stopCamera(), [stopCamera])
 
-  // Auto-import when the user opened the app via a scanned QR deep-link URL.
-  useEffect(() => {
-    const pending = sessionStorage.getItem('wl_pending_import')
-    if (!pending) return
-    sessionStorage.removeItem('wl_pending_import')
-    setCode(pending)
-    api.previewImportCode(pending).then(result => {
-      if (result?.success) { setPreview(result); setMsg('') }
-      else setMsg('Could not read QR backup.')
-    }).catch(() => setMsg('Could not read QR backup.'))
-  }, [])
-
   async function doExport() {
     setBusy(true)
     try {
@@ -2471,14 +2459,7 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]         = useState(() => {
-    // If a QR deep-link import is waiting in sessionStorage, open the manage tab
-    // so DataPanel mounts and its auto-import effect fires immediately.
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
-      return 'manage'
-    }
-    return location.state?.tab || 'overview'
-  })
+  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [sheetOpen, setSheetOpen]         = useState(false)
@@ -2754,6 +2735,18 @@ export default function Dashboard() {
       stopPolling()
       document.removeEventListener('visibilitychange', handleVisibility)
     }
+  }, [])
+
+  // QR deep-link auto-import: runs once on mount, no confirmation needed.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    api.importCode(pending).then(result => {
+      if (result?.success === false) return // silently ignore, user can import manually
+      loadAll()
+      setActiveTab('overview')
+    }).catch(() => {})
   }, [])
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
