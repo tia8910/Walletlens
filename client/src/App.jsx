@@ -22,6 +22,7 @@ import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
+import { initMood } from './moodEngine'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -293,6 +294,7 @@ export default function App() {
 
   useEffect(() => {
     applySettings()
+    initMood()
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
       track('pwa_session', { installed: true })
     }
@@ -364,6 +366,7 @@ export default function App() {
   return (
     <div className="wl-app">
       <DynamicBackground />
+      <div className="wl-mood-aura" aria-hidden="true" />
 
       <header className="wl-topbar">
         <PriceTicker />

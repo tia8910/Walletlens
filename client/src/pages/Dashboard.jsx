@@ -12,6 +12,7 @@ import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
+import { applyMood } from '../moodEngine'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
@@ -2784,6 +2785,14 @@ export default function Dashboard() {
     if (m) setMilestone(m)
     prevPnLRef.current = totalPnL
   }, [loaded, totalValue, totalPnL])
+
+  // ── Generative brand reactivity: let the day's P&L tint the whole app ──
+  useEffect(() => {
+    if (!loaded) return
+    const todayVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
+    const prevVal = totalValue - todayVal
+    applyMood(prevVal > 0 ? (todayVal / prevVal) * 100 : 0)
+  }, [loaded, totalValue, enriched])
 
   useEffect(() => {
     if (!loaded || !enriched.length) return

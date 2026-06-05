@@ -59,6 +59,10 @@ input, select, textarea {
 * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) #000; }
 
 :root {
+  /* Generative brand reactivity — ambient mood (set live by moodEngine.js) */
+  --mood: 0;
+  --mood-aura-color: 100, 116, 139;
+  --mood-aura-opacity: 0.02;
   /* Brand palette — neon mint on black */
   --g: #00e676;
   --gd: #00b856;
@@ -3481,6 +3485,28 @@ tr:last-child td { border-bottom: none; }
   pointer-events: none;
   display: block;
   will-change: transform;
+}
+
+/* ═══ Generative brand reactivity — ambient mood aura ═══════════════════════
+   A whisper-quiet tint behind all content that breathes with the day's P&L:
+   emerald energy when up, calm muted slate when down, near-silent when flat.
+   Driven by --mood-aura-color / --mood-aura-opacity from moodEngine.js. */
+.wl-mood-aura {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: var(--mood-aura-opacity, 0.02);
+  background:
+    radial-gradient(125% 90% at 50% -15%,
+      rgb(var(--mood-aura-color, 100, 116, 139)) 0%, transparent 55%),
+    radial-gradient(100% 70% at 85% 118%,
+      rgb(var(--mood-aura-color, 100, 116, 139)) 0%, transparent 50%);
+  transition: opacity 1.6s ease, background 1.6s ease;
+  will-change: opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-mood-aura { transition: none; }
 }
 
 /* ═══ Lens glow — sharper, more dramatic premium pulse ═══ */
