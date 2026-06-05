@@ -157,7 +157,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
             <span key={i} style={{
               whiteSpace: 'nowrap', padding: '0 1.5rem',
               fontSize: '0.75rem', fontWeight: 600,
-              color: 'var(--text-main, #e2e8f0)', lineHeight: 1,
+              color: 'var(--text, #0f172a)', lineHeight: 1,
             }}>
               {tip}
               <span style={{ marginLeft: '1.5rem', color: accent, opacity: 0.6 }}>●</span>
