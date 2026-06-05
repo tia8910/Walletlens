@@ -1146,7 +1146,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       const trades = await parseTradesWithClaude(rawText, voiceLang === 'ar' ? 'ar' : 'en', alternatives)
       if (!trades.length) {
         if (!parsed?.transactions?.some(t => t.coin && t.type && t.amount != null))
-          setError(voiceLang === 'ar' ? 'لم أفهم — حاول مرة أخرى أو اكتب الصفقة' : 'Couldn\'t parse — try again or type the trade below')
+          setError(voiceLang === 'ar' ? 'لم أفهم — أضف فعلاً وكمية، مثال: "اشتريت واحد بيتكوين"' : 'Couldn\'t parse — include a verb & amount, e.g. "I bought 1 Bitcoin"')
         return
       }
       // Claude (with every recognizer transcript to triangulate) is far more
