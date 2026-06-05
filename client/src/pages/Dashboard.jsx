@@ -1181,16 +1181,19 @@ function DataPanel({ onRefresh }) {
   async function doExport() {
     setBusy(true)
     try {
-      const result = await api.exportCode()
-      if (result) {
-        setCode(result); setMsg('')
-        // QR uses the compact snapshot (holdings only) so it always fits in 1 QR.
-        // The text code still contains full transaction history.
-        const qrCode = await api.exportQrSnapshot()
-        const parts = await makeQrParts(qrCode || result)
+      // QR snapshot (holdings-only, no images) runs independently of the full backup.
+      const [result, qrCode] = await Promise.all([
+        api.exportCode().catch(() => null),
+        api.exportQrSnapshot().catch(() => null),
+      ])
+      const qrSource = qrCode || result
+      if (result) { setCode(result); setMsg('') }
+      else if (!qrSource) setMsg('Export failed.')
+      else setMsg('')
+      if (qrSource) {
+        const parts = await makeQrParts(qrSource)
         setQrParts(parts); setShowQr(false)
       }
-      else setMsg('Export failed.')
     } finally { setBusy(false) }
   }
 

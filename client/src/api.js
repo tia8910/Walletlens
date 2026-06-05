@@ -1762,7 +1762,10 @@ export const api = {
       console.error('Gzip export failed, falling back:', err);
     }
     try {
-      return btoa(unescape(encodeURIComponent(json)));
+      const enc = new TextEncoder().encode(json);
+      let bin = '';
+      for (let i = 0; i < enc.length; i++) bin += String.fromCharCode(enc[i]);
+      return 'WLZ:' + btoa(bin);
     } catch (err) {
       console.error('Export error:', err);
       return null;
@@ -1804,7 +1807,10 @@ export const api = {
         return 'WLQS:' + btoa(bin)
       }
     } catch {}
-    return 'WLQS:' + btoa(unescape(encodeURIComponent(json)))
+    const enc = new TextEncoder().encode(json)
+    let bin = ''
+    for (let i = 0; i < enc.length; i++) bin += String.fromCharCode(enc[i])
+    return 'WLQS:' + btoa(bin)
   },
 
   // Parse a code without committing anything. Returns a summary the UI can display for confirmation.
@@ -1822,10 +1828,13 @@ export const api = {
           const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
           jsonString = await new Response(stream).text();
         } catch {
-          jsonString = decodeURIComponent(escape(bin));
+          jsonString = new TextDecoder().decode(bytes);
         }
       } else {
-        jsonString = decodeURIComponent(escape(atob(trimmed)));
+        const b = atob(trimmed);
+        const bb = new Uint8Array(b.length);
+        for (let i = 0; i < b.length; i++) bb[i] = b.charCodeAt(i);
+        jsonString = new TextDecoder().decode(bb);
       }
       const data = JSON.parse(jsonString);
 
