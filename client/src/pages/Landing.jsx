@@ -358,7 +358,7 @@ export default function Landing() {
       <section className="lp-section lp-section-alt" id="browser-extension">
         <div className="lp-section-label">Browser Extension</div>
         <h2 className="lp-section-h2">
-          Your crypto portfolio,<br />
+          Your whole portfolio,<br />
           <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
@@ -534,7 +534,7 @@ export default function Landing() {
           <FeatureCard delay={140} accent="244,114,182"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>}
             title="🎙️ Voice Trade Import"
-            desc="Just say it — “I bought 0.5 BTC at 60K” or “اشتريت واحد بيتكوين وبعت سولانا” — and WalletLens logs the trade. Supports Arabic and English, multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
+            desc="Just say it — “I bought 0.5 BTC at 60K” or “I added 20 Apple shares and 10g of gold” — and WalletLens logs the trade. Handles multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
           />
         </div>
       </section>
