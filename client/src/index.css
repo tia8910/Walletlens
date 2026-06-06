@@ -6468,6 +6468,107 @@ select.bs-input option { background: var(--bg3); }
   color: rgba(255,255,255,0.3);
 }
 
+/* ══ Landing LIGHT theme ═══════════════════════════════════════════════════
+   Flips the always-dark landing to a clean light theme: light bg + dark text
+   + green accents. Scoped to .lp-light so the dark dashboard is untouched.
+   All selectors are 2-class so they beat the single-class base rules. */
+.lp.lp-light {
+  background: #eef6f1;            /* fills scroll overflow */
+  color: #0f172a;
+  --text: #0f172a;
+  --text-muted: rgba(15,23,42,0.62);
+  --text-sub: rgba(15,23,42,0.5);
+}
+/* Headings → dark slate */
+.lp-light .lp-brand-title,
+.lp-light .lp-hero-h1,
+.lp-light .lp-live-value,
+.lp-light .lp-stat-val,
+.lp-light .lp-section-h2,
+.lp-light .lp-feat-title,
+.lp-light .lp-step-title,
+.lp-light .lp-asset-name,
+.lp-light .lp-final-h2,
+.lp-light .lp-final-brand-name,
+.lp-light .lp-compare-feat { color: #0f172a; }
+
+/* Secondary / muted text → slate */
+.lp-light .lp-hero-sub,
+.lp-light .lp-privacy-caption,
+.lp-light .lp-feat-desc,
+.lp-light .lp-step-desc,
+.lp-light .lp-asset-desc,
+.lp-light .lp-stat-lbl,
+.lp-light .lp-live-label,
+.lp-light .lp-live-cents,
+.lp-light .lp-final-sub,
+.lp-light .lp-compare-note,
+.lp-light .lp-c-muted,
+.lp-light .lp-compare-table thead th { color: rgba(15,23,42,0.6); }
+
+/* Faint labels */
+.lp-light .lp-brand-action { color: rgba(15,23,42,0.42); }
+.lp-light .lp-brand-sep    { color: rgba(15,23,42,0.2); }
+.lp-light .lp-final-links  { color: rgba(15,23,42,0.4); }
+
+/* Hero accent subtitle — readable green→sky gradient on light */
+.lp-light .lp-h1-accent {
+  background: linear-gradient(135deg, #059669 0%, #059669 55%, #0284c7 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Surfaces: white cards + light borders */
+.lp-light .lp-feat-card,
+.lp-light .lp-asset-card,
+.lp-light .lp-compare-card,
+.lp-light .lp-live-card {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(15,23,42,0.1);
+  box-shadow: 0 4px 24px rgba(15,23,42,0.06);
+}
+
+/* Trust pills + ghost CTA */
+.lp-light .lp-trust-pill {
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(15,23,42,0.12);
+  color: rgba(15,23,42,0.72);
+}
+.lp-light .lp-trust-pill:hover { border-color: rgba(15,23,42,0.22); }
+.lp-light .lp-cta-ghost {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(15,23,42,0.15);
+  color: #0f172a;
+}
+.lp-light .lp-cta-ghost:hover { background: #fff; border-color: rgba(15,23,42,0.28); }
+
+/* Alt band + stats band → light */
+.lp-light .lp-section-alt,
+.lp-light .lp-stats {
+  background: rgba(255,255,255,0.5);
+  border-top-color: rgba(15,23,42,0.08);
+  border-bottom-color: rgba(15,23,42,0.08);
+}
+.lp-light .lp-stat-sep { background: rgba(15,23,42,0.12); }
+
+/* Compare table */
+.lp-light .lp-compare-table th,
+.lp-light .lp-compare-table td { border-bottom-color: rgba(15,23,42,0.08); }
+.lp-light .lp-compare-table tbody td:first-child,
+.lp-light .lp-compare-table thead th:first-child { background: #e7f1ec; }
+.lp-light .lp-compare-table thead th.lp-compare-us { background: rgba(var(--g-rgb),0.12); }
+.lp-light .lp-compare-uscell { background: rgba(var(--g-rgb),0.08); }
+
+/* Footer */
+.lp-light .lp-footer {
+  background: rgba(231,241,236,0.92);
+  border-top-color: rgba(15,23,42,0.08);
+  color: rgba(15,23,42,0.5);
+}
+
+/* Email opt-in input on light */
+.lp-light input::placeholder { color: rgba(15,23,42,0.4); }
+
 /* ── Pulsing logo orb (landing hero) ──────────────────────────────────── */
 .lp-logo-orb {
   position: relative;

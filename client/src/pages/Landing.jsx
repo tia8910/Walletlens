@@ -231,7 +231,7 @@ export default function Landing() {
   }, [])
 
   return (
-    <div className="lp">
+    <div className="lp lp-light">
       <LandingBackground />
 
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
