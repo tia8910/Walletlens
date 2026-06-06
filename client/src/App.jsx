@@ -385,7 +385,7 @@ export default function App() {
               <Logo size={36} animated />
             </button>
             <div className="wl-topbar-brand-text">
-              <strong className="wl-topbar-brand-name">WalletLens</strong>
+              <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld">.live</span></strong>
               <div className="wl-topbar-brand-actions">
                 <span className={`wl-topbar-brand-action${headerActionIdx === 0 ? ' active' : ''}`}>
                   {lang === 'ar' ? 'تتبع' : 'TRACK'}
