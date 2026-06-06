@@ -7225,6 +7225,9 @@ input[type="date"] { color-scheme: dark; }
 @media (prefers-reduced-motion:reduce){
   .lz-coin,.lz-coin-halo,.lz-orb,.lz-bar-fill{ animation:none!important; }
 }
+.lz-badges{ display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin:0 0 1.3rem; }
+.lz-badge{ font-size:.8rem; font-weight:600; color:#d1fae5; border:1px solid rgba(16,185,129,.4);
+  background:rgba(16,185,129,.10); border-radius:999px; padding:.38rem .8rem; }
 
 /* ── $LENZ airdrop quests (.aq-*, inside .lz-root) ───────────────────────── */
 .lz-root .aq-dash{ display:flex; align-items:center; justify-content:center; gap:1.6rem; flex-wrap:wrap; margin-top:.4rem; }

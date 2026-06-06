@@ -116,6 +116,12 @@ export default function Airdrop() {
         <span className="lz-eyebrow">Airdrop · 10,500,000 LENZ pool</span>
         <h1 className="lz-title">$LENZ Airdrop</h1>
         <p className="lz-tagline">Earn $LENZ — the native token of WalletLens — by using the app and joining the community. Complete quests, climb tiers, and claim at snapshot. No purchase required.</p>
+        <div className="lz-badges">
+          <span className="lz-badge">🎁 Free airdrop</span>
+          <span className="lz-badge">🚫 No sale · No IPO</span>
+          <span className="lz-badge">⚖️ Fair · flat per wallet</span>
+          <span className="lz-badge">💧 Only tiny Sui gas to claim</span>
+        </div>
 
         <div className="aq-dash">
           <div className="aq-ring" role="img" aria-label={`${pct}% of quests complete`}>
