@@ -67,6 +67,7 @@ const About        = lazy(() => import('./pages/About'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
+const AdminMail    = lazy(() => import('./pages/AdminMail'))
 
 function PageFallback() {
   return <div className="wl-page-fallback"><p>Loading…</p></div>
@@ -289,7 +290,7 @@ export default function App() {
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -358,6 +359,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/admin/mail" element={<AdminMail />} />
         </Routes></Suspense></ErrorBoundary>
       </div>
     )
