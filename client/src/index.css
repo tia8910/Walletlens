@@ -6569,6 +6569,39 @@ select.bs-input option { background: var(--bg3); }
 /* Email opt-in input on light */
 .lp-light input::placeholder { color: rgba(15,23,42,0.4); }
 
+/* Rescue / pain section */
+.lp-light .lp-pain-card {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(15,23,42,0.1);
+  box-shadow: 0 4px 24px rgba(15,23,42,0.06);
+}
+.lp-light .lp-pain-text     { color: rgba(15,23,42,0.7) !important; }
+.lp-light .lp-pain-solution { color: #0f172a !important; }
+.lp-light .lp-ai-feat {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(15,23,42,0.1);
+}
+
+/* Buttons — primary solid green, secondary white w/ green outline */
+.lp-light .lp-cta-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(5,150,105,0.32);
+}
+.lp-light .lp-cta-primary:hover {
+  box-shadow: 0 10px 30px rgba(5,150,105,0.45);
+}
+.lp-light .lp-cta-ghost {
+  background: #ffffff;
+  border: 1.5px solid rgba(5,150,105,0.5);
+  color: #047857;
+}
+.lp-light .lp-cta-ghost:hover {
+  background: rgba(5,150,105,0.07);
+  border-color: #059669;
+  color: #065f46;
+}
+
 /* ── Pulsing logo orb (landing hero) ──────────────────────────────────── */
 .lp-logo-orb {
   position: relative;
@@ -6934,12 +6967,13 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .share-btn-dl   { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.8); }
 [data-wl-light] .share-btn-copy { background: rgba(var(--g-rgb),0.12); color: var(--g); border-color: rgba(var(--g-rgb),0.3); }
 
-/* Landing page — always dark canvas, force white text when in light mode */
-[data-wl-light] .lp-section-sub    { color: rgba(255,255,255,0.6) !important; }
-[data-wl-light] .lp-ai-feat-title  { color: #fff !important; }
-[data-wl-light] .lp-ai-feat-desc   { color: rgba(255,255,255,0.55) !important; }
-[data-wl-light] .lp-footer-brand   { color: rgba(255,255,255,0.5) !important; }
-[data-wl-light] .lp-footer-links a { color: rgba(255,255,255,0.5) !important; }
+/* Landing page is now a LIGHT theme (.lp-light) — force dark text regardless
+   of the app's data-wl-light theme attribute. */
+.lp-light .lp-section-sub    { color: rgba(15,23,42,0.62) !important; }
+.lp-light .lp-ai-feat-title  { color: #0f172a !important; }
+.lp-light .lp-ai-feat-desc   { color: rgba(15,23,42,0.6) !important; }
+.lp-light .lp-footer-brand   { color: rgba(15,23,42,0.55) !important; }
+.lp-light .lp-footer-links a { color: rgba(15,23,42,0.55) !important; }
 
 /* ── Eye toggle / hidden values ────────────────────────────────────────── */
 .dvx-eye-btn {
