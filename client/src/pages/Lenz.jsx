@@ -98,6 +98,16 @@ export default function Lenz() {
           <li><strong>Hold-to-unlock cosmetics</strong> — optional flourishes that never gate the free core app.</li>
         </ul>
 
+        <h2>How to hold $LENZ (wallet &amp; gas)</h2>
+        <p>$LENZ lives on Secret Network, so you need a Secret-compatible wallet and a small amount of SCRT for gas. Because balances are encrypted, you also create a <strong>viewing key</strong> (or sign a permit) to see your own balance.</p>
+        <ol>
+          <li><strong>Install a wallet</strong> — <a href="https://www.keplr.app" target="_blank" rel="noreferrer">Keplr</a> or <a href="https://www.leapwallet.io" target="_blank" rel="noreferrer">Leap</a> (browser extension or mobile). Both support Secret Network (<code>secret-4</code>) out of the box.</li>
+          <li><strong>Get a little SCRT for gas</strong> — buy SCRT on an exchange and withdraw to your Secret address, or bridge in. A fraction of an SCRT covers many transactions.</li>
+          <li><strong>Add the $LENZ token</strong> — import it by its contract address (published here once live). Secret tokens are added by contract, not auto-detected.</li>
+          <li><strong>Create a viewing key</strong> — your wallet will prompt for this when you add $LENZ; it lets only you decrypt your balance. Keep it private — anyone with it can read your balance (but not move your funds).</li>
+        </ol>
+        <p className="doc-meta">Never share your seed phrase. A viewing key only reveals your balance to whoever holds it; your seed phrase controls your funds — WalletLens and $LENZ will never ask for either.</p>
+
         <h2>Legitimacy — don't trust, verify</h2>
         <p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain — you don't have to take our word for it. Once deployed, the official contract address and audited <strong>code hash</strong> are published here and in the repo, and anyone can run the verification script (<code>lenz-token/scripts/verify-onchain.sh</code>) to confirm:</p>
         <ul>

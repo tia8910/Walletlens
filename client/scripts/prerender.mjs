@@ -1134,6 +1134,14 @@ write('/lenz', buildPage({
 <li>Private tipping of contributors using SNIP-20's on-chain privacy.</li>
 <li>Optional hold-to-unlock cosmetics that never gate the free core app.</li>
 </ul>
+<h2>How to hold $LENZ (wallet &amp; gas)</h2>
+<p>$LENZ lives on Secret Network, so you need a Secret-compatible wallet and a small amount of SCRT for gas. Because balances are encrypted, you also create a viewing key (or sign a permit) to see your own balance.</p>
+<ol>
+<li>Install a wallet — Keplr (keplr.app) or Leap (leapwallet.io), browser or mobile. Both support Secret Network (secret-4) out of the box.</li>
+<li>Get a little SCRT for gas — buy SCRT on an exchange and withdraw to your Secret address, or bridge in. A fraction of an SCRT covers many transactions.</li>
+<li>Add the $LENZ token by its contract address (published here once live). Secret tokens are added by contract, not auto-detected.</li>
+<li>Create a viewing key — your wallet prompts for this when you add $LENZ; it lets only you decrypt your balance. Never share your seed phrase.</li>
+</ol>
 <h2>Legitimacy — don't trust, verify</h2>
 <p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official contract address and audited code hash are published here and in the repo, and anyone can run the verification script to confirm the deployed bytecode is the audited snip20-reference-impl build, that minting is permanently disabled (hard cap 21,000,000 LENZ), that 100% of supply is liquid at genesis with no insider bag, that the admin is renounced or a published multisig, and that liquidity is locked on a non-upgradeable contract.</p>
 <p><strong>Beware of scams.</strong> The only official $LENZ contract address and code hash live on this page and in the WalletLens repo. WalletLens will never DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase or viewing key. Anything that does is fraudulent.</p>

@@ -55,6 +55,7 @@ lenz-token/
     env.example.sh             # copy to env.sh and fill in
   TOKENOMICS.md                # 21M hard cap, no unlocks, distribution, utility
   SECURITY.md                  # anti-rug guarantees + how to verify each on-chain
+  LAUNCH.md                    # ordered, phase-by-phase launch runbook
   Makefile                     # convenience wrappers around the scripts
 ```
 
