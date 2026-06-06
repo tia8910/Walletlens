@@ -77,6 +77,16 @@ for (const r of rows) {
   seen.add(k)
 }
 
+// Safety net: enforce a hard per-wallet cap so no single address is over-allocated.
+// Override with --cap <LENZ>; default ~0.1% of supply (21,000 LENZ).
+const capArgI = process.argv.indexOf('--cap')
+const CAP_BASE = BigInt(Math.round(parseFloat(capArgI >= 0 ? process.argv[capArgI + 1] : '21000') * 1e6))
+for (const r of rows) {
+  if (BigInt(r.amount) > CAP_BASE) {
+    throw new Error(`amount for ${r.address} (${Number(r.amount) / 1e6} LENZ) exceeds per-wallet cap (${Number(CAP_BASE) / 1e6} LENZ). Use prepare-snapshot.mjs or pass --cap.`)
+  }
+}
+
 const leaves = rows.map(r => leafHash(r.address, r.amount))
 const layers = buildLayers(leaves)
 const root = toHex(layers[layers.length - 1][0])
