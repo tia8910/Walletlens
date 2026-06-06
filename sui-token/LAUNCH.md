@@ -36,7 +36,12 @@ Ordered steps to launch $LENZ — the native token of [walletlens.live](https://
 ## Phase 5 — Discoverability & community
 - 🟢 Apply to **CoinGecko** and **CoinMarketCap** (free) once there are a few days of
   trading volume and some liquidity.
-- 🟢 Airdrop to WalletLens users; pin the official package id + anti-phishing notice.
+- 🟢 **Airdrop via a claim (Merkle) approach, not mass sends:** publish a snapshot +
+  proof root once; users claim their own allocation and pay their own gas. Apply a
+  **per-wallet cap** (≈0.1% of supply) so no whale forms, and **phase** it (snapshot
+  batch first, then quests/referrals, then ongoing rewards). See TOKENOMICS.md for the
+  users-heavy sub-split (30% early users / 12.5% quests / 7.5% ongoing).
+- 🟢 Pin the official package id + coin type + anti-phishing notice everywhere.
 
 ---
 
