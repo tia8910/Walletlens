@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import InstallExtension from '../components/InstallExtension'
+import EmailOptIn from '../components/EmailOptIn'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -762,6 +763,17 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>AI Advisor</button>
         </div>
+      </section>
+
+      <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
+        <div className="lp-section-label">Stay ahead</div>
+        <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
+          Get market insights &<br /><span style={{ color:'var(--g)' }}>new features first</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
+          Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
+        </p>
+        <EmailOptIn source="landing_newsletter" />
       </section>
 
       <section style={{ display:'flex', justifyContent:'center', padding:'1.5rem 1rem 0' }}>
