@@ -46,5 +46,9 @@ fi
 cp "$PRODUCED" "$ARTIFACT_DIR/contract.wasm.gz"
 echo
 echo "==> Artifact ready: $ARTIFACT_DIR/contract.wasm.gz"
-echo "    sha256: $(sha256sum "$ARTIFACT_DIR/contract.wasm.gz" | awk '{print $1}')"
-echo "    Record this checksum so deployers can verify the same audited build."
+echo "    gzip sha256:               $(sha256sum "$ARTIFACT_DIR/contract.wasm.gz" | awk '{print $1}')"
+echo "    code hash (uncompressed):  $(gunzip -c "$ARTIFACT_DIR/contract.wasm.gz" | sha256sum | awk '{print $1}')"
+echo
+echo "    The 'code hash (uncompressed)' is what Secret Network reports on-chain."
+echo "    Publish it so anyone can confirm the deployed bytecode is this audited build"
+echo "    (verify-onchain.sh compares it automatically)."

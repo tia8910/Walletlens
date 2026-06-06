@@ -28,3 +28,7 @@ export CONTRACT_ADDR=""
 export LABEL="lenz-walletlens-v1"
 # Viewing key used by create-viewing-key.sh / query-balance.sh:
 export VIEWING_KEY=""
+# Optional: expected on-chain code hash (sha256 of the uncompressed wasm) so
+# verify-onchain.sh can check legitimacy without a local build. Printed by
+# ./scripts/bootstrap.sh as "code hash (uncompressed wasm)".
+export EXPECTED_CODE_HASH=""

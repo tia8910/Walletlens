@@ -50,8 +50,11 @@ lenz-token/
     instantiate.sh             # instantiate $LENZ from a code id + config
     create-viewing-key.sh      # mint a viewing key so you can read your balance
     query-balance.sh           # query your (private) balance with a viewing key
+    verify-onchain.sh          # "don't trust, verify" — PASS/FAIL legitimacy report
+    renounce-admin.sh          # hand admin to a multisig / renounce (close rug vector)
     env.example.sh             # copy to env.sh and fill in
   TOKENOMICS.md                # 21M hard cap, no unlocks, distribution, utility
+  SECURITY.md                  # anti-rug guarantees + how to verify each on-chain
   Makefile                     # convenience wrappers around the scripts
 ```
 
@@ -92,9 +95,33 @@ secretcli keys add deployer            # or: secretcli keys import ...
 # 5. Create a viewing key and read your private balance
 ./scripts/create-viewing-key.sh
 ./scripts/query-balance.sh
+
+# 6. Prove it's legit — verify the deployed contract against the audited build
+./scripts/verify-onchain.sh
 ```
 
-Or via make: `make bootstrap && make upload && make instantiate`.
+Or via make: `make bootstrap && make upload && make instantiate && make verify`.
+
+---
+
+## Legitimacy — don't trust, verify
+
+$LENZ is a real, long-term token, and every protection is **independently
+verifiable**. See [`SECURITY.md`](SECURITY.md) for the full list and commands.
+`./scripts/verify-onchain.sh` checks them automatically and prints a PASS/FAIL report:
+
+- **Audited bytecode** — the on-chain code hash equals the hash of the audited
+  `snip20-reference-impl` build (no hidden logic).
+- **Fixed supply** — minting permanently disabled; cap is 21,000,000 LENZ.
+- **No unlocks / no insider bag** — 100% liquid at genesis, published distribution.
+- **No admin rug** — admin renounced or held by a published multisig (and mint is
+  off regardless).
+- **Locked liquidity**, **not upgradeable**.
+
+> **Anti-phishing:** the only official contract address + code hash live on
+> **https://walletlens.live/lenz** and in this repo. WalletLens never DMs you, never
+> runs a "claim" site that asks you to connect a wallet or sign, and never asks for
+> your seed phrase or viewing key.
 
 ---
 

@@ -31,6 +31,10 @@ const FAQS = [
     a: 'A low, hard cap of 21,000,000 LENZ with minting permanently disabled — no new tokens can ever be printed. 100% is liquid at genesis: there is no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang. The hard cap is publicly verifiable on-chain, while individual balances and transfers stay private.',
   },
   {
+    q: 'How do I know $LENZ is not a scam?',
+    a: 'Because you can verify it instead of trusting it. The deployed contract runs the audited snip20-reference-impl (the on-chain code hash matches the audited build), minting is permanently disabled, there is no team/insider allocation or vesting unlock, the admin is renounced or a published multisig, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official contract address and code hash are published on this page and in the WalletLens repo.',
+  },
+  {
     q: 'Is this financial advice or an investment offer?',
     a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Privacy tokens are also delisted by many exchanges and may be regulated differently across jurisdictions. Do your own research.',
   },
@@ -93,6 +97,17 @@ export default function Lenz() {
           <li><strong>Private tipping</strong> — tip contributors privately, using SNIP-20's real on-chain privacy.</li>
           <li><strong>Hold-to-unlock cosmetics</strong> — optional flourishes that never gate the free core app.</li>
         </ul>
+
+        <h2>Legitimacy — don't trust, verify</h2>
+        <p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain — you don't have to take our word for it. Once deployed, the official contract address and audited <strong>code hash</strong> are published here and in the repo, and anyone can run the verification script (<code>lenz-token/scripts/verify-onchain.sh</code>) to confirm:</p>
+        <ul>
+          <li><strong>Audited bytecode</strong> — the on-chain code hash equals the audited <a href="https://github.com/scrt-labs/snip20-reference-impl" target="_blank" rel="noreferrer">snip20-reference-impl</a> build (no hidden logic).</li>
+          <li><strong>Fixed supply</strong> — minting permanently disabled; hard cap 21,000,000 LENZ.</li>
+          <li><strong>No unlocks, no insider bag</strong> — 100% liquid at genesis, distribution wallets published.</li>
+          <li><strong>No admin rug</strong> — admin renounced or held by a published multisig (and minting is off regardless).</li>
+          <li><strong>Locked liquidity</strong> and a <strong>non-upgradeable</strong> contract.</li>
+        </ul>
+        <p className="lenz-warn"><strong>Beware of scams.</strong> The only official $LENZ contract address and code hash live on this page and in the WalletLens repo. WalletLens will <strong>never</strong> DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase or viewing key. Anything that does is fraudulent.</p>
 
         <h2>Frequently asked questions</h2>
         <div className="doc-faq">
