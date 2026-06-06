@@ -28,6 +28,59 @@ function corsHeaders(origin: string | null): HeadersInit {
   }
 }
 
+// ── Email sending (Resend) ──────────────────────────────────────────────────
+// All mail goes out from contact@walletlens.live. Requires the RESEND_API_KEY
+// env secret and a verified walletlens.live domain in the Resend dashboard.
+const MAIL_FROM = "WalletLens <contact@walletlens.live>"
+
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const key = Deno.env.get("RESEND_API_KEY")
+  if (!key) return false
+  try {
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      body: JSON.stringify({ from: MAIL_FROM, to, subject, html, reply_to: "contact@walletlens.live" }),
+    })
+    if (!resp.ok) console.error("Resend error:", resp.status, await resp.text())
+    return resp.ok
+  } catch (e) {
+    console.error("Resend exception:", e)
+    return false
+  }
+}
+
+// Branded HTML shell so every email looks consistent.
+function emailShell(bodyHtml: string): string {
+  return `<!DOCTYPE html><html><body style="margin:0;background:#0b0f14;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;color:#e6edf3;padding:24px">
+  <div style="max-width:560px;margin:0 auto;background:#11161d;border:1px solid #1f2730;border-radius:16px;overflow:hidden">
+    <div style="padding:22px 28px;border-bottom:1px solid #1f2730">
+      <span style="font-size:20px;font-weight:800;color:#4ade80">WalletLens</span>
+      <span style="font-size:11px;color:#7d8794;letter-spacing:.08em;margin-left:8px">TRACK · ANALYZE · GROW</span>
+    </div>
+    <div style="padding:28px">${bodyHtml}</div>
+    <div style="padding:18px 28px;border-top:1px solid #1f2730;font-size:12px;color:#6b7480">
+      You're receiving this because you joined WalletLens at
+      <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a>.<br>
+      100% free · private · no account. Reply <b>unsubscribe</b> to stop.
+    </div>
+  </div></body></html>`
+}
+
+const WELCOME_HTML = emailShell(`
+  <h1 style="margin:0 0 14px;font-size:22px;color:#fff">Welcome aboard! 🎉</h1>
+  <p style="margin:0 0 14px;line-height:1.6;color:#c4cdd6">
+    Thanks for joining WalletLens — the <b>free, private</b> net-worth tracker for crypto, stocks, metals, cash &amp; real estate. No account, your data never leaves your device.
+  </p>
+  <p style="margin:0 0 18px;line-height:1.6;color:#c4cdd6">
+    Here's the fastest way to start: import your whole portfolio from a <b>screenshot</b> — no API keys, no manual typing.
+  </p>
+  <a href="https://walletlens.live/dashboard" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:12px 22px;border-radius:12px">Open my dashboard →</a>
+  <p style="margin:22px 0 0;line-height:1.6;color:#8a93a0;font-size:13px">
+    You'll get a weekly market-sentiment digest and early access to new features. That's it.
+  </p>
+`)
+
 function buildPrompt(transcript: string, hintLang: string, alternatives: string[]): string {
   // When several speech-to-text engines disagree, listing every candidate
   // lets the model triangulate the true utterance — the single biggest
@@ -194,6 +247,8 @@ Deno.serve(async (req: Request) => {
       await kv.set(key, { email, source, at: new Date().toISOString() })
       // Maintain a running counter for quick totals
       await kv.atomic().sum(["signups_count"], 1n).commit()
+      // Auto-send the welcome email from contact@walletlens.live (best-effort).
+      sendEmail(email, "Welcome to WalletLens 🎉", WELCOME_HTML).catch(() => {})
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
     } catch (e) {
       console.error("KV signup error:", e)
@@ -218,6 +273,51 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true, count: rows.length, signups: rows }), { status: 200, headers })
     } catch (e) {
       console.error("KV export error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  // ── Send a campaign to all signups (mode: "send_campaign") ────────────────
+  // Protected by SIGNUP_EXPORT_TOKEN. POST { mode, token, subject, html, test? }.
+  // Sends from contact@walletlens.live via Resend, wrapped in the brand shell.
+  // Pass `test: "you@email"` to send a single preview to yourself first.
+  if (body?.mode === "send_campaign") {
+    const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+    if (!expected || body.token !== expected) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers })
+    }
+    if (!Deno.env.get("RESEND_API_KEY")) {
+      return new Response(JSON.stringify({ error: "mail_not_configured" }), { status: 503, headers })
+    }
+    const subject = (body.subject || "").toString().trim()
+    const inner = (body.html || "").toString()
+    if (!subject || !inner) {
+      return new Response(JSON.stringify({ error: "missing_subject_or_html" }), { status: 400, headers })
+    }
+    const html = emailShell(inner)
+
+    // Preview mode — send only to the given test address.
+    if (body.test) {
+      const ok = await sendEmail(body.test.toString(), `[TEST] ${subject}`, html)
+      return new Response(JSON.stringify({ ok, test: true }), { status: ok ? 200 : 502, headers })
+    }
+
+    try {
+      const kv = await Deno.openKv()
+      const recipients: string[] = []
+      for await (const entry of kv.list<{ email: string }>({ prefix: ["signups"] })) {
+        if (entry.value?.email) recipients.push(entry.value.email)
+      }
+      let sent = 0, failed = 0
+      // Sequential with a tiny delay to stay under Resend's rate limit.
+      for (const to of recipients) {
+        const ok = await sendEmail(to, subject, html)
+        ok ? sent++ : failed++
+        await new Promise((r) => setTimeout(r, 120))
+      }
+      return new Response(JSON.stringify({ ok: true, total: recipients.length, sent, failed }), { status: 200, headers })
+    } catch (e) {
+      console.error("Campaign error:", e)
       return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
     }
   }
