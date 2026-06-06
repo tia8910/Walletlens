@@ -135,6 +135,7 @@ function _saveCache(key, val) {
   // don't trigger repeated JSON.stringify + setItem calls.
   clearTimeout(_saveCacheTimers[key])
   _saveCacheTimers[key] = setTimeout(() => {
+    delete _saveCacheTimers[key]
     try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
   }, 200)
 }

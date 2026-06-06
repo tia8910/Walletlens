@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v140'
+const SW_VERSION = 'v141'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 
@@ -53,12 +53,22 @@ self.addEventListener('install', e => {
   )
 })
 
+const API_CACHE_MAX = 120 // max entries before oldest are evicted
+
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
         keys.filter(k => k !== STATIC && k !== API_CACHE).map(k => caches.delete(k))
       ))
+      .then(async () => {
+        // Trim API cache to prevent unbounded growth across long sessions.
+        const cache = await caches.open(API_CACHE)
+        const keys = await cache.keys()
+        if (keys.length > API_CACHE_MAX) {
+          await Promise.all(keys.slice(0, keys.length - API_CACHE_MAX).map(k => cache.delete(k)))
+        }
+      })
       .then(() => self.clients.claim())
   )
 })
