@@ -9,9 +9,9 @@ import { loadData } from '../data/storage'
 // are self-attested and re-checked at snapshot time. Final eligibility is settled
 // by a Merkle claim with a per-wallet cap (see /lenz and sui-token/TOKENOMICS.md).
 
-// TODO: confirm the official X handle. Telegram/YouTube are the real channels.
 const SOCIAL = {
-  x: 'https://x.com/walletlens',
+  x: 'https://x.com/wallet_lens',          // official WalletLens account
+  founder: 'https://x.com/tarek_abhamed',  // founder
   telegram: 'https://t.me/walletlenss',
   youtube: 'https://youtube.com/@walletlens',
 }
@@ -63,8 +63,9 @@ export default function Airdrop() {
   const QUESTS = useMemo(() => [
     { id: 'portfolio', icon: '📊', pts: 100, type: 'app', title: 'Create your portfolio', desc: 'Add at least one holding in WalletLens.', auto: portfolio, cta: 'Open app', href: '/dashboard' },
     { id: 'track3', icon: '🧺', pts: 100, type: 'app', title: 'Track 3+ assets', desc: 'Hold three or more different assets.', auto: assets >= 3, cta: 'Add assets', href: '/dashboard' },
-    { id: 'follow_x', icon: '𝕏', pts: 50, type: 'social', title: 'Follow @walletlens on X', desc: 'Follow the official account.', href: SOCIAL.x },
-    { id: 'repost', icon: '🔁', pts: 75, type: 'social', title: 'Repost the launch post', desc: 'Share the $LENZ launch on X.', href: `https://x.com/intent/tweet?text=${encodeURIComponent('I’m claiming the $LENZ airdrop on @walletlens — the free, privacy-first net-worth tracker, native token on #Sui.')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}` },
+    { id: 'follow_x', icon: '𝕏', pts: 50, type: 'social', title: 'Follow @wallet_lens on X', desc: 'Follow the official account.', href: SOCIAL.x },
+    { id: 'follow_founder', icon: '👤', pts: 25, type: 'social', title: 'Follow the founder @tarek_abhamed', desc: 'Follow the founder on X.', href: SOCIAL.founder },
+    { id: 'repost', icon: '🔁', pts: 75, type: 'social', title: 'Repost the launch post', desc: 'Share the $LENZ launch on X.', href: `https://x.com/intent/tweet?text=${encodeURIComponent('I’m claiming the $LENZ airdrop on @wallet_lens — the free, privacy-first net-worth tracker, native token on #Sui.')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}` },
     { id: 'telegram', icon: '✈️', pts: 50, type: 'social', title: 'Join the Telegram', desc: 'Join the community channel.', href: SOCIAL.telegram },
     { id: 'youtube', icon: '▶️', pts: 50, type: 'social', title: 'Subscribe on YouTube', desc: 'Subscribe to @walletlens.', href: SOCIAL.youtube },
     { id: 'screenshot', icon: '📸', pts: 100, type: 'proof', title: 'Share a portfolio screenshot', desc: 'Post a screenshot of your WalletLens dashboard with #LENZ.' },
@@ -177,7 +178,7 @@ export default function Airdrop() {
                       </div>
                     ) : q.type === 'proof' ? (
                       <div className="aq-q-actions">
-                        <a className="lz-btn lz-btn-ghost" href={`https://x.com/intent/tweet?text=${encodeURIComponent('My @walletlens portfolio, tracked privately & for free. Claiming the $LENZ airdrop on #Sui #LENZ')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}`} target="_blank" rel="noreferrer">Share on X</a>
+                        <a className="lz-btn lz-btn-ghost" href={`https://x.com/intent/tweet?text=${encodeURIComponent('My @wallet_lens portfolio, tracked privately & for free. Claiming the $LENZ airdrop on #Sui #LENZ')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}`} target="_blank" rel="noreferrer">Share on X</a>
                         <button className="aq-mark" onClick={() => toggle(q, !complete)}>{complete ? 'Marked ✓' : 'Mark done'}</button>
                       </div>
                     ) : q.type === 'app' ? (
