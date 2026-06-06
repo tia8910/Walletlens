@@ -6,3 +6,4 @@ scripts/env.sh
 
 # Publish result (contains ids; regenerate from chain)
 publish-output.json
+node_modules/
