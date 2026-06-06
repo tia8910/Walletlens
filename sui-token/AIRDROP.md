@@ -40,7 +40,7 @@ address
 Filters by on-chain history and splits the batch pool equally (capped):
 ```bash
 cd sui-token
-node scripts/prepare-snapshot.mjs candidates.csv --pool 6300000 --min-tx 1 --cap 21000
+node scripts/prepare-snapshot.mjs candidates.csv --pool 3000000 --min-tx 1 --cap 10000
 #   → snapshot.csv (address,amount in base units) + rejected.csv
 # Use --skip-gate to test the allocation math offline.
 ```

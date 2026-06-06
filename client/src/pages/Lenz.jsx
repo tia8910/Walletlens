@@ -7,13 +7,13 @@ import LenzLogo from '../components/LenzLogo'
 // so it never affects the rest of the site. Numbers mirror sui-token/TOKENOMICS.md.
 
 const ALLOCATIONS = [
-  { label: 'Community airdrop & rewards', pct: 50, lenz: 10_500_000, note: 'Airdrops to WalletLens users and contribution rewards' },
-  { label: 'Liquidity', pct: 35, lenz: 7_350_000, note: 'DEX liquidity so a real price exists (LP locked)' },
-  { label: 'Ecosystem / DAO treasury', pct: 15, lenz: 3_150_000, note: 'Governance-controlled — no team lock, no insider bag' },
+  { label: 'Community airdrop & rewards', pct: 50, lenz: 5_000_000, note: 'Airdrops to WalletLens users and contribution rewards' },
+  { label: 'Liquidity', pct: 35, lenz: 3_500_000, note: 'DEX liquidity so a real price exists (LP locked)' },
+  { label: 'Ecosystem / DAO treasury', pct: 15, lenz: 1_500_000, note: 'Governance-controlled — no team lock, no insider bag' },
 ]
 
 const STATS = [
-  { k: 'Max supply', v: '21,000,000', s: 'LENZ — hard cap, minting locked' },
+  { k: 'Max supply', v: '10,000,000', s: 'LENZ — hard cap, minting locked' },
   { k: 'Unlocks', v: 'None', s: '100% liquid at genesis' },
   { k: 'Chain', v: 'Sui', s: 'fast, low-fee, easy to buy' },
   { k: 'Supply', v: 'Verifiable', s: 'TreasuryCap frozen on-chain' },
@@ -27,7 +27,7 @@ const UTILITY = [
 ]
 
 const CHECKS = [
-  'Fixed supply — total supply is 21,000,000 LENZ',
+  'Fixed supply — total supply is 10,000,000 LENZ',
   'Minting locked forever — the TreasuryCap is frozen on-chain, so no one can ever mint again',
   'No unlocks, no insider bag — 100% liquid at genesis, distribution wallets published',
   'Immutable metadata — name, symbol, decimals and icon are frozen',
@@ -36,12 +36,12 @@ const CHECKS = [
 ]
 
 const FAQS = [
-  { q: 'What is $LENZ?', a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 21,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
+  { q: 'What is $LENZ?', a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 10,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
   { q: 'Why Sui?', a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
   { q: 'Is $LENZ private?', a: 'No — and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a "privacy coin."' },
   { q: 'Does holding $LENZ change how WalletLens works?', a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
-  { q: 'What is the supply, and are there unlocks?', a: 'A low, hard cap of 21,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
-  { q: 'How do I know $LENZ is not a scam?', a: 'Because you can verify it instead of trusting it. The total supply is fixed at 21,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
+  { q: 'What is the supply, and are there unlocks?', a: 'A low, hard cap of 10,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
+  { q: 'How do I know $LENZ is not a scam?', a: 'Because you can verify it instead of trusting it. The total supply is fixed at 10,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
   { q: 'Is this financial advice or an investment offer?', a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Do your own research.' },
 ]
 
@@ -75,7 +75,7 @@ export default function Lenz() {
         </div>
         <span className="lz-eyebrow">Native token of walletlens.live</span>
         <h1 className="lz-title">$LENZ</h1>
-        <p className="lz-tagline">The native token of WalletLens — a low, hard-capped <strong>21M</strong> coin on <strong>Sui</strong>. No unlocks. No insider bag. Supply locked. Verifiable.</p>
+        <p className="lz-tagline">The native token of WalletLens — a low, hard-capped <strong>10M</strong> coin on <strong>Sui</strong>. No unlocks. No insider bag. Supply locked. Verifiable.</p>
         <div className="lz-badges">
           <span className="lz-badge">🎁 Free airdrop</span>
           <span className="lz-badge">🚫 No sale · No IPO</span>
@@ -83,7 +83,7 @@ export default function Lenz() {
           <span className="lz-badge">🔒 Supply locked</span>
         </div>
         <div className="lz-chips">
-          <span className="lz-chip"><b>21M</b> hard cap</span>
+          <span className="lz-chip"><b>10M</b> hard cap</span>
           <span className="lz-chip"><b>0</b> unlocks</span>
           <span className="lz-chip">Built on Sui</span>
           <span className="lz-chip">Supply locked</span>
@@ -100,7 +100,7 @@ export default function Lenz() {
           <section className="lz-card">
             <h2 className="lz-h2">What is $LENZ?</h2>
             <p>$LENZ is the native token of <a href="https://walletlens.live" target="_blank" rel="noreferrer">walletlens.live</a> — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device.</p>
-            <p>It is a <strong>standard Sui coin</strong> with a fixed 21,000,000 supply and minting locked forever — the utility &amp; governance token of the WalletLens ecosystem.</p>
+            <p>It is a <strong>standard Sui coin</strong> with a fixed 10,000,000 supply and minting locked forever — the utility &amp; governance token of the WalletLens ecosystem.</p>
           </section>
           <section className="lz-card">
             <h2 className="lz-h2">Why Sui</h2>

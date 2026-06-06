@@ -1,7 +1,7 @@
 /// $LENZ — the native token of walletlens.live, on Sui.
 ///
 /// A standard Sui `coin` with a fixed, hard-capped supply and NO ongoing minting:
-/// the entire 21,000,000 LENZ supply is minted once at publish time, then the
+/// the entire 10,000,000 LENZ supply is minted once at publish time, then the
 /// TreasuryCap is FROZEN — after which no address (including the deployer) can ever
 /// mint again. The CoinMetadata is frozen too, so name/symbol/icon are immutable.
 ///
@@ -18,8 +18,8 @@ module lenz::lenz {
 
     /// 6 decimals. 1 LENZ = 1,000,000 base units.
     const DECIMALS: u8 = 6;
-    /// 21,000,000 LENZ × 10^6 = 21,000,000,000,000 base units. Hard cap.
-    const TOTAL_SUPPLY: u64 = 21_000_000_000_000;
+    /// 10,000,000 LENZ × 10^6 = 10,000,000,000,000 base units. Hard cap.
+    const TOTAL_SUPPLY: u64 = 10_000_000_000_000;
 
     fun init(witness: LENZ, ctx: &mut TxContext) {
         let (mut treasury, metadata) = coin::create_currency(

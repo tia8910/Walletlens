@@ -21,9 +21,9 @@ export SUPPLY_COIN_ID=""
 
 # --- Distribution (100% liquid at genesis, no unlocks) -----------------------
 # Base units (6 decimals): 1 LENZ = 1_000_000.
-#   Community 50% = 10,500,000 LENZ = 10500000000000
-#   Liquidity 35% =  7,350,000 LENZ =  7350000000000
-#   Treasury  15% =  3,150,000 LENZ =  3150000000000
+#   Community 50% = 5,000,000 LENZ = 5000000000000
+#   Liquidity 35% =  3,500,000 LENZ =  3500000000000
+#   Treasury  15% =  1,500,000 LENZ =  1500000000000
 export ADDR_COMMUNITY=""
 export ADDR_LIQUIDITY=""
 export ADDR_TREASURY=""
