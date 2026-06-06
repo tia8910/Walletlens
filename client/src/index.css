@@ -6582,24 +6582,33 @@ select.bs-input option { background: var(--bg3); }
   border-color: rgba(15,23,42,0.1);
 }
 
-/* Buttons — primary solid green, secondary white w/ green outline */
+/* "How it works" step boxes → white cards */
+.lp-light .lp-step {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(15,23,42,0.1);
+  box-shadow: 0 4px 24px rgba(15,23,42,0.06);
+}
+.lp-light .lp-step-num { color: rgba(37,99,235,0.55); }
+
+/* Buttons — primary vibrant blue, secondary white w/ blue outline */
 .lp-light .lp-cta-primary {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(5,150,105,0.32);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.32);
+  animation: none;        /* disable the green glow keyframe */
 }
 .lp-light .lp-cta-primary:hover {
-  box-shadow: 0 10px 30px rgba(5,150,105,0.45);
+  box-shadow: 0 10px 30px rgba(37,99,235,0.45);
 }
 .lp-light .lp-cta-ghost {
   background: #ffffff;
-  border: 1.5px solid rgba(5,150,105,0.5);
-  color: #047857;
+  border: 1.5px solid rgba(37,99,235,0.5);
+  color: #1d4ed8;
 }
 .lp-light .lp-cta-ghost:hover {
-  background: rgba(5,150,105,0.07);
-  border-color: #059669;
-  color: #065f46;
+  background: rgba(37,99,235,0.07);
+  border-color: #1d4ed8;
+  color: #1e40af;
 }
 
 /* ── Pulsing logo orb (landing hero) ──────────────────────────────────── */
