@@ -241,7 +241,7 @@ export default function Landing() {
           <div className="lp-brand-lockup">
             <Logo size={80} animated className="lp-brand-logo" />
             <div className="lp-brand-text">
-            <div className="lp-brand-title">WalletLens<span className="wl-live-tld">.live</span></div>
+            <div className="lp-brand-title">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></div>
             <div className="lp-brand-subtext">
               <div className="lp-brand-tagline">{t('brandTag')}</div>
               <div className="lp-brand-actions">

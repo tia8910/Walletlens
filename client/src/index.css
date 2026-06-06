@@ -5963,6 +5963,13 @@ select.bs-input option { background: var(--bg3); }
   -webkit-text-fill-color: transparent;
   animation: wl-live-shimmer 3s linear infinite, wl-live-pulse 2.2s ease-in-out infinite;
 }
+/* Blinking "." dot inside .live — solid green, overrides the gradient fill */
+.wl-live-dot {
+  -webkit-text-fill-color: #4ade80;
+  color: #4ade80;
+  text-shadow: 0 0 6px rgba(74,222,128,0.7);
+  animation: wl-live-blink 1.4s ease-in-out infinite;
+}
 @keyframes wl-live-shimmer {
   to { background-position: 200% 0; }
 }
@@ -5970,8 +5977,12 @@ select.bs-input option { background: var(--bg3); }
   0%, 100% { filter: drop-shadow(0 0 0 rgba(74,222,128,0)); }
   50%      { filter: drop-shadow(0 0 8px rgba(74,222,128,0.55)); }
 }
+@keyframes wl-live-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .wl-live-tld { animation: none; }
+  .wl-live-tld, .wl-live-dot { animation: none; }
 }
 .lp-brand-tagline {
   font-size: 0.72rem;
