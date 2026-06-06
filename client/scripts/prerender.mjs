@@ -1090,41 +1090,40 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
-    a: '$LENZ is the privacy token of the WalletLens ecosystem, issued as a SNIP-20 token on Secret Network. SNIP-20 tokens keep balances and transfer amounts encrypted on-chain, so holdings are not visible on a public block explorer.' },
+    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is issued as a SNIP-20 token on Secret Network, which keeps balances and transfer amounts encrypted on-chain, so holdings are not visible on a public block explorer.' },
   { q: 'How is this different from an ERC-20 "privacy" token?',
     a: 'On Ethereum and most chains, every balance and transfer is public, so a token there with "privacy" in its name is not actually private. SNIP-20 on Secret Network provides real, protocol-level privacy: you read your own balance with a viewing key or signed permit, and outsiders cannot.' },
   { q: 'Does holding $LENZ change how WalletLens works?',
     a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
-  { q: 'Is the supply fixed?',
-    a: 'The launch configuration is a fixed 100,000,000 LENZ with minting disabled, so no new tokens can be printed after launch. Total supply is kept private, consistent with a privacy token.' },
+  { q: 'What is the supply, and are there unlocks?',
+    a: 'A low, hard cap of 21,000,000 LENZ with minting permanently disabled — no new tokens can ever be printed. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang. The hard cap is publicly verifiable on-chain, while individual balances and transfers stay private.' },
   { q: 'Is this financial advice or an investment offer?',
     a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Privacy tokens are delisted by many exchanges and may be regulated differently across jurisdictions. Do your own research.' },
 ]
 write('/lenz', buildPage({
   path: '/lenz',
-  title: '$LENZ — WalletLens Privacy Token (SNIP-20 on Secret Network)',
-  description: '$LENZ is the privacy token of the WalletLens ecosystem — a SNIP-20 token on Secret Network with encrypted balances and transfers. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
+  title: '$LENZ — Native Token of walletlens.live (SNIP-20 on Secret Network)',
+  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A low 21M hard-capped SNIP-20 privacy token on Secret Network with no unlocks, no vesting and no insider allocation. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
   bodyHtml: `
-<h1>$LENZ — The WalletLens Privacy Token</h1>
-<p>$LENZ is the privacy token of the WalletLens ecosystem, issued as a SNIP-20 token on Secret Network. Balances and transfer amounts are encrypted on-chain, so your holdings are not visible on a public block explorer — an honest fit for a tracker built around the idea that your financial data is yours.</p>
+<h1>$LENZ — The Native Token of walletlens.live</h1>
+<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is issued as a SNIP-20 token on Secret Network, so balances and transfer amounts are encrypted on-chain and your holdings are not visible on a public block explorer.</p>
 <h2>Why SNIP-20, not a "privacy" ERC-20</h2>
 <p>On Ethereum and most public chains every balance and transfer is visible to anyone, so a token there with "privacy" in its name is not actually private. SNIP-20 gives privacy at the protocol level, which is why $LENZ is on Secret Network rather than a public chain.</p>
-<h2>Tokenomics</h2>
+<h2>Tokenomics — low cap, no unlocks</h2>
 <ul>
 <li>Name / ticker: WalletLens / LENZ</li>
 <li>Standard: SNIP-20 (private balances &amp; transfers)</li>
 <li>Chain: Secret Network (secret-4 mainnet, pulsar-3 testnet)</li>
-<li>Total supply: 100,000,000 LENZ — fixed, minting disabled</li>
+<li>Max supply: 21,000,000 LENZ — low, hard cap, minting permanently disabled</li>
+<li>Unlocks / vesting: none — 100% liquid at genesis, no cliffs, no insider allocation</li>
 <li>Decimals: 6 (1 LENZ = 1,000,000 uLENZ)</li>
-<li>Total supply visibility: private, consistent with a privacy token</li>
+<li>Cap visibility: publicly verifiable on-chain — balances stay private</li>
 </ul>
-<h2>Distribution</h2>
+<h2>Distribution — 100% liquid at genesis</h2>
 <ul>
-<li>Community &amp; rewards — 40% (40,000,000 LENZ)</li>
-<li>Ecosystem &amp; liquidity — 25% (25,000,000 LENZ)</li>
-<li>Team — 15% (15,000,000 LENZ), vested via timelock/multisig</li>
-<li>Treasury / DAO — 15% (15,000,000 LENZ)</li>
-<li>Public sale — 5% (5,000,000 LENZ), optional</li>
+<li>Community airdrop &amp; rewards — 50% (10,500,000 LENZ)</li>
+<li>Liquidity — 35% (7,350,000 LENZ), LP locked</li>
+<li>Ecosystem / DAO treasury — 15% (3,150,000 LENZ), no team lock</li>
 </ul>
 <h2>Proposed utility</h2>
 <ul>

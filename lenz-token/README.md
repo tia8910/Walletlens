@@ -1,6 +1,13 @@
-# $LENZ — WalletLens Privacy Token (SNIP-20 on Secret Network)
+# $LENZ — the native token of walletlens.live (SNIP-20 on Secret Network)
 
-**$LENZ is a genuinely private token** built on [Secret Network](https://scrt.network).
+**$LENZ is the native token of [walletlens.live](https://walletlens.live)** — a
+100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks,
+precious metals, fiat and real estate, with AI insights and live prices, where all
+your data stays on your device.
+
+It is a **low, hard-capped (21,000,000), genuinely private token** built on
+[Secret Network](https://scrt.network): **no unlocks, no vesting, no insider
+allocation** — 100% liquid at genesis, with a publicly verifiable cap.
 Unlike an ERC-20 (where every balance and transfer is public on a block explorer),
 SNIP-20 tokens keep **balances and transfer amounts encrypted on-chain**. Holders
 read their own balance through a *viewing key* or a *permit*; outsiders cannot.
@@ -44,7 +51,7 @@ lenz-token/
     create-viewing-key.sh      # mint a viewing key so you can read your balance
     query-balance.sh           # query your (private) balance with a viewing key
     env.example.sh             # copy to env.sh and fill in
-  TOKENOMICS.md                # supply, distribution, utility, vesting
+  TOKENOMICS.md                # 21M hard cap, no unlocks, distribution, utility
   Makefile                     # convenience wrappers around the scripts
 ```
 
