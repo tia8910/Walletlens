@@ -166,17 +166,65 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers })
   }
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY")
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
-  }
-
   // deno-lint-ignore no-explicit-any
   let body: any
   try {
     body = await req.json()
   } catch {
     return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers })
+  }
+
+  // ── Newsletter / waitlist signup (mode: "email") ──────────────────────────
+  // Stores an opted-in email in Deno KV (built into Deno Deploy, no setup).
+  // No AI key required — runs even if ANTHROPIC_API_KEY is absent.
+  if (body?.mode === "email") {
+    const email = (body.email || "").toString().trim().toLowerCase()
+    const source = (body.source || "landing").toString().slice(0, 60)
+    // RFC-lite validation — good enough to reject obvious junk
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const key = ["signups", email]
+      const existing = await kv.get(key)
+      if (existing.value) {
+        return new Response(JSON.stringify({ ok: true, duplicate: true }), { status: 200, headers })
+      }
+      await kv.set(key, { email, source, at: new Date().toISOString() })
+      // Maintain a running counter for quick totals
+      await kv.atomic().sum(["signups_count"], 1n).commit()
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+    } catch (e) {
+      console.error("KV signup error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  // ── Export collected signups (mode: "email_export") ───────────────────────
+  // Protected by the SIGNUP_EXPORT_TOKEN env secret. POST { mode, token }.
+  // Returns every stored signup so the list can be downloaded into an ESP.
+  if (body?.mode === "email_export") {
+    const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+    if (!expected || body.token !== expected) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const rows: unknown[] = []
+      for await (const entry of kv.list({ prefix: ["signups"] })) {
+        rows.push(entry.value)
+      }
+      return new Response(JSON.stringify({ ok: true, count: rows.length, signups: rows }), { status: 200, headers })
+    } catch (e) {
+      console.error("KV export error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY")
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
   }
 
   // ── Screenshot import (mode: "vision") ────────────────────────────────────
