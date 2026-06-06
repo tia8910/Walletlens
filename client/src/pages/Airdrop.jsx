@@ -220,8 +220,9 @@ export default function Airdrop() {
           <ul className="lz-checks">
             <li>The airdrop pool is <strong>10,500,000 LENZ (50% of supply)</strong> — users-first, never an insider bag.</li>
             <li>At snapshot, eligible wallets and amounts are published as a <strong>Merkle claim</strong> — you claim your own $LENZ, paying your own gas.</li>
-            <li>A <strong>per-wallet cap</strong> (~0.1% of supply) keeps any single address from dominating — no whales.</li>
-            <li>Social quests are <strong>re-checked at snapshot</strong>; obvious sybil/bot wallets are filtered out.</li>
+            <li><strong>Anti-sybil:</strong> allocation is <strong>flat (equal per eligible wallet)</strong> with a hard <strong>per-wallet cap</strong>, so farming with many wallets earns ~nothing extra.</li>
+            <li><strong>On-chain gating:</strong> only wallets with real prior Sui activity qualify — fresh, zero-history throwaway wallets are filtered out. Use the Sui address you actually use.</li>
+            <li>Social quests are <strong>re-checked at snapshot</strong>; obvious bot/sybil wallets are dropped.</li>
             <li>Progress on this page is stored <strong>on your device</strong> — WalletLens keeps no account or server-side profile of you.</li>
           </ul>
           <div className="lz-warn">

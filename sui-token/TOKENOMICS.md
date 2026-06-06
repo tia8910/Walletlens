@@ -58,12 +58,15 @@ The 50% pool is distributed to the community, never to a single wallet:
 | Quests & referrals | 12.5% | 2,625,000 | phased campaigns |
 | Ongoing usage rewards | 7.5% | 1,575,000 | drip over time |
 
-**Anti-concentration rules:**
-- **Per-wallet cap** on the airdrop so no single address can scoop a large share
-  (suggested ≈ 0.1% of supply = 21,000 LENZ; configurable).
-- **Claim-based (Merkle) distribution** — you publish one snapshot + proof root and
-  users claim their own allocation (paying their own gas). No mass manual sends, far
-  cheaper, and tokens go straight to many holders instead of sitting concentrated.
+**Anti-concentration / anti-sybil rules:**
+- **Flat allocation** — the pool is split equally among eligible wallets, so making
+  many wallets earns ~no extra (farming is uneconomic).
+- **Per-wallet cap** — hard cap enforced in tooling (≈0.1% of supply = 21,000 LENZ;
+  configurable) so no single address is over-allocated.
+- **On-chain gating** — only wallets with real prior Sui activity qualify; fresh,
+  zero-history throwaway wallets are filtered out (`scripts/prepare-snapshot.mjs`).
+- **Claim-based (Merkle) distribution** — publish one snapshot + proof root; users
+  claim their own allocation (paying their own gas). No mass manual sends, far cheaper.
 - **Phased release** — snapshot batch first; quests and ongoing rewards later.
 
 ## Utility (proposed)

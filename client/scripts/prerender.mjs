@@ -1185,7 +1185,7 @@ write('/airdrop', buildPage({
 <li>Refer friends with your referral link.</li>
 </ul>
 <h2>How eligibility works</h2>
-<p>At snapshot, eligible wallets and amounts are published as a Merkle claim — you claim your own $LENZ and pay your own gas. In-app quests are verified on your device; social quests are re-checked at snapshot and obvious bot/sybil wallets are filtered out. Progress is stored on your device — WalletLens keeps no account or server-side profile.</p>
+<p>At snapshot, eligible wallets and amounts are published as a Merkle claim — you claim your own $LENZ and pay your own gas. Anti-sybil: allocation is flat (equal per eligible wallet) with a hard per-wallet cap, and only wallets with real prior Sui activity qualify — fresh throwaway wallets are filtered out, so farming with many wallets earns almost nothing extra. In-app quests are verified on your device; social quests are re-checked at snapshot. Progress is stored on your device — WalletLens keeps no account or server-side profile.</p>
 <p><strong>Beware of scams.</strong> The only official airdrop is on walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to a random site, and never ask for your seed phrase.</p>
 <h2>Disclaimer</h2>
 <p>This page is informational only and is not financial advice and not an offer to sell a security. Quests, points, weights, dates and amounts are draft and may change. Completing quests does not guarantee an allocation. Do your own research.</p>

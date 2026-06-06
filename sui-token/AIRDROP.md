@@ -19,25 +19,40 @@ Odd nodes are carried up unchanged; proofs are position-independent. `build-merk
 and `airdrop.move` implement this identically (verified: every generated proof folds
 back to the root).
 
-## Step 1 — Make the snapshot
-A CSV with one row per eligible wallet, amount in **base units** (1 LENZ = 1,000,000):
-```csv
-address,amount
-0x<64hex>,500000        # 0.5 LENZ
-0x<64hex>,21000000      # 21 LENZ (example per-wallet cap ≈ 0.1% would be 21,000 LENZ = 21000000000)
-```
-Apply your **per-wallet cap** here (no wallet over the cap) and de-dupe addresses (the
-tool rejects duplicates).
+## Anti-sybil model (no backend needed)
+You can't fully stop someone making many wallets, so we make it **uneconomic** and
+**filter throwaway wallets**:
+- **On-chain gating** — only wallets with real prior Sui activity qualify (fresh,
+  zero-history farm wallets are dropped).
+- **Flat allocation** — the pool is split **equally** among survivors, so 10 wallets
+  ≈ 10× the gas/effort for ~no extra reward.
+- **Hard per-wallet cap** — enforced in tooling so no address is over-allocated.
 
-## Step 2 — Build the tree
+## Step 1 — Candidate list
+A CSV with one Sui address per line (header/extra columns ignored):
+```csv
+address
+0x<64hex>
+0x<64hex>
+```
+
+## Step 2 — Gate + flat allocation
+Filters by on-chain history and splits the batch pool equally (capped):
 ```bash
 cd sui-token
-node scripts/build-merkle.mjs snapshot.csv airdrop-out
+node scripts/prepare-snapshot.mjs candidates.csv --pool 6300000 --min-tx 1 --cap 21000
+#   → snapshot.csv (address,amount in base units) + rejected.csv
+# Use --skip-gate to test the allocation math offline.
+```
+
+## Step 3 — Build the tree
+```bash
+node scripts/build-merkle.mjs snapshot.csv airdrop-out   # enforces the per-wallet cap again
 ```
 Outputs `airdrop-out/root.txt`, `proofs.json`, `summary.json`. **`summary.json` tells you
 the exact total to fund** the airdrop with.
 
-## Step 3 — Create the airdrop on-chain
+## Step 4 — Create the airdrop on-chain
 You need a single `Coin<LENZ>` object holding exactly the total from `summary.json`
 (split one off with `sui client split-coin` if needed), then:
 ```bash
@@ -49,7 +64,7 @@ sui client call \
 ```
 This shares an `Airdrop` object (note its id) and sends you an `AdminCap`.
 
-## Step 4 — Users claim
+## Step 5 — Users claim
 Each eligible wallet looks up its `{ amount, proof }` in `proofs.json` and calls:
 ```
 package: <PACKAGE_ID>  module: airdrop  function: claim
@@ -60,7 +75,7 @@ small **claim button on `/airdrop`** (Sui dApp-kit) or a tiny SDK script that re
 `proofs.json`. (Ask Claude to wire the `/airdrop` claim button when you're ready — it
 needs the live `PACKAGE_ID` + `AIRDROP_OBJECT_ID`.)
 
-## Step 5 — After the campaign
+## Step 6 — After the campaign
 Recover any unclaimed balance with your AdminCap:
 ```bash
 sui client call --package <PACKAGE_ID> --module airdrop --function sweep \
