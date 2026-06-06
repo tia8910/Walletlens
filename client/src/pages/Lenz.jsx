@@ -76,6 +76,12 @@ export default function Lenz() {
         <span className="lz-eyebrow">Native token of walletlens.live</span>
         <h1 className="lz-title">$LENZ</h1>
         <p className="lz-tagline">The native token of WalletLens — a low, hard-capped <strong>21M</strong> coin on <strong>Sui</strong>. No unlocks. No insider bag. Supply locked. Verifiable.</p>
+        <div className="lz-badges">
+          <span className="lz-badge">🎁 Free airdrop</span>
+          <span className="lz-badge">🚫 No sale · No IPO</span>
+          <span className="lz-badge">⚖️ Fair distribution</span>
+          <span className="lz-badge">🔒 Supply locked</span>
+        </div>
         <div className="lz-chips">
           <span className="lz-chip"><b>21M</b> hard cap</span>
           <span className="lz-chip"><b>0</b> unlocks</span>
