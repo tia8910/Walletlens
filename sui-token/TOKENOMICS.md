@@ -39,12 +39,32 @@
 ## Distribution (100% liquid at genesis — no unlocks)
 | Allocation | % | LENZ | Base units |
 |---|---:|---:|---:|
-| Community airdrop & rewards | 50% | 10,500,000 | 10,500,000,000,000 |
+| Airdrop & rewards (community) | 50% | 10,500,000 | 10,500,000,000,000 |
 | Liquidity (LP locked) | 35% | 7,350,000 | 7,350,000,000,000 |
 | Ecosystem / DAO treasury | 15% | 3,150,000 | 3,150,000,000,000 |
+| **Founder / team** | **0%** | **0** | — |
 | **Total** | **100%** | **21,000,000** | **21,000,000,000,000** |
 
-There is no team/insider allocation to vest — a stronger guarantee than any schedule.
+**No founder/insider allocation.** The deployer custodies the treasury and liquidity
+reserves transparently, but holds no personal bag — the strongest "no insider"
+guarantee. No vesting is needed because there is nothing to vest.
+
+### Airdrop & rewards — internal split (users-heavy)
+The 50% pool is distributed to the community, never to a single wallet:
+
+| Sub-allocation | % of total | LENZ | Mechanism |
+|---|---:|---:|---|
+| Early users (snapshot) | 30% | 6,300,000 | one-time **Merkle claim** |
+| Quests & referrals | 12.5% | 2,625,000 | phased campaigns |
+| Ongoing usage rewards | 7.5% | 1,575,000 | drip over time |
+
+**Anti-concentration rules:**
+- **Per-wallet cap** on the airdrop so no single address can scoop a large share
+  (suggested ≈ 0.1% of supply = 21,000 LENZ; configurable).
+- **Claim-based (Merkle) distribution** — you publish one snapshot + proof root and
+  users claim their own allocation (paying their own gas). No mass manual sends, far
+  cheaper, and tokens go straight to many holders instead of sitting concentrated.
+- **Phased release** — snapshot batch first; quests and ongoing rewards later.
 
 ## Utility (proposed)
 - **Governance** over roadmap, supported assets, and treasury spend.
