@@ -1,0 +1,23 @@
+{
+  "name": "WalletLens",
+  "symbol": "LENZ",
+  "decimals": 6,
+  "admin": "REPLACE_WITH_ADMIN_SECRET_ADDRESS",
+  "prng_seed": "REPLACE_WITH_BASE64_RANDOM_SEED",
+  "initial_balances": [
+    { "address": "REPLACE_WITH_COMMUNITY_ADDRESS",  "amount": "40000000000000" },
+    { "address": "REPLACE_WITH_ECOSYSTEM_ADDRESS",  "amount": "25000000000000" },
+    { "address": "REPLACE_WITH_TEAM_VESTING_ADDRESS",  "amount": "15000000000000" },
+    { "address": "REPLACE_WITH_TREASURY_DAO_ADDRESS",  "amount": "15000000000000" },
+    { "address": "REPLACE_WITH_PUBLIC_SALE_ADDRESS",  "amount": "5000000000000" }
+  ],
+  "config": {
+    "public_total_supply": false,
+    "enable_deposit": false,
+    "enable_redeem": false,
+    "enable_mint": false,
+    "enable_burn": false,
+    "can_modify_denoms": false
+  },
+  "supported_denoms": []
+}
