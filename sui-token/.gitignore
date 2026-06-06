@@ -1,0 +1,8 @@
+# Move build output
+build/
+
+# Local secrets / deploy config — NEVER commit
+scripts/env.sh
+
+# Publish result (contains ids; regenerate from chain)
+publish-output.json

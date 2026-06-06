@@ -1090,36 +1090,38 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
-    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is issued as a SNIP-20 token on Secret Network, which keeps balances and transfer amounts encrypted on-chain, so holdings are not visible on a public block explorer.' },
-  { q: 'How is this different from an ERC-20 "privacy" token?',
-    a: 'On Ethereum and most chains, every balance and transfer is public, so a token there with "privacy" in its name is not actually private. SNIP-20 on Secret Network provides real, protocol-level privacy: you read your own balance with a viewing key or signed permit, and outsiders cannot.' },
+    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 21,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
+  { q: 'Why Sui?',
+    a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
+  { q: 'Is $LENZ private?',
+    a: 'No, and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a privacy coin.' },
   { q: 'Does holding $LENZ change how WalletLens works?',
     a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
   { q: 'What is the supply, and are there unlocks?',
-    a: 'A low, hard cap of 21,000,000 LENZ with minting permanently disabled — no new tokens can ever be printed. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang. The hard cap is publicly verifiable on-chain, while individual balances and transfers stay private.' },
+    a: 'A low, hard cap of 21,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
   { q: 'How do I know $LENZ is not a scam?',
-    a: 'Because you can verify it instead of trusting it. The deployed contract runs the audited snip20-reference-impl (the on-chain code hash matches the audited build), minting is permanently disabled, there is no team/insider allocation or vesting unlock, the admin is renounced or a published multisig, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official contract address and code hash are published on this page and in the WalletLens repo.' },
+    a: 'Because you can verify it instead of trusting it. The total supply is fixed at 21,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
   { q: 'Is this financial advice or an investment offer?',
-    a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Privacy tokens are delisted by many exchanges and may be regulated differently across jurisdictions. Do your own research.' },
+    a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Do your own research.' },
 ]
 write('/lenz', buildPage({
   path: '/lenz',
-  title: '$LENZ — Native Token of walletlens.live (SNIP-20 on Secret Network)',
-  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A low 21M hard-capped SNIP-20 privacy token on Secret Network with no unlocks, no vesting and no insider allocation. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
+  title: '$LENZ — Native Token of walletlens.live (on Sui)',
+  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A low 21M hard-capped Sui coin with locked minting, no unlocks and no insider allocation. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
   bodyHtml: `
 <h1>$LENZ — The Native Token of walletlens.live</h1>
-<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is issued as a SNIP-20 token on Secret Network, so balances and transfer amounts are encrypted on-chain and your holdings are not visible on a public block explorer.</p>
-<h2>Why SNIP-20, not a "privacy" ERC-20</h2>
-<p>On Ethereum and most public chains every balance and transfer is visible to anyone, so a token there with "privacy" in its name is not actually private. SNIP-20 gives privacy at the protocol level, which is why $LENZ is on Secret Network rather than a public chain.</p>
+<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is a standard Sui coin with a fixed 21,000,000 supply and minting locked forever — the utility and governance token of the WalletLens ecosystem.</p>
+<h2>Why Sui</h2>
+<p>Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. Sui is a public chain, so $LENZ is the native/utility token of a privacy-first app, not a privacy coin. The privacy is in the product: your portfolio data stays on your device.</p>
 <h2>Tokenomics — low cap, no unlocks</h2>
 <ul>
 <li>Name / ticker: WalletLens / LENZ</li>
-<li>Standard: SNIP-20 (private balances &amp; transfers)</li>
-<li>Chain: Secret Network (secret-4 mainnet, pulsar-3 testnet)</li>
-<li>Max supply: 21,000,000 LENZ — low, hard cap, minting permanently disabled</li>
+<li>Type: standard Sui coin; supply locked by freezing the TreasuryCap</li>
+<li>Chain: Sui</li>
+<li>Max supply: 21,000,000 LENZ — low, hard cap, minting locked forever</li>
 <li>Unlocks / vesting: none — 100% liquid at genesis, no cliffs, no insider allocation</li>
-<li>Decimals: 6 (1 LENZ = 1,000,000 uLENZ)</li>
-<li>Cap visibility: publicly verifiable on-chain — balances stay private</li>
+<li>Decimals: 6 (1 LENZ = 1,000,000 base units)</li>
+<li>Supply: publicly verifiable on-chain</li>
 </ul>
 <h2>Distribution — 100% liquid at genesis</h2>
 <ul>
@@ -1131,24 +1133,23 @@ write('/lenz', buildPage({
 <ul>
 <li>Governance over the roadmap, supported assets, and treasury spend.</li>
 <li>Usage rewards for contributions (translations, content, referrals).</li>
-<li>Private tipping of contributors using SNIP-20's on-chain privacy.</li>
 <li>Optional hold-to-unlock cosmetics that never gate the free core app.</li>
 </ul>
-<h2>How to hold $LENZ (wallet &amp; gas)</h2>
-<p>$LENZ lives on Secret Network, so you need a Secret-compatible wallet and a small amount of SCRT for gas. Because balances are encrypted, you also create a viewing key (or sign a permit) to see your own balance.</p>
+<h2>How to buy and hold $LENZ (wallet &amp; gas)</h2>
+<p>$LENZ lives on Sui, so you need a Sui wallet and a little SUI for gas.</p>
 <ol>
-<li>Install a wallet — Keplr (keplr.app) or Leap (leapwallet.io), browser or mobile. Both support Secret Network (secret-4) out of the box.</li>
-<li>Get a little SCRT for gas — buy SCRT on an exchange and withdraw to your Secret address, or bridge in. A fraction of an SCRT covers many transactions.</li>
-<li>Add the $LENZ token by its contract address (published here once live). Secret tokens are added by contract, not auto-detected.</li>
-<li>Create a viewing key — your wallet prompts for this when you add $LENZ; it lets only you decrypt your balance. Never share your seed phrase.</li>
+<li>Install a wallet — Slush (Sui Wallet) or Suiet.</li>
+<li>Get a little SUI for gas — buy SUI and withdraw to your Sui address. A fraction of a SUI covers many transactions.</li>
+<li>Swap for $LENZ on a Sui DEX (Cetus, Turbos, BlueMove) or an aggregator, using the official coin type published here once live.</li>
+<li>Verify the coin type before swapping — only trade the official package::lenz::LENZ shown on this page, to avoid impostor coins.</li>
 </ol>
 <h2>Legitimacy — don't trust, verify</h2>
-<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official contract address and audited code hash are published here and in the repo, and anyone can run the verification script to confirm the deployed bytecode is the audited snip20-reference-impl build, that minting is permanently disabled (hard cap 21,000,000 LENZ), that 100% of supply is liquid at genesis with no insider bag, that the admin is renounced or a published multisig, and that liquidity is locked on a non-upgradeable contract.</p>
-<p><strong>Beware of scams.</strong> The only official $LENZ contract address and code hash live on this page and in the WalletLens repo. WalletLens will never DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase or viewing key. Anything that does is fraudulent.</p>
+<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official package id and coin type are published here and in the repo, and anyone can run the verification script to confirm the total supply is 21,000,000 LENZ, that the TreasuryCap is frozen so minting is permanently impossible, that the metadata is immutable, that 100% of supply is liquid at genesis with no insider bag, and that liquidity is locked.</p>
+<p><strong>Beware of scams.</strong> The only official $LENZ package id and coin type live on this page and in the WalletLens repo. WalletLens will never DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase. Anything that does is fraudulent.</p>
 <h2>Frequently asked questions</h2>
 ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 <h2>Disclaimer</h2>
-<p>This page is informational only and is not financial advice and not an offer to sell a security. Privacy tokens are delisted by some exchanges and may be regulated differently across jurisdictions. Tokenomics shown are draft launch parameters and may change. Do your own research.</p>
+<p>This page is informational only and is not financial advice and not an offer to sell a security. Tokenomics shown are draft launch parameters and may change. Do your own research.</p>
 <p><a href="/about">About WalletLens</a> · <a href="/privacy">Privacy Policy</a> · <a href="/">Home</a></p>
 `,
   jsonLd: [
