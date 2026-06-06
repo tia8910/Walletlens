@@ -1,0 +1,8 @@
+# Cloned audited reference implementation (reproducible from the pinned tag)
+.refimpl/
+
+# Compiled artifact (reproducible via scripts/bootstrap.sh)
+artifact/
+
+# Local secrets / deploy config — NEVER commit
+scripts/env.sh
