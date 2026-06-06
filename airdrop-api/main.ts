@@ -121,9 +121,15 @@ Deno.serve(async (req) => {
 
     if (!ADDR_RE.test(address)) return json({ error: "invalid Sui address" }, 400);
 
-    // 1) Ownership: the signature must prove control of `address`.
-    if (!(await verifyOwnership(address, signature))) {
-      return json({ error: "signature does not prove ownership of this wallet" }, 401);
+    // 1) Ownership is OPTIONAL at registration — no wallet connection required, so
+    //    users who fear "connect wallet" can still register by pasting their address.
+    //    This is safe because only the true owner can ever CLAIM: the Merkle claim
+    //    pays ctx.sender(), so registering an unowned address gains an attacker
+    //    nothing. If a signature IS supplied we verify it and mark "verified".
+    let verified = false;
+    if (signature) {
+      verified = await verifyOwnership(address, signature);
+      if (!verified) return json({ error: "signature was provided but is invalid" }, 401);
     }
     // 2) On-chain history gate (reject fresh/throwaway wallets).
     const eligible = await onchainOk(address);
@@ -145,6 +151,7 @@ Deno.serve(async (req) => {
       referrals: existing?.referrals ?? 0,
       xHandle: xHandle || existing?.xHandle || null,
       eligible,
+      verified: verified || existing?.verified || false,
       ipHash,
       ipFlag: ipCount >= 5, // many wallets from one IP → flag for review
       createdAt: existing?.createdAt ?? Date.now(),
@@ -164,9 +171,12 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       eligible,
+      verified,
       points,
       referralLink: `https://walletlens.live/airdrop?ref=${address}`,
-      note: eligible ? "Registered and eligible." : "Registered, but this wallet has no on-chain Sui history yet — use a wallet you actually transact with to qualify.",
+      note: eligible
+        ? "Registered and eligible. You'll claim with your wallet only at the end."
+        : "Registered, but this wallet has no on-chain Sui history yet — use a wallet you actually transact with to qualify.",
     });
   }
 

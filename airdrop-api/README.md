@@ -4,16 +4,27 @@ A tiny backend (Deno Deploy + Deno KV) that collects **validated** airdrop
 registrations. It is the only part of WalletLens that stores data on a server —
 a deliberate, scoped exception for the airdrop. The core app stays data-free.
 
-## How a wallet is validated
-1. **Ownership (signature):** the user signs a fixed message with their Sui wallet;
-   the API verifies the signature resolves to that exact address. You cannot
-   register a wallet you don't control.
+## How a wallet is validated (no "connect wallet" needed to register)
+Users fear connecting wallets, so registration requires **no wallet connection and
+no signature** — you just submit your address. This is safe because ownership is
+enforced for free at claim time:
+
+> The Merkle `claim` pays tokens to **whoever calls it** (`ctx.sender()`), and only
+> the address in the snapshot can claim its slice. So **only the true owner can ever
+> receive a wallet's tokens** — registering an address you don't own gains you nothing.
+
+Validation layers:
+1. **Claim-time ownership (free, automatic):** the on-chain claim only pays the real
+   owner. No registration-time signature required.
 2. **On-chain gate:** the API checks the wallet has ≥ `MIN_TX` prior outgoing
    transactions — fresh, zero-history throwaway wallets are marked **not eligible**.
-3. **De-dup + IP flag:** one record per address; registrations are grouped by a
-   salted IP hash, and clusters (≥5 wallets/IP) get `ipFlag` for review.
+3. **De-dup + IP flag:** one record per address; registrations grouped by a salted IP
+   hash, clusters (≥5 wallets/IP) get `ipFlag` for review.
 4. **Flat payout:** final allocation is equal-per-wallet + capped (see `sui-token/`),
    so any sybil that slips through earns ~nothing.
+5. **Optional signature (power users):** if a wallet *does* sign the ownership
+   message, the record is marked `verified: true` (a trust badge) — but it's never
+   required.
 
 ## Endpoints
 | Method | Path | Purpose |

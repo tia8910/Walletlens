@@ -17,6 +17,9 @@ const SOCIAL = {
 }
 const STORE_KEY = 'lenz_airdrop_v1'
 const SUI_ADDR_RE = /^0x[0-9a-fA-F]{64}$/
+// Set this to your deployed airdrop-api URL (Deno Deploy) to enable server-side
+// registration. Empty = local-only (progress still saved on device, no backend).
+const AIRDROP_API = ''
 
 function load() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') } catch { return {} }
@@ -86,7 +89,26 @@ export default function Airdrop() {
   const [copied, setCopied] = useState(false)
   const copyRef = () => { if (refLink) { navigator.clipboard?.writeText(refLink); setCopied(true); setTimeout(() => setCopied(false), 1500) } }
 
-  const saveAddress = () => setState(s => ({ ...s, address: addrValid ? address : s.address }))
+  const [regMsg, setRegMsg] = useState('')
+  const [registering, setRegistering] = useState(false)
+  const saveAddress = async () => {
+    if (!addrValid) return
+    setState(s => ({ ...s, address }))
+    // No wallet connection required — ownership is enforced for free at claim time.
+    if (!AIRDROP_API) { setRegMsg('Saved on this device. Server registration opens at launch.'); return }
+    setRegistering(true); setRegMsg('')
+    try {
+      const completed = QUESTS.filter(isDone).map(q => q.id)
+      const r = await fetch(`${AIRDROP_API}/register`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, quests: completed, referredBy: state.referredBy || undefined }),
+      })
+      const j = await r.json()
+      if (!r.ok) setRegMsg(j.error || 'Registration failed — try again.')
+      else setRegMsg(j.note || (j.eligible ? 'Registered and eligible ✓' : 'Registered.'))
+    } catch { setRegMsg('Could not reach the server — your progress is saved locally.') }
+    finally { setRegistering(false) }
+  }
   const registered = addrValid && state.address === address
 
   // Circumference for the progress ring (r=52).
@@ -143,7 +165,7 @@ export default function Airdrop() {
         {/* Sui address gate */}
         <section className="lz-card lz-section">
           <h2 className="lz-h2">1 · Add your Sui address</h2>
-          <p>Your $LENZ will be claimable to this Sui address. Double-check it — it cannot be recovered if wrong.</p>
+          <p>Just paste your Sui address — <strong>no wallet connection needed to register.</strong> You'll only use your wallet at the very end to claim your free $LENZ.</p>
           <div className="aq-addr">
             <input
               className="aq-input"
@@ -152,11 +174,13 @@ export default function Airdrop() {
               spellCheck={false}
               onChange={e => setAddress(e.target.value.trim())}
             />
-            <button className="lz-btn lz-btn-primary" disabled={!addrValid} onClick={saveAddress}>
-              {registered ? 'Saved ✓' : 'Save'}
+            <button className="lz-btn lz-btn-primary" disabled={!addrValid || registering} onClick={saveAddress}>
+              {registering ? 'Registering…' : registered ? 'Saved ✓' : 'Register'}
             </button>
           </div>
           {address && !addrValid && <p className="aq-err">That doesn't look like a Sui address (expected 0x + 64 hex characters).</p>}
+          {regMsg && <p className="lz-note">{regMsg}</p>}
+          <p className="lz-note">🔒 We never ask you to connect a wallet, sign a transaction, or share your seed phrase to register. Anyone who does is a scam.</p>
           {state.referredBy && <p className="lz-note">Referred by <code>{state.referredBy.slice(0, 10)}…</code> — thanks for joining through a friend.</p>}
         </section>
 
