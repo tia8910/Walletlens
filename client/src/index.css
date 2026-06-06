@@ -5954,9 +5954,7 @@ select.bs-input option { background: var(--bg3); }
 
 /* Animated ".live" TLD suffix on the brand wordmark */
 .wl-live-tld {
-  position: relative;
   display: inline-block;
-  margin-left: 0.04em;
   font-weight: 800;
   background: linear-gradient(90deg, #4ade80, #22d3ee, #4ade80);
   background-size: 200% 100%;
@@ -5965,20 +5963,6 @@ select.bs-input option { background: var(--bg3); }
   -webkit-text-fill-color: transparent;
   animation: wl-live-shimmer 3s linear infinite, wl-live-pulse 2.2s ease-in-out infinite;
 }
-/* Live "blink" dot before the suffix */
-.wl-live-tld::before {
-  content: '';
-  display: inline-block;
-  width: 0.32em;
-  height: 0.32em;
-  margin-right: 0.18em;
-  border-radius: 50%;
-  background: #4ade80;
-  vertical-align: middle;
-  -webkit-text-fill-color: #4ade80;
-  box-shadow: 0 0 6px #4ade80;
-  animation: wl-live-blink 1.4s ease-in-out infinite;
-}
 @keyframes wl-live-shimmer {
   to { background-position: 200% 0; }
 }
@@ -5986,12 +5970,8 @@ select.bs-input option { background: var(--bg3); }
   0%, 100% { filter: drop-shadow(0 0 0 rgba(74,222,128,0)); }
   50%      { filter: drop-shadow(0 0 8px rgba(74,222,128,0.55)); }
 }
-@keyframes wl-live-blink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.35; transform: scale(0.8); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .wl-live-tld, .wl-live-tld::before { animation: none; }
+  .wl-live-tld { animation: none; }
 }
 .lp-brand-tagline {
   font-size: 0.72rem;
