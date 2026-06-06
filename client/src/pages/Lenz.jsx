@@ -83,7 +83,8 @@ export default function Lenz() {
           <span className="lz-chip">Supply locked</span>
         </div>
         <div className="lz-cta">
-          <a href="#verify" className="lz-btn lz-btn-primary">Verify on-chain</a>
+          <Link to="/airdrop" className="lz-btn lz-btn-primary">Join the airdrop</Link>
+          <a href="#verify" className="lz-btn lz-btn-ghost">Verify on-chain</a>
           <a href="#hold" className="lz-btn lz-btn-ghost">How to hold</a>
         </div>
       </section>

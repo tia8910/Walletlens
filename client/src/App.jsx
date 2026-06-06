@@ -65,6 +65,7 @@ const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
 const Lenz         = lazy(() => import('./pages/Lenz'))
+const Airdrop      = lazy(() => import('./pages/Airdrop'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
@@ -359,6 +360,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
           <Route path="/lenz" element={<Lenz />} />
+          <Route path="/airdrop" element={<Airdrop />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin/mail" element={<AdminMail />} />
@@ -450,6 +452,7 @@ export default function App() {
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
               <Route path="/lenz" element={<Lenz />} />
+              <Route path="/airdrop" element={<Airdrop />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
