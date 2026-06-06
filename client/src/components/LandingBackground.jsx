@@ -37,14 +37,14 @@ export default function LandingBackground() {
     // ── Brand emerald gradient base (no black) ──────────────────────────────
     function paintBase() {
       const g = ctx.createLinearGradient(0, 0, w * 0.4, h)
-      g.addColorStop(0,   '#063a2b')
-      g.addColorStop(0.5, '#042c25')
-      g.addColorStop(1,   '#02211d')
+      g.addColorStop(0,   '#04241b')
+      g.addColorStop(0.5, '#031c17')
+      g.addColorStop(1,   '#021310')
       ctx.fillStyle = g
       ctx.fillRect(0, 0, w, h)
-      // Soft brand glow from upper area
-      const rg = ctx.createRadialGradient(w * 0.5, h * 0.18, 0, w * 0.5, h * 0.18, h * 0.75)
-      rg.addColorStop(0, 'rgba(16,185,129,0.22)')
+      // Subtle brand glow, kept low so text stays readable
+      const rg = ctx.createRadialGradient(w * 0.5, h * 0.1, 0, w * 0.5, h * 0.1, h * 0.7)
+      rg.addColorStop(0, 'rgba(16,185,129,0.12)')
       rg.addColorStop(1, 'rgba(16,185,129,0)')
       ctx.fillStyle = rg
       ctx.fillRect(0, 0, w, h)
@@ -76,7 +76,7 @@ export default function LandingBackground() {
         o.x += o.vx; o.y += o.vy; o.phase += 0.01
         if (o.x < -o.r) o.x = w + o.r; if (o.x > w + o.r) o.x = -o.r
         if (o.y < -o.r) o.y = h + o.r; if (o.y > h + o.r) o.y = -o.r
-        const pulse = 0.18 + Math.sin(o.phase) * 0.06
+        const pulse = 0.10 + Math.sin(o.phase) * 0.04
         const grad = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r)
         grad.addColorStop(0, `rgba(${o.c[0]},${o.c[1]},${o.c[2]},${pulse})`)
         grad.addColorStop(1, `rgba(${o.c[0]},${o.c[1]},${o.c[2]},0)`)
@@ -90,11 +90,11 @@ export default function LandingBackground() {
     // Smooth flowing wave with an overall upward trend (rises to the right).
     function curveY(x, time, layer) {
       const nx = x / w
-      const trend = -nx * h * (layer === 0 ? 0.18 : 0.12)      // upward to the right
+      const trend = -nx * h * (layer === 0 ? 0.11 : 0.07)      // upward to the right
       const a1 = Math.sin(nx * 6 + time * (layer === 0 ? 1 : 0.6)) * (mobile ? 22 : 34)
       const a2 = Math.sin(nx * 13 - time * (layer === 0 ? 1.6 : 1)) * (mobile ? 10 : 16)
       const a3 = Math.sin(nx * 3 + time * 0.4) * (mobile ? 16 : 26)
-      const base = layer === 0 ? h * 0.72 : h * 0.82
+      const base = layer === 0 ? h * 0.86 : h * 0.93
       return base + trend + a1 + a2 + a3
     }
 
@@ -166,9 +166,18 @@ export default function LandingBackground() {
 
     // ── Vignette for text readability ───────────────────────────────────────
     function drawVignette() {
-      const v = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.25, w / 2, h * 0.42, h * 0.95)
-      v.addColorStop(0, 'rgba(2,20,16,0)')
-      v.addColorStop(1, 'rgba(2,16,13,0.6)')
+      // Vertical scrim — darkest through the hero text band so copy stays crisp
+      const s = ctx.createLinearGradient(0, 0, 0, h)
+      s.addColorStop(0,    'rgba(2,16,13,0.30)')
+      s.addColorStop(0.35, 'rgba(2,16,13,0.45)')
+      s.addColorStop(0.62, 'rgba(2,16,13,0.40)')
+      s.addColorStop(1,    'rgba(2,16,13,0.12)')
+      ctx.fillStyle = s
+      ctx.fillRect(0, 0, w, h)
+      // Edge darkening
+      const v = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.3, w / 2, h * 0.42, h)
+      v.addColorStop(0, 'rgba(2,16,13,0)')
+      v.addColorStop(1, 'rgba(2,14,11,0.5)')
       ctx.fillStyle = v
       ctx.fillRect(0, 0, w, h)
     }
