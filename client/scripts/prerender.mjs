@@ -1165,6 +1165,34 @@ ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
   ],
 }))
 
+// ── $LENZ airdrop ─────────────────────────────────────────────────────────────
+write('/airdrop', buildPage({
+  path: '/airdrop',
+  title: '$LENZ Airdrop — Earn the Native Token of walletlens.live (on Sui)',
+  description: 'Earn $LENZ, the native token of walletlens.live, through the community airdrop. Complete quests — use the app, follow on X, join Telegram, refer friends — climb tiers, and claim at snapshot. 10.5M LENZ pool, per-wallet cap, no purchase required.',
+  bodyHtml: `
+<h1>$LENZ Airdrop</h1>
+<p>Earn $LENZ — the native token of walletlens.live, a free, privacy-first all-asset portfolio tracker — through the community airdrop. Complete quests, climb tiers, and claim your allocation at snapshot. No purchase required.</p>
+<h2>The pool</h2>
+<p>The airdrop pool is 10,500,000 LENZ — 50% of the fixed 21,000,000 supply. It is community-first: there is no founder or insider allocation. A per-wallet cap keeps any single address from dominating.</p>
+<h2>Quests</h2>
+<ul>
+<li>Create your portfolio in WalletLens (add a holding).</li>
+<li>Track 3 or more assets.</li>
+<li>Follow @wallet_lens on X (and the founder @tarek_abhamed) and repost the launch.</li>
+<li>Join the Telegram and subscribe on YouTube.</li>
+<li>Share a screenshot of your portfolio.</li>
+<li>Refer friends with your referral link.</li>
+</ul>
+<h2>How eligibility works</h2>
+<p>At snapshot, eligible wallets and amounts are published as a Merkle claim — you claim your own $LENZ and pay your own gas. In-app quests are verified on your device; social quests are re-checked at snapshot and obvious bot/sybil wallets are filtered out. Progress is stored on your device — WalletLens keeps no account or server-side profile.</p>
+<p><strong>Beware of scams.</strong> The only official airdrop is on walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to a random site, and never ask for your seed phrase.</p>
+<h2>Disclaimer</h2>
+<p>This page is informational only and is not financial advice and not an offer to sell a security. Quests, points, weights, dates and amounts are draft and may change. Completing quests does not guarantee an allocation. Do your own research.</p>
+<p><a href="/lenz">About $LENZ</a> · <a href="/">WalletLens</a> · <a href="/privacy">Privacy Policy</a></p>
+`,
+}))
+
 // ── Privacy ──────────────────────────────────────────────────────────────────
 write('/privacy', buildPage({
   path: '/privacy',
@@ -1213,7 +1241,7 @@ write('/terms', buildPage({
 `,
 }))
 
-console.log(`\nPrerendered ${POSTS.length + 7} content pages into dist/.`)
+console.log(`\nPrerendered ${POSTS.length + 8} content pages into dist/.`)
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
@@ -1228,6 +1256,7 @@ const STATIC_ROUTES = [
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
+  { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
   { path: '/terms',   changefreq: 'monthly', priority: '0.5' },
 ]

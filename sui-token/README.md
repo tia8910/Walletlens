@@ -26,14 +26,18 @@ ecosystem.
 ```
 sui-token/
   Move.toml
-  sources/lenz.move          # the coin module: mint 21M once, then freeze the cap
+  sources/
+    lenz.move                # the coin module: mint 21M once, then freeze the cap
+    airdrop.move             # Merkle claim contract (trustless airdrop payout)
   scripts/
     publish.sh               # build + publish (runs init: mint + freeze)
     distribute.sh            # split & send the allocations (no vesting)
     verify-onchain.sh        # "don't trust, verify" PASS/FAIL report
+    build-merkle.mjs         # snapshot CSV → Merkle root + per-address proofs
     env.example.sh           # copy to env.sh and fill in
   TOKENOMICS.md              # 21M hard cap, no unlocks, distribution, utility
   LAUNCH.md                  # ordered launch runbook + cost & liquidity
+  AIRDROP.md                 # Merkle airdrop: snapshot → publish → users claim
 ```
 `build/`, `publish-output.json` and `scripts/env.sh` are git-ignored.
 

@@ -7225,6 +7225,58 @@ input[type="date"] { color-scheme: dark; }
 @media (prefers-reduced-motion:reduce){
   .lz-coin,.lz-coin-halo,.lz-orb,.lz-bar-fill{ animation:none!important; }
 }
+
+/* ── $LENZ airdrop quests (.aq-*, inside .lz-root) ───────────────────────── */
+.lz-root .aq-dash{ display:flex; align-items:center; justify-content:center; gap:1.6rem; flex-wrap:wrap; margin-top:.4rem; }
+.aq-ring{ position:relative; width:124px; height:124px; flex-shrink:0; }
+.aq-ring-bg{ fill:none; stroke:rgba(255,255,255,.10); stroke-width:10; }
+.aq-ring-fg{ fill:none; stroke:#34d399; stroke-width:10; stroke-linecap:round; transition:stroke-dasharray .6s ease;
+  filter:drop-shadow(0 0 6px rgba(16,185,129,.6)); }
+.aq-ring-mid{ position:absolute; inset:0; display:grid; place-content:center; text-align:center; line-height:1.1; }
+.aq-ring-mid b{ font-size:1.6rem; background:var(--lz-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.aq-ring-mid span{ font-size:.72rem; color:var(--lz-muted); }
+.aq-dash-stats{ display:flex; gap:1.6rem; flex-wrap:wrap; }
+.aq-dash-stat{ display:flex; flex-direction:column; }
+.aq-dash-stat span{ font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--lz-muted); }
+.aq-dash-stat b{ font-size:1.3rem; color:var(--lz-text); }
+.aq-dash-stat small{ font-size:.74rem; color:var(--lz-muted); }
+.aq-tier-name{ background:var(--lz-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+.aq-addr{ display:flex; gap:.6rem; margin-top:.8rem; flex-wrap:wrap; }
+.aq-input{ flex:1; min-width:240px; background:rgba(0,0,0,.3); border:1px solid var(--lz-line); border-radius:12px;
+  padding:.75rem .9rem; color:var(--lz-text); font-size:.95rem; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.aq-input:focus{ outline:none; border-color:#34d399; }
+.aq-err{ color:#fca5a5; font-size:.84rem; margin-top:.5rem; }
+
+.aq-quests{ display:flex; flex-direction:column; gap:.7rem; margin-top:1rem; }
+.aq-quest{ position:relative; display:flex; gap:.9rem; align-items:flex-start; padding:1rem 1.1rem; border-radius:16px;
+  border:1px solid var(--lz-line); background:rgba(0,0,0,.22); transition:border-color .2s ease, background .2s ease; }
+.aq-quest.is-done{ border-color:rgba(16,185,129,.45); background:rgba(16,185,129,.08); }
+.aq-q-icon{ font-size:1.4rem; line-height:1.6; width:2.2rem; height:2.2rem; flex-shrink:0; display:grid; place-items:center;
+  border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--lz-line); }
+.aq-q-body{ flex:1; min-width:0; }
+.aq-q-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.aq-q-head strong{ color:var(--lz-text); }
+.aq-q-pts{ flex-shrink:0; font-weight:800; font-size:.86rem; background:var(--lz-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.aq-q-body p{ margin:.25rem 0 .6rem; color:var(--lz-muted); font-size:.9rem; }
+.aq-q-actions{ display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+.lz-root .aq-q-actions .lz-btn, .lz-root .aq-ref .lz-btn{ padding:.5rem 1rem; font-size:.86rem; }
+.aq-mark{ background:transparent; border:1px solid var(--lz-line); color:var(--lz-muted); border-radius:999px;
+  padding:.5rem 1rem; font-size:.86rem; font-weight:600; cursor:pointer; }
+.aq-mark:hover{ color:var(--lz-text); border-color:#34d399; }
+.aq-auto{ color:#5eead4; font-size:.88rem; font-weight:600; }
+.aq-q-check{ position:absolute; top:.7rem; right:.9rem; color:#34d399; font-weight:800; }
+.aq-ref{ display:flex; gap:.5rem; flex-wrap:wrap; }
+.aq-ref-input{ flex:1; min-width:200px; font-size:.82rem; }
+
+.aq-tiers{ display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem; margin-top:1rem; }
+@media (max-width:600px){ .aq-tiers{ grid-template-columns:1fr 1fr; } }
+.aq-tier{ display:flex; flex-direction:column; gap:.2rem; padding:.9rem; border-radius:14px; text-align:center;
+  border:1px solid var(--lz-line); background:rgba(0,0,0,.25); }
+.aq-tier.is-active{ border-color:#34d399; background:rgba(16,185,129,.12); box-shadow:0 0 20px rgba(16,185,129,.25); }
+.aq-tier b{ color:var(--lz-text); }
+.aq-tier span{ font-size:.76rem; color:var(--lz-muted); }
+.aq-tier small{ font-weight:800; background:var(--lz-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
 .doc-footer {
   display: flex; gap: 1.5rem; flex-wrap: wrap;
   padding: 1.2rem 2rem;
