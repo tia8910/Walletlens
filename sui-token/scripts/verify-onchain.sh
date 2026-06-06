@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # "Don't trust, verify." Read-only checks that $LENZ is legit on Sui:
-#   - total supply == 21,000,000 LENZ (and matches the published cap)
+#   - total supply == 10,000,000 LENZ (and matches the published cap)
 #   - the TreasuryCap is Immutable (frozen) → minting is permanently locked
 #   - the CoinMetadata is Immutable (frozen) → name/symbol/icon can't change
 # Anyone can run this; it only queries the full node.
@@ -20,10 +20,10 @@ rpc(){ curl -s -X POST "$RPC" -H 'Content-Type: application/json' \
 echo "Verifying \$LENZ ($COIN_TYPE) on $NETWORK"
 echo
 
-echo "[1] Total supply == 21,000,000 LENZ"
+echo "[1] Total supply == 10,000,000 LENZ"
 SUP="$(rpc suix_getTotalSupply "[\"$COIN_TYPE\"]" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("result",{}).get("value",""))' 2>/dev/null)"
 echo "    on-chain base units: ${SUP:-<none>}"
-[ "$SUP" = "21000000000000" ] && ok "fixed supply = 21,000,000 LENZ" || bad "supply != 21,000,000 LENZ"
+[ "$SUP" = "10000000000000" ] && ok "fixed supply = 10,000,000 LENZ" || bad "supply != 10,000,000 LENZ"
 
 check_immutable(){ # $1=objId  $2=label
   local id="$1" label="$2"

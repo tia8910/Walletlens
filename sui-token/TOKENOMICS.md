@@ -5,7 +5,7 @@
 > encoded in `sources/lenz.move`; keep this file in sync.
 
 ## Design principles (no gaps)
-- **Low, hard-capped supply** — 21,000,000 LENZ, minted once at publish.
+- **Low, hard-capped supply** — 10,000,000 LENZ, minted once at publish.
 - **Minting locked forever** — the TreasuryCap is frozen at publish, so `coin::mint`
   can never run again. No inflation, ever.
 - **No unlocks, no vesting, no insider allocation** — 100% liquid at genesis.
@@ -30,8 +30,8 @@
 ## Supply
 | | |
 |---|---|
-| Max / total supply | **21,000,000 LENZ** |
-| In base units | 21,000,000,000,000 |
+| Max / total supply | **10,000,000 LENZ** |
+| In base units | 10,000,000,000,000 |
 | Circulating at genesis | **100%** (no vesting) |
 | Mintable after publish | **No** — TreasuryCap frozen |
 | Total supply visibility | Public (verifiable via `suix_getTotalSupply`) |
@@ -39,11 +39,11 @@
 ## Distribution (100% liquid at genesis — no unlocks)
 | Allocation | % | LENZ | Base units |
 |---|---:|---:|---:|
-| Airdrop & rewards (community) | 50% | 10,500,000 | 10,500,000,000,000 |
-| Liquidity (LP locked) | 35% | 7,350,000 | 7,350,000,000,000 |
-| Ecosystem / DAO treasury | 15% | 3,150,000 | 3,150,000,000,000 |
+| Airdrop & rewards (community) | 50% | 5,000,000 | 5,000,000,000,000 |
+| Liquidity (LP locked) | 35% | 3,500,000 | 3,500,000,000,000 |
+| Ecosystem / DAO treasury | 15% | 1,500,000 | 1,500,000,000,000 |
 | **Founder / team** | **0%** | **0** | — |
-| **Total** | **100%** | **21,000,000** | **21,000,000,000,000** |
+| **Total** | **100%** | **10,000,000** | **10,000,000,000,000** |
 
 **No founder/insider allocation.** The deployer custodies the treasury and liquidity
 reserves transparently, but holds no personal bag — the strongest "no insider"
@@ -54,14 +54,14 @@ The 50% pool is distributed to the community, never to a single wallet:
 
 | Sub-allocation | % of total | LENZ | Mechanism |
 |---|---:|---:|---|
-| Early users (snapshot) | 30% | 6,300,000 | one-time **Merkle claim** |
-| Quests & referrals | 12.5% | 2,625,000 | phased campaigns |
-| Ongoing usage rewards | 7.5% | 1,575,000 | drip over time |
+| Early users (snapshot) | 30% | 3,000,000 | one-time **Merkle claim** |
+| Quests & referrals | 12.5% | 1,250,000 | phased campaigns |
+| Ongoing usage rewards | 7.5% | 750,000 | drip over time |
 
 **Anti-concentration / anti-sybil rules:**
 - **Flat allocation** — the pool is split equally among eligible wallets, so making
   many wallets earns ~no extra (farming is uneconomic).
-- **Per-wallet cap** — hard cap enforced in tooling (≈0.1% of supply = 21,000 LENZ;
+- **Per-wallet cap** — hard cap enforced in tooling (≈0.1% of supply = 10,000 LENZ;
   configurable) so no single address is over-allocated.
 - **On-chain gating** — only wallets with real prior Sui activity qualify; fresh,
   zero-history throwaway wallets are filtered out (`scripts/prepare-snapshot.mjs`).

@@ -113,7 +113,7 @@ export default function Airdrop() {
           <span className="lz-coin-halo" aria-hidden="true" />
           <LenzLogo size={120} animated className="lz-coin" />
         </div>
-        <span className="lz-eyebrow">Airdrop · 10,500,000 LENZ pool</span>
+        <span className="lz-eyebrow">Airdrop · 5,000,000 LENZ pool</span>
         <h1 className="lz-title">$LENZ Airdrop</h1>
         <p className="lz-tagline">Earn $LENZ — the native token of WalletLens — by using the app and joining the community. Complete quests, climb tiers, and claim at snapshot. No purchase required.</p>
         <div className="lz-badges">
@@ -224,7 +224,7 @@ export default function Airdrop() {
         <section id="how" className="lz-card lz-section">
           <h2 className="lz-h2">How eligibility works</h2>
           <ul className="lz-checks">
-            <li>The airdrop pool is <strong>10,500,000 LENZ (50% of supply)</strong> — users-first, never an insider bag.</li>
+            <li>The airdrop pool is <strong>5,000,000 LENZ (50% of supply)</strong> — users-first, never an insider bag.</li>
             <li>At snapshot, eligible wallets and amounts are published as a <strong>Merkle claim</strong> — you claim your own $LENZ, paying your own gas.</li>
             <li><strong>Anti-sybil:</strong> allocation is <strong>flat (equal per eligible wallet)</strong> with a hard <strong>per-wallet cap</strong>, so farming with many wallets earns ~nothing extra.</li>
             <li><strong>On-chain gating:</strong> only wallets with real prior Sui activity qualify — fresh, zero-history throwaway wallets are filtered out. Use the Sui address you actually use.</li>

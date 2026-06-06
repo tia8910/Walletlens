@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and publish the $LENZ Move package. init() runs at publish time: it mints
-# the full 21,000,000 supply to you and FREEZES the TreasuryCap (minting locked
+# the full 10,000,000 supply to you and FREEZES the TreasuryCap (minting locked
 # forever). Prints the ids you need to record in scripts/env.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -12,7 +12,7 @@ echo "==> Switching to $NETWORK and building"
 sui client switch --env "$NETWORK" >/dev/null 2>&1 || true
 sui move build
 
-echo "==> Publishing (init mints 21M and freezes the TreasuryCap)"
+echo "==> Publishing (init mints 10M and freezes the TreasuryCap)"
 sui client publish --gas-budget 300000000 --json > publish-output.json
 echo "    Raw result saved to publish-output.json"
 
@@ -33,7 +33,7 @@ print("\n==> Record these in scripts/env.sh:")
 print("PACKAGE_ID     =", pkg)
 print("TREASURY_CAP_ID=", cap, "(should be Immutable/frozen)")
 print("METADATA_ID    =", meta)
-print("SUPPLY_COIN_ID =", coin, "(holds the full 21,000,000 LENZ)")
+print("SUPPLY_COIN_ID =", coin, "(holds the full 10,000,000 LENZ)")
 print("COIN TYPE      =", (pkg or "<pkg>")+"::lenz::LENZ")
 PY
 else

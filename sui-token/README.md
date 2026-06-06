@@ -5,7 +5,7 @@ free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks,
 precious metals, fiat and real estate, with AI insights and live prices, where all
 your data stays on your device.
 
-$LENZ is a **standard Sui `coin`** with a **low, hard cap of 21,000,000**, **no
+$LENZ is a **standard Sui `coin`** with a **low, hard cap of 10,000,000**, **no
 unlocks** (100% liquid at genesis), and **supply locked forever** by freezing the
 TreasuryCap at publish. It is the utility/governance token of the WalletLens
 ecosystem.
@@ -27,7 +27,7 @@ ecosystem.
 sui-token/
   Move.toml
   sources/
-    lenz.move                # the coin module: mint 21M once, then freeze the cap
+    lenz.move                # the coin module: mint 10M once, then freeze the cap
     airdrop.move             # Merkle claim contract (trustless airdrop payout)
   scripts/
     publish.sh               # build + publish (runs init: mint + freeze)
@@ -35,7 +35,7 @@ sui-token/
     verify-onchain.sh        # "don't trust, verify" PASS/FAIL report
     build-merkle.mjs         # snapshot CSV → Merkle root + per-address proofs
     env.example.sh           # copy to env.sh and fill in
-  TOKENOMICS.md              # 21M hard cap, no unlocks, distribution, utility
+  TOKENOMICS.md              # 10M hard cap, no unlocks, distribution, utility
   LAUNCH.md                  # ordered launch runbook + cost & liquidity
   AIRDROP.md                 # Merkle airdrop: snapshot → publish → users claim
 ```
@@ -53,7 +53,7 @@ cp scripts/env.example.sh scripts/env.sh   # then edit it
 chmod +x scripts/*.sh
 
 sui client faucet                 # testnet gas
-./scripts/publish.sh              # mints 21M to you, freezes the cap; prints ids
+./scripts/publish.sh              # mints 10M to you, freezes the cap; prints ids
 #  → paste PACKAGE_ID / TREASURY_CAP_ID / METADATA_ID / SUPPLY_COIN_ID into env.sh
 ./scripts/verify-onchain.sh       # confirm supply + frozen cap
 ./scripts/distribute.sh           # send the 50/35/15 allocations
@@ -61,7 +61,7 @@ sui client faucet                 # testnet gas
 
 ## Legitimacy — don't trust, verify
 Everything is verifiable on-chain (`./scripts/verify-onchain.sh`):
-- **Fixed supply** — total supply = 21,000,000 LENZ.
+- **Fixed supply** — total supply = 10,000,000 LENZ.
 - **Minting locked forever** — the TreasuryCap object is **Immutable (frozen)**, so
   `coin::mint` can never be called again by anyone.
 - **No unlocks / no insider bag** — 100% liquid at genesis; distribution wallets are

@@ -6,10 +6,10 @@
 //
 // candidates.csv : one Sui address per line (header + extra columns ignored).
 // Options:
-//   --pool <LENZ>     total LENZ to distribute in this batch (e.g. 6300000)   [required]
+//   --pool <LENZ>     total LENZ to distribute in this batch (e.g. 3000000)   [required]
 //   --rpc <url>       Sui full node      (default: https://fullnode.mainnet.sui.io:443)
 //   --min-tx <n>      min prior outgoing txns to be eligible (default 1; 0 = no gate)
-//   --cap <LENZ>      hard per-wallet cap (default 21000  = ~0.1% of supply)
+//   --cap <LENZ>      hard per-wallet cap (default 10000  = ~0.1% of supply)
 //   --skip-gate       skip the on-chain check (offline; for testing allocation)
 //   --out <file>      output snapshot (default snapshot.csv)
 //
@@ -26,7 +26,7 @@ if (!csvPath || has('--help')) { console.error('usage: node scripts/prepare-snap
 
 const RPC = opt('--rpc', 'https://fullnode.mainnet.sui.io:443')
 const MIN_TX = parseInt(opt('--min-tx', '1'), 10)
-const CAP_BASE = BigInt(Math.round(parseFloat(opt('--cap', '21000')) * 1e6))
+const CAP_BASE = BigInt(Math.round(parseFloat(opt('--cap', '10000')) * 1e6))
 const OUT = opt('--out', 'snapshot.csv')
 const poolArg = opt('--pool', null)
 if (!poolArg) { console.error('--pool <LENZ> is required'); process.exit(1) }

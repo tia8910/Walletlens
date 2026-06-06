@@ -36,7 +36,7 @@ export const TRACK_COINS = [
   // Enabling now would ship a thin, price-less page (the very doorway content this
   // list avoids). Once $LENZ is listed on a supported price source (e.g. CoinGecko),
   // set `id` to its CoinGecko id and uncomment:
-  // { slug: 'lenz', id: 'REPLACE_WITH_COINGECKO_ID', name: 'WalletLens', symbol: 'LENZ', type: 'crypto', blurb: 'the native token of the WalletLens ecosystem, a Sui coin with a fixed 21M supply and locked minting.' },
+  // { slug: 'lenz', id: 'REPLACE_WITH_COINGECKO_ID', name: 'WalletLens', symbol: 'LENZ', type: 'crypto', blurb: 'the native token of the WalletLens ecosystem, a Sui coin with a fixed 10M supply and locked minting.' },
 ]
 
 export const TRACK_STOCKS = [

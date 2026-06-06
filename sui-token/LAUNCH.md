@@ -6,13 +6,13 @@ Ordered steps to launch $LENZ — the native token of [walletlens.live](https://
 > Legend: 🟢 do yourself · 🔴 irreversible
 
 ## Phase 0 — Decide
-- 🟢 Confirm params (already set): **21,000,000 hard cap, 6 decimals, no unlocks**,
+- 🟢 Confirm params (already set): **10,000,000 hard cap, 6 decimals, no unlocks**,
   distribution Community 50% / Liquidity 35% / Treasury 15%.
 - 🟢 Make the **treasury a multisig** if possible.
 
 ## Phase 1 — Testnet dry run
 - 🟢 `sui client switch --env testnet && sui client faucet`
-- 🟢 `./scripts/publish.sh` → mints 21M to you, **freezes the TreasuryCap**.
+- 🟢 `./scripts/publish.sh` → mints 10M to you, **freezes the TreasuryCap**.
 - 🟢 Fill ids in `scripts/env.sh`; `./scripts/verify-onchain.sh` → clean PASS.
 - 🟢 `./scripts/distribute.sh` to test wallets; confirm balances on an explorer.
 
