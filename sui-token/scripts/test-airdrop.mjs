@@ -4,7 +4,7 @@
 // second claim is rejected (EAlreadyClaimed). Read-keys-from-env; testnet only.
 //
 //   cd sui-token
-//   npm install @mysten/sui
+//   npm install @mysten/sui@^1        (v1 API — NOT the v2 major)
 //   sui keytool export --key-identity <your-address>      # copy the suiprivkey...
 //   set SUI_PKG=0x049ba922...c8f5      (Windows;  use `export` on mac/linux)
 //   set SUI_PRIVKEY=suiprivkey1......
