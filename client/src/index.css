@@ -7082,6 +7082,10 @@ input[type="date"] { color-scheme: dark; }
 .doc-faq-item[open] summary::after { content: '−'; }
 .doc-faq-item p { margin: 0 0 1rem; color: rgba(255,255,255,0.78); }
 [data-wl-light] .doc-faq-item p { color: var(--text-muted); }
+.lenz-table { width: 100%; border-collapse: collapse; margin: .5rem 0 1rem; font-size: .92rem; }
+.lenz-table th, .lenz-table td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.82); }
+.lenz-table th { color: var(--gd); font-weight: 600; }
+[data-wl-light] .lenz-table th, [data-wl-light] .lenz-table td { color: var(--text-muted); border-bottom-color: rgba(0,0,0,0.1); }
 .doc-footer {
   display: flex; gap: 1.5rem; flex-wrap: wrap;
   padding: 1.2rem 2rem;

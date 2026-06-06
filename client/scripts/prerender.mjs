@@ -1087,6 +1087,71 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
   ],
 }))
 
+// ── $LENZ token ──────────────────────────────────────────────────────────────
+const lenzFaqs = [
+  { q: 'What is $LENZ?',
+    a: '$LENZ is the privacy token of the WalletLens ecosystem, issued as a SNIP-20 token on Secret Network. SNIP-20 tokens keep balances and transfer amounts encrypted on-chain, so holdings are not visible on a public block explorer.' },
+  { q: 'How is this different from an ERC-20 "privacy" token?',
+    a: 'On Ethereum and most chains, every balance and transfer is public, so a token there with "privacy" in its name is not actually private. SNIP-20 on Secret Network provides real, protocol-level privacy: you read your own balance with a viewing key or signed permit, and outsiders cannot.' },
+  { q: 'Does holding $LENZ change how WalletLens works?',
+    a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
+  { q: 'Is the supply fixed?',
+    a: 'The launch configuration is a fixed 100,000,000 LENZ with minting disabled, so no new tokens can be printed after launch. Total supply is kept private, consistent with a privacy token.' },
+  { q: 'Is this financial advice or an investment offer?',
+    a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Privacy tokens are delisted by many exchanges and may be regulated differently across jurisdictions. Do your own research.' },
+]
+write('/lenz', buildPage({
+  path: '/lenz',
+  title: '$LENZ — WalletLens Privacy Token (SNIP-20 on Secret Network)',
+  description: '$LENZ is the privacy token of the WalletLens ecosystem — a SNIP-20 token on Secret Network with encrypted balances and transfers. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
+  bodyHtml: `
+<h1>$LENZ — The WalletLens Privacy Token</h1>
+<p>$LENZ is the privacy token of the WalletLens ecosystem, issued as a SNIP-20 token on Secret Network. Balances and transfer amounts are encrypted on-chain, so your holdings are not visible on a public block explorer — an honest fit for a tracker built around the idea that your financial data is yours.</p>
+<h2>Why SNIP-20, not a "privacy" ERC-20</h2>
+<p>On Ethereum and most public chains every balance and transfer is visible to anyone, so a token there with "privacy" in its name is not actually private. SNIP-20 gives privacy at the protocol level, which is why $LENZ is on Secret Network rather than a public chain.</p>
+<h2>Tokenomics</h2>
+<ul>
+<li>Name / ticker: WalletLens / LENZ</li>
+<li>Standard: SNIP-20 (private balances &amp; transfers)</li>
+<li>Chain: Secret Network (secret-4 mainnet, pulsar-3 testnet)</li>
+<li>Total supply: 100,000,000 LENZ — fixed, minting disabled</li>
+<li>Decimals: 6 (1 LENZ = 1,000,000 uLENZ)</li>
+<li>Total supply visibility: private, consistent with a privacy token</li>
+</ul>
+<h2>Distribution</h2>
+<ul>
+<li>Community &amp; rewards — 40% (40,000,000 LENZ)</li>
+<li>Ecosystem &amp; liquidity — 25% (25,000,000 LENZ)</li>
+<li>Team — 15% (15,000,000 LENZ), vested via timelock/multisig</li>
+<li>Treasury / DAO — 15% (15,000,000 LENZ)</li>
+<li>Public sale — 5% (5,000,000 LENZ), optional</li>
+</ul>
+<h2>Proposed utility</h2>
+<ul>
+<li>Governance over the roadmap, supported assets, and treasury spend.</li>
+<li>Usage rewards for contributions (translations, content, referrals).</li>
+<li>Private tipping of contributors using SNIP-20's on-chain privacy.</li>
+<li>Optional hold-to-unlock cosmetics that never gate the free core app.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
+<h2>Disclaimer</h2>
+<p>This page is informational only and is not financial advice and not an offer to sell a security. Privacy tokens are delisted by some exchanges and may be regulated differently across jurisdictions. Tokenomics shown are draft launch parameters and may change. Do your own research.</p>
+<p><a href="/about">About WalletLens</a> · <a href="/privacy">Privacy Policy</a> · <a href="/">Home</a></p>
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: lenzFaqs.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
+}))
+
 // ── Privacy ──────────────────────────────────────────────────────────────────
 write('/privacy', buildPage({
   path: '/privacy',
@@ -1135,7 +1200,7 @@ write('/terms', buildPage({
 `,
 }))
 
-console.log(`\nPrerendered ${POSTS.length + 6} content pages into dist/.`)
+console.log(`\nPrerendered ${POSTS.length + 7} content pages into dist/.`)
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
@@ -1149,6 +1214,7 @@ const STATIC_ROUTES = [
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
+  { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
   { path: '/terms',   changefreq: 'monthly', priority: '0.5' },
 ]
