@@ -6594,27 +6594,27 @@ select.bs-input option { background: var(--bg3); }
    Uses .lp.lp-light (specificity 0,3,0) to beat the cinematic
    .lp .lp-cta-primary rules defined later in this file. */
 .lp.lp-light .lp-cta-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%) !important;
+  background: linear-gradient(135deg, #0b1220 0%, #0f3d2e 45%, #059669 80%, #10b981 100%) !important;
   color: #fff !important;
-  box-shadow: 0 6px 22px rgba(37,99,235,0.4), 0 0 0 1px rgba(59,130,246,0.2) inset !important;
-  animation: none !important;        /* stop the green gradient pulse */
+  box-shadow: 0 6px 22px rgba(5,150,105,0.4), 0 0 0 1px rgba(16,185,129,0.2) inset !important;
+  animation: none !important;        /* stop the default gradient pulse */
 }
 .lp.lp-light .lp-cta-primary:hover {
-  box-shadow: 0 12px 34px rgba(37,99,235,0.55) !important;
+  box-shadow: 0 12px 34px rgba(5,150,105,0.55) !important;
   background-position: 100% 0% !important;
 }
 .lp.lp-light .lp-cta-ghost {
   background: #ffffff !important;
-  border: 1.5px solid rgba(37,99,235,0.5) !important;
-  color: #1d4ed8 !important;
+  border: 1.5px solid rgba(16,185,129,0.5) !important;
+  color: #0f172a !important;
   animation: none !important;
   backdrop-filter: none !important;
   box-shadow: 0 2px 12px rgba(15,23,42,0.06) !important;
 }
 .lp.lp-light .lp-cta-ghost:hover {
-  background: rgba(37,99,235,0.07) !important;
-  border-color: #1d4ed8 !important;
-  color: #1e40af !important;
+  background: rgba(16,185,129,0.07) !important;
+  border-color: #059669 !important;
+  color: #064e3b !important;
 }
 
 /* ── Pulsing logo orb (landing hero) ──────────────────────────────────── */
