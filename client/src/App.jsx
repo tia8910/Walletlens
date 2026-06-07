@@ -293,6 +293,9 @@ export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
+  // Defer non-critical shell overlays until the browser is idle so they don't
+  // compete with the main page render for parse/network bandwidth.
+  const [shellReady, setShellReady] = useState(false)
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
@@ -308,6 +311,13 @@ export default function App() {
   }, [])
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
+
+  useEffect(() => {
+    const id = typeof requestIdleCallback !== 'undefined'
+      ? requestIdleCallback(() => setShellReady(true), { timeout: 3000 })
+      : setTimeout(() => setShellReady(true), 1500)
+    return () => typeof requestIdleCallback !== 'undefined' ? cancelIdleCallback(id) : clearTimeout(id)
+  }, [])
 
   // Prefetch the highest-traffic app chunks during idle on the landing page
   // so the first navigation to any of them is instant.
@@ -481,9 +491,9 @@ export default function App() {
         </nav>
       </footer>
 
-      <Suspense fallback={null}><WelcomeModal /></Suspense>
-      <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
-      <Suspense fallback={null}><AssistantChat /></Suspense>
+      {shellReady && <Suspense fallback={null}><WelcomeModal /></Suspense>}
+      {shellReady && <Suspense fallback={null}><PWAInstallPrompt /></Suspense>}
+      {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>
