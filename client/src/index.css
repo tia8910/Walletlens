@@ -7249,10 +7249,10 @@ input[type="date"] { color-scheme: dark; }
 .aq-tier-name{ background:var(--lz-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
 
 .aq-addr{ display:flex; gap:.6rem; margin-top:.8rem; flex-wrap:wrap; }
-.aq-input{ flex:1; min-width:240px; background:rgba(0,0,0,.3); border:1px solid var(--lz-line); border-radius:12px;
-  padding:.75rem .9rem; color:var(--lz-text); font-size:.95rem; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
-.aq-input::placeholder{ color:rgba(231,245,239,0.45); }
-.aq-input:focus{ outline:none; border-color:#34d399; }
+.lz-root .aq-input{ flex:1; min-width:240px; background:rgba(0,0,0,.3); border:1px solid var(--lz-line); border-radius:12px;
+  padding:.75rem .9rem; color:#e7f5ef; font-size:.95rem; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; -webkit-text-fill-color:#e7f5ef; }
+.lz-root .aq-input::placeholder{ color:rgba(231,245,239,0.45); -webkit-text-fill-color:rgba(231,245,239,0.45); }
+.lz-root .aq-input:focus{ outline:none; border-color:#34d399; }
 .aq-err{ color:#fca5a5; font-size:.84rem; margin-top:.5rem; }
 
 .aq-quests{ display:flex; flex-direction:column; gap:.7rem; margin-top:1rem; }
