@@ -1180,7 +1180,7 @@ write('/airdrop', buildPage({
 <li>Create your portfolio in WalletLens (add a holding).</li>
 <li>Track 3 or more assets.</li>
 <li>Follow @wallet_lens on X (and the founder @tarek_abhamed) and repost the launch.</li>
-<li>Join the Telegram and subscribe on YouTube.</li>
+<li>Subscribe on YouTube.</li>
 <li>Share a screenshot of your portfolio.</li>
 <li>Refer friends with your referral link.</li>
 </ul>

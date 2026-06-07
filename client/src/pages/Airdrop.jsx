@@ -69,7 +69,6 @@ export default function Airdrop() {
     { id: 'follow_x', icon: '𝕏', pts: 50, type: 'social', title: 'Follow @wallet_lens on X', desc: 'Follow the official account.', href: SOCIAL.x },
     { id: 'follow_founder', icon: '👤', pts: 25, type: 'social', title: 'Follow the founder @tarek_abhamed', desc: 'Follow the founder on X.', href: SOCIAL.founder },
     { id: 'repost', icon: '🔁', pts: 75, type: 'social', title: 'Repost the launch post', desc: 'Share the $LENZ launch on X.', href: `https://x.com/intent/tweet?text=${encodeURIComponent('I’m claiming the $LENZ airdrop on @wallet_lens — the free, privacy-first net-worth tracker, native token on #Sui.')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}` },
-    { id: 'telegram', icon: '✈️', pts: 50, type: 'social', title: 'Join the Telegram', desc: 'Join the community channel.', href: SOCIAL.telegram },
     { id: 'youtube', icon: '▶️', pts: 50, type: 'social', title: 'Subscribe on YouTube', desc: 'Subscribe to @walletlens.', href: SOCIAL.youtube },
     { id: 'screenshot', icon: '📸', pts: 100, type: 'proof', title: 'Share a portfolio screenshot', desc: 'Post a screenshot of your WalletLens dashboard with #LENZ.' },
     { id: 'referral', icon: '🤝', pts: 50, type: 'referral', title: 'Refer a friend', desc: 'Share your referral link — earn bonus weight per join.' },
