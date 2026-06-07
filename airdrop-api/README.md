@@ -22,14 +22,13 @@ Validation layers:
    hash, clusters (≥5 wallets/IP) get `ipFlag` for review.
 4. **Flat payout:** final allocation is equal-per-wallet + capped (see `sui-token/`),
    so any sybil that slips through earns ~nothing.
-5. **Optional signature (power users):** if a wallet *does* sign the ownership
-   message, the record is marked `verified: true` (a trust badge) — but it's never
-   required.
+The service has **zero external dependencies** (pure Deno + Web Crypto), so it builds
+and deploys on Deno Deploy with no install step.
 
 ## Endpoints
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/register` | `{ address, signature, quests[], referredBy?, xHandle? }` → validate + store |
+| POST | `/register` | `{ address, quests[], referredBy?, xHandle? }` → validate + store |
 | GET | `/status?address=0x…` | a wallet's registration record |
 | GET | `/stats` | `{ total, eligible }` (for the page counter) |
 | GET | `/export` | `Authorization: Bearer <ADMIN_TOKEN>` → CSV of eligible addresses |
