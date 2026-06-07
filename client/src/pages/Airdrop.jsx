@@ -8,9 +8,9 @@ import LenzLogo from '../components/LenzLogo'
 
 const STORE_KEY = 'lenz_airdrop_v1'
 const SUI_ADDR_RE = /^0x[0-9a-fA-F]{64}$/
-// Set to the deployed airdrop-api URL to enable the waitlist server-side. Empty =
-// local-only (saved on device). Earning stays disabled until launch regardless.
-const AIRDROP_API = ''
+// Set to the deployed airdrop-api URL to enable server-side waitlist. Empty =
+// local-only. Earning stays "Coming soon" until launch regardless.
+const AIRDROP_API = 'https://walletlens.tia8910.deno.net'
 
 const INAPP = [
   { icon: '🔥', title: 'Daily streak', desc: 'Use WalletLens daily — streak bonuses.', pts: '10/day' },
