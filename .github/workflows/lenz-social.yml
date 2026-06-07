@@ -1,0 +1,60 @@
+name: $LENZ Social Agent
+
+# Dedicated $LENZ agent: Claude writes the post + a branded card headline/subline,
+# renders an on-brand image, and posts BOTH to @wallet_lens (or drafts them).
+#   • With X_API_* secrets → posts the image + text automatically.
+#   • Without them → uploads the rendered card as an artifact + opens a draft issue.
+# Original posts only; replies/engagement stay human (auto-engagement risks a ban).
+#
+# Secrets: ANTHROPIC_API_KEY (required); X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN,
+#          X_ACCESS_SECRET (optional, enables auto-post with image).
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # daily 15:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lenz-social:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install fonts (for the card text)
+        run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - name: Install renderer
+        working-directory: promo
+        run: npm install @resvg/resvg-js
+      - name: Generate card + post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+        run: node promo/lenz-social-agent.mjs
+      - name: Upload rendered card (draft mode)
+        if: ${{ hashFiles('promo/lenz-drafts/*.png') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lenz-card
+          path: promo/lenz-drafts/*.png
+      - name: Open review issue (draft mode)
+        if: ${{ hashFiles('promo/x-post.json') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues" \
+            -d @promo/x-post.json > /dev/null \
+            && echo "Draft issue created (card is the 'lenz-card' artifact)."
