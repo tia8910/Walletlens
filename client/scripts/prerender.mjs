@@ -1168,27 +1168,18 @@ ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ airdrop ─────────────────────────────────────────────────────────────
 write('/airdrop', buildPage({
   path: '/airdrop',
-  title: '$LENZ Airdrop — Earn the Native Token of walletlens.live (on Sui)',
-  description: 'Earn $LENZ, the native token of walletlens.live, through the community airdrop. Complete quests — use the app, follow on X, join Telegram, refer friends — climb tiers, and claim at snapshot. 10.5M LENZ pool, per-wallet cap, no purchase required.',
+  title: 'Earn $LENZ — Use WalletLens, get rewarded (coming soon)',
+  description: 'Earn $LENZ, the native token of walletlens.live, by using the app and sharing it. Use & earn — daily streaks, Academy, referrals, threads. Points convert to $LENZ at launch. No purchase, no wallet connection to join. Coming soon — join the waitlist.',
   bodyHtml: `
-<h1>$LENZ Airdrop</h1>
-<p>Earn $LENZ — the native token of walletlens.live, a free, privacy-first all-asset portfolio tracker — through the community airdrop. Complete quests, climb tiers, and claim your allocation at snapshot. No purchase required.</p>
-<h2>The pool</h2>
-<p>The airdrop pool is 5,000,000 LENZ — 50% of the fixed 10,000,000 supply. It is community-first: there is no founder or insider allocation. A per-wallet cap keeps any single address from dominating.</p>
-<h2>Quests</h2>
-<ul>
-<li>Create your portfolio in WalletLens (add a holding).</li>
-<li>Track 3 or more assets.</li>
-<li>Follow @wallet_lens on X (and the founder @tarek_abhamed) and repost the launch.</li>
-<li>Subscribe on YouTube.</li>
-<li>Share a screenshot of your portfolio.</li>
-<li>Refer friends with your referral link.</li>
-</ul>
-<h2>How eligibility works</h2>
-<p>At snapshot, eligible wallets and amounts are published as a Merkle claim — you claim your own $LENZ and pay your own gas. Anti-sybil: allocation is flat (equal per eligible wallet) with a hard per-wallet cap, and only wallets with real prior Sui activity qualify — fresh throwaway wallets are filtered out, so farming with many wallets earns almost nothing extra. In-app quests are verified on your device; social quests are re-checked at snapshot. Progress is stored on your device — WalletLens keeps no account or server-side profile.</p>
-<p><strong>Beware of scams.</strong> The only official airdrop is on walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to a random site, and never ask for your seed phrase.</p>
+<h1>Earn $LENZ</h1>
+<p>WalletLens is the net-worth tracker that rewards you for using it. Use the app and share it to earn points — converted to $LENZ at launch. Free forever, no purchase. <strong>Coming soon</strong> — join the waitlist now by adding your Sui address (no wallet connection).</p>
+<h2>Ways to earn (coming soon)</h2>
+<p>Use the app: daily streaks, create a portfolio, track 3+ assets, complete Academy lessons, use features, install the PWA. Share &amp; grow: refer an active friend, write a thread about WalletLens/$LENZ, mention @wallet_lens, share an article or your portfolio card, follow + repost.</p>
+<h2>How it works</h2>
+<p>Now: join the waitlist with just your Sui address — no wallet connection, no signature. At launch: earning opens; points convert to $LENZ from a fixed budget, pro-rata, capped per wallet, claimed on-chain (claim-once). Fair and private: no sale, no insider bag; we store only your address and points, never your holdings. After launch: hold or lock $LENZ to unlock perks (ad-free, pro features) — coming soon.</p>
+<p><strong>Beware of scams.</strong> The only official page is walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to join, and never asks for your seed phrase.</p>
 <h2>Disclaimer</h2>
-<p>This page is informational only and is not financial advice and not an offer to sell a security. Quests, points, weights, dates and amounts are draft and may change. Completing quests does not guarantee an allocation. Do your own research.</p>
+<p>Informational only — not financial advice and not an offer to sell a security. Earning is not live yet; actions, points and dates are draft and may change. Participation does not guarantee an allocation. Do your own research.</p>
 <p><a href="/lenz">About $LENZ</a> · <a href="/">WalletLens</a> · <a href="/privacy">Privacy Policy</a></p>
 `,
 }))

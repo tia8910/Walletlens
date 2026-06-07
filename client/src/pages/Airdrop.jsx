@@ -1,118 +1,89 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import LenzLogo from '../components/LenzLogo'
-import { loadData } from '../data/storage'
 
-// $LENZ airdrop quest page. Reuses the premium .lz-* theme from /lenz and adds
-// .aq-* quest UI. Progress is stored locally (no backend, consistent with the
-// privacy-first app). In-app quests auto-verify from localStorage; social quests
-// are self-attested and re-checked at snapshot time. Final eligibility is settled
-// by a Merkle claim with a per-wallet cap (see /lenz and sui-token/TOKENOMICS.md).
+// "Use & Earn $LENZ" page. PRE-LAUNCH: earning is "Coming soon" — only the waitlist
+// (paste a Sui address, no wallet connection) is live. Points → $LENZ at launch.
+// See REWARDS.md for the full spec. Reuses the premium .lz-* / .aq-* theme.
 
-const SOCIAL = {
-  x: 'https://x.com/wallet_lens',          // official WalletLens account
-  founder: 'https://x.com/tarek_abhamed',  // founder
-  telegram: 'https://t.me/walletlenss',
-  youtube: 'https://youtube.com/@walletlens',
-}
 const STORE_KEY = 'lenz_airdrop_v1'
 const SUI_ADDR_RE = /^0x[0-9a-fA-F]{64}$/
-// Set this to your deployed airdrop-api URL (Deno Deploy) to enable server-side
-// registration. Empty = local-only (progress still saved on device, no backend).
+// Set to the deployed airdrop-api URL to enable the waitlist server-side. Empty =
+// local-only (saved on device). Earning stays disabled until launch regardless.
 const AIRDROP_API = ''
 
-function load() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') } catch { return {} }
-}
-function hasPortfolio() {
-  try { return (loadData('transactions') || []).length > 0 } catch { return false }
-}
-function distinctAssets() {
-  try {
-    const txs = loadData('transactions') || []
-    return new Set(txs.map(t => t.coin_id || t.coinId || t.symbol)).size
-  } catch { return 0 }
-}
+const INAPP = [
+  { icon: '🔥', title: 'Daily streak', desc: 'Use WalletLens daily — streak bonuses.', pts: '10/day' },
+  { icon: '📊', title: 'Create your portfolio', desc: 'Add your first holding.', pts: 100 },
+  { icon: '🧺', title: 'Track 3+ assets', desc: 'Diversify across assets.', pts: 100 },
+  { icon: '🎓', title: 'Academy lessons', desc: 'Learn investing & crypto, lesson by lesson.', pts: '50 ea' },
+  { icon: '🏅', title: 'Finish the Academy', desc: 'Complete every lesson.', pts: 200 },
+  { icon: '🤖', title: 'Use a feature', desc: 'AI analysis, alerts, import…', pts: '50 ea' },
+  { icon: '📱', title: 'Install the app (PWA)', desc: 'Add WalletLens to your home screen.', pts: 50 },
+]
+const SHARING = [
+  { icon: '🤝', title: 'Refer an active friend', desc: 'They join and actually use it.', pts: 200 },
+  { icon: '🧵', title: 'Write a thread', desc: 'A quality thread about WalletLens/$LENZ (reviewed).', pts: 500 },
+  { icon: '📣', title: 'Mention @wallet_lens', desc: 'Tag us in a post.', pts: '25/day' },
+  { icon: '📰', title: 'Share an article', desc: 'Share a WalletLens blog post.', pts: 30 },
+  { icon: '🖼️', title: 'Share your portfolio card', desc: 'Post your net-worth card.', pts: 50 },
+  { icon: '𝕏', title: 'Follow + repost', desc: 'Follow @wallet_lens and repost.', pts: 50 },
+]
 
-const TIERS = [
-  { name: 'Explorer', min: 0, mult: '1.0×' },
-  { name: 'Believer', min: 150, mult: '1.25×' },
-  { name: 'Champion', min: 300, mult: '1.5×' },
-  { name: 'Legend', min: 450, mult: '2.0×' },
+const FAQS = [
+  { q: 'Is earning live yet?', a: 'Not yet — WalletLens is pre-launch (on Sui testnet). Every earn action is marked "Coming soon." You can join the waitlist now by adding your Sui address, and you\'ll be first when earning goes live.' },
+  { q: 'How do I earn $LENZ?', a: 'When it launches: use the app and share it to earn Points. At mainnet launch, Points convert to $LENZ (pro-rata, capped per wallet) and you claim them on-chain. No purchase, ever.' },
+  { q: 'Do I need to connect a wallet?', a: 'No. You only paste your Sui address to join the waitlist — no wallet connection, no signature. You use your wallet once, at the very end, to claim. We never ask you to connect a wallet or share your seed phrase to register.' },
+  { q: 'What data do you store?', a: 'Your portfolio never leaves your device. The optional rewards program records only your Sui address and the points you earn — never your holdings, never your identity — and only if you choose to participate.' },
+  { q: 'How is farming prevented?', a: 'Points convert from a fixed budget split pro-rata with a per-wallet cap, plus an on-chain wallet gate at conversion and review-gated threads — so spamming earns little.' },
 ]
 
 export default function Airdrop() {
-  const [state, setState] = useState(load)
+  const [state, setState] = useState(() => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') } catch { return {} } })
   const [address, setAddress] = useState(state.address || '')
+  const [regMsg, setRegMsg] = useState('')
+  const [registering, setRegistering] = useState(false)
 
-  useEffect(() => { document.title = '$LENZ Airdrop — Earn the Native Token of walletlens.live' }, [])
-
-  // Capture referral on first visit.
+  useEffect(() => { document.title = 'Earn $LENZ — Use WalletLens, get rewarded (coming soon)' }, [])
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
-    if (ref && SUI_ADDR_RE.test(ref) && !state.referredBy) {
-      setState(s => ({ ...s, referredBy: ref }))
-    }
+    if (ref && SUI_ADDR_RE.test(ref) && !state.referredBy) setState(s => ({ ...s, referredBy: ref }))
   }, []) // eslint-disable-line
-
-  // Persist.
   useEffect(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)) } catch {} }, [state])
 
   const addrValid = SUI_ADDR_RE.test(address)
-  const portfolio = hasPortfolio()
-  const assets = distinctAssets()
-
-  // Quest definitions. `auto` quests verify from on-device data.
-  const QUESTS = useMemo(() => [
-    { id: 'portfolio', icon: '📊', pts: 100, type: 'app', title: 'Create your portfolio', desc: 'Add at least one holding in WalletLens.', auto: portfolio, cta: 'Open app', href: '/dashboard' },
-    { id: 'track3', icon: '🧺', pts: 100, type: 'app', title: 'Track 3+ assets', desc: 'Hold three or more different assets.', auto: assets >= 3, cta: 'Add assets', href: '/dashboard' },
-    { id: 'follow_x', icon: '𝕏', pts: 50, type: 'social', title: 'Follow @wallet_lens on X', desc: 'Follow the official account.', href: SOCIAL.x },
-    { id: 'follow_founder', icon: '👤', pts: 25, type: 'social', title: 'Follow the founder @tarek_abhamed', desc: 'Follow the founder on X.', href: SOCIAL.founder },
-    { id: 'repost', icon: '🔁', pts: 75, type: 'social', title: 'Repost the launch post', desc: 'Share the $LENZ launch on X.', href: `https://x.com/intent/tweet?text=${encodeURIComponent('I’m claiming the $LENZ airdrop on @wallet_lens — the free, privacy-first net-worth tracker, native token on #Sui.')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}` },
-    { id: 'youtube', icon: '▶️', pts: 50, type: 'social', title: 'Subscribe on YouTube', desc: 'Subscribe to @walletlens.', href: SOCIAL.youtube },
-    { id: 'screenshot', icon: '📸', pts: 100, type: 'proof', title: 'Share a portfolio screenshot', desc: 'Post a screenshot of your WalletLens dashboard with #LENZ.' },
-    { id: 'referral', icon: '🤝', pts: 50, type: 'referral', title: 'Refer a friend', desc: 'Share your referral link — earn bonus weight per join.' },
-  ], [portfolio, assets])
-
-  const done = state.quests || {}
-  const isDone = q => q.auto || !!done[q.id]
-  const toggle = (q, val) => setState(s => ({ ...s, quests: { ...(s.quests || {}), [q.id]: val } }))
-
-  const totalPts = QUESTS.reduce((a, q) => a + q.pts, 0)
-  const earnedPts = QUESTS.reduce((a, q) => a + (isDone(q) ? q.pts : 0), 0)
-  const pct = Math.round((earnedPts / totalPts) * 100)
-  const tier = [...TIERS].reverse().find(t => earnedPts >= t.min) || TIERS[0]
-
+  const joined = addrValid && state.address === address
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://walletlens.live'
   const refLink = addrValid ? `${origin}/airdrop?ref=${address}` : ''
   const [copied, setCopied] = useState(false)
   const copyRef = () => { if (refLink) { navigator.clipboard?.writeText(refLink); setCopied(true); setTimeout(() => setCopied(false), 1500) } }
 
-  const [regMsg, setRegMsg] = useState('')
-  const [registering, setRegistering] = useState(false)
-  const saveAddress = async () => {
+  const join = async () => {
     if (!addrValid) return
     setState(s => ({ ...s, address }))
-    // No wallet connection required — ownership is enforced for free at claim time.
-    if (!AIRDROP_API) { setRegMsg('Saved on this device. Server registration opens at launch.'); return }
+    if (!AIRDROP_API) { setRegMsg('You\'re on the waitlist (saved on this device). We\'ll notify you at launch.'); return }
     setRegistering(true); setRegMsg('')
     try {
-      const completed = QUESTS.filter(isDone).map(q => q.id)
       const r = await fetch(`${AIRDROP_API}/register`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, quests: completed, referredBy: state.referredBy || undefined }),
+        body: JSON.stringify({ address, quests: [], referredBy: state.referredBy || undefined }),
       })
       const j = await r.json()
-      if (!r.ok) setRegMsg(j.error || 'Registration failed — try again.')
-      else setRegMsg(j.note || (j.eligible ? 'Registered and eligible ✓' : 'Registered.'))
-    } catch { setRegMsg('Could not reach the server — your progress is saved locally.') }
+      setRegMsg(r.ok ? (j.note || 'You\'re on the waitlist ✓') : (j.error || 'Could not join — try again.'))
+    } catch { setRegMsg('Could not reach the server — saved locally.') }
     finally { setRegistering(false) }
   }
-  const registered = addrValid && state.address === address
 
-  // Circumference for the progress ring (r=52).
-  const C = 2 * Math.PI * 52
-  const dash = C * (pct / 100)
+  const Card = ({ a }) => (
+    <div className="aq-quest">
+      <span className="aq-q-icon" aria-hidden="true">{a.icon}</span>
+      <div className="aq-q-body">
+        <div className="aq-q-head"><strong>{a.title}</strong><span className="aq-q-pts">+{a.pts}</span></div>
+        <p>{a.desc}</p>
+        <span className="lz-soon">Coming soon</span>
+      </div>
+    </div>
+  )
 
   return (
     <div className="lz-root">
@@ -124,7 +95,7 @@ export default function Airdrop() {
         <Link to="/" className="lz-back"><span aria-hidden="true">←</span> WalletLens</Link>
         <nav className="lz-navlinks">
           <Link to="/lenz">$LENZ</Link>
-          <a href="#quests">Quests</a>
+          <a href="#earn">Earn</a>
           <a href="#how">How it works</a>
         </nav>
       </header>
@@ -134,136 +105,84 @@ export default function Airdrop() {
           <span className="lz-coin-halo" aria-hidden="true" />
           <LenzLogo size={120} animated className="lz-coin" />
         </div>
-        <span className="lz-eyebrow">Airdrop · 5,000,000 LENZ pool</span>
-        <h1 className="lz-title">$LENZ Airdrop</h1>
-        <p className="lz-tagline">Earn $LENZ — the native token of WalletLens — by using the app and joining the community. Complete quests, climb tiers, and claim at snapshot. No purchase required.</p>
+        <span className="lz-eyebrow">Use &amp; Earn · Coming soon</span>
+        <h1 className="lz-title">Earn $LENZ</h1>
+        <p className="lz-tagline">The net-worth tracker that rewards you for using it. Use WalletLens and share it to earn points — converted to <strong>$LENZ</strong> at launch. Free forever. No purchase.</p>
         <div className="lz-badges">
-          <span className="lz-badge">🎁 Free airdrop</span>
+          <span className="lz-badge">🎁 Free to earn</span>
           <span className="lz-badge">🚫 No sale · No IPO</span>
-          <span className="lz-badge">⚖️ Fair · flat per wallet</span>
-          <span className="lz-badge">💧 Only tiny Sui gas to claim</span>
+          <span className="lz-badge">⚖️ Fair · capped per wallet</span>
+          <span className="lz-badge">🔒 No wallet connect to join</span>
         </div>
-
-        <div className="aq-dash">
-          <div className="aq-ring" role="img" aria-label={`${pct}% of quests complete`}>
-            <svg width="124" height="124" viewBox="0 0 124 124">
-              <circle cx="62" cy="62" r="52" className="aq-ring-bg" />
-              <circle cx="62" cy="62" r="52" className="aq-ring-fg" strokeDasharray={`${dash} ${C}`} transform="rotate(-90 62 62)" />
-            </svg>
-            <div className="aq-ring-mid"><b>{pct}%</b><span>complete</span></div>
-          </div>
-          <div className="aq-dash-stats">
-            <div className="aq-dash-stat"><span>Points</span><b>{earnedPts}<small> / {totalPts}</small></b></div>
-            <div className="aq-dash-stat"><span>Tier</span><b className="aq-tier-name">{tier.name}</b><small>{tier.mult} weight</small></div>
-            <div className="aq-dash-stat"><span>Status</span><b>{registered ? 'Registered' : 'Not registered'}</b></div>
-          </div>
+        <div className="lz-cta">
+          <a href="#waitlist" className="lz-btn lz-btn-primary">Join the waitlist</a>
+          <a href="#how" className="lz-btn lz-btn-ghost">How it works</a>
         </div>
       </section>
 
       <main className="lz-main">
-        {/* Sui address gate */}
-        <section className="lz-card lz-section">
-          <h2 className="lz-h2">1 · Add your Sui address</h2>
-          <p>Just paste your Sui address — <strong>no wallet connection needed to register.</strong> You'll only use your wallet at the very end to claim your free $LENZ.</p>
+        {/* Waitlist (LIVE) */}
+        <section id="waitlist" className="lz-card lz-section">
+          <h2 className="lz-h2">Join the waitlist</h2>
+          <p>Earning isn't live yet — but add your Sui address now to be first when it opens. <strong>No wallet connection, no signature.</strong> You'll only use your wallet at the very end to claim.</p>
           <div className="aq-addr">
-            <input
-              className="aq-input"
-              placeholder="0x… (66-character Sui address)"
-              value={address}
-              spellCheck={false}
-              onChange={e => setAddress(e.target.value.trim())}
-            />
-            <button className="lz-btn lz-btn-primary" disabled={!addrValid || registering} onClick={saveAddress}>
-              {registering ? 'Registering…' : registered ? 'Saved ✓' : 'Register'}
+            <input className="aq-input" placeholder="0x… (66-character Sui address)" value={address} spellCheck={false} onChange={e => setAddress(e.target.value.trim())} />
+            <button className="lz-btn lz-btn-primary" disabled={!addrValid || registering} onClick={join}>
+              {registering ? 'Joining…' : joined ? 'On the list ✓' : 'Join waitlist'}
             </button>
           </div>
-          {address && !addrValid && <p className="aq-err">That doesn't look like a Sui address (expected 0x + 64 hex characters).</p>}
+          {address && !addrValid && <p className="aq-err">That doesn't look like a Sui address (0x + 64 hex).</p>}
           {regMsg && <p className="lz-note">{regMsg}</p>}
-          <p className="lz-note">🔒 We never ask you to connect a wallet, sign a transaction, or share your seed phrase to register. Anyone who does is a scam.</p>
-          {state.referredBy && <p className="lz-note">Referred by <code>{state.referredBy.slice(0, 10)}…</code> — thanks for joining through a friend.</p>}
+          {joined && (
+            <div className="aq-ref">
+              <input className="aq-input aq-ref-input" readOnly value={refLink} />
+              <button className="lz-btn lz-btn-ghost" onClick={copyRef}>{copied ? 'Copied!' : 'Copy referral link'}</button>
+            </div>
+          )}
+          <p className="lz-note">🔒 We never ask you to connect a wallet, sign a transaction, or share your seed phrase to join. Anyone who does is a scam.</p>
         </section>
 
-        {/* Quests */}
-        <section id="quests" className="lz-card lz-section">
-          <h2 className="lz-h2">2 · Complete quests</h2>
-          <p>In-app quests verify automatically on this device. Social quests open the link, then mark them done — they're re-checked at snapshot.</p>
-          <div className="aq-quests">
-            {QUESTS.map(q => {
-              const complete = isDone(q)
-              return (
-                <div key={q.id} className={`aq-quest${complete ? ' is-done' : ''}`}>
-                  <span className="aq-q-icon" aria-hidden="true">{q.icon}</span>
-                  <div className="aq-q-body">
-                    <div className="aq-q-head">
-                      <strong>{q.title}</strong>
-                      <span className="aq-q-pts">+{q.pts}</span>
-                    </div>
-                    <p>{q.desc}</p>
-
-                    {q.type === 'referral' ? (
-                      <div className="aq-ref">
-                        <input className="aq-input aq-ref-input" readOnly value={refLink || 'Add your Sui address to get a referral link'} />
-                        <button className="lz-btn lz-btn-ghost" disabled={!refLink} onClick={copyRef}>{copied ? 'Copied!' : 'Copy link'}</button>
-                      </div>
-                    ) : q.type === 'proof' ? (
-                      <div className="aq-q-actions">
-                        <a className="lz-btn lz-btn-ghost" href={`https://x.com/intent/tweet?text=${encodeURIComponent('My @wallet_lens portfolio, tracked privately & for free. Claiming the $LENZ airdrop on #Sui #LENZ')}&url=${encodeURIComponent('https://walletlens.live/airdrop')}`} target="_blank" rel="noreferrer">Share on X</a>
-                        <button className="aq-mark" onClick={() => toggle(q, !complete)}>{complete ? 'Marked ✓' : 'Mark done'}</button>
-                      </div>
-                    ) : q.type === 'app' ? (
-                      complete
-                        ? <span className="aq-auto">Verified on this device ✓</span>
-                        : <Link className="lz-btn lz-btn-ghost" to={q.href}>{q.cta}</Link>
-                    ) : (
-                      <div className="aq-q-actions">
-                        <a className="lz-btn lz-btn-ghost" href={q.href} target="_blank" rel="noreferrer" onClick={() => toggle(q, true)}>{q.cta || 'Open'}</a>
-                        <button className="aq-mark" onClick={() => toggle(q, !complete)}>{complete ? 'Marked ✓' : 'Mark done'}</button>
-                      </div>
-                    )}
-                  </div>
-                  <span className="aq-q-check" aria-hidden="true">{complete ? '✓' : ''}</span>
-                </div>
-              )
-            })}
+        {/* Earn actions (COMING SOON) */}
+        <section id="earn" className="lz-section">
+          <h2 className="lz-h2 lz-center">Ways to earn <span className="lz-sub">(coming soon)</span></h2>
+          <div className="lz-card lz-section">
+            <h3 className="lz-h3">📲 Use the app</h3>
+            <div className="aq-quests">{INAPP.map(a => <Card key={a.title} a={a} />)}</div>
+          </div>
+          <div className="lz-card lz-section">
+            <h3 className="lz-h3">🔁 Share &amp; grow the community</h3>
+            <div className="aq-quests">{SHARING.map(a => <Card key={a.title} a={a} />)}</div>
           </div>
         </section>
 
-        {/* Tiers */}
-        <section className="lz-card lz-section">
-          <h2 className="lz-h2">Tiers &amp; weight</h2>
-          <p>More points = a higher allocation weight (capped per wallet to keep it fair).</p>
-          <div className="aq-tiers">
-            {TIERS.map(t => (
-              <div key={t.name} className={`aq-tier${tier.name === t.name ? ' is-active' : ''}`}>
-                <b>{t.name}</b>
-                <span>{t.min}+ pts</span>
-                <small>{t.mult}</small>
-              </div>
+        {/* How it works */}
+        <section id="how" className="lz-card lz-section">
+          <h2 className="lz-h2">How it works</h2>
+          <ul className="lz-checks">
+            <li><strong>Now:</strong> join the waitlist (just your Sui address).</li>
+            <li><strong>At launch:</strong> earning opens — use the app + share to collect points.</li>
+            <li><strong>Points → $LENZ:</strong> points convert to $LENZ from a fixed budget, pro-rata, capped per wallet — claimed on-chain (claim-once).</li>
+            <li><strong>Fair &amp; private:</strong> no sale, no insider bag; we store only your address + points, never your holdings.</li>
+            <li><strong>After launch:</strong> hold/lock $LENZ to unlock perks (ad-free, pro features) — <em>coming soon</em>.</li>
+          </ul>
+          <div className="lz-warn"><strong>Beware of scams.</strong> The only official page is walletlens.live/airdrop. We never DM you a claim link or ask you to connect a wallet to join.</div>
+        </section>
+
+        {/* FAQ */}
+        <section className="lz-section">
+          <h2 className="lz-h2 lz-center">FAQ</h2>
+          <div className="lz-faq">
+            {FAQS.map(f => (
+              <details key={f.q} className="lz-faq-item"><summary>{f.q}</summary><p>{f.a}</p></details>
             ))}
           </div>
         </section>
 
-        {/* How it works / honesty */}
-        <section id="how" className="lz-card lz-section">
-          <h2 className="lz-h2">How eligibility works</h2>
-          <ul className="lz-checks">
-            <li>The airdrop pool is <strong>5,000,000 LENZ (50% of supply)</strong> — users-first, never an insider bag.</li>
-            <li>At snapshot, eligible wallets and amounts are published as a <strong>Merkle claim</strong> — you claim your own $LENZ, paying your own gas.</li>
-            <li><strong>Anti-sybil:</strong> allocation is <strong>flat (equal per eligible wallet)</strong> with a hard <strong>per-wallet cap</strong>, so farming with many wallets earns ~nothing extra.</li>
-            <li><strong>On-chain gating:</strong> only wallets with real prior Sui activity qualify — fresh, zero-history throwaway wallets are filtered out. Use the Sui address you actually use.</li>
-            <li>Social quests are <strong>re-checked at snapshot</strong>; obvious bot/sybil wallets are dropped.</li>
-            <li>Progress on this page is stored <strong>on your device</strong> — WalletLens keeps no account or server-side profile of you.</li>
-          </ul>
-          <div className="lz-warn">
-            <strong>Beware of scams.</strong> The only official airdrop is on <strong>walletlens.live/airdrop</strong>. WalletLens will never DM you a "claim" link, never ask you to connect a wallet to a random site, and never ask for your seed phrase.
-          </div>
-        </section>
-
-        <p className="lz-disclaimer">This page is informational only and is <strong>not financial advice</strong> and <strong>not an offer to sell a security</strong>. Quest list, points, weights, dates and amounts are draft and may change. Completing quests does not guarantee an allocation. Do your own research.</p>
+        <p className="lz-disclaimer">Informational only — <strong>not financial advice</strong> and <strong>not an offer to sell a security</strong>. Earning is not live yet; actions, points and dates are draft and may change. Participation does not guarantee an allocation. Do your own research.</p>
       </main>
 
       <footer className="lz-foot">
-        <div className="lz-foot-brand"><LenzLogo size={26} /> <span>$LENZ Airdrop</span></div>
+        <div className="lz-foot-brand"><LenzLogo size={26} /> <span>Earn $LENZ</span></div>
         <nav className="lz-foot-links">
           <Link to="/lenz">About $LENZ</Link>
           <Link to="/">WalletLens</Link>
