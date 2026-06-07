@@ -38,3 +38,18 @@ obvious bots. **Replies and engagement stay human** — that's where trust is bu
 This keeps the account **alive** (consistent posting) so it never looks dead — but
 growth still needs a human replying and engaging in the Sui/crypto community. The
 agent removes the "I forgot to post" problem, not the "show up and be human" part.
+
+---
+
+## Dedicated $LENZ social agent (design + post)
+`promo/lenz-social-agent.mjs` (workflow `.github/workflows/lenz-social.yml`, daily
+15:00 UTC) is the **$LENZ-specific** agent: Claude writes the post **and** a card
+headline/subline, then `lenz-card.mjs` renders an **on-brand image** (the privacy-lens
+coin + brand gradients). It then:
+- **auto-posts the image + text** to @wallet_lens if the `X_API_*` secrets are set, or
+- **draft mode:** saves the card as a workflow **artifact** (`lenz-card`) and opens a
+  GitHub issue with the post text to review/post manually.
+
+Setup is the same X API credentials as above (image posting uses the v1.1 media
+upload + v2 tweet). Themes/headlines rotate daily; edit `HEADLINES` in the agent or
+the template in `lenz-card.mjs`. Still original posts only — engagement stays human.
