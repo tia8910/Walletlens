@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Distribute the fixed supply to the allocation wallets (100% liquid, no vesting).
+# Distribute supply to the allocation wallets (community/liquidity/treasury).
 # Splits the single supply Coin<LENZ> and sends each allocation in one PTB.
 # Amounts are in base units (6 decimals).
 set -euo pipefail
