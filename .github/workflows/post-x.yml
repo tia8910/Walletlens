@@ -9,8 +9,8 @@ name: WalletLens X Post Agent
 #          X_ACCESS_TOKEN, X_ACCESS_SECRET (optional, enables auto-post).
 
 on:
-  schedule:
-    - cron: '0 14 * * *'   # daily 14:00 UTC
+  # Manual only — the dedicated $LENZ social agent (lenz-social.yml) is the primary
+  # daily poster (it posts an image + text). Run this text-only agent on demand.
   workflow_dispatch:
 
 permissions:

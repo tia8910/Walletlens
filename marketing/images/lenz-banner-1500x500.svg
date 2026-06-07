@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500">
+<defs>
+  <radialGradient id="bg" cx="40%" cy="28%" r="95%"><stop offset="0%" stop-color="#0a241c"/><stop offset="55%" stop-color="#04100c"/><stop offset="100%" stop-color="#020a07"/></radialGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#10b981" stop-opacity="0.45"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glow2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.30"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+  <linearGradient id="txt" x1="560" y1="150" x2="980" y2="290" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a7f3d0"/><stop offset="38%" stop-color="#10b981"/><stop offset="70%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#6366f1"/></linearGradient>
+  <linearGradient id="ring" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a7f3d0"/><stop offset="32%" stop-color="#10b981"/><stop offset="66%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#6366f1"/></linearGradient>
+  <radialGradient id="face" cx="38%" cy="34%" r="75%"><stop offset="0%" stop-color="#0d2a24"/><stop offset="100%" stop-color="#04100c"/></radialGradient>
+  <radialGradient id="glass" cx="42%" cy="38%" r="70%"><stop offset="0%" stop-color="#14b8a6" stop-opacity="0.55"/><stop offset="55%" stop-color="#0b3b34" stop-opacity="0.65"/><stop offset="100%" stop-color="#02110d"/></radialGradient>
+  <linearGradient id="sheen" x1="18" y1="14" x2="40" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+  <linearGradient id="key" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#5eead4"/></linearGradient>
+</defs>
+<rect width="1500" height="500" fill="url(#bg)"/>
+<circle cx="350" cy="200" r="260" fill="url(#glow)"/>
+<circle cx="1300" cy="430" r="300" fill="url(#glow2)"/>
+<g transform="translate(209.2 49.19999999999999) scale(4.4)">
+  <circle cx="32" cy="32" r="29.5" fill="url(#face)" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="32" cy="32" r="29.5" fill="none" stroke="url(#sheen)" stroke-width="1.1" opacity="0.7"/>
+  <circle cx="32" cy="32" r="24" fill="none" stroke="url(#ring)" stroke-width="1" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity="0.55"/>
+  <circle cx="32" cy="32" r="14.5" fill="url(#glass)" stroke="url(#ring)" stroke-width="2"/>
+  <polygon points="41.00,32.00 36.50,39.79 27.50,39.79 23.00,32.00 27.50,24.21 36.50,24.21" fill="none" stroke="url(#ring)" stroke-width="1" opacity="0.6"/>
+  <circle cx="32" cy="30" r="2.7" fill="url(#key)"/><path d="M30.1 31.6 L33.9 31.6 L33 37.2 L31 37.2 Z" fill="url(#key)"/>
+  <path d="M23.5 27 A 11 11 0 0 1 35 21.5" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M46 13.6 L46.9 16.1 L49.4 17 L46.9 17.9 L46 20.4 L45.1 17.9 L42.6 17 L45.1 16.1 Z" fill="#ecfeff"/>
+</g>
+<g font-family="DejaVu Sans">
+  <text x="600" y="170" font-size="26" letter-spacing="5" fill="#7cf3d4" font-weight="bold">WALLETLENS.LIVE  ·  ON SUI</text>
+  <text x="595" y="300" font-size="118" font-weight="bold" fill="url(#txt)" letter-spacing="-2">$LENZ</text>
+  <text x="600" y="368" font-size="40" font-weight="bold" fill="#eef7f2" letter-spacing="3">Use the app. Earn $LENZ.</text>
+  <text x="600" y="420" font-size="28" fill="#9fb6ad">Free · fair · coming soon — @wallet_lens</text>
+</g></svg>
