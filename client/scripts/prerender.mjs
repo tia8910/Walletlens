@@ -1090,50 +1090,57 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
-    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 10,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
+    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker on Sui. It is a standard Sui coin with a fixed 10,000,000 supply and minting frozen forever. You earn $LENZ by using and sharing the app, and holders unlock premium features. The free core tracker never requires it.' },
+  { q: 'How do I earn $LENZ?',
+    a: 'By using WalletLens and helping it grow — tracking your portfolio, daily streaks, completing Academy lessons, referring active users, and sharing content. Earning opens at launch (you can join the waitlist now). You collect points that convert to $LENZ — no purchase, ever.' },
   { q: 'Why Sui?',
-    a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
+    a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
+  { q: 'Does holding $LENZ change the app?',
+    a: 'The free tracker is always 100% free and never requires $LENZ. Holding or locking $LENZ unlocks optional extras — an ad-free app, pro analytics and governance — rolling out after launch. It only adds on top; it never gates the core features.' },
   { q: 'Is $LENZ private?',
     a: 'No, and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a privacy coin.' },
-  { q: 'Does holding $LENZ change how WalletLens works?',
-    a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
   { q: 'What is the supply, and are there unlocks?',
-    a: 'A low, hard cap of 10,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
+    a: 'A fixed 10,000,000 LENZ, minted once with minting frozen forever — no inflation. There is no team or insider allocation. Reward and reserve tokens are released transparently over time from a public, time-locked schedule rather than all at once, which protects holders from sudden sell pressure. Everything is verifiable on-chain.' },
+  { q: 'Where can I get or trade $LENZ?',
+    a: 'At launch, on Sui DEXes (Cetus, Turbos, FlowX) and aggregators; it also auto-appears on DexScreener and DexTools, and we will apply to CoinGecko and CoinMarketCap (both free). Before launch, you earn it by using the app — join the waitlist on the Earn page.' },
   { q: 'How do I know $LENZ is not a scam?',
-    a: 'Because you can verify it instead of trusting it. The total supply is fixed at 10,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
+    a: 'Verify instead of trusting: fixed 10,000,000 supply, minting frozen, immutable metadata, 0% insider allocation, reserves time-locked on a public schedule, and locked liquidity — all verifiable on-chain (the repo ships a verify-onchain.sh that prints a PASS/FAIL report). The only official package id and coin type are published on this page and in the open-source repo.' },
   { q: 'Is this financial advice or an investment offer?',
     a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Do your own research.' },
 ]
 write('/lenz', buildPage({
   path: '/lenz',
   title: '$LENZ — Native Token of walletlens.live (on Sui)',
-  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A low 10M hard-capped Sui coin with locked minting, no unlocks and no insider allocation. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
+  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A fixed 10M-supply Sui coin with minting frozen and 0% insider allocation. Earn it by using the app; hold for perks. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
   bodyHtml: `
 <h1>$LENZ — The Native Token of walletlens.live</h1>
-<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is a standard Sui coin with a fixed 10,000,000 supply and minting locked forever — the utility and governance token of the WalletLens ecosystem.</p>
+<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is a standard Sui coin with a fixed 10,000,000 supply and minting frozen forever. You earn $LENZ by using and sharing the app, and holders unlock premium features.</p>
 <h2>Why Sui</h2>
-<p>Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. Sui is a public chain, so $LENZ is the native/utility token of a privacy-first app, not a privacy coin. The privacy is in the product: your portfolio data stays on your device.</p>
-<h2>Tokenomics — low cap, no unlocks</h2>
+<p>Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. Sui is a public chain, so $LENZ is the native/utility token of a privacy-first app, not a privacy coin. The privacy is in the product: your portfolio data stays on your device.</p>
+<h2>Tokenomics — fixed supply, fair</h2>
 <ul>
 <li>Name / ticker: WalletLens / LENZ</li>
 <li>Type: standard Sui coin; supply locked by freezing the TreasuryCap</li>
 <li>Chain: Sui</li>
-<li>Max supply: 10,000,000 LENZ — low, hard cap, minting locked forever</li>
-<li>Unlocks / vesting: none — 100% liquid at genesis, no cliffs, no insider allocation</li>
+<li>Max supply: 10,000,000 LENZ — fixed, minting frozen forever (no inflation)</li>
+<li>Insiders: 0% — no team or VC allocation</li>
+<li>Distribution: earn-based; reward &amp; reserve tokens released over time from a public, time-locked schedule</li>
 <li>Decimals: 6 (1 LENZ = 1,000,000 base units)</li>
 <li>Supply: publicly verifiable on-chain</li>
 </ul>
-<h2>Distribution — 100% liquid at genesis</h2>
+<h2>Distribution — community-first, no insider bag</h2>
 <ul>
-<li>Community airdrop &amp; rewards — 50% (5,000,000 LENZ)</li>
+<li>Community rewards (use &amp; earn) — 50% (5,000,000 LENZ), released over time</li>
 <li>Liquidity — 35% (3,500,000 LENZ), LP locked</li>
-<li>Ecosystem / DAO treasury — 15% (1,500,000 LENZ), no team lock</li>
+<li>Ecosystem / DAO treasury — 15% (1,500,000 LENZ), transparent &amp; time-locked</li>
+<li>Founder / team — 0%</li>
 </ul>
-<h2>Proposed utility</h2>
+<h2>Utility</h2>
 <ul>
+<li>Use &amp; earn — earn $LENZ by using WalletLens and sharing it; no purchase required.</li>
+<li>Holders unlock an ad-free app and pro features (after launch).</li>
 <li>Governance over the roadmap, supported assets, and treasury spend.</li>
-<li>Usage rewards for contributions (translations, content, referrals).</li>
-<li>Optional hold-to-unlock cosmetics that never gate the free core app.</li>
+<li>The free core tracker always stays free and never requires $LENZ.</li>
 </ul>
 <h2>How to buy and hold $LENZ (wallet &amp; gas)</h2>
 <p>$LENZ lives on Sui, so you need a Sui wallet and a little SUI for gas.</p>
@@ -1144,7 +1151,7 @@ write('/lenz', buildPage({
 <li>Verify the coin type before swapping — only trade the official package::lenz::LENZ shown on this page, to avoid impostor coins.</li>
 </ol>
 <h2>Legitimacy — don't trust, verify</h2>
-<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official package id and coin type are published here and in the repo, and anyone can run the verification script to confirm the total supply is 10,000,000 LENZ, that the TreasuryCap is frozen so minting is permanently impossible, that the metadata is immutable, that 100% of supply is liquid at genesis with no insider bag, and that liquidity is locked.</p>
+<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official package id and coin type are published here and in the repo, and anyone can run the verification script to confirm the total supply is 10,000,000 LENZ, that the TreasuryCap is frozen so minting is permanently impossible, that the metadata is immutable, that there is no team or insider allocation (reserves are time-locked on a public schedule), and that liquidity is locked.</p>
 <p><strong>Beware of scams.</strong> The only official $LENZ package id and coin type live on this page and in the WalletLens repo. WalletLens will never DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase. Anything that does is fraudulent.</p>
 <h2>Frequently asked questions</h2>
 ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
