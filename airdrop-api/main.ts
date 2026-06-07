@@ -25,7 +25,7 @@ const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
 const ADDR_RE = /^0x[0-9a-fA-F]{64}$/;
 const QUEST_PTS: Record<string, number> = {
   portfolio: 100, track3: 100, follow_x: 50, follow_founder: 25,
-  repost: 75, telegram: 50, youtube: 50, screenshot: 100, referral: 50,
+  repost: 75, youtube: 50, screenshot: 100, referral: 50,
 };
 // The exact message the wallet must sign (frontend builds the identical string).
 const signMessage = (addr: string) =>
