@@ -1094,7 +1094,7 @@ const lenzFaqs = [
   { q: 'How do I earn $LENZ?',
     a: 'By using WalletLens and helping it grow — tracking your portfolio, daily streaks, completing Academy lessons, referring active users, and sharing content. Earning opens at launch (you can join the waitlist now). You collect points that convert to $LENZ — no purchase, ever.' },
   { q: 'Why Sui?',
-    a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
+    a: 'Sui is fast, low-fee and has a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to discover — listing on CoinGecko and CoinMarketCap is free, with no costly gatekeepers.' },
   { q: 'Does holding $LENZ change the app?',
     a: 'The free tracker is always 100% free and never requires $LENZ. Holding or locking $LENZ unlocks optional extras — an ad-free app, pro analytics and governance — rolling out after launch. It only adds on top; it never gates the core features.' },
   { q: 'Is $LENZ private?',

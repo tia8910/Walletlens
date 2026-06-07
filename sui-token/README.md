@@ -5,10 +5,11 @@ free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks,
 precious metals, fiat and real estate, with AI insights and live prices, where all
 your data stays on your device.
 
-$LENZ is a **standard Sui `coin`** with a **low, hard cap of 10,000,000**, **no
-unlocks** (100% liquid at genesis), and **supply locked forever** by freezing the
-TreasuryCap at publish. It is the utility/governance token of the WalletLens
-ecosystem.
+$LENZ is a **standard Sui `coin`** with a **low, hard cap of 10,000,000**, **0%
+insider/team allocation**, and **supply locked forever** by freezing the TreasuryCap
+at publish. You **earn it by using and sharing the app**; reward & reserve tokens are
+released over time from a transparent, time-locked schedule. It is the
+utility/governance token of the WalletLens ecosystem.
 
 > **Honest framing.** Sui is a public chain: balances and transfers are visible on a
 > block explorer. $LENZ is therefore the **native/utility token of a privacy-first
@@ -35,7 +36,7 @@ sui-token/
     verify-onchain.sh        # "don't trust, verify" PASS/FAIL report
     build-merkle.mjs         # snapshot CSV → Merkle root + per-address proofs
     env.example.sh           # copy to env.sh and fill in
-  TOKENOMICS.md              # 10M hard cap, no unlocks, distribution, utility
+  TOKENOMICS.md              # 10M hard cap, 0% insiders, use-&-earn distribution
   LAUNCH.md                  # ordered launch runbook + cost & liquidity
   AIRDROP.md                 # Merkle airdrop: snapshot → publish → users claim
 ```
@@ -64,8 +65,8 @@ Everything is verifiable on-chain (`./scripts/verify-onchain.sh`):
 - **Fixed supply** — total supply = 10,000,000 LENZ.
 - **Minting locked forever** — the TreasuryCap object is **Immutable (frozen)**, so
   `coin::mint` can never be called again by anyone.
-- **No unlocks / no insider bag** — 100% liquid at genesis; distribution wallets are
-  published.
+- **No insider bag** — 0% to team/VCs; reward & reserve tokens are time-locked and
+  released on a public schedule; distribution wallets are published.
 - **Immutable metadata** — name/symbol/decimals/icon are frozen.
 - **No admin / no upgrade hook** — the module has no mint authority that survives
   publish and no special logic to abuse.

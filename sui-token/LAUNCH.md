@@ -6,7 +6,7 @@ Ordered steps to launch $LENZ — the native token of [walletlens.live](https://
 > Legend: 🟢 do yourself · 🔴 irreversible
 
 ## Phase 0 — Decide
-- 🟢 Confirm params (already set): **10,000,000 hard cap, 6 decimals, no unlocks**,
+- 🟢 Confirm params (already set): **10,000,000 hard cap, 6 decimals, 0% insiders**,
   distribution Community 50% / Liquidity 35% / Treasury 15%.
 - 🟢 Make the **treasury a multisig** if possible.
 
