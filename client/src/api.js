@@ -58,12 +58,17 @@ export const foldBalances = _foldBalancesPure;
 export const getCachedCoinImage = (coinId) => coinImageCache[coinId] || null;
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
+// Our own server-side proxy on Deno Deploy. Allowlist-only, CORS-enabled, and
+// not subject to the browser's CORS limits or per-region IP geo-blocks (e.g.
+// Binance). Tried FIRST everywhere because it's the most reliable; the public
+// proxies below remain as backups if the Deno service is ever unreachable.
+export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
 const CORS_PROXIES = [
+  DENO_PROXY,
   (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  (u) => `https://cors.eu.org/${u}`,
   (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
@@ -453,12 +458,8 @@ async function fetchStockLive(coinId) {
     }
   } catch { /* fall through */ }
 
-  // ── 6. CORS proxies (last resort, often blocked on mobile) ──
-  const PROXIES = [
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  ];
-  for (const proxy of PROXIES) {
+  // ── 6. CORS proxies (Deno proxy first, then public fallbacks) ──
+  for (const proxy of CORS_PROXIES) {
     for (const target of [stooqUrl, yahooV8]) {
       try {
         const res = await fetchWithTimeout(proxy(target), 6000);
@@ -578,8 +579,11 @@ async function fetchTwelveDataBatch(tickers) {
   try {
     const syms = tickers.map(t => `${t.toLowerCase()}.us`).join('%3B'); // %3B = ;
     const url = `https://stooq.com/q/l/?s=${syms}&f=sd2t2ohlcvn&h&e=csv`;
-    const res = await fetchWithTimeout(url, 6000);
-    if (res.ok) {
+    // Stooq has no CORS headers → direct fetch fails in the browser. Try direct
+    // (works on some networks) then fall back to our server-side proxy.
+    let res = await fetchWithTimeout(url, 6000).catch(() => null);
+    if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(url), 7000).catch(() => null);
+    if (res && res.ok) {
       const text = await res.text();
       const byIdx = parseStooqBatchCsv(text);
       if (byIdx && Object.keys(byIdx).length > 0) {
@@ -596,10 +600,7 @@ async function fetchTwelveDataBatch(tickers) {
   // ── 2. corsproxy → Yahoo Finance v8 chart for each ticker in parallel ──
   try {
     const results = await Promise.all(tickers.map(async sym => {
-      for (const wrap of [
-        (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-        (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      ]) {
+      for (const wrap of CORS_PROXIES) {
         try {
           const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
           const res = await fetchWithTimeout(wrap(target), 5000);
@@ -637,20 +638,18 @@ async function fetchOneTicker(sym) {
       }
     } catch {}
   }
-  // 2. Stooq CSV
+  // 2. Stooq CSV (direct, then server-side proxy — Stooq has no CORS headers)
   try {
     const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
-    const res = await fetchWithTimeout(stooqUrl, 4000);
-    if (res.ok) {
+    let res = await fetchWithTimeout(stooqUrl, 4000).catch(() => null);
+    if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(stooqUrl), 6000).catch(() => null);
+    if (res && res.ok) {
       const parsed = parseStooqRow(await res.text());
       if (parsed) return { ...parsed, source: 'stooq' };
     }
   } catch {}
   // 3. CORS proxy → Yahoo v8
-  for (const wrap of [
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  ]) {
+  for (const wrap of CORS_PROXIES) {
     try {
       const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
       const res = await fetchWithTimeout(wrap(target), 4000);
@@ -724,12 +723,15 @@ async function fetchStooqHistory(symbol, days = 30) {
       if (out.length > 0) return out;
     }
   } catch {}
-  try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`);
-    if (res.ok) {
-      return parseStooqCsv(await res.text(), days);
-    }
-  } catch {}
+  for (const wrap of CORS_PROXIES) {
+    try {
+      const res = await fetch(wrap(url));
+      if (res.ok) {
+        const out = parseStooqCsv(await res.text(), days);
+        if (out.length > 0) return out;
+      }
+    } catch {}
+  }
   return [];
 }
 
@@ -967,8 +969,13 @@ export const api = {
             // tickers locally so unknown symbols can never poison the batch.
             if (tradeable.length > 0) {
               try {
-                const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', 4500);
-                if (res.ok) {
+                // Binance is geo-blocked from some IPs (e.g. Egypt, Turkey). Try
+                // direct first, then fall back to our server-side proxy so those
+                // users still get Binance's fast, complete price + 24h data.
+                const _bUrl = 'https://api.binance.com/api/v3/ticker/24hr';
+                let res = await fetchWithTimeout(_bUrl, 4500).catch(() => null);
+                if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(_bUrl), 6000).catch(() => null);
+                if (res && res.ok) {
                   const list = await res.json();
                   if (Array.isArray(list)) {
                     const wanted = new Set(tradeable.map(([,s]) => `${s}USDT`));
