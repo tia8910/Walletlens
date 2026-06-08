@@ -298,9 +298,11 @@ export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
   const { locked, unlock } = useBiometricLock()
 
@@ -431,6 +433,52 @@ export default function App() {
               </svg>
               <span className="wl-topbar-install-label">Add to Chrome</span>
             </a>
+            <button
+              className="wl-topbar-x"
+              onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next, source: 'topbar' }) }}
+              title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label="Toggle light or dark mode"
+            >
+              <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={16} />
+            </button>
+            <div className="wl-topbar-theme-wrap">
+              <button
+                className="wl-topbar-x"
+                onClick={() => setThemeMenuOpen(o => !o)}
+                title="Change color theme"
+                aria-label="Change color theme"
+                aria-expanded={themeMenuOpen}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="13.5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/>
+                  <circle cx="17.5" cy="10.5" r="1.3" fill="currentColor" stroke="none"/>
+                  <circle cx="8.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
+                  <circle cx="6.5" cy="12.5" r="1.3" fill="currentColor" stroke="none"/>
+                  <path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H16a6 6 0 0 0 6-6c0-4.4-4.5-7.7-10-7.7z"/>
+                </svg>
+              </button>
+              {themeMenuOpen && (
+                <>
+                  <div className="wl-topbar-theme-backdrop" onClick={() => setThemeMenuOpen(false)} />
+                  <div className="wl-topbar-theme-pop" role="menu">
+                    {THEMES.map(th => (
+                      <button
+                        key={th.id}
+                        className={`wl-topbar-theme-swatch${theme === th.id ? ' active' : ''}`}
+                        onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id, source: 'topbar' }); setThemeMenuOpen(false) }}
+                        title={th.name}
+                        role="menuitem"
+                      >
+                        <span className="wl-topbar-theme-dot" style={{ background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})` }}>
+                          {th.logo ? <img src={th.logo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
+                        </span>
+                        <span>{th.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <PWATopbarButton />
             <a className="wl-topbar-x" href="https://x.com/wallet_lens" target="_blank" rel="noopener noreferrer" title="Follow @wallet_lens on X">
               <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
