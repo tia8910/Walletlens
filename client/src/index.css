@@ -8014,6 +8014,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   box-shadow: 0 0 0 1px var(--border), 0 0 14px rgba(var(--g-rgb),0.25);
 }
 .wl-topbar-ctrl:hover svg { transform: none; }
+.wl-topbar-ctrl-emoji { font-size: 16px; line-height: 1; display: block; }
 
 /* ── Quick theme picker popover (topbar) ───────────────────────────────── */
 .wl-topbar-theme-wrap { position: relative; display: flex; }
