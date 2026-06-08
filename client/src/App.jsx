@@ -434,16 +434,16 @@ export default function App() {
               <span className="wl-topbar-install-label">Add to Chrome</span>
             </a>
             <button
-              className="wl-topbar-x"
+              className="wl-topbar-x wl-topbar-ctrl"
               onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next, source: 'topbar' }) }}
               title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               aria-label="Toggle light or dark mode"
             >
-              <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={16} />
+              <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={17} />
             </button>
             <div className="wl-topbar-theme-wrap">
               <button
-                className="wl-topbar-x"
+                className="wl-topbar-x wl-topbar-ctrl"
                 onClick={() => setThemeMenuOpen(o => !o)}
                 title="Change color theme"
                 aria-label="Change color theme"

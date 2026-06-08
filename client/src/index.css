@@ -8002,6 +8002,19 @@ input[type="date"] { color-scheme: dark; }
 /* Topbar mode/theme controls are <button> — reset native button chrome */
 button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inherit; }
 
+/* Mood + theme controls: accent-tinted bordered pills so they stand out from
+   the plain social icons and read clearly as interactive controls. */
+.wl-topbar-ctrl {
+  color: var(--g) !important;
+  background: var(--accent-bg, rgba(0,255,170,0.10)) !important;
+  border: 1px solid var(--border, rgba(0,255,170,0.3)) !important;
+}
+.wl-topbar-ctrl:hover {
+  background: var(--green-bg, rgba(0,255,170,0.18)) !important;
+  box-shadow: 0 0 0 1px var(--border), 0 0 14px rgba(var(--g-rgb),0.25);
+}
+.wl-topbar-ctrl:hover svg { transform: none; }
+
 /* ── Quick theme picker popover (topbar) ───────────────────────────────── */
 .wl-topbar-theme-wrap { position: relative; display: flex; }
 .wl-topbar-theme-backdrop { position: fixed; inset: 0; z-index: 60; }
