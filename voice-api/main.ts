@@ -21,10 +21,61 @@ function corsHeaders(origin: string | null): HeadersInit {
   const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://walletlens.live"
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Vary": "Origin",
     "Content-Type": "application/json",
+  }
+}
+
+// ── Price proxy (GET /proxy?url=…) ──────────────────────────────────────────
+// The static site can't reach some price APIs directly: they lack CORS headers
+// (CoinGecko, Stooq, Yahoo) or are geo-blocked from the user's own IP (Binance
+// in some regions). This server-side proxy fetches an allowlisted upstream and
+// returns it with permissive CORS, so prices work on every network/region
+// without relying on flaky public CORS proxies. Allowlist-only = not an open
+// proxy. No secrets involved; safe to run unauthenticated.
+const PROXY_ALLOWLIST = new Set([
+  "api.coingecko.com",
+  "min-api.cryptocompare.com",
+  "api.binance.com",
+  "api1.binance.com",
+  "api-gcp.binance.com",
+  "api.gold-api.com",
+  "stooq.com",
+  "query1.finance.yahoo.com",
+  "query2.finance.yahoo.com",
+  "rest.coincap.io",
+  "api.coincap.io",
+  "api.coinpaprika.com",
+  "open.er-api.com",
+  "api.frankfurter.app",
+])
+
+async function handleProxy(target: string | null, headers: HeadersInit): Promise<Response> {
+  if (!target) {
+    return new Response(JSON.stringify({ error: "missing_url" }), { status: 400, headers })
+  }
+  let parsed: URL
+  try { parsed = new URL(target) } catch {
+    return new Response(JSON.stringify({ error: "bad_url" }), { status: 400, headers })
+  }
+  if (parsed.protocol !== "https:" || !PROXY_ALLOWLIST.has(parsed.hostname)) {
+    return new Response(JSON.stringify({ error: "host_not_allowed" }), { status: 403, headers })
+  }
+  try {
+    const upstream = await fetch(parsed.toString(), {
+      headers: { "Accept": "application/json, text/csv, */*", "User-Agent": "WalletLens-Proxy/1.0" },
+      signal: AbortSignal.timeout(8000),
+    })
+    const text = await upstream.text()
+    const ct = upstream.headers.get("content-type") || "application/json"
+    return new Response(text, {
+      status: upstream.status,
+      headers: { ...headers, "Content-Type": ct, "Cache-Control": "public, max-age=30" },
+    })
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "upstream_failed", detail: String(e) }), { status: 502, headers })
   }
 }
 
@@ -215,6 +266,16 @@ Deno.serve(async (req: Request) => {
   const headers = corsHeaders(origin)
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
+
+  // Server-side price proxy — GET /proxy?url=<allowlisted upstream>
+  if (req.method === "GET") {
+    const reqUrl = new URL(req.url)
+    if (reqUrl.pathname === "/proxy") {
+      return await handleProxy(reqUrl.searchParams.get("url"), headers)
+    }
+    return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers })
+  }
+
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers })
   }
