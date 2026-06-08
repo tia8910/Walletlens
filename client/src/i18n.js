@@ -147,6 +147,7 @@ export const translations = {
     about: 'About',
     blog: 'Blog',
     privacy: 'Privacy Policy',
+    terms: 'Terms',
     github: 'GitHub',
 
     // ── Dashboard ────────────────────────────────────────────────────────────
@@ -385,6 +386,7 @@ export const translations = {
     about: 'حول',
     blog: 'المدونة',
     privacy: 'سياسة الخصوصية',
+    terms: 'الشروط',
     github: 'GitHub',
 
     // ── Dashboard ────────────────────────────────────────────────────────────

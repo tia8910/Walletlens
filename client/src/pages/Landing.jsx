@@ -791,6 +791,8 @@ export default function Landing() {
           <Link to="/lenz" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
           <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
           <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/terms" onClick={() => track('landing_footer_nav', { to: 'terms' })}>{t('terms')}</Link>
+          <a href="mailto:contact@walletlens.live" onClick={() => track('landing_footer_nav', { to: 'contact' })}>Contact</a>
         </nav>
       </footer>
     </div>
