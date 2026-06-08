@@ -110,11 +110,20 @@ function mdToHtml(text) {
 // alternates: [{ hreflang, path }] — emits <link rel="alternate" hreflang>
 // for international SEO (tells Google which URLs are language variants of each
 // other). Pass for any page that has an English↔Arabic counterpart.
-function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates }) {
+function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false }) {
   const url = ORIGIN + path
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
     html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
+  }
+  // Templated SEO pages (track/price/calculator) are kept live for users but
+  // excluded from Google's index to avoid "scaled content" / low-value flags
+  // (AdSense + Search quality). follow lets crawlers still pass link equity.
+  if (noindex) {
+    html = html.replace(
+      /<meta name="robots" content="[^"]*"\s*\/?>/,
+      '<meta name="robots" content="noindex, follow" />'
+    )
   }
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
   html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
@@ -641,6 +650,7 @@ ${aiBullet}
     title: pageTitle,
     description: pageDesc,
     bodyHtml: assetBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -728,6 +738,7 @@ for (const c of CALCULATORS) {
     title: pageTitle,
     description: pageDesc,
     bodyHtml: calcBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -889,6 +900,7 @@ ${priceFaq.html}
     title: `${a.name} Price Today (${a.symbol}) — Live Price & Free Tracker | WalletLens`,
     description: `Live ${a.name} (${a.symbol}) price today, plus a free way to track your ${a.symbol} profit and loss in WalletLens — no account, data stays on your device.`,
     bodyHtml: priceBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -1269,19 +1281,23 @@ const AR_ROUTES = [
   ...Object.keys(AR_COMPARISONS).map(slug => `/ar/vs/${slug}`),
   ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
+// NOTE: /track, /calculator and /price are intentionally EXCLUDED from the
+// sitemap and marked noindex in their prerendered HTML. They are templated SEO
+// pages (same structure, only the asset name changes) — listing them dilutes
+// the site's indexed quality and triggers "scaled content" / low-value flags
+// (Google Search quality + AdSense). They remain live and usable for direct
+// visitors. Only genuinely unique content (articles, glossary, comparisons,
+// core pages) is submitted for indexing.
 const sitemapUrls = [
   ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
-  ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
   ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
-  ...CALCULATORS.map(c => urlEntry({ loc: `${ORIGIN}/calculator/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.8' })),
-  ...PRICE_ASSETS.map(a => urlEntry({ loc: `${ORIGIN}/price/${a.slug}`, lastmod: TODAY, changefreq: 'daily', priority: '0.8' })),
   ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
   ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
   ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + p, lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length + AR_ROUTES.length} urls).`)
+console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track/calculator/price excluded as noindex).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
