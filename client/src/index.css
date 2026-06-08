@@ -5856,6 +5856,22 @@ select.bs-input option { background: var(--bg3); }
   color: #fff;
   font-family: var(--font, 'Inter', sans-serif);
   overflow-x: hidden;
+  /* The landing is always dark-themed (dark canvas + sections), independent of
+     the app's saved light/dark preference. Lock the theme variables it consumes
+     to dark values so returning light-mode users still get readable white text
+     and dark surfaces instead of dark-on-dark. */
+  --text: #ffffff;
+  --text2: rgba(0,255,170,0.75);
+  --text-muted: rgba(255,255,255,0.6);
+  --text-sub: rgba(255,255,255,0.4);
+  --surface-1: rgba(255,255,255,0.04);
+  --surface-2: rgba(255,255,255,0.08);
+  --surface-3: rgba(255,255,255,0.13);
+  --border: rgba(0,255,170,0.3);
+  --card-bg: rgba(14,22,18,0.92);
+  --bg2: rgba(14,22,18,0.92);
+  --bg3: #0d1610;
+  --bg4: #122018;
 }
 
 /* ── Hero ── */
