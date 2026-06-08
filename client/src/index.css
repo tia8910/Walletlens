@@ -8006,7 +8006,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
    the plain social icons and read clearly as interactive controls. */
 .wl-topbar-ctrl {
   color: var(--g) !important;
-  background: var(--accent-bg, rgba(0,255,170,0.10)) !important;
+  background: var(--surface-2, rgba(255,255,255,0.08)) !important;
   border: 1px solid var(--border, rgba(0,255,170,0.3)) !important;
 }
 .wl-topbar-ctrl:hover {
