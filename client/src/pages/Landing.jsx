@@ -215,14 +215,15 @@ export default function Landing() {
 
   useEffect(() => {
     const phrases = ACCENT_PHRASES[lang] || ACCENT_PHRASES.en
+    let tid = null
     const id = setInterval(() => {
       setAccentIn(false)
-      setTimeout(() => {
+      tid = setTimeout(() => {
         setAccentIdx(i => (i + 1) % phrases.length)
         setAccentIn(true)
       }, 350)
     }, 2800)
-    return () => clearInterval(id)
+    return () => { clearInterval(id); if (tid) clearTimeout(tid) }
   }, [lang])
 
   useEffect(() => {

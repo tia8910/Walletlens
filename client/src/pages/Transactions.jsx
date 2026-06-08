@@ -638,7 +638,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <div className="dropdown">
                       {coinResults.map(c => (
                         <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                          {c.thumb && <img src={c.thumb} alt="" width={24} height={24} style={{ borderRadius: '50%' }} />}
+                          {c.thumb && <img src={c.thumb} alt="" width={24} height={24} loading="lazy" decoding="async" style={{ borderRadius: '50%' }} />}
                           <span>{c.name}</span>
                           <small>{c.symbol.toUpperCase()}</small>
                         </div>

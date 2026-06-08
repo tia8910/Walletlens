@@ -2300,6 +2300,7 @@ tr:last-child td { border-bottom: none; }
   width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
   border-top-color: white; border-radius: 50%;
   animation: spin 0.6s linear infinite;
+  will-change: transform;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -2501,6 +2502,7 @@ tr:last-child td { border-bottom: none; }
   width: 12px; height: 12px; border-radius: 50%;
   border: 2px solid var(--border); border-top-color: var(--g);
   animation: ts-spin 0.9s linear infinite;
+  will-change: transform;
 }
 @keyframes ts-spin { to { transform: rotate(360deg); } }
 
@@ -3991,6 +3993,7 @@ tr:last-child td { border-bottom: none; }
   display: inline-block; width: 16px; height: 16px;
   border: 2px solid rgba(var(--g-rgb),0.3); border-top-color: var(--g);
   border-radius: 50%; animation: qs-spin 0.7s linear infinite;
+  will-change: transform;
 }
 @keyframes qs-spin { to { transform: rotate(360deg) } }
 .qs-empty { padding: 1.5rem 1.2rem; color: rgba(255,255,255,0.4); font-size: 0.9rem; line-height: 1.6; }
@@ -7515,7 +7518,7 @@ input[type="date"] { color-scheme: dark; }
 .ai-adv-analyze-btn { padding: 0.8rem 2rem; font-size: 1rem; margin-top: 0.5rem; }
 
 .ai-adv-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.5rem; text-align: center; color: rgba(255,255,255,0.5); }
-.ai-adv-spinner { width: 36px; height: 36px; border: 3px solid rgba(var(--g-rgb),0.2); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.ai-adv-spinner { width: 36px; height: 36px; border: 3px solid rgba(var(--g-rgb),0.2); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; will-change: transform; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .ai-adv-error { padding: 1.5rem; text-align: center; color: #f87171; }
@@ -7670,7 +7673,7 @@ input[type="date"] { color-scheme: dark; }
 .risk-grade { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; }
 .risk-chevron { color: rgba(255,255,255,0.35); transition: transform 0.2s; display: flex; }
 .risk-ring-svg { flex-shrink: 0; }
-.risk-spinner { width: 28px; height: 28px; border: 3px solid rgba(var(--g-rgb),0.15); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.risk-spinner { width: 28px; height: 28px; border: 3px solid rgba(var(--g-rgb),0.15); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; will-change: transform; }
 
 .risk-signals { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.06); }
 .risk-signal { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.82rem; }
@@ -8583,6 +8586,7 @@ input[type="date"] { color-scheme: dark; }
 .news-refresh-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 .news-refresh-btn:disabled { opacity: 0.4; cursor: default; }
 @keyframes news-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.news-refresh-btn:disabled svg { will-change: transform; }
 
 .news-last-updated {
   font-size: 0.75rem;
@@ -10536,3 +10540,22 @@ input[type="date"] { color-scheme: dark; }
 [data-wl-light] .wlc-msg-assistant { background: rgba(0,0,0,0.04); color: #1e293b; }
 [data-wl-light] .wlc-suggestion { color: #1e293b; }
 [data-wl-light] .wlc-input { background: rgba(0,0,0,0.03); color: #1e293b; border-color: rgba(0,0,0,0.12); }
+
+/* ═══ Global accessibility: respect OS reduced-motion preference ════════
+   Stops all spin/rotate animations for users who have enabled
+   "Reduce Motion" in their system accessibility settings.            ══ */
+@media (prefers-reduced-motion: reduce) {
+  .price-spinner,
+  .tiny-spinner,
+  .qs-spinner,
+  .ai-adv-spinner,
+  .risk-spinner,
+  .news-refresh-btn svg {
+    animation: none !important;
+    will-change: auto;
+  }
+  .news-modal,
+  .news-modal-overlay {
+    animation: none !important;
+  }
+}
