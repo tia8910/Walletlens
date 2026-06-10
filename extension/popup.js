@@ -95,15 +95,24 @@ function letterBadge(holding, cls) {
   return d;
 }
 
-// Returns an <img> of the real asset logo, falling back through the crypto
-// icon CDN to a coloured badge. `cls` is the base class (holding-icon /
-// market-icon). Non-crypto assets go straight to their styled badge.
+// Returns an <img> of the real asset logo, falling back through official
+// CoinGecko image → stored image → icon CDNs → coloured badge. `cls` is the
+// base class (holding-icon / market-icon). Non-crypto assets go straight to
+// their styled badge.
 function assetIcon(holding, cls) {
   if (nonCryptoBadge(holding)) return letterBadge(holding, cls);
   const sym = (holding.coin_symbol || '').toLowerCase();
+  const official = cachedPrices[holding.coin_id]?.image;
   const sources = [];
-  if (holding.coin_image && /^https?:\/\//.test(holding.coin_image)) sources.push(holding.coin_image);
-  if (sym) sources.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`);
+  if (official && /^https?:\/\//.test(official)) sources.push(official);
+  if (holding.coin_image && /^https?:\/\//.test(holding.coin_image) && holding.coin_image !== official) sources.push(holding.coin_image);
+  if (sym) {
+    sources.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`);
+    sources.push(`https://assets.coincap.io/assets/icons/${sym}@2x.png`);
+  }
+  // Deno-proxied retries — official logo still loads on networks that block
+  // the CDNs directly (proxy allowlists the logo hosts and passes bytes through)
+  for (const src of sources.slice()) sources.push(DENO_PROXY(src));
   if (!sources.length) return letterBadge(holding, cls);
   const img = document.createElement('img');
   img.className = cls + ' ' + cls + '-img';
@@ -157,23 +166,40 @@ async function fetchPrices(coinIds) {
       if (c && c.ids === ids && Date.now()-c.fetchedAt < PRICE_TTL) return c.prices;
     }
   } catch {}
-  const url = new URL(CG_PRICE_URL);
-  url.searchParams.set('ids', ids);
-  url.searchParams.set('vs_currencies', 'usd');
-  url.searchParams.set('include_24hr_change', 'true');
-  const urlStr = url.toString();
+
+  // Primary: /coins/markets — one call returns price, 24h change AND the
+  // official CoinGecko logo URL for every coin (used by assetIcon).
+  const mktUrl = `${CG_MARKET_URL}?vs_currency=usd&ids=${encodeURIComponent(ids)}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`;
+  // Fallback: simple/price — no logos, but keeps values flowing if markets fails.
+  const simpleUrl = `${CG_PRICE_URL}?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`;
   const attempts = [
-    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(mktUrl, { signal: AbortSignal.timeout(8000) }),
+    () => fetch(DENO_PROXY(mktUrl), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(simpleUrl, { signal: AbortSignal.timeout(8000) }),
+    () => fetch(DENO_PROXY(simpleUrl), { signal: AbortSignal.timeout(10000) }),
   ];
   for (const attempt of attempts) {
     try {
       const res = await attempt();
       if (!res.ok) continue;
       const json = await res.json();
-      if (!json || typeof json !== 'object' || Array.isArray(json)) continue;
-      try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices:json, fetchedAt:Date.now() } }); } catch {}
-      return json;
+      let prices = null;
+      if (Array.isArray(json)) {
+        prices = {};
+        for (const c of json) {
+          if (!c?.id) continue;
+          prices[c.id] = {
+            usd: c.current_price,
+            usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+            image: c.image || '',
+          };
+        }
+      } else if (json && typeof json === 'object') {
+        prices = json;
+      }
+      if (!prices || !Object.keys(prices).length) continue;
+      try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices, fetchedAt:Date.now() } }); } catch {}
+      return prices;
     } catch {}
   }
   return {};
