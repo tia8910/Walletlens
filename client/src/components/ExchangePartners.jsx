@@ -28,7 +28,7 @@ const CRYPTO_EXCHANGES = [
     fee: '0.08% maker fee',
     bonus: 'Earn up to 100 USDT on sign-up',
     reward: 'Up to 100 USDT',
-    color: '#e2e8f0',
+    color: 'var(--text)',
     bg: 'linear-gradient(135deg, #0a0a0f 0%, #16161f 100%)',
     glow: 'rgba(226,232,240,0.15)',
     url: 'https://okx.com/join/85929296',

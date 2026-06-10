@@ -342,7 +342,7 @@ function getRank(iq) {
   if (iq >= 1000) return { label: 'Strategist', color: '#60a5fa', icon: '🥈' }
   if (iq >= 500)  return { label: 'Analyst', color: 'var(--g-ink)', fontWeight: 700, icon: '🥉' }
   if (iq >= 200)  return { label: 'Trader',  color: '#f59e0b', icon: '📈' }
-  return { label: 'Rookie', color: 'rgba(255,255,255,0.5)', icon: '🌱' }
+  return { label: 'Rookie', color: 'rgba(255,255,255,0.75)', icon: '🌱' }
 }
 
 // ── Share hack as image ────────────────────────────────────────────────────
