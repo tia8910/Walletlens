@@ -64,6 +64,7 @@ const Technicals   = lazy(() => import('./pages/Technicals'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
+const FAQ          = lazy(() => import('./pages/FAQ'))
 const Lenz         = lazy(() => import('./pages/Lenz'))
 const Airdrop      = lazy(() => import('./pages/Airdrop'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
@@ -303,7 +304,7 @@ export default function App() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
-  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
+  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/faq', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -370,6 +371,7 @@ export default function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/lenz" element={<Lenz />} />
           <Route path="/airdrop" element={<Airdrop />} />
           <Route path="/privacy" element={<Privacy />} />
@@ -505,6 +507,7 @@ export default function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="/lenz" element={<Lenz />} />
               <Route path="/airdrop" element={<Airdrop />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -523,6 +526,7 @@ export default function App() {
         <nav className="wl-app-footer-links">
           <button onClick={() => navigate('/lenz')}>$LENZ on Sui</button>
           <button onClick={() => navigate('/about')}>{t('about')}</button>
+          <button onClick={() => navigate('/faq')}>FAQ</button>
           <button onClick={() => navigate('/blog')}>{t('blog')}</button>
           <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
           <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
