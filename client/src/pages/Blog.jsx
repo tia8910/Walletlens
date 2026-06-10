@@ -25,7 +25,9 @@ function useBlogHead(post) {
       return el
     }
 
-    const url = post ? `${ORIGIN}/blog/${post.slug}` : `${ORIGIN}/blog`
+    // Trailing slash matches the URL GitHub Pages actually serves (the
+    // prerendered canonical uses the same form — they must agree).
+    const url = post ? `${ORIGIN}/blog/${post.slug}/` : `${ORIGIN}/blog/`
     const title = post ? `${post.title} | WalletLens` : 'Blog — Portfolio Tracking, Crypto Investing & Market Analysis | WalletLens'
     const desc = post ? post.summary : 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.'
 

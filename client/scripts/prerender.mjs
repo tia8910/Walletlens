@@ -110,8 +110,14 @@ function mdToHtml(text) {
 // alternates: [{ hreflang, path }] — emits <link rel="alternate" hreflang>
 // for international SEO (tells Google which URLs are language variants of each
 // other). Pass for any page that has an English↔Arabic counterpart.
+// GitHub Pages serves every route as a directory (route/index.html) and 301s
+// /route → /route/. Canonical, og:url, hreflang, sitemap and internal links
+// must therefore all use the trailing-slash form — otherwise Google reports
+// "Page with redirect" and "Duplicate, Google chose different canonical".
+const withSlash = (p) => (p === '/' || p.endsWith('/') ? p : p + '/')
+
 function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false }) {
-  const url = ORIGIN + path
+  const url = ORIGIN + withSlash(path)
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
     html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
@@ -135,7 +141,7 @@ function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', di
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
   if (alternates && alternates.length) {
     const links = alternates.map(a =>
-      `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + a.path)}" />`
+      `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + withSlash(a.path))}" />`
     ).join('\n')
     html = html.replace('</head>', `${links}\n  </head>`)
   }
@@ -148,7 +154,10 @@ function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', di
   // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
   // DOM) paints over this for real users, while crawlers/no-JS fetches still
   // read the full text. React wipes #root (and this block) on mount.
-  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${bodyHtml}</div>`
+  // Internal links get a trailing slash so crawlers never follow a 301 hop
+  // (only bare paths like /track/bitcoin — anchors/queries/files untouched).
+  const slashedBody = bodyHtml.replace(/href="(\/[a-z0-9\-\/]*[a-z0-9\-])"/gi, 'href="$1/"')
+  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${slashedBody}</div>`
   html = html.replace('<div id="root">', `<div id="root">${seo}`)
   return html
 }
@@ -305,7 +314,7 @@ write('/free-net-worth-tracker', buildPage({
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-        { '@type': 'ListItem', position: 2, name: 'Free Net Worth Tracker', item: ORIGIN + '/free-net-worth-tracker' },
+        { '@type': 'ListItem', position: 2, name: 'Free Net Worth Tracker', item: ORIGIN + '/free-net-worth-tracker/' },
       ],
     },
   ],
@@ -370,7 +379,7 @@ ${faq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: 'Import From Screenshot', item: ORIGIN + '/import-portfolio-from-screenshot' },
+          { '@type': 'ListItem', position: 2, name: 'Import From Screenshot', item: ORIGIN + '/import-portfolio-from-screenshot/' },
         ],
       },
       howToJsonLd('How to import a portfolio from a screenshot', steps),
@@ -426,7 +435,7 @@ ${faq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: 'Add Holdings by Voice', item: ORIGIN + '/add-holdings-by-voice' },
+          { '@type': 'ListItem', position: 2, name: 'Add Holdings by Voice', item: ORIGIN + '/add-holdings-by-voice/' },
         ],
       },
       howToJsonLd('How to add holdings by voice', steps),
@@ -522,8 +531,8 @@ ${arFaq.html}
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
-          { '@type': 'ListItem', position: 2, name: `WalletLens مقابل ${ar.name}`, item: `${ORIGIN}/ar/vs/${c.slug}` },
+          { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker/' },
+          { '@type': 'ListItem', position: 2, name: `WalletLens مقابل ${ar.name}`, item: `${ORIGIN}/ar/vs/${c.slug}/` },
         ],
       },
       arFaq.jsonLd,
@@ -657,7 +666,7 @@ ${aiBullet}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `Track ${c.name}`, item: `${ORIGIN}/track/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `Track ${c.name}`, item: `${ORIGIN}/track/${c.slug}/` },
         ],
       },
     ],
@@ -747,14 +756,14 @@ for (const c of CALCULATORS) {
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-        url: `${ORIGIN}/calculator/${c.slug}`,
+        url: `${ORIGIN}/calculator/${c.slug}/`,
       },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}/` },
         ],
       },
     ],
@@ -789,14 +798,14 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
         name: t.term,
         description: t.short,
         inDefinedTermSet: `${ORIGIN}/learn`,
-        url: `${ORIGIN}/learn/${t.slug}`,
+        url: `${ORIGIN}/learn/${t.slug}/`,
       },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}` },
+          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}/` },
         ],
       },
     ],
@@ -858,7 +867,7 @@ ${vsFaq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}/` },
         ],
       },
       vsFaq.jsonLd,
@@ -907,7 +916,7 @@ ${priceFaq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}` },
+          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}/` },
         ],
       },
       priceFaq.jsonLd,
@@ -968,8 +977,8 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
         url: ORIGIN,
         logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
       },
-      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
-      url: `${ORIGIN}/blog/${p.slug}`,
+      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}/`,
+      url: `${ORIGIN}/blog/${p.slug}/`,
       // Speakable: lets voice assistants read the headline + lead paragraph aloud.
       speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', 'article > p:nth-of-type(1)'] },
     },
@@ -978,8 +987,8 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog' },
-        { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog/' },
+        { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}/` },
       ],
     },
   ]
@@ -1023,15 +1032,15 @@ for (const p of AR_POSTS) {
         url: ORIGIN,
         logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
       },
-      mainEntityOfPage: `${ORIGIN}/ar/blog/${p.slug}`,
-      url: `${ORIGIN}/ar/blog/${p.slug}`,
+      mainEntityOfPage: `${ORIGIN}/ar/blog/${p.slug}/`,
+      url: `${ORIGIN}/ar/blog/${p.slug}/`,
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
-        { '@type': 'ListItem', position: 2, name: p.title, item: `${ORIGIN}/ar/blog/${p.slug}` },
+        { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker/' },
+        { '@type': 'ListItem', position: 2, name: p.title, item: `${ORIGIN}/ar/blog/${p.slug}/` },
       ],
     },
   ]
@@ -1289,11 +1298,11 @@ const AR_ROUTES = [
 // visitors. Only genuinely unique content (articles, glossary, comparisons,
 // core pages) is submitted for indexing.
 const sitemapUrls = [
-  ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
-  ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
-  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
-  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
-  ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + p, lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
+  ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + withSlash(r.path), lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
+  ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}/`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
+  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
+  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
+  ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + withSlash(p), lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
@@ -1304,7 +1313,7 @@ console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track/calculator/pri
 // from POSTS so every article is always advertised to AI answer engines.
 try {
   const llmsTemplate = readFileSync(resolve(PUBLIC, 'llms.txt'), 'utf8')
-  const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}): ${p.summary}`).join('\n')
+  const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}/): ${p.summary}`).join('\n')
   const newSection = `## Blog articles\n\n${articleList}\n`
   // Replace from the "## Blog articles" heading up to the next "## " heading.
   const llms = llmsTemplate.replace(
@@ -1320,7 +1329,7 @@ try {
   // entire corpus in one fetch instead of crawling each page.
   const llmsBase = llms.replace(/## Blog articles[\s\S]*$/, '').trimEnd()
   const fullArticles = POSTS.map(p =>
-    `## ${p.title}\n${ORIGIN}/blog/${p.slug}\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
+    `## ${p.title}\n${ORIGIN}/blog/${p.slug}/\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
   ).join('\n\n---\n\n')
   const llmsFull = `${llmsBase}\n\n# Full article corpus\n\n${fullArticles}\n`
   writeFileSync(resolve(DIST, 'llms-full.txt'), llmsFull, 'utf8')
