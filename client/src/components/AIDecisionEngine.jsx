@@ -246,7 +246,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                       </span>
                       {result.confidence}% confidence
                     </span>
-                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g)' : '#f87171' }}>
+                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                       {result.momentum >= 0 ? '▲' : '▼'} {Math.abs(result.momentum).toFixed(1)}% momentum
                     </span>
                   </div>

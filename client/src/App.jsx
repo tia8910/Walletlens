@@ -207,7 +207,7 @@ function Drawer({ open, onClose }) {
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
           <button className={active('/airdrop')} onClick={() => go('/airdrop')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.4 2.4 0 0 1 4.8.2c0 1.6-2.4 2-2.4 3.5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg>
-            <span style={{ color: '#34d399' }}>Earn $LENZ</span>
+            <span style={{ color: 'var(--g-ink)' }}>Earn $LENZ</span>
             <span style={{ marginInlineStart: 'auto', fontSize: '.6rem', fontWeight: 700, letterSpacing: '.04em', color: '#fbbf24', border: '1px solid rgba(245,158,11,.45)', borderRadius: '999px', padding: '.08rem .4rem' }}>SOON</span>
           </button>
         </div>

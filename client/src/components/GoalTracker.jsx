@@ -221,7 +221,7 @@ export default function GoalTracker({ currentValue }) {
                 background: 'rgba(34,197,94,0.18)',
                 border: '1px solid rgba(34,197,94,0.35)',
                 borderRadius: '8px',
-                color: '#22c55e',
+                color: 'var(--g-ink)',
                 padding: '0.45rem',
                 fontSize: '0.82rem',
                 fontWeight: 600,

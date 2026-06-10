@@ -491,7 +491,7 @@ export default function Landing() {
         <div className="lp-section-label">Browser Extension</div>
         <h2 className="lp-section-h2">
           Your whole portfolio,<br />
-          <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
+          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>one click from your toolbar</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
           The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
@@ -636,7 +636,7 @@ export default function Landing() {
       <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
         <div className="lp-section-label">Stay ahead</div>
         <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
-          Get market insights &<br /><span style={{ color:'var(--g)' }}>new features first</span>
+          Get market insights &<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>new features first</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
           Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.

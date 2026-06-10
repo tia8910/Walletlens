@@ -210,6 +210,30 @@ const BINANCE_ID_OVERRIDES = {
   'fetch-ai': 'FET', 'arweave': 'AR', 'render-token': 'RENDER', 'sui': 'SUI',
   'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
 };
+// ── Same-origin market snapshot ───────────────────────────────────────────
+// /market.json is refreshed every 30 min by a GitHub Actions cron (pushed
+// straight to gh-pages, like stock-prices.json). Because it's served from
+// walletlens.live itself it works on networks that block crypto APIs and
+// CORS proxies outright — if the site loads, this loads.
+let _staticMarket = null;
+let _staticMarketAt = 0;
+async function _loadStaticMarket() {
+  const now = Date.now();
+  if (_staticMarket && now - _staticMarketAt < 10 * 60_000) return _staticMarket;
+  try {
+    const res = await fetchWithTimeout('/market.json?t=' + Math.floor(now / 1_800_000), 5000);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.coins) && data.coins.length > 0) {
+        _staticMarket = data.coins;
+        _staticMarketAt = now;
+        return _staticMarket;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
 // Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
 // first (returns instantly), then CoinGecko, then CoinCap as a fallback.
@@ -236,6 +260,14 @@ async function _loadMarketSnapshot(perPage = 250) {
     cache[perPage] = { t: now, v: data };
     try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
     return data;
+  }
+
+  // Fallback: same-origin snapshot — reachable wherever the site itself is
+  const staticMkt = await _loadStaticMarket();
+  if (staticMkt) {
+    cache[perPage] = { t: now, v: staticMkt };
+    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return staticMkt.slice(0, perPage);
   }
 
   // Fallback: CoinCap
@@ -796,10 +828,14 @@ export const api = {
         holdings[tx.coin_id].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
         const h = holdings[tx.coin_id];
-        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct
+        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct.
+        // Clamp the sold quantity to the running balance — an oversell (typo or
+        // missing buy record) must not drive the holding negative, which would
+        // silently eat into any later buys.
         const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
-        h.total_invested = Math.max(0, h.total_invested - avgCost * tx.amount);
-        h.amount -= tx.amount;
+        const sold = Math.min(tx.amount, Math.max(0, h.amount));
+        h.total_invested = Math.max(0, h.total_invested - avgCost * sold);
+        h.amount = Math.max(0, h.amount - tx.amount);
       }
     }
 
@@ -873,7 +909,8 @@ export const api = {
     const _inFlight = new Map();
     return async (ids) => {
     if (!ids) return {};
-    const key = ids;
+    // Order-insensitive key so "btc,eth" and "eth,btc" dedupe to one fan-out.
+    const key = ids.split(',').filter(Boolean).sort().join(',');
     if (_inFlight.has(key)) return _inFlight.get(key);
     const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
@@ -1122,6 +1159,32 @@ export const api = {
               } catch {}
             }));
             _saveCache(PRICE_CACHE_KEY, priceCache);
+          }
+          // Absolute last resort: the same-origin /market.json snapshot
+          // (≤30 min old) — works even when every crypto API and proxy is
+          // blocked by the user's network.
+          const finalMissing = cryptoIds.filter(id => !priceCache[id]);
+          if (finalMissing.length > 0) {
+            const mkt = await _loadStaticMarket();
+            if (mkt) {
+              const byId = new Map(mkt.map(c => [c.id, c]));
+              for (const id of finalMissing) {
+                const c = byId.get(id);
+                if (c && typeof c.current_price === 'number' && c.current_price > 0) {
+                  priceCache[id] = {
+                    usd: c.current_price,
+                    usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                    usd_market_cap: c.market_cap || 0,
+                    name: c.name,
+                    symbol: c.symbol,
+                    source: 'snapshot',
+                  };
+                  if (c.image) coinImageCache[id] = c.image;
+                }
+              }
+              _saveCache(PRICE_CACHE_KEY, priceCache);
+              _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+            }
           }
         }
         for (const id of cryptoIds) {
@@ -1420,8 +1483,8 @@ export const api = {
       const r = Math.log(prices[i][1] / prices[i - 1][1]);
       if (isFinite(r)) returns.push(r);
     }
-    const meanR = returns.reduce((s, r) => s + r, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length;
+    const meanR = returns.length > 0 ? returns.reduce((s, r) => s + r, 0) / returns.length : 0;
+    const variance = returns.length > 0 ? returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length : 0;
     const volatility = Math.sqrt(variance) * Math.sqrt(365); // annualised
 
     // Recent high/low range position (0 = at low, 1 = at high)
