@@ -11,7 +11,7 @@ import InstallExtension from '../components/InstallExtension'
 const SETTINGS_KEY = 'wl_settings'
 
 const ACCENTS = [
-  { id: 'green',  label: 'Green',  color: 'var(--g)' },
+  { id: 'green',  label: 'Green',  color: 'var(--g-ink)', fontWeight: 700 },
   { id: 'blue',   label: 'Blue',   color: '#38bdf8' },
   { id: 'purple', label: 'Purple', color: '#a78bfa' },
   { id: 'gold',   label: 'Gold',   color: '#fbbf24' },
@@ -239,7 +239,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Data storage</span><span style={{ color:'var(--g)' }}>100% local · never uploaded</span>
+            <span>Data storage</span><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>100% local · never uploaded</span>
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -247,7 +247,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>
-            <a href="/privacy" style={{ color:'var(--g)', textDecoration:'none' }}>Privacy Policy</a>
+            <a href="/privacy" style={{ color: 'var(--g-ink)', fontWeight: 700, textDecoration:'none' }}>Privacy Policy</a>
           </div>
         </div>
       </div>

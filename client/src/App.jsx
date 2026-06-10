@@ -207,7 +207,7 @@ function Drawer({ open, onClose }) {
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
           <button className={active('/airdrop')} onClick={() => go('/airdrop')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.4 2.4 0 0 1 4.8.2c0 1.6-2.4 2-2.4 3.5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg>
-            <span style={{ color: '#34d399' }}>Earn $LENZ</span>
+            <span style={{ color: 'var(--g-ink)' }}>Earn $LENZ</span>
             <span style={{ marginInlineStart: 'auto', fontSize: '.6rem', fontWeight: 700, letterSpacing: '.04em', color: '#fbbf24', border: '1px solid rgba(245,158,11,.45)', borderRadius: '999px', padding: '.08rem .4rem' }}>SOON</span>
           </button>
         </div>
@@ -298,9 +298,11 @@ export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
   const { locked, unlock } = useBiometricLock()
 
@@ -431,6 +433,46 @@ export default function App() {
               </svg>
               <span className="wl-topbar-install-label">Add to Chrome</span>
             </a>
+            <button
+              className="wl-topbar-x wl-topbar-ctrl"
+              onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next, source: 'topbar' }) }}
+              title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label="Toggle light or dark mode"
+            >
+              <span className="wl-topbar-ctrl-emoji">{mode === 'dark' ? '☀️' : '🌙'}</span>
+            </button>
+            <div className="wl-topbar-theme-wrap">
+              <button
+                className="wl-topbar-x wl-topbar-ctrl"
+                onClick={() => setThemeMenuOpen(o => !o)}
+                title="Change color theme"
+                aria-label="Change color theme"
+                aria-expanded={themeMenuOpen}
+              >
+                <span className="wl-topbar-ctrl-emoji">🎨</span>
+              </button>
+              {themeMenuOpen && (
+                <>
+                  <div className="wl-topbar-theme-backdrop" onClick={() => setThemeMenuOpen(false)} />
+                  <div className="wl-topbar-theme-pop" role="menu">
+                    {THEMES.map(th => (
+                      <button
+                        key={th.id}
+                        className={`wl-topbar-theme-swatch${theme === th.id ? ' active' : ''}`}
+                        onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id, source: 'topbar' }); setThemeMenuOpen(false) }}
+                        title={th.name}
+                        role="menuitem"
+                      >
+                        <span className="wl-topbar-theme-dot" style={{ background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})` }}>
+                          {th.logo ? <img src={th.logo} alt="coin logo" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
+                        </span>
+                        <span>{th.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <PWATopbarButton />
             <a className="wl-topbar-x" href="https://x.com/wallet_lens" target="_blank" rel="noopener noreferrer" title="Follow @wallet_lens on X">
               <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>

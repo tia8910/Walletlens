@@ -94,7 +94,7 @@ export default function Airdrop() {
       <header className="lz-nav">
         <Link to="/" className="lz-back"><span aria-hidden="true">←</span> WalletLens</Link>
         <nav className="lz-navlinks">
-          <Link to="/lenz">$LENZ</Link>
+          <Link to="/lenz/">$LENZ</Link>
           <a href="#earn">Earn</a>
           <a href="#how">How it works</a>
         </nav>
@@ -184,9 +184,9 @@ export default function Airdrop() {
       <footer className="lz-foot">
         <div className="lz-foot-brand"><LenzLogo size={26} /> <span>Earn $LENZ</span></div>
         <nav className="lz-foot-links">
-          <Link to="/lenz">About $LENZ</Link>
+          <Link to="/lenz/">About $LENZ</Link>
           <Link to="/">WalletLens</Link>
-          <Link to="/privacy">Privacy</Link>
+          <Link to="/privacy/">Privacy</Link>
         </nav>
       </footer>
     </div>

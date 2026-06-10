@@ -31,7 +31,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'diversification', label: 'Diversification', icon: '⚖️', color: 'var(--g)',
+    id: 'diversification', label: 'Diversification', icon: '⚖️', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => h.value / totalValue)
@@ -66,7 +66,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'pnl_health', label: 'P&L Health', icon: '💚', color: 'var(--g)',
+    id: 'pnl_health', label: 'P&L Health', icon: '💚', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
       const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested || h.invested || 1, 1)) * (h.value / totalValue), 0) * 100
@@ -180,7 +180,7 @@ export default function Coach() {
         {hasPrices && eval_ && (
           <div className="coach-hero-score">
             <div className="coach-score-pill" style={{
-              color: eval_.overall >= 80 ? 'var(--g)' : eval_.overall >= 55 ? '#fbbf24' : '#f87171',
+              color: eval_.overall >= 80 ? 'var(--g-ink)' : eval_.overall >= 55 ? '#fbbf24' : '#f87171',
               borderColor: eval_.overall >= 80 ? 'rgba(0,200,83,0.3)' : eval_.overall >= 55 ? 'rgba(251,191,36,0.3)' : 'rgba(248,113,113,0.3)',
             }}>
               <span className="coach-score-num">{eval_.overall}</span>
@@ -251,7 +251,7 @@ export default function Coach() {
                   {eval_.missing.length > 0 ? (
                     <div className="eval-missing-count">⚠️ {eval_.missing.length} gap{eval_.missing.length > 1 ? 's' : ''} found — tap each to fix</div>
                   ) : (
-                    <div className="eval-missing-count" style={{ color:'var(--g)' }}>✅ All checks passed — excellent wallet health!</div>
+                    <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>✅ All checks passed — excellent wallet health!</div>
                   )}
                 </div>
                 <ScoreRing score={eval_.overall} />
@@ -322,7 +322,7 @@ export default function Coach() {
           </div>
 
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'alerts' } }); track('coach_action', { action: 'alerts' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(0,200,83,0.13)', color: 'var(--g)' }}>
+            <div className="coach-action-icon" style={{ background: 'rgba(0,200,83,0.13)', color: 'var(--g-ink)', fontWeight: 700 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </div>
             <div className="coach-action-body">

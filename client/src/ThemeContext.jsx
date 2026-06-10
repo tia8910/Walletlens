@@ -295,7 +295,7 @@ const ThemeContext = createContext({ theme: 'emerald', mode: 'light', setTheme: 
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
-  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'light')
+  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'dark')
 
   const setTheme = (id) => {
     setThemeState(id)

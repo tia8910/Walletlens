@@ -58,12 +58,17 @@ export const foldBalances = _foldBalancesPure;
 export const getCachedCoinImage = (coinId) => coinImageCache[coinId] || null;
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
+// Our own server-side proxy on Deno Deploy. Allowlist-only, CORS-enabled, and
+// not subject to the browser's CORS limits or per-region IP geo-blocks (e.g.
+// Binance). Tried FIRST everywhere because it's the most reliable; the public
+// proxies below remain as backups if the Deno service is ever unreachable.
+export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
 const CORS_PROXIES = [
+  DENO_PROXY,
   (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  (u) => `https://cors.eu.org/${u}`,
   (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
@@ -152,7 +157,7 @@ setTimeout(() => {
   const now = Date.now();
   // CryptoCompare fallback — used when Binance is blocked (e.g. Egypt, Turkey)
   const _ccPrewarm = () => {
-    const syms = Object.values(TOP_BINANCE_ID); // BTC,ETH,BNB,...
+    const syms = Object.keys(TOP_BINANCE_ID); // BTC,ETH,BNB,...
     fetchWithTimeout(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms.join(',')}&tsyms=USD`, 5000)
       .then(async r => {
         if (!r?.ok) return;
@@ -161,7 +166,7 @@ setTimeout(() => {
         for (const [sym, currencies] of Object.entries(d.RAW)) {
           const raw = currencies?.USD;
           if (!raw?.PRICE || raw.PRICE <= 0) continue;
-          const id = Object.entries(TOP_BINANCE_ID).find(([, s]) => s === sym)?.[0];
+          const id = TOP_BINANCE_ID[sym];
           if (!id) continue;
           if (!priceCache[id] || !priceCache[id].usd) {
             priceCache[id] = { ...(priceCache[id] || {}), usd: raw.PRICE, usd_24h_change: raw.CHANGEPCT24HOUR || 0, symbol: sym, source: 'cryptocompare' };
@@ -205,6 +210,30 @@ const BINANCE_ID_OVERRIDES = {
   'fetch-ai': 'FET', 'arweave': 'AR', 'render-token': 'RENDER', 'sui': 'SUI',
   'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
 };
+// ── Same-origin market snapshot ───────────────────────────────────────────
+// /market.json is refreshed every 30 min by a GitHub Actions cron (pushed
+// straight to gh-pages, like stock-prices.json). Because it's served from
+// walletlens.live itself it works on networks that block crypto APIs and
+// CORS proxies outright — if the site loads, this loads.
+let _staticMarket = null;
+let _staticMarketAt = 0;
+async function _loadStaticMarket() {
+  const now = Date.now();
+  if (_staticMarket && now - _staticMarketAt < 10 * 60_000) return _staticMarket;
+  try {
+    const res = await fetchWithTimeout('/market.json?t=' + Math.floor(now / 1_800_000), 5000);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.coins) && data.coins.length > 0) {
+        _staticMarket = data.coins;
+        _staticMarketAt = now;
+        return _staticMarket;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
 // Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
 // first (returns instantly), then CoinGecko, then CoinCap as a fallback.
@@ -231,6 +260,14 @@ async function _loadMarketSnapshot(perPage = 250) {
     cache[perPage] = { t: now, v: data };
     try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
     return data;
+  }
+
+  // Fallback: same-origin snapshot — reachable wherever the site itself is
+  const staticMkt = await _loadStaticMarket();
+  if (staticMkt) {
+    cache[perPage] = { t: now, v: staticMkt };
+    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return staticMkt.slice(0, perPage);
   }
 
   // Fallback: CoinCap
@@ -453,12 +490,8 @@ async function fetchStockLive(coinId) {
     }
   } catch { /* fall through */ }
 
-  // ── 6. CORS proxies (last resort, often blocked on mobile) ──
-  const PROXIES = [
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  ];
-  for (const proxy of PROXIES) {
+  // ── 6. CORS proxies (Deno proxy first, then public fallbacks) ──
+  for (const proxy of CORS_PROXIES) {
     for (const target of [stooqUrl, yahooV8]) {
       try {
         const res = await fetchWithTimeout(proxy(target), 6000);
@@ -578,8 +611,11 @@ async function fetchTwelveDataBatch(tickers) {
   try {
     const syms = tickers.map(t => `${t.toLowerCase()}.us`).join('%3B'); // %3B = ;
     const url = `https://stooq.com/q/l/?s=${syms}&f=sd2t2ohlcvn&h&e=csv`;
-    const res = await fetchWithTimeout(url, 6000);
-    if (res.ok) {
+    // Stooq has no CORS headers → direct fetch fails in the browser. Try direct
+    // (works on some networks) then fall back to our server-side proxy.
+    let res = await fetchWithTimeout(url, 6000).catch(() => null);
+    if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(url), 7000).catch(() => null);
+    if (res && res.ok) {
       const text = await res.text();
       const byIdx = parseStooqBatchCsv(text);
       if (byIdx && Object.keys(byIdx).length > 0) {
@@ -596,10 +632,7 @@ async function fetchTwelveDataBatch(tickers) {
   // ── 2. corsproxy → Yahoo Finance v8 chart for each ticker in parallel ──
   try {
     const results = await Promise.all(tickers.map(async sym => {
-      for (const wrap of [
-        (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-        (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      ]) {
+      for (const wrap of CORS_PROXIES) {
         try {
           const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
           const res = await fetchWithTimeout(wrap(target), 5000);
@@ -637,20 +670,18 @@ async function fetchOneTicker(sym) {
       }
     } catch {}
   }
-  // 2. Stooq CSV
+  // 2. Stooq CSV (direct, then server-side proxy — Stooq has no CORS headers)
   try {
     const stooqUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`;
-    const res = await fetchWithTimeout(stooqUrl, 4000);
-    if (res.ok) {
+    let res = await fetchWithTimeout(stooqUrl, 4000).catch(() => null);
+    if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(stooqUrl), 6000).catch(() => null);
+    if (res && res.ok) {
       const parsed = parseStooqRow(await res.text());
       if (parsed) return { ...parsed, source: 'stooq' };
     }
   } catch {}
   // 3. CORS proxy → Yahoo v8
-  for (const wrap of [
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  ]) {
+  for (const wrap of CORS_PROXIES) {
     try {
       const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
       const res = await fetchWithTimeout(wrap(target), 4000);
@@ -724,12 +755,15 @@ async function fetchStooqHistory(symbol, days = 30) {
       if (out.length > 0) return out;
     }
   } catch {}
-  try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`);
-    if (res.ok) {
-      return parseStooqCsv(await res.text(), days);
-    }
-  } catch {}
+  for (const wrap of CORS_PROXIES) {
+    try {
+      const res = await fetch(wrap(url));
+      if (res.ok) {
+        const out = parseStooqCsv(await res.text(), days);
+        if (out.length > 0) return out;
+      }
+    } catch {}
+  }
   return [];
 }
 
@@ -794,10 +828,14 @@ export const api = {
         holdings[tx.coin_id].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
         const h = holdings[tx.coin_id];
-        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct
+        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct.
+        // Clamp the sold quantity to the running balance — an oversell (typo or
+        // missing buy record) must not drive the holding negative, which would
+        // silently eat into any later buys.
         const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
-        h.total_invested = Math.max(0, h.total_invested - avgCost * tx.amount);
-        h.amount -= tx.amount;
+        const sold = Math.min(tx.amount, Math.max(0, h.amount));
+        h.total_invested = Math.max(0, h.total_invested - avgCost * sold);
+        h.amount = Math.max(0, h.amount - tx.amount);
       }
     }
 
@@ -871,7 +909,8 @@ export const api = {
     const _inFlight = new Map();
     return async (ids) => {
     if (!ids) return {};
-    const key = ids;
+    // Order-insensitive key so "btc,eth" and "eth,btc" dedupe to one fan-out.
+    const key = ids.split(',').filter(Boolean).sort().join(',');
     if (_inFlight.has(key)) return _inFlight.get(key);
     const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
@@ -967,8 +1006,13 @@ export const api = {
             // tickers locally so unknown symbols can never poison the batch.
             if (tradeable.length > 0) {
               try {
-                const res = await fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr', 4500);
-                if (res.ok) {
+                // Binance is geo-blocked from some IPs (e.g. Egypt, Turkey). Try
+                // direct first, then fall back to our server-side proxy so those
+                // users still get Binance's fast, complete price + 24h data.
+                const _bUrl = 'https://api.binance.com/api/v3/ticker/24hr';
+                let res = await fetchWithTimeout(_bUrl, 4500).catch(() => null);
+                if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(_bUrl), 6000).catch(() => null);
+                if (res && res.ok) {
                   const list = await res.json();
                   if (Array.isArray(list)) {
                     const wanted = new Set(tradeable.map(([,s]) => `${s}USDT`));
@@ -1115,6 +1159,32 @@ export const api = {
               } catch {}
             }));
             _saveCache(PRICE_CACHE_KEY, priceCache);
+          }
+          // Absolute last resort: the same-origin /market.json snapshot
+          // (≤30 min old) — works even when every crypto API and proxy is
+          // blocked by the user's network.
+          const finalMissing = cryptoIds.filter(id => !priceCache[id]);
+          if (finalMissing.length > 0) {
+            const mkt = await _loadStaticMarket();
+            if (mkt) {
+              const byId = new Map(mkt.map(c => [c.id, c]));
+              for (const id of finalMissing) {
+                const c = byId.get(id);
+                if (c && typeof c.current_price === 'number' && c.current_price > 0) {
+                  priceCache[id] = {
+                    usd: c.current_price,
+                    usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                    usd_market_cap: c.market_cap || 0,
+                    name: c.name,
+                    symbol: c.symbol,
+                    source: 'snapshot',
+                  };
+                  if (c.image) coinImageCache[id] = c.image;
+                }
+              }
+              _saveCache(PRICE_CACHE_KEY, priceCache);
+              _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+            }
           }
         }
         for (const id of cryptoIds) {
@@ -1413,8 +1483,8 @@ export const api = {
       const r = Math.log(prices[i][1] / prices[i - 1][1]);
       if (isFinite(r)) returns.push(r);
     }
-    const meanR = returns.reduce((s, r) => s + r, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length;
+    const meanR = returns.length > 0 ? returns.reduce((s, r) => s + r, 0) / returns.length : 0;
+    const variance = returns.length > 0 ? returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length : 0;
     const volatility = Math.sqrt(variance) * Math.sqrt(365); // annualised
 
     // Recent high/low range position (0 = at low, 1 = at high)
