@@ -262,8 +262,8 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 `
 write('/', buildPage({
   path: '/',
-  title: 'WalletLens — Free Net Worth & Portfolio Tracker | Crypto, Stocks, Gold',
-  description: 'Track your entire net worth in one free app — crypto, US stocks, gold, silver, cash & FX. The free net worth tracker for managing all your investments in one place. No account, AI insights, data stays on your device.',
+  title: 'WalletLens — Free Portfolio Tracker with Live Prices',
+  description: 'WalletLens is a free portfolio & net worth tracker with live prices for crypto, US stocks, gold and cash. No account — your data stays on your device.',
   bodyHtml: homeBody,
 }))
 
