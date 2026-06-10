@@ -59,35 +59,65 @@ function symbolGradient(sym) {
   return `linear-gradient(135deg, hsl(${h1},70%,48%), hsl(${h2},75%,34%))`;
 }
 
+// Non-crypto badge palette — mirrors the web app's CoinLogo ASSET_ICONS /
+// nonCryptoColor so the extension and dashboard look identical.
+const METAL_BADGE = {
+  'metal:xau': { label: 'XAU', c1: '#f59e0b', c2: '#b45309' },
+  'metal:xag': { label: 'XAG', c1: '#94a3b8', c2: '#475569' },
+  'metal:xpt': { label: 'XPT', c1: '#cbd5e1', c2: '#94a3b8' },
+  'metal:xcu': { label: 'XCU', c1: '#c2410c', c2: '#92400e' },
+};
+function nonCryptoBadge(holding) {
+  const id = holding.coin_id || '';
+  if (METAL_BADGE[id]) return METAL_BADGE[id];
+  if (id.startsWith('stock:')) return { label: id.slice(6).toUpperCase().slice(0, 4), c1: '#10b981', c2: '#047857' };
+  if (id.startsWith('fiat:'))  return { label: id.slice(5).toUpperCase().slice(0, 3), c1: '#0ea5e9', c2: '#0369a1' };
+  if (id.startsWith('bond:'))  return { label: (holding.coin_symbol || 'BND').slice(0, 3).toUpperCase(), c1: '#0284c7', c2: '#075985' };
+  if (id.startsWith('other:') || id.startsWith('real:') || id.startsWith('cash:'))
+    return { label: (holding.coin_symbol || 'OTH').slice(0, 3).toUpperCase(), c1: '#a78bfa', c2: '#6d28d9' };
+  return null; // crypto
+}
+
 function letterBadge(holding, cls) {
   const d = document.createElement('div');
   d.className = cls;
-  const id = holding.coin_id || '';
-  // Non-crypto (stock:/metal:/fiat:/bond:) → coloured initials, no CDN call
-  const isCrypto = !(id.startsWith('stock:') || id.startsWith('metal:') || id.startsWith('fiat:') || id.startsWith('bond:') || id.startsWith('other:'));
-  d.textContent = abbrev(holding.coin_symbol || id.replace(/^[a-z]+:/, ''));
-  d.style.background = symbolGradient(holding.coin_symbol || id);
+  const nc = nonCryptoBadge(holding);
+  if (nc) {
+    d.textContent = nc.label;
+    d.style.background = `radial-gradient(circle at 35% 35%, ${nc.c1}, ${nc.c2})`;
+    d.style.fontSize = nc.label.length > 3 ? '7px' : nc.label.length > 2 ? '8px' : '10px';
+  } else {
+    d.textContent = abbrev(holding.coin_symbol || (holding.coin_id || '').replace(/^[a-z]+:/, ''));
+    d.style.background = symbolGradient(holding.coin_symbol || holding.coin_id);
+  }
   d.style.color = '#fff';
   d.style.border = 'none';
-  if (!isCrypto) d.style.borderRadius = '7px'; // squircle for non-crypto, circle for crypto
   return d;
 }
 
-// Returns an <img> of the real asset logo, falling back to a letter badge on
-// missing/broken images. `cls` is the base class (holding-icon / market-icon).
+// Returns an <img> of the real asset logo, falling back through the crypto
+// icon CDN to a coloured badge. `cls` is the base class (holding-icon /
+// market-icon). Non-crypto assets go straight to their styled badge.
 function assetIcon(holding, cls) {
-  const url = holding.coin_image;
-  if (url && /^https?:\/\//.test(url)) {
-    const img = document.createElement('img');
-    img.className = cls + ' ' + cls + '-img';
-    img.src = url;
-    img.alt = '';
-    img.loading = 'lazy';
-    img.referrerPolicy = 'no-referrer';
-    img.addEventListener('error', () => img.replaceWith(letterBadge(holding, cls)));
-    return img;
-  }
-  return letterBadge(holding, cls);
+  if (nonCryptoBadge(holding)) return letterBadge(holding, cls);
+  const sym = (holding.coin_symbol || '').toLowerCase();
+  const sources = [];
+  if (holding.coin_image && /^https?:\/\//.test(holding.coin_image)) sources.push(holding.coin_image);
+  if (sym) sources.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`);
+  if (!sources.length) return letterBadge(holding, cls);
+  const img = document.createElement('img');
+  img.className = cls + ' ' + cls + '-img';
+  img.src = sources[0];
+  img.alt = '';
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+  let idx = 0;
+  img.addEventListener('error', () => {
+    idx += 1;
+    if (idx < sources.length) img.src = sources[idx];
+    else img.replaceWith(letterBadge(holding, cls));
+  });
+  return img;
 }
 
 // ── Portfolio math ────────────────────────────────────────────────────────────
@@ -147,6 +177,115 @@ async function fetchPrices(coinIds) {
     } catch {}
   }
   return {};
+}
+
+// ── Non-crypto prices (stocks / metals / fiat) — same sources as the web app ──
+
+const NON_CRYPTO_RE = /^(stock|metal|fiat|bond|other|real|cash):/;
+
+async function fetchStockPrices(stockIds) {
+  if (!stockIds.length) return {};
+  const tickers = stockIds.map(id => id.slice(6).toLowerCase() + '.us');
+  const url = `https://stooq.com/q/l/?s=${tickers.join('%3B')}&f=sd2t2ohlcvn&h&e=csv`;
+  // Stooq has no CORS headers — direct works on some networks, proxy elsewhere
+  const attempts = [
+    () => fetch(url, { signal: AbortSignal.timeout(7000) }),
+    () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(9000) }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      const lines = (await res.text()).trim().split('\n').slice(1); // drop header
+      const out = {};
+      lines.forEach((line, i) => {
+        const cols = line.split(',');     // Symbol,Date,Time,Open,High,Low,Close,Volume,Name
+        const open = parseFloat(cols[3]), close = parseFloat(cols[6]);
+        if (isFinite(close) && close > 0 && stockIds[i]) {
+          out[stockIds[i]] = {
+            usd: close,
+            usd_24h_change: isFinite(open) && open > 0 ? ((close - open) / open) * 100 : null,
+          };
+        }
+      });
+      if (Object.keys(out).length) return out;
+    } catch {}
+  }
+  return {};
+}
+
+const METAL_CODE = { 'metal:xau': 'XAU', 'metal:xag': 'XAG', 'metal:xcu': 'XCU', 'metal:xpt': 'XPT' };
+
+async function fetchMetalPrices(metalIds) {
+  if (!metalIds.length) return {};
+  const out = {};
+  await Promise.all(metalIds.map(async id => {
+    const code = METAL_CODE[id];
+    if (!code) return;
+    const url = `https://api.gold-api.com/price/${code}`;
+    const attempts = [
+      () => fetch(url, { signal: AbortSignal.timeout(6000) }),
+      () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(8000) }),
+    ];
+    for (const attempt of attempts) {
+      try {
+        const res = await attempt();
+        if (!res.ok) continue;
+        const j = await res.json();
+        if (j?.price > 0) { out[id] = { usd: j.price, usd_24h_change: 0 }; return; }
+      } catch {}
+    }
+  }));
+  return out;
+}
+
+async function fetchFiatPrices(fiatIds) {
+  if (!fiatIds.length) return {};
+  const url = 'https://open.er-api.com/v6/latest/USD';
+  const attempts = [
+    () => fetch(url, { signal: AbortSignal.timeout(6000) }),
+    () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(8000) }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      const rates = (await res.json())?.rates;
+      if (!rates) continue;
+      const out = {};
+      for (const id of fiatIds) {
+        const r = rates[id.slice(5).toUpperCase()];
+        // rates are units-per-USD, so one unit is worth the reciprocal in USD
+        if (typeof r === 'number' && r > 0) out[id] = { usd: 1 / r, usd_24h_change: 0 };
+      }
+      if (Object.keys(out).length) return out;
+    } catch {}
+  }
+  return {};
+}
+
+// Route every holding to the right price source and merge the results.
+// bond:/other:/etc. have no live market — value them at average cost so they
+// still count toward the total instead of disappearing.
+async function fetchAllPrices(map) {
+  const ids = Array.from(map.keys());
+  const stockIds  = ids.filter(id => id.startsWith('stock:'));
+  const metalIds  = ids.filter(id => id.startsWith('metal:'));
+  const fiatIds   = ids.filter(id => id.startsWith('fiat:'));
+  const cryptoIds = ids.filter(id => !NON_CRYPTO_RE.test(id));
+  const [crypto, stocks, metals, fiats] = await Promise.all([
+    fetchPrices([...cryptoIds, 'bitcoin', 'ethereum'].filter((v, i, a) => a.indexOf(v) === i)),
+    fetchStockPrices(stockIds),
+    fetchMetalPrices(metalIds),
+    fetchFiatPrices(fiatIds),
+  ]);
+  const merged = { ...crypto, ...stocks, ...metals, ...fiats };
+  for (const [id, h] of map) {
+    if (!merged[id]?.usd && h.amount > 0 && h.totalCost > 0) {
+      merged[id] = { usd: h.totalCost / h.amount, usd_24h_change: null, estimated: true };
+    }
+  }
+  return merged;
 }
 
 async function fetchMarketCoins() {
@@ -665,7 +804,7 @@ function renderHoldingsTab() {
       listEl.appendChild(row);
     }
     // Fetch signals lazily and inject badges without blocking render
-    const isCrypto = id => !id.startsWith('stock:') && !id.startsWith('metal:');
+    const isCrypto = id => !NON_CRYPTO_RE.test(id);
     for (const { holding } of holdingsArr) {
       if (!isCrypto(holding.coin_id)) continue;
       fetchSignalForCoin(holding.coin_id).then(sig => {
@@ -833,8 +972,8 @@ async function render() {
   const taSelect = $('ta-coin-select');
   taSelect.innerHTML = '<option value="">Select a coin…</option>';
   for (const [id, h] of map) {
-    // Only crypto coins (skip stocks/metals which have no CoinGecko OHLC)
-    if (id.startsWith('stock:') || id.startsWith('metal:')) continue;
+    // Only crypto coins (non-crypto assets have no CoinGecko OHLC)
+    if (NON_CRYPTO_RE.test(id)) continue;
     const opt = document.createElement('option');
     opt.value = id;
     opt.textContent = (h.coin_symbol||'').toUpperCase() + ' — ' + (h.coin_name||id);
@@ -848,9 +987,8 @@ async function render() {
   hide('loading');
   show('tab-' + currentTab);
 
-  // Fetch prices
-  const allCoinIds = [...Array.from(map.keys()), 'bitcoin', 'ethereum'].filter((v,i,a)=>a.indexOf(v)===i);
-  cachedPrices = await fetchPrices(allCoinIds);
+  // Fetch prices for every asset class (crypto, stocks, metals, fiat, …)
+  cachedPrices = await fetchAllPrices(map);
 
   const holdingsArr = buildHoldingsArr(map);
   renderOverviewTab(holdingsArr, hideValues, syncedAt);

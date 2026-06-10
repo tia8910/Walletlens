@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WalletLens Portfolio",
   "short_name": "WalletLens",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Your whole net worth in your toolbar — crypto, stocks, gold & cash. AI screenshot + voice import. Free, private, no account.",
   "icons": {
     "16":  "icons/icon-16.png",
@@ -34,6 +34,10 @@
     "https://walletlens.live/*",
     "https://api.coingecko.com/*",
     "https://api.alternative.me/*",
-    "https://walletlens-voice-parse.tia8910.deno.net/*"
+    "https://walletlens-voice-parse.tia8910.deno.net/*",
+    "https://stooq.com/*",
+    "https://api.gold-api.com/*",
+    "https://open.er-api.com/*",
+    "https://cdn.jsdelivr.net/*"
   ]
 }
