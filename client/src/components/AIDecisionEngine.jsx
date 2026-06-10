@@ -257,11 +257,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                   {result.assetActions.map((a, i) => (
                     <div key={i} className="ade-asset-row">
                       <div className="ade-asset-left">
-<<<<<<< HEAD
                         <CoinLogo image={a.coin_image} symbol={a.sym} coinId={a.coin_id} size={28} className="ade-asset-img" />
-=======
-                        {a.coin_image && <img src={a.coin_image} alt="coin logo" width={28} height={28} className="ade-asset-img" />}
->>>>>>> origin/main
                         <div>
                           <div className="ade-asset-sym">{a.sym}</div>
                           <div className="ade-asset-weight">{typeof a.w === 'number' ? a.w.toFixed(1) : '—'}% of portfolio</div>
