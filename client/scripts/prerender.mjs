@@ -1109,6 +1109,92 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
   ],
 }))
 
+// ── FAQ ──────────────────────────────────────────────────────────────────────
+// Mirrors client/src/pages/FAQ.jsx (FAQ_SECTIONS) — keep the two in sync.
+const faqPageSections = [
+  { title: 'Getting Started', faqs: [
+    { q: 'Is WalletLens really free?',
+      a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.' },
+    { q: 'Do I need an account or email to use it?',
+      a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of.' },
+    { q: 'How do I add my first holding?',
+      a: 'Open the dashboard and tap "Add Trade". Search for the asset, enter the amount and the price you paid, and save. You can also speak a trade with voice input, import a screenshot of an exchange or broker app, or paste a backup code from another device.' },
+    { q: 'Can I use WalletLens on my phone?',
+      a: 'Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks.' },
+    { q: 'Does WalletLens support languages other than English?',
+      a: 'Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned.' },
+  ]},
+  { title: 'Privacy & Data', faqs: [
+    { q: 'Where is my portfolio data stored?',
+      a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no server that receives your holdings. Your financial data never leaves your device unless you choose to export a backup code." },
+    { q: 'Can WalletLens see my portfolio?',
+      a: 'No. The only network calls the app makes are to public price APIs (CoinGecko, Binance, Stooq, Gold-API and similar) to fetch market prices, and those requests never include your holdings, amounts, or any identity. Optional AI analysis sends only anonymous aggregates.' },
+    { q: 'How do I back up my portfolio?',
+      a: 'Open Settings → Backup and copy your WLZ backup code (or show it as a QR code). The code is a compressed snapshot of your whole portfolio. Store it somewhere safe — because there is no cloud account, the backup code is the only way to restore your data if you clear your browser.' },
+    { q: 'How do I move my portfolio to a new device?',
+      a: 'Export a backup code (or QR) on the old device, then paste or scan it on the new one. The import takes seconds and nothing passes through any server.' },
+    { q: 'How do I delete all my data?',
+      a: "Clearing your browser's site data for walletlens.live removes everything, because everything lives in your browser. There is no server-side copy to ask us to delete." },
+  ]},
+  { title: 'Assets & Prices', faqs: [
+    { q: 'What assets can I track in one place?',
+      a: 'Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, bonds, and custom assets like real estate — all in a single net worth dashboard with live prices, cost basis, and profit/loss.' },
+    { q: 'Where do the live prices come from?',
+      a: 'Crypto prices come from CoinGecko with Binance, CryptoCompare, CoinCap and CoinPaprika as automatic fallbacks. US stocks come from Stooq, precious metals from Gold-API, and currency rates from open exchange-rate APIs. If your network blocks these sources, the app falls back to a snapshot served from walletlens.live itself.' },
+    { q: 'Why is a price missing or showing zero?',
+      a: 'Usually the asset is custom (bonds, real estate) and needs a manual price — edit the holding to set its current value. For listed assets, a hard refresh typically restores live prices; the app retries several sources automatically.' },
+    { q: 'How is my profit & loss calculated?',
+      a: 'WalletLens tracks your cost basis per asset from your buy and sell transactions using the average-cost method. Unrealized P&L is the difference between current market value and the cost basis of what you still hold.' },
+  ]},
+  { title: 'Features & AI', faqs: [
+    { q: 'What does the AI analysis do?',
+      a: 'The AI Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice.' },
+    { q: 'Can I set price alerts?',
+      a: 'Yes. Set "rises above" or "falls below" alerts on any holding. With notifications enabled you get alerted even when WalletLens is in a background tab, complete with a sound.' },
+    { q: 'What is the voice import?',
+      a: 'Tap the microphone and say something like "I bought half a Bitcoin at sixty thousand dollars in January" — the AI parses it into a structured transaction for you to confirm. It works in English and Arabic.' },
+    { q: 'What is the screenshot import?',
+      a: 'Upload a screenshot of any exchange, broker, or bank app and the AI reads the holdings from the image and adds them to your portfolio — useful for migrating from another tracker in one step.' },
+    { q: 'What does the Chrome extension do?',
+      a: 'The WalletLens extension shows your portfolio total, all holdings with live prices, market data, the Fear & Greed index, news, and technical signals from your browser toolbar. It syncs with the web app through your local data — no account needed.' },
+  ]},
+  { title: 'Comparisons & Troubleshooting', faqs: [
+    { q: 'How is WalletLens different from CoinStats, Empower, or Kubera?',
+      a: 'Most trackers focus only on crypto, charge a subscription, require you to connect exchange or bank logins, or store your data on their servers. WalletLens covers every asset class, is free forever, needs no logins, and keeps all data on your device.' },
+    { q: 'The app loads but data is empty — what do I do?',
+      a: 'First hard-refresh (Ctrl+Shift+R on desktop, pull-to-refresh on mobile) to pick up the latest version. If market sections stay empty, your network may block crypto price APIs — WalletLens automatically falls back to a same-origin price snapshot within a few seconds.' },
+    { q: 'I cleared my browser and lost my portfolio. Can you restore it?',
+      a: 'Only if you saved a WLZ backup code — paste it in Settings → Backup to restore everything instantly. There is no server-side copy, which is the price of true privacy, so export a backup regularly.' },
+    { q: 'Is WalletLens open source?',
+      a: 'Yes. You can inspect the code, report issues, or contribute on GitHub at github.com/tia8910/walletlens.' },
+    { q: 'How do I report a bug or request a feature?',
+      a: 'Email contact@walletlens.live or open an issue on GitHub — we read everything.' },
+  ]},
+]
+const allFaqPageQs = faqPageSections.flatMap(s => s.faqs)
+write('/faq', buildPage({
+  path: '/faq',
+  title: 'FAQ — WalletLens Free Net Worth Tracker',
+  description: 'Answers to common questions about WalletLens: is it free, where your data is stored, supported assets, live price sources, backups, the AI analysis, the Chrome extension, and troubleshooting.',
+  bodyHtml: `
+<h1>Frequently Asked Questions</h1>
+<p>Everything about tracking your net worth with WalletLens — free, private, no account. Can't find your answer? Email <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
+${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')).join('\n')}
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a></p>
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: allFaqPageQs.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
+}))
+
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
@@ -1304,6 +1390,7 @@ const STATIC_ROUTES = [
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
+  { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
   { path: '/terms',   changefreq: 'monthly', priority: '0.5' },
 ]

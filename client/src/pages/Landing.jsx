@@ -656,6 +656,7 @@ export default function Landing() {
         <nav className="lp-footer-links">
           <Link to="/free-net-worth-tracker/" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
           <Link to="/about/" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
+          <Link to="/faq/" onClick={() => track('landing_footer_nav', { to: 'faq' })}>FAQ</Link>
           <Link to="/lenz/" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
           <Link to="/blog/" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
           <Link to="/privacy/" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
