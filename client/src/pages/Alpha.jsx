@@ -217,12 +217,31 @@ export default function Alpha() {
       return
     }
 
-    const [trendRes, marketsRes] = await Promise.all([
+    // Direct CoinGecko first (freshest), then the resilient api layer which
+    // falls back through CORS proxies and the same-origin /market.json
+    // snapshot — so signals load even on networks that block crypto APIs.
+    const [trendRes, marketsDirect] = await Promise.all([
       fetchJSON(`${CG}/search/trending`),
       fetchJSON(`${CG}/coins/markets?vs_currency=usd&order=volume_desc&per_page=100&page=1&price_change_percentage=24h`),
     ])
+    let marketsRes = marketsDirect
+    if (!Array.isArray(marketsRes) || marketsRes.length === 0) {
+      const snap = await api.getWhaleMarketSnapshot().catch(() => [])
+      if (Array.isArray(snap) && snap.length > 0) {
+        marketsRes = [...snap].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 100)
+      }
+    }
 
-    const trendCoins = (trendRes?.coins || []).map(c => c.item)
+    let trendCoins = (trendRes?.coins || []).map(c => c.item)
+    if (!trendCoins.length && Array.isArray(marketsRes) && marketsRes.length > 0) {
+      // Trending endpoint unreachable — approximate with the highest
+      // volume-to-market-cap movers from the market snapshot.
+      trendCoins = [...marketsRes]
+        .filter(c => c.market_cap > 0 && c.total_volume > 0)
+        .sort((a, b) => (b.total_volume / b.market_cap) - (a.total_volume / a.market_cap))
+        .slice(0, 7)
+        .map(c => ({ id: c.id, name: c.name, symbol: c.symbol, thumb: c.image, market_cap_rank: c.market_cap_rank }))
+    }
     setTrending(trendCoins.slice(0, 7))
 
     if (marketsRes) {
@@ -401,6 +420,8 @@ export default function Alpha() {
         <SectionHead icon={<Icon name="flow" size={20} />} title="Smart Money" sub="What's trending with large volume right now" live />
         {loading && trending.length === 0 ? (
           <div className="alpha-loading-row muted">Fetching signals…</div>
+        ) : trending.length === 0 ? (
+          <div className="alpha-loading-row muted">Market data unavailable — check back in a moment</div>
         ) : (
           <div className="alpha-coin-list">
             {trending.slice(0, 7).map((c, i) => (

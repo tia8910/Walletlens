@@ -1,0 +1,64 @@
+name: Update Market Snapshot
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-market:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch top-250 market data from CoinGecko
+        run: |
+          python3 << 'EOF'
+          import urllib.request, json, time, sys
+
+          URL = ("https://api.coingecko.com/api/v3/coins/markets"
+                 "?vs_currency=usd&order=market_cap_desc&per_page=250&page=1"
+                 "&sparkline=false&price_change_percentage=1h%2C24h%2C7d")
+
+          coins = []
+          for attempt in range(3):
+            try:
+              req = urllib.request.Request(URL, headers={"User-Agent": "WalletLens-Actions/1.0"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                data = json.load(r)
+              if isinstance(data, list) and len(data) >= 50:
+                coins = data
+                break
+              print(f"attempt {attempt+1}: unexpected payload ({type(data)}, len={len(data) if isinstance(data, list) else 'n/a'})")
+            except Exception as e:
+              print(f"attempt {attempt+1} failed: {e}")
+            time.sleep(10)
+
+          if not coins:
+            # Keep the previous snapshot rather than publishing an empty one
+            print("All attempts failed — keeping existing market.json")
+            sys.exit(0)
+
+          output = {
+            "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "count": len(coins),
+            "coins": coins,
+          }
+          with open("market.json", "w") as f:
+            json.dump(output, f)
+          print(f"Saved {len(coins)} coins to market.json")
+          EOF
+
+      - name: Commit updated market snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add market.json
+          git diff --staged --quiet || git commit -m "chore: update market snapshot [skip ci]"
+          git push
