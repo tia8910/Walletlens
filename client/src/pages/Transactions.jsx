@@ -575,7 +575,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         <h2>Transactions</h2>
         <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
           background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(var(--g-rgb),0.15)',
-          color: showForm ? '#f87171' : 'var(--g)',
+          color: showForm ? '#f87171' : 'var(--g-ink)',
           border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(var(--g-rgb),0.3)'}`,
           borderRadius: '10px', padding: '0.4rem 0.85rem',
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
@@ -1002,7 +1002,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       {confirmNoneOpen && (
         <div className="bs-confirm-overlay" style={{ position: 'fixed', zIndex: 1000 }} onClick={() => setConfirmNoneOpen(false)}>
           <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
-            <div className="bs-confirm-icon" style={{ color: form.type === 'buy' ? 'var(--g)' : '#f87171' }}>
+            <div className="bs-confirm-icon" style={{ color: form.type === 'buy' ? 'var(--g-ink)' : '#f87171' }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
               </svg>

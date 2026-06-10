@@ -55,7 +55,7 @@ export default function RiskBudget({ enriched, totalValue }) {
         </div>
         <div className="rb-sum-card">
           <span className="rb-sum-label">Total risk budget</span>
-          <span className="rb-sum-val" style={{ color: totalBudgetPct > 20 ? '#f87171' : 'var(--g)' }}>
+          <span className="rb-sum-val" style={{ color: totalBudgetPct > 20 ? '#f87171' : 'var(--g-ink)' }}>
             {totalBudgetPct.toFixed(1)}% of portfolio
           </span>
         </div>

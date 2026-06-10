@@ -183,7 +183,7 @@ export default function Whales() {
             ))}
           </div>
           <div className="whale-card">
-            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bar-chart" size={16} style={{ color:'var(--g)' }} />Volume Leaders</h3>
+            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bar-chart" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Volume Leaders</h3>
             <p className="whale-help">Where the most dollars are flowing right now.</p>
             {volumeLeaders.map(c => (
               <div key={c.id} className="whale-row">

@@ -75,7 +75,7 @@ export default function AdminMail() {
     <div style={{ minHeight: '100vh', background: '#0b0f14' }}>
       <div style={wrap}>
         <h1 style={{ fontSize: '1.6rem', margin: '0 0 0.3rem', color: '#fff' }}>
-          <span style={{ color: '#4ade80' }}>WalletLens</span> · Mail
+          <span style={{ color: 'var(--g-ink)' }}>WalletLens</span> · Mail
         </h1>
         <p style={{ color: '#7d8794', fontSize: '0.85rem', margin: 0 }}>Send campaigns from contact@walletlens.live to your newsletter list.</p>
 
@@ -84,7 +84,7 @@ export default function AdminMail() {
           <input style={input} type="password" placeholder="SIGNUP_EXPORT_TOKEN" value={token} onChange={e => saveToken(e.target.value)} />
           <button style={btn('rgba(255,255,255,0.1)', '#fff')} onClick={loadStats} disabled={busy || !token}>Check</button>
         </div>
-        {stats && <p style={{ color: '#4ade80', fontSize: '0.82rem', marginTop: '0.5rem' }}>✓ {stats.count} subscriber(s) on the list</p>}
+        {stats && <p style={{ color: 'var(--g-ink)', fontSize: '0.82rem', marginTop: '0.5rem' }}>✓ {stats.count} subscriber(s) on the list</p>}
 
         <label style={label}>Subject</label>
         <input style={input} placeholder="📉 This week's market sentiment" value={subject} onChange={e => setSubject(e.target.value)} />
@@ -111,7 +111,7 @@ export default function AdminMail() {
           <p style={{ marginTop: '1.2rem', padding: '0.7rem 1rem', borderRadius: '10px', fontSize: '0.86rem',
             background: result.type === 'ok' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
             border: `1px solid ${result.type === 'ok' ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
-            color: result.type === 'ok' ? '#4ade80' : '#f87171' }}>
+            color: result.type === 'ok' ? 'var(--g-ink)' : '#f87171' }}>
             {result.msg}
           </p>
         )}

@@ -385,7 +385,14 @@ async function gunzipB64(b64) {
   const writer = ds.writable.getWriter();
   writer.write(bytes); writer.close();
   const chunks = []; const reader = ds.readable.getReader();
-  while (true) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); }
+  let total = 0;
+  const MAX_DECOMPRESSED = 10 * 1024 * 1024; // a real backup is a few KB — anything huge is a zip bomb
+  while (true) {
+    const { done, value } = await reader.read(); if (done) break;
+    total += value.length;
+    if (total > MAX_DECOMPRESSED) { reader.cancel(); throw new Error('Backup too large to decompress.'); }
+    chunks.push(value);
+  }
   const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
   let off = 0; for (const c of chunks) { out.set(c, off); off += c.length; }
   return new TextDecoder().decode(out);
@@ -571,7 +578,11 @@ async function loadNewsTab() {
   for (const a of articles) {
     const item = document.createElement('div');
     item.className = 'news-item';
-    item.addEventListener('click', () => { ext.tabs.create({ url: a.url || a.link }); window.close(); });
+    item.addEventListener('click', () => {
+      const url = a.url || a.link;
+      // News items come from a remote feed — only ever open http(s) links.
+      if (typeof url === 'string' && /^https?:\/\//i.test(url)) { ext.tabs.create({ url }); window.close(); }
+    });
 
     const title = document.createElement('div');
     title.className = 'news-title';

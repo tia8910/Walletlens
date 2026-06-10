@@ -316,7 +316,7 @@ export default function Alpha() {
                   <div className="alpha-breakdown-bar-wrap">
                     <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.momentumScore / 30) * 100}%`, background: alphaScore.momentum >= 0 ? 'var(--g)' : '#f87171' }} />
                   </div>
-                  <span style={{ color: alphaScore.momentum >= 0 ? 'var(--g)' : '#f87171' }}>
+                  <span style={{ color: alphaScore.momentum >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                     {alphaScore.momentum >= 0 ? '+' : ''}{alphaScore.momentum.toFixed(1)}%
                   </span>
                 </div>

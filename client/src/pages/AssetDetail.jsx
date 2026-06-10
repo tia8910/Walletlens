@@ -504,7 +504,7 @@ function WhalePanel({ s, symbol }) {
 function TechnicalsCard({ ta }) {
   const lvl = (p) => (p == null ? '—' : '$' + (p >= 1 ? Math.round(p).toLocaleString() : +(+p).toPrecision(4)))
   const trendMeta = {
-    uptrend:   { label: 'Uptrend',   color: 'var(--gd)' },
+    uptrend:   { label: 'Uptrend',   color: 'var(--g-ink)' },
     downtrend: { label: 'Downtrend', color: '#ef4444' },
     sideways:  { label: 'Sideways',  color: '#f59e0b' },
   }[ta.trend] || { label: 'Sideways', color: '#f59e0b' }
@@ -532,7 +532,7 @@ function TechnicalsCard({ ta }) {
   return (
     <div className="whale-panel">
       <div className="whale-panel-head">
-        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={17} style={{ color:'var(--g)' }} />Technical Analysis</h3>
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Technical Analysis</h3>
         <span className="whale-panel-window">{ta.samples}d daily</span>
       </div>
 
@@ -599,7 +599,7 @@ function TechnicalsCard({ ta }) {
             : <div className="ta-level muted">None nearby</div>}
         </div>
         <div className="ta-levels-col">
-          <div className="ta-levels-h" style={{ color: 'var(--gd)' }}>Support</div>
+          <div className="ta-levels-h" style={{ color: 'var(--g-ink)' }}>Support</div>
           {(ta.supports || []).length
             ? ta.supports.map((p, i) => <div key={i} className="ta-level">S{i + 1} · {lvl(p)}</div>)
             : <div className="ta-level muted">None nearby</div>}

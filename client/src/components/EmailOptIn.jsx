@@ -45,7 +45,7 @@ export default function EmailOptIn({ source = 'landing', compact = false }) {
 
   if (status === 'ok') {
     return (
-      <p style={{ textAlign: 'center', color: 'var(--g)', fontWeight: 600, margin: compact ? '0.5rem 0' : '1rem 0' }}>
+      <p style={{ textAlign: 'center', color: 'var(--g-ink)', fontWeight: 700, fontWeight: 600, margin: compact ? '0.5rem 0' : '1rem 0' }}>
         {msg}
       </p>
     )

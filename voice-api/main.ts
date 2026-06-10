@@ -75,8 +75,26 @@ async function handleProxy(target: string | null, headers: HeadersInit): Promise
       headers: { "Accept": "application/json, text/csv, image/*, */*", "User-Agent": "WalletLens-Proxy/1.0" },
       signal: AbortSignal.timeout(8000),
     })
+    // If the upstream redirected, the final host must still be allowlisted —
+    // otherwise an allowlisted API could bounce us to an arbitrary URL (SSRF).
+    try {
+      const finalHost = new URL(upstream.url).hostname
+      if (finalHost && !PROXY_ALLOWLIST.has(finalHost)) {
+        return new Response(JSON.stringify({ error: "redirect_not_allowed" }), { status: 502, headers })
+      }
+    } catch { /* upstream.url unavailable — keep going with the body checks */ }
+    // Cap the passthrough at 5 MB — price JSON and logos are tiny; anything
+    // bigger would only tie up server memory.
+    const MAX_BODY = 5 * 1024 * 1024
+    const cl = Number(upstream.headers.get("content-length") || 0)
+    if (cl > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers })
+    }
     // Pass bytes through untouched — text() would corrupt binary (logo images)
     const body = await upstream.arrayBuffer()
+    if (body.byteLength > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers })
+    }
     const ct = upstream.headers.get("content-type") || "application/json"
     const isImage = ct.startsWith("image/")
     return new Response(body, {

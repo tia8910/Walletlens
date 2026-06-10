@@ -796,10 +796,14 @@ export const api = {
         holdings[tx.coin_id].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
         const h = holdings[tx.coin_id];
-        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct
+        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct.
+        // Clamp the sold quantity to the running balance — an oversell (typo or
+        // missing buy record) must not drive the holding negative, which would
+        // silently eat into any later buys.
         const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
-        h.total_invested = Math.max(0, h.total_invested - avgCost * tx.amount);
-        h.amount -= tx.amount;
+        const sold = Math.min(tx.amount, Math.max(0, h.amount));
+        h.total_invested = Math.max(0, h.total_invested - avgCost * sold);
+        h.amount = Math.max(0, h.amount - tx.amount);
       }
     }
 
@@ -873,7 +877,8 @@ export const api = {
     const _inFlight = new Map();
     return async (ids) => {
     if (!ids) return {};
-    const key = ids;
+    // Order-insensitive key so "btc,eth" and "eth,btc" dedupe to one fan-out.
+    const key = ids.split(',').filter(Boolean).sort().join(',');
     if (_inFlight.has(key)) return _inFlight.get(key);
     const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
@@ -1420,8 +1425,8 @@ export const api = {
       const r = Math.log(prices[i][1] / prices[i - 1][1]);
       if (isFinite(r)) returns.push(r);
     }
-    const meanR = returns.reduce((s, r) => s + r, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length;
+    const meanR = returns.length > 0 ? returns.reduce((s, r) => s + r, 0) / returns.length : 0;
+    const variance = returns.length > 0 ? returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length : 0;
     const volatility = Math.sqrt(variance) * Math.sqrt(365); // annualised
 
     // Recent high/low range position (0 = at low, 1 = at high)

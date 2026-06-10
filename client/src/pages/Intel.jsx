@@ -206,7 +206,7 @@ function GemsTab({ market }) {
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
-            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(var(--g-rgb),0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
+            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(var(--g-rgb),0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g-ink)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
               {c.gemScore} gem score
             </div>
           </Link>
@@ -248,7 +248,7 @@ function AlphaTab({ market, trending }) {
     .sort((a, b) => Math.abs(b.price_change_percentage_24h_in_currency||0) - Math.abs(a.price_change_percentage_24h_in_currency||0))
     .slice(0, 4)
     .forEach(c => signals.push({
-      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g)' : '#f87171',
+      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g-ink)' : '#f87171',
       tag: c.price_change_percentage_24h_in_currency >= 0 ? 'Breakout' : 'Capitulation',
       coin: c, detail: `${fmtPct(c.price_change_percentage_24h_in_currency)} · MCap ${fmtUsd(c.market_cap)}`,
     }))

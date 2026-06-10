@@ -147,7 +147,8 @@ function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', di
   }
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
-    const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>`).join('\n')
+    // Escape "<" so content containing "</script>" can't break out of the JSON-LD block.
+    const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b).replace(/</g, '\\u003c')}</script>`).join('\n')
     html = html.replace('</head>', `${scripts}\n  </head>`)
   }
   // Hidden-but-crawlable content block, injected as first child of #root.
