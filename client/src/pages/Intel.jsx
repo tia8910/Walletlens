@@ -184,7 +184,11 @@ function GemsTab({ market }) {
                   strokeWidth="3" strokeDasharray={`${(c.gemScore/100)*94.2} 94.2`}
                   strokeLinecap="round" transform="rotate(-90 18 18)" />
               </svg>
+<<<<<<< HEAD
               <img src={c.image} alt="coin logo" className="gem-img"  onError={e => { e.currentTarget.style.display = 'none' }} />
+=======
+              <img src={c.image} alt="coin logo" className="gem-img" />
+>>>>>>> origin/main
             </div>
             <div className="gem-info">
               <div className="gem-name">{c.name}</div>
@@ -269,7 +273,11 @@ function AlphaTab({ market, trending }) {
             <div className="alpha-content">
               <div className="alpha-tag" style={{ color: s.color }}>{s.tag}</div>
               <div className="alpha-name">
+<<<<<<< HEAD
                 {s.coin.image && <img src={s.coin.image} alt="coin logo" width={18} height={18} style={{borderRadius:'50%',marginRight:6}}  onError={e => { e.currentTarget.style.display = 'none' }} />}
+=======
+                {s.coin.image && <img src={s.coin.image} alt="coin logo" width={18} height={18} style={{borderRadius:'50%',marginRight:6}} />}
+>>>>>>> origin/main
                 {s.coin.name} <span className="alpha-sym">{s.coin.symbol?.toUpperCase()}</span>
               </div>
               <div className="alpha-detail">{s.detail}</div>
@@ -364,7 +372,11 @@ function IndicatorsTab({ market, globalData }) {
           const barW = Math.min(Math.abs(ch) / 15 * 100, 100)
           return (
             <Link key={c.id} to={`/asset/${c.id}`} className="ind-mom-row">
+<<<<<<< HEAD
               <img src={c.image} alt="coin logo" width={20} height={20} style={{borderRadius:'50%'}}  onError={e => { e.currentTarget.style.display = 'none' }} />
+=======
+              <img src={c.image} alt="coin logo" width={20} height={20} style={{borderRadius:'50%'}} />
+>>>>>>> origin/main
               <span className="ind-mom-sym">{c.symbol?.toUpperCase()}</span>
               <div className="ind-mom-bar-wrap">
                 <div className="ind-mom-bar" style={{
