@@ -13,3 +13,7 @@ promo/launch-copy.json
 promo/youtube-seen.json
 promo/youtube-issue.json
 walletlens-extension-*.zip
+
+#  social agent runtime output (not committed)
+promo/lenz-drafts/
+promo/x-post.json

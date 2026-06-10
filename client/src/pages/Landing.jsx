@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import InstallExtension from '../components/InstallExtension'
+import EmailOptIn from '../components/EmailOptIn'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -69,117 +70,6 @@ function StepCard({ n, title, desc, delay = 0 }) {
   )
 }
 
-// ── Pain point card ───────────────────────────────────────────────────────
-function PainCard({ emoji, pain, solution, delay = 0, isRtl }) {
-  const ref = useRef(null)
-  const [vis, setVis] = useState(false)
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect() } }, { threshold: 0.15 })
-    obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [])
-  return (
-    <div ref={ref} className={`lp-pain-card ${vis ? 'lp-feat-vis' : ''}`} style={{ transitionDelay: `${delay}ms` }}>
-      <div className="lp-pain-emoji">{emoji}</div>
-      <p className="lp-pain-text">{pain}</p>
-      <div className="lp-pain-divider">{isRtl ? '←' : '→'}</div>
-      <p className="lp-pain-solution">{solution}</p>
-    </div>
-  )
-}
-
-// ── Live portfolio mockup: ticking counter + drawing SVG chart ────────────
-function LiveMockup({ label, change }) {
-  const [val, setVal]      = useState(248750.42)
-  const [points, setPoints] = useState([])
-  const [drawn, setDrawn]   = useState(0)
-  const pathRef = useRef(null)
-  const [pathLen, setPathLen] = useState(420)
-
-  // Live counter ticks up/down by tiny amounts so it feels alive
-  useEffect(() => {
-    const id = setInterval(() => {
-      setVal(v => Math.max(248000, v + (Math.random() - 0.35) * 14))
-    }, 900)
-    return () => clearInterval(id)
-  }, [])
-
-  // Generate a deterministic-ish upward-trending random walk for the chart
-  useEffect(() => {
-    const arr = []
-    let y = 78
-    for (let i = 0; i < 32; i++) {
-      y += (Math.random() - 0.62) * 7
-      y = Math.max(14, Math.min(86, y))
-      arr.push(y)
-    }
-    setPoints(arr)
-  }, [])
-
-  // Animate the line drawing itself
-  useEffect(() => {
-    if (points.length === 0) return
-    if (pathRef.current?.getTotalLength) setPathLen(pathRef.current.getTotalLength())
-    let raf
-    const t0 = performance.now()
-    const tick = (now) => {
-      const p = Math.min((now - t0) / 1800, 1)
-      setDrawn(p)
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [points])
-
-  if (points.length === 0) return null
-
-  const W = 320, H = 100
-  const step = W / (points.length - 1)
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${(i * step).toFixed(2)} ${p.toFixed(2)}`).join(' ')
-  const fill = `${line} L ${W} ${H} L 0 ${H} Z`
-  const tipX = (points.length - 1) * step
-  const tipY = points[points.length - 1]
-  const whole = Math.floor(val)
-  const cents = (val - whole).toFixed(2).slice(2)
-
-  return (
-    <div className="lp-live-card">
-      <div className="lp-live-header">
-        <span className="lp-live-label">{label}</span>
-        <span className="lp-live-status"><span className="lp-live-dot-anim" />LIVE</span>
-      </div>
-      <div className="lp-live-value">
-        ${whole.toLocaleString()}<span className="lp-live-cents">.{cents}</span>
-      </div>
-      <div className="lp-live-change">{change}</div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="lp-live-chart">
-        <defs>
-          <linearGradient id="lp-live-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#00ffaa" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#00ffaa" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={fill} fill="url(#lp-live-fill)" opacity={drawn} />
-        <path
-          ref={pathRef}
-          d={line}
-          fill="none"
-          stroke="#00ffaa"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={pathLen}
-          strokeDashoffset={pathLen * (1 - drawn)}
-          style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,170,0.55))' }}
-        />
-        {drawn > 0.96 && (
-          <circle cx={tipX} cy={tipY} r="4.5" fill="#00ffaa" className="lp-live-tip" />
-        )}
-      </svg>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────
 const ACCENT_PHRASES = {
   en: [
@@ -240,7 +130,7 @@ export default function Landing() {
           <div className="lp-brand-lockup">
             <Logo size={80} animated className="lp-brand-logo" />
             <div className="lp-brand-text">
-            <div className="lp-brand-title">WalletLens</div>
+            <div className="lp-brand-title">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></div>
             <div className="lp-brand-subtext">
               <div className="lp-brand-tagline">{t('brandTag')}</div>
               <div className="lp-brand-actions">
@@ -307,27 +197,6 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="lp-hero-mockup">
-          <LiveMockup label={t('mockupLabel')} change={t('mockupChange')} />
-        </div>
-      </section>
-
-      {/* ══ PAIN POINTS / RESCUE ═══════════════════════════════════════ */}
-      <section className="lp-section lp-rescue-section">
-        <div className="lp-section-label">{t('painLabel')}</div>
-        <h2 className="lp-section-h2">
-          {t('painH2a')}<br />
-          <span style={{ color: 'var(--g)' }}>{t('painH2b')}</span>
-        </h2>
-        <p className="lp-section-sub" style={{ maxWidth: 560, margin: '0 auto 2.5rem' }}>
-          {t('painIntro')}
-        </p>
-        <div className="lp-pain-grid">
-          <PainCard delay={0}   isRtl={isRtl} emoji="😰" pain={t('pain1')} solution={t('sol1')} />
-          <PainCard delay={80}  isRtl={isRtl} emoji="💸" pain={t('pain2')} solution={t('sol2')} />
-          <PainCard delay={160} isRtl={isRtl} emoji="😴" pain={t('pain3')} solution={t('sol3')} />
-          <PainCard delay={240} isRtl={isRtl} emoji="🤯" pain={t('pain4')} solution={t('sol4')} />
-        </div>
       </section>
 
       {/* ══ STATS ══════════════════════════════════════════════════════ */}
@@ -350,49 +219,6 @@ export default function Landing() {
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={4} /></div>
           <div className="lp-stat-lbl">{t('statClassesLbl')}</div>
-        </div>
-      </section>
-
-      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
-      <section className="lp-section lp-section-alt" id="browser-extension">
-        <div className="lp-section-label">Browser Extension</div>
-        <h2 className="lp-section-h2">
-          Your crypto portfolio,<br />
-          <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
-        </h2>
-        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
-          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
-          24h change, holdings, market movers and buy/sell signals — right from your browser,
-          without opening the site. It syncs automatically and your data stays on your device.
-        </p>
-
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem', maxWidth: 860, margin: '0 auto 2rem', textAlign: 'left',
-        }}>
-          {[
-            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
-            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
-            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
-            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
-          ].map((b, i) => (
-            <div key={i} style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)',
-              borderRadius: '14px', padding: '1rem 1.1rem',
-            }}>
-              <div style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{b.e}</div>
-              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{b.t}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5 }}>{b.d}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
-          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
-            Free · Works in Chrome, Edge, Brave &amp; Opera
-          </span>
         </div>
       </section>
 
@@ -533,7 +359,7 @@ export default function Landing() {
           <FeatureCard delay={140} accent="244,114,182"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>}
             title="🎙️ Voice Trade Import"
-            desc="Just say it — “I bought 0.5 BTC at 60K” or “اشتريت واحد بيتكوين وبعت سولانا” — and WalletLens logs the trade. Supports Arabic and English, multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
+            desc="Just say it — “I bought 0.5 BTC at 60K” or “I added 20 Apple shares and 10g of gold” — and WalletLens logs the trade. Handles multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
           />
         </div>
       </section>
@@ -660,6 +486,49 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
+      <section className="lp-section lp-section-alt" id="browser-extension">
+        <div className="lp-section-label">Browser Extension</div>
+        <h2 className="lp-section-h2">
+          Your whole portfolio,<br />
+          <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
+          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
+          24h change, holdings, market movers and buy/sell signals — right from your browser,
+          without opening the site. It syncs automatically and your data stays on your device.
+        </p>
+
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1rem', maxWidth: 860, margin: '0 auto 2rem', textAlign: 'left',
+        }}>
+          {[
+            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
+            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
+            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
+            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
+          ].map((b, i) => (
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)',
+              borderRadius: '14px', padding: '1rem 1.1rem',
+            }}>
+              <div style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{b.e}</div>
+              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{b.t}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5 }}>{b.d}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
+          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
+            Free · Works in Chrome, Edge, Brave &amp; Opera
+          </span>
+        </div>
+      </section>
+
       {/* ══ COMPARISON ═════════════════════════════════════════════════ */}
       <section className="lp-section" id="free-net-worth-tracker">
         <div className="lp-section-label">Free net worth tracker</div>
@@ -764,6 +633,17 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
+        <div className="lp-section-label">Stay ahead</div>
+        <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
+          Get market insights &<br /><span style={{ color:'var(--g)' }}>new features first</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
+          Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
+        </p>
+        <EmailOptIn source="landing_newsletter" />
+      </section>
+
       <section style={{ display:'flex', justifyContent:'center', padding:'1.5rem 1rem 0' }}>
         <InstallExtension variant="badge" source="landing_footer" />
       </section>
@@ -774,10 +654,13 @@ export default function Landing() {
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
         <nav className="lp-footer-links">
-          <Link to="/free-net-worth-tracker" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
-          <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
-          <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
-          <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/free-net-worth-tracker/" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
+          <Link to="/about/" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
+          <Link to="/lenz/" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
+          <Link to="/blog/" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
+          <Link to="/privacy/" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/terms/" onClick={() => track('landing_footer_nav', { to: 'terms' })}>{t('terms')}</Link>
+          <a href="mailto:contact@walletlens.live" onClick={() => track('landing_footer_nav', { to: 'contact' })}>Contact</a>
         </nav>
       </footer>
     </div>

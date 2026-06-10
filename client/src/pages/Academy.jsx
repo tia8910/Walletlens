@@ -880,7 +880,7 @@ export default function Academy() {
                 return (
                   <Link
                     key={post.slug}
-                    to={`/blog/${post.slug}`}
+                    to={`/blog/${post.slug}/`}
                     className="acad-article-card"
                     onClick={() => track('academy_article_click', { slug: post.slug, cat })}
                   >

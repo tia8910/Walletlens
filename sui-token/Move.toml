@@ -1,0 +1,12 @@
+[package]
+name = "lenz"
+edition = "2024.beta"
+# version = "1.0.0"
+
+[dependencies]
+# Pin to the network you publish to. testnet branch shown; for mainnet use
+# rev = "framework/mainnet". Pinning to an exact tag/commit is even stronger.
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+
+[addresses]
+lenz = "0x0"

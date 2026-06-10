@@ -53,9 +53,9 @@ export default function Privacy() {
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
-        <Link to="/terms">Terms of Service</Link>
-        <Link to="/about">About</Link>
-        <Link to="/blog">Blog</Link>
+        <Link to="/terms/">Terms of Service</Link>
+        <Link to="/about/">About</Link>
+        <Link to="/blog/">Blog</Link>
       </footer>
     </div>
   )
