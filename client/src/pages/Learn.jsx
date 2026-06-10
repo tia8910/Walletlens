@@ -72,18 +72,18 @@ export default function Learn() {
             <h2>Related terms</h2>
             <ul className="tc-list">
               {related.map(r => (
-                <li key={r.slug}><Link to={`/learn/${r.slug}`}>{r.term}</Link></li>
+                <li key={r.slug}><Link to={`/learn/${r.slug}/`}>{r.term}</Link></li>
               ))}
             </ul>
           </section>
         )}
 
         <footer className="tc-foot">
-          <Link to="/free-net-worth-tracker">Free net worth tracker</Link>
+          <Link to="/free-net-worth-tracker/">Free net worth tracker</Link>
           <span>·</span>
-          <Link to="/blog">Blog</Link>
+          <Link to="/blog/">Blog</Link>
           <span>·</span>
-          <Link to="/about">About</Link>
+          <Link to="/about/">About</Link>
           <span>·</span>
           <Link to="/">Home</Link>
         </footer>

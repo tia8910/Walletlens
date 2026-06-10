@@ -64,9 +64,9 @@ export default function Terms() {
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
-        <Link to="/privacy">Privacy Policy</Link>
-        <Link to="/about">About</Link>
-        <Link to="/blog">Blog</Link>
+        <Link to="/privacy/">Privacy Policy</Link>
+        <Link to="/about/">About</Link>
+        <Link to="/blog/">Blog</Link>
       </footer>
     </div>
   )
