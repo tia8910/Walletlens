@@ -125,11 +125,16 @@ export default function DynamicBackground({
     seed()
     step()
 
-    const ro = new ResizeObserver(() => { resize(); seed() })
+    let resizeTimer = null
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => { resize(); seed() }, 150)
+    })
     ro.observe(canvas)
 
     return () => {
       cancelAnimationFrame(raf)
+      clearTimeout(resizeTimer)
       ro.disconnect()
       document.removeEventListener('wl-theme', readColors)
       document.removeEventListener('visibilitychange', handleVisibility)

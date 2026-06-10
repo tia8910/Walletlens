@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -254,7 +254,7 @@ function Drawer({ open, onClose }) {
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
                 }}>
-                  {th.logo ? <img src={th.logo} alt={th.name} style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
+                  {th.logo ? <img src={th.logo} alt={th.name} loading="lazy" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
                 </span>
                 <span className="wl-drawer-swatch-label">{th.name}</span>
               </button>
@@ -303,7 +303,13 @@ export default function App() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
-  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
+  const isLanding = useMemo(() => {
+    const p = location.pathname
+    return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/privacy'].includes(p) ||
+      p.startsWith('/blog/') || p.startsWith('/track/') || p.startsWith('/calculator/') ||
+      p.startsWith('/learn/') || p.startsWith('/vs/') || p.startsWith('/price/') ||
+      p.startsWith('/ar/') || p.startsWith('/admin/')
+  }, [location.pathname])
   const { locked, unlock } = useBiometricLock()
 
   useEffect(() => {
@@ -464,7 +470,7 @@ export default function App() {
                         role="menuitem"
                       >
                         <span className="wl-topbar-theme-dot" style={{ background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})` }}>
-                          {th.logo ? <img src={th.logo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
+                          {th.logo ? <img src={th.logo} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
                         </span>
                         <span>{th.name}</span>
                       </button>

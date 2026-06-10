@@ -12,7 +12,7 @@ export default defineConfig({
     // esnext: no transpilation overhead for modern browsers
     target: 'esnext',
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 400,
     reportCompressedSize: true,
     // Skip modulepreload polyfill — all target browsers support native modulepreload
     modulePreload: { polyfill: false },

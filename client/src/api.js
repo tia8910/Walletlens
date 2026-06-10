@@ -104,12 +104,26 @@ async function fetchJSON(url) {
 
 // Race all CORS proxies simultaneously — returns the first success.
 // Cuts worst-case wait from 15s (sequential) down to ~4s.
+// An outer AbortController cancels still-pending requests once the
+// first one wins, avoiding unnecessary bandwidth consumption.
 async function fetchJSONFast(url) {
-  const sources = [
-    fetchWithTimeout(url, 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
-    ...CORS_PROXIES.map(w => fetchWithTimeout(w(url), 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })),
-  ]
-  try { return await Promise.any(sources) } catch { return null }
+  const outer = new AbortController()
+  function makeReq(reqUrl) {
+    const inner = new AbortController()
+    const t = setTimeout(() => inner.abort(), 4000)
+    const signal = typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([inner.signal, outer.signal])
+      : inner.signal
+    return fetch(reqUrl, { signal })
+      .then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json() })
+      .catch(e => { clearTimeout(t); throw e })
+  }
+  const sources = [makeReq(url), ...CORS_PROXIES.map(w => makeReq(w(url)))]
+  try {
+    const result = await Promise.any(sources)
+    outer.abort()
+    return result
+  } catch { return null }
 }
 
 // ─── Asset Categories ───
