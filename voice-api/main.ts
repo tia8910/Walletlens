@@ -50,6 +50,13 @@ const PROXY_ALLOWLIST = new Set([
   "api.coinpaprika.com",
   "open.er-api.com",
   "api.frankfurter.app",
+  // Asset logo CDNs — proxied so coin logos load on networks that block them
+  "coin-images.coingecko.com",
+  "assets.coingecko.com",
+  "cdn.jsdelivr.net",
+  "assets.coincap.io",
+  "raw.githubusercontent.com",
+  "lcw.nyc3.cdn.digitaloceanspaces.com",
 ])
 
 async function handleProxy(target: string | null, headers: HeadersInit): Promise<Response> {
@@ -65,14 +72,21 @@ async function handleProxy(target: string | null, headers: HeadersInit): Promise
   }
   try {
     const upstream = await fetch(parsed.toString(), {
-      headers: { "Accept": "application/json, text/csv, */*", "User-Agent": "WalletLens-Proxy/1.0" },
+      headers: { "Accept": "application/json, text/csv, image/*, */*", "User-Agent": "WalletLens-Proxy/1.0" },
       signal: AbortSignal.timeout(8000),
     })
-    const text = await upstream.text()
+    // Pass bytes through untouched — text() would corrupt binary (logo images)
+    const body = await upstream.arrayBuffer()
     const ct = upstream.headers.get("content-type") || "application/json"
-    return new Response(text, {
+    const isImage = ct.startsWith("image/")
+    return new Response(body, {
       status: upstream.status,
-      headers: { ...headers, "Content-Type": ct, "Cache-Control": "public, max-age=30" },
+      headers: {
+        ...headers,
+        "Content-Type": ct,
+        // Logos are immutable — cache long; price data stays fresh
+        "Cache-Control": isImage ? "public, max-age=86400" : "public, max-age=30",
+      },
     })
   } catch (e) {
     return new Response(JSON.stringify({ error: "upstream_failed", detail: String(e) }), { status: 502, headers })
