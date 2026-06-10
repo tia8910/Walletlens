@@ -30,6 +30,13 @@ export const TRACK_COINS = [
   { slug: 'near', id: 'near', name: 'NEAR Protocol', symbol: 'NEAR', type: 'crypto', blurb: 'a developer-friendly, sharded proof-of-stake blockchain built for usability.' },
   { slug: 'tezos', id: 'tezos', name: 'Tezos', symbol: 'XTZ', type: 'crypto', blurb: 'a self-amending blockchain with on-chain governance and upgrades.' },
   { slug: 'ethereum-classic', id: 'ethereum-classic', name: 'Ethereum Classic', symbol: 'ETC', type: 'crypto', blurb: 'the original Ethereum chain that retained proof-of-work after the 2016 fork.' },
+  // $LENZ — WalletLens's own native token on Sui (see /lenz and sui-token/).
+  // Intentionally NOT enabled yet: a /track/ page needs a live, queryable price,
+  // and $LENZ has no market/price source until it is deployed and has liquidity.
+  // Enabling now would ship a thin, price-less page (the very doorway content this
+  // list avoids). Once $LENZ is listed on a supported price source (e.g. CoinGecko),
+  // set `id` to its CoinGecko id and uncomment:
+  // { slug: 'lenz', id: 'REPLACE_WITH_COINGECKO_ID', name: 'WalletLens', symbol: 'LENZ', type: 'crypto', blurb: 'the native token of the WalletLens ecosystem, a Sui coin with a fixed 10M supply and locked minting.' },
 ]
 
 export const TRACK_STOCKS = [

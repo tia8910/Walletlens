@@ -19,6 +19,7 @@ import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
+import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
@@ -1178,18 +1179,6 @@ function DataPanel({ onRefresh, onImported }) {
   }, [])
   useEffect(() => () => stopCamera(), [stopCamera])
 
-  // Auto-import when the user opened the app via a scanned QR deep-link URL.
-  useEffect(() => {
-    const pending = sessionStorage.getItem('wl_pending_import')
-    if (!pending) return
-    sessionStorage.removeItem('wl_pending_import')
-    setCode(pending)
-    api.previewImportCode(pending).then(result => {
-      if (result?.success) { setPreview(result); setMsg('') }
-      else setMsg('Could not read QR backup.')
-    }).catch(() => setMsg('Could not read QR backup.'))
-  }, [])
-
   async function doExport() {
     setBusy(true)
     try {
@@ -1508,7 +1497,7 @@ const FEATURE_SLIDES = [
   { tag:'CORRELATION',   icon:'grid', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
   { tag:'ACADEMY',       icon:'graduation', color:'#34d399', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
   { tag:'INVESTMENT HACKS',icon:'lightbulb',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
-  { tag:'VOICE',         icon:'mic', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
+  { tag:'VOICE',         icon:'mic', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. Crypto, stocks, gold & more. Multiple trades at once.' },
   { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
   { tag:'PRIVACY',       icon:'lock', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
   { tag:'FREE',          icon:'award', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
@@ -2471,9 +2460,22 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
+  const [activeTab, setActiveTab]         = useState(() => {
+    // If a QR deep-link import is waiting in sessionStorage, open the manage tab
+    // so DataPanel mounts and its auto-import effect fires immediately.
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
+      return 'manage'
+    }
+    return location.state?.tab || 'overview'
+  })
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
+  const [holdingsSearch,  setHoldingsSearch]  = useState('')
+  const [holdingsCat,     setHoldingsCat]     = useState('all')
+  const [holdingsSort,    setHoldingsSort]    = useState('value')
+  const [holdingsSortDir, setHoldingsSortDir] = useState('desc')
+  const [holdingsBadge,   setHoldingsBadge]   = useState('all')
+  const [selectedAssets,  setSelectedAssets]  = useState(() => new Set())
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
@@ -2749,6 +2751,18 @@ export default function Dashboard() {
     }
   }, [])
 
+  // QR deep-link auto-import: runs once on mount, no confirmation needed.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    api.importCode(pending).then(result => {
+      if (result?.success === false) return // silently ignore, user can import manually
+      loadAll()
+      setActiveTab('overview')
+    }).catch(() => {})
+  }, [])
+
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
     const raw = portfolio.map(h => {
       const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
@@ -2923,7 +2937,62 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const displayHoldings = showAllHoldings ? enriched : enriched.slice(0, 6)
+  // Badge labels available per main category (derived from unfiltered enriched for stable chip list)
+  const badgesByCategory = useMemo(() => {
+    const result = {}
+    enriched.forEach(h => {
+      const cat   = categorizeAsset(h)
+      const badge = getAssetCategoryBadge(h)?.label
+      if (badge) {
+        if (!result[cat]) result[cat] = new Set()
+        result[cat].add(badge)
+      }
+    })
+    return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]))
+  }, [enriched])
+
+
+  const filteredHoldings = useMemo(() => {
+    let list = [...enriched]
+    const q = holdingsSearch.trim().toLowerCase()
+    if (q) list = list.filter(h => h.coin_symbol?.toLowerCase().includes(q) || h.coin_name?.toLowerCase().includes(q))
+    if (holdingsCat !== 'all') list = list.filter(h => categorizeAsset(h) === holdingsCat)
+    if (holdingsBadge !== 'all') list = list.filter(h => getAssetCategoryBadge(h)?.label === holdingsBadge)
+    list.sort((a, b) => {
+      if (holdingsSort === 'name') {
+        const cmp = (a.coin_symbol ?? '').localeCompare(b.coin_symbol ?? '')
+        return holdingsSortDir === 'asc' ? cmp : -cmp
+      }
+      const va = holdingsSort === 'pnl_pct' ? (a.pnlPct ?? 0) : holdingsSort === 'pct24h' ? (a.pct24h ?? 0) : holdingsSort === 'invested' ? (a.total_invested ?? 0) : (a.value ?? 0)
+      const vb = holdingsSort === 'pnl_pct' ? (b.pnlPct ?? 0) : holdingsSort === 'pct24h' ? (b.pct24h ?? 0) : holdingsSort === 'invested' ? (b.total_invested ?? 0) : (b.value ?? 0)
+      return holdingsSortDir === 'asc' ? va - vb : vb - va
+    })
+    return list
+  }, [enriched, holdingsSearch, holdingsCat, holdingsBadge, holdingsSort, holdingsSortDir])
+
+  const isHoldingsFiltered = holdingsSearch.trim() !== '' || holdingsCat !== 'all' || holdingsBadge !== 'all'
+
+  const filteredStats = useMemo(() => {
+    if (!isHoldingsFiltered || !filteredHoldings.length) return null
+    const value    = filteredHoldings.reduce((s, h) => s + (h.value || 0), 0)
+    const invested = filteredHoldings.reduce((s, h) => s + (h.total_invested || 0), 0)
+    const pnl      = filteredHoldings.reduce((s, h) => s + (h.pnl || 0), 0)
+    const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
+    return { value, invested, pnl, pnlPct }
+  }, [filteredHoldings, isHoldingsFiltered])
+
+  const selectedStats = useMemo(() => {
+    if (selectedAssets.size === 0) return null
+    const sel = filteredHoldings.filter(h => selectedAssets.has(h.coin_id))
+    if (!sel.length) return null
+    const value    = sel.reduce((s, h) => s + (h.value || 0), 0)
+    const invested = sel.reduce((s, h) => s + (h.total_invested || 0), 0)
+    const pnl      = sel.reduce((s, h) => s + (h.pnl || 0), 0)
+    const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
+    return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
+  }, [filteredHoldings, selectedAssets])
+
+  const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
@@ -3246,7 +3315,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showBackupCode && (
-                  <BackupCode hideTrigger />
+                  <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
                 )}
               </>
             )
@@ -3271,6 +3340,15 @@ export default function Dashboard() {
               </>
             )
           })()}
+
+          {/* Sentiment + portfolio tips ticker */}
+          {enriched.length > 0 && (
+            <SentimentTicker
+              holdings={enriched}
+              totalValue={totalValue}
+              totalPnLPct={totalPnLPct}
+            />
+          )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
@@ -3588,7 +3666,9 @@ export default function Dashboard() {
               {/* ── Holdings (primary column) ── */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
-                  <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
+                  <h3 style={{ margin:0 }}>
+                    Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
+                  </h3>
                   <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
                     {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
                     <button
@@ -3600,6 +3680,94 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
+
+                {/* ── Filter / sort bar ── */}
+                {enriched.length > 1 && (
+                  <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    {/* Search + sort row */}
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                          type="text"
+                          placeholder="Search assets…"
+                          value={holdingsSearch}
+                          onChange={e => setHoldingsSearch(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.35rem 1.6rem 0.35rem 0.6rem', color: 'var(--text)', fontSize: '0.77rem', outline: 'none' }}
+                        />
+                        {holdingsSearch && (
+                          <button onClick={() => setHoldingsSearch('')} style={{ position:'absolute', right:'0.4rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.85rem', padding:0, lineHeight:1 }}>✕</button>
+                        )}
+                      </div>
+                      <select
+                        value={holdingsSort}
+                        onChange={e => setHoldingsSort(e.target.value)}
+                        style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'8px', padding:'0.35rem 0.5rem', color:'var(--text)', fontSize:'0.75rem', cursor:'pointer', flexShrink:0 }}
+                      >
+                        <option value="value">Value</option>
+                        <option value="pnl_pct">P&L %</option>
+                        <option value="pct24h">24 h</option>
+                        <option value="invested">Invested</option>
+                        <option value="name">Name</option>
+                      </select>
+                      <button
+                        onClick={() => setHoldingsSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                        title={holdingsSortDir === 'desc' ? 'Descending' : 'Ascending'}
+                        style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'8px', padding:'0.35rem 0.55rem', color:'var(--text)', fontSize:'0.85rem', cursor:'pointer', flexShrink:0, lineHeight:1 }}
+                      >
+                        {holdingsSortDir === 'desc' ? '↓' : '↑'}
+                      </button>
+                    </div>
+
+                    {/* Category chips — only when >1 category */}
+                    {catBreakdown.length > 1 && (
+                      <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
+                        {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
+                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'var(--g)' : 'var(--surface-2)', color: holdingsCat === cat ? '#000' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'var(--g)' : 'var(--border)'}`, borderRadius:'20px', padding:'0.18rem 0.55rem', fontSize:'0.69rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Filtered summary stats */}
+                    {filteredStats && !selectedStats && (
+                      <div style={{ fontSize:'0.71rem', color:'var(--text-muted)', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center' }}>
+                        <span>{filteredHoldings.length} asset{filteredHoldings.length !== 1 ? 's' : ''}</span>
+                        <span style={{ opacity:0.4 }}>·</span>
+                        <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(filteredStats.value)}</span>
+                        {filteredStats.pnl !== 0 && !pricesFailed && (
+                          <>
+                            <span style={{ opacity:0.4 }}>·</span>
+                            <span style={{ fontWeight:600, color: filteredStats.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
+                              {filteredStats.pnl >= 0 ? '+' : ''}{hidden ? '••' : cv(filteredStats.pnl)} ({filteredStats.pnlPct >= 0 ? '+' : ''}{filteredStats.pnlPct.toFixed(1)}%)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Selected assets summary */}
+                    {selectedStats && (
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
+                        <div style={{ fontSize:'0.71rem', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center', background:'rgba(0,255,170,0.08)', border:'1px solid rgba(0,255,170,0.25)', borderRadius:'8px', padding:'0.25rem 0.6rem' }}>
+                          <span style={{ color:'var(--g)', fontWeight:700 }}>✓ {selectedAssets.size} selected</span>
+                          <span style={{ opacity:0.4 }}>·</span>
+                          <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(selectedStats.value)}</span>
+                          {selectedStats.pnl !== 0 && !pricesFailed && (
+                            <>
+                              <span style={{ opacity:0.4 }}>·</span>
+                              <span style={{ fontWeight:600, color: selectedStats.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
+                                {selectedStats.pnl >= 0 ? '+' : ''}{hidden ? '••' : cv(selectedStats.pnl)} ({selectedStats.pnlPct >= 0 ? '+' : ''}{selectedStats.pnlPct.toFixed(1)}%)
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => setSelectedAssets(new Set())} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.78rem', padding:'0.2rem 0.3rem', lineHeight:1 }} title="Clear selection">✕ Clear</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {enriched.length === 0
                   ? <p className="muted">Nothing yet.</p>
                   : <>
@@ -3633,6 +3801,20 @@ export default function Dashboard() {
                                 </span>
                               )}
                             </div>
+                            {/* Sub-category badge chips — shown inside the group when >1 badge type exists */}
+                            {badgesByCategory[cat]?.length > 1 && (
+                              <div style={{ display:'flex', gap:'0.3rem', flexWrap:'wrap', padding:'0.3rem 0 0.4rem' }}>
+                                {['all', ...badgesByCategory[cat]].map(badge => {
+                                  const isActive = holdingsBadge === badge
+                                  const badgeColor = badge !== 'all' ? (CRYPTO_CATEGORY_COLORS[badge] || STOCK_SECTOR_COLORS[badge] || '#6366f1') : null
+                                  return (
+                                    <button key={badge} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                                      {badge === 'all' ? 'All' : badge}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
@@ -3643,9 +3825,19 @@ export default function Dashboard() {
                                   ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
                                 const bePct = h.price > 0 && breakEvenPrice > 0
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
+                                const isSelected = selectedAssets.has(h.coin_id)
+                                const isDimmed   = selectedAssets.size > 0 && !isSelected
                                 return (
                                   <li key={h.coin_id} className="dvx-holding holo-card-v2"
+                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s' }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onClick={e => e.stopPropagation()}
+                                      onChange={() => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
+                                      style={{ flexShrink:0, width:'16px', height:'16px', marginRight:'0.5rem', cursor:'pointer', accentColor:'var(--g)' }}
+                                    />
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                                     <div className="dvx-holding-meta">
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
@@ -3709,9 +3901,9 @@ export default function Dashboard() {
                         )})
                       })()}
                     </div>
-                    {enriched.length > 6 && (
+                    {!isHoldingsFiltered && filteredHoldings.length > 6 && (
                       <button className="dvx-show-more" onClick={() => setShowAllHoldings(v => !v)}>
-                        {showAllHoldings ? '▲ Show less' : `▼ Show all ${enriched.length} assets`}
+                        {showAllHoldings ? '▲ Show less' : `▼ Show all ${filteredHoldings.length} assets`}
                       </button>
                     )}
                   </>
@@ -3937,7 +4129,7 @@ export default function Dashboard() {
           </div>
           {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
-          {showBackupCode && <BackupCode hideTrigger />}
+          {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
       )}
       {activeTab === 'tools' && enriched.length > 0 && (
@@ -4062,7 +4254,7 @@ export default function Dashboard() {
                 {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
-                {importMode === 'backup' && <BackupCode hideTrigger />}
+                {importMode === 'backup' && <DataPanel onRefresh={loadAll} onImported={() => { loadAll(); setImportChooser(false) }} />}
               </>
             )}
           </div>

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import InstallExtension from '../components/InstallExtension'
+import EmailOptIn from '../components/EmailOptIn'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -240,7 +241,7 @@ export default function Landing() {
           <div className="lp-brand-lockup">
             <Logo size={80} animated className="lp-brand-logo" />
             <div className="lp-brand-text">
-            <div className="lp-brand-title">WalletLens</div>
+            <div className="lp-brand-title">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></div>
             <div className="lp-brand-subtext">
               <div className="lp-brand-tagline">{t('brandTag')}</div>
               <div className="lp-brand-actions">
@@ -357,7 +358,7 @@ export default function Landing() {
       <section className="lp-section lp-section-alt" id="browser-extension">
         <div className="lp-section-label">Browser Extension</div>
         <h2 className="lp-section-h2">
-          Your crypto portfolio,<br />
+          Your whole portfolio,<br />
           <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
@@ -533,7 +534,7 @@ export default function Landing() {
           <FeatureCard delay={140} accent="244,114,182"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>}
             title="🎙️ Voice Trade Import"
-            desc="Just say it — “I bought 0.5 BTC at 60K” or “اشتريت واحد بيتكوين وبعت سولانا” — and WalletLens logs the trade. Supports Arabic and English, multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
+            desc="Just say it — “I bought 0.5 BTC at 60K” or “I added 20 Apple shares and 10g of gold” — and WalletLens logs the trade. Handles multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
           />
         </div>
       </section>
@@ -764,6 +765,17 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
+        <div className="lp-section-label">Stay ahead</div>
+        <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
+          Get market insights &<br /><span style={{ color:'var(--g)' }}>new features first</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
+          Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
+        </p>
+        <EmailOptIn source="landing_newsletter" />
+      </section>
+
       <section style={{ display:'flex', justifyContent:'center', padding:'1.5rem 1rem 0' }}>
         <InstallExtension variant="badge" source="landing_footer" />
       </section>
@@ -776,8 +788,11 @@ export default function Landing() {
         <nav className="lp-footer-links">
           <Link to="/free-net-worth-tracker" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
           <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
+          <Link to="/lenz" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
           <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
           <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/terms" onClick={() => track('landing_footer_nav', { to: 'terms' })}>{t('terms')}</Link>
+          <a href="mailto:contact@walletlens.live" onClick={() => track('landing_footer_nav', { to: 'contact' })}>Contact</a>
         </nav>
       </footer>
     </div>

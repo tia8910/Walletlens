@@ -1,0 +1,10 @@
+{
+  "name": "lenz-sui-token",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tooling for the $LENZ Sui token (Merkle airdrop, snapshot, tests).",
+  "dependencies": {
+    "@mysten/sui": "^1.45.0"
+  }
+}
