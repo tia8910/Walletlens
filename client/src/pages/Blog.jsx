@@ -138,7 +138,7 @@ function ShareBar({ post }) {
 
 function PostCard({ post }) {
   return (
-    <Link to={`/blog/${post.slug}`} className="blog-card">
+    <Link to={`/blog/${post.slug}/`} className="blog-card">
       <div className="blog-card-meta">{post.date} · {post.readTime}</div>
       <h2 className="blog-card-title">{post.title}</h2>
       <p className="blog-card-summary">{post.summary}</p>
@@ -155,7 +155,7 @@ function RelatedPosts({ slug }) {
       <h2 className="blog-related-title">Keep reading</h2>
       <div className="blog-related-grid">
         {related.map(p => (
-          <Link key={p.slug} to={`/blog/${p.slug}`} className="blog-related-card">
+          <Link key={p.slug} to={`/blog/${p.slug}/`} className="blog-related-card">
             <span className="blog-related-meta">{p.readTime}</span>
             <span className="blog-related-name">{p.title}</span>
             <span className="blog-related-cta">Read →</span>
@@ -248,7 +248,7 @@ export default function Blog() {
     return (
       <div className="doc-page">
         <header className="doc-header"><Link to="/" className="doc-brand"><Logo size={26} /> WalletLens</Link></header>
-        <article className="doc-article"><h1>Post not found</h1><Link to="/blog">← Back to Blog</Link></article>
+        <article className="doc-article"><h1>Post not found</h1><Link to="/blog/">← Back to Blog</Link></article>
       </div>
     )
   }
@@ -258,7 +258,7 @@ export default function Blog() {
       <div className="doc-page">
         <header className="doc-header"><Link to="/" className="doc-brand"><Logo size={26} /> WalletLens</Link></header>
         <article className="doc-article">
-          <Link to="/blog" className="blog-back">← All Articles</Link>
+          <Link to="/blog/" className="blog-back">← All Articles</Link>
           <p className="doc-meta">{post.date} · {post.readTime}</p>
           <h1>{post.title}</h1>
           <p className="blog-summary">{post.summary}</p>
@@ -269,14 +269,14 @@ export default function Blog() {
           <div className="blog-cta-box">
             <strong>Start tracking your portfolio for free</strong>
             <p>WalletLens is 100% free, no account required, and all your data stays on your device.</p>
-            <Link to="/dashboard" className="blog-cta-btn">Open WalletLens →</Link>
+            <Link to="/dashboard/" className="blog-cta-btn">Open WalletLens →</Link>
           </div>
           <RelatedPosts slug={post.slug} />
         </article>
         <footer className="doc-footer">
-          <Link to="/blog">← All Articles</Link>
+          <Link to="/blog/">← All Articles</Link>
           <Link to="/">Home</Link>
-          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/privacy/">Privacy Policy</Link>
         </footer>
       </div>
     )
@@ -294,8 +294,8 @@ export default function Blog() {
       </div>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
-        <Link to="/about">About</Link>
-        <Link to="/privacy">Privacy Policy</Link>
+        <Link to="/about/">About</Link>
+        <Link to="/privacy/">Privacy Policy</Link>
       </footer>
     </div>
   )

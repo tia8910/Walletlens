@@ -1262,6 +1262,33 @@ write('/terms', buildPage({
 
 console.log(`\nPrerendered ${POSTS.length + 8} content pages into dist/.`)
 
+// ── App-route shells (noindex) ───────────────────────────────────────────────
+// In-app pages have no crawlable content (everything renders client-side from
+// the user's local data). Without a prerendered dir, GitHub Pages serves
+// 404.html + a JS redirect, which Googlebot reports as "Discovered – currently
+// not indexed" noise. A 200 + explicit noindex,follow gives crawlers a clean,
+// stable answer and keeps these URLs out of indexing reports.
+const APP_ROUTES = [
+  { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
+  { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
+  { path: '/whales',       title: 'Whale Tracker — WalletLens',  description: 'Real-time large Bitcoin transactions and volume anomalies.' },
+  { path: '/alpha',        title: 'Alpha — WalletLens',          description: 'Market signals and analysis tools.' },
+  { path: '/academy',      title: 'Academy — WalletLens',        description: 'Learn portfolio tracking and investing concepts.' },
+  { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
+  { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
+  { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
+]
+for (const r of APP_ROUTES) {
+  write(r.path, buildPage({
+    path: r.path,
+    title: r.title,
+    description: r.description,
+    noindex: true,
+    bodyHtml: `<h1>${esc(r.title.replace(' — WalletLens', ''))}</h1><p>${esc(r.description)} <a href="/">Open WalletLens</a> — free, private, no account needed.</p>`,
+  }))
+}
+console.log(`Prerendered ${APP_ROUTES.length} app-route shells (noindex).`)
+
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
 // App routes (/dashboard, /whales, /alpha, etc.) are intentionally excluded:
