@@ -363,6 +363,8 @@ input, select, textarea {
 /* ── Landing page is ALWAYS dark — reset all CSS vars inside .lp ── */
 [data-wl-light] .lp {
   --text: rgba(255,255,255,0.95);
+  --text2: rgba(255,255,255,0.82);
+  --g-ink: #ffffff; /* accent text stays bold white on the always-dark landing */
   --text-muted: rgba(255,255,255,0.65);
   --text-sub: rgba(255,255,255,0.4);
   --bg: #0a0a0f;
@@ -6494,6 +6496,8 @@ select.bs-input option { background: var(--bg3); }
   background: #eef6f1;            /* fills scroll overflow */
   color: #0f172a;
   --text: #0f172a;
+  --text2: rgba(15,23,42,0.85);
+  --g-ink: #0f172a; /* accent text reads bold black on the light landing */
   --text-muted: rgba(15,23,42,0.62);
   --text-sub: rgba(15,23,42,0.5);
 }
