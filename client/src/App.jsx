@@ -464,7 +464,7 @@ export default function App() {
                         role="menuitem"
                       >
                         <span className="wl-topbar-theme-dot" style={{ background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})` }}>
-                          {th.logo ? <img src={th.logo} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
+                          {th.logo ? <img src={th.logo} alt="coin logo" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
                         </span>
                         <span>{th.name}</span>
                       </button>
