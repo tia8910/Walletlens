@@ -157,7 +157,7 @@ setTimeout(() => {
   const now = Date.now();
   // CryptoCompare fallback — used when Binance is blocked (e.g. Egypt, Turkey)
   const _ccPrewarm = () => {
-    const syms = Object.values(TOP_BINANCE_ID); // BTC,ETH,BNB,...
+    const syms = Object.keys(TOP_BINANCE_ID); // BTC,ETH,BNB,...
     fetchWithTimeout(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms.join(',')}&tsyms=USD`, 5000)
       .then(async r => {
         if (!r?.ok) return;
@@ -166,7 +166,7 @@ setTimeout(() => {
         for (const [sym, currencies] of Object.entries(d.RAW)) {
           const raw = currencies?.USD;
           if (!raw?.PRICE || raw.PRICE <= 0) continue;
-          const id = Object.entries(TOP_BINANCE_ID).find(([, s]) => s === sym)?.[0];
+          const id = TOP_BINANCE_ID[sym];
           if (!id) continue;
           if (!priceCache[id] || !priceCache[id].usd) {
             priceCache[id] = { ...(priceCache[id] || {}), usd: raw.PRICE, usd_24h_change: raw.CHANGEPCT24HOUR || 0, symbol: sym, source: 'cryptocompare' };
