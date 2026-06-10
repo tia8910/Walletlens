@@ -606,7 +606,7 @@ function FearGreedGauge({ value, label, color }) {
       {/* Value */}
       <text x={cx} y={cy - 18} textAnchor="middle" fontSize="22" fontWeight="900"
         fill={color} fontFamily="Inter,sans-serif">{value}</text>
-      <text x={cx} y={cy - 5} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.5)"
+      <text x={cx} y={cy - 5} textAnchor="middle" fontSize="9" fill="var(--text-muted)"
         fontFamily="Inter,sans-serif">{label}</text>
     </svg>
   )
@@ -661,7 +661,7 @@ function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
         const [x, y] = labelPoint(i)
         return (
           <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-            fontSize="9" fill="rgba(255,255,255,0.55)" fontFamily="Inter,sans-serif">
+            fontSize="9" fill="var(--text-muted)" fontFamily="Inter,sans-serif">
             {lbl}
           </text>
         )
@@ -3462,9 +3462,9 @@ export default function Dashboard() {
                         </svg>
                         <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>Customize Dashboard</h3>
                       </div>
-                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'#aaa', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
+                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
                     </div>
-                    <p style={{ fontSize:'0.73rem', color:'#666', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
+                    <p style={{ fontSize:'0.73rem', color:'var(--text-muted)', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
 
                     {/* Card grid */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>

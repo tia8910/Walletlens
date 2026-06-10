@@ -449,7 +449,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   <textarea id="wl-backup-code-textarea" value={exportCode} readOnly
                     onClick={e => e.target.select()} style={{
                       width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
-                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'#e2e8f0',
+                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                       padding:'0.6rem', fontSize:'0.7rem', fontFamily:'monospace',
                       resize:'vertical', wordBreak:'break-all', boxSizing:'border-box',
                     }} />
@@ -514,7 +514,7 @@ export default function BackupCode({ hideTrigger = false }) {
                 onChange={e => { importSourceRef.current = 'backup_code'; setImportText(e.target.value); setError(''); setImportResult(null) }}
                 placeholder="Paste backup code here…" style={{
                   width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
-                  border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'#e2e8f0',
+                  border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                   padding:'0.6rem', fontSize:'0.72rem', fontFamily:'monospace',
                   resize:'vertical', wordBreak:'break-all', boxSizing:'border-box', marginBottom:'0.6rem',
                 }} />

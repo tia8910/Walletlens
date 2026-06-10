@@ -238,7 +238,7 @@ export default function MarketMood() {
             marginTop: '0.25rem', padding: '0 0.25rem',
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="frown" size={12} style={{ color: '#f87171' }} />Fear</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: '#94a3b8' }} />Neutral</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: 'var(--text-muted)' }} />Neutral</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: 'var(--g-ink)' }} />Greed</span>
           </div>
         </>
