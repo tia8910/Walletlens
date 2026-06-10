@@ -9,6 +9,7 @@ const SITE            = 'https://walletlens.live';
 const CG_PRICE_URL    = 'https://api.coingecko.com/api/v3/simple/price';
 const CG_MARKET_URL   = 'https://api.coingecko.com/api/v3/coins/markets';
 const FG_URL          = 'https://api.alternative.me/fng/?limit=1';
+const DENO_PROXY      = u => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
 
 const MARKET_COINS = ['bitcoin','ethereum','binancecoin','solana','ripple','cardano'];
 const NEWS_URL     = 'https://walletlens.live/news.json';
@@ -126,33 +127,51 @@ async function fetchPrices(coinIds) {
       if (c && c.ids === ids && Date.now()-c.fetchedAt < PRICE_TTL) return c.prices;
     }
   } catch {}
-  try {
-    const url = new URL(CG_PRICE_URL);
-    url.searchParams.set('ids', ids);
-    url.searchParams.set('vs_currencies', 'usd');
-    url.searchParams.set('include_24hr_change', 'true');
-    const res = await fetch(url, { signal:AbortSignal.timeout(8000) });
-    if (!res.ok) return {};
-    const json = await res.json();
-    try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices:json, fetchedAt:Date.now() } }); } catch {}
-    return json;
-  } catch { return {}; }
+  const url = new URL(CG_PRICE_URL);
+  url.searchParams.set('ids', ids);
+  url.searchParams.set('vs_currencies', 'usd');
+  url.searchParams.set('include_24hr_change', 'true');
+  const urlStr = url.toString();
+  const attempts = [
+    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
+    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      const json = await res.json();
+      if (!json || typeof json !== 'object' || Array.isArray(json)) continue;
+      try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices:json, fetchedAt:Date.now() } }); } catch {}
+      return json;
+    } catch {}
+  }
+  return {};
 }
 
 async function fetchMarketCoins() {
-  try {
-    const url = new URL(CG_MARKET_URL);
-    url.searchParams.set('vs_currency', 'usd');
-    url.searchParams.set('ids', MARKET_COINS.join(','));
-    url.searchParams.set('order', 'market_cap_desc');
-    url.searchParams.set('per_page', '6');
-    url.searchParams.set('page', '1');
-    url.searchParams.set('sparkline', 'false');
-    url.searchParams.set('price_change_percentage', '24h');
-    const res = await fetch(url, { signal:AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch { return []; }
+  const url = new URL(CG_MARKET_URL);
+  url.searchParams.set('vs_currency', 'usd');
+  url.searchParams.set('ids', MARKET_COINS.join(','));
+  url.searchParams.set('order', 'market_cap_desc');
+  url.searchParams.set('per_page', '6');
+  url.searchParams.set('page', '1');
+  url.searchParams.set('sparkline', 'false');
+  url.searchParams.set('price_change_percentage', '24h');
+  const urlStr = url.toString();
+  const attempts = [
+    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
+    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) return data;
+    } catch {}
+  }
+  return [];
 }
 
 async function fetchNews() {
@@ -167,13 +186,19 @@ async function fetchNews() {
 }
 
 async function fetchOHLC(coinId) {
-  try {
-    const url = CG_OHLC_URL.replace('{id}', coinId);
-    const full = url + '?vs_currency=usd&days=14';
-    const res = await fetch(full, { signal:AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    return await res.json(); // [[ts, open, high, low, close], ...]
-  } catch { return null; }
+  const urlStr = CG_OHLC_URL.replace('{id}', coinId) + '?vs_currency=usd&days=14';
+  const attempts = [
+    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
+    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      return await res.json();
+    } catch {}
+  }
+  return null;
 }
 
 async function fetchFearGreed() {
