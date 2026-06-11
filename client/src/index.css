@@ -110,6 +110,13 @@ input, select, textarea {
   --red: #f87171;
   --red-bg: rgba(248, 113, 113, 0.12);
   --orange: #fbbf24;
+  /* Semantic accents — alias hardcoded hexes scattered through the app so
+     gains/losses/warnings stay consistent and theme-aware. */
+  --cyan: #5eead4;
+  --amber: #f59e0b;
+  --rose: #ff8080;
+  --positive: #34d399;
+  --negative: #f87171;
 
   --header-gradient: linear-gradient(135deg, #09090e 0%, #191a24 50%, #00e676 110%);
   --header-gradient-alt: linear-gradient(135deg, #00e676 0%, #00b856 100%);
@@ -121,10 +128,18 @@ input, select, textarea {
   --mesh-4: rgba(0, 0, 0, 0.8);
 
   --radius: 22px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 2px 12px rgba(0, 0, 0, 0.18);
-  --shadow-lg: 0 4px 24px rgba(0, 0, 0, 0.28), 0 8px 32px rgba(0, 0, 0, 0.2);
+  /* Layered shadows — a crisp 1px contact edge + soft ambient diffusion +
+     a faint inner top highlight reads as real depth (premium SaaS feel)
+     instead of a flat single drop shadow. */
+  --shadow: 0 1px 2px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-lg: 0 2px 6px rgba(0,0,0,0.3), 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
   --shadow-glow: 0 1px 3px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.12);
-  --glass: blur(10px) saturate(140%);
+  --glass: blur(14px) saturate(150%);
+  /* Standard motion easing + duration tokens for consistent micro-interactions */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 0.14s;
+  --dur: 0.22s;
 }
 
 /* On mobile, backdrop-filter compositing is expensive — halve the blur radius
@@ -1074,11 +1089,18 @@ body {
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01';
   min-height: 100vh; min-height: 100dvh;
   position: relative;
 }
 
 h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
+/* Tabular figures for all money/number displays — keeps columns aligned and
+   stops digit-width jitter when live prices tick (a premium-finance detail). */
+.mono, [class*="value"], [class*="price"], [class*="pnl"], [class*="amount"],
+[class*="total"], [class*="-num"], .hero-value, td { font-variant-numeric: tabular-nums; }
 
 /* ── Animated zooming-lens logo ── */
 .lens-ring {
@@ -1816,8 +1838,8 @@ body::after {
   padding: 0.3rem 0.65rem; border-radius: 8px;
   border: 1px solid;
 }
-.hero-pnl.positive { color: #5eead4; background: rgba(var(--g-rgb),0.12); border-color: rgba(var(--g-rgb),0.25); }
-.hero-pnl.negative { color: #ff8080; background: rgba(255, 107, 107, 0.12); border-color: rgba(255, 107, 107, 0.20); }
+.hero-pnl.positive { color: var(--cyan); background: rgba(var(--g-rgb),0.12); border-color: rgba(var(--g-rgb),0.25); }
+.hero-pnl.negative { color: var(--rose); background: rgba(255, 107, 107, 0.12); border-color: rgba(255, 107, 107, 0.20); }
 .hero-invested {
   font-size: 0.78rem; font-weight: 500;
   color: rgba(255,255,255,0.7);
@@ -1845,8 +1867,9 @@ body::after {
 .target-form input::placeholder { color: rgba(255,255,255,0.85); }
 .target-form input:focus { border-color: white; }
 .target-form button { padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
-.btn-outline { background: rgba(255,255,255,0.18); border: 1px dashed rgba(255,255,255,0.5); color: white; padding: 0.55rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.15s; }
-.btn-outline:hover { background: rgba(255,255,255,0.28); }
+.btn-outline { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.22); color: white; padding: 0.55rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.btn-outline:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.34); }
+.btn-outline:active { transform: scale(0.985); }
 .btn-ghost { background: none; border: none; color: rgba(255,255,255,0.85); padding: 0.5rem; cursor: pointer; font-size: 0.85rem; }
 .btn-ghost:hover { color: white; background: none; }
 
@@ -1883,10 +1906,10 @@ body::after {
   background: var(--bg2);
 }
 .action-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.5); }
-.buy-btn  { background: linear-gradient(135deg, var(--gd), var(--gd)); color: #fff; }
-.buy-btn:hover  { background: linear-gradient(135deg, var(--gd), var(--gd)); }
+.buy-btn  { background: linear-gradient(135deg, var(--g), var(--gd)); color: #fff; }
+.buy-btn:hover  { background: linear-gradient(135deg, var(--g), var(--gd)); filter: brightness(1.06); }
 .sell-btn { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
-.sell-btn:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+.sell-btn:hover { background: linear-gradient(135deg, #ef4444, #dc2626); filter: brightness(1.06); }
 .wallet-btn { background: var(--bg3); color: var(--text); border-color: var(--border); }
 .wallet-btn:hover { background: var(--bg4); }
 .data-btn { background: linear-gradient(135deg, var(--g), #0f2318); color: #000; }
@@ -1901,12 +1924,12 @@ body::after {
   cursor: pointer; transition: all 0.15s; border: none;
 }
 .data-export-btn {
-  background: linear-gradient(135deg, var(--g), var(--g)); color: white;
+  background: linear-gradient(135deg, var(--g), var(--gd)); color: white;
   box-shadow: 0 2px 8px rgba(var(--g-rgb),0.25);
 }
-.data-export-btn:hover { background: linear-gradient(135deg, var(--gd), var(--g)); }
+.data-export-btn:hover { background: linear-gradient(135deg, var(--g), var(--gd)); filter: brightness(1.06); }
 .data-import-btn {
-  background: var(--bg3); color: var(--text); border: 1px dashed var(--border);
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
 }
 .data-import-btn:hover { background: var(--bg4); }
 .import-status {
@@ -10604,3 +10627,84 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .wlc-msg-assistant { background: rgba(0,0,0,0.04); color: #1e293b; }
 [data-wl-light] .wlc-suggestion { color: #1e293b; }
 [data-wl-light] .wlc-input { background: rgba(0,0,0,0.03); color: #1e293b; border-color: rgba(0,0,0,0.12); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   PREMIUM POLISH LAYER
+   Cross-cutting refinements that lift the whole app to a premium feel:
+   keyboard-accessible focus rings, unified disabled states, brand-tinted
+   text selection, and consistent tactile micro-interactions. Kept last so
+   these baseline behaviours win without having to touch every component.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Brand-tinted text selection (replaces the default browser blue). */
+::selection { background: rgba(var(--g-rgb), 0.3); color: #fff; }
+[data-wl-light] ::selection { background: rgba(var(--g-rgb), 0.22); color: #0f172a; }
+
+/* Keyboard-only focus ring on every interactive element. :focus-visible keeps
+   it off for mouse/touch (no ugly persistent ring) while remaining fully
+   accessible for keyboard navigation — a hallmark of polished products. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--g);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+/* Remove the legacy hard outline in favour of the ring above. */
+:focus:not(:focus-visible) { outline: none; }
+
+/* Unified disabled state for all buttons — clearly inert, no hover lift. */
+button:disabled,
+button[disabled],
+[role="button"][aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+  transform: none !important;
+  box-shadow: none !important;
+}
+button:disabled:hover,
+button[disabled]:hover { filter: grayscale(0.2) brightness(1) !important; }
+
+/* Disabled inputs read as locked, not broken. */
+input:disabled,
+select:disabled,
+textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Consistent tactile press for any clickable that opts in via these classes
+   but doesn't already define an :active transform. */
+button:not(:disabled):active,
+.action-btn:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active { transition-duration: 0.06s; }
+
+/* Refined card hover — a subtle lift + brighter border + deeper shadow reads
+   as "interactive surface" instead of a flat box. Scoped to dashboard/holding
+   cards so static content cards stay calm. */
+.coin-card, .holding-card, .asset-card {
+  transition: transform var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+  will-change: transform;
+}
+.coin-card:hover, .holding-card:hover, .asset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(var(--g-rgb), 0.4);
+}
+
+/* Premium accessibility: honour reduced-motion globally as a safety net.
+   Long ambient loops (tickers, drifting glows, shimmer) are silenced and all
+   transitions collapse to near-instant, while keeping layout intact. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
