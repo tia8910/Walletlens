@@ -206,7 +206,7 @@ function GemsTab({ market }) {
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
-            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(var(--g-rgb),0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g-ink)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
+            <div className="gem-score-badge" data-tier={c.gemScore >= 70 ? 'high' : c.gemScore >= 45 ? 'medium' : 'low'}>
               {c.gemScore} gem score
             </div>
           </Link>
