@@ -63,50 +63,54 @@ input, select, textarea {
   --mood: 0;
   --mood-aura-color: 100, 116, 139;
   --mood-aura-opacity: 0.02;
-  /* Brand palette — neon mint on black */
-  --g: #00e676;
-  --gd: #00b856;
-  /* Accent-colored TEXT (links, table highlights, positive values). Per design
-     direction this is bold white on the dark theme and bold black in light
-     mode — green stays for backgrounds, borders and badges only. */
+  /* Brand palette — refined emerald accent, disciplined. The accent is a POP,
+     not a wash: it appears on gains, the logo, primary CTAs and focus rings —
+     never on body text, metadata or card chrome. (Runtime values come from
+     ThemeContext; these :root values are the neutral-slate fallback that also
+     covers prerendered pages before JS hydrates.) */
+  --g: #10b981;
+  --gd: #059669;
+  /* Accent-colored TEXT (links, table highlights, positive values). Bold white
+     on dark / bold black in light — the accent hue stays for backgrounds,
+     borders and badges only, never plain text. */
   --g-ink: #ffffff;
-  --g-rgb: 0, 230, 118;
-  --gd-rgb: 0, 184, 86;
-  --gl: rgba(0, 230, 118, 0.12);
-  --ink: #050a07;
-  --ink2: #0d1610;
-  --ink3: rgba(0, 230, 118, 0.55);
+  --g-rgb: 16, 185, 129;
+  --gd-rgb: 5, 150, 105;
+  --gl: rgba(16, 185, 129, 0.10);
+  --ink: #060708;
+  --ink2: #111316;
+  --ink3: rgba(16, 185, 129, 0.45);
   --mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --display: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Surface — deep forest green undertone */
-  --bg: #080f0c;
-  --card-bg: rgba(14, 22, 18, 0.92);
-  --bg2: rgba(14, 22, 18, 0.92);
-  --bg3: #0d1610;
-  --bg4: #122018;
-  --border: rgba(0, 230, 118, 0.38);
+  /* Surface — neutral graphite, NO color undertone */
+  --bg: #0a0b0d;
+  --card-bg: rgba(20, 22, 26, 0.88);
+  --bg2: rgba(20, 22, 26, 0.88);
+  --bg3: #111316;
+  --bg4: #16181d;
+  --border: rgba(255, 255, 255, 0.08);
 
-  /* Text */
-  --text: #ffffff;
-  /* Secondary text — was green-tinted; now white per bold-white text direction */
-  --text2: rgba(255, 255, 255, 0.82);
-  --text-muted: rgba(255,255,255,0.88);
-  --text-sub: rgba(255,255,255,0.75);
+  /* Text — neutral white / gray hierarchy, tuned for solid legibility
+     (metadata is NEVER tinted with the accent hue) */
+  --text: #f5f6f7;
+  --text2: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255,255,255,0.62);
+  --text-sub: rgba(255,255,255,0.46);
   --surface-1: rgba(255,255,255,0.04);
-  --surface-2: rgba(255,255,255,0.08);
-  --surface-3: rgba(255,255,255,0.13);
+  --surface-2: rgba(255,255,255,0.07);
+  --surface-3: rgba(255,255,255,0.11);
 
   /* Accents */
-  --accent: #00e676;
-  --accent2: #00b856;
-  --accent3: #00e676;
-  --accent-bg: rgba(0, 230, 118, 0.12);
-  --accent2-bg: rgba(0, 184, 86, 0.12);
-  --accent3-bg: rgba(0, 230, 118, 0.12);
+  --accent: #10b981;
+  --accent2: #059669;
+  --accent3: #10b981;
+  --accent-bg: rgba(16, 185, 129, 0.10);
+  --accent2-bg: rgba(5, 150, 105, 0.10);
+  --accent3-bg: rgba(16, 185, 129, 0.10);
 
-  --green: #00e676;
-  --green-bg: rgba(0, 230, 118, 0.14);
+  --green: #10b981;
+  --green-bg: rgba(16, 185, 129, 0.12);
   --red: #f87171;
   --red-bg: rgba(248, 113, 113, 0.12);
   --orange: #fbbf24;
@@ -123,13 +127,13 @@ input, select, textarea {
   --purple: #a78bfa;
   --purple-bg: rgba(167, 139, 250, 0.12);
 
-  --header-gradient: linear-gradient(135deg, #09090e 0%, #191a24 50%, #00e676 110%);
-  --header-gradient-alt: linear-gradient(135deg, #00e676 0%, #00b856 100%);
+  --header-gradient: linear-gradient(135deg, #0a0b0d 0%, #16181d 55%, #10b981 135%);
+  --header-gradient-alt: linear-gradient(135deg, #10b981 0%, #059669 100%);
 
-  /* Floating mesh — dark emerald tones */
-  --mesh-1: rgba(0, 230, 118, 0.06);
-  --mesh-2: rgba(0, 184, 86, 0.04);
-  --mesh-3: rgba(0, 230, 118, 0.05);
+  /* Floating mesh — barely-there neutral/emerald */
+  --mesh-1: rgba(16, 185, 129, 0.04);
+  --mesh-2: rgba(5, 150, 105, 0.03);
+  --mesh-3: rgba(16, 185, 129, 0.035);
   --mesh-4: rgba(0, 0, 0, 0.8);
 
   --radius: 22px;
@@ -356,28 +360,28 @@ input, select, textarea {
 /* ── Light mode overrides ────────────────────────────────────────────────── */
 [data-wl-light] {
   color-scheme: light;
-  /* Text colors — dark on light background (was inheriting white from :root) */
-  --text: #0f172a;
-  --text-muted: rgba(15, 23, 42, 0.88);
-  --text-sub: rgba(15, 23, 42, 0.75);
-  /* Surfaces — subtle dark tints over the light page background */
-  --surface-1: rgba(15, 23, 42, 0.04);
-  --surface-2: rgba(15, 23, 42, 0.07);
-  --surface-3: rgba(15, 23, 42, 0.1);
-  --card-bg: rgba(255, 255, 255, 0.7);
-  --border: rgba(15, 23, 42, 0.12);
-  /* Accent text reads bold black on the light page (green kept for fills/borders) */
-  --g-ink: #0f172a;
-  --text2: rgba(15, 23, 42, 0.85);
-  /* Tone down neon green backgrounds — #00ffaa is too vivid at full opacity on white */
-  --gl: rgba(0, 255, 170, 0.06);
-  --accent-bg: rgba(0, 255, 170, 0.07);
-  --accent2-bg: rgba(0, 214, 138, 0.06);
-  --accent3-bg: rgba(0, 255, 170, 0.06);
-  --green-bg: rgba(0, 255, 170, 0.07);
-  --mesh-1: rgba(0, 255, 170, 0.03);
-  --mesh-2: rgba(0, 214, 138, 0.02);
-  --mesh-3: rgba(0, 255, 170, 0.02);
+  /* Text — solid near-black hierarchy on the light canvas (no tint) */
+  --text: #16181b;
+  --text2: rgba(24, 24, 27, 0.70);
+  --text-muted: rgba(24, 24, 27, 0.58);
+  --text-sub: rgba(24, 24, 27, 0.42);
+  /* Surfaces — subtle neutral tints over the light page background */
+  --surface-1: rgba(0, 0, 0, 0.04);
+  --surface-2: rgba(0, 0, 0, 0.06);
+  --surface-3: rgba(0, 0, 0, 0.10);
+  --card-bg: rgba(255, 255, 255, 0.96);
+  --border: rgba(0, 0, 0, 0.09);
+  /* Accent text reads bold near-black on the light page (emerald kept for fills) */
+  --g-ink: #16181b;
+  /* Refined emerald, faint — disciplined accent backgrounds only */
+  --gl: rgba(5, 150, 105, 0.08);
+  --accent-bg: rgba(5, 150, 105, 0.08);
+  --accent2-bg: rgba(4, 120, 87, 0.06);
+  --accent3-bg: rgba(5, 150, 105, 0.08);
+  --green-bg: rgba(5, 150, 105, 0.10);
+  --mesh-1: rgba(5, 150, 105, 0.03);
+  --mesh-2: rgba(4, 120, 87, 0.02);
+  --mesh-3: rgba(5, 150, 105, 0.02);
 }
 
 /* ── Landing page is ALWAYS dark — reset all CSS vars inside .lp ── */
