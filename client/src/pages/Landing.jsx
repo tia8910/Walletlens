@@ -371,7 +371,7 @@ export default function Landing() {
         <p className="lp-section-sub">{t('aiSub')}</p>
         <div className="lp-ai-grid">
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(0,255,170,0.12)',color:'#00ffaa'}}>
+            <div className="lp-ai-feat-icon" data-i="1">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div>
@@ -380,7 +380,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(255,215,0,0.12)',color:'#ffd700'}}>
+            <div className="lp-ai-feat-icon" data-i="2">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             </div>
             <div>
@@ -389,7 +389,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(239,68,68,0.12)',color:'#f87171'}}>
+            <div className="lp-ai-feat-icon" data-i="3">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <div>
@@ -398,7 +398,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(168,85,247,0.12)',color:'#c084fc'}}>
+            <div className="lp-ai-feat-icon" data-i="4">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             </div>
             <div>
@@ -407,7 +407,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(59,130,246,0.12)',color:'#60a5fa'}}>
+            <div className="lp-ai-feat-icon" data-i="5">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>
             </div>
             <div>
@@ -416,7 +416,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(20,184,166,0.12)',color:'#2dd4bf'}}>
+            <div className="lp-ai-feat-icon" data-i="6">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
             </div>
             <div>
@@ -425,7 +425,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(251,146,60,0.12)',color:'#fb923c'}}>
+            <div className="lp-ai-feat-icon" data-i="7">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div>
@@ -434,7 +434,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(167,139,250,0.12)',color:'#a78bfa'}}>
+            <div className="lp-ai-feat-icon" data-i="8">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div>
@@ -464,22 +464,22 @@ export default function Landing() {
         <h2 className="lp-section-h2">{t('assetTitle')}</h2>
         <div className="lp-asset-grid">
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(247,147,26,0.12)', color: '#f7931a' }}>₿</div>
+            <div className="lp-asset-icon" data-asset="btc">₿</div>
             <div className="lp-asset-name">{t('assetCrypto')}</div>
             <div className="lp-asset-desc">{t('assetCryptoDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(255,215,0,0.12)', color: '#ffd700' }}>Au</div>
+            <div className="lp-asset-icon" data-asset="gold">Au</div>
             <div className="lp-asset-name">{t('assetGold')}</div>
             <div className="lp-asset-desc">{t('assetGoldDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(192,192,192,0.12)', color: '#c0c0c0' }}>Ag</div>
+            <div className="lp-asset-icon" data-asset="silver">Ag</div>
             <div className="lp-asset-name">{t('assetSilver')}</div>
             <div className="lp-asset-desc">{t('assetSilverDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>$</div>
+            <div className="lp-asset-icon" data-asset="stocks">$</div>
             <div className="lp-asset-name">{t('assetStocks')}</div>
             <div className="lp-asset-desc">{t('assetStocksDesc')}</div>
           </div>
@@ -499,23 +499,17 @@ export default function Landing() {
           without opening the site. It syncs automatically and your data stays on your device.
         </p>
 
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem', maxWidth: 860, margin: '0 auto 2rem', textAlign: 'left',
-        }}>
+        <div className="lp-ext-feat-grid">
           {[
             { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
             { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
             { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
             { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
           ].map((b, i) => (
-            <div key={i} style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)',
-              borderRadius: '14px', padding: '1rem 1.1rem',
-            }}>
-              <div style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{b.e}</div>
-              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{b.t}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5 }}>{b.d}</div>
+            <div key={i} className="lp-ext-feat">
+              <div className="lp-ext-feat-icon">{b.e}</div>
+              <div className="lp-ext-feat-title">{b.t}</div>
+              <div className="lp-ext-feat-desc">{b.d}</div>
             </div>
           ))}
         </div>
