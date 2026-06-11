@@ -7,6 +7,10 @@
 const SW_VERSION = 'v154'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
+// CDN assets (coin icons, Google Fonts) are content-addressed and never change,
+// so they live in a version-independent cache that survives SW updates.
+// Without this, every deployment causes ~100 coin icons to be re-fetched.
+const CDN_CACHE = 'walletlens-cdn-v1'
 
 // Static files to pre-cache at install time for instant first-load.
 // manifest.webmanifest is included so the install prompt works offline.
@@ -57,7 +61,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== STATIC && k !== API_CACHE).map(k => caches.delete(k))
+        keys.filter(k => k !== STATIC && k !== API_CACHE && k !== CDN_CACHE).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   )
@@ -103,10 +107,10 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Google Fonts: cache-first (font files are content-addressed / immutable)
+  // ── Google Fonts: cache-first in version-independent CDN cache
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(
-      caches.open(STATIC).then(async cache => {
+      caches.open(CDN_CACHE).then(async cache => {
         const cached = await cache.match(req)
         if (cached) return cached
         const fresh = await fetch(req)
@@ -117,10 +121,10 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Static CDN assets (e.g. coin icons): cache-first, indefinitely
+  // ── Static CDN assets (e.g. coin icons): cache-first in version-independent CDN cache
   if (isStaticCdn(url)) {
     e.respondWith(
-      caches.open(STATIC).then(async cache => {
+      caches.open(CDN_CACHE).then(async cache => {
         const cached = await cache.match(req)
         if (cached) return cached
         const fresh = await fetch(req)
