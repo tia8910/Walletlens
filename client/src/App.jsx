@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -307,11 +307,22 @@ export default function App() {
   const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/faq', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
   const { locked, unlock } = useBiometricLock()
 
+  const _guardianChecked = useRef(false)
   useEffect(() => {
     applySettings()
     initMood()
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
       track('pwa_session', { installed: true })
+    }
+    // Silent guardian check-in — fires once per session, well after app load
+    if (!_guardianChecked.current) {
+      _guardianChecked.current = true
+      const local = (() => { try { return JSON.parse(localStorage.getItem('wl_guardian') || 'null') } catch { return null } })()
+      if (local?.active) {
+        setTimeout(() => {
+          import('./components/PortfolioGuardian').then(m => m.silentCheckin()).catch(() => {})
+        }, 4000)
+      }
     }
   }, [])
 
