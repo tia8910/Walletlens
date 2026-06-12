@@ -4069,10 +4069,6 @@ export default function Dashboard() {
                           +${fmt(h.value * chg / 100)}
                         </div>
                       </div>
-                      <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
-                        +${fmt(h.value * chg / 100)}
-                      </div>
-                    </div>
                   )
                 })}
               </div>

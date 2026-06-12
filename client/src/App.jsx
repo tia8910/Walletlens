@@ -71,6 +71,7 @@ const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
+const Vision       = lazy(() => import('./pages/Vision'))
 
 function PageFallback() {
   return <div className="wl-page-fallback"><p>Loading…</p></div>
@@ -233,6 +234,10 @@ function Drawer({ open, onClose }) {
           </button>
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
             <IconTechnicals /><span style={{ color: '#60a5fa' }}>Analysis</span>
+          </button>
+          <button className={active('/vision')} onClick={() => go('/vision')}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span style={{ color: '#10b981' }}>Vision</span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
@@ -557,6 +562,7 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/vision" element={<Vision />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

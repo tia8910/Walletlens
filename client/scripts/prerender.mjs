@@ -1400,6 +1400,83 @@ console.log(`\nPrerendered ${POSTS.length + 8} content pages into dist/.`)
 // 404.html + a JS redirect, which Googlebot reports as "Discovered – currently
 // not indexed" noise. A 200 + explicit noindex,follow gives crawlers a clean,
 // stable answer and keeps these URLs out of indexing reports.
+// ── Vision page (/vision) ──────────────────────────────────────────────────
+{
+  const vFaq = faqBlock([
+    {
+      q: 'What is a portfolio vision plan?',
+      a: 'A portfolio vision plan divides your net worth into named buckets — such as an emergency fund, a long-term hold, and a withdrawal plan — so you always know what each dollar is for and how long your money will last.',
+    },
+    {
+      q: 'How do I set up a withdrawal runway?',
+      a: 'In WalletLens Vision, create a bucket for your spending funds and enter your monthly withdrawal amount. The app automatically calculates how many months and years your current balance can sustain that spend rate.',
+    },
+    {
+      q: 'Can I link my actual portfolio holdings to a bucket?',
+      a: 'Yes. When editing a bucket, select any of your tracked assets (crypto, stocks, metals, cash) to link them. The bucket\'s current value is then pulled live from your holdings so you always see your real allocation.',
+    },
+    {
+      q: 'Is Portfolio Vision free?',
+      a: 'Yes — Portfolio Vision is part of WalletLens, which is 100% free with no account, no subscription, and no ads. All your bucket data is stored privately on your device.',
+    },
+    {
+      q: 'How is the unallocated (rest) bucket calculated?',
+      a: 'If you mark a bucket as "Remaining", WalletLens automatically sets its value to your total net worth minus the sum of all other buckets. This ensures every dollar is accounted for.',
+    },
+  ])
+  const vBody = `
+<h1>Portfolio Vision — Plan Every Dollar of Your Net Worth</h1>
+<p>WalletLens Portfolio Vision lets you divide your entire net worth into purpose-driven <strong>buckets</strong> — an emergency fund, a long-term BTC hold, a monthly salary bucket, and anything else you need — and see a live donut chart, progress bars, and a <strong>withdrawal runway</strong> for each one. All free, no account, data stays on your device.</p>
+<p><a href="/vision">Open Portfolio Vision free →</a></p>
+<h2>What you can do with Portfolio Vision</h2>
+<ul>
+<li><strong>Name every dollar</strong> — create buckets like "Salary cover 3 years", "BTC long-term hold", and "Alt coins" and assign real holdings to each.</li>
+<li><strong>Withdrawal runway calculator</strong> — enter a monthly spend for any bucket and see exactly how many months and years the balance will last.</li>
+<li><strong>Live values</strong> — link your tracked assets so each bucket's value updates automatically with live market prices.</li>
+<li><strong>Progress toward targets</strong> — set a fixed-dollar or percentage-of-net-worth target per bucket and track progress with a visual bar.</li>
+<li><strong>Donut chart overview</strong> — see your entire vision in one colour-coded allocation chart.</li>
+</ul>
+<h2>How to set up your portfolio vision</h2>
+<ol>
+<li>Open WalletLens — no account or email required.</li>
+<li>Navigate to Portfolio Vision from the side menu.</li>
+<li>Click "Add Bucket" and give it a name, type (emergency / hold / withdrawal / investment / rest), and colour.</li>
+<li>Optionally set a target amount or a percentage of your net worth.</li>
+<li>Enter a monthly withdrawal to see the runway for that bucket.</li>
+<li>Link any of your tracked holdings so the bucket value stays live.</li>
+</ol>
+<p><a href="/vision">Start planning your portfolio vision →</a></p>
+${vFaq.html}
+<p><a href="/dashboard">Portfolio dashboard</a> · <a href="/blog/portfolio-vision-planning">Portfolio Vision Planning guide</a> · <a href="/blog/crypto-withdrawal-strategy">Crypto Withdrawal Strategy</a> · <a href="/blog/net-worth-goal-buckets">Net Worth Goal Buckets</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a></p>`
+
+  write('/vision', buildPage({
+    path: '/vision',
+    title: brandTitle('Portfolio Vision — Plan Every Dollar of Your Net Worth'),
+    description: 'Plan your entire net worth with purpose-driven buckets in WalletLens. Set withdrawal runway, link live holdings, track targets — free, no account, data on your device.',
+    bodyHtml: vBody,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Portfolio Vision', item: ORIGIN + '/vision/' },
+        ],
+      },
+      howToJsonLd('How to set up your portfolio vision plan', [
+        'Open WalletLens — no account or email required.',
+        'Navigate to Portfolio Vision from the side menu.',
+        'Click "Add Bucket" and give it a name, type, and colour.',
+        'Set a target amount or a percentage of your net worth.',
+        'Enter a monthly withdrawal amount to calculate your runway.',
+        'Link your tracked holdings so the bucket value updates live.',
+      ]),
+      vFaq.jsonLd,
+    ],
+  }))
+  console.log('Prerendered /vision.')
+}
+
 const APP_ROUTES = [
   { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
@@ -1456,6 +1533,7 @@ const STATIC_ROUTES = [
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
+  { path: '/vision',  changefreq: 'monthly', priority: '0.8' },
   { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
   { path: '/terms',   changefreq: 'monthly', priority: '0.5' },

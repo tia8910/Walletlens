@@ -781,7 +781,7 @@ export default function Academy() {
             <div className="acad-done-msg">
               <span className="acad-done-icon">✅</span>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--g-ink)', fontWeight: 700 }}>Challenge complete for today!</div>
+                <div style={{ fontWeight: 700, color: 'var(--g-ink)' }}>Challenge complete for today!</div>
                 <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Come back tomorrow for a new question. Streak: {store.streak}🔥</div>
               </div>
             </div>
