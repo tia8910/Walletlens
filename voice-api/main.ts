@@ -293,6 +293,57 @@ Using these numbers AND your knowledge of this asset's fundamentals, tokenomics 
 Keep bull/bear to 2-3 items each. Ground every point in the pillars/stats or well-known facts about the asset. This is analysis, not financial advice.`
 }
 
+// ── Portfolio Vision advice ────────────────────────────────────────────────
+// Reviews the user's planning "buckets" (goals, targets, monthly cash-flow) and
+// asset-class mix, and returns concrete, prioritised planning advice. Reasons
+// over the supplied numbers + general personal-finance best practice. Education,
+// not individualised financial advice.
+// deno-lint-ignore no-explicit-any
+function buildVisionAdvicePrompt(p: any): string {
+  const cur = p?.currency || "USD"
+  const cats = Array.isArray(p?.categories) && p.categories.length
+    ? p.categories.map((c: any) => `  - ${c.name}: ${cur} ${Math.round(c.value).toLocaleString()} (${c.pct}%)`).join("\n")
+    : "  (no live holdings — planning from manual amounts)"
+  const buckets = Array.isArray(p?.buckets) && p.buckets.length
+    ? p.buckets.map((b: any) => {
+        const bits = [
+          `type: ${b.type}`,
+          `current: ${cur} ${Math.round(b.current || 0).toLocaleString()}`,
+          b.target ? `target: ${cur} ${Math.round(b.target).toLocaleString()}` : null,
+          b.targetMonths ? `timeframe: ${b.targetMonths} months` : null,
+          b.monthlyContribution ? `adding: ${cur} ${Math.round(b.monthlyContribution).toLocaleString()}/mo` : null,
+          b.monthlyWithdrawal ? `drawing: ${cur} ${Math.round(b.monthlyWithdrawal).toLocaleString()}/mo` : null,
+          b.categories?.length ? `focus: ${b.categories.join(", ")}` : null,
+          `${b.pctOfNW || 0}% of net worth`,
+        ].filter(Boolean).join(" · ")
+        return `  - "${b.name}" — ${bits}`
+      }).join("\n")
+    : "  (no buckets yet)"
+  const m = p?.monthly || {}
+
+  return `You are a sharp, fiduciary-minded personal-finance and portfolio-planning advisor inside WalletLens (a private, all-asset net-worth tracker: crypto, stocks, metals, cash, real estate). The user has organised their money into planning "buckets" (goals). Give specific, prioritised, numbers-grounded advice — diversification, emergency-fund adequacy, withdrawal sustainability (~4%/yr rule of thumb), goal funding pace, concentration risk, and asset-class fit per goal. Be concrete and avoid generic hedging. This is education, not individualised financial advice.
+
+Total net worth: ${cur} ${Math.round(p?.netWorth || 0).toLocaleString()}
+Asset-class mix:
+${cats}
+Monthly plan: adding ${cur} ${Math.round(m.in || 0).toLocaleString()} · drawing ${cur} ${Math.round(m.out || 0).toLocaleString()} · net ${cur} ${Math.round(m.net || 0).toLocaleString()}
+Buckets:
+${buckets}
+
+Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "headline": "<=14 word overall verdict on this plan",
+  "score": <integer 0-100 plan-health: diversification + emergency cover + goal feasibility + withdrawal safety>,
+  "insights": [
+    { "title": "<=6 words", "detail": "<=30 words, specific & numbers-grounded", "level": "good" | "warn" | "tip" }
+  ],
+  "actions": [ "<one concrete next step, <=18 words>" ]
+}
+
+Give 3-6 insights and 2-4 actions. Every point must reference the user's actual numbers/buckets above. If a bucket is underfunded for its timeframe, say by how much per month. If an emergency fund is missing or thin, flag it. If one asset class dominates, call out the concentration.`
+}
+
 // ── Portfolio Guardian cron ───────────────────────────────────────────────
 // Scans all guardian records every 6 h and emails heirs when the user's
 // check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
@@ -762,6 +813,39 @@ Rules:
       return new Response(JSON.stringify({ ok: true, reply }), { headers })
     } catch (e) {
       console.error("assistant error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
+  // ── Portfolio Vision advice (mode: "vision_advice") ───────────────────────
+  if (body?.mode === "vision_advice") {
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 900,
+          messages: [{ role: "user", content: buildVisionAdvicePrompt(body) }],
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (vision_advice):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const text = data.content?.[0]?.text || ""
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error("no JSON in response")
+      const advice = JSON.parse(match[0])
+      return new Response(JSON.stringify({ ok: true, advice }), { headers })
+    } catch (e) {
+      console.error("vision_advice error:", e)
       return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
     }
   }
