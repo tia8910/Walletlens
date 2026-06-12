@@ -88,7 +88,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // /Walletlens/ subpath since GitHub Pages doesn't serve it from there
 // reliably and walletlens.live is the primary install target.
 if ('serviceWorker' in navigator && basename === '/') {
+  // When a new SW takes control (it calls skipWaiting + clients.claim on
+  // deploy), the already-loaded page is still running the OLD bundles. Reload
+  // once so the user lands on the freshly deployed code without manual cache
+  // clearing. Guarded by `hadController` so the first-ever install (page starts
+  // uncontrolled) doesn't trigger a needless reload, and by `refreshing` so we
+  // never loop.
+  const hadController = !!navigator.serviceWorker.controller
+  let refreshing = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || refreshing) return
+    refreshing = true
+    window.location.reload()
+  })
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      // Actively check for a new SW now and whenever the tab regains focus, so
+      // returning/long-lived sessions pick up new deployments promptly instead
+      // of waiting on the browser's once-a-day background check.
+      reg.update().catch(() => {})
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {})
+      })
+    }).catch(() => {})
   })
 }
