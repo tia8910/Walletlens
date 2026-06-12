@@ -1,15 +1,21 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 
 // Detect low-power devices (mobile or < 4 logical CPUs) so we can throttle
 // the O(n²) particle simulation before it affects frame rate.
-function getParticleCount(requested) {
-  if (typeof window === 'undefined') return requested
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 0
-  const mobile = window.matchMedia?.('(max-width: 768px)').matches
-  const lowPower = navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4
+function getParticleCount(requested, reducedMotion, mobile, lowPower) {
+  if (reducedMotion) return 0
   if (mobile || lowPower) return Math.min(requested, 40)
   return requested
 }
+
+// MediaQueryList objects are stable — create them once per module load
+// so matchMedia is never called inside render or on every animation frame.
+const _mqlReduceMotion = typeof window !== 'undefined'
+  ? window.matchMedia('(prefers-reduced-motion: reduce)') : null
+const _mqlMobile = typeof window !== 'undefined'
+  ? window.matchMedia('(max-width: 768px)') : null
+const _lowPower = typeof navigator !== 'undefined'
+  && navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4
 
 export default function DynamicBackground({
   particleCount = 100,
@@ -17,14 +23,17 @@ export default function DynamicBackground({
   color = null,
 }) {
   const canvasRef = useRef(null)
-  const reduceMotion = typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const effectiveCount = getParticleCount(particleCount)
+
+  // Read from stable MQL objects — no layout recalc, no new objects per render.
+  const reduceMotion = _mqlReduceMotion?.matches ?? false
+  const mobile       = _mqlMobile?.matches ?? false
+  const effectiveCount = useMemo(
+    () => getParticleCount(particleCount, reduceMotion, mobile, _lowPower),
+    [particleCount, reduceMotion, mobile]
+  )
   // shadowBlur is expensive (GPU composite step per-particle). Skip it on
   // mobile and low-power CPUs where it measurably drops frame rate.
-  const useShadow = typeof window !== 'undefined'
-    && !window.matchMedia?.('(max-width: 768px)').matches
-    && !(navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4)
+  const useShadow = !mobile && !_lowPower
 
   useEffect(() => {
     if (reduceMotion) return

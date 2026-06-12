@@ -184,7 +184,7 @@ function GemsTab({ market }) {
                   strokeWidth="3" strokeDasharray={`${(c.gemScore/100)*94.2} 94.2`}
                   strokeLinecap="round" transform="rotate(-90 18 18)" />
               </svg>
-              <img src={c.image} alt="" className="gem-img" />
+              <img src={c.image} alt="coin logo" className="gem-img" onError={e => { e.currentTarget.style.display = 'none' }} />
             </div>
             <div className="gem-info">
               <div className="gem-name">{c.name}</div>
@@ -206,7 +206,7 @@ function GemsTab({ market }) {
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
-            <div className="gem-score-badge" style={{ background: c.gemScore >= 70 ? 'rgba(var(--g-rgb),0.15)' : c.gemScore >= 45 ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)', color: c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa' }}>
+            <div className="gem-score-badge" data-tier={c.gemScore >= 70 ? 'high' : c.gemScore >= 45 ? 'medium' : 'low'}>
               {c.gemScore} gem score
             </div>
           </Link>
@@ -248,7 +248,7 @@ function AlphaTab({ market, trending }) {
     .sort((a, b) => Math.abs(b.price_change_percentage_24h_in_currency||0) - Math.abs(a.price_change_percentage_24h_in_currency||0))
     .slice(0, 4)
     .forEach(c => signals.push({
-      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g)' : '#f87171',
+      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g-ink)' : '#f87171',
       tag: c.price_change_percentage_24h_in_currency >= 0 ? 'Breakout' : 'Capitulation',
       coin: c, detail: `${fmtPct(c.price_change_percentage_24h_in_currency)} · MCap ${fmtUsd(c.market_cap)}`,
     }))
@@ -269,7 +269,7 @@ function AlphaTab({ market, trending }) {
             <div className="alpha-content">
               <div className="alpha-tag" style={{ color: s.color }}>{s.tag}</div>
               <div className="alpha-name">
-                {s.coin.image && <img src={s.coin.image} alt="" width={18} height={18} style={{borderRadius:'50%',marginRight:6}} />}
+                {s.coin.image && <img src={s.coin.image} alt="coin logo" width={18} height={18} style={{borderRadius:'50%',marginRight:6}} onError={e => { e.currentTarget.style.display = 'none' }} />}
                 {s.coin.name} <span className="alpha-sym">{s.coin.symbol?.toUpperCase()}</span>
               </div>
               <div className="alpha-detail">{s.detail}</div>
@@ -364,7 +364,7 @@ function IndicatorsTab({ market, globalData }) {
           const barW = Math.min(Math.abs(ch) / 15 * 100, 100)
           return (
             <Link key={c.id} to={`/asset/${c.id}`} className="ind-mom-row">
-              <img src={c.image} alt="" width={20} height={20} style={{borderRadius:'50%'}} />
+              <img src={c.image} alt="coin logo" width={20} height={20} style={{borderRadius:'50%'}} onError={e => { e.currentTarget.style.display = 'none' }} />
               <span className="ind-mom-sym">{c.symbol?.toUpperCase()}</span>
               <div className="ind-mom-bar-wrap">
                 <div className="ind-mom-bar" style={{

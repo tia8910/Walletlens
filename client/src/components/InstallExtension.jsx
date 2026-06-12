@@ -60,7 +60,7 @@ export default function InstallExtension({ variant = 'button', source = 'unknown
 
   if (variant === 'link') {
     return (
-      <a {...common} style={{ color: '#4ade80', fontWeight: 600, textDecoration: 'none', ...style }}>
+      <a {...common} style={{ color: 'var(--g-ink)', fontWeight: 600, textDecoration: 'none', ...style }}>
         {text}
       </a>
     )

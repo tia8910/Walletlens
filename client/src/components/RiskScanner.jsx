@@ -56,7 +56,7 @@ async function fetchJSON(url) {
 // Returns { score 0-100, grade, color, signals[], breakdown{} }
 async function scoreToken(coinId, forceRefresh = false) {
   if (STABLECOINS.has(coinId)) {
-    return { score: 90, grade: 'SAFE', color: 'var(--g)', signals: [
+    return { score: 90, grade: 'SAFE', color: 'var(--g-ink)', fontWeight: 700, signals: [
       { label: 'Fiat-pegged stablecoin — no rug risk', status: 'good' },
       { label: 'High liquidity by design', status: 'good' },
       { label: 'No smart contract price dependency', status: 'good' },
@@ -64,7 +64,7 @@ async function scoreToken(coinId, forceRefresh = false) {
   }
 
   if (SAFE_IDS.has(coinId)) {
-    return { score: 95, grade: 'SAFE', color: 'var(--g)', signals: [
+    return { score: 95, grade: 'SAFE', color: 'var(--g-ink)', fontWeight: 700, signals: [
       { label: 'Established blue-chip asset', status: 'good' },
       { label: 'High liquidity across major exchanges', status: 'good' },
       { label: 'Multi-year on-chain track record', status: 'good' },
@@ -532,13 +532,13 @@ async function checkScamAddress(input) {
     if (info.is_honeypot === '1') {
       danger += 40; flags.push({ icon: '🚨', text: 'HONEYPOT — you cannot sell this token', color: '#ef4444' })
     } else if (info.is_honeypot === '0') {
-      flags.push({ icon: '✓', text: 'Not a honeypot — selling is possible', color: 'var(--g)' })
+      flags.push({ icon: '✓', text: 'Not a honeypot — selling is possible', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     if (info.is_open_source === '0') {
       danger += 15; flags.push({ icon: '✕', text: 'Contract is NOT verified — hidden code', color: '#f87171' })
     } else if (info.is_open_source === '1') {
-      flags.push({ icon: '✓', text: 'Contract is open source and verified', color: 'var(--g)' })
+      flags.push({ icon: '✓', text: 'Contract is open source and verified', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     if (info.can_mint === '1') {
@@ -558,7 +558,7 @@ async function checkScamAddress(input) {
     } else if (buyTax > 0 || sellTax > 0) {
       flags.push({ icon: '⚠', text: `Tax: buy ${buyTax.toFixed(1)}% / sell ${sellTax.toFixed(1)}%`, color: '#f59e0b' })
     } else {
-      flags.push({ icon: '✓', text: 'Zero buy/sell tax', color: 'var(--g)' })
+      flags.push({ icon: '✓', text: 'Zero buy/sell tax', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     const holders = info.holders || []
@@ -569,7 +569,7 @@ async function checkScamAddress(input) {
       } else if (top3Pct > 20) {
         flags.push({ icon: '⚠', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}%`, color: '#f59e0b' })
       } else {
-        flags.push({ icon: '✓', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: 'var(--g)' })
+        flags.push({ icon: '✓', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: 'var(--g-ink)', fontWeight: 700 })
       }
     }
 
@@ -666,7 +666,7 @@ function ScamCatcher() {
 
 // ── Legend ────────────────────────────────────────────────────────────────
 const LEGEND = [
-  { grade: 'SAFE',      color: 'var(--g)', range: '80–100', desc: 'Established, liquid, low contract risk' },
+  { grade: 'SAFE',      color: 'var(--g-ink)', fontWeight: 700, range: '80–100', desc: 'Established, liquid, low contract risk' },
   { grade: 'MODERATE',  color: '#f59e0b', range: '60–79',  desc: 'Some risk factors — monitor closely' },
   { grade: 'HIGH RISK', color: '#f87171', range: '35–59',  desc: 'Multiple red flags — be cautious' },
   { grade: 'DANGER',    color: '#ef4444', range: '0–34',   desc: 'Likely scam or extreme risk' },

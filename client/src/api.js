@@ -74,12 +74,20 @@ const CORS_PROXIES = [
 
 // Per-attempt timeout for any single fetch — without this, a slow proxy
 // can stall the whole pipeline for 30s+ before failing over.
+// Accepts an optional external AbortSignal so callers (e.g. fetchJSONFast)
+// can cancel all in-flight requests once the first one wins.
 const FETCH_TIMEOUT_MS = 3000;
-async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS, externalSignal) {
   const controller = new AbortController();
+  // Combine our timeout signal with any caller-supplied cancellation signal.
+  // AbortSignal.any is available in Chrome 116+/Firefox 116+/Safari 17.4+ (all
+  // within our esnext target). Fallback: use only the timeout controller.
+  const signal = externalSignal && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([controller.signal, externalSignal])
+    : controller.signal;
   const t = setTimeout(() => controller.abort(), ms);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { signal });
   } finally {
     clearTimeout(t);
   }
@@ -104,25 +112,18 @@ async function fetchJSON(url) {
 
 // Race all CORS proxies simultaneously — returns the first success.
 // Cuts worst-case wait from 15s (sequential) down to ~4s.
-// An outer AbortController cancels still-pending requests once the
-// first one wins, avoiding unnecessary bandwidth consumption.
+// The shared AbortController cancels all losing requests the moment one wins,
+// preventing bandwidth waste and avoiding extra hits to rate-limited APIs.
 async function fetchJSONFast(url) {
-  const outer = new AbortController()
-  function makeReq(reqUrl) {
-    const inner = new AbortController()
-    const t = setTimeout(() => inner.abort(), 4000)
-    const signal = typeof AbortSignal.any === 'function'
-      ? AbortSignal.any([inner.signal, outer.signal])
-      : inner.signal
-    return fetch(reqUrl, { signal })
-      .then(r => { clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json() })
-      .catch(e => { clearTimeout(t); throw e })
-  }
-  const sources = [makeReq(url), ...CORS_PROXIES.map(w => makeReq(w(url)))]
+  const controller = new AbortController();
+  const sources = [
+    fetchWithTimeout(url, 4000, controller.signal).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    ...CORS_PROXIES.map(w => fetchWithTimeout(w(url), 4000, controller.signal).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })),
+  ]
   try {
-    const result = await Promise.any(sources)
-    outer.abort()
-    return result
+    const result = await Promise.any(sources);
+    controller.abort(); // cancel all still-in-flight losers
+    return result;
   } catch { return null }
 }
 
@@ -171,7 +172,7 @@ setTimeout(() => {
   const now = Date.now();
   // CryptoCompare fallback — used when Binance is blocked (e.g. Egypt, Turkey)
   const _ccPrewarm = () => {
-    const syms = Object.values(TOP_BINANCE_ID); // BTC,ETH,BNB,...
+    const syms = Object.keys(TOP_BINANCE_ID); // BTC,ETH,BNB,...
     fetchWithTimeout(`https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${syms.join(',')}&tsyms=USD`, 5000)
       .then(async r => {
         if (!r?.ok) return;
@@ -180,7 +181,7 @@ setTimeout(() => {
         for (const [sym, currencies] of Object.entries(d.RAW)) {
           const raw = currencies?.USD;
           if (!raw?.PRICE || raw.PRICE <= 0) continue;
-          const id = Object.entries(TOP_BINANCE_ID).find(([, s]) => s === sym)?.[0];
+          const id = TOP_BINANCE_ID[sym];
           if (!id) continue;
           if (!priceCache[id] || !priceCache[id].usd) {
             priceCache[id] = { ...(priceCache[id] || {}), usd: raw.PRICE, usd_24h_change: raw.CHANGEPCT24HOUR || 0, symbol: sym, source: 'cryptocompare' };
@@ -224,6 +225,30 @@ const BINANCE_ID_OVERRIDES = {
   'fetch-ai': 'FET', 'arweave': 'AR', 'render-token': 'RENDER', 'sui': 'SUI',
   'hyperliquid': 'HYPE', 'first-digital-usd': 'FDUSD',
 };
+// ── Same-origin market snapshot ───────────────────────────────────────────
+// /market.json is refreshed every 30 min by a GitHub Actions cron (pushed
+// straight to gh-pages, like stock-prices.json). Because it's served from
+// walletlens.live itself it works on networks that block crypto APIs and
+// CORS proxies outright — if the site loads, this loads.
+let _staticMarket = null;
+let _staticMarketAt = 0;
+async function _loadStaticMarket() {
+  const now = Date.now();
+  if (_staticMarket && now - _staticMarketAt < 10 * 60_000) return _staticMarket;
+  try {
+    const res = await fetchWithTimeout('/market.json?t=' + Math.floor(now / 1_800_000), 5000);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.coins) && data.coins.length > 0) {
+        _staticMarket = data.coins;
+        _staticMarketAt = now;
+        return _staticMarket;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
 // Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
 // first (returns instantly), then CoinGecko, then CoinCap as a fallback.
@@ -250,6 +275,14 @@ async function _loadMarketSnapshot(perPage = 250) {
     cache[perPage] = { t: now, v: data };
     try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
     return data;
+  }
+
+  // Fallback: same-origin snapshot — reachable wherever the site itself is
+  const staticMkt = await _loadStaticMarket();
+  if (staticMkt) {
+    cache[perPage] = { t: now, v: staticMkt };
+    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    return staticMkt.slice(0, perPage);
   }
 
   // Fallback: CoinCap
@@ -295,6 +328,11 @@ function _symbolForId(id, holdings) {
   if (h?.coin_symbol) return String(h.coin_symbol).toUpperCase();
   return null;
 }
+// Module-level in-memory mirror of the chart localStorage cache.
+// Keeps getChartData from parsing potentially large JSON on every call.
+const _CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
+let _chartCache = (() => { try { return JSON.parse(localStorage.getItem(_CHART_CACHE_KEY) || '{}'); } catch { return {}; } })();
+
 let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
@@ -314,13 +352,14 @@ async function fetchMetalsLive() {
   if (metalCache && now - metalCacheTime < METAL_CACHE_DURATION) return metalCache;
 
   const out = {};
-  // Primary: gold-api.com
+  // Primary: gold-api.com — use fetchWithTimeout so a slow API doesn't hang
+  // the entire price refresh cycle indefinitely.
   try {
     const [goldRes, silverRes, copperRes, platinumRes] = await Promise.all([
-      fetch('https://api.gold-api.com/price/XAU'),
-      fetch('https://api.gold-api.com/price/XAG'),
-      fetch('https://api.gold-api.com/price/XCU'),
-      fetch('https://api.gold-api.com/price/XPT'),
+      fetchWithTimeout('https://api.gold-api.com/price/XAU'),
+      fetchWithTimeout('https://api.gold-api.com/price/XAG'),
+      fetchWithTimeout('https://api.gold-api.com/price/XCU'),
+      fetchWithTimeout('https://api.gold-api.com/price/XPT'),
     ]);
     if (goldRes.ok) {
       const g = await goldRes.json();
@@ -365,6 +404,25 @@ async function fetchMetalsLive() {
   return metalCache || {};
 }
 
+// ─── Binance bStocks — tokenized 1:1-backed securities (launched June 2026) ───
+// These trade as /USDT pairs on the main Binance exchange (api.binance.com).
+// Map: WalletLens ticker (lowercase) → Binance symbol
+const BSTOCK_SYMBOLS = {
+  nvdab: 'NVDABUSDT',
+  tslab: 'TSLAB' + 'USDT',
+  mubb:  'MUBB'  + 'USDT',
+  sndkb: 'SNDKB' + 'USDT',
+  crclb: 'CRCLB' + 'USDT',
+}
+// For historical charts: map bStock → underlying US stock on Stooq
+const BSTOCK_UNDERLYING = {
+  'stock:nvdab': 'nvda.us',
+  'stock:tslab': 'tsla.us',
+  'stock:mubb':  'mu.us',
+  'stock:sndkb': 'sndk.us',
+  'stock:crclb': 'crcl.us',
+}
+
 // ─── Real-time US stock prices via Stooq (CORS-enabled CSV) ───
 // Returns { [coin_id]: { usd, usd_24h_change, name } } for the requested IDs.
 function parseStooqRow(csv) {
@@ -390,7 +448,30 @@ async function fetchStockLive(coinId) {
 
   const tickerUp = ticker.toUpperCase();
 
-  // ── 0. Static prices file served from same origin (no CORS, always works) ──
+  // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
+  // Route through Deno proxy first (bypasses CORS + regional Binance geo-blocks),
+  // then try direct as fallback.
+  const binanceSymbol = BSTOCK_SYMBOLS[ticker.toLowerCase()];
+  if (binanceSymbol) {
+    const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+    for (const url of [DENO_PROXY(binanceUrl), binanceUrl]) {
+      try {
+        const res = await fetchWithTimeout(url, 6000);
+        if (res.ok) {
+          const data = await res.json();
+          const price = parseFloat(data.lastPrice);
+          const pct   = parseFloat(data.priceChangePercent);
+          if (isFinite(price) && price > 0) {
+            const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
+            stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+            return parsed;
+          }
+        }
+      } catch { /* try next */ }
+    }
+  }
+
+  // ── 0b. Static prices file served from same origin (no CORS, always works) ──
   const staticPrices = await fetchStaticStockPrices()
   if (staticPrices?.[coinId]) {
     const p = staticPrices[coinId]
@@ -398,7 +479,7 @@ async function fetchStockLive(coinId) {
     return p;
   }
 
-  // ── 1. Stock price proxy (our own CORS-safe proxy, most reliable on mobile) ──
+  // ── 1. Stock price proxy (CORS-safe proxy, most reliable on mobile) ──
   if (STOCK_WORKER_URL) {
     try {
       const res = await fetchWithTimeout(`${STOCK_WORKER_URL}?symbol=${encodeURIComponent(tickerUp)}`, 7000);
@@ -708,6 +789,8 @@ function stooqSymbolFor(id) {
   if (id === SILVER_ID) return 'xagusd';
   if (id === COPPER_ID) return 'xcuusd';
   if (id === PLATINUM_ID) return 'xptusd';
+  // bStocks: use underlying stock history (NVDAB → nvda.us, etc.)
+  if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id];
   if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
   return null;
 }
@@ -810,10 +893,14 @@ export const api = {
         holdings[tx.coin_id].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
         const h = holdings[tx.coin_id];
-        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct
+        // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct.
+        // Clamp the sold quantity to the running balance — an oversell (typo or
+        // missing buy record) must not drive the holding negative, which would
+        // silently eat into any later buys.
         const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
-        h.total_invested = Math.max(0, h.total_invested - avgCost * tx.amount);
-        h.amount -= tx.amount;
+        const sold = Math.min(tx.amount, Math.max(0, h.amount));
+        h.total_invested = Math.max(0, h.total_invested - avgCost * sold);
+        h.amount = Math.max(0, h.amount - tx.amount);
       }
     }
 
@@ -887,7 +974,8 @@ export const api = {
     const _inFlight = new Map();
     return async (ids) => {
     if (!ids) return {};
-    const key = ids;
+    // Order-insensitive key so "btc,eth" and "eth,btc" dedupe to one fan-out.
+    const key = ids.split(',').filter(Boolean).sort().join(',');
     if (_inFlight.has(key)) return _inFlight.get(key);
     const coinIds = ids.split(',').filter(Boolean);
     const manual = loadData('manual_prices', {});
@@ -1137,6 +1225,32 @@ export const api = {
             }));
             _saveCache(PRICE_CACHE_KEY, priceCache);
           }
+          // Absolute last resort: the same-origin /market.json snapshot
+          // (≤30 min old) — works even when every crypto API and proxy is
+          // blocked by the user's network.
+          const finalMissing = cryptoIds.filter(id => !priceCache[id]);
+          if (finalMissing.length > 0) {
+            const mkt = await _loadStaticMarket();
+            if (mkt) {
+              const byId = new Map(mkt.map(c => [c.id, c]));
+              for (const id of finalMissing) {
+                const c = byId.get(id);
+                if (c && typeof c.current_price === 'number' && c.current_price > 0) {
+                  priceCache[id] = {
+                    usd: c.current_price,
+                    usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                    usd_market_cap: c.market_cap || 0,
+                    name: c.name,
+                    symbol: c.symbol,
+                    source: 'snapshot',
+                  };
+                  if (c.image) coinImageCache[id] = c.image;
+                }
+              }
+              _saveCache(PRICE_CACHE_KEY, priceCache);
+              _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+            }
+          }
         }
         for (const id of cryptoIds) {
           if (priceCache[id]) result[id] = { ...priceCache[id], source: 'coingecko' };
@@ -1254,12 +1368,9 @@ export const api = {
     // Localstorage cache: 5 min TTL per (id, days). Returns cached series
     // immediately if fresh, otherwise tries CoinGecko, then CoinCap, then
     // falls back to whatever we have in 30d signals cache.
-    const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
     const CHART_TTL = 5 * 60 * 1000;
-    let chartCache = {};
-    try { chartCache = JSON.parse(localStorage.getItem(CHART_CACHE_KEY) || '{}'); } catch {}
     const cacheKey = `${id}::${days}`;
-    const hit = chartCache[cacheKey];
+    const hit = _chartCache[cacheKey];
     if (hit && Date.now() - hit.t < CHART_TTL && Array.isArray(hit.v) && hit.v.length > 0) {
       return hit.v;
     }
@@ -1272,8 +1383,8 @@ export const api = {
         price,
       }));
       try {
-        chartCache[cacheKey] = { t: Date.now(), v: series };
-        localStorage.setItem(CHART_CACHE_KEY, JSON.stringify(chartCache));
+        _chartCache[cacheKey] = { t: Date.now(), v: series };
+        localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache));
       } catch {}
       return series;
     };
@@ -1434,8 +1545,8 @@ export const api = {
       const r = Math.log(prices[i][1] / prices[i - 1][1]);
       if (isFinite(r)) returns.push(r);
     }
-    const meanR = returns.reduce((s, r) => s + r, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length;
+    const meanR = returns.length > 0 ? returns.reduce((s, r) => s + r, 0) / returns.length : 0;
+    const variance = returns.length > 0 ? returns.reduce((s, r) => s + (r - meanR) ** 2, 0) / returns.length : 0;
     const volatility = Math.sqrt(variance) * Math.sqrt(365); // annualised
 
     // Recent high/low range position (0 = at low, 1 = at high)

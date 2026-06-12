@@ -45,7 +45,7 @@ export default function EmailOptIn({ source = 'landing', compact = false }) {
 
   if (status === 'ok') {
     return (
-      <p style={{ textAlign: 'center', color: 'var(--g)', fontWeight: 600, margin: compact ? '0.5rem 0' : '1rem 0' }}>
+      <p style={{ textAlign: 'center', color: 'var(--g-ink)', fontWeight: 700, fontWeight: 600, margin: compact ? '0.5rem 0' : '1rem 0' }}>
         {msg}
       </p>
     )
@@ -81,7 +81,7 @@ export default function EmailOptIn({ source = 'landing', compact = false }) {
       {status === 'error' && (
         <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem', textAlign: 'center' }}>{msg}</p>
       )}
-      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', marginTop: '0.6rem', textAlign: 'center' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '0.6rem', textAlign: 'center' }}>
         No spam. Unsubscribe anytime. We only store your email — never your portfolio.
       </p>
     </form>

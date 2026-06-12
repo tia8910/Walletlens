@@ -441,7 +441,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   <div style={{
                     background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
                     borderRadius:'8px', padding:'0.55rem 0.75rem', marginBottom:'0.6rem',
-                    fontSize:'0.75rem', color:'#4ade80', display:'flex', justifyContent:'space-between',
+                    fontSize:'0.75rem', color:'var(--g-ink)', display:'flex', justifyContent:'space-between',
                   }}>
                     <span>✅ {exportInfo?.txCount} trades · {exportInfo?.walletCount} wallets</span>
                     <span style={{ color:'var(--text-muted)' }}>{(exportInfo?.size / 1024).toFixed(1)} KB</span>
@@ -449,7 +449,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   <textarea id="wl-backup-code-textarea" value={exportCode} readOnly
                     onClick={e => e.target.select()} style={{
                       width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
-                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'#e2e8f0',
+                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                       padding:'0.6rem', fontSize:'0.7rem', fontFamily:'monospace',
                       resize:'vertical', wordBreak:'break-all', boxSizing:'border-box',
                     }} />
@@ -457,7 +457,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     <button onClick={handleCopy} style={btn({
                       flex:1, background: copied ? 'rgba(74,222,128,0.18)' : 'rgba(59,130,246,0.18)',
                       border:`1px solid ${copied ? 'rgba(74,222,128,0.4)' : 'rgba(59,130,246,0.4)'}`,
-                      color: copied ? '#4ade80' : '#93c5fd',
+                      color: copied ? 'var(--g-ink)' : '#93c5fd',
                       display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
                     })}>
                       {copied ? '✅ Copied!' : <><CopyIcon /> Copy code</>}
@@ -514,7 +514,7 @@ export default function BackupCode({ hideTrigger = false }) {
                 onChange={e => { importSourceRef.current = 'backup_code'; setImportText(e.target.value); setError(''); setImportResult(null) }}
                 placeholder="Paste backup code here…" style={{
                   width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
-                  border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'#e2e8f0',
+                  border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                   padding:'0.6rem', fontSize:'0.72rem', fontFamily:'monospace',
                   resize:'vertical', wordBreak:'break-all', boxSizing:'border-box', marginBottom:'0.6rem',
                 }} />
@@ -581,7 +581,7 @@ export default function BackupCode({ hideTrigger = false }) {
               {importResult ? (
                 <div style={{
                   background:'rgba(74,222,128,0.1)', border:'1px solid rgba(74,222,128,0.35)',
-                  borderRadius:'8px', color:'#4ade80', padding:'0.6rem 0.75rem',
+                  borderRadius:'8px', color:'var(--g-ink)', padding:'0.6rem 0.75rem',
                   fontSize:'0.85rem', textAlign:'center', fontWeight:600,
                 }}>
                   ✅ Restored {importResult.restored} data set{importResult.restored !== 1 ? 's' : ''}!

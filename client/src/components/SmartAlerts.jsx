@@ -149,7 +149,7 @@ const SIGNAL_META = {
   whale:      { icon: 'flow',         color: '#38bdf8', label: 'Whale Move'   },
   momentum:   { icon: 'arrow-ne',     color: '#a78bfa', label: 'Momentum'     },
   volume:     { icon: 'volume-chart', color: '#fb923c', label: 'Vol Anomaly'  },
-  news:       { icon: 'news',         color: '#4ade80', label: 'Breaking News' },
+  news:       { icon: 'news',         color: 'var(--g-ink)', label: 'Breaking News' },
 }
 
 // ── Correlation engine (pure function, no side-effects) ────────────────────
@@ -528,7 +528,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           <div className="sa-empty-icon">⚡</div>
           <p>No correlated signals yet.</p>
           <p className="sa-empty-sub">Smart Alerts fires when whale activity, price momentum, volume anomaly, or breaking news align for a coin you hold.</p>
-          {marketMode && <p className="sa-empty-sub" style={{ color: 'var(--g)' }}>Watching BTC, ETH, SOL, XRP, BNB, DOGE market-wide.</p>}
+          {marketMode && <p className="sa-empty-sub" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>Watching BTC, ETH, SOL, XRP, BNB, DOGE market-wide.</p>}
         </div>
       )}
 

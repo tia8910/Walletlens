@@ -50,6 +50,13 @@ const PROXY_ALLOWLIST = new Set([
   "api.coinpaprika.com",
   "open.er-api.com",
   "api.frankfurter.app",
+  // Asset logo CDNs — proxied so coin logos load on networks that block them
+  "coin-images.coingecko.com",
+  "assets.coingecko.com",
+  "cdn.jsdelivr.net",
+  "assets.coincap.io",
+  "raw.githubusercontent.com",
+  "lcw.nyc3.cdn.digitaloceanspaces.com",
 ])
 
 async function handleProxy(target: string | null, headers: HeadersInit): Promise<Response> {
@@ -65,14 +72,39 @@ async function handleProxy(target: string | null, headers: HeadersInit): Promise
   }
   try {
     const upstream = await fetch(parsed.toString(), {
-      headers: { "Accept": "application/json, text/csv, */*", "User-Agent": "WalletLens-Proxy/1.0" },
+      headers: { "Accept": "application/json, text/csv, image/*, */*", "User-Agent": "WalletLens-Proxy/1.0" },
       signal: AbortSignal.timeout(8000),
     })
-    const text = await upstream.text()
+    // If the upstream redirected, the final host must still be allowlisted —
+    // otherwise an allowlisted API could bounce us to an arbitrary URL (SSRF).
+    try {
+      const finalHost = new URL(upstream.url).hostname
+      if (finalHost && !PROXY_ALLOWLIST.has(finalHost)) {
+        return new Response(JSON.stringify({ error: "redirect_not_allowed" }), { status: 502, headers })
+      }
+    } catch { /* upstream.url unavailable — keep going with the body checks */ }
+    // Cap the passthrough at 5 MB — price JSON and logos are tiny; anything
+    // bigger would only tie up server memory.
+    const MAX_BODY = 5 * 1024 * 1024
+    const cl = Number(upstream.headers.get("content-length") || 0)
+    if (cl > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers })
+    }
+    // Pass bytes through untouched — text() would corrupt binary (logo images)
+    const body = await upstream.arrayBuffer()
+    if (body.byteLength > MAX_BODY) {
+      return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers })
+    }
     const ct = upstream.headers.get("content-type") || "application/json"
-    return new Response(text, {
+    const isImage = ct.startsWith("image/")
+    return new Response(body, {
       status: upstream.status,
-      headers: { ...headers, "Content-Type": ct, "Cache-Control": "public, max-age=30" },
+      headers: {
+        ...headers,
+        "Content-Type": ct,
+        // Logos are immutable — cache long; price data stays fresh
+        "Cache-Control": isImage ? "public, max-age=86400" : "public, max-age=30",
+      },
     })
   } catch (e) {
     return new Response(JSON.stringify({ error: "upstream_failed", detail: String(e) }), { status: 502, headers })
@@ -261,6 +293,74 @@ Using these numbers AND your knowledge of this asset's fundamentals, tokenomics 
 Keep bull/bear to 2-3 items each. Ground every point in the pillars/stats or well-known facts about the asset. This is analysis, not financial advice.`
 }
 
+// ── Portfolio Guardian cron ───────────────────────────────────────────────
+// Scans all guardian records every 6 h and emails heirs when the user's
+// check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
+async function runGuardianCron(): Promise<{ scanned: number; notified: number }> {
+  const kv = await Deno.openKv()
+  const now = Date.now()
+  let scanned = 0, notified = 0
+  for await (const entry of kv.list<Record<string, unknown>>({ prefix: ["guardian"] })) {
+    scanned++
+    const rec = entry.value
+    if (!rec?.active || rec.notifiedAt) continue
+    const lastCheckin = new Date(rec.lastCheckin as string).getTime()
+    const intervalMs = (rec.intervalDays as number) * 24 * 60 * 60 * 1000
+    if (now - lastCheckin < intervalMs) continue
+
+    const ps = rec.portfolioSummary as { totalUsd: number; assetSymbols: string[]; currency: string }
+    const valueStr = ps.totalUsd > 0
+      ? `approximately ${ps.currency} ${ps.totalUsd.toLocaleString()}`
+      : "an undisclosed amount"
+    const assetStr = ps.assetSymbols.length > 0 ? ps.assetSymbols.join(", ") : "various assets"
+    const lastSeen = new Date(rec.lastCheckin as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    const userMessage = (rec.message as string) || ""
+
+    const html = emailShell(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#fff">A message from someone you care about</h1>
+      ${userMessage ? `
+      <div style="background:#1a2210;border-left:3px solid #4ade80;padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 22px">
+        <p style="margin:0;line-height:1.7;color:#d1fae5;font-style:italic">"${userMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}"</p>
+      </div>` : ""}
+      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">
+        This is an automated message from <b style="color:#4ade80">WalletLens Portfolio Guardian</b>.
+        A person who set you as their heir has not checked in since <b>${lastSeen}</b>.
+      </p>
+      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">
+        They held a portfolio worth ${valueStr} including: <b style="color:#e2e8f0">${assetStr}</b>.
+      </p>
+      <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:18px;margin:22px 0">
+        <p style="margin:0 0 10px;font-weight:700;color:#4ade80;font-size:14px">HOW TO ACCESS THEIR PORTFOLIO</p>
+        <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
+          <li>Open <a href="https://walletlens.live" style="color:#4ade80">walletlens.live</a> on their phone, computer or tablet.</li>
+          <li>Look for a <b>WLZ backup code</b> or QR code saved in their notes, password manager, photos, or messages.</li>
+          <li>In WalletLens go to <b>Settings &rarr; Backup &rarr; Restore</b> and paste or scan the code.</li>
+          <li>Your full portfolio view will be restored immediately — no account needed.</li>
+        </ol>
+      </div>
+      <p style="margin:0;line-height:1.6;color:#7d8794;font-size:13px">
+        WalletLens stores no financial data on its servers — the portfolio lives on the user's device.
+        If you cannot find their backup code, check their devices for the WalletLens app or browser bookmark.<br><br>
+        Questions? <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>
+      </p>
+    `)
+
+    const heirs = rec.heirs as { name: string; email: string }[]
+    for (const heir of heirs) {
+      const subject = `Important: a message about ${(rec.deviceId as string).slice(0, 4)}…'s WalletLens portfolio`
+      await sendEmail(heir.email, subject, html)
+    }
+    await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() })
+    notified++
+  }
+  console.log(`Guardian cron: scanned ${scanned}, notified ${notified}`)
+  return { scanned, notified }
+}
+
+Deno.cron("guardian-sweep", "0 */6 * * *", async () => {
+  try { await runGuardianCron() } catch (e) { console.error("Guardian cron failed:", e) }
+})
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
   const headers = corsHeaders(origin)
@@ -383,7 +483,153 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // ── Portfolio Guardian — Dead Man's Switch ───────────────────────────────
+  // Lets users register heir email addresses. If they stop opening WalletLens
+  // for longer than their chosen interval, the server emails the heirs with a
+  // portfolio summary and a personal message.
+  //
+  // KV schema:
+  //   ["guardian", deviceId]  → GuardianRecord
+  //
+  // GuardianRecord {
+  //   deviceId: string          (anonymous — chosen by client)
+  //   heirs: [{name, email}]    (up to 3)
+  //   message: string           (personal message from user, max 500 chars)
+  //   intervalDays: number      (30 | 60 | 90 | 180)
+  //   portfolioSummary: {       (client-supplied at setup/checkin time)
+  //     totalUsd: number,
+  //     assetSymbols: string[]  (e.g. ["BTC","ETH","AAPL","Gold"])
+  //     currency: string        (display currency code)
+  //   }
+  //   lastCheckin: string       (ISO timestamp)
+  //   notifiedAt?: string       (ISO timestamp of heir notification, if sent)
+  //   active: boolean
+  // }
+  //
+  // No financial amounts beyond a rounded total are stored server-side.
+  // The backup code never leaves the device.
+
+  if (body?.mode === "guardian_setup") {
+    // POST { mode:"guardian_setup", deviceId, heirs, message, intervalDays, portfolioSummary }
+    const { deviceId, heirs, message, intervalDays, portfolioSummary } = body
+
+    // Validate deviceId — alphanumeric, 8-64 chars
+    if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    // Validate heirs array (1–3 items)
+    if (!Array.isArray(heirs) || heirs.length === 0 || heirs.length > 3) {
+      return new Response(JSON.stringify({ error: "invalid_heirs" }), { status: 400, headers })
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const cleanHeirs = heirs
+      .filter((h: { name?: unknown; email?: unknown }) => h && typeof h.email === "string" && emailRe.test(h.email.trim()))
+      .slice(0, 3)
+      .map((h: { name?: unknown; email?: unknown }) => ({
+        name: String(h.name || "").trim().slice(0, 80) || "Heir",
+        email: String(h.email).trim().toLowerCase(),
+      }))
+    if (cleanHeirs.length === 0) {
+      return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
+    }
+    // Validate interval
+    const validIntervals = [30, 60, 90, 180]
+    const interval = validIntervals.includes(Number(intervalDays)) ? Number(intervalDays) : 90
+
+    // Validate message
+    const cleanMessage = String(message || "").trim().slice(0, 500)
+
+    // Validate portfolio summary (optional but must be safe if provided)
+    const summary = portfolioSummary && typeof portfolioSummary === "object"
+      ? {
+          totalUsd: typeof portfolioSummary.totalUsd === "number" ? Math.round(Math.abs(portfolioSummary.totalUsd)) : 0,
+          assetSymbols: Array.isArray(portfolioSummary.assetSymbols)
+            ? portfolioSummary.assetSymbols.slice(0, 20).map((s: unknown) => String(s).slice(0, 10)) : [],
+          currency: String(portfolioSummary.currency || "USD").slice(0, 5).toUpperCase(),
+        }
+      : { totalUsd: 0, assetSymbols: [], currency: "USD" }
+
+    try {
+      const kv = await Deno.openKv()
+      const record = {
+        deviceId,
+        heirs: cleanHeirs,
+        message: cleanMessage,
+        intervalDays: interval,
+        portfolioSummary: summary,
+        lastCheckin: new Date().toISOString(),
+        notifiedAt: null,
+        active: true,
+      }
+      await kv.set(["guardian", deviceId], record)
+      return new Response(JSON.stringify({ ok: true, interval, heirCount: cleanHeirs.length }), { status: 200, headers })
+    } catch (e) {
+      console.error("Guardian setup error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  if (body?.mode === "guardian_checkin") {
+    // POST { mode:"guardian_checkin", deviceId, portfolioSummary? }
+    const { deviceId, portfolioSummary } = body
+    if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const entry = await kv.get<Record<string, unknown>>(["guardian", deviceId])
+      if (!entry.value || !entry.value.active) {
+        return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers })
+      }
+      const updated = { ...entry.value, lastCheckin: new Date().toISOString(), notifiedAt: null }
+      // Optionally refresh the portfolio summary
+      if (portfolioSummary && typeof portfolioSummary === "object") {
+        updated.portfolioSummary = {
+          totalUsd: typeof portfolioSummary.totalUsd === "number" ? Math.round(Math.abs(portfolioSummary.totalUsd)) : (entry.value.portfolioSummary as { totalUsd: number }).totalUsd,
+          assetSymbols: Array.isArray(portfolioSummary.assetSymbols)
+            ? portfolioSummary.assetSymbols.slice(0, 20).map((s: unknown) => String(s).slice(0, 10))
+            : (entry.value.portfolioSummary as { assetSymbols: string[] }).assetSymbols,
+          currency: String(portfolioSummary.currency || (entry.value.portfolioSummary as { currency: string }).currency || "USD").slice(0, 5).toUpperCase(),
+        }
+      }
+      await kv.set(["guardian", deviceId], updated)
+      return new Response(JSON.stringify({ ok: true, lastCheckin: updated.lastCheckin }), { status: 200, headers })
+    } catch (e) {
+      console.error("Guardian checkin error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  if (body?.mode === "guardian_cancel") {
+    // POST { mode:"guardian_cancel", deviceId }
+    const { deviceId } = body
+    if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const entry = await kv.get<Record<string, unknown>>(["guardian", deviceId])
+      if (entry.value) {
+        await kv.set(["guardian", deviceId], { ...entry.value, active: false })
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+    } catch (e) {
+      console.error("Guardian cancel error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+  // Manual admin trigger (protected)
+  if (body?.mode === "guardian_cron_trigger") {
+    const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+    if (!expected || body.token !== expected) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers })
+    }
+    const result = await runGuardianCron()
+    return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers })
+  }
+
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY")
+
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers })
   }

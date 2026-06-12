@@ -256,7 +256,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   { color: '#fb923c', label: '0.5–0.8  Correlated' },
                   { color: '#94a3b8', label: '~0  Uncorrelated' },
                   { color: '#93c5fd', label: '< -0.2  Diversifying' },
-                  { color: '#4ade80', label: '< -0.5  Hedge' },
+                  { color: 'var(--g-ink)', label: '< -0.5  Hedge' },
                 ].map(l => (
                   <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: l.color, opacity: 0.8, flexShrink: 0 }} />

@@ -340,9 +340,9 @@ function getRank(iq) {
   if (iq >= 5000) return { label: 'Legend', color: '#ffd700', icon: '👑' }
   if (iq >= 2000) return { label: 'Whale',  color: '#a78bfa', icon: '🥇' }
   if (iq >= 1000) return { label: 'Strategist', color: '#60a5fa', icon: '🥈' }
-  if (iq >= 500)  return { label: 'Analyst', color: 'var(--g)', icon: '🥉' }
+  if (iq >= 500)  return { label: 'Analyst', color: 'var(--g-ink)', fontWeight: 700, icon: '🥉' }
   if (iq >= 200)  return { label: 'Trader',  color: '#f59e0b', icon: '📈' }
-  return { label: 'Rookie', color: 'rgba(255,255,255,0.5)', icon: '🌱' }
+  return { label: 'Rookie', color: 'rgba(255,255,255,0.75)', icon: '🌱' }
 }
 
 // ── Share hack as image ────────────────────────────────────────────────────
@@ -739,7 +739,7 @@ export default function Academy() {
           <div className="acad-challenge-meta">
             <span className="acad-cat-badge">{question.cat}</span>
             {phase === 'playing' && (
-              <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : 'var(--g)' }}>
+              <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : 'var(--g-ink)' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 {timeLeft}s
               </div>
@@ -781,7 +781,7 @@ export default function Academy() {
             <div className="acad-done-msg">
               <span className="acad-done-icon">✅</span>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--g)' }}>Challenge complete for today!</div>
+                <div style={{ fontWeight: 700, color: 'var(--g-ink)', fontWeight: 700 }}>Challenge complete for today!</div>
                 <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Come back tomorrow for a new question. Streak: {store.streak}🔥</div>
               </div>
             </div>
@@ -880,7 +880,7 @@ export default function Academy() {
                 return (
                   <Link
                     key={post.slug}
-                    to={`/blog/${post.slug}`}
+                    to={`/blog/${post.slug}/`}
                     className="acad-article-card"
                     onClick={() => track('academy_article_click', { slug: post.slug, cat })}
                   >
