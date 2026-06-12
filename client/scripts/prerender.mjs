@@ -1459,6 +1459,27 @@ for (const r of APP_ROUTES) {
 }
 console.log(`Prerendered ${APP_ROUTES.length} app-route shells (noindex).`)
 
+// ── Deleted-route redirect stubs ───────────────────────────────────────────
+// GitHub Pages ignores _redirects. For removed pages that Googlebot has cached
+// (shows up in Search Console as "Not found 404"), we emit a prerendered HTML
+// stub with meta-refresh + canonical pointing to the replacement URL, plus
+// noindex,follow. This gives Googlebot a 200 with a clear redirect signal,
+// dequeuing the 404 from Search Console without creating a new indexable page.
+function writeRedirect(fromPath, toPath, title) {
+  const toUrl = ORIGIN + withSlash(toPath)
+  let html = template
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,    `$1${esc(toUrl)}$2`)
+  html = html.replace(/<meta name="robots" content="[^"]*"\s*\/?>/, '<meta name="robots" content="noindex, follow" />')
+  html = html.replace('</head>', `  <meta http-equiv="refresh" content="0;url=${esc(toUrl)}" />\n</head>`)
+  const seo = `<div id="prerender-content" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7"><p>This page has moved. <a href="${esc(toUrl)}">Continue →</a></p></div>`
+  html = html.replace('<div id="root">', `<div id="root">${seo}`)
+  write(fromPath, html)
+}
+
+writeRedirect('/market', '/dashboard', 'Market — WalletLens')
+console.log('Prerendered /market redirect stub → /dashboard.')
+
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
 // App routes (/dashboard, /whales, /alpha, etc.) are intentionally excluded:
