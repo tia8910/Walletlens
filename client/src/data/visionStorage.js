@@ -41,6 +41,8 @@ export function newBucket(overrides = {}) {
     linkedAssets: [],     // array of coin_ids (live current value)
     color: BUCKET_COLORS[(id - 1) % BUCKET_COLORS.length],
     notes: '',
+    completed: false,
+    completedAt: null,
     createdAt: new Date().toISOString(),
     ...overrides,
   }

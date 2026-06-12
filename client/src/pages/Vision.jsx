@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api'
 import { BUCKET_TYPES, BUCKET_COLORS, loadBuckets, saveBuckets, newBucket } from '../data/visionStorage'
 import { getVisionAdvice } from '../visionAdviceAi'
+import { isStablecoin } from '../stablecoins'
 import { track } from '../analytics'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -20,12 +21,16 @@ function getAssetCategory(coinId) {
 
 // Category for a holding — prefer the explicit category stored on the
 // transaction/holding, fall back to coin_id prefix parsing.
+// Stablecoins are detected by id/symbol and treated as their own category
+// (cash-equivalent) rather than volatile crypto — regardless of any "crypto"
+// tag the user may have applied.
 function holdingCategory(h) {
   const c = (h?.category || '').toLowerCase()
   if (c.includes('stock')) return 'stocks'
   if (c.includes('metal')) return 'metals'
   if (c.includes('real'))  return 'real_estate'
   if (c.includes('cash') || c.includes('fiat')) return 'cash'
+  if (isStablecoin(h?.coin_id, h?.coin_symbol || h?.symbol)) return 'stablecoins'
   if (c === 'crypto') return 'crypto'
   return getAssetCategory(h?.coin_id)
 }
@@ -45,12 +50,21 @@ function holdingValue(prices, h) {
 }
 
 const CATEGORIES = {
-  crypto:      { label: 'Crypto',      icon: '₿',  color: '#f7931a' },
-  stocks:      { label: 'Stocks',      icon: '📊', color: '#0ea5e9' },
-  metals:      { label: 'Metals',      icon: '🥇', color: '#f59e0b' },
-  cash:        { label: 'Cash',        icon: '💵', color: '#10b981' },
-  real_estate: { label: 'Real Estate', icon: '🏠', color: '#8b5cf6' },
+  crypto:      { label: 'Crypto',       icon: '₿',  color: '#f7931a' },
+  stablecoins: { label: 'Stablecoins',  icon: '🏦', color: '#64748b' },
+  stocks:      { label: 'Stocks',       icon: '📊', color: '#0ea5e9' },
+  metals:      { label: 'Metals',       icon: '🥇', color: '#f59e0b' },
+  cash:        { label: 'Cash',         icon: '💵', color: '#10b981' },
+  real_estate: { label: 'Real Estate',  icon: '🏠', color: '#8b5cf6' },
 }
+
+const GOAL_TEMPLATES = [
+  { icon: '🛡️', label: 'Emergency Fund', type: 'emergency', targetPct: 10, categories: ['cash', 'stablecoins'], notes: '3–6 months expenses in liquid assets' },
+  { icon: '🔒', label: 'Retirement Hold', type: 'hold', categories: ['crypto', 'stocks'], notes: 'Long-term growth — do not sell early' },
+  { icon: '🏠', label: 'Down Payment', type: 'invest', targetAmount: 50000, targetMonths: 36, categories: ['stablecoins', 'cash'] },
+  { icon: '📈', label: 'Growth Fund', type: 'invest', targetPct: 30, categories: ['crypto', 'stocks', 'metals'] },
+  { icon: '💸', label: 'Income Plan', type: 'withdrawal', categories: ['stablecoins', 'cash'], notes: 'Drawdown for living expenses' },
+]
 
 // ── Donut chart (pure SVG) ────────────────────────────────────────────
 function DonutChart({ slices, total, cx = 80, cy = 80, r = 64, stroke = 20 }) {
@@ -312,7 +326,7 @@ function CategoryBreakdown({ holdings, prices }) {
 }
 
 // ── Bucket card ───────────────────────────────────────────────────────
-function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete }) {
+function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete, onToggleComplete }) {
   const type = BUCKET_TYPES[bucket.type] || BUCKET_TYPES.hold
   const target = bucket.isRest
     ? (totalNW - currentValue)
@@ -322,6 +336,9 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
 
   const progress = pct(currentValue, target)
   const nwShare = pct(currentValue, totalNW)
+
+  const isGoalMet = target != null && target > 0 && currentValue >= target
+  const isDone = bucket.completed || isGoalMet
 
   // ETA to target — chosen timeframe if set, else projected from contribution
   const eta = bucket.targetMonths > 0
@@ -352,14 +369,21 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
   }, [bucket.linkedAssets, holdings, prices])
 
   return (
-    <div className="vp-card" style={{ borderLeft: `3px solid ${bucket.color}` }}>
+    <div className={`vp-card${bucket.completed ? ' vp-card--done' : ''}`} style={{ borderLeft: `3px solid ${bucket.color}` }}>
       <div className="vp-card-head">
+        <span className="vp-drag-handle" title="Drag to reorder">⠿</span>
         <span className="vp-type-icon">{type.icon}</span>
         <div className="vp-card-title">
           <strong>{bucket.name || type.label}</strong>
           <span className="vp-type-label">{type.label}</span>
+          {bucket.completed && <span className="vp-done-badge">✓ Done</span>}
         </div>
         <div className="vp-card-actions">
+          {bucket.completed && (
+            <button className="vp-btn-icon" onClick={() => onToggleComplete(bucket.id)} title="Restore">
+              ↩
+            </button>
+          )}
           <button className="vp-btn-icon" onClick={() => onEdit(bucket)} title="Edit">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -411,6 +435,13 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
       )}
 
       {bucket.notes && <p className="vp-notes">{bucket.notes}</p>}
+
+      {isGoalMet && !bucket.completed && (
+        <div className="vp-goal-met">
+          <span>✓ Goal reached!</span>
+          <button className="vp-goal-met-btn" onClick={e => { e.stopPropagation(); onToggleComplete(bucket.id) }}>Archive</button>
+        </div>
+      )}
 
       <BucketAnalysis
         bucket={bucket}
@@ -518,6 +549,32 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
         </div>
 
         <div className="vp-modal-body">
+          {isNew && (
+            <div className="vp-field">
+              <span>Start from template <span style={{opacity:.5,fontWeight:400}}>(optional)</span></span>
+              <div className="vp-templates">
+                {GOAL_TEMPLATES.map((tpl, i) => (
+                  <button key={i} type="button" className="vp-tpl-btn"
+                    onClick={() => {
+                      setForm(f => ({
+                        ...f,
+                        name: f.name || tpl.label,
+                        type: tpl.type,
+                        targetMode: tpl.targetPct != null ? 'pct' : tpl.targetAmount ? 'fixed' : 'none',
+                        targetAmount: tpl.targetAmount ?? '',
+                        targetPct: tpl.targetPct ?? '',
+                        targetMonths: tpl.targetMonths ?? '',
+                        categories: tpl.categories || [],
+                        notes: f.notes || tpl.notes || '',
+                      }))
+                    }}>
+                    {tpl.icon} {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <label className="vp-field">
             <span>Name</span>
             <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={BUCKET_TYPES[form.type]?.label} className="vp-input" />
@@ -633,6 +690,26 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
             <div className="vp-field">
               <span>Link assets <span style={{ opacity: .5, fontWeight: 400 }}>(select by category or individually)</span></span>
 
+              {(() => {
+                const suggestedCats = ({
+                  emergency: ['cash', 'stablecoins'],
+                  withdrawal: ['cash', 'stablecoins'],
+                  hold: ['crypto', 'stocks', 'metals'],
+                  invest: ['crypto', 'stocks'],
+                  rest: [],
+                }[form.type]) || []
+                const suggestableIds = suggestedCats.flatMap(cat => (holdingsByCategory[cat] || []).map(h => h.coin_id)).filter(Boolean)
+                return form.linkedAssets.length === 0 && suggestableIds.length > 0 ? (
+                  <div className="vp-autolink-tip">
+                    <span>💡 Auto-link {suggestedCats.map(c => CATEGORIES[c]?.label).filter(Boolean).join(' & ')} assets?</span>
+                    <button type="button" className="vp-autolink-btn"
+                      onClick={() => set('linkedAssets', suggestableIds)}>
+                      Link {suggestableIds.length} asset{suggestableIds.length !== 1 ? 's' : ''}
+                    </button>
+                  </div>
+                ) : null
+              })()}
+
               {availableCategories.length > 1 && (
                 <div className="vp-cat-btns">
                   {availableCategories.map(cat => {
@@ -709,6 +786,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 // ── Main page ─────────────────────────────────────────────────────────
 export default function Vision() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [buckets, setBuckets] = useState(loadBuckets)
   const [holdings, setHoldings] = useState([])
   const [prices, setPrices] = useState({})
@@ -718,8 +796,18 @@ export default function Vision() {
   const [advice, setAdvice] = useState(null)
   const [adviceLoading, setAdviceLoading] = useState(false)
   const [adviceError, setAdviceError] = useState(false)
+  const [dragging, setDragging] = useState(null)
+  const [dragOver, setDragOver] = useState(null)
 
   useEffect(() => { track('vision_view') }, [])
+
+  // Auto-open bucket modal pre-linked to an asset if arriving from Dashboard
+  useEffect(() => {
+    const coinId = location.state?.linkAsset
+    if (!coinId || !holdings.length) return
+    const h = holdings.find(x => x.coin_id === coinId)
+    if (h) setEditTarget({ linkedAssets: [coinId] })
+  }, [location.state?.linkAsset, holdings.length > 0])
 
   useEffect(() => {
     let alive = true
@@ -804,6 +892,12 @@ export default function Vision() {
     track('vision_bucket_delete')
   }
 
+  function handleToggleComplete(id) {
+    save(buckets.map(b => b.id === id
+      ? { ...b, completed: !b.completed, completedAt: b.completed ? null : new Date().toISOString() }
+      : b))
+  }
+
   const totalMonthly = buckets.reduce((s, b) => s + (b.monthlyWithdrawal || 0), 0)
   const totalRunwayMonths = totalMonthly > 0 ? Math.floor(totalNW / totalMonthly) : null
 
@@ -875,6 +969,10 @@ export default function Vision() {
           <h1>🗺️ Portfolio Vision</h1>
           <p>Plan every dollar — buckets, goals, and withdrawal runway in one view.</p>
         </div>
+        <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Export PDF
+        </button>
       </div>
 
       {loading ? (
@@ -934,6 +1032,11 @@ export default function Vision() {
               <div className="vp-empty-icon">🗂️</div>
               <h2>No buckets yet</h2>
               <p>Create your first bucket to start planning your portfolio vision.</p>
+              {holdings.length > 0 && (
+                <p className="vp-empty-tip">
+                  You have {holdings.length} holding{holdings.length !== 1 ? 's' : ''} worth {fmt(totalNW)} — create buckets to plan how each dollar is working for you.
+                </p>
+              )}
               <button className="vp-btn-primary vp-add-first" onClick={() => setEditTarget('new')}>
                 + Add First Bucket
               </button>
@@ -956,15 +1059,35 @@ export default function Vision() {
                 </div>
 
                 <div className="vp-cards-col">
-                  {buckets.map(b => (
-                    <BucketCard key={b.id} bucket={b}
-                      currentValue={bucketCurrentValue(b)}
-                      totalNW={effectiveNW}
-                      holdings={holdings}
-                      prices={prices}
-                      onEdit={setEditTarget}
-                      onDelete={setDeleteId}
-                    />
+                  {buckets.map((b, idx) => (
+                    <div
+                      key={b.id}
+                      draggable
+                      onDragStart={() => setDragging(idx)}
+                      onDragOver={e => { e.preventDefault(); setDragOver(idx) }}
+                      onDrop={() => {
+                        if (dragging == null || dragging === idx) return
+                        const next = [...buckets]
+                        const [item] = next.splice(dragging, 1)
+                        next.splice(idx, 0, item)
+                        save(next)
+                        setDragging(null)
+                        setDragOver(null)
+                      }}
+                      onDragEnd={() => { setDragging(null); setDragOver(null) }}
+                      className={`vp-drag-wrap${dragOver === idx && dragging !== idx ? ' vp-drag-over' : ''}`}
+                      style={{ opacity: dragging === idx ? 0.4 : 1 }}
+                    >
+                      <BucketCard key={b.id} bucket={b}
+                        currentValue={bucketCurrentValue(b)}
+                        totalNW={effectiveNW}
+                        holdings={holdings}
+                        prices={prices}
+                        onEdit={setEditTarget}
+                        onDelete={setDeleteId}
+                        onToggleComplete={handleToggleComplete}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
