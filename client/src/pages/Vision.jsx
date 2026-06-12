@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { BUCKET_TYPES, BUCKET_COLORS, loadBuckets, saveBuckets, newBucket } from '../data/visionStorage'
+import { getVisionAdvice } from '../visionAdviceAi'
 import { track } from '../analytics'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -714,6 +715,9 @@ export default function Vision() {
   const [loading, setLoading] = useState(true)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
+  const [advice, setAdvice] = useState(null)
+  const [adviceLoading, setAdviceLoading] = useState(false)
+  const [adviceError, setAdviceError] = useState(false)
 
   useEffect(() => { track('vision_view') }, [])
 
@@ -807,6 +811,58 @@ export default function Vision() {
   const monthlyIn  = buckets.reduce((s, b) => s + (b.monthlyContribution || 0), 0)
   const monthlyOut = totalMonthly
   const monthlyNet = monthlyIn - monthlyOut
+
+  function bucketTarget(b) {
+    if (b.isRest) return null
+    if (b.targetPct != null) return effectiveNW * b.targetPct / 100
+    return b.targetAmount ?? null
+  }
+
+  async function requestAdvice() {
+    setAdviceLoading(true)
+    setAdviceError(false)
+    track('vision_ai_advice')
+
+    // Asset-class mix (rounded, no raw transactions leave the device)
+    const catMap = {}
+    let catTotal = 0
+    for (const h of holdings) {
+      const v = holdingValue(prices, h)
+      const c = holdingCategory(h)
+      catMap[c] = (catMap[c] || 0) + v
+      catTotal += v
+    }
+    const categories = Object.entries(catMap)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => ({ name: CATEGORIES[k]?.label || k, value: Math.round(v), pct: pct(v, catTotal) }))
+
+    const payload = {
+      netWorth: Math.round(totalNW),
+      currency: 'USD',
+      categories,
+      monthly: { in: Math.round(monthlyIn), out: Math.round(monthlyOut), net: Math.round(monthlyNet) },
+      buckets: buckets.map(b => {
+        const cv = bucketCurrentValue(b)
+        return {
+          name: b.name || BUCKET_TYPES[b.type]?.label,
+          type: b.type,
+          current: Math.round(cv),
+          target: bucketTarget(b) != null ? Math.round(bucketTarget(b)) : null,
+          targetMonths: b.targetMonths || null,
+          monthlyContribution: b.monthlyContribution || null,
+          monthlyWithdrawal: b.monthlyWithdrawal || null,
+          categories: (b.categories || []).map(k => CATEGORIES[k]?.label || k),
+          pctOfNW: pct(cv, effectiveNW),
+        }
+      }),
+    }
+
+    const result = await getVisionAdvice(payload)
+    if (result) setAdvice(result)
+    else setAdviceError(true)
+    setAdviceLoading(false)
+  }
 
   return (
     <div className="page vp-page">
@@ -918,6 +974,65 @@ export default function Vision() {
           <button className="vp-btn-add" onClick={() => setEditTarget('new')}>
             + Add Bucket
           </button>
+
+          {/* ── AI Advisor ── */}
+          {buckets.length > 0 && (
+            <div className="vp-ai">
+              <div className="vp-ai-head">
+                <h3 className="vp-ai-title">✨ AI Plan Advisor</h3>
+                <button className="vp-ai-btn" onClick={requestAdvice} disabled={adviceLoading}>
+                  {adviceLoading ? 'Analyzing…' : advice ? 'Refresh advice' : 'Get AI advice'}
+                </button>
+              </div>
+
+              {!advice && !adviceLoading && !adviceError && (
+                <p className="vp-ai-empty">Get personalized advice on your goals, diversification, emergency cover, and funding pace — based on your actual buckets and asset mix.</p>
+              )}
+              {adviceError && (
+                <p className="vp-ai-empty vp-ai-err">Couldn't reach the AI advisor right now. Please try again in a moment.</p>
+              )}
+
+              {advice && (
+                <div className="vp-ai-body">
+                  {advice.headline && (
+                    <div className="vp-ai-headline">
+                      {advice.score != null && (
+                        <span className="vp-ai-score" style={{ '--s': advice.score, color: advice.score >= 70 ? '#10b981' : advice.score >= 40 ? '#f59e0b' : '#ef4444' }}>
+                          {advice.score}<small>/100</small>
+                        </span>
+                      )}
+                      <span className="vp-ai-headline-text">{advice.headline}</span>
+                    </div>
+                  )}
+
+                  {advice.insights.length > 0 && (
+                    <div className="vp-ai-insights">
+                      {advice.insights.map((ins, i) => (
+                        <div key={i} className={`vp-ai-insight vp-ai-${ins.level}`}>
+                          <span className="vp-ai-ins-dot" />
+                          <div>
+                            {ins.title && <strong>{ins.title}</strong>}
+                            {ins.detail && <span>{ins.detail}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {advice.actions.length > 0 && (
+                    <div className="vp-ai-actions">
+                      <span className="vp-ai-actions-label">Next steps</span>
+                      <ol>
+                        {advice.actions.map((a, i) => <li key={i}>{a}</li>)}
+                      </ol>
+                    </div>
+                  )}
+
+                  <p className="vp-ai-disclaimer">AI-generated education, not individualized financial advice.</p>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

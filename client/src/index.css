@@ -11490,5 +11490,43 @@ button:not(:disabled):active,
 }
 .vp-field-hint strong { font-weight: 700; }
 
+/* ── AI Plan Advisor ── */
+.vp-ai {
+  margin-top: 1.25rem; padding: 1rem 1.1rem;
+  background: rgba(var(--g-rgb), .05);
+  border: 1px solid rgba(var(--g-rgb), .18);
+  border-radius: 16px;
+}
+.vp-ai-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.vp-ai-title { margin: 0; font-size: 1rem; }
+.vp-ai-btn {
+  background: var(--g-ink); color: #000; border: none; border-radius: 999px;
+  padding: .45rem 1rem; font-size: .82rem; font-weight: 700; cursor: pointer;
+  transition: opacity .15s;
+}
+.vp-ai-btn:hover { opacity: .85; }
+.vp-ai-btn:disabled { opacity: .55; cursor: default; }
+.vp-ai-empty { margin: .6rem 0 0; font-size: .82rem; opacity: .6; line-height: 1.45; }
+.vp-ai-err { color: #ef4444; opacity: .85; }
+.vp-ai-body { margin-top: .85rem; display: flex; flex-direction: column; gap: .85rem; }
+.vp-ai-headline { display: flex; align-items: center; gap: .7rem; }
+.vp-ai-score { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+.vp-ai-score small { font-size: .7rem; font-weight: 600; opacity: .55; }
+.vp-ai-headline-text { font-size: .95rem; font-weight: 700; line-height: 1.3; }
+.vp-ai-insights { display: flex; flex-direction: column; gap: .5rem; }
+.vp-ai-insight { display: flex; align-items: flex-start; gap: .55rem; font-size: .84rem; line-height: 1.4; }
+.vp-ai-insight > div { display: flex; flex-direction: column; gap: .1rem; }
+.vp-ai-insight strong { font-weight: 700; }
+.vp-ai-insight span { opacity: .8; }
+.vp-ai-ins-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.vp-ai-good .vp-ai-ins-dot { background: #10b981; }
+.vp-ai-warn .vp-ai-ins-dot { background: #f59e0b; }
+.vp-ai-tip  .vp-ai-ins-dot { background: #6366f1; }
+.vp-ai-actions { background: rgba(255,255,255,.04); border-radius: 12px; padding: .65rem .9rem; }
+.vp-ai-actions-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .55; }
+.vp-ai-actions ol { margin: .4rem 0 0; padding-inline-start: 1.1rem; display: flex; flex-direction: column; gap: .3rem; }
+.vp-ai-actions li { font-size: .84rem; line-height: 1.4; }
+.vp-ai-disclaimer { margin: 0; font-size: .7rem; opacity: .4; font-style: italic; }
+
 /* Monthly plan summary tint */
 .vp-summary-monthly { margin-top: -.4rem; }
