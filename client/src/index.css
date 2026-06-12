@@ -11467,3 +11467,21 @@ button:not(:disabled):active,
 .vp-cat-name { flex: 1; }
 .vp-cat-val { font-weight: 600; }
 .vp-cat-pct { opacity: .5; font-size: .74rem; min-width: 2.8rem; text-align: right; }
+
+/* ── Monthly contribution / ETA on bucket cards ── */
+.vp-contrib { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .35rem 0 .1rem; }
+.vp-contrib-amt { font-size: .78rem; font-weight: 700; color: #10b981; }
+.vp-eta {
+  font-size: .72rem; font-weight: 600; opacity: .7;
+  background: rgba(255,255,255,.07); padding: .1rem .45rem; border-radius: 999px;
+}
+
+/* Planned (manual) category badge — dashed to distinguish from live composition */
+.vp-cat-badge-planned { border-style: dashed; opacity: .7; }
+
+/* ── Two-up field row (contribution + withdrawal) ── */
+.vp-field-row { display: flex; gap: .6rem; }
+.vp-field-row .vp-field { flex: 1; min-width: 0; }
+
+/* Monthly plan summary tint */
+.vp-summary-monthly { margin-top: -.4rem; }
