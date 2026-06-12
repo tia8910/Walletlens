@@ -6,6 +6,7 @@
   "description": "WalletLens promotion and outreach automation scripts",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@resvg/resvg-js": "^2.6.2",
     "imapflow": "^1.0.169",
     "mailparser": "^3.7.1",
     "nodemailer": "^6.9.16"

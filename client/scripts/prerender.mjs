@@ -26,7 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
 const PUBLIC = resolve(__dirname, '..', 'public')
 const ORIGIN = 'https://walletlens.live'
-const OG_IMAGE = `${ORIGIN}/og-image.svg`
+const OG_IMAGE = `${ORIGIN}/og-image.png`
 const TODAY = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
 const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
@@ -110,11 +110,49 @@ function mdToHtml(text) {
 // alternates: [{ hreflang, path }] — emits <link rel="alternate" hreflang>
 // for international SEO (tells Google which URLs are language variants of each
 // other). Pass for any page that has an English↔Arabic counterpart.
-function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates }) {
-  const url = ORIGIN + path
+// GitHub Pages serves every route as a directory (route/index.html) and 301s
+// /route → /route/. Canonical, og:url, hreflang, sitemap and internal links
+// must therefore all use the trailing-slash form — otherwise Google reports
+// "Page with redirect" and "Duplicate, Google chose different canonical".
+const withSlash = (p) => (p === '/' || p.endsWith('/') ? p : p + '/')
+
+// Keep meta descriptions within Google's ~160-char display window so the
+// snippet shown in search results ends cleanly instead of being truncated
+// mid-word by the engine. Prefers a sentence boundary; falls back to the last
+// word boundary + ellipsis. Anything already within budget is returned as-is.
+// Append the " | WalletLens" brand suffix to a title only when the result
+// still fits Google's ~60-char title display. For long editorial titles the
+// brand is dropped so the keyword-rich part shows in full instead of the brand
+// being truncated mid-word. (Brand is still conveyed via og:site_name + JSON-LD.)
+const BRAND_SUFFIX = ' | WalletLens'
+const brandTitle = (t) => (t.length + BRAND_SUFFIX.length <= 60 ? t + BRAND_SUFFIX : t)
+
+function clampDesc(s, max = 158) {
+  if (!s || s.length <= max) return s
+  const slice = s.slice(0, max + 1)
+  const sentEnd = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '))
+  if (sentEnd >= 100) return s.slice(0, sentEnd + 1).trim()
+  const sp = slice.lastIndexOf(' ')
+  // Trim a dangling word and any trailing connector punctuation so the snippet
+  // reads "fully free…" rather than "fully free,…".
+  return (sp > 0 ? s.slice(0, sp) : s.slice(0, max)).replace(/[\s,;:.—–-]+$/, '') + '…'
+}
+
+function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false }) {
+  const url = ORIGIN + withSlash(path)
+  description = clampDesc(description)
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
     html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
+  }
+  // Templated SEO pages (track/price/calculator) are kept live for users but
+  // excluded from Google's index to avoid "scaled content" / low-value flags
+  // (AdSense + Search quality). follow lets crawlers still pass link equity.
+  if (noindex) {
+    html = html.replace(
+      /<meta name="robots" content="[^"]*"\s*\/?>/,
+      '<meta name="robots" content="noindex, follow" />'
+    )
   }
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
   html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
@@ -126,20 +164,24 @@ function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', di
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
   if (alternates && alternates.length) {
     const links = alternates.map(a =>
-      `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + a.path)}" />`
+      `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + withSlash(a.path))}" />`
     ).join('\n')
     html = html.replace('</head>', `${links}\n  </head>`)
   }
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
-    const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b)}</script>`).join('\n')
+    // Escape "<" so content containing "</script>" can't break out of the JSON-LD block.
+    const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b).replace(/</g, '\\u003c')}</script>`).join('\n')
     html = html.replace('</head>', `${scripts}\n  </head>`)
   }
   // Hidden-but-crawlable content block, injected as first child of #root.
   // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
   // DOM) paints over this for real users, while crawlers/no-JS fetches still
   // read the full text. React wipes #root (and this block) on mount.
-  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${bodyHtml}</div>`
+  // Internal links get a trailing slash so crawlers never follow a 301 hop
+  // (only bare paths like /track/bitcoin — anchors/queries/files untouched).
+  const slashedBody = bodyHtml.replace(/href="(\/[a-z0-9\-\/]*[a-z0-9\-])"/gi, 'href="$1/"')
+  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${slashedBody}</div>`
   html = html.replace('<div id="root">', `<div id="root">${seo}`)
   return html
 }
@@ -244,9 +286,28 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 `
 write('/', buildPage({
   path: '/',
-  title: 'WalletLens — Free Net Worth & Portfolio Tracker | Crypto, Stocks, Gold',
-  description: 'Track your entire net worth in one free app — crypto, US stocks, gold, silver, cash & FX. The free net worth tracker for managing all your investments in one place. No account, AI insights, data stays on your device.',
+  title: 'WalletLens — Free Portfolio Tracker with Live Prices',
+  description: 'WalletLens is a free portfolio & net worth tracker with live prices for crypto, US stocks, gold and cash. No account — your data stays on your device.',
   bodyHtml: homeBody,
+  jsonLd: [
+    // WebApplication + Organization are emitted once site-wide from the global
+    // JSON-LD in index.html (single canonical instance, one aggregateRating).
+    // The homepage only adds its page-specific FAQPage to avoid duplicate /
+    // conflicting entities that Google flags as low-quality structured data.
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'Is WalletLens free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is 100% free with no paid tier, no premium paywall, and no subscription. You can track unlimited assets, use all AI features, and export backups without ever paying.' } },
+        { '@type': 'Question', name: 'Do I need an account to use WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'No. WalletLens requires no sign-up, no email, and no password. Open the app and start tracking immediately. There is no account to hack, leak, or lock you out.' } },
+        { '@type': 'Question', name: 'Where is my portfolio data stored?', acceptedAnswer: { '@type': 'Answer', text: "Entirely in your browser's localStorage on your device. WalletLens has no backend database. Your financial data never leaves your device." } },
+        { '@type': 'Question', name: 'What assets can I track with WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'Crypto (10,000+ coins including Bitcoin, Ethereum, Solana), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), gold, silver, platinum, fiat currencies, cash, bonds, and custom assets — all in one live dashboard.' } },
+        { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice for a free net worth tracker: it covers every asset class (crypto, stocks, gold, cash), needs no account, keeps data private on your device, and includes AI analysis — all at no cost.' } },
+        { '@type': 'Question', name: 'Can I import my portfolio from a screenshot?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens can read a screenshot of any exchange, broker, or wallet app and automatically extract each asset, amount and price into your portfolio — no manual typing, no CSV, no account required.' } },
+        { '@type': 'Question', name: 'Does WalletLens support voice import?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Say your holdings naturally ("I have half a Bitcoin and 20 Apple shares") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic.' } },
+      ],
+    },
+  ],
 }))
 
 // ── Free Net Worth Tracker (comparison landing) ──────────────────────────────
@@ -287,16 +348,27 @@ ${compareRow('Installable app (PWA)', ['Yes', 'Yes', 'Web', 'Yes', 'No'])}
 `
 write('/free-net-worth-tracker', buildPage({
   path: '/free-net-worth-tracker',
-  title: 'Free Net Worth Tracker — Manage All Your Investments | WalletLens',
+  title: 'Free Net Worth Tracker — All Your Investments | WalletLens',
   description: 'A free net worth tracker to manage all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
   bodyHtml: fnwtBody,
   jsonLd: [
+    // WebApplication is emitted once globally from index.html — not repeated
+    // here, to avoid a duplicate/conflicting entity for the same app.
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-        { '@type': 'ListItem', position: 2, name: 'Free Net Worth Tracker', item: ORIGIN + '/free-net-worth-tracker' },
+        { '@type': 'ListItem', position: 2, name: 'Free Net Worth Tracker', item: ORIGIN + '/free-net-worth-tracker/' },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice: it tracks your entire net worth across crypto, stocks, gold, cash and FX, needs no account, keeps data private on your device, and is completely free with no paid tier.' } },
+        { '@type': 'Question', name: 'Is there a free net worth tracker with no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens requires no sign-up or email. Open it and start tracking immediately. All your portfolio data stays in your browser and never reaches a server.' } },
+        { '@type': 'Question', name: 'How does WalletLens compare to Empower and Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is free with no paid tier. Kubera costs $199/year. Empower is free but upsells wealth management. Both Empower and Kubera require account creation and store data on their servers. WalletLens stores everything locally.' } },
       ],
     },
   ],
@@ -352,7 +424,7 @@ ${faq.html}
 <p><a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/import-portfolio-from-screenshot', buildPage({
     path: '/import-portfolio-from-screenshot',
-    title: 'Import Your Portfolio From a Screenshot — Free, No Account | WalletLens',
+    title: 'Import Your Portfolio From a Screenshot — Free | WalletLens',
     description: 'WalletLens reads a screenshot of your holdings from any exchange, broker or wallet and turns it into a tracked portfolio automatically — free, no account, no CSV, data stays on your device. The only net-worth tracker with AI screenshot import.',
     bodyHtml: body,
     jsonLd: [
@@ -361,7 +433,7 @@ ${faq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: 'Import From Screenshot', item: ORIGIN + '/import-portfolio-from-screenshot' },
+          { '@type': 'ListItem', position: 2, name: 'Import From Screenshot', item: ORIGIN + '/import-portfolio-from-screenshot/' },
         ],
       },
       howToJsonLd('How to import a portfolio from a screenshot', steps),
@@ -408,7 +480,7 @@ ${faq.html}
 <p><a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/add-holdings-by-voice', buildPage({
     path: '/add-holdings-by-voice',
-    title: 'Add Crypto & Stock Holdings by Voice — Free, English & Arabic | WalletLens',
+    title: 'Add Holdings by Voice — Free, English & Arabic | WalletLens',
     description: 'WalletLens lets you add your portfolio holdings just by speaking — AI turns your voice into structured holdings in English or Arabic. Free, no account, hands-free, data stays on your device. The only net-worth tracker with voice import.',
     bodyHtml: body,
     jsonLd: [
@@ -417,7 +489,7 @@ ${faq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: 'Add Holdings by Voice', item: ORIGIN + '/add-holdings-by-voice' },
+          { '@type': 'ListItem', position: 2, name: 'Add Holdings by Voice', item: ORIGIN + '/add-holdings-by-voice/' },
         ],
       },
       howToJsonLd('How to add holdings by voice', steps),
@@ -513,8 +585,8 @@ ${arFaq.html}
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
-          { '@type': 'ListItem', position: 2, name: `WalletLens مقابل ${ar.name}`, item: `${ORIGIN}/ar/vs/${c.slug}` },
+          { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker/' },
+          { '@type': 'ListItem', position: 2, name: `WalletLens مقابل ${ar.name}`, item: `${ORIGIN}/ar/vs/${c.slug}/` },
         ],
       },
       arFaq.jsonLd,
@@ -641,13 +713,14 @@ ${aiBullet}
     title: pageTitle,
     description: pageDesc,
     bodyHtml: assetBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `Track ${c.name}`, item: `${ORIGIN}/track/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `Track ${c.name}`, item: `${ORIGIN}/track/${c.slug}/` },
         ],
       },
     ],
@@ -728,6 +801,7 @@ for (const c of CALCULATORS) {
     title: pageTitle,
     description: pageDesc,
     bodyHtml: calcBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -736,14 +810,14 @@ for (const c of CALCULATORS) {
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-        url: `${ORIGIN}/calculator/${c.slug}`,
+        url: `${ORIGIN}/calculator/${c.slug}/`,
       },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `${c.name} Profit Calculator`, item: `${ORIGIN}/calculator/${c.slug}/` },
         ],
       },
     ],
@@ -768,7 +842,7 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/learn/' + t.slug, buildPage({
     path: '/learn/' + t.slug,
-    title: `What Is ${t.term}? Definition & Example | WalletLens`,
+    title: `What Is ${t.term}? Definition & Example`,
     description: t.short,
     bodyHtml: learnBody,
     jsonLd: [
@@ -778,14 +852,14 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
         name: t.term,
         description: t.short,
         inDefinedTermSet: `${ORIGIN}/learn`,
-        url: `${ORIGIN}/learn/${t.slug}`,
+        url: `${ORIGIN}/learn/${t.slug}/`,
       },
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}` },
+          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}/` },
         ],
       },
     ],
@@ -847,7 +921,7 @@ ${vsFaq.html}
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}` },
+          { '@type': 'ListItem', position: 2, name: `WalletLens vs ${c.competitor}`, item: `${ORIGIN}/vs/${c.slug}/` },
         ],
       },
       vsFaq.jsonLd,
@@ -889,13 +963,14 @@ ${priceFaq.html}
     title: `${a.name} Price Today (${a.symbol}) — Live Price & Free Tracker | WalletLens`,
     description: `Live ${a.name} (${a.symbol}) price today, plus a free way to track your ${a.symbol} profit and loss in WalletLens — no account, data stays on your device.`,
     bodyHtml: priceBody,
+    noindex: true,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}` },
+          { '@type': 'ListItem', position: 2, name: `${a.name} Price`, item: `${ORIGIN}/price/${a.slug}/` },
         ],
       },
       priceFaq.jsonLd,
@@ -917,7 +992,7 @@ ${POSTS.map(p => `
 `
 write('/blog', buildPage({
   path: '/blog',
-  title: 'Blog — Portfolio Tracking, Crypto Investing & Market Analysis | WalletLens',
+  title: 'Blog — Portfolio Tracking & Crypto Investing | WalletLens',
   description: 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.',
   bodyHtml: blogBody,
 }))
@@ -956,8 +1031,8 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
         url: ORIGIN,
         logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
       },
-      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}`,
-      url: `${ORIGIN}/blog/${p.slug}`,
+      mainEntityOfPage: `${ORIGIN}/blog/${p.slug}/`,
+      url: `${ORIGIN}/blog/${p.slug}/`,
       // Speakable: lets voice assistants read the headline + lead paragraph aloud.
       speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', 'article > p:nth-of-type(1)'] },
     },
@@ -966,15 +1041,15 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog' },
-        { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: ORIGIN + '/blog/' },
+        { '@type': 'ListItem', position: 3, name: p.title, item: `${ORIGIN}/blog/${p.slug}/` },
       ],
     },
   ]
   const hasAr = AR_POSTS.some(a => a.slug === p.slug)
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
-    title: `${p.title} | WalletLens`,
+    title: brandTitle(p.title),
     description: p.summary,
     bodyHtml: articleHtml,
     jsonLd,
@@ -1011,21 +1086,21 @@ for (const p of AR_POSTS) {
         url: ORIGIN,
         logo: { '@type': 'ImageObject', url: `${ORIGIN}/icon-512.svg` },
       },
-      mainEntityOfPage: `${ORIGIN}/ar/blog/${p.slug}`,
-      url: `${ORIGIN}/ar/blog/${p.slug}`,
+      mainEntityOfPage: `${ORIGIN}/ar/blog/${p.slug}/`,
+      url: `${ORIGIN}/ar/blog/${p.slug}/`,
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker' },
-        { '@type': 'ListItem', position: 2, name: p.title, item: `${ORIGIN}/ar/blog/${p.slug}` },
+        { '@type': 'ListItem', position: 1, name: 'WalletLens', item: ORIGIN + '/ar/free-net-worth-tracker/' },
+        { '@type': 'ListItem', position: 2, name: p.title, item: `${ORIGIN}/ar/blog/${p.slug}/` },
       ],
     },
   ]
   write('/ar/blog/' + p.slug, buildPage({
     path: '/ar/blog/' + p.slug,
-    title: `${p.title} | WalletLens`,
+    title: brandTitle(p.title),
     description: p.summary,
     bodyHtml: articleHtml,
     lang: 'ar',
@@ -1053,7 +1128,7 @@ const aboutFaqs = [
 ]
 write('/about', buildPage({
   path: '/about',
-  title: 'About WalletLens — Free Net Worth Tracker for Crypto, Stocks & Gold',
+  title: 'About WalletLens — Free Private Net Worth Tracker',
   description: 'WalletLens is a free, private net worth tracker for all your investments — crypto, stocks, gold, silver, cash & FX in one dashboard. No account, no server, no data collection. Learn what it does, who it is for, and how it compares.',
   bodyHtml: `
 <h1>About WalletLens — The Free, Private Net Worth Tracker</h1>
@@ -1075,14 +1150,92 @@ write('/about', buildPage({
 ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 <p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="mailto:contact@walletlens.live">contact@walletlens.live</a></p>
 `,
+  // Organization is emitted once globally from index.html (the richer instance
+  // with sameAs + contactPoint); the About page adds no duplicate of its own.
+}))
+
+// ── FAQ ──────────────────────────────────────────────────────────────────────
+// Mirrors client/src/pages/FAQ.jsx (FAQ_SECTIONS) — keep the two in sync.
+const faqPageSections = [
+  { title: 'Getting Started', faqs: [
+    { q: 'Is WalletLens really free?',
+      a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.' },
+    { q: 'Do I need an account or email to use it?',
+      a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of.' },
+    { q: 'How do I add my first holding?',
+      a: 'Open the dashboard and tap "Add Trade". Search for the asset, enter the amount and the price you paid, and save. You can also speak a trade with voice input, import a screenshot of an exchange or broker app, or paste a backup code from another device.' },
+    { q: 'Can I use WalletLens on my phone?',
+      a: 'Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks.' },
+    { q: 'Does WalletLens support languages other than English?',
+      a: 'Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned.' },
+  ]},
+  { title: 'Privacy & Data', faqs: [
+    { q: 'Where is my portfolio data stored?',
+      a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no server that receives your holdings. Your financial data never leaves your device unless you choose to export a backup code." },
+    { q: 'Can WalletLens see my portfolio?',
+      a: 'No. The only network calls the app makes are to public price APIs (CoinGecko, Binance, Stooq, Gold-API and similar) to fetch market prices, and those requests never include your holdings, amounts, or any identity. Optional AI analysis sends only anonymous aggregates.' },
+    { q: 'How do I back up my portfolio?',
+      a: 'Open Settings → Backup and copy your WLZ backup code (or show it as a QR code). The code is a compressed snapshot of your whole portfolio. Store it somewhere safe — because there is no cloud account, the backup code is the only way to restore your data if you clear your browser.' },
+    { q: 'How do I move my portfolio to a new device?',
+      a: 'Export a backup code (or QR) on the old device, then paste or scan it on the new one. The import takes seconds and nothing passes through any server.' },
+    { q: 'How do I delete all my data?',
+      a: "Clearing your browser's site data for walletlens.live removes everything, because everything lives in your browser. There is no server-side copy to ask us to delete." },
+  ]},
+  { title: 'Assets & Prices', faqs: [
+    { q: 'What assets can I track in one place?',
+      a: 'Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, bonds, and custom assets like real estate — all in a single net worth dashboard with live prices, cost basis, and profit/loss.' },
+    { q: 'Where do the live prices come from?',
+      a: 'Crypto prices come from CoinGecko with Binance, CryptoCompare, CoinCap and CoinPaprika as automatic fallbacks. US stocks come from Stooq, precious metals from Gold-API, and currency rates from open exchange-rate APIs. If your network blocks these sources, the app falls back to a snapshot served from walletlens.live itself.' },
+    { q: 'Why is a price missing or showing zero?',
+      a: 'Usually the asset is custom (bonds, real estate) and needs a manual price — edit the holding to set its current value. For listed assets, a hard refresh typically restores live prices; the app retries several sources automatically.' },
+    { q: 'How is my profit & loss calculated?',
+      a: 'WalletLens tracks your cost basis per asset from your buy and sell transactions using the average-cost method. Unrealized P&L is the difference between current market value and the cost basis of what you still hold.' },
+  ]},
+  { title: 'Features & AI', faqs: [
+    { q: 'What does the AI analysis do?',
+      a: 'The AI Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice.' },
+    { q: 'Can I set price alerts?',
+      a: 'Yes. Set "rises above" or "falls below" alerts on any holding. With notifications enabled you get alerted even when WalletLens is in a background tab, complete with a sound.' },
+    { q: 'What is the voice import?',
+      a: 'Tap the microphone and say something like "I bought half a Bitcoin at sixty thousand dollars in January" — the AI parses it into a structured transaction for you to confirm. It works in English and Arabic.' },
+    { q: 'What is the screenshot import?',
+      a: 'Upload a screenshot of any exchange, broker, or bank app and the AI reads the holdings from the image and adds them to your portfolio — useful for migrating from another tracker in one step.' },
+    { q: 'What does the Chrome extension do?',
+      a: 'The WalletLens extension shows your portfolio total, all holdings with live prices, market data, the Fear & Greed index, news, and technical signals from your browser toolbar. It syncs with the web app through your local data — no account needed.' },
+  ]},
+  { title: 'Comparisons & Troubleshooting', faqs: [
+    { q: 'How is WalletLens different from CoinStats, Empower, or Kubera?',
+      a: 'Most trackers focus only on crypto, charge a subscription, require you to connect exchange or bank logins, or store your data on their servers. WalletLens covers every asset class, is free forever, needs no logins, and keeps all data on your device.' },
+    { q: 'The app loads but data is empty — what do I do?',
+      a: 'First hard-refresh (Ctrl+Shift+R on desktop, pull-to-refresh on mobile) to pick up the latest version. If market sections stay empty, your network may block crypto price APIs — WalletLens automatically falls back to a same-origin price snapshot within a few seconds.' },
+    { q: 'I cleared my browser and lost my portfolio. Can you restore it?',
+      a: 'Only if you saved a WLZ backup code — paste it in Settings → Backup to restore everything instantly. There is no server-side copy, which is the price of true privacy, so export a backup regularly.' },
+    { q: 'Is WalletLens open source?',
+      a: 'Yes. You can inspect the code, report issues, or contribute on GitHub at github.com/tia8910/walletlens.' },
+    { q: 'How do I report a bug or request a feature?',
+      a: 'Email contact@walletlens.live or open an issue on GitHub — we read everything.' },
+  ]},
+]
+const allFaqPageQs = faqPageSections.flatMap(s => s.faqs)
+write('/faq', buildPage({
+  path: '/faq',
+  title: 'FAQ — WalletLens Free Net Worth Tracker',
+  description: 'Answers to common questions about WalletLens: is it free, where your data is stored, supported assets, live price sources, backups, the AI analysis, the Chrome extension, and troubleshooting.',
+  bodyHtml: `
+<h1>Frequently Asked Questions</h1>
+<p>Everything about tracking your net worth with WalletLens — free, private, no account. Can't find your answer? Email <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
+${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')).join('\n')}
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a></p>
+`,
   jsonLd: [
     {
       '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'WalletLens',
-      url: ORIGIN + '/',
-      logo: ORIGIN + '/icon-512.svg',
-      description: 'Free, private net worth tracker for crypto, stocks, gold, silver, cash and FX.',
+      '@type': 'FAQPage',
+      mainEntity: allFaqPageQs.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
     },
   ],
 }))
@@ -1090,50 +1243,57 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
-    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 10,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
+    a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker on Sui. It is a standard Sui coin with a fixed 10,000,000 supply and minting frozen forever. You earn $LENZ by using and sharing the app, and holders unlock premium features. The free core tracker never requires it.' },
+  { q: 'How do I earn $LENZ?',
+    a: 'By using WalletLens and helping it grow — tracking your portfolio, daily streaks, completing Academy lessons, referring active users, and sharing content. Earning opens at launch (you can join the waitlist now). You collect points that convert to $LENZ — no purchase, ever.' },
   { q: 'Why Sui?',
-    a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
+    a: 'Sui is fast, low-fee and has a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to discover — listing on CoinGecko and CoinMarketCap is free, with no costly gatekeepers.' },
+  { q: 'Does holding $LENZ change the app?',
+    a: 'The free tracker is always 100% free and never requires $LENZ. Holding or locking $LENZ unlocks optional extras — an ad-free app, pro analytics and governance — rolling out after launch. It only adds on top; it never gates the core features.' },
   { q: 'Is $LENZ private?',
     a: 'No, and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a privacy coin.' },
-  { q: 'Does holding $LENZ change how WalletLens works?',
-    a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
   { q: 'What is the supply, and are there unlocks?',
-    a: 'A low, hard cap of 10,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
+    a: 'A fixed 10,000,000 LENZ, minted once with minting frozen forever — no inflation. There is no team or insider allocation. Reward and reserve tokens are released transparently over time from a public, time-locked schedule rather than all at once, which protects holders from sudden sell pressure. Everything is verifiable on-chain.' },
+  { q: 'Where can I get or trade $LENZ?',
+    a: 'At launch, on Sui DEXes (Cetus, Turbos, FlowX) and aggregators; it also auto-appears on DexScreener and DexTools, and we will apply to CoinGecko and CoinMarketCap (both free). Before launch, you earn it by using the app — join the waitlist on the Earn page.' },
   { q: 'How do I know $LENZ is not a scam?',
-    a: 'Because you can verify it instead of trusting it. The total supply is fixed at 10,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
+    a: 'Verify instead of trusting: fixed 10,000,000 supply, minting frozen, immutable metadata, 0% insider allocation, reserves time-locked on a public schedule, and locked liquidity — all verifiable on-chain (the repo ships a verify-onchain.sh that prints a PASS/FAIL report). The only official package id and coin type are published on this page and in the open-source repo.' },
   { q: 'Is this financial advice or an investment offer?',
     a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Do your own research.' },
 ]
 write('/lenz', buildPage({
   path: '/lenz',
   title: '$LENZ — Native Token of walletlens.live (on Sui)',
-  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A low 10M hard-capped Sui coin with locked minting, no unlocks and no insider allocation. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
+  description: '$LENZ is the native token of walletlens.live, a free privacy-first all-asset portfolio tracker. A fixed 10M-supply Sui coin with minting frozen and 0% insider allocation. Earn it by using the app; hold for perks. Tokenomics, distribution, utility and FAQ. Informational only, not financial advice.',
   bodyHtml: `
 <h1>$LENZ — The Native Token of walletlens.live</h1>
-<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is a standard Sui coin with a fixed 10,000,000 supply and minting locked forever — the utility and governance token of the WalletLens ecosystem.</p>
+<p>$LENZ is the native token of walletlens.live — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device. It is a standard Sui coin with a fixed 10,000,000 supply and minting frozen forever. You earn $LENZ by using and sharing the app, and holders unlock premium features.</p>
 <h2>Why Sui</h2>
-<p>Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. Sui is a public chain, so $LENZ is the native/utility token of a privacy-first app, not a privacy coin. The privacy is in the product: your portfolio data stays on your device.</p>
-<h2>Tokenomics — low cap, no unlocks</h2>
+<p>Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. Sui is a public chain, so $LENZ is the native/utility token of a privacy-first app, not a privacy coin. The privacy is in the product: your portfolio data stays on your device.</p>
+<h2>Tokenomics — fixed supply, fair</h2>
 <ul>
 <li>Name / ticker: WalletLens / LENZ</li>
 <li>Type: standard Sui coin; supply locked by freezing the TreasuryCap</li>
 <li>Chain: Sui</li>
-<li>Max supply: 10,000,000 LENZ — low, hard cap, minting locked forever</li>
-<li>Unlocks / vesting: none — 100% liquid at genesis, no cliffs, no insider allocation</li>
+<li>Max supply: 10,000,000 LENZ — fixed, minting frozen forever (no inflation)</li>
+<li>Insiders: 0% — no team or VC allocation</li>
+<li>Distribution: earn-based; reward &amp; reserve tokens released over time from a public, time-locked schedule</li>
 <li>Decimals: 6 (1 LENZ = 1,000,000 base units)</li>
 <li>Supply: publicly verifiable on-chain</li>
 </ul>
-<h2>Distribution — 100% liquid at genesis</h2>
+<h2>Distribution — community-first, no insider bag</h2>
 <ul>
-<li>Community airdrop &amp; rewards — 50% (5,000,000 LENZ)</li>
+<li>Community rewards (use &amp; earn) — 50% (5,000,000 LENZ), released over time</li>
 <li>Liquidity — 35% (3,500,000 LENZ), LP locked</li>
-<li>Ecosystem / DAO treasury — 15% (1,500,000 LENZ), no team lock</li>
+<li>Ecosystem / DAO treasury — 15% (1,500,000 LENZ), transparent &amp; time-locked</li>
+<li>Founder / team — 0%</li>
 </ul>
-<h2>Proposed utility</h2>
+<h2>Utility</h2>
 <ul>
+<li>Use &amp; earn — earn $LENZ by using WalletLens and sharing it; no purchase required.</li>
+<li>Holders unlock an ad-free app and pro features (after launch).</li>
 <li>Governance over the roadmap, supported assets, and treasury spend.</li>
-<li>Usage rewards for contributions (translations, content, referrals).</li>
-<li>Optional hold-to-unlock cosmetics that never gate the free core app.</li>
+<li>The free core tracker always stays free and never requires $LENZ.</li>
 </ul>
 <h2>How to buy and hold $LENZ (wallet &amp; gas)</h2>
 <p>$LENZ lives on Sui, so you need a Sui wallet and a little SUI for gas.</p>
@@ -1144,7 +1304,7 @@ write('/lenz', buildPage({
 <li>Verify the coin type before swapping — only trade the official package::lenz::LENZ shown on this page, to avoid impostor coins.</li>
 </ol>
 <h2>Legitimacy — don't trust, verify</h2>
-<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official package id and coin type are published here and in the repo, and anyone can run the verification script to confirm the total supply is 10,000,000 LENZ, that the TreasuryCap is frozen so minting is permanently impossible, that the metadata is immutable, that 100% of supply is liquid at genesis with no insider bag, and that liquidity is locked.</p>
+<p>$LENZ is a real, long-term token, and every protection is independently verifiable on-chain. Once deployed, the official package id and coin type are published here and in the repo, and anyone can run the verification script to confirm the total supply is 10,000,000 LENZ, that the TreasuryCap is frozen so minting is permanently impossible, that the metadata is immutable, that there is no team or insider allocation (reserves are time-locked on a public schedule), and that liquidity is locked.</p>
 <p><strong>Beware of scams.</strong> The only official $LENZ package id and coin type live on this page and in the WalletLens repo. WalletLens will never DM you, never run a "claim/airdrop" site that asks you to connect a wallet or sign a transaction, and never asks for your seed phrase. Anything that does is fraudulent.</p>
 <h2>Frequently asked questions</h2>
 ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
@@ -1168,27 +1328,18 @@ ${lenzFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 // ── $LENZ airdrop ─────────────────────────────────────────────────────────────
 write('/airdrop', buildPage({
   path: '/airdrop',
-  title: '$LENZ Airdrop — Earn the Native Token of walletlens.live (on Sui)',
-  description: 'Earn $LENZ, the native token of walletlens.live, through the community airdrop. Complete quests — use the app, follow on X, join Telegram, refer friends — climb tiers, and claim at snapshot. 10.5M LENZ pool, per-wallet cap, no purchase required.',
+  title: 'Earn $LENZ — Use WalletLens, get rewarded (coming soon)',
+  description: 'Earn $LENZ, the native token of walletlens.live, by using the app and sharing it. Use & earn — daily streaks, Academy, referrals, threads. Points convert to $LENZ at launch. No purchase, no wallet connection to join. Coming soon — join the waitlist.',
   bodyHtml: `
-<h1>$LENZ Airdrop</h1>
-<p>Earn $LENZ — the native token of walletlens.live, a free, privacy-first all-asset portfolio tracker — through the community airdrop. Complete quests, climb tiers, and claim your allocation at snapshot. No purchase required.</p>
-<h2>The pool</h2>
-<p>The airdrop pool is 5,000,000 LENZ — 50% of the fixed 10,000,000 supply. It is community-first: there is no founder or insider allocation. A per-wallet cap keeps any single address from dominating.</p>
-<h2>Quests</h2>
-<ul>
-<li>Create your portfolio in WalletLens (add a holding).</li>
-<li>Track 3 or more assets.</li>
-<li>Follow @wallet_lens on X (and the founder @tarek_abhamed) and repost the launch.</li>
-<li>Join the Telegram and subscribe on YouTube.</li>
-<li>Share a screenshot of your portfolio.</li>
-<li>Refer friends with your referral link.</li>
-</ul>
-<h2>How eligibility works</h2>
-<p>At snapshot, eligible wallets and amounts are published as a Merkle claim — you claim your own $LENZ and pay your own gas. Anti-sybil: allocation is flat (equal per eligible wallet) with a hard per-wallet cap, and only wallets with real prior Sui activity qualify — fresh throwaway wallets are filtered out, so farming with many wallets earns almost nothing extra. In-app quests are verified on your device; social quests are re-checked at snapshot. Progress is stored on your device — WalletLens keeps no account or server-side profile.</p>
-<p><strong>Beware of scams.</strong> The only official airdrop is on walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to a random site, and never ask for your seed phrase.</p>
+<h1>Earn $LENZ</h1>
+<p>WalletLens is the net-worth tracker that rewards you for using it. Use the app and share it to earn points — converted to $LENZ at launch. Free forever, no purchase. <strong>Coming soon</strong> — join the waitlist now by adding your Sui address (no wallet connection).</p>
+<h2>Ways to earn (coming soon)</h2>
+<p>Use the app: daily streaks, create a portfolio, track 3+ assets, complete Academy lessons, use features, install the PWA. Share &amp; grow: refer an active friend, write a thread about WalletLens/$LENZ, mention @wallet_lens, share an article or your portfolio card, follow + repost.</p>
+<h2>How it works</h2>
+<p>Now: join the waitlist with just your Sui address — no wallet connection, no signature. At launch: earning opens; points convert to $LENZ from a fixed budget, pro-rata, capped per wallet, claimed on-chain (claim-once). Fair and private: no sale, no insider bag; we store only your address and points, never your holdings. After launch: hold or lock $LENZ to unlock perks (ad-free, pro features) — coming soon.</p>
+<p><strong>Beware of scams.</strong> The only official page is walletlens.live/airdrop. WalletLens will never DM you a claim link, never ask you to connect a wallet to join, and never asks for your seed phrase.</p>
 <h2>Disclaimer</h2>
-<p>This page is informational only and is not financial advice and not an offer to sell a security. Quests, points, weights, dates and amounts are draft and may change. Completing quests does not guarantee an allocation. Do your own research.</p>
+<p>Informational only — not financial advice and not an offer to sell a security. Earning is not live yet; actions, points and dates are draft and may change. Participation does not guarantee an allocation. Do your own research.</p>
 <p><a href="/lenz">About $LENZ</a> · <a href="/">WalletLens</a> · <a href="/privacy">Privacy Policy</a></p>
 `,
 }))
@@ -1243,6 +1394,54 @@ write('/terms', buildPage({
 
 console.log(`\nPrerendered ${POSTS.length + 8} content pages into dist/.`)
 
+// ── App-route shells (noindex) ───────────────────────────────────────────────
+// In-app pages have no crawlable content (everything renders client-side from
+// the user's local data). Without a prerendered dir, GitHub Pages serves
+// 404.html + a JS redirect, which Googlebot reports as "Discovered – currently
+// not indexed" noise. A 200 + explicit noindex,follow gives crawlers a clean,
+// stable answer and keeps these URLs out of indexing reports.
+const APP_ROUTES = [
+  { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
+  { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
+  { path: '/whales',       title: 'Whale Tracker — WalletLens',  description: 'Real-time large Bitcoin transactions and volume anomalies.' },
+  { path: '/alpha',        title: 'Alpha — WalletLens',          description: 'Market signals and analysis tools.' },
+  { path: '/academy',      title: 'Academy — WalletLens',        description: 'Learn portfolio tracking and investing concepts.' },
+  { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
+  { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
+  { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
+]
+for (const r of APP_ROUTES) {
+  write(r.path, buildPage({
+    path: r.path,
+    title: r.title,
+    description: r.description,
+    noindex: true,
+    bodyHtml: `<h1>${esc(r.title.replace(' — WalletLens', ''))}</h1><p>${esc(r.description)} <a href="/">Open WalletLens</a> — free, private, no account needed.</p>`,
+  }))
+}
+console.log(`Prerendered ${APP_ROUTES.length} app-route shells (noindex).`)
+
+// ── Deleted-route redirect stubs ───────────────────────────────────────────
+// GitHub Pages ignores _redirects. For removed pages that Googlebot has cached
+// (shows up in Search Console as "Not found 404"), we emit a prerendered HTML
+// stub with meta-refresh + canonical pointing to the replacement URL, plus
+// noindex,follow. This gives Googlebot a 200 with a clear redirect signal,
+// dequeuing the 404 from Search Console without creating a new indexable page.
+function writeRedirect(fromPath, toPath, title) {
+  const toUrl = ORIGIN + withSlash(toPath)
+  let html = template
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,    `$1${esc(toUrl)}$2`)
+  html = html.replace(/<meta name="robots" content="[^"]*"\s*\/?>/, '<meta name="robots" content="noindex, follow" />')
+  html = html.replace('</head>', `  <meta http-equiv="refresh" content="0;url=${esc(toUrl)}" />\n</head>`)
+  const seo = `<div id="prerender-content" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7"><p>This page has moved. <a href="${esc(toUrl)}">Continue →</a></p></div>`
+  html = html.replace('<div id="root">', `<div id="root">${seo}`)
+  write(fromPath, html)
+}
+
+writeRedirect('/market', '/dashboard', 'Market — WalletLens')
+console.log('Prerendered /market redirect stub → /dashboard.')
+
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
 // App routes (/dashboard, /whales, /alpha, etc.) are intentionally excluded:
@@ -1257,6 +1456,7 @@ const STATIC_ROUTES = [
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
+  { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
   { path: '/terms',   changefreq: 'monthly', priority: '0.5' },
 ]
@@ -1271,26 +1471,30 @@ const AR_ROUTES = [
   ...Object.keys(AR_COMPARISONS).map(slug => `/ar/vs/${slug}`),
   ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
+// NOTE: /track, /calculator and /price are intentionally EXCLUDED from the
+// sitemap and marked noindex in their prerendered HTML. They are templated SEO
+// pages (same structure, only the asset name changes) — listing them dilutes
+// the site's indexed quality and triggers "scaled content" / low-value flags
+// (Google Search quality + AdSense). They remain live and usable for direct
+// visitors. Only genuinely unique content (articles, glossary, comparisons,
+// core pages) is submitted for indexing.
 const sitemapUrls = [
-  ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + r.path, lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
-  ...ALL_TRACK_ASSETS.map(c => urlEntry({ loc: `${ORIGIN}/track/${c.slug}`, lastmod: TODAY, changefreq: 'weekly', priority: '0.7' })),
-  ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
-  ...CALCULATORS.map(c => urlEntry({ loc: `${ORIGIN}/calculator/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.8' })),
-  ...PRICE_ASSETS.map(a => urlEntry({ loc: `${ORIGIN}/price/${a.slug}`, lastmod: TODAY, changefreq: 'daily', priority: '0.8' })),
-  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
-  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
-  ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + p, lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
+  ...STATIC_ROUTES.map(r => urlEntry({ loc: ORIGIN + withSlash(r.path), lastmod: TODAY, changefreq: r.changefreq, priority: r.priority })),
+  ...POSTS.map(p => urlEntry({ loc: `${ORIGIN}/blog/${p.slug}/`, lastmod: postIsoDate(p.date), changefreq: 'monthly', priority: '0.85' })),
+  ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
+  ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
+  ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + withSlash(p), lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${STATIC_ROUTES.length + ALL_TRACK_ASSETS.length + POSTS.length + CALCULATORS.length + PRICE_ASSETS.length + COMPARISONS.length + GLOSSARY.length + AR_ROUTES.length} urls).`)
+console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track/calculator/price excluded as noindex).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list
 // from POSTS so every article is always advertised to AI answer engines.
 try {
   const llmsTemplate = readFileSync(resolve(PUBLIC, 'llms.txt'), 'utf8')
-  const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}): ${p.summary}`).join('\n')
+  const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}/): ${p.summary}`).join('\n')
   const newSection = `## Blog articles\n\n${articleList}\n`
   // Replace from the "## Blog articles" heading up to the next "## " heading.
   const llms = llmsTemplate.replace(
@@ -1306,7 +1510,7 @@ try {
   // entire corpus in one fetch instead of crawling each page.
   const llmsBase = llms.replace(/## Blog articles[\s\S]*$/, '').trimEnd()
   const fullArticles = POSTS.map(p =>
-    `## ${p.title}\n${ORIGIN}/blog/${p.slug}\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
+    `## ${p.title}\n${ORIGIN}/blog/${p.slug}/\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
   ).join('\n\n---\n\n')
   const llmsFull = `${llmsBase}\n\n# Full article corpus\n\n${fullArticles}\n`
   writeFileSync(resolve(DIST, 'llms-full.txt'), llmsFull, 'utf8')

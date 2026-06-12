@@ -9,11 +9,12 @@
 // Env: SUI_RPC, MIN_TX, ADMIN_TOKEN, IP_SALT, ALLOWED_ORIGIN
 //
 // Routes:
-//   POST /register   { address, signature, quests[], referredBy?, xHandle? }
+//   POST /register   { address, quests[], referredBy?, xHandle? }   (no wallet connect)
 //   GET  /status?address=0x..
 //   GET  /stats
 //   GET  /export      (header: Authorization: Bearer <ADMIN_TOKEN>) → CSV of eligible
-import { verifyPersonalMessageSignature } from "npm:@mysten/sui@^1/verify";
+// No external deps — runs on Deno Deploy with zero install. (Wallet ownership is
+// enforced for free at claim time on-chain, so no signature library is needed here.)
 
 const kv = await Deno.openKv();
 const RPC = Deno.env.get("SUI_RPC") ?? "https://fullnode.mainnet.sui.io:443";
@@ -25,11 +26,8 @@ const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
 const ADDR_RE = /^0x[0-9a-fA-F]{64}$/;
 const QUEST_PTS: Record<string, number> = {
   portfolio: 100, track3: 100, follow_x: 50, follow_founder: 25,
-  repost: 75, telegram: 50, youtube: 50, screenshot: 100, referral: 50,
+  repost: 75, youtube: 50, screenshot: 100, referral: 50,
 };
-// The exact message the wallet must sign (frontend builds the identical string).
-const signMessage = (addr: string) =>
-  `WalletLens $LENZ airdrop\nI confirm I own this wallet and want to register:\n${addr}`;
 
 const cors = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -61,16 +59,6 @@ async function onchainOk(address: string): Promise<boolean> {
     return (j?.result?.data?.length ?? 0) >= MIN_TX;
   } catch {
     return false; // fail safe: ineligible if RPC unreachable
-  }
-}
-
-async function verifyOwnership(address: string, signature: string): Promise<boolean> {
-  try {
-    const bytes = new TextEncoder().encode(signMessage(address));
-    const pubkey = await verifyPersonalMessageSignature(bytes, signature);
-    return pubkey.toSuiAddress() === address;
-  } catch {
-    return false;
   }
 }
 
@@ -114,23 +102,15 @@ Deno.serve(async (req) => {
     let body: any;
     try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
     const address = String(body.address ?? "").toLowerCase();
-    const signature = String(body.signature ?? "");
     const quests: string[] = Array.isArray(body.quests) ? body.quests.filter((q: string) => q in QUEST_PTS) : [];
     const referredBy = ADDR_RE.test(String(body.referredBy ?? "").toLowerCase()) ? String(body.referredBy).toLowerCase() : null;
     const xHandle = String(body.xHandle ?? "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
 
     if (!ADDR_RE.test(address)) return json({ error: "invalid Sui address" }, 400);
 
-    // 1) Ownership is OPTIONAL at registration — no wallet connection required, so
-    //    users who fear "connect wallet" can still register by pasting their address.
-    //    This is safe because only the true owner can ever CLAIM: the Merkle claim
-    //    pays ctx.sender(), so registering an unowned address gains an attacker
-    //    nothing. If a signature IS supplied we verify it and mark "verified".
-    let verified = false;
-    if (signature) {
-      verified = await verifyOwnership(address, signature);
-      if (!verified) return json({ error: "signature was provided but is invalid" }, 401);
-    }
+    // No wallet connection / signature required to register — ownership is enforced
+    // for free at claim time (the on-chain Merkle claim pays ctx.sender()), so
+    // registering an unowned address gains an attacker nothing.
     // 2) On-chain history gate (reject fresh/throwaway wallets).
     const eligible = await onchainOk(address);
 
@@ -151,7 +131,6 @@ Deno.serve(async (req) => {
       referrals: existing?.referrals ?? 0,
       xHandle: xHandle || existing?.xHandle || null,
       eligible,
-      verified: verified || existing?.verified || false,
       ipHash,
       ipFlag: ipCount >= 5, // many wallets from one IP → flag for review
       createdAt: existing?.createdAt ?? Date.now(),
@@ -171,7 +150,6 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       eligible,
-      verified,
       points,
       referralLink: `https://walletlens.live/airdrop?ref=${address}`,
       note: eligible

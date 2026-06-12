@@ -59,7 +59,7 @@ const IcoOther = (
 
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto',  icon: '₿',           color: '#6366f1' },
-  { key: 'stock',  label: 'Stocks',  icon: '📈',           color: 'var(--gd)' },
+  { key: 'stock',  label: 'Stocks',  icon: '📈',           color: 'var(--g-ink)' },
   { key: 'gold',   label: 'Gold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver',  icon: IcoSilverBar,   color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat',    icon: '$',            color: '#0ea5e9' },
@@ -73,12 +73,12 @@ const BUY_WITH_OPTIONS = [
   { key: 'USDT',   label: 'USDT',   icon: '₮', color: '#26a17b' },
   { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
-  { key: 'USD',    label: 'USD',    icon: '$', color: '#22c55e' },
+  { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
   { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
   { key: 'CUSTOM', label: 'Other',  icon: '✎', color: '#a78bfa' },
 ]
 const SELL_FOR_OPTIONS = [
-  { key: 'USD',    label: 'USD',    icon: '$', color: '#22c55e' },
+  { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
   { key: 'USDT',   label: 'USDT',   icon: '₮', color: '#26a17b' },
   { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
@@ -879,7 +879,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-field">
                 <label className="bs-label">
                   Price (USD)
-                  {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color:'var(--g)'}}>fetching…</span>}
+                  {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color: 'var(--g-ink)', fontWeight: 700}}>fetching…</span>}
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
                 <input className="bs-input bs-input-value" type="text" inputMode={price === '…' ? 'text' : 'decimal'} placeholder="Enter price" min="0" step="any"

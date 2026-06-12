@@ -26,13 +26,33 @@ jobs:
           import urllib.request, csv, json, io, time
 
           TICKERS = [
+            # ── Mega Cap Tech ──
             "AAPL","MSFT","NVDA","GOOGL","META","AMZN","TSLA","AVGO","ORCL","CRM",
-            "AMD","INTC","QCOM","IBM","ADBE","NOW","PLTR","NET","SNOW","BRK.B",
-            "JPM","V","MA","BAC","GS","MS","WFC","AXP","C","COIN","HOOD",
+            "AMD","INTC","QCOM","IBM","ADBE","NOW","PLTR","SNOW",
+            # ── AI / Cloud / SaaS ──
+            "NET","DDOG","CRWD","ZS","APP","TTD","SMCI","ARM","ASML","TSM","NFLX","MSTR",
+            # ── Mobility / Social / Consumer Internet ──
+            "UBER","LYFT","ABNB","DASH","SNAP","PINS","SPOT","RBLX","ZM","AFRM",
+            # ── China / Asia Tech ──
+            "BABA","PDD","JD",
+            # ── Finance ──
+            "BRK.B","JPM","V","MA","BAC","GS","MS","WFC","AXP","C","COIN","HOOD",
+            "SQ","PYPL","SOFI","NU","SCHW","BLK","PGR","DKNG",
+            # ── Healthcare ──
             "LLY","UNH","JNJ","ABBV","PFE","MRK","NVO",
+            "TMO","ISRG","ABT","AMGN","GILD","VRTX","REGN","MRNA",
+            # ── Consumer / Media ──
             "WMT","COST","MCD","NKE","SBUX","KO","PEP","TGT",
-            "XOM","CVX","COP","OXY",
-            "SPY","QQQ","IWM","DIA","VOO","VTI","GLD","TLT","ARKK","SOXX"
+            "DIS","CMCSA","LULU","HD","LOW",
+            # ── Energy ──
+            "XOM","CVX","COP","OXY","NEE","FSLR","ENPH",
+            # ── Crypto Mining ──
+            "RIOT","MARA","CORZ","HUT",
+            # ── Defense / Industrial ──
+            "LMT","RTX","BA","GE","CAT","DE",
+            # ── ETFs ──
+            "SPY","QQQ","IWM","DIA","VOO","VTI","GLD","TLT","ARKK","SOXX",
+            "XLK","XLF","XLV","XLC","SCHD","JEPI","JEPQ",
           ]
 
           result = {}
@@ -83,6 +103,32 @@ jobs:
               time.sleep(0.5)
             except Exception as e:
               print(f"  retry failed for {sym}: {e}")
+
+          # ── Fetch Binance bStock prices (tokenized securities, 24/7) ──
+          import json as _json
+          BSTOCKS = {
+            "nvdab": "NVDABUSDT",
+            "tslab": "TSLAB" + "USDT",
+            "mubb":  "MUBB"  + "USDT",
+            "sndkb": "SNDKB" + "USDT",
+            "crclb": "CRCLB" + "USDT",
+          }
+          for ticker_lower, symbol in BSTOCKS.items():
+            try:
+              burl = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
+              breq = urllib.request.Request(burl, headers={"User-Agent": "Mozilla/5.0"})
+              with urllib.request.urlopen(breq, timeout=10) as br:
+                bdata = _json.loads(br.read().decode("utf-8"))
+              price = float(bdata.get("lastPrice", 0) or 0)
+              pct   = float(bdata.get("priceChangePercent", 0) or 0)
+              if price > 0:
+                result[f"stock:{ticker_lower}"] = {
+                  "usd": round(price, 4),
+                  "usd_24h_change": round(pct, 4)
+                }
+                print(f"  bStock {ticker_lower}: ${price:.4f} ({pct:+.2f}%)")
+            except Exception as e:
+              print(f"  Binance bStock {ticker_lower} failed: {e}")
 
           output = {
             "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

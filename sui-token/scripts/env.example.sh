@@ -19,7 +19,7 @@ export METADATA_ID=""
 # The Coin<LENZ> object id holding the full supply (input to distribute.sh):
 export SUPPLY_COIN_ID=""
 
-# --- Distribution (100% liquid at genesis, no unlocks) -----------------------
+# --- Distribution (no insider bag; reserve released over time) ---------------
 # Base units (6 decimals): 1 LENZ = 1_000_000.
 #   Community 50% = 5,000,000 LENZ = 5000000000000
 #   Liquidity 35% =  3,500,000 LENZ =  3500000000000

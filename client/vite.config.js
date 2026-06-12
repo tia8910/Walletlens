@@ -1,8 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync, writeFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Auto-stamp the service worker with a unique build version on every production
+// build. This guarantees cache busting without relying on a manually incremented
+// version string that is easy to forget.
+function swVersionPlugin() {
+  return {
+    name: 'sw-version-stamp',
+    apply: 'build',
+    closeBundle() {
+      const swPath = resolve(__dirname, 'dist/sw.js')
+      try {
+        let sw = readFileSync(swPath, 'utf8')
+        // Encode build time as a base-36 string: compact yet collision-free across builds.
+        const version = `v${Math.floor(Date.now() / 1000).toString(36)}`
+        sw = sw.replace(/const SW_VERSION = '[^']*'/, `const SW_VERSION = '${version}'`)
+        writeFileSync(swPath, sw)
+      } catch { /* sw.js not present (e.g. non-PWA builds) — silently skip */ }
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), swVersionPlugin()],
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.
@@ -53,6 +78,20 @@ export default defineConfig({
           // separately means a Dashboard JS update doesn't bust these.
           if (id.includes('/src/data/assets') || id.includes('/src/data/trackCoins')) {
             return 'asset-data'
+          }
+          // Glossary (42 KB) — only used by Learn page; isolated so a term
+          // edit doesn't bust the Learn chunk or appear in any other bundle.
+          if (id.includes('/src/data/glossary')) {
+            return 'glossary-data'
+          }
+          // Comparisons (14 KB) — only used by Compare page.
+          if (id.includes('/src/data/comparisons')) {
+            return 'comparisons-data'
+          }
+          // Arabic blog posts (46 KB) — isolated from the English blog-data
+          // chunk so an Arabic content edit only invalidates this chunk.
+          if (id.includes('/src/data/arabicBlog')) {
+            return 'arabic-blog-data'
           }
         },
       },

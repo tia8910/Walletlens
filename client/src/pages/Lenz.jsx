@@ -7,41 +7,43 @@ import LenzLogo from '../components/LenzLogo'
 // so it never affects the rest of the site. Numbers mirror sui-token/TOKENOMICS.md.
 
 const ALLOCATIONS = [
-  { label: 'Community airdrop & rewards', pct: 50, lenz: 5_000_000, note: 'Airdrops to WalletLens users and contribution rewards' },
+  { label: 'Community rewards (use & earn)', pct: 50, lenz: 5_000_000, note: 'Earned by using and sharing the app — released over time, not dumped at once' },
   { label: 'Liquidity', pct: 35, lenz: 3_500_000, note: 'DEX liquidity so a real price exists (LP locked)' },
-  { label: 'Ecosystem / DAO treasury', pct: 15, lenz: 1_500_000, note: 'Governance-controlled — no team lock, no insider bag' },
+  { label: 'Ecosystem / DAO treasury', pct: 15, lenz: 1_500_000, note: 'Transparent, time-locked — growth, listings, holder programs. No insider bag.' },
 ]
 
 const STATS = [
-  { k: 'Max supply', v: '10,000,000', s: 'LENZ — hard cap, minting locked' },
-  { k: 'Unlocks', v: 'None', s: '100% liquid at genesis' },
-  { k: 'Chain', v: 'Sui', s: 'fast, low-fee, easy to buy' },
-  { k: 'Supply', v: 'Verifiable', s: 'TreasuryCap frozen on-chain' },
+  { k: 'Max supply', v: '10,000,000', s: 'fixed — minting frozen forever' },
+  { k: 'Distribution', v: 'Earn-based', s: 'use & share the app to earn' },
+  { k: 'Chain', v: 'Sui', s: 'fast, low-fee — free CG/CMC listing' },
+  { k: 'Insiders', v: '0%', s: 'no team or VC allocation' },
 ]
 
 const UTILITY = [
-  { t: 'Governance', d: 'Vote on the roadmap, supported assets, and treasury spend.' },
-  { t: 'Usage rewards', d: 'Earn LENZ for contributing — translations, content, referrals.' },
-  { t: 'Community tipping', d: 'Tip and reward contributors directly on Sui — fast and low-fee.' },
-  { t: 'Hold-to-unlock', d: 'Optional cosmetics that never gate the free core app.' },
+  { t: 'Use & earn', d: 'Earn $LENZ by using WalletLens and sharing it — no purchase required.' },
+  { t: 'Ad-free + pro (holders)', d: 'Hold or lock $LENZ to unlock an ad-free app and pro features — rolling out after launch.' },
+  { t: 'Governance', d: 'Vote on the roadmap, supported assets and treasury spend.' },
+  { t: 'Free core, always', d: 'The free tracker never changes; $LENZ only adds extras on top.' },
 ]
 
 const CHECKS = [
-  'Fixed supply — total supply is 10,000,000 LENZ',
-  'Minting locked forever — the TreasuryCap is frozen on-chain, so no one can ever mint again',
-  'No unlocks, no insider bag — 100% liquid at genesis, distribution wallets published',
+  'Fixed supply — 10,000,000 LENZ, with minting frozen forever (no inflation, ever)',
+  'No insider bag — 0% to team or VCs; reward & reserve tokens are time-locked and released on a public schedule',
   'Immutable metadata — name, symbol, decimals and icon are frozen',
-  'No admin, no upgrade hook — a tiny standard coin module with no logic to abuse',
-  'Locked liquidity (LP locked so it cannot be pulled)',
+  'No admin backdoor, no upgrade hook — a small, standard Sui coin',
+  'Liquidity locked so it cannot be pulled',
+  'Open-source and on-chain verifiable (the repo ships a verify-onchain.sh PASS/FAIL check)',
 ]
 
 const FAQS = [
-  { q: 'What is $LENZ?', a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker. It is a standard Sui coin with a fixed 10,000,000 supply and locked minting, used as the utility and governance token of the WalletLens ecosystem.' },
-  { q: 'Why Sui?', a: 'Sui is fast and low-fee with a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, BlueMove, DeepBook and aggregators) and easy to list — CoinGecko and CoinMarketCap applications are free. The Move coin module is small and standard.' },
-  { q: 'Is $LENZ private?', a: 'No — and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a "privacy coin."' },
-  { q: 'Does holding $LENZ change how WalletLens works?', a: 'No. WalletLens remains 100% free, with no account and all portfolio data on your device. $LENZ is a separate, optional ecosystem token; the core tracker never requires it.' },
-  { q: 'What is the supply, and are there unlocks?', a: 'A low, hard cap of 10,000,000 LENZ. The entire supply is minted once at publish and the TreasuryCap is then frozen, so no new tokens can ever be created. 100% is liquid at genesis: no vesting, no cliffs, no locked tranches and no insider allocation, so there is no future unlock overhang.' },
-  { q: 'How do I know $LENZ is not a scam?', a: 'Because you can verify it instead of trusting it. The total supply is fixed at 10,000,000, the TreasuryCap is frozen (minting permanently impossible), the metadata is immutable, there is no team/insider allocation or vesting unlock, and liquidity is locked. The repo ships a verify-onchain.sh script that checks all of this and prints a PASS/FAIL report. The only official package id and coin type are published on this page and in the WalletLens repo.' },
+  { q: 'What is $LENZ?', a: '$LENZ is the native token of walletlens.live — a free, no-account, privacy-first all-asset portfolio tracker on Sui. It is a standard Sui coin with a fixed 10,000,000 supply and minting frozen forever. You earn $LENZ by using and sharing the app, and holders unlock premium features. The free core tracker never requires it.' },
+  { q: 'How do I earn $LENZ?', a: 'By using WalletLens and helping it grow — tracking your portfolio, daily streaks, completing Academy lessons, referring active users, and sharing content. Earning opens at launch (you can join the waitlist now). You collect points that convert to $LENZ — no purchase, ever.' },
+  { q: 'Why Sui?', a: 'Sui is fast, low-fee and has a large, growing ecosystem, so $LENZ is easy to buy (Cetus, Turbos, FlowX, DeepBook and aggregators) and easy to discover — listing on CoinGecko and CoinMarketCap is free, with no costly gatekeepers.' },
+  { q: 'Does holding $LENZ change the app?', a: 'The free tracker is always 100% free and never requires $LENZ. Holding or locking $LENZ unlocks optional extras — an ad-free app, pro analytics and governance — rolling out after launch. It only adds on top; it never gates the core features.' },
+  { q: 'Is $LENZ private?', a: 'No, and we will not pretend otherwise. Sui is a public chain, so balances and transfers are visible on a block explorer. The privacy is in the product: WalletLens keeps all your portfolio data on your device. $LENZ is the native/utility token of that privacy-first app, not a "privacy coin."' },
+  { q: 'What is the supply, and are there unlocks?', a: 'A fixed 10,000,000 LENZ, minted once with minting frozen forever — no inflation. There is no team or insider allocation. Reward and reserve tokens are released transparently over time from a public, time-locked schedule rather than all at once, which protects holders from sudden sell pressure. Everything is verifiable on-chain.' },
+  { q: 'Where can I get or trade $LENZ?', a: 'At launch, on Sui DEXes (Cetus, Turbos, FlowX) and aggregators; it also auto-appears on DexScreener and DexTools, and we will apply to CoinGecko and CoinMarketCap (both free). Before launch, you earn it by using the app — join the waitlist on the Earn page.' },
+  { q: 'How do I know $LENZ is not a scam?', a: 'Verify instead of trusting: fixed 10,000,000 supply, minting frozen, immutable metadata, 0% insider allocation, reserves time-locked on a public schedule, and locked liquidity — all verifiable on-chain (the repo ships a verify-onchain.sh that prints a PASS/FAIL report). The only official package id and coin type are published on this page and in the open-source repo.' },
   { q: 'Is this financial advice or an investment offer?', a: 'No. This page is informational only. $LENZ is not financial advice and nothing here is an offer to sell a security. Do your own research.' },
 ]
 
@@ -75,21 +77,21 @@ export default function Lenz() {
         </div>
         <span className="lz-eyebrow">Native token of walletlens.live</span>
         <h1 className="lz-title">$LENZ</h1>
-        <p className="lz-tagline">The native token of WalletLens — a low, hard-capped <strong>10M</strong> coin on <strong>Sui</strong>. No unlocks. No insider bag. Supply locked. Verifiable.</p>
+        <p className="lz-tagline">The native token of WalletLens — a fixed <strong>10M</strong>-supply coin on <strong>Sui</strong>. <strong>Earn it by using the app.</strong> No sale. No insider bag. Mint frozen. Verifiable.</p>
         <div className="lz-badges">
-          <span className="lz-badge">🎁 Free airdrop</span>
+          <span className="lz-badge">🎁 Earn by using</span>
           <span className="lz-badge">🚫 No sale · No IPO</span>
-          <span className="lz-badge">⚖️ Fair distribution</span>
-          <span className="lz-badge">🔒 Supply locked</span>
+          <span className="lz-badge">⚖️ 0% insiders</span>
+          <span className="lz-badge">🔒 Mint frozen</span>
         </div>
         <div className="lz-chips">
-          <span className="lz-chip"><b>10M</b> hard cap</span>
-          <span className="lz-chip"><b>0</b> unlocks</span>
+          <span className="lz-chip"><b>10M</b> fixed supply</span>
+          <span className="lz-chip"><b>0%</b> insiders</span>
           <span className="lz-chip">Built on Sui</span>
-          <span className="lz-chip">Supply locked</span>
+          <span className="lz-chip">Use &amp; earn</span>
         </div>
         <div className="lz-cta">
-          <Link to="/airdrop" className="lz-btn lz-btn-primary">Join the airdrop</Link>
+          <Link to="/airdrop/" className="lz-btn lz-btn-primary">Earn $LENZ</Link>
           <a href="#verify" className="lz-btn lz-btn-ghost">Verify on-chain</a>
           <a href="#hold" className="lz-btn lz-btn-ghost">How to hold</a>
         </div>
@@ -100,7 +102,7 @@ export default function Lenz() {
           <section className="lz-card">
             <h2 className="lz-h2">What is $LENZ?</h2>
             <p>$LENZ is the native token of <a href="https://walletlens.live" target="_blank" rel="noreferrer">walletlens.live</a> — a 100% free, no-account, privacy-first all-asset portfolio tracker for crypto, stocks, precious metals, fiat and real estate, with AI insights and live prices, where all your data stays on your device.</p>
-            <p>It is a <strong>standard Sui coin</strong> with a fixed 10,000,000 supply and minting locked forever — the utility &amp; governance token of the WalletLens ecosystem.</p>
+            <p>It is a <strong>standard Sui coin</strong> with a fixed 10,000,000 supply and minting frozen forever. You <strong>earn it by using and sharing the app</strong>, and holders unlock premium features — the utility &amp; governance token of the WalletLens ecosystem.</p>
           </section>
           <section className="lz-card">
             <h2 className="lz-h2">Why Sui</h2>
@@ -110,7 +112,7 @@ export default function Lenz() {
         </div>
 
         <section id="tokenomics" className="lz-card lz-section">
-          <h2 className="lz-h2">Tokenomics — low cap, no unlocks</h2>
+          <h2 className="lz-h2">Tokenomics — fixed supply, fair</h2>
           <div className="lz-stats">
             {STATS.map(s => (
               <div key={s.k} className="lz-stat">
@@ -123,7 +125,7 @@ export default function Lenz() {
         </section>
 
         <section className="lz-card lz-section">
-          <h2 className="lz-h2">Distribution — 100% liquid at genesis</h2>
+          <h2 className="lz-h2">Distribution — community-first, no insider bag</h2>
           <div className="lz-bars">
             {ALLOCATIONS.map(a => (
               <div key={a.label} className="lz-bar-row">
@@ -138,7 +140,7 @@ export default function Lenz() {
               </div>
             ))}
           </div>
-          <p className="lz-note">No vesting schedule exists because there is no team or insider allocation to vest — a stronger guarantee than any unlock schedule. The treasury is a transparent, governance-controlled wallet, and the liquidity LP is locked.</p>
+          <p className="lz-note">There is <strong>no team or insider allocation</strong> (0%). Reward and reserve tokens are released transparently over time from a public, time-locked schedule — not dumped at once — which protects holders from sudden sell pressure. The treasury is transparent and governance-controlled, and the liquidity LP is locked.</p>
         </section>
 
         <section className="lz-card lz-section">
@@ -198,8 +200,8 @@ export default function Lenz() {
         <div className="lz-foot-brand"><LenzLogo size={26} /> <span>$LENZ · WalletLens</span></div>
         <nav className="lz-foot-links">
           <Link to="/">WalletLens</Link>
-          <Link to="/about">About</Link>
-          <Link to="/privacy">Privacy</Link>
+          <Link to="/about/">About</Link>
+          <Link to="/privacy/">Privacy</Link>
         </nav>
       </footer>
     </div>

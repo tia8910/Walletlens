@@ -1371,7 +1371,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           style={{
             background: open ? 'linear-gradient(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.18))' : 'linear-gradient(135deg, rgba(5,150,105,0.1), rgba(16,185,129,0.1))',
             border: '1px solid rgba(5,150,105,0.35)',
-            borderRadius: '12px', color: '#34d399',
+            borderRadius: '12px', color: 'var(--g-ink)',
             padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
             cursor: 'pointer', display: 'flex', alignItems: 'center',
             gap: '0.5rem', width: '100%', justifyContent: 'space-between',
@@ -1610,7 +1610,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {/* header: trade N / remove */}
                 {parsed.transactions.length > 1 && (
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.55rem' }}>
-                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#34d399', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--g-ink)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
                       {isAr ? `صفقة ${idx + 1}` : `Trade ${idx + 1}`}
                     </span>
                     <button onClick={() => removeTx(idx)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:'1rem', lineHeight:1 }}>✕</button>
@@ -1643,7 +1643,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       <span style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--text)' }}>
                         {tx.coin.symbol} · {tx.coin.name}
                         {tx.coin.category && tx.coin.category !== 'crypto' && (
-                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(52,211,153,0.15)', color:'#34d399', textTransform:'uppercase' }}>{tx.coin.category}</span>
+                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(52,211,153,0.15)', color:'var(--g-ink)', textTransform:'uppercase' }}>{tx.coin.category}</span>
                         )}
                       </span>
                       <button onClick={() => { updateTx(idx, { coin: null, suggestions: null }); setAssetQueries(q => ({...q, [idx]: ''})) }}
@@ -1656,7 +1656,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       {/* Suggestion chips */}
                       {tx.suggestions?.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginBottom:'0.45rem' }}>
-                          <span style={{ fontSize:'0.72rem', color:'#34d399', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
+                          <span style={{ fontSize:'0.72rem', color:'var(--g-ink)', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
                           {tx.suggestions.map(s => (
                             <button key={s.id} onClick={() => { updateTx(idx, { coin: s, suggestions: null }); fetchAndSetPrice(idx, s.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(52,211,153,0.15)', border:'1.5px solid rgba(52,211,153,0.4)',
@@ -1718,7 +1718,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       }}
                     />
                     {tx.unitNote && (
-                      <span style={{ fontSize:'0.68rem', color:'#34d399', marginTop:'0.15rem', display:'block' }}>
+                      <span style={{ fontSize:'0.68rem', color:'var(--g-ink)', marginTop:'0.15rem', display:'block' }}>
                         {isAr ? `محوّل من ${tx.unitNote}` : `from ${tx.unitNote}`}
                       </span>
                     )}
@@ -1765,7 +1765,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                               fontSize:'0.76rem', fontWeight:700, fontFamily:'inherit',
                               border: `1.5px solid ${active ? 'rgba(52,211,153,0.55)' : 'rgba(255,255,255,0.12)'}`,
                               background: active ? 'rgba(52,211,153,0.16)' : 'transparent',
-                              color: active ? '#34d399' : 'var(--text-muted)',
+                              color: active ? 'var(--g-ink)' : 'var(--text-muted)',
                               transition:'all 0.15s',
                             }}>
                               {LEG_LABEL[o] || o}
@@ -1785,7 +1785,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             <button onClick={addBlankTx} style={{
               width:'100%', marginBottom:'0.65rem',
               background:'transparent', border:'1.5px dashed rgba(52,211,153,0.4)',
-              borderRadius:'10px', color:'#34d399', padding:'0.6rem',
+              borderRadius:'10px', color:'var(--g-ink)', padding:'0.6rem',
               fontWeight:700, fontSize:'0.83rem', cursor:'pointer',
             }}>
               ＋ {isAr ? 'إضافة صفقة أخرى' : 'Add another order'}
@@ -1806,7 +1806,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           {confirmed ? (
             <div style={{
               background:'rgba(74,222,128,0.12)', border:'1px solid rgba(74,222,128,0.35)',
-              borderRadius:'10px', color:'#4ade80',
+              borderRadius:'10px', color:'var(--g-ink)',
               padding:'0.6rem 0.75rem', fontSize:'0.85rem', textAlign:'center', fontWeight:700,
             }}>
               ✅ {isAr

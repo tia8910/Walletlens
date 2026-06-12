@@ -80,7 +80,7 @@ function computeMood(articles) {
 }
 
 function moodLabel(score) {
-  if (score >= 80) return { label: 'Extreme Greed', color: '#22c55e', icon: 'smile' }
+  if (score >= 80) return { label: 'Extreme Greed', color: 'var(--g-ink)', icon: 'smile' }
   if (score >= 60) return { label: 'Greed',         color: '#86efac', icon: 'smile' }
   if (score >= 45) return { label: 'Neutral',        color: '#94a3b8', icon: 'meh' }
   if (score >= 25) return { label: 'Fear',           color: '#fb923c', icon: 'frown' }
@@ -238,8 +238,8 @@ export default function MarketMood() {
             marginTop: '0.25rem', padding: '0 0.25rem',
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="frown" size={12} style={{ color: '#f87171' }} />Fear</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: '#94a3b8' }} />Neutral</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: '#22c55e' }} />Greed</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: 'var(--text-muted)' }} />Neutral</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: 'var(--g-ink)' }} />Greed</span>
           </div>
         </>
       ) : (

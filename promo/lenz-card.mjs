@@ -1,0 +1,51 @@
+// $LENZ branded social card renderer. renderCard({ headline, subline }) → PNG buffer.
+// 1600×900, on-brand (the privacy-lens coin + emerald→cyan→indigo gradients).
+// headline/subline are supplied by the agent so each post gets a fresh design.
+import { Resvg } from '@resvg/resvg-js'
+
+const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+export function buildSvg({ headline = 'COMING SOON', subline = 'Use & earn $LENZ — free, fair, on Sui.' } = {}) {
+  const W = 1600, H = 900
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>
+    <radialGradient id="bg" cx="38%" cy="30%" r="90%"><stop offset="0%" stop-color="#0a241c"/><stop offset="55%" stop-color="#04100c"/><stop offset="100%" stop-color="#020a07"/></radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#10b981" stop-opacity="0.45"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.30"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+    <linearGradient id="txt" x1="640" y1="300" x2="1180" y2="470" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a7f3d0"/><stop offset="38%" stop-color="#10b981"/><stop offset="70%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#6366f1"/></linearGradient>
+    <linearGradient id="ring" x1="200" y1="270" x2="540" y2="630" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a7f3d0"/><stop offset="32%" stop-color="#10b981"/><stop offset="66%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#6366f1"/></linearGradient>
+    <radialGradient id="face" cx="38%" cy="34%" r="75%"><stop offset="0%" stop-color="#0d2a24"/><stop offset="100%" stop-color="#04100c"/></radialGradient>
+    <radialGradient id="glass" cx="42%" cy="38%" r="70%"><stop offset="0%" stop-color="#14b8a6" stop-opacity="0.55"/><stop offset="55%" stop-color="#0b3b34" stop-opacity="0.65"/><stop offset="100%" stop-color="#02110d"/></radialGradient>
+    <linearGradient id="sheen" x1="18" y1="14" x2="40" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#5eead4"/></linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <circle cx="370" cy="450" r="320" fill="url(#glow)"/>
+  <circle cx="1350" cy="780" r="360" fill="url(#glow2)"/>
+  <g transform="translate(191 271) scale(5.6)">
+    <circle cx="32" cy="32" r="29.5" fill="url(#face)" stroke="url(#ring)" stroke-width="3.5"/>
+    <circle cx="32" cy="32" r="29.5" fill="none" stroke="url(#sheen)" stroke-width="1.1" opacity="0.7"/>
+    <circle cx="32" cy="32" r="24" fill="none" stroke="url(#ring)" stroke-width="1" stroke-dasharray="1.5 4.5" stroke-linecap="round" opacity="0.55"/>
+    <circle cx="32" cy="32" r="14.5" fill="url(#glass)" stroke="url(#ring)" stroke-width="2"/>
+    <polygon points="41.00,32.00 36.50,39.79 27.50,39.79 23.00,32.00 27.50,24.21 36.50,24.21" fill="none" stroke="url(#ring)" stroke-width="1" opacity="0.6"/>
+    <circle cx="32" cy="30" r="2.7" fill="url(#key)"/>
+    <path d="M30.1 31.6 L33.9 31.6 L33 37.2 L31 37.2 Z" fill="url(#key)"/>
+    <path d="M23.5 27 A 11 11 0 0 1 35 21.5" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M46 13.6 L46.9 16.1 L49.4 17 L46.9 17.9 L46 20.4 L45.1 17.9 L42.6 17 L45.1 16.1 Z" fill="#ecfeff"/>
+  </g>
+  <g font-family="DejaVu Sans">
+    <text x="642" y="258" font-size="26" letter-spacing="6" fill="#7cf3d4" font-weight="bold">WALLETLENS.LIVE  ·  ON SUI</text>
+    <text x="636" y="438" font-size="172" font-weight="bold" fill="url(#txt)" letter-spacing="-2">$LENZ</text>
+    <text x="642" y="544" font-size="60" font-weight="bold" fill="#eef7f2" letter-spacing="6">${esc(String(headline).toUpperCase())}</text>
+    <text x="642" y="624" font-size="32" fill="#9fb6ad">${esc(subline)}</text>
+    <text x="642" y="752" font-size="40" font-weight="bold" fill="#5eead4">@wallet_lens</text>
+    <text x="642" y="838" font-size="25" fill="#cbd5d0">Free to earn  ·  No sale  ·  0% insiders  ·  Mint frozen</text>
+  </g>
+</svg>`
+}
+
+export function renderCard(opts) {
+  const svg = buildSvg(opts)
+  const png = new Resvg(svg, { font: { loadSystemFonts: true, defaultFontFamily: 'DejaVu Sans' }, fitTo: { mode: 'width', value: 1600 } }).render().asPng()
+  return { png, svg }
+}

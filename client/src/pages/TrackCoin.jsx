@@ -115,11 +115,11 @@ export default function TrackCoin() {
         </section>
 
         <footer className="tc-foot">
-          <Link to="/free-net-worth-tracker">Free net worth tracker</Link>
+          <Link to="/free-net-worth-tracker/">Free net worth tracker</Link>
           <span>·</span>
-          <Link to="/blog">Blog</Link>
+          <Link to="/blog/">Blog</Link>
           <span>·</span>
-          <Link to="/about">About</Link>
+          <Link to="/about/">About</Link>
           <span>·</span>
           <Link to="/">Home</Link>
         </footer>
