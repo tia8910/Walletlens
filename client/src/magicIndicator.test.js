@@ -69,8 +69,12 @@ describe('directionMeta', () => {
 })
 
 describe('computeMagic', () => {
-  it('returns null when no pillar has data', () => {
-    expect(computeMagic({})).toBeNull()
+  it('returns a neutral zero-coverage read when no pillar has data', () => {
+    const m = computeMagic({})
+    expect(m.score).toBe(0)
+    expect(m.confidence).toBe(0)
+    expect(m.coverage).toBe(0)
+    expect(m.pillars.every(p => p.estimated)).toBe(true)
   })
   it('produces a bullish composite when everything aligns', () => {
     const m = computeMagic({ ta: bullishTA, signals: bullishSignals, fundamental: goodFundamental })
@@ -95,7 +99,8 @@ describe('computeMagic', () => {
     const m = computeMagic({ ta: bullishTA })
     expect(m).not.toBeNull()
     expect(m.coverage).toBeLessThan(100)
-    expect(m.pillars.filter(p => p.available).length).toBe(1)
+    // Pillars always render (estimated fillers), but only one has real data.
+    expect(m.pillars.filter(p => !p.estimated).length).toBe(1)
   })
 })
 

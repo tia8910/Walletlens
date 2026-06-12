@@ -2691,7 +2691,7 @@ Track NVIDIA, Apple, Bitcoin, and every asset in one free dashboard at [walletle
   },
   {
     slug: 'what-is-roi-investing',
-    title: 'What Is ROI in Investing? (And How to Calculate It for Crypto, Stocks, and Gold)',
+    title: 'What Is ROI in Investing? How to Calculate It',
     date: 'June 2026',
     readTime: '5 min read',
     summary: 'ROI explained — the formula, what it means for different asset types, its limitations, and how to calculate it instantly.',
@@ -2814,6 +2814,103 @@ The entire setup takes 5–15 minutes for a typical portfolio. After that, you o
 **Stock watchlist apps:** Good for stocks, no crypto. Usually limited to watchlists rather than true cost-basis P&L.
 
 For a complete multi-asset net worth view without connecting any accounts, [walletlens.live](https://walletlens.live) remains the best free option — covering every asset class in one place, with your data stored only on your device. No account, no bank login, no sign-up.
+    `
+  },
+  {
+    slug: 'how-to-track-unrealized-gains-and-losses',
+    title: 'How to Track Unrealized Gains and Losses in Your Portfolio',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold.',
+    content: `
+Most investors check their portfolio balance daily but rarely stop to ask a more precise question: how much of what they see is real profit, and how much is just paper gain? That distinction — between unrealized and realized gains or losses — is one of the most important concepts in personal investing, yet it often goes unexplained.
+
+Understanding your unrealized P&L (profit and loss) gives you a clearer picture of where you actually stand. It informs decisions about when to take profits, how to rebalance, and whether your cost basis is healthy enough to ride out a downturn. This guide explains the mechanics from scratch, shows you how to calculate it manually, and walks through how modern free tools can automate the whole process.
+
+## What Are Unrealized Gains and Losses?
+
+An **unrealized gain** is the increase in value of an asset you still hold. You bought 1 ETH at $2,000 and it is now worth $3,500 — that $1,500 gain is unrealized because you have not sold. The moment you sell, it becomes a **realized gain**, and that is when tax obligations typically arise in most jurisdictions.
+
+An **unrealized loss** works the same way in reverse. If that ETH dropped to $1,400, you would have an unrealized loss of $600. Until you sell, the loss is only on paper — but it still affects your net worth, your allocation percentages, and your emotional decision-making.
+
+The key point: **unrealized figures tell you where you are; realized figures determine what you owe.** Both matter, but for portfolio management purposes you spend most of your time working with unrealized numbers.
+
+## The Formula for Calculating Unrealized P&L
+
+The math is straightforward once you know your cost basis.
+
+**Unrealized P&L = (Current Price − Average Cost Basis) × Quantity Held**
+
+For example:
+- You bought 0.5 BTC at $58,000 and another 0.5 BTC at $62,000
+- Your **average cost basis** = ($58,000 + $62,000) / 2 = $60,000
+- Current BTC price = $67,000
+- Unrealized gain = ($67,000 − $60,000) × 1 BTC = **$7,000**
+
+To express it as a percentage return:
+
+**Unrealized P&L % = ((Current Price − Average Cost Basis) / Average Cost Basis) × 100**
+
+Using the same example: ($67,000 − $60,000) / $60,000 × 100 = **+11.67%**
+
+These calculations become more complex when you have made multiple purchases at different prices — which is almost always the case for active investors.
+
+## Why Tracking This Manually Gets Difficult Fast
+
+Most investors do not buy one asset once. They dollar-cost average into Bitcoin over months, add ETH dips, hold a mix of ETFs, and accumulate gold positions over years. Each purchase has its own price and date. Tracking average cost basis across 15 or 20 positions in a spreadsheet is genuinely tedious, and a single missed entry throws every subsequent calculation off.
+
+There are also a few common traps:
+
+- **Forgetting fees.** If you paid a $12 trading fee on a $500 purchase, your real cost basis per unit is slightly higher than the raw price.
+- **Mixing FIFO and average cost.** Different accounting methods produce different cost bases. Consistency matters, especially if you ever calculate taxes.
+- **Stale prices.** A spreadsheet you update once a week is not showing you your actual unrealized P&L — it is showing you a snapshot from days ago.
+
+For assets like crypto, where prices move 5–10% in hours, stale data is not just inconvenient — it can lead to genuinely bad decisions.
+
+## How a Local-First Portfolio Tracker Solves This
+
+This is where dedicated tools earn their place. [WalletLens](https://walletlens.live) is a free, browser-based portfolio tracker that calculates your average cost basis and unrealized P&L automatically across every asset class — crypto, stocks, ETFs, precious metals, real estate, and cash — all in one net-worth view.
+
+What makes it particularly useful for this specific problem is the combination of live prices and your own trade data. You enter your buys and sells (manually, by voice, via screenshot, or through CSV import), and WalletLens continuously recalculates your average cost basis and unrealized P&L against real-time market prices. You always see a current number, not a stale one.
+
+Crucially, everything runs locally in your browser. No account, no login, no data sent to any server. Your cost basis figures — which reveal a lot about your financial life — never leave your device.
+
+## Reading Your Unrealized P&L Across Asset Classes
+
+One underappreciated use of unrealized P&L tracking is comparing performance across very different asset types. A simple table helps illustrate the kind of view a good tracker gives you:
+
+| Asset | Avg Cost Basis | Current Price | Quantity | Unrealized P&L |
+|---|---|---|---|---|
+| BTC | $60,000 | $67,000 | 1 BTC | +$7,000 (+11.7%) |
+| AAPL | $172 | $195 | 20 shares | +$460 (+13.4%) |
+| Gold (oz) | $2,050 | $2,380 | 5 oz | +$1,650 (+16.1%) |
+| ETH | $3,200 | $2,700 | 2 ETH | −$1,000 (−15.6%) |
+
+This kind of consolidated view reveals something a single-asset app can never show: your overall unrealized gain or loss across your entire financial picture. In this example, the ETH position is underwater, but the portfolio as a whole is comfortably positive — context that matters enormously when deciding whether to hold, add, or exit.
+
+## Using Unrealized P&L to Make Smarter Decisions
+
+Tracking unrealized P&L is not just an accounting exercise. It actively informs strategy in several ways.
+
+**Setting profit targets.** Knowing your cost basis lets you define meaningful sell targets. "I want to take profits when I'm up 50%" is a real, calculable goal when you know your entry price — not just a vague aspiration. WalletLens includes a Sell Targets feature that lets you set up to five price targets per asset with progress bars showing how close you are to each threshold.
+
+**Stress testing.** If BTC dropped 30% from here, what would your unrealized loss be? Answering that question before the dip helps you decide whether your position size is one you can emotionally and financially sustain.
+
+**Tax-loss harvesting awareness.** In many jurisdictions, you can realise a loss strategically to offset gains elsewhere. You can only identify candidates for this if you know which positions are currently at a loss. *(Note: tax rules vary significantly by country and individual circumstance — consult a qualified tax professional before making decisions based on this strategy.)*
+
+**Rebalancing triggers.** If one asset has gained so much that it now represents 60% of your portfolio when you intended 30%, your unrealized gain is also a rebalancing signal. The growth is real; the allocation drift is real; and acting on it thoughtfully is easier when the numbers are in front of you.
+
+## The Difference Between Paper Gains and Locked-In Value
+
+One psychological pattern worth naming: many investors treat unrealized gains as if they are already in the bank. They see $40,000 in unrealized profit and feel wealthy — then watch the market correct and feel as if they "lost" money they never actually had. Tracking unrealized P&L rigorously helps break this habit. The number is real and informative, but it is also conditional. Markets move.
+
+The discipline of monitoring your unrealized figures regularly — rather than just your total portfolio value — builds a more honest relationship with your investments. You see not just what things are worth now, but what you paid, how much of the current value is gain, and how exposed you are to a reversal.
+
+## Conclusion
+
+Unrealized gains and losses are the heartbeat of an active portfolio. They tell you whether your decisions are working, where your risk is concentrated, and when it might be time to act. The formula is simple, but the execution — tracking multiple assets across multiple purchases with live prices — demands a tool built for the job.
+
+Whether you prefer a spreadsheet for occasional check-ins or a real-time tracker that does the maths automatically, the habit of monitoring your cost basis and unrealized P&L is one of the most practical things any investor can build in 2026. The numbers do not make decisions for you, but they make sure the decisions you do make are grounded in reality.
     `
   },
 ]

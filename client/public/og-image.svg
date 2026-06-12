@@ -103,9 +103,6 @@
   </g>
 
   <!-- WalletLens wordmark -->
-  <text x="200" y="165" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="52" fill="white" letter-spacing="-1">Wallet</text>
-  <text x="200" y="165" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="52" fill="url(#ring)" letter-spacing="-1" x="455">Lens</text>
-  <!-- hack: use tspan -->
   <text x="200" y="165" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="52" fill="white" letter-spacing="-1">
     <tspan fill="white">Wallet</tspan><tspan fill="#34d399">Lens</tspan>
   </text>
