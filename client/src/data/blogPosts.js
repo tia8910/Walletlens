@@ -2913,4 +2913,229 @@ Unrealized gains and losses are the heartbeat of an active portfolio. They tell 
 Whether you prefer a spreadsheet for occasional check-ins or a real-time tracker that does the maths automatically, the habit of monitoring your cost basis and unrealized P&L is one of the most practical things any investor can build in 2026. The numbers do not make decisions for you, but they make sure the decisions you do make are grounded in reality.
     `
   },
+  {
+    slug: 'portfolio-vision-planning',
+    title: 'Portfolio Vision Planning: Set Goals for Every Dollar',
+    date: 'June 2026',
+    readTime: '6 min read',
+    summary: 'Learn how to split your net worth into purpose-driven buckets — emergency fund, long-term holds, and withdrawal plans — and track live progress toward each goal.',
+    content: `
+Most investors know what they own but not what it's *for*. A Bitcoin holding sitting in your portfolio is just a number until you decide: is this my retirement? My emergency fund? A 3-year salary replacement? This guide shows you how to assign every dollar a role — and track live progress toward each goal.
+
+## Why "What's It For?" Changes Everything
+
+When you don't have a plan for your money, you make decisions based on emotion. A 20% BTC dip feels catastrophic if you don't know you won't touch it for 5 years. A 10% altcoin gain feels amazing if you forget that money was supposed to be your rent buffer.
+
+Portfolio vision planning solves this by giving each part of your portfolio a *job*.
+
+## The 3-Bucket Framework
+
+**Bucket 1 — Safety Net (Liquidity)**
+Cash, stablecoins, or low-volatility assets you can liquidate instantly. Rule of thumb: 6–12 months of living expenses. Example: $20,000 in USDT at $500/month covers 40 months.
+
+**Bucket 2 — Core Holdings (Long-term)**
+Bitcoin, blue-chip stocks, gold. You're not touching this for 3–10 years. Set a target (e.g. "hold until $150k BTC") and stop watching the daily price.
+
+**Bucket 3 — Growth/Speculation (Upside)**
+Altcoins, small-cap stocks, high-risk bets. This is money you can afford to lose. Cap it as a percentage of your net worth (e.g. max 20%).
+
+## Setting a Withdrawal Plan
+
+If your safety-net bucket is meant to replace income, calculate your runway:
+
+**Runway = Current Value ÷ Monthly Withdrawal**
+
+$20,000 ÷ $500/month = 40 months (3.3 years)
+
+The key insight: as your portfolio grows from market appreciation, your runway extends automatically. If BTC goes up 30% and you've linked your safety bucket to your stablecoin holdings, you see the exact new runway in real time.
+
+## How to Track This in WalletLens
+
+WalletLens has a built-in **Vision** feature where you can:
+
+1. Create named buckets (Salary Cover, BTC Long Term, Alt Coins)
+2. Link each bucket to specific holdings in your portfolio
+3. Set a target amount or "Rest" (auto-fills with everything not in other buckets)
+4. Add a monthly withdrawal amount to see live runway calculations
+5. Watch the donut chart update as markets move
+
+Go to the **Vision** page from the sidebar to set up your plan.
+
+## Common Mistakes
+
+**Mistake 1 — No target amount.** If you don't set a target, you don't know if you're on track. "I want more money" is not a plan.
+
+**Mistake 2 — Mixing buckets.** Your emergency fund should be in stablecoins or cash, not Bitcoin. If your safety net depends on BTC price, it's not a safety net.
+
+**Mistake 3 — Ignoring the withdrawal side.** Accumulation is only half the plan. Knowing exactly when you'll start withdrawing, how much, and from which bucket is what makes a plan executable.
+
+## The Math That Changes Your Mindset
+
+Once you see that your $20,000 safety bucket covers 40 months of expenses, that 20% market correction stops being terrifying. Your runway is 40 months either way — the rest of your portfolio can absorb volatility because you know you're covered.
+
+Set your vision. Link your holdings. Let the math do the rest.
+`,
+  },
+  {
+    slug: 'crypto-withdrawal-strategy',
+    title: 'Crypto Withdrawal Strategy: How to Plan a Sustainable Drawdown',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'A step-by-step guide to planning when and how to withdraw from your crypto portfolio — without running out too soon or leaving too much on the table.',
+    content: `
+Accumulating crypto is the part everyone talks about. Withdrawal strategy — actually converting your portfolio into income or spending money — is the part nobody teaches. This guide fixes that.
+
+## The Core Problem With Crypto Withdrawals
+
+Traditional finance has the 4% rule: withdraw 4% of your portfolio per year and you'll almost certainly never run out. Crypto doesn't have an equivalent because:
+
+1. Volatility is 10–20× higher than equities
+2. The asset class is younger (no 50-year drawdown data)
+3. Tax events are triggered differently by jurisdiction
+
+So you need a custom withdrawal framework.
+
+## The 3-Step Withdrawal Framework
+
+**Step 1: Define your withdrawal bucket**
+Before withdrawing anything, earmark the money you'll withdraw into a separate "withdrawal bucket." This should be in stablecoins (USDT, USDC) or cash — not volatile crypto.
+
+**Step 2: Calculate your runway**
+Runway = Withdrawal Bucket ÷ Monthly Need
+
+$30,000 ÷ $800/month = 37.5 months
+
+Your goal is to always maintain at least 12 months of runway in your withdrawal bucket.
+
+**Step 3: Replenish from growth**
+When bull markets push your portfolio up, convert some gains into your withdrawal bucket. You're not selling your thesis — you're harvesting volatility profit into stability.
+
+## When to Withdraw: Market-Based Rules
+
+**Bad strategy:** Withdraw on a fixed date regardless of market conditions.
+
+**Better strategy:** Withdraw based on portfolio value milestones.
+
+Example rules:
+- If BTC > $120k, convert 5% to stablecoins
+- If total portfolio > 2× your "enough number," move 20% to withdrawal bucket
+- Never withdraw more than 2% per month from volatile assets
+
+## The Enough Number
+
+Your "enough number" is the portfolio size where you can sustain your desired lifestyle indefinitely. Calculate it:
+
+**Enough Number = Annual Spending ÷ 0.04**
+
+If you need $2,000/month ($24,000/year): $24,000 ÷ 0.04 = **$600,000**
+
+Once your portfolio hits $600,000, by the 4% rule you can theoretically withdraw forever. But in crypto, use 2.5–3% to be conservative given higher volatility.
+
+## Tax-Smart Withdrawal Sequencing
+
+Different assets have different tax implications. Sequence matters:
+
+1. **First:** Harvest stablecoins (usually no gain, no tax event)
+2. **Second:** Sell assets held longest (long-term capital gains rates)
+3. **Last:** Sell recent purchases (short-term rates, highest tax)
+
+Always consult a tax professional — this is general guidance, not advice.
+
+## Tracking Your Withdrawal Plan in WalletLens
+
+The WalletLens Vision feature lets you set up a withdrawal plan with one click:
+
+1. Create a bucket named "Monthly Income" or "Living Expenses"
+2. Set bucket type to **Withdrawal Plan**
+3. Enter your monthly withdrawal amount
+4. Link it to your stablecoin holdings
+5. See live runway: "Your $25,000 lasts **31 months** at $800/mo"
+
+As you add to your stablecoin holdings or as values change, the runway updates automatically — no spreadsheet needed.
+
+## The Bottom Line
+
+A good crypto withdrawal strategy has three components:
+- A dedicated, stable withdrawal bucket (stablecoins or cash)
+- A monthly runway calculation that updates with market prices
+- A replenishment rule that harvests volatile gains into stability
+
+Don't wait until you need the money to figure out how to access it. Plan the withdrawal before you need to execute it.
+`,
+  },
+  {
+    slug: 'net-worth-goal-buckets',
+    title: 'How to Split Your Net Worth Into Goals (and Actually Stick to Them)',
+    date: 'June 2026',
+    readTime: '5 min read',
+    summary: 'Stop treating your portfolio as one big number. This guide shows how to divide your net worth into goal-based buckets that give every dollar a purpose and keep you disciplined.',
+    content: `
+Your net worth is one number on a dashboard. But that number is made up of dozens of decisions — emergency money, long-term bets, income replacement, speculative plays — all mixed together. When everything is one pile, it's impossible to make rational decisions about any part of it.
+
+The solution: split your net worth into named, purpose-driven buckets.
+
+## What Is a Net Worth Bucket?
+
+A bucket is a named portion of your portfolio with:
+- A **purpose** (what this money is *for*)
+- A **target** (how much you need)
+- A **strategy** (hold, withdraw, grow, or emergency)
+- **Linked assets** (which holdings count toward this bucket)
+
+## The 4 Essential Buckets
+
+**1. Emergency / Liquidity Bucket**
+Purpose: Survive unexpected expenses without touching investments.
+Target: 6–12 months of living expenses.
+Assets: Stablecoins, cash, short-term bonds.
+Strategy: Keep fully funded. Replenish immediately after use.
+
+**2. Core Wealth Bucket**
+Purpose: Long-term wealth building you don't touch for 5+ years.
+Target: Your "enough number" (annual spend ÷ 3% = portfolio target).
+Assets: Bitcoin, ETFs, gold, blue-chip stocks.
+Strategy: Buy and hold. Don't watch daily.
+
+**3. Opportunity / Growth Bucket**
+Purpose: Higher-risk, higher-upside speculation.
+Target: Cap at 10–25% of total net worth.
+Assets: Altcoins, small-cap stocks, new projects.
+Strategy: Size positions so you can lose the entire bucket without financial harm.
+
+**4. Goals Bucket (Optional)**
+Purpose: Specific medium-term goals — house down payment, business investment, sabbatical fund.
+Target: Fixed dollar amount with a deadline.
+Assets: Whatever combination of stability and growth fits the timeline.
+Strategy: More conservative as the goal date approaches.
+
+## The "Rest" Allocation
+
+Any money not explicitly assigned to a bucket is "unallocated." The goal of bucket planning is to shrink your unallocated pile to zero — every dollar with a job.
+
+In WalletLens, the **Everything Else** bucket automatically captures your unallocated net worth so you can see it clearly.
+
+## Keeping Buckets in Balance
+
+Set a quarterly rebalancing rule:
+
+- If Emergency bucket < 80% funded → pause new investments and refill
+- If Growth bucket > 30% of net worth → trim back to target
+- If Core bucket is hit by 30% drawdown → evaluate (don't panic-sell)
+
+## How to Set This Up in WalletLens
+
+1. Open the **Vision** page (sidebar → Vision)
+2. Create your Emergency bucket, link stablecoin holdings, set monthly withdrawal
+3. Create your Core bucket, link BTC/ETH/stock holdings, set target value
+4. Create your Growth bucket, set target percentage (20% of net worth)
+5. The "Everything Else" bucket auto-fills with your unallocated remainder
+6. Watch the live donut chart update as prices move
+
+## The Mindset Shift
+
+Once you run this setup for 30 days, something changes: you stop reacting to price movements. A 30% altcoin crash only affects your Growth bucket, which you sized to absorb losses. Your Emergency bucket is untouched. Your Core bucket is on a 5-year timeline. You don't need to do anything.
+
+That's the goal — not just tracking what you have, but knowing what it's all *for*.
+`,
+  },
 ]
