@@ -428,22 +428,26 @@ async function fetchStockLive(coinId) {
   const tickerUp = ticker.toUpperCase();
 
   // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
+  // Route through Deno proxy first (bypasses CORS + regional Binance geo-blocks),
+  // then try direct as fallback.
   const binanceSymbol = BSTOCK_SYMBOLS[ticker.toLowerCase()];
   if (binanceSymbol) {
-    try {
-      const res = await fetchWithTimeout(
-        `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`, 5000);
-      if (res.ok) {
-        const data = await res.json();
-        const price = parseFloat(data.lastPrice);
-        const pct   = parseFloat(data.priceChangePercent);
-        if (isFinite(price) && price > 0) {
-          const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
-          stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
-          return parsed;
+    const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+    for (const url of [DENO_PROXY(binanceUrl), binanceUrl]) {
+      try {
+        const res = await fetchWithTimeout(url, 6000);
+        if (res.ok) {
+          const data = await res.json();
+          const price = parseFloat(data.lastPrice);
+          const pct   = parseFloat(data.priceChangePercent);
+          if (isFinite(price) && price > 0) {
+            const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
+            stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+            return parsed;
+          }
         }
-      }
-    } catch { /* fall through to static prices */ }
+      } catch { /* try next */ }
+    }
   }
 
   // ── 0b. Static prices file served from same origin (no CORS, always works) ──
