@@ -868,8 +868,17 @@ export const api = {
   getPortfolio: async (walletId) => {
     let txs = loadData('transactions');
     if (walletId) txs = txs.filter(t => t.wallet_id === parseInt(walletId));
-    // Sort ascending so cost-basis removal uses the correct running average
-    txs = txs.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    // Sort ascending so cost-basis removal uses the correct running average.
+    // For transactions on the SAME calendar date, fall back to insertion order
+    // (id ascending) — otherwise a same-day sell logged after a buy would be
+    // applied to a zero balance first (clamped to 0) and the trade wouldn't
+    // reflect. Transactions are stored newest-first, so date alone leaves
+    // same-day trades in reverse chronological order.
+    txs = txs.slice().sort((a, b) => {
+      const d = (a.date || '').localeCompare(b.date || '');
+      if (d !== 0) return d;
+      return (a.id || 0) - (b.id || 0);
+    });
 
     const holdings = {};
     for (const tx of txs) {
