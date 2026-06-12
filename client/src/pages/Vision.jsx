@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as api from '../api'
 import { BUCKET_TYPES, BUCKET_COLORS, loadBuckets, saveBuckets, newBucket } from '../data/visionStorage'
@@ -7,6 +7,23 @@ import { track } from '../analytics'
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 const fmtSmall = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n)
 const pct = (a, b) => b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0
+
+function getAssetCategory(coinId) {
+  if (!coinId) return 'crypto'
+  if (coinId.startsWith('metal:')) return 'metals'
+  if (coinId.startsWith('stock:')) return 'stocks'
+  if (coinId.startsWith('real:'))  return 'real_estate'
+  if (coinId.startsWith('cash:') || coinId.startsWith('fiat:')) return 'cash'
+  return 'crypto'
+}
+
+const CATEGORIES = {
+  crypto:      { label: 'Crypto',      icon: '₿',  color: '#f7931a' },
+  stocks:      { label: 'Stocks',      icon: '📊', color: '#0ea5e9' },
+  metals:      { label: 'Metals',      icon: '🥇', color: '#f59e0b' },
+  cash:        { label: 'Cash',        icon: '💵', color: '#10b981' },
+  real_estate: { label: 'Real Estate', icon: '🏠', color: '#8b5cf6' },
+}
 
 // ── Donut chart (pure SVG) ────────────────────────────────────────────
 function DonutChart({ slices, total, cx = 80, cy = 80, r = 64, stroke = 20 }) {
@@ -19,7 +36,7 @@ function DonutChart({ slices, total, cx = 80, cy = 80, r = 64, stroke = 20 }) {
     return arc
   })
   return (
-    <svg viewBox={`0 0 ${cx * 2} ${cy * 2}`} width="160" height="160" aria-hidden="true">
+    <svg viewBox={`0 0 ${cx * 2} ${cy * 2}`} width={cx * 2} height={cy * 2} aria-hidden="true">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={stroke} />
       {arcs.map((a, i) => a.dash > 0 && (
         <circle key={i} cx={cx} cy={cy} r={r}
@@ -46,17 +63,196 @@ function Runway({ value, monthly }) {
   return <span className="vp-runway">{label}</span>
 }
 
+// ── Smart analysis per bucket ─────────────────────────────────────────
+function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
+  const insights = []
+
+  if (!bucket.linkedAssets?.length && !bucket.isRest) {
+    insights.push({ level: 'info', msg: 'Link assets or select a category above to track live value' })
+    return (
+      <div className="vp-analysis">
+        {insights.map((ins, i) => (
+          <div key={i} className={`vp-analysis-item vp-analysis-${ins.level}`}>
+            <span className="vp-analysis-dot" />
+            <span>{ins.msg}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // Runway health
+  if (bucket.monthlyWithdrawal && bucket.monthlyWithdrawal > 0 && currentValue > 0) {
+    const months = Math.floor(currentValue / bucket.monthlyWithdrawal)
+    if (bucket.type === 'emergency') {
+      if (months < 3)
+        insights.push({ level: 'warn', msg: `Only ${months}m emergency runway — aim for 3–6 months minimum` })
+      else if (months < 6)
+        insights.push({ level: 'info', msg: `${months}m emergency runway — healthy, building to 6 months is ideal` })
+      else
+        insights.push({ level: 'ok', msg: `${months}m emergency runway — solid safety net ✓` })
+    } else if (bucket.type === 'withdrawal') {
+      if (months < 12)
+        insights.push({ level: 'warn', msg: `Only ${months}m withdrawal runway — below 12-month minimum` })
+      else if (months < 24)
+        insights.push({ level: 'info', msg: `${months}m withdrawal runway — consider building to 24+ months` })
+      else
+        insights.push({ level: 'ok', msg: `${months}m withdrawal runway — well-funded ✓` })
+    }
+  }
+
+  // Concentration analysis
+  if (currentValue > 0 && bucket.linkedAssets?.length) {
+    let maxVal = 0, maxName = ''
+    for (const id of bucket.linkedAssets) {
+      const h = holdings.find(x => x.coin_id === id)
+      if (!h) continue
+      const val = (h.amount || 0) * (prices[id]?.usd || 0)
+      if (val > maxVal) {
+        maxVal = val
+        maxName = h.symbol?.toUpperCase() || h.name || id
+      }
+    }
+    const concPct = Math.round((maxVal / currentValue) * 100)
+    if (concPct >= 80 && bucket.linkedAssets.length > 1) {
+      insights.push({ level: 'warn', msg: `${maxName} is ${concPct}% of this bucket — highly concentrated` })
+    }
+  }
+
+  // Category risk analysis — emergency fund should not be heavy crypto
+  if (bucket.type === 'emergency' && currentValue > 0 && bucket.linkedAssets?.length) {
+    const cryptoVal = bucket.linkedAssets.reduce((s, id) => {
+      if (getAssetCategory(id) !== 'crypto') return s
+      const h = holdings.find(x => x.coin_id === id)
+      return s + (h ? (h.amount || 0) * (prices[id]?.usd || 0) : 0)
+    }, 0)
+    const cryptoPct = Math.round((cryptoVal / currentValue) * 100)
+    if (cryptoPct > 50) {
+      insights.push({ level: 'warn', msg: `${cryptoPct}% in crypto — emergency funds should be in stable, liquid assets` })
+    }
+  }
+
+  // Hold bucket — suggest diversification advice
+  if (bucket.type === 'hold' && bucket.linkedAssets?.length === 1) {
+    const cat = getAssetCategory(bucket.linkedAssets[0])
+    if (cat === 'crypto') {
+      insights.push({ level: 'info', msg: 'Single crypto asset — high growth potential but volatile; consider diversifying' })
+    }
+  }
+
+  // Investment bucket — check category mix
+  if (bucket.type === 'invest' && currentValue > 0 && bucket.linkedAssets?.length) {
+    const catCounts = {}
+    for (const id of bucket.linkedAssets) {
+      const cat = getAssetCategory(id)
+      catCounts[cat] = (catCounts[cat] || 0) + 1
+    }
+    if (Object.keys(catCounts).length === 1) {
+      const onlyCat = Object.keys(catCounts)[0]
+      insights.push({ level: 'info', msg: `All assets in ${CATEGORIES[onlyCat]?.label || onlyCat} — mixing asset classes reduces risk` })
+    }
+  }
+
+  // NW share advice
+  if (currentValue > 0 && totalNW > 0) {
+    const share = Math.round((currentValue / totalNW) * 100)
+    if (bucket.type === 'hold' && share > 65) {
+      insights.push({ level: 'info', msg: `${share}% of net worth in this bucket — large position, ensure it aligns with your risk tolerance` })
+    }
+    if (bucket.type === 'emergency' && share > 30) {
+      insights.push({ level: 'info', msg: `${share}% of NW as emergency fund — consider deploying excess into growth buckets` })
+    }
+  }
+
+  // Target gap
+  if (!bucket.isRest && bucket.targetAmount && currentValue < bucket.targetAmount * 0.5) {
+    const gap = bucket.targetAmount - currentValue
+    insights.push({ level: 'warn', msg: `${pct(currentValue, bucket.targetAmount)}% funded — ${fmt(gap)} gap to target` })
+  }
+
+  if (!insights.length) return null
+
+  return (
+    <div className="vp-analysis">
+      {insights.map((ins, i) => (
+        <div key={i} className={`vp-analysis-item vp-analysis-${ins.level}`}>
+          <span className="vp-analysis-dot" />
+          <span>{ins.msg}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Category breakdown ────────────────────────────────────────────────
+function CategoryBreakdown({ holdings, prices }) {
+  const cats = {}
+  let total = 0
+  for (const h of holdings) {
+    const cat = getAssetCategory(h.coin_id)
+    const val = (h.amount || 0) * (prices[h.coin_id]?.usd || 0)
+    cats[cat] = (cats[cat] || 0) + val
+    total += val
+  }
+  if (total === 0) return null
+
+  const slices = Object.entries(cats)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => ({ color: CATEGORIES[k]?.color || '#888', value: v, key: k }))
+
+  return (
+    <div className="vp-cat-breakdown">
+      <h3 className="vp-section-title">Portfolio by Asset Class</h3>
+      <div className="vp-cat-layout">
+        <DonutChart slices={slices} total={total} cx={54} cy={54} r={40} stroke={15} />
+        <div className="vp-cat-rows">
+          {slices.map(s => (
+            <div key={s.key} className="vp-cat-row">
+              <span className="vp-cat-dot" style={{ background: s.color }} />
+              <span className="vp-cat-name">
+                {CATEGORIES[s.key]?.icon} {CATEGORIES[s.key]?.label || s.key}
+              </span>
+              <span className="vp-cat-val">{fmt(s.value)}</span>
+              <span className="vp-cat-pct">{pct(s.value, total)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Bucket card ───────────────────────────────────────────────────────
-function BucketCard({ bucket, currentValue, totalNW, onEdit, onDelete }) {
+function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete }) {
   const type = BUCKET_TYPES[bucket.type] || BUCKET_TYPES.hold
   const target = bucket.isRest
-    ? (totalNW - currentValue)   // rest = unallocated
+    ? (totalNW - currentValue)
     : bucket.targetPct != null
     ? (totalNW * bucket.targetPct / 100)
     : bucket.targetAmount
 
   const progress = pct(currentValue, target)
   const nwShare = pct(currentValue, totalNW)
+
+  // Category composition badges
+  const catBreakdown = useMemo(() => {
+    if (!bucket.linkedAssets?.length) return []
+    const cats = {}
+    let total = 0
+    for (const id of bucket.linkedAssets) {
+      const h = holdings.find(x => x.coin_id === id)
+      if (!h) continue
+      const val = (h.amount || 0) * (prices[id]?.usd || 0)
+      const cat = getAssetCategory(id)
+      cats[cat] = (cats[cat] || 0) + val
+      total += val
+    }
+    return Object.entries(cats)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => ({ key: k, pct: Math.round((v / total) * 100), color: CATEGORIES[k]?.color || '#888', label: CATEGORIES[k]?.label || k, icon: CATEGORIES[k]?.icon }))
+  }, [bucket.linkedAssets, holdings, prices])
 
   return (
     <div className="vp-card" style={{ borderLeft: `3px solid ${bucket.color}` }}>
@@ -90,7 +286,25 @@ function BucketCard({ bucket, currentValue, totalNW, onEdit, onDelete }) {
         </div>
       )}
 
+      {catBreakdown.length > 0 && (
+        <div className="vp-cat-badges">
+          {catBreakdown.map(c => (
+            <span key={c.key} className="vp-cat-badge" style={{ borderColor: c.color, color: c.color }}>
+              {c.icon} {c.label} {c.pct}%
+            </span>
+          ))}
+        </div>
+      )}
+
       {bucket.notes && <p className="vp-notes">{bucket.notes}</p>}
+
+      <BucketAnalysis
+        bucket={bucket}
+        currentValue={currentValue}
+        totalNW={totalNW}
+        holdings={holdings}
+        prices={prices}
+      />
     </div>
   )
 }
@@ -111,7 +325,44 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const toggleAsset = (id) => set('linkedAssets', form.linkedAssets.includes(id) ? form.linkedAssets.filter(x => x !== id) : [...form.linkedAssets, id])
+
+  const toggleAsset = (id) =>
+    set('linkedAssets', form.linkedAssets.includes(id)
+      ? form.linkedAssets.filter(x => x !== id)
+      : [...form.linkedAssets, id])
+
+  // Group holdings by category for quick-select
+  const holdingsByCategory = useMemo(() => {
+    const groups = {}
+    for (const h of holdings) {
+      const cat = getAssetCategory(h.coin_id)
+      if (!groups[cat]) groups[cat] = []
+      groups[cat].push(h)
+    }
+    return groups
+  }, [holdings])
+
+  const availableCategories = useMemo(() =>
+    Object.keys(holdingsByCategory).filter(k => holdingsByCategory[k].length > 0),
+    [holdingsByCategory])
+
+  function toggleCategory(cat) {
+    const catIds = (holdingsByCategory[cat] || []).map(h => h.coin_id)
+    const allSelected = catIds.every(id => form.linkedAssets.includes(id))
+    if (allSelected) {
+      set('linkedAssets', form.linkedAssets.filter(id => !catIds.includes(id)))
+    } else {
+      set('linkedAssets', [...new Set([...form.linkedAssets, ...catIds])])
+    }
+  }
+
+  function catState(cat) {
+    const catIds = (holdingsByCategory[cat] || []).map(h => h.coin_id)
+    if (!catIds.length) return 'empty'
+    if (catIds.every(id => form.linkedAssets.includes(id))) return 'full'
+    if (catIds.some(id => form.linkedAssets.includes(id))) return 'partial'
+    return 'none'
+  }
 
   function handleSave() {
     const out = {
@@ -195,20 +446,61 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 
           {holdings.length > 0 && (
             <div className="vp-field">
-              <span>Link assets <span style={{ opacity: .5, fontWeight: 400 }}>(for live current value)</span></span>
+              <span>Link assets <span style={{ opacity: .5, fontWeight: 400 }}>(select by category or individually)</span></span>
+
+              {availableCategories.length > 1 && (
+                <div className="vp-cat-btns">
+                  {availableCategories.map(cat => {
+                    const state = catState(cat)
+                    return (
+                      <button
+                        key={cat}
+                        className={`vp-cat-btn${state === 'full' ? ' active' : state === 'partial' ? ' partial' : ''}`}
+                        style={{ '--cat-color': CATEGORIES[cat]?.color || '#888' }}
+                        onClick={() => toggleCategory(cat)}
+                        title={`Toggle all ${CATEGORIES[cat]?.label || cat} assets`}
+                      >
+                        {CATEGORIES[cat]?.icon} {CATEGORIES[cat]?.label || cat}
+                        {state === 'partial' && <span className="vp-cat-btn-dot">•</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
               <div className="vp-assets-list">
-                {holdings.map(h => {
-                  const px = prices[h.coin_id]?.usd || 0
-                  const val = h.amount * px
-                  return (
-                    <label key={h.coin_id} className="vp-asset-check">
-                      <input type="checkbox" checked={form.linkedAssets.includes(h.coin_id)} onChange={() => toggleAsset(h.coin_id)} />
-                      <span>{h.symbol?.toUpperCase() || h.name}</span>
-                      <span style={{ marginInlineStart: 'auto', opacity: .6, fontSize: '.78rem' }}>{fmtSmall(val)}</span>
-                    </label>
-                  )
-                })}
+                {availableCategories.map(cat => (
+                  <div key={cat}>
+                    {availableCategories.length > 1 && (
+                      <div className="vp-asset-group-label" style={{ color: CATEGORIES[cat]?.color }}>
+                        {CATEGORIES[cat]?.icon} {CATEGORIES[cat]?.label || cat}
+                      </div>
+                    )}
+                    {holdingsByCategory[cat].map(h => {
+                      const px = prices[h.coin_id]?.usd || 0
+                      const val = h.amount * px
+                      return (
+                        <label key={h.coin_id} className="vp-asset-check">
+                          <input type="checkbox" checked={form.linkedAssets.includes(h.coin_id)} onChange={() => toggleAsset(h.coin_id)} />
+                          <span>{h.symbol?.toUpperCase() || h.name}</span>
+                          <span style={{ marginInlineStart: 'auto', opacity: .6, fontSize: '.78rem' }}>{fmtSmall(val)}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
+
+              {form.linkedAssets.length > 0 && (
+                <div className="vp-linked-summary">
+                  {form.linkedAssets.length} asset{form.linkedAssets.length !== 1 ? 's' : ''} selected
+                  {' · '}
+                  {fmt(form.linkedAssets.reduce((s, id) => {
+                    const h = holdings.find(x => x.coin_id === id)
+                    return s + (h ? (h.amount || 0) * (prices[id]?.usd || 0) : 0)
+                  }, 0))} current value
+                </div>
+              )}
             </div>
           )}
 
@@ -237,7 +529,7 @@ export default function Vision() {
   const [holdings, setHoldings] = useState([])
   const [prices, setPrices] = useState({})
   const [loading, setLoading] = useState(true)
-  const [editTarget, setEditTarget] = useState(null)  // null | 'new' | bucket object
+  const [editTarget, setEditTarget] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
 
   useEffect(() => { track('vision_view') }, [])
@@ -358,6 +650,9 @@ export default function Vision() {
             )}
           </div>
 
+          {/* ── Category breakdown ── */}
+          {holdings.length > 0 && <CategoryBreakdown holdings={holdings} prices={prices} />}
+
           {/* ── Chart + buckets ── */}
           {buckets.length === 0 ? (
             <div className="vp-empty">
@@ -369,31 +664,36 @@ export default function Vision() {
               </button>
             </div>
           ) : (
-            <div className="vp-layout">
-              <div className="vp-chart-col">
-                <DonutChart slices={donutSlices} total={totalAllocated || 1} />
-                <div className="vp-legend">
+            <>
+              <h3 className="vp-section-title">Your Buckets</h3>
+              <div className="vp-layout">
+                <div className="vp-chart-col">
+                  <DonutChart slices={donutSlices} total={totalAllocated || 1} />
+                  <div className="vp-legend">
+                    {buckets.map(b => (
+                      <div key={b.id} className="vp-legend-row">
+                        <span className="vp-legend-dot" style={{ background: b.color }} />
+                        <span className="vp-legend-name">{b.name || BUCKET_TYPES[b.type]?.label}</span>
+                        <span className="vp-legend-pct">{pct(bucketCurrentValue(b), totalNW)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="vp-cards-col">
                   {buckets.map(b => (
-                    <div key={b.id} className="vp-legend-row">
-                      <span className="vp-legend-dot" style={{ background: b.color }} />
-                      <span className="vp-legend-name">{b.name || BUCKET_TYPES[b.type]?.label}</span>
-                      <span className="vp-legend-pct">{pct(bucketCurrentValue(b), totalNW)}%</span>
-                    </div>
+                    <BucketCard key={b.id} bucket={b}
+                      currentValue={bucketCurrentValue(b)}
+                      totalNW={totalNW}
+                      holdings={holdings}
+                      prices={prices}
+                      onEdit={setEditTarget}
+                      onDelete={setDeleteId}
+                    />
                   ))}
                 </div>
               </div>
-
-              <div className="vp-cards-col">
-                {buckets.map(b => (
-                  <BucketCard key={b.id} bucket={b}
-                    currentValue={bucketCurrentValue(b)}
-                    totalNW={totalNW}
-                    onEdit={setEditTarget}
-                    onDelete={setDeleteId}
-                  />
-                ))}
-              </div>
-            </div>
+            </>
           )}
 
           <button className="vp-btn-add" onClick={() => setEditTarget('new')}>

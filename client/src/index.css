@@ -11402,3 +11402,68 @@ button:not(:disabled):active,
   transition: opacity .15s;
 }
 .vp-btn-danger:hover { opacity: .85; }
+
+/* ── Category quick-select buttons (modal) ── */
+.vp-cat-btns { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; }
+.vp-cat-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .28rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05);
+  color: var(--fg); cursor: pointer; transition: border-color .15s, background .15s;
+  position: relative;
+}
+.vp-cat-btn:hover { border-color: var(--cat-color, #888); background: rgba(255,255,255,.1); }
+.vp-cat-btn.active { border-color: var(--cat-color, #888); background: color-mix(in srgb, var(--cat-color, #888) 18%, transparent); color: var(--cat-color, #888); }
+.vp-cat-btn.partial { border-color: color-mix(in srgb, var(--cat-color, #888) 50%, transparent); color: color-mix(in srgb, var(--cat-color, #888) 80%, var(--fg)); }
+.vp-cat-btn-dot { font-size: .65rem; vertical-align: middle; margin-left: .1rem; }
+
+/* ── Asset group headers inside list ── */
+.vp-asset-group-label {
+  font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: .3rem .75rem .15rem; opacity: .85;
+}
+
+/* ── Selected assets summary line ── */
+.vp-linked-summary {
+  font-size: .76rem; opacity: .55; padding: .25rem 0 0; text-align: right;
+}
+
+/* ── Category composition badges on bucket cards ── */
+.vp-cat-badges { display: flex; flex-wrap: wrap; gap: .3rem; margin: .4rem 0 .1rem; }
+.vp-cat-badge {
+  font-size: .7rem; font-weight: 600; padding: .15rem .45rem; border-radius: 999px;
+  border: 1px solid; opacity: .8;
+}
+
+/* ── Smart analysis panel ── */
+.vp-analysis { margin-top: .55rem; display: flex; flex-direction: column; gap: .25rem; }
+.vp-analysis-item {
+  display: flex; align-items: flex-start; gap: .4rem;
+  font-size: .76rem; line-height: 1.35;
+}
+.vp-analysis-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px;
+}
+.vp-analysis-ok   .vp-analysis-dot { background: #10b981; }
+.vp-analysis-warn .vp-analysis-dot { background: #f59e0b; }
+.vp-analysis-info .vp-analysis-dot { background: #6366f1; }
+.vp-analysis-ok   { color: color-mix(in srgb, #10b981 70%, var(--fg)); }
+.vp-analysis-warn { color: color-mix(in srgb, #f59e0b 80%, var(--fg)); }
+.vp-analysis-info { opacity: .7; }
+
+/* ── Portfolio by asset class breakdown ── */
+.vp-cat-breakdown {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: .9rem 1rem; margin-bottom: 1.25rem;
+}
+.vp-section-title {
+  font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  opacity: .5; margin: 0 0 .7rem;
+}
+.vp-cat-layout { display: flex; align-items: center; gap: 1rem; }
+.vp-cat-rows { flex: 1; display: flex; flex-direction: column; gap: .35rem; }
+.vp-cat-row { display: flex; align-items: center; gap: .5rem; font-size: .82rem; }
+.vp-cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.vp-cat-name { flex: 1; }
+.vp-cat-val { font-weight: 600; }
+.vp-cat-pct { opacity: .5; font-size: .74rem; min-width: 2.8rem; text-align: right; }
