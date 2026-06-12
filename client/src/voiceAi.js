@@ -58,17 +58,17 @@ Extract EVERY trade the user described. Return STRICT JSON ONLY — no markdown 
 {
   "trades": [
     {
-      "type": "buy" | "sell",
+      "type": "buy" | "sell" | null,
       "symbol": "BTC" | "ETH" | "SOL" | "AAPL" | "TSLA" | "XAU" | etc. (uppercase ticker the asset is commonly known by),
       "name": "Bitcoin" | "Solana" | "Apple" | etc. (full readable name),
-      "amount": <number, the QUANTITY of units bought/sold>,
+      "amount": <number or null — the QUANTITY of units bought/sold, null if not stated>,
       "price": <number or null — only if a unit price was explicitly stated>
     }
   ]
 }
 
 Rules:
-- MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from the FIRST asset to the LAST — never stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each.
+- MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from start to finish — NEVER stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each. If you returned only 1 trade but the sentence contains multiple coin names, you missed trades — re-read and add them all.
 - Worked Arabic example: "اشتريت اثنين سولانا وثلاث ايثيريوم وبعت نص بيتكوين" → [{buy SOL 2},{buy ETH 3},{sell BTC 0.5}]. The verb switches to "بعت" (sell) for Bitcoin only.
 - A shared amount before a list applies to each unless a per-coin amount is given: "I bought 2 Solana and 3 Cardano" → [SOL × 2, ADA × 3]; "I bought 5 of Bitcoin and Ethereum" → [BTC × 5, ETH × 5].
 - If the transcript is too garbled to extract ANY trade, return { "trades": [] }.
@@ -79,12 +79,19 @@ Rules:
 - Common STT mis-hearings of coins: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
 - Stocks: Apple = AAPL, Tesla = TSLA, Microsoft = MSFT, NVIDIA = NVDA, Google = GOOGL, Amazon = AMZN, Meta = META, Palantir = PLTR, Coinbase = COIN, Robinhood = HOOD.
 - Metals: gold = XAU, silver = XAG, platinum = XPT, copper = HG.
-- If the user only mentioned a coin without a clear buy/sell intent, do NOT invent one — skip that trade.`
+- If the user only mentioned a coin with no clear buy/sell intent or amount, still include it with "type": null and "amount": null — the user will fill in those details.`
 }
 
 function filterTrades(arr) {
   return Array.isArray(arr)
-    ? arr.filter(t => t && (t.type === 'buy' || t.type === 'sell') && t.symbol && typeof t.amount === 'number' && t.amount > 0)
+    ? arr.filter(t => {
+        if (!t || !t.symbol) return false
+        // Full trade: known type + positive amount
+        if ((t.type === 'buy' || t.type === 'sell') && typeof t.amount === 'number' && t.amount > 0) return true
+        // Partial: coin name only — user will fill in type + amount in the edit card
+        if (!t.type && t.amount == null) return true
+        return false
+      })
     : []
 }
 

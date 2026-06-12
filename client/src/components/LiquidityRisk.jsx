@@ -15,7 +15,7 @@ function isCrypto(id) {
 }
 
 function badge(impact) {
-  if (impact < 0.1) return { label: 'High Liquidity', color: '#22c55e' }
+  if (impact < 0.1) return { label: 'High Liquidity', color: 'var(--g-ink)' }
   if (impact < 1)   return { label: 'Medium', color: '#fb923c' }
   return { label: 'Low Liquidity', color: '#f87171' }
 }
@@ -169,7 +169,7 @@ export default function LiquidityRisk({ holdings }) {
           {data && (
             <span style={{
               fontSize: '0.72rem',
-              color: lowCount > 0 ? '#f87171' : '#22c55e',
+              color: lowCount > 0 ? '#f87171' : 'var(--g-ink)',
               background: lowCount > 0 ? 'rgba(248,113,113,0.1)' : 'rgba(34,197,94,0.1)',
               borderRadius: 6,
               padding: '0.15rem 0.5rem',

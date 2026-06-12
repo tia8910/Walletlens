@@ -21,7 +21,7 @@ export function LanguageProvider({ children }) {
     return translations[lang]?.[key] ?? translations.en[key] ?? key
   }, [lang])
 
-  const value = useMemo(() => ({ lang, setLang, t, isRtl: lang === 'ar' }), [lang, setLang, t])
+  const value = useMemo(() => ({ lang, setLang, t, isRtl: lang === 'ar' }), [lang, t])
 
   return (
     <LanguageContext.Provider value={value}>

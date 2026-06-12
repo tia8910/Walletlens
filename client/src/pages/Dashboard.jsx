@@ -19,6 +19,7 @@ import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
+import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import VoiceImport from '../components/VoiceImport'
@@ -69,7 +70,7 @@ const Ico = {
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
 const MC_TIERS = [
-  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: 'var(--g)', emoji: '◈' },
+  { id: 'mega',       label: 'Mega Cap',         min: 100e9,  color: 'var(--g-ink)', fontWeight: 700, emoji: '◈' },
   { id: 'large',      label: 'Large Cap',        min: 10e9,   color: '#3b82f6', emoji: '◆' },
   { id: 'mid',        label: 'Mid Cap',          min: 1e9,    color: '#f59e0b', emoji: '◇' },
   { id: 'small',      label: 'Small Cap',        min: 100e6,  color: '#f87171', emoji: '▸' },
@@ -225,8 +226,9 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const topAsset = investments[0]
   const topWeight = weights[0] * 100
 
-  if (topWeight > 60) insights.push({ type: 'warn', text: `${topAsset.coin_symbol.toUpperCase()} dominates ${topWeight.toFixed(0)}% of your portfolio — high concentration risk.` })
-  else if (topWeight > 40) insights.push({ type: 'info', text: `${topAsset.coin_symbol.toUpperCase()} is your largest position at ${topWeight.toFixed(0)}%.` })
+  const topSym = topAsset?.coin_symbol?.toUpperCase() || topAsset?.coin_id || ''
+  if (topWeight > 60) insights.push({ type: 'warn', text: `${topSym} dominates ${topWeight.toFixed(0)}% of your portfolio — high concentration risk.` })
+  else if (topWeight > 40) insights.push({ type: 'info', text: `${topSym} is your largest position at ${topWeight.toFixed(0)}%.` })
 
   if (n < 3) insights.push({ type: 'warn', text: `Only ${n} asset${n > 1 ? 's' : ''} detected — consider spreading into more positions to reduce risk.` })
   else if (n >= 8) insights.push({ type: 'good', text: `${n} assets tracked — solid diversification across your portfolio.` })
@@ -395,7 +397,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-health-bars">
           {[
-            { label: t('diversification'), val: ai.concentrationScore, color: 'var(--g)' },
+            { label: t('diversification'), val: ai.concentrationScore, color: 'var(--g-ink)', fontWeight: 700 },
             { label: t('momentum'),        val: ai.momentumScore,      color: '#3b82f6' },
             { label: t('pnlHealth'),       val: ai.pnlHealth,          color: '#f59e0b' },
             { label: t('capSpread'),       val: ai.tierScore,          color: '#8b5cf6' },
@@ -420,7 +422,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">{t('momentum')}</div>
-          <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? 'var(--g)' : '#f87171'}}>
+          <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? 'var(--g-ink)' : '#f87171'}}>
             {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
           </div>
           <div className="ai-ind-sub">weighted avg</div>
@@ -500,7 +502,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
       {/* ── Today's P&L ── */}
       <div className="glass-card ai-today-card">
         <h4 className="ai-section-title">{t('todayPerformance')}</h4>
-        <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? 'var(--g)' : '#f87171' }}>
+        <div className="ai-today-main" style={{ color: ai.todayPnL >= 0 ? 'var(--g-ink)' : '#f87171' }}>
           {ai.todayPnL >= 0 ? '+' : ''}${Math.abs(ai.todayPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className="ai-today-assets">
@@ -517,10 +519,10 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                     marginLeft: chg < 0 ? 'auto' : undefined,
                   }} />
                 </div>
-                <span className="ai-today-chg" style={{ color: chg >= 0 ? 'var(--g)' : '#f87171' }}>
+                <span className="ai-today-chg" style={{ color: chg >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                   {chg >= 0 ? '+' : ''}{chg.toFixed(2)}%
                 </span>
-                <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? 'var(--g)' : '#f87171' }}>
+                <span className="ai-today-pnl" style={{ color: dayPnL >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                   {dayPnL >= 0 ? '+' : ''}${Math.abs(dayPnL).toFixed(0)}
                 </span>
               </div>
@@ -551,7 +553,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
                   }} />
                 </div>
               </div>
-              <span className="ai-entry-score" style={{ color: h.priceDiff >= 0 ? 'var(--g)' : '#f87171' }}>
+              <span className="ai-entry-score" style={{ color: h.priceDiff >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                 {h.priceDiff >= 0 ? '+' : ''}{h.priceDiff.toFixed(1)}%
               </span>
             </div>
@@ -577,7 +579,7 @@ function FearGreedGauge({ value, label, color }) {
   const zones = [
     { label: 'Extreme Fear', color: '#8b5cf6', from: 0,  to: 20 },
     { label: 'Fear',         color: '#3b82f6', from: 20, to: 40 },
-    { label: 'Neutral',      color: 'var(--g)', from: 40, to: 60 },
+    { label: 'Neutral',      color: 'var(--g-ink)', fontWeight: 700, from: 40, to: 60 },
     { label: 'Greed',        color: '#f59e0b', from: 60, to: 80 },
     { label: 'Extreme Greed',color: '#f87171', from: 80, to: 100 },
   ]
@@ -604,7 +606,7 @@ function FearGreedGauge({ value, label, color }) {
       {/* Value */}
       <text x={cx} y={cy - 18} textAnchor="middle" fontSize="22" fontWeight="900"
         fill={color} fontFamily="Inter,sans-serif">{value}</text>
-      <text x={cx} y={cy - 5} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.5)"
+      <text x={cx} y={cy - 5} textAnchor="middle" fontSize="9" fill="var(--text-muted)"
         fontFamily="Inter,sans-serif">{label}</text>
     </svg>
   )
@@ -659,7 +661,7 @@ function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
         const [x, y] = labelPoint(i)
         return (
           <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-            fontSize="9" fill="rgba(255,255,255,0.55)" fontFamily="Inter,sans-serif">
+            fontSize="9" fill="var(--text-muted)" fontFamily="Inter,sans-serif">
             {lbl}
           </text>
         )
@@ -736,7 +738,7 @@ const EVAL_CATEGORIES = [
     id: 'diversification',
     label: 'Diversification',
     icon: 'scale',
-    color: 'var(--g)',
+    color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => totalValue > 0 ? h.value / totalValue : 0)
@@ -795,7 +797,7 @@ const EVAL_CATEGORIES = [
     id: 'pnl_health',
     label: 'P&L Health',
     icon: 'pulse',
-    color: 'var(--g)',
+    color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
       const avgPnlPct = totalValue > 0 ? enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100 : 0
@@ -894,7 +896,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
             </div>
           )}
           {missing.length === 0 && (
-            <div className="eval-missing-count" style={{ color:'var(--g)' }}>
+            <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
               <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>All checks passed — excellent wallet health!
             </div>
           )}
@@ -926,7 +928,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
             </div>
             {expanded === cat.id && (
               <div className="eval-cat-tip">
-                <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g)' : '#f59e0b' }} />
+                <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g-ink)' : '#f59e0b' }} />
                 {cat.tip}
               </div>
             )}
@@ -1150,7 +1152,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
 }
 
 // ── Data panel — short WLZ backup code ───────────────────────────────────
-function DataPanel({ onRefresh }) {
+function DataPanel({ onRefresh, onImported }) {
   const { t } = useLanguage()
   const [code, setCode]     = useState('')
   const [copied, setCopied] = useState(false)
@@ -1181,21 +1183,44 @@ function DataPanel({ onRefresh }) {
   async function doExport() {
     setBusy(true)
     try {
-      const result = await api.exportCode()
-      if (result) {
-        setCode(result); setMsg('')
-        const parts = await makeQrParts(result)
+      // QR deep-link and full backup run in parallel.
+      const [result, qrUrl] = await Promise.all([
+        api.exportCode().catch(() => null),
+        api.exportQrDeepLink().catch(() => null),
+      ])
+      const qrSource = qrUrl || result
+      if (result) { setCode(result); setMsg('') }
+      else if (!qrSource) setMsg('Export failed.')
+      else setMsg('')
+      if (qrSource) {
+        const parts = await makeQrParts(qrSource)
         setQrParts(parts); setShowQr(false)
       }
-      else setMsg('Export failed.')
     } finally { setBusy(false) }
   }
 
   async function toggleExportQr() {
     if (showQr) { setShowQr(false); return }
-    let parts = qrParts
-    if (!parts.length && code) { parts = await makeQrParts(code); setQrParts(parts) }
-    setShowQr(parts.length > 0)
+    if (qrParts.length) { setShowQr(true); return }
+    const qrUrl = await api.exportQrDeepLink().catch(() => null)
+    if (qrUrl) { const parts = await makeQrParts(qrUrl); setQrParts(parts); setShowQr(parts.length > 0) }
+  }
+
+  // Standalone QR generation — independent of the text backup code. Always
+  // produces a single compact holdings-only QR, even if the full backup fails.
+  async function generateQr() {
+    if (showQr) { setShowQr(false); return }
+    setBusy(true)
+    try {
+      const qrUrl = await api.exportQrDeepLink().catch(() => null)
+      if (qrUrl) {
+        const parts = await makeQrParts(qrUrl)
+        setQrParts(parts); setShowQr(parts.length > 0)
+        setMsg(parts.length > 0 ? '' : 'QR generation failed.')
+      } else {
+        setMsg('QR generation failed.')
+      }
+    } finally { setBusy(false) }
   }
 
   function ingest(data) {
@@ -1263,8 +1288,11 @@ function DataPanel({ onRefresh }) {
     const result = await api.importCode(code.trim())
     setBusy(false)
     if (result?.success === false) { setMsg('Import failed: ' + (result.error || 'unknown error')); return }
-    setMsg('Imported! Refreshing…'); setCode(''); setPreview(null)
-    onRefresh(); setTimeout(() => setMsg(''), 2500)
+    setMsg('Imported! Redirecting…'); setCode(''); setPreview(null)
+    onRefresh()
+    // Jump to the portfolio overview so the user sees their restored holdings.
+    if (onImported) setTimeout(() => onImported(), 300)
+    setTimeout(() => setMsg(''), 2500)
   }
 
   return (
@@ -1273,9 +1301,15 @@ function DataPanel({ onRefresh }) {
         Your data is stored as a short backup code (WLZ format). Export it to save or transfer to another device. Paste a code to restore.
       </p>
 
-      <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
-        {Ico.export} {t('generateBackup')}
-      </button>
+      <div className="dvx-panel-row">
+        <button className="dvx-btn dvx-btn-primary dvx-btn-full" onClick={doExport} disabled={busy}>
+          {Ico.export} {t('generateBackup')}
+        </button>
+        <button className="dvx-btn dvx-btn-full" onClick={generateQr} disabled={busy}
+          style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
+          {Ico.qr} {showQr ? 'Hide QR' : 'Generate QR'}
+        </button>
+      </div>
 
       {code && (
         <div className="dvx-code-box">
@@ -1291,10 +1325,10 @@ function DataPanel({ onRefresh }) {
         </div>
       )}
 
-      {code && showQr && qrParts.length > 0 && (
+      {showQr && qrParts.length > 0 && (
         <div style={{ textAlign:'center', margin:'0.5rem 0' }}>
           {qrParts.length > 1 && (
-            <p style={{ fontSize:'0.78rem', color:'var(--g)', margin:'0 0 0.5rem', fontWeight:700 }}>
+            <p style={{ fontSize:'0.78rem', color: 'var(--g-ink)', fontWeight: 700, margin:'0 0 0.5rem', fontWeight:700 }}>
               📲 {qrParts.length}-part QR — scan each in order on the other device
             </p>
           )}
@@ -1342,7 +1376,7 @@ function DataPanel({ onRefresh }) {
         </div>
       )}
       {!scanning && scanMsg && (
-        <p className="dvx-msg" style={{ color:'var(--g)', fontWeight:600 }}>📲 {scanMsg}</p>
+        <p className="dvx-msg" style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:600 }}>📲 {scanMsg}</p>
       )}
 
       {preview && (
@@ -1410,7 +1444,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 
   return (
     <div className="glass-card heatmap-card">
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color:'var(--g)' }} />Portfolio Heatmap</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Portfolio Heatmap</h3>
       <div className="heatmap-grid">
         {cells.map((c, i) => {
           const minSize = 60
@@ -1445,26 +1479,26 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
-  { tag:'ALL ASSETS',    icon:'globe', color:'#34d399', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
+  { tag:'ALL ASSETS',    icon:'globe', color:'var(--g-ink)', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
   { tag:'CRYPTO',        icon:'₿',  color:'#f7931a', title:'10,000+ Coins Tracked',             desc:'Real-time prices, P&L, and allocation for any cryptocurrency — from Bitcoin to micro-cap altcoins.' },
   { tag:'STOCKS & ETFs', icon:'trend-up', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
   { tag:'METALS',        icon:'diamond', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
-  { tag:'CASH',          icon:'banknote', color:'#22c55e', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
+  { tag:'CASH',          icon:'banknote', color:'var(--g-ink)', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
   { tag:'AI ADVISOR',    icon:'✦',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
   { tag:'RISK SCANNER',  icon:'warning', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
   { tag:'RISK BUDGET',   icon:'sliders', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
   { tag:'SET TARGETS',   icon:'target', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
-  { tag:'SELL PLAN',     icon:'clipboard', color:'#34d399', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
-  { tag:'BUY/SELL TIMING',icon:'gauge',color:'#10b981', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
+  { tag:'SELL PLAN',     icon:'clipboard', color:'var(--g-ink)', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
+  { tag:'BUY/SELL TIMING',icon:'gauge',color:'var(--g-ink)', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
   { tag:'WHALE ALERTS',  icon:'flow', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
   { tag:'PRICE ALERTS',  icon:'bell', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
   { tag:'GOALS',         icon:'award', color:'#fbbf24', title:'Goal-Based Portfolio Tracker',      desc:'Set a target (e.g. $50K by Dec 2026) — track progress with a live ring, DCA calc & probability badge.' },
   { tag:'MARKET MOOD',   icon:'thermometer', color:'#f87171', title:'Fear & Greed Gauge',               desc:'Real-time market sentiment scored from live crypto headlines — know the crowd\'s emotion before you trade.' },
   { tag:'SECTOR MAP',    icon:'map', color:'#818cf8', title:'Sector Rotation Heatmap',          desc:'L1, L2, DeFi, AI, Gaming, Meme — each sector colour-coded by 7-day performance so you follow the money.' },
   { tag:'CORRELATION',   icon:'grid', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
-  { tag:'ACADEMY',       icon:'graduation', color:'#34d399', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
+  { tag:'ACADEMY',       icon:'graduation', color:'var(--g-ink)', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
   { tag:'INVESTMENT HACKS',icon:'lightbulb',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
-  { tag:'VOICE',         icon:'mic', color:'#10b981', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. English and Arabic. Multiple trades at once.' },
+  { tag:'VOICE',         icon:'mic', color:'var(--g-ink)', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. Crypto, stocks, gold & more. Multiple trades at once.' },
   { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
   { tag:'PRIVACY',       icon:'lock', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
   { tag:'FREE',          icon:'award', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
@@ -1662,7 +1696,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
         <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.25rem' }}>
           {allDone ? "You're all set!" : 'Welcome to WalletLens'}
         </div>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color:'var(--g)', marginBottom:'0.9rem' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color: 'var(--g-ink)', fontWeight: 700, marginBottom:'0.9rem' }}>
           <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>ANALYZE</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
         </div>
         {/* Progress bar + counter */}
@@ -1722,7 +1756,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
               }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
                   <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', textDecoration: s.done ? 'line-through' : 'none', textDecorationColor:'rgba(var(--g-rgb),0.5)' }}>{s.label}</span>
-                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color:'var(--g)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Done</span>}
+                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Done</span>}
                 </div>
                 <div style={{ fontSize:'0.74rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.45 }}>{s.desc}</div>
                 {isCurrent && s.cta && (
@@ -1765,7 +1799,7 @@ function ConstellationMap() {
     { symbol:'SLVR', color:'#c0c8d8', x:0.18, y:0.72, iconBg:'linear-gradient(135deg,#4a4a4a,#9aa0ac)', svg:'silver' },
     { symbol:'AAPL', color:'#a2aaad',   x:0.12, y:0.32, logo:'https://logo.clearbit.com/apple.com', logoBg:'#000' },
     { symbol:'NVDA', color:'#76b900',   x:0.62, y:0.10, logo:'https://logo.clearbit.com/nvidia.com', logoBg:'#000' },
-    { symbol:'USD',  color:'#22c55e', x:0.88, y:0.64, svg:'usd' },
+    { symbol:'USD',  color:'var(--g-ink)', x:0.88, y:0.64, svg:'usd' },
   ]
   // Edges (constellation lines between node indices)
   const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[1,6],[2,6]]
@@ -1977,7 +2011,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
           background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g)', fontWeight: 700, fontSize: '0.82rem',
+          color: 'var(--g-ink)', fontWeight: 700, fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
           <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Add trade
@@ -1995,7 +2029,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
           background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.3)',
-          color: '#10b981', fontWeight: 700, fontSize: '0.82rem',
+          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
           <Icon name="mic" size={15} /> Voice import
@@ -2038,7 +2072,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
                     fontSize:a.iconSize || '0.6rem', color:a.iconColor || 'white', fontWeight:800, flexShrink:0,
                   }}>{a.icon}</span>
               }
-              <span style={{ color:'var(--g)', fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
+              <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
               {a.label}
             </button>
           )
@@ -2067,7 +2101,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
           <button key={s.id} onClick={() => setTool(s.id)} style={{
             flex:1, padding:'0.45rem', borderRadius:'9px', border:'none', cursor:'pointer', fontWeight:700, fontSize:'0.8rem',
             background: tool === s.id ? 'rgba(var(--g-rgb),0.18)' : 'none',
-            color: tool === s.id ? 'var(--g)' : 'var(--text-muted)',
+            color: tool === s.id ? 'var(--g-ink)' : 'var(--text-muted)',
             transition:'all 0.15s',
           }}>{s.label}</button>
         ))}
@@ -2348,11 +2382,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Proceeds</span>
-                        <span className="dvx-target-val" style={{ color:'var(--g)' }}>${fmt(proceeds)}</span>
+                        <span className="dvx-target-val" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>${fmt(proceeds)}</span>
                       </div>
                       <div className="dvx-target-cell">
                         <span className="dvx-target-lbl">Distance</span>
-                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g)' : gainVsNow > 0 ? 'var(--text)' : '#f87171' }}>
+                        <span className="dvx-target-val" style={{ color: reached ? 'var(--g-ink)' : gainVsNow > 0 ? 'var(--text)' : '#f87171' }}>
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
@@ -2427,9 +2461,22 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [activeTab, setActiveTab]         = useState(location.state?.tab || 'overview')
+  const [activeTab, setActiveTab]         = useState(() => {
+    // If a QR deep-link import is waiting in sessionStorage, open the manage tab
+    // so DataPanel mounts and its auto-import effect fires immediately.
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
+      return 'manage'
+    }
+    return location.state?.tab || 'overview'
+  })
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
+  const [holdingsSearch,  setHoldingsSearch]  = useState('')
+  const [holdingsCat,     setHoldingsCat]     = useState('all')
+  const [holdingsSort,    setHoldingsSort]    = useState('value')
+  const [holdingsSortDir, setHoldingsSortDir] = useState('desc')
+  const [holdingsBadge,   setHoldingsBadge]   = useState('all')
+  const [selectedAssets,  setSelectedAssets]  = useState(() => new Set())
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
@@ -2705,6 +2752,18 @@ export default function Dashboard() {
     }
   }, [])
 
+  // QR deep-link auto-import: runs once on mount, no confirmation needed.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('wl_pending_import')
+    if (!pending) return
+    sessionStorage.removeItem('wl_pending_import')
+    api.importCode(pending).then(result => {
+      if (result?.success === false) return // silently ignore, user can import manually
+      loadAll()
+      setActiveTab('overview')
+    }).catch(() => {})
+  }, [])
+
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
     const raw = portfolio.map(h => {
       const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
@@ -2780,7 +2839,8 @@ export default function Dashboard() {
     if (!loaded || totalValue === 0 || milestone) return
     // Use actual 24h coin price changes, not the chart timeframe % which can be all-time
     const todayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
-    const dayChangePct = totalValue > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0
+    const dayBase = totalValue - todayPnLVal
+    const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
     const m = detectMilestone({ totalValue, totalPnL, prevTotalPnL: prevPnLRef.current, dayChangePct })
     if (m) setMilestone(m)
     prevPnLRef.current = totalPnL
@@ -2879,10 +2939,62 @@ export default function Dashboard() {
     }))
   }, [enriched, pricesFailed])
 
-  const displayHoldings = useMemo(
-    () => showAllHoldings ? enriched : enriched.slice(0, 6),
-    [enriched, showAllHoldings]
-  )
+  // Badge labels available per main category (derived from unfiltered enriched for stable chip list)
+  const badgesByCategory = useMemo(() => {
+    const result = {}
+    enriched.forEach(h => {
+      const cat   = categorizeAsset(h)
+      const badge = getAssetCategoryBadge(h)?.label
+      if (badge) {
+        if (!result[cat]) result[cat] = new Set()
+        result[cat].add(badge)
+      }
+    })
+    return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]))
+  }, [enriched])
+
+
+  const filteredHoldings = useMemo(() => {
+    let list = [...enriched]
+    const q = holdingsSearch.trim().toLowerCase()
+    if (q) list = list.filter(h => h.coin_symbol?.toLowerCase().includes(q) || h.coin_name?.toLowerCase().includes(q))
+    if (holdingsCat !== 'all') list = list.filter(h => categorizeAsset(h) === holdingsCat)
+    if (holdingsBadge !== 'all') list = list.filter(h => getAssetCategoryBadge(h)?.label === holdingsBadge)
+    list.sort((a, b) => {
+      if (holdingsSort === 'name') {
+        const cmp = (a.coin_symbol ?? '').localeCompare(b.coin_symbol ?? '')
+        return holdingsSortDir === 'asc' ? cmp : -cmp
+      }
+      const va = holdingsSort === 'pnl_pct' ? (a.pnlPct ?? 0) : holdingsSort === 'pct24h' ? (a.pct24h ?? 0) : holdingsSort === 'invested' ? (a.total_invested ?? 0) : (a.value ?? 0)
+      const vb = holdingsSort === 'pnl_pct' ? (b.pnlPct ?? 0) : holdingsSort === 'pct24h' ? (b.pct24h ?? 0) : holdingsSort === 'invested' ? (b.total_invested ?? 0) : (b.value ?? 0)
+      return holdingsSortDir === 'asc' ? va - vb : vb - va
+    })
+    return list
+  }, [enriched, holdingsSearch, holdingsCat, holdingsBadge, holdingsSort, holdingsSortDir])
+
+  const isHoldingsFiltered = holdingsSearch.trim() !== '' || holdingsCat !== 'all' || holdingsBadge !== 'all'
+
+  const filteredStats = useMemo(() => {
+    if (!isHoldingsFiltered || !filteredHoldings.length) return null
+    const value    = filteredHoldings.reduce((s, h) => s + (h.value || 0), 0)
+    const invested = filteredHoldings.reduce((s, h) => s + (h.total_invested || 0), 0)
+    const pnl      = filteredHoldings.reduce((s, h) => s + (h.pnl || 0), 0)
+    const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
+    return { value, invested, pnl, pnlPct }
+  }, [filteredHoldings, isHoldingsFiltered])
+
+  const selectedStats = useMemo(() => {
+    if (selectedAssets.size === 0) return null
+    const sel = filteredHoldings.filter(h => selectedAssets.has(h.coin_id))
+    if (!sel.length) return null
+    const value    = sel.reduce((s, h) => s + (h.value || 0), 0)
+    const invested = sel.reduce((s, h) => s + (h.total_invested || 0), 0)
+    const pnl      = sel.reduce((s, h) => s + (h.pnl || 0), 0)
+    const pnlPct   = invested > 0 ? (pnl / invested) * 100 : 0
+    return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
+  }, [filteredHoldings, selectedAssets])
+
+  const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
@@ -2978,7 +3090,7 @@ export default function Dashboard() {
               <button onClick={() => openSheet('buy', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.22), rgba(var(--g-rgb),0.10))',
-                color: 'var(--g)', fontWeight: 800, fontSize: '0.9rem',
+                color: 'var(--g-ink)', fontWeight: 700, fontWeight: 800, fontSize: '0.9rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
                 boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
                 transition: 'box-shadow 0.15s',
@@ -3205,7 +3317,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showBackupCode && (
-                  <BackupCode hideTrigger />
+                  <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
                 )}
               </>
             )
@@ -3231,6 +3343,15 @@ export default function Dashboard() {
             )
           })()}
 
+          {/* Sentiment + portfolio tips ticker */}
+          {enriched.length > 0 && (
+            <SentimentTicker
+              holdings={enriched}
+              totalValue={totalValue}
+              totalPnLPct={totalPnLPct}
+            />
+          )}
+
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
             <p className="dvx-hero-label">
@@ -3251,7 +3372,7 @@ export default function Dashboard() {
                   <path d="M8 16H3v5"/>
                 </svg>
               </button>
-              <button className="dvx-eye-btn" title="Customize dashboard" onClick={() => setShowCardConfig(v => !v)} style={{ color: showCardConfig ? 'var(--g)' : undefined }}>
+              <button className="dvx-eye-btn" title="Customize dashboard" onClick={() => setShowCardConfig(v => !v)} style={{ color: showCardConfig ? 'var(--g-ink)' : undefined }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3"/>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -3341,9 +3462,9 @@ export default function Dashboard() {
                         </svg>
                         <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>Customize Dashboard</h3>
                       </div>
-                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'#aaa', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
+                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
                     </div>
-                    <p style={{ fontSize:'0.73rem', color:'#666', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
+                    <p style={{ fontSize:'0.73rem', color:'var(--text-muted)', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
 
                     {/* Card grid */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
@@ -3366,7 +3487,7 @@ export default function Dashboard() {
                       <button onClick={() => { const all = Object.fromEntries(CARD_CONFIG.map(c => [c.id, false])); setCardVis(all); try { localStorage.setItem('wl_card_vis', JSON.stringify(all)) } catch {} }} style={{ flex:1, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'8px', color:'#f87171', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
                         Hide all
                       </button>
-                      <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ flex:1, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'8px', color:'#4ade80', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
+                      <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ flex:1, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'8px', color:'var(--g-ink)', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
                         Show all
                       </button>
                     </div>
@@ -3394,7 +3515,7 @@ export default function Dashboard() {
                   {tf.label}
                 </button>
               ))}
-              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g)' : 'var(--text-sub)', alignSelf:'center' }}>
+              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g-ink)' : 'var(--text-sub)', alignSelf:'center' }}>
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
@@ -3547,7 +3668,9 @@ export default function Dashboard() {
               {/* ── Holdings (primary column) ── */}
               <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
-                  <h3 style={{ margin:0 }}>Holdings ({enriched.length})</h3>
+                  <h3 style={{ margin:0 }}>
+                    Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
+                  </h3>
                   <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
                     {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
                     <button
@@ -3559,6 +3682,94 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
+
+                {/* ── Filter / sort bar ── */}
+                {enriched.length > 1 && (
+                  <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    {/* Search + sort row */}
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                          type="text"
+                          placeholder="Search assets…"
+                          value={holdingsSearch}
+                          onChange={e => setHoldingsSearch(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.35rem 1.6rem 0.35rem 0.6rem', color: 'var(--text)', fontSize: '0.77rem', outline: 'none' }}
+                        />
+                        {holdingsSearch && (
+                          <button onClick={() => setHoldingsSearch('')} style={{ position:'absolute', right:'0.4rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.85rem', padding:0, lineHeight:1 }}>✕</button>
+                        )}
+                      </div>
+                      <select
+                        value={holdingsSort}
+                        onChange={e => setHoldingsSort(e.target.value)}
+                        style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'8px', padding:'0.35rem 0.5rem', color:'var(--text)', fontSize:'0.75rem', cursor:'pointer', flexShrink:0 }}
+                      >
+                        <option value="value">Value</option>
+                        <option value="pnl_pct">P&L %</option>
+                        <option value="pct24h">24 h</option>
+                        <option value="invested">Invested</option>
+                        <option value="name">Name</option>
+                      </select>
+                      <button
+                        onClick={() => setHoldingsSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                        title={holdingsSortDir === 'desc' ? 'Descending' : 'Ascending'}
+                        style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'8px', padding:'0.35rem 0.55rem', color:'var(--text)', fontSize:'0.85rem', cursor:'pointer', flexShrink:0, lineHeight:1 }}
+                      >
+                        {holdingsSortDir === 'desc' ? '↓' : '↑'}
+                      </button>
+                    </div>
+
+                    {/* Category chips — only when >1 category */}
+                    {catBreakdown.length > 1 && (
+                      <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
+                        {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
+                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'var(--g)' : 'var(--surface-2)', color: holdingsCat === cat ? '#000' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'var(--g)' : 'var(--border)'}`, borderRadius:'20px', padding:'0.18rem 0.55rem', fontSize:'0.69rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Filtered summary stats */}
+                    {filteredStats && !selectedStats && (
+                      <div style={{ fontSize:'0.71rem', color:'var(--text-muted)', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center' }}>
+                        <span>{filteredHoldings.length} asset{filteredHoldings.length !== 1 ? 's' : ''}</span>
+                        <span style={{ opacity:0.4 }}>·</span>
+                        <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(filteredStats.value)}</span>
+                        {filteredStats.pnl !== 0 && !pricesFailed && (
+                          <>
+                            <span style={{ opacity:0.4 }}>·</span>
+                            <span style={{ fontWeight:600, color: filteredStats.pnl >= 0 ? 'var(--g-ink)' : '#f87171' }}>
+                              {filteredStats.pnl >= 0 ? '+' : ''}{hidden ? '••' : cv(filteredStats.pnl)} ({filteredStats.pnlPct >= 0 ? '+' : ''}{filteredStats.pnlPct.toFixed(1)}%)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Selected assets summary */}
+                    {selectedStats && (
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
+                        <div style={{ fontSize:'0.71rem', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center', background:'rgba(0,255,170,0.08)', border:'1px solid rgba(0,255,170,0.25)', borderRadius:'8px', padding:'0.25rem 0.6rem' }}>
+                          <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:700 }}>✓ {selectedAssets.size} selected</span>
+                          <span style={{ opacity:0.4 }}>·</span>
+                          <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(selectedStats.value)}</span>
+                          {selectedStats.pnl !== 0 && !pricesFailed && (
+                            <>
+                              <span style={{ opacity:0.4 }}>·</span>
+                              <span style={{ fontWeight:600, color: selectedStats.pnl >= 0 ? 'var(--g-ink)' : '#f87171' }}>
+                                {selectedStats.pnl >= 0 ? '+' : ''}{hidden ? '••' : cv(selectedStats.pnl)} ({selectedStats.pnlPct >= 0 ? '+' : ''}{selectedStats.pnlPct.toFixed(1)}%)
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => setSelectedAssets(new Set())} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.78rem', padding:'0.2rem 0.3rem', lineHeight:1 }} title="Clear selection">✕ Clear</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {enriched.length === 0
                   ? <p className="muted">Nothing yet.</p>
                   : <>
@@ -3584,7 +3795,7 @@ export default function Dashboard() {
                                   {cat !== 'cash' && ci.pnl !== 0 && !pricesFailed && (
                                     <>
                                       <span className="dvx-cat-group-sep">·</span>
-                                      <span style={{ color: ci.pnl >= 0 ? 'var(--g)' : '#f87171' }}>
+                                      <span style={{ color: ci.pnl >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                                         {ci.pnl >= 0 ? '+' : '-'}{hidden ? '••' : cv(ci.pnl)} ({ci.pnlPct >= 0 ? '+' : ''}{ci.pnlPct.toFixed(1)}%)
                                       </span>
                                     </>
@@ -3592,6 +3803,20 @@ export default function Dashboard() {
                                 </span>
                               )}
                             </div>
+                            {/* Sub-category badge chips — shown inside the group when >1 badge type exists */}
+                            {badgesByCategory[cat]?.length > 1 && (
+                              <div style={{ display:'flex', gap:'0.3rem', flexWrap:'wrap', padding:'0.3rem 0 0.4rem' }}>
+                                {['all', ...badgesByCategory[cat]].map(badge => {
+                                  const isActive = holdingsBadge === badge
+                                  const badgeColor = badge !== 'all' ? (CRYPTO_CATEGORY_COLORS[badge] || STOCK_SECTOR_COLORS[badge] || '#6366f1') : null
+                                  return (
+                                    <button key={badge} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                                      {badge === 'all' ? 'All' : badge}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
@@ -3602,9 +3827,19 @@ export default function Dashboard() {
                                   ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
                                 const bePct = h.price > 0 && breakEvenPrice > 0
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
+                                const isSelected = selectedAssets.has(h.coin_id)
+                                const isDimmed   = selectedAssets.size > 0 && !isSelected
                                 return (
                                   <li key={h.coin_id} className="dvx-holding holo-card-v2"
+                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s' }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onClick={e => e.stopPropagation()}
+                                      onChange={() => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
+                                      style={{ flexShrink:0, width:'16px', height:'16px', marginRight:'0.5rem', cursor:'pointer', accentColor:'var(--g)' }}
+                                    />
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
                                     <div className="dvx-holding-meta">
                                       <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
@@ -3626,10 +3861,10 @@ export default function Dashboard() {
                                       </div>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
-                                          Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>
+                                          Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:700 }}>
                                             {cv(breakEvenPrice)}
                                           </span>
-                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g)' : '#f87171' }}>
+                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                                             {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
                                           </span>}
                                         </span>
@@ -3655,7 +3890,7 @@ export default function Dashboard() {
                                     <div style={TEXT_RIGHT_STYLE}>
                                       <div className="dvx-holding-val">{cv(displayValue)}</div>
                                       {!showBreakEven && hasPnl && (
-                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? 'var(--g)' : '#f87171', marginTop:'0.1rem' }}>
+                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? 'var(--g-ink)' : '#f87171', marginTop:'0.1rem' }}>
                                           {h.pnl >= 0 ? '+' : '-'}{cv(h.pnl)} ({pct(h.pnlPct)})
                                         </div>
                                       )}
@@ -3668,9 +3903,9 @@ export default function Dashboard() {
                         )})
                       })()}
                     </div>
-                    {enriched.length > 6 && (
+                    {!isHoldingsFiltered && filteredHoldings.length > 6 && (
                       <button className="dvx-show-more" onClick={() => setShowAllHoldings(v => !v)}>
-                        {showAllHoldings ? '▲ Show less' : `▼ Show all ${enriched.length} assets`}
+                        {showAllHoldings ? '▲ Show less' : `▼ Show all ${filteredHoldings.length} assets`}
                       </button>
                     )}
                   </>
@@ -3736,7 +3971,7 @@ export default function Dashboard() {
                 return (
                   <div className="glass-card">
                     <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color:'var(--g)' }} />Net Worth History</h3>
+                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Net Worth History</h3>
                       <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
                     </div>
                     <ResponsiveContainer width="100%" height={175}>
@@ -3782,7 +4017,7 @@ export default function Dashboard() {
           {/* Today's Movers — actionable daily insight */}
           {cardVis.movers && !isDemo && enriched.length >= 2 && !pricesFailed && (
             <div className="glass-card dvx-movers-card">
-              <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color:'var(--g)' }} />Today's Movers</h3>
+              <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Today's Movers</h3>
               <div className="dvx-movers-row">
                 {[...enriched]
                   .filter(h => prices[h.coin_id]?.usd_24h_change != null)
@@ -3795,9 +4030,9 @@ export default function Dashboard() {
                         <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
                         <div className="dvx-mover-meta">
                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'var(--g)' }}>+{chg.toFixed(2)}%</span>
+                          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>+{chg.toFixed(2)}%</span>
                         </div>
-                        <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
+                        <div className="dvx-mover-impact" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
                           +${fmt(h.value * chg / 100)}
                         </div>
                       </div>
@@ -3881,13 +4116,13 @@ export default function Dashboard() {
             Import your portfolio in seconds — no account needed
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
-            <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g)', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
               <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Add trade
             </button>
             <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="folder" size={15} /> Import backup
             </button>
-            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'#10b981', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="mic" size={15} /> Voice import
             </button>
             <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(167,139,250,0.1)', border:'1.5px solid rgba(167,139,250,0.3)', color:'#a78bfa', fontWeight:700, fontSize:'0.82rem' }}>
@@ -3896,7 +4131,7 @@ export default function Dashboard() {
           </div>
           {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
-          {showBackupCode && <BackupCode hideTrigger />}
+          {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
       )}
       {activeTab === 'tools' && enriched.length > 0 && (
@@ -3949,7 +4184,7 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
-            <DataPanel onRefresh={loadAll} />
+            <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Browser Extension</h3>
@@ -4021,7 +4256,7 @@ export default function Dashboard() {
                 {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
-                {importMode === 'backup' && <BackupCode hideTrigger />}
+                {importMode === 'backup' && <DataPanel onRefresh={loadAll} onImported={() => { loadAll(); setImportChooser(false) }} />}
               </>
             )}
           </div>

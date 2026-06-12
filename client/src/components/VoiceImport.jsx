@@ -892,18 +892,18 @@ function fmtAmt(n) {
 
 // ── Example commands shown to user ─────────────────────────────────────────
 const EXAMPLES_EN = [
+  '"BTC" or "Bitcoin" — opens edit card to fill in details',
   '"I bought 0.5 Bitcoin at 60k"',
   '"Sold 10 Apple shares at 220"',
   '"Bought 100 Tesla at 280"',
   '"Bought 1 oz of gold"',
-  '"Sold 5000 USD at 1.1"',
 ]
 const EXAMPLES_AR = [
+  '"BTC" أو "بيتكوين" — يفتح بطاقة لتكملة التفاصيل',
   '"اشتريت بيتكوين 0.5 بسعر 60 ألف"',
   '"اشتريت 10 ابل بسعر 220"',
   '"اشتريت 100 تيسلا"',
   '"اشتريت 1 ذهب"',
-  '"بعت 5000 دولار"',
 ]
 
 // ── Web Speech API support check ───────────────────────────────────────────
@@ -1011,19 +1011,21 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       recsRef.current.forEach(r => { try { r.stop() } catch {} })
     }, 5 * 60 * 1000)
 
-    // Use only the recognizers for the selected language.
-    // Arabic: ar-SA (Gulf/MSA) + ar-EG (Egyptian) in parallel on non-iOS.
-    // English: en-US only.
+    // Always run Arabic + English recognizers in parallel on non-iOS so the
+    // user can speak either language regardless of the UI language selector.
+    // ar-SA covers Gulf/MSA, ar-EG covers Egyptian, en-US handles English +
+    // phonetic mis-hearings of Arabic words by English STT engines.
+    // On iOS only one mic recognizer is allowed — use the selected language.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : isAppArabic ? ['ar-SA', 'ar-EG'] : ['en-US']
+      : ['ar-SA', 'ar-EG', 'en-US']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
-      rec.maxAlternatives = isArabic ? 5 : 3
+      rec.maxAlternatives = isArabic ? 8 : 5
       rec.lang = langCode
 
       rec.onstart = () => {
@@ -1132,6 +1134,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
   const [aiThinking, setAiThinking] = useState(false)
 
+  // Detect whether a transcript is predominantly Arabic or English so the
+  // AI prompt uses the right language hint regardless of the UI toggle.
+  const detectHintLang = (text) => {
+    const arabicChars = (text.match(/[؀-ۿ]/g) || []).length
+    return arabicChars > text.length * 0.15 ? 'ar' : 'en'
+  }
+
   // Ask Claude to interpret a transcript the local regex parser couldn't fully
   // resolve. Runs DIRECTLY in the browser with the user's own key (falling back
   // to the serverless endpoint), so it handles multi-trade sentences, dialects,
@@ -1143,10 +1152,21 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     setAiThinking(true)
     setError('')
     try {
-      const trades = await parseTradesWithClaude(rawText, voiceLang === 'ar' ? 'ar' : 'en', alternatives)
+      const trades = await parseTradesWithClaude(rawText, detectHintLang(rawText), alternatives)
       if (!trades.length) {
+        // AI returned nothing — fall back to the local parser. If it found coins
+        // (even without a verb or amount), show them as partial cards so the user
+        // can fill in the details, rather than showing a hard error. This handles
+        // bare coin names like "Bitcoin" without requiring a Deno redeploy.
+        const localParsed = parseVoiceCommand(rawText)
+        const hasCoins = localParsed.transactions.some(t => t.coin || t.suggestions?.length)
+        if (hasCoins) {
+          setParsed(localParsed)
+          setReaction(getReaction(rawText, localParsed.transactions[0] || {}))
+          return
+        }
         if (!parsed?.transactions?.some(t => t.coin && t.type && t.amount != null))
-          setError(voiceLang === 'ar' ? 'لم أفهم — حاول مرة أخرى أو اكتب الصفقة' : 'Couldn\'t parse — try again or type the trade below')
+          setError(voiceLang === 'ar' ? 'لم أفهم — أضف فعلاً وكمية، مثال: "اشتريت واحد بيتكوين"' : 'Couldn\'t parse — include a verb & amount, e.g. "I bought 1 Bitcoin"')
         return
       }
       // Claude (with every recognizer transcript to triangulate) is far more
@@ -1163,14 +1183,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           coin,
           amount: typeof t.amount === 'number' ? t.amount : null,
           price: typeof t.price === 'number' ? t.price : null,
-          matchedWord: t.type === 'buy' ? 'bought' : 'sold',
+          matchedWord: t.type === 'buy' ? 'bought' : t.type === 'sell' ? 'sold' : '',
           // Keep unmatched symbols so the user can resolve them via search,
           // and remember the spoken name to seed that search box.
           coinSymbol: (t.symbol || '').toUpperCase(),
           coinName: t.name || '',
           suggestions: coin ? null : [],
         }
-      }).filter(t => t.amount != null && (t.coin || t.coinSymbol))
+      }).filter(t => t.coin || t.coinSymbol)
       if (!transactions.length) return
       const aiParsed = { original: rawText, transactions }
       setParsed(aiParsed)
@@ -1202,9 +1222,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // "complete", so relying on incompleteness alone silently drops trades.
     // Claude is authoritative for multi-trade + dialects; if it returns
     // nothing (no key / offline) we keep whatever the local parser found.
-    // Send the longest transcript across all language channels for coverage.
+    // Pick the highest-scoring transcript as primary (tiebreak: length).
+    // A transcript that parsed 2 clean trades beats a longer garbled one.
     const candidates = Object.values(transcriptsRef.current).filter(Boolean)
-    const best = candidates.reduce((a, b) => b.length > a.length ? b : a, '') || transcript
+    const best = candidates.reduce((bestSoFar, t) => {
+      if (!bestSoFar) return t
+      const sT    = scoreParsed(parseVoiceCommand(t))
+      const sBest = scoreParsed(parseVoiceCommand(bestSoFar))
+      return sT > sBest || (sT === sBest && t.length > bestSoFar.length) ? t : bestSoFar
+    }, '') || transcript
     const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
     // Pass EVERY recognizer's transcript so Claude can triangulate the true
     // utterance — far more accurate than a single best-guess for accented or
@@ -1345,7 +1371,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           style={{
             background: open ? 'linear-gradient(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.18))' : 'linear-gradient(135deg, rgba(5,150,105,0.1), rgba(16,185,129,0.1))',
             border: '1px solid rgba(5,150,105,0.35)',
-            borderRadius: '12px', color: '#34d399',
+            borderRadius: '12px', color: 'var(--g-ink)',
             padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
             cursor: 'pointer', display: 'flex', alignItems: 'center',
             gap: '0.5rem', width: '100%', justifyContent: 'space-between',
@@ -1516,7 +1542,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 value={typedText}
                 onChange={e => setTypedText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && typedText.trim().length >= 3 && !aiThinking) { tryAiFallback(typedText.trim(), 0); } }}
-                placeholder={isAr ? 'مثال: اشتريت واحد بيتكوين وواحد ايثيريوم' : 'e.g. I bought 1 Bitcoin and 1 Ethereum'}
+                placeholder={isAr ? 'مثال: BTC · بيتكوين · اشتريت واحد بيتكوين' : 'e.g. BTC · Bitcoin · I bought 1 Bitcoin'}
                 dir={isAr ? 'rtl' : 'ltr'}
                 style={{
                   flex:1, minWidth:0, padding:'0.6rem 0.8rem', borderRadius:'10px',
@@ -1584,7 +1610,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {/* header: trade N / remove */}
                 {parsed.transactions.length > 1 && (
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.55rem' }}>
-                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#34d399', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                    <span style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--g-ink)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
                       {isAr ? `صفقة ${idx + 1}` : `Trade ${idx + 1}`}
                     </span>
                     <button onClick={() => removeTx(idx)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:'1rem', lineHeight:1 }}>✕</button>
@@ -1617,7 +1643,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       <span style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--text)' }}>
                         {tx.coin.symbol} · {tx.coin.name}
                         {tx.coin.category && tx.coin.category !== 'crypto' && (
-                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(52,211,153,0.15)', color:'#34d399', textTransform:'uppercase' }}>{tx.coin.category}</span>
+                          <span style={{ marginInlineStart:'0.4rem', fontSize:'0.66rem', fontWeight:700, padding:'0.1rem 0.4rem', borderRadius:'5px', background:'rgba(52,211,153,0.15)', color:'var(--g-ink)', textTransform:'uppercase' }}>{tx.coin.category}</span>
                         )}
                       </span>
                       <button onClick={() => { updateTx(idx, { coin: null, suggestions: null }); setAssetQueries(q => ({...q, [idx]: ''})) }}
@@ -1630,7 +1656,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       {/* Suggestion chips */}
                       {tx.suggestions?.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', marginBottom:'0.45rem' }}>
-                          <span style={{ fontSize:'0.72rem', color:'#34d399', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
+                          <span style={{ fontSize:'0.72rem', color:'var(--g-ink)', fontWeight:600, alignSelf:'center' }}>{isAr ? 'هل تقصد؟' : 'Did you mean?'}</span>
                           {tx.suggestions.map(s => (
                             <button key={s.id} onClick={() => { updateTx(idx, { coin: s, suggestions: null }); fetchAndSetPrice(idx, s.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(52,211,153,0.15)', border:'1.5px solid rgba(52,211,153,0.4)',
@@ -1692,7 +1718,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       }}
                     />
                     {tx.unitNote && (
-                      <span style={{ fontSize:'0.68rem', color:'#34d399', marginTop:'0.15rem', display:'block' }}>
+                      <span style={{ fontSize:'0.68rem', color:'var(--g-ink)', marginTop:'0.15rem', display:'block' }}>
                         {isAr ? `محوّل من ${tx.unitNote}` : `from ${tx.unitNote}`}
                       </span>
                     )}
@@ -1739,7 +1765,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                               fontSize:'0.76rem', fontWeight:700, fontFamily:'inherit',
                               border: `1.5px solid ${active ? 'rgba(52,211,153,0.55)' : 'rgba(255,255,255,0.12)'}`,
                               background: active ? 'rgba(52,211,153,0.16)' : 'transparent',
-                              color: active ? '#34d399' : 'var(--text-muted)',
+                              color: active ? 'var(--g-ink)' : 'var(--text-muted)',
                               transition:'all 0.15s',
                             }}>
                               {LEG_LABEL[o] || o}
@@ -1759,7 +1785,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             <button onClick={addBlankTx} style={{
               width:'100%', marginBottom:'0.65rem',
               background:'transparent', border:'1.5px dashed rgba(52,211,153,0.4)',
-              borderRadius:'10px', color:'#34d399', padding:'0.6rem',
+              borderRadius:'10px', color:'var(--g-ink)', padding:'0.6rem',
               fontWeight:700, fontSize:'0.83rem', cursor:'pointer',
             }}>
               ＋ {isAr ? 'إضافة صفقة أخرى' : 'Add another order'}
@@ -1780,7 +1806,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           {confirmed ? (
             <div style={{
               background:'rgba(74,222,128,0.12)', border:'1px solid rgba(74,222,128,0.35)',
-              borderRadius:'10px', color:'#4ade80',
+              borderRadius:'10px', color:'var(--g-ink)',
               padding:'0.6rem 0.75rem', fontSize:'0.85rem', textAlign:'center', fontWeight:700,
             }}>
               ✅ {isAr

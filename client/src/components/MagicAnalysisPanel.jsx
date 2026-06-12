@@ -501,7 +501,7 @@ function AiVerdict({ item, onVerdictReady }) {
       <div className="magic-ai-cols">
         {verdict.bull?.length > 0 && (
           <div>
-            <div className="magic-ai-col-h" style={{ color: '#22c55e' }}>Bull</div>
+            <div className="magic-ai-col-h" style={{ color: 'var(--g-ink)' }}>Bull</div>
             <ul>{verdict.bull.map((b, i) => <li key={i}>{b}</li>)}</ul>
           </div>
         )}
@@ -534,7 +534,7 @@ function AssetCard({ item, onOpen }) {
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>
             {money(item.price)}
-            {chg != null && <span style={{ marginLeft: '0.4rem', color: chg >= 0 ? '#22c55e' : '#ef4444' }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
+            {chg != null && <span style={{ marginLeft: '0.4rem', color: chg >= 0 ? 'var(--g-ink)' : '#ef4444' }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
             <span style={{ marginLeft: '0.4rem' }}>· {item.weight.toFixed(1)}% of book</span>
           </div>
         </div>
@@ -635,7 +635,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
   if (!cryptoIds.length) {
     return (
       <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
-        <div style={{ marginBottom: '0.4rem', display: 'flex', justifyContent: 'center' }}><Icon name="pulse" size={30} style={{ color: 'var(--g)' }} /></div>
+        <div style={{ marginBottom: '0.4rem', display: 'flex', justifyContent: 'center' }}><Icon name="pulse" size={30} style={{ color: 'var(--g-ink)', fontWeight: 700 }} /></div>
         <p className="muted" style={{ margin: 0 }}>
           Add a crypto holding to see the Magic Indicator — technicals, on-chain flow, volume,
           whales and fundamentals merged into one direction.

@@ -256,7 +256,7 @@ export default function PriceAlerts({ enriched, prices }) {
               return (
                 <p className="pal-hint muted">
                   Current: ${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })} ·{' '}
-                  <span style={{ color: dist >= 0 ? 'var(--g)' : '#f87171' }}>
+                  <span style={{ color: dist >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                     {dist >= 0 ? '+' : ''}{dist}% away
                   </span>
                 </p>
@@ -280,7 +280,7 @@ export default function PriceAlerts({ enriched, prices }) {
                 <div className="pal-card-top">
                   <div className="pal-card-left">
                     <span className="pal-sym">{a.coin_symbol?.toUpperCase()}</span>
-                    <span className="pal-cond-badge" style={{ color: a.condition === 'above' ? 'var(--g)' : '#f87171' }}>
+                    <span className="pal-cond-badge" style={{ color: a.condition === 'above' ? 'var(--g-ink)' : '#f87171' }}>
                       {a.condition === 'above' ? '↑ above' : '↓ below'} ${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                     </span>
                   </div>
@@ -305,7 +305,7 @@ export default function PriceAlerts({ enriched, prices }) {
               <div className="pal-card-top">
                 <div className="pal-card-left">
                   <span className="pal-sym">{a.coin_symbol?.toUpperCase()}</span>
-                  <span className="pal-cond-badge" style={{ color: 'var(--g)' }}>
+                  <span className="pal-cond-badge" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
                     ✓ {a.condition === 'above' ? '↑' : '↓'} ${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                   </span>
                 </div>

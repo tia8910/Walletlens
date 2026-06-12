@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
+import CoinLogo from './CoinLogo'
 
 /* ─── local rule engine (fallback when API not available) ─────────────── */
 function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
@@ -56,7 +57,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
       action === 'ADD'   ? 'var(--g)' :
       action === 'HOLD'  ? '#60a5fa' : '#a78bfa'
 
-    return { sym, action, actionColor, score, reasons, pnlPct, chg24h, w, value: h.value, coin_image: h.coin_image }
+    return { sym, action, actionColor, score, reasons, pnlPct, chg24h, w, value: h.value, coin_image: h.coin_image, coin_id: h.coin_id }
   })
 
   const sellOrTrim = assetActions.filter(a => a.action === 'SELL' || a.action === 'TRIM')
@@ -245,7 +246,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                       </span>
                       {result.confidence}% confidence
                     </span>
-                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g)' : '#f87171' }}>
+                    <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g-ink)' : '#f87171' }}>
                       {result.momentum >= 0 ? '▲' : '▼'} {Math.abs(result.momentum).toFixed(1)}% momentum
                     </span>
                   </div>
@@ -256,7 +257,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                   {result.assetActions.map((a, i) => (
                     <div key={i} className="ade-asset-row">
                       <div className="ade-asset-left">
-                        {a.coin_image && <img src={a.coin_image} alt="" width={28} height={28} className="ade-asset-img" />}
+                        <CoinLogo image={a.coin_image} symbol={a.sym} coinId={a.coin_id} size={28} className="ade-asset-img" />
                         <div>
                           <div className="ade-asset-sym">{a.sym}</div>
                           <div className="ade-asset-weight">{typeof a.w === 'number' ? a.w.toFixed(1) : '—'}% of portfolio</div>

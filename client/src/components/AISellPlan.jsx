@@ -152,7 +152,7 @@ const URGENCY_BG    = { high: '#f8717115', medium: '#fbbf2415', low: 'rgba(var(-
 
 const fmtLvl = (p) => (p == null ? '—' : '$' + (p >= 1 ? Math.round(p).toLocaleString() : +(+p).toPrecision(4)))
 const TREND_META = {
-  uptrend:   { label: '↗ Uptrend',   color: 'var(--g)' },
+  uptrend:   { label: '↗ Uptrend',   color: 'var(--g-ink)', fontWeight: 700 },
   downtrend: { label: '↘ Downtrend', color: '#f87171' },
   sideways:  { label: '→ Sideways',  color: '#fbbf24' },
 }
@@ -216,7 +216,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
     <div className="glass-card" style={{ marginTop: '1rem' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'1rem' }}>
         <div>
-          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color:'var(--g)' }} />Smart Sell Plan</h3>
+          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Smart Sell Plan</h3>
           <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>
             Technical-analysis exit strategy — targets from real support/resistance, RSI, MACD &amp; trend. No API key needed.
           </p>
@@ -303,7 +303,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                     }}>{row.action}</span>
                   </div>
                   <div style={{ textAlign:'right', fontSize:'0.8rem' }}>
-                    <span style={{ color: row.pnlPct >= 0 ? 'var(--g)' : '#f87171', fontWeight:600 }}>
+                    <span style={{ color: row.pnlPct >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:600 }}>
                       {row.pnlPct >= 0 ? '+' : ''}{row.pnlPct.toFixed(1)}%
                     </span>
                     <span className="muted" style={{ marginLeft:'0.4rem' }}>{row.weight.toFixed(1)}% portfolio</span>
