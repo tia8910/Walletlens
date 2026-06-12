@@ -3930,13 +3930,13 @@ export default function Dashboard() {
                                     </div>
                                     {!isDemo && (
                                       <div className="dvx-holding-actions" onClick={e => e.stopPropagation()}>
-                                        <button className="dvx-ha-btn" title="Set price target"
+                                        <button className="dvx-ha-btn"
                                           onClick={() => navigate('/dashboard', { state: { tab: 'targets' } })}>
-                                          🎯
+                                          🎯 Set Target
                                         </button>
-                                        <button className="dvx-ha-btn" title="Plan in Vision"
+                                        <button className="dvx-ha-btn"
                                           onClick={() => navigate('/vision', { state: { linkAsset: h.coin_id } })}>
-                                          🗺️
+                                          🗺️ Set Vision
                                         </button>
                                       </div>
                                     )}
