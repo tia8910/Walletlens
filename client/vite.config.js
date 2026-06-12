@@ -1,8 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync, writeFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Auto-stamp the service worker with a unique build version on every production
+// build. This guarantees cache busting without relying on a manually incremented
+// version string that is easy to forget.
+function swVersionPlugin() {
+  return {
+    name: 'sw-version-stamp',
+    apply: 'build',
+    closeBundle() {
+      const swPath = resolve(__dirname, 'dist/sw.js')
+      try {
+        let sw = readFileSync(swPath, 'utf8')
+        // Encode build time as a base-36 string: compact yet collision-free across builds.
+        const version = `v${Math.floor(Date.now() / 1000).toString(36)}`
+        sw = sw.replace(/const SW_VERSION = '[^']*'/, `const SW_VERSION = '${version}'`)
+        writeFileSync(swPath, sw)
+      } catch { /* sw.js not present (e.g. non-PWA builds) — silently skip */ }
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), swVersionPlugin()],
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.

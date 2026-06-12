@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useRef } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -304,7 +304,13 @@ export default function App() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
-  const isLanding = ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/faq', '/privacy'].includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/track/') || location.pathname.startsWith('/calculator/') || location.pathname.startsWith('/learn/') || location.pathname.startsWith('/vs/') || location.pathname.startsWith('/price/') || location.pathname.startsWith('/ar/') || location.pathname.startsWith('/admin/')
+  const isLanding = useMemo(() => {
+    const p = location.pathname
+    return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/faq', '/privacy'].includes(p) ||
+      p.startsWith('/blog/') || p.startsWith('/track/') || p.startsWith('/calculator/') ||
+      p.startsWith('/learn/') || p.startsWith('/vs/') || p.startsWith('/price/') ||
+      p.startsWith('/ar/') || p.startsWith('/admin/')
+  }, [location.pathname])
   const { locked, unlock } = useBiometricLock()
 
   const _guardianChecked = useRef(false)
