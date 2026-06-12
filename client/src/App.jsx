@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react'
+import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
