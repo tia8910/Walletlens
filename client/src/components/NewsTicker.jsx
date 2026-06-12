@@ -102,9 +102,9 @@ export default function NewsTicker() {
 
   const [modalOpen, setModalOpen] = useState(false)
 
-  if (!items.length) return null
-
   const doubled = useMemo(() => [...items, ...items], [items])
+
+  if (!items.length) return null
 
   return (
     <>
