@@ -111,8 +111,12 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
   const insights = []
 
   // Nothing to value yet AND no plan set — prompt the user.
+  const target = bucket.isRest ? null
+    : bucket.targetPct != null ? (totalNW * bucket.targetPct / 100)
+    : bucket.targetAmount
   const hasPlan = bucket.linkedAssets?.length || bucket.manualAmount > 0 ||
-    bucket.categories?.length || bucket.monthlyContribution > 0
+    bucket.categories?.length || bucket.monthlyContribution > 0 ||
+    bucket.monthlyWithdrawal > 0 || bucket.targetMonths > 0 || target > 0
   if (!bucket.isRest && currentValue <= 0 && !hasPlan) {
     insights.push({ level: 'info', msg: 'Set a current amount, link assets, or pick a category to start tracking' })
     return (
@@ -127,11 +131,32 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
     )
   }
 
+  // Goal timeframe — user-chosen number of months to reach the target
+  if (bucket.targetMonths > 0 && target > 0 && currentValue < target) {
+    const need = (target - currentValue) / bucket.targetMonths
+    const monthLbl = `${bucket.targetMonths} month${bucket.targetMonths !== 1 ? 's' : ''}`
+    if (bucket.monthlyContribution > 0) {
+      if (bucket.monthlyContribution >= need * 0.99)
+        insights.push({ level: 'ok', msg: `${fmt(bucket.monthlyContribution)}/mo covers your ${monthLbl} goal (needs ${fmt(need)}/mo) ✓` })
+      else
+        insights.push({ level: 'warn', msg: `Short for your ${monthLbl} goal — save ${fmt(need)}/mo (you're adding ${fmt(bucket.monthlyContribution)}/mo, ${fmt(need - bucket.monthlyContribution)} more needed)` })
+    } else {
+      insights.push({ level: 'info', msg: `To reach ${fmt(target)} in ${monthLbl}, save ${fmt(need)}/mo` })
+    }
+  }
+
+  // Withdrawal funding target over the chosen timeframe
+  if (bucket.targetMonths > 0 && bucket.monthlyWithdrawal > 0 && !(target > 0)) {
+    const needed = bucket.monthlyWithdrawal * bucket.targetMonths
+    const gap = needed - currentValue
+    if (gap > 0)
+      insights.push({ level: 'info', msg: `Funding ${fmt(bucket.monthlyWithdrawal)}/mo for ${bucket.targetMonths} months needs ${fmt(needed)} — ${fmt(gap)} to go` })
+    else
+      insights.push({ level: 'ok', msg: `Fully funded for ${bucket.targetMonths} months of ${fmt(bucket.monthlyWithdrawal)}/mo withdrawals ✓` })
+  }
+
   // Monthly contribution → time-to-goal projection
-  const target = bucket.isRest ? null
-    : bucket.targetPct != null ? (totalNW * bucket.targetPct / 100)
-    : bucket.targetAmount
-  if (bucket.monthlyContribution > 0) {
+  if (bucket.monthlyContribution > 0 && !(bucket.targetMonths > 0)) {
     const m = monthsToTarget(currentValue, target, bucket.monthlyContribution)
     if (m != null) {
       const yearly = bucket.monthlyContribution * 12
@@ -297,8 +322,10 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
   const progress = pct(currentValue, target)
   const nwShare = pct(currentValue, totalNW)
 
-  // ETA to target from monthly contribution (goal-progress projection)
-  const eta = etaLabel(monthsToTarget(currentValue, target, bucket.monthlyContribution))
+  // ETA to target — chosen timeframe if set, else projected from contribution
+  const eta = bucket.targetMonths > 0
+    ? etaLabel(bucket.targetMonths)
+    : etaLabel(monthsToTarget(currentValue, target, bucket.monthlyContribution))
 
   // Planned (manual) asset-class focus — works without any linked holdings
   const plannedCats = bucket.categories || []
@@ -407,6 +434,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
     targetPct: bucket.targetPct ?? '',
     monthlyWithdrawal: bucket.monthlyWithdrawal ?? '',
     monthlyContribution: bucket.monthlyContribution ?? '',
+    targetMonths: bucket.targetMonths ?? '',
     manualAmount: bucket.manualAmount ?? '',
     categories: bucket.categories || [],
     linkedAssets: bucket.linkedAssets || [],
@@ -469,6 +497,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
       targetPct: form.targetMode === 'pct' && form.targetPct ? parseFloat(form.targetPct) : null,
       monthlyWithdrawal: form.monthlyWithdrawal ? parseFloat(form.monthlyWithdrawal) : null,
       monthlyContribution: form.monthlyContribution ? parseFloat(form.monthlyContribution) : null,
+      targetMonths: form.targetMonths ? Math.round(parseFloat(form.targetMonths)) : null,
       manualAmount: form.manualAmount ? parseFloat(form.manualAmount) : null,
       categories: form.categories,
       linkedAssets: form.linkedAssets,
@@ -547,6 +576,31 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                 placeholder="e.g. 500" className="vp-input" />
             </label>
           </div>
+
+          {/* Goal timeframe — user chooses how many months to reach the target */}
+          <label className="vp-field">
+            <span>Reach goal in <span style={{ opacity: .5, fontWeight: 400 }}>(months)</span></span>
+            <input type="number" min="1" step="1" value={form.targetMonths} onChange={e => set('targetMonths', e.target.value)}
+              placeholder="e.g. 24" className="vp-input" />
+            {(() => {
+              const tgt = form.targetMode === 'fixed' ? parseFloat(form.targetAmount)
+                : form.targetMode === 'pct' ? (totalNW * parseFloat(form.targetPct) / 100)
+                : NaN
+              const cur = form.linkedAssets.length
+                ? form.linkedAssets.reduce((s, id) => s + holdingValue(prices, holdings.find(x => x.coin_id === id)), 0)
+                : (parseFloat(form.manualAmount) || 0)
+              const months = parseInt(form.targetMonths, 10)
+              if (months > 0 && isFinite(tgt) && tgt > cur) {
+                const need = (tgt - cur) / months
+                return <span className="vp-field-hint">Save <strong>{fmt(need)}/mo</strong> to reach {fmt(tgt)} in {months} month{months !== 1 ? 's' : ''}</span>
+              }
+              if (months > 0 && parseFloat(form.monthlyWithdrawal) > 0) {
+                const need = parseFloat(form.monthlyWithdrawal) * months
+                return <span className="vp-field-hint">Needs <strong>{fmt(need)}</strong> to fund {fmt(parseFloat(form.monthlyWithdrawal))}/mo for {months} months</span>
+              }
+              return null
+            })()}
+          </label>
 
           {/* Plan by asset category — always available, no portfolio required */}
           <div className="vp-field">
