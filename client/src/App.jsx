@@ -335,6 +335,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
+  const [shellReady, setShellReady] = useState(false)
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
