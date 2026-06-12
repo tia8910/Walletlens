@@ -35,6 +35,7 @@ export function newBucket(overrides = {}) {
     isRest: false,        // true = auto shows everything not in other buckets
     monthlyWithdrawal: null,    // $ drawn down each month (runway)
     monthlyContribution: null,  // $ added each month (goal progress)
+    targetMonths: null,         // timeframe in months to reach the target
     manualAmount: null,         // manually-entered current value (planning without live holdings)
     categories: [],             // planned asset-class focus, e.g. ['crypto','cash']
     linkedAssets: [],     // array of coin_ids (live current value)

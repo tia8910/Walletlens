@@ -11483,5 +11483,12 @@ button:not(:disabled):active,
 .vp-field-row { display: flex; gap: .6rem; }
 .vp-field-row .vp-field { flex: 1; min-width: 0; }
 
+/* Live hint under a field (e.g. computed required monthly) */
+.vp-field-hint {
+  font-size: .76rem; font-weight: 400; opacity: .7; margin-top: .3rem;
+  color: var(--g-ink);
+}
+.vp-field-hint strong { font-weight: 700; }
+
 /* Monthly plan summary tint */
 .vp-summary-monthly { margin-top: -.4rem; }
