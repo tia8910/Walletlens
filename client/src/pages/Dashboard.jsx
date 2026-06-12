@@ -1902,10 +1902,14 @@ function ConstellationMap() {
     }
 
     resize()
-    const ro = new ResizeObserver(resize)
+    let resizeTimer = null
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(resize, 150)
+    })
     ro.observe(canvas)
     draw()
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); themeObserver.disconnect() }
+    return () => { cancelAnimationFrame(raf); clearTimeout(resizeTimer); ro.disconnect(); themeObserver.disconnect() }
   }, [])
 
   return (
