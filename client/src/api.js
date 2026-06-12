@@ -74,12 +74,20 @@ const CORS_PROXIES = [
 
 // Per-attempt timeout for any single fetch — without this, a slow proxy
 // can stall the whole pipeline for 30s+ before failing over.
+// Accepts an optional external AbortSignal so callers (e.g. fetchJSONFast)
+// can cancel all in-flight requests once the first one wins.
 const FETCH_TIMEOUT_MS = 3000;
-async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS, externalSignal) {
   const controller = new AbortController();
+  // Combine our timeout signal with any caller-supplied cancellation signal.
+  // AbortSignal.any is available in Chrome 116+/Firefox 116+/Safari 17.4+ (all
+  // within our esnext target). Fallback: use only the timeout controller.
+  const signal = externalSignal && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([controller.signal, externalSignal])
+    : controller.signal;
   const t = setTimeout(() => controller.abort(), ms);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { signal });
   } finally {
     clearTimeout(t);
   }
@@ -104,12 +112,19 @@ async function fetchJSON(url) {
 
 // Race all CORS proxies simultaneously — returns the first success.
 // Cuts worst-case wait from 15s (sequential) down to ~4s.
+// The shared AbortController cancels all losing requests the moment one wins,
+// preventing bandwidth waste and avoiding extra hits to rate-limited APIs.
 async function fetchJSONFast(url) {
+  const controller = new AbortController();
   const sources = [
-    fetchWithTimeout(url, 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
-    ...CORS_PROXIES.map(w => fetchWithTimeout(w(url), 4000).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })),
+    fetchWithTimeout(url, 4000, controller.signal).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    ...CORS_PROXIES.map(w => fetchWithTimeout(w(url), 4000, controller.signal).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })),
   ]
-  try { return await Promise.any(sources) } catch { return null }
+  try {
+    const result = await Promise.any(sources);
+    controller.abort(); // cancel all still-in-flight losers
+    return result;
+  } catch { return null }
 }
 
 // ─── Asset Categories ───
@@ -337,13 +352,14 @@ async function fetchMetalsLive() {
   if (metalCache && now - metalCacheTime < METAL_CACHE_DURATION) return metalCache;
 
   const out = {};
-  // Primary: gold-api.com
+  // Primary: gold-api.com — use fetchWithTimeout so a slow API doesn't hang
+  // the entire price refresh cycle indefinitely.
   try {
     const [goldRes, silverRes, copperRes, platinumRes] = await Promise.all([
-      fetch('https://api.gold-api.com/price/XAU'),
-      fetch('https://api.gold-api.com/price/XAG'),
-      fetch('https://api.gold-api.com/price/XCU'),
-      fetch('https://api.gold-api.com/price/XPT'),
+      fetchWithTimeout('https://api.gold-api.com/price/XAU'),
+      fetchWithTimeout('https://api.gold-api.com/price/XAG'),
+      fetchWithTimeout('https://api.gold-api.com/price/XCU'),
+      fetchWithTimeout('https://api.gold-api.com/price/XPT'),
     ]);
     if (goldRes.ok) {
       const g = await goldRes.json();
