@@ -11566,8 +11566,11 @@ button:not(:disabled):active,
 .vp-export-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
 
 /* ── Dashboard holding action buttons ── */
-.dvx-holding-actions { display: none; flex-direction: column; gap: 2px; margin-left: .35rem; flex-shrink: 0; }
-.dvx-holding:hover .dvx-holding-actions { display: flex; }
+.dvx-holding-actions { display: flex; flex-direction: column; gap: 2px; margin-left: .35rem; flex-shrink: 0; }
+@media (hover: hover) {
+  .dvx-holding-actions { display: none; }
+  .dvx-holding:hover .dvx-holding-actions { display: flex; }
+}
 .dvx-ha-btn { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); font-size: .8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .12s, border-color .12s; }
 .dvx-ha-btn:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.22); }
 
