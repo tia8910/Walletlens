@@ -106,7 +106,7 @@ export default function Settings() {
                   overflow: 'hidden', padding: 0,
                 }}>
                   {t.logo
-                    ? <img src={t.logo} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ? <img src={t.logo} alt={t.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     : null}
                 </span>
                 {t.name}

@@ -58,6 +58,11 @@ export default defineConfig({
           if (id.includes('node_modules/xlsx')) {
             return 'xlsx'
           }
+          // QR libraries: only loaded when the user opens the backup/scan panel.
+          // Splitting them ensures Dashboard's main chunk doesn't carry their weight.
+          if (id.includes('node_modules/jsqr') || id.includes('node_modules/qrcode')) {
+            return 'qr-libs'
+          }
           // i18n: 32 KB of translation strings — isolated so a copy change only
           // invalidates this chunk, not the whole app.
           if (id.includes('/src/i18n.')) {

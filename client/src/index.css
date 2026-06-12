@@ -2336,6 +2336,7 @@ tr:last-child td { border-bottom: none; }
   width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
   border-top-color: white; border-radius: 50%;
   animation: spin 0.6s linear infinite;
+  will-change: transform;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -2537,6 +2538,7 @@ tr:last-child td { border-bottom: none; }
   width: 12px; height: 12px; border-radius: 50%;
   border: 2px solid var(--border); border-top-color: var(--g);
   animation: ts-spin 0.9s linear infinite;
+  will-change: transform;
 }
 @keyframes ts-spin { to { transform: rotate(360deg); } }
 
@@ -4027,6 +4029,7 @@ tr:last-child td { border-bottom: none; }
   display: inline-block; width: 16px; height: 16px;
   border: 2px solid rgba(var(--g-rgb),0.3); border-top-color: var(--g);
   border-radius: 50%; animation: qs-spin 0.7s linear infinite;
+  will-change: transform;
 }
 @keyframes qs-spin { to { transform: rotate(360deg) } }
 .qs-empty { padding: 1.5rem 1.2rem; color: rgba(255,255,255,0.75); font-size: 0.9rem; line-height: 1.6; }
@@ -7724,7 +7727,7 @@ input[type="date"] { color-scheme: dark; }
 .risk-grade { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; }
 .risk-chevron { color: rgba(255,255,255,0.7); transition: transform 0.2s; display: flex; }
 .risk-ring-svg { flex-shrink: 0; }
-.risk-spinner { width: 28px; height: 28px; border: 3px solid rgba(var(--g-rgb),0.15); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.risk-spinner { width: 28px; height: 28px; border: 3px solid rgba(var(--g-rgb),0.15); border-top-color: var(--g); border-radius: 50%; animation: spin 0.8s linear infinite; will-change: transform; }
 
 .risk-signals { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.06); }
 .risk-signal { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.82rem; }
@@ -8683,6 +8686,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .news-refresh-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 .news-refresh-btn:disabled { opacity: 0.4; cursor: default; }
 @keyframes news-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.news-refresh-btn:disabled svg { will-change: transform; }
 
 .news-last-updated {
   font-size: 0.75rem;
