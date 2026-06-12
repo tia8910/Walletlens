@@ -3048,6 +3048,16 @@ export default function Dashboard() {
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
+  // Pre-sorted top-3 gainers/losers — memoized so the two sort+filter+slice
+  // operations don't repeat on every Dashboard render.
+  const { topGainers, topLosers } = useMemo(() => {
+    const withChange = enriched.filter(h => prices[h.coin_id]?.usd_24h_change != null)
+    const sorted = [...withChange].sort((a, b) =>
+      (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0)
+    )
+    return { topGainers: sorted.slice(0, 3), topLosers: sorted.slice(-3).reverse() }
+  }, [enriched, prices])
+
   const tabs = [
     { id: 'overview', label: t('overview'), icon: Ico.overview },
     { id: 'tools',    label: 'Analysis',    icon: Ico.ai },
@@ -4036,30 +4046,30 @@ export default function Dashboard() {
                           +${fmt(h.value * chg / 100)}
                         </div>
                       </div>
-                    )
-                  })}
+                      <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
+                        +${fmt(h.value * chg / 100)}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               <div className="dvx-movers-divider" />
               <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[a.coin_id]?.usd_24h_change ?? 0) - (prices[b.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
-                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-                    return (
-                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
-                        <div className="dvx-mover-meta">
-                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
-                        </div>
-                        <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
-                          {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
-                        </div>
+                {topLosers.map(h => {
+                  const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                  return (
+                    <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
+                      <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
+                      <div className="dvx-mover-meta">
+                        <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                        <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
                       </div>
-                    )
-                  })}
+                      <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
+                        {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

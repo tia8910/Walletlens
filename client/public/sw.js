@@ -53,12 +53,22 @@ self.addEventListener('install', e => {
   )
 })
 
+const API_CACHE_MAX = 120 // max entries before oldest are evicted
+
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
         keys.filter(k => k !== STATIC && k !== API_CACHE).map(k => caches.delete(k))
       ))
+      .then(async () => {
+        // Trim API cache to prevent unbounded growth across long sessions.
+        const cache = await caches.open(API_CACHE)
+        const keys = await cache.keys()
+        if (keys.length > API_CACHE_MAX) {
+          await Promise.all(keys.slice(0, keys.length - API_CACHE_MAX).map(k => cache.delete(k)))
+        }
+      })
       .then(() => self.clients.claim())
   )
 })
