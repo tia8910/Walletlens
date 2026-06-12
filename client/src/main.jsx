@@ -27,7 +27,11 @@ function chunkReload() {
     sessionStorage.setItem(RETRY_KEY, String(n + 1))
   } catch {}
   if ('caches' in window) {
-    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => window.location.reload())
+    // Only nuke API/versioned caches — preserve the static-asset cache so the
+    // reload doesn't re-download every hashed JS/CSS chunk from scratch.
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => !k.startsWith('walletlens-static-')).map(k => caches.delete(k))))
+      .finally(() => window.location.reload())
   } else {
     window.location.reload()
   }

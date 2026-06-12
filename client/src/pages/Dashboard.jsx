@@ -22,13 +22,19 @@ import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
-import VoiceImport from '../components/VoiceImport'
-import BackupCode from '../components/BackupCode'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import InstallExtension from '../components/InstallExtension'
-import { makeQrParts, createPartCollector, scanImageData, decodeQrFromImageFile } from '../utils/qrBackup'
+
+// Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
+// backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
+let _qrBackupPromise = null
+const _loadQrBackup = () => {
+  if (!_qrBackupPromise) _qrBackupPromise = import('../utils/qrBackup')
+  return _qrBackupPromise
+}
 
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
+const VoiceImport    = lazy(() => import('../components/VoiceImport'))
 const TradeSheet     = lazy(() => import('../components/TradeSheet'))
 const ShareCard      = lazy(() => import('../components/ShareCard'))
 const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
@@ -1171,6 +1177,7 @@ function DataPanel({ onRefresh, onImported }) {
   const animRef = useRef(null)
   const streamRef = useRef(null)
   const collectorRef = useRef(null)
+  const qrModRef = useRef(null) // resolved qrBackup module for sync scanFrame access
 
   const stopCamera = useCallback(() => {
     if (animRef.current) cancelAnimationFrame(animRef.current)
@@ -1183,6 +1190,7 @@ function DataPanel({ onRefresh, onImported }) {
   async function doExport() {
     setBusy(true)
     try {
+      const { makeQrParts } = await _loadQrBackup()
       // QR deep-link and full backup run in parallel.
       const [result, qrUrl] = await Promise.all([
         api.exportCode().catch(() => null),
@@ -1202,6 +1210,7 @@ function DataPanel({ onRefresh, onImported }) {
   async function toggleExportQr() {
     if (showQr) { setShowQr(false); return }
     if (qrParts.length) { setShowQr(true); return }
+    const { makeQrParts } = await _loadQrBackup()
     const qrUrl = await api.exportQrDeepLink().catch(() => null)
     if (qrUrl) { const parts = await makeQrParts(qrUrl); setQrParts(parts); setShowQr(parts.length > 0) }
   }
@@ -1212,6 +1221,7 @@ function DataPanel({ onRefresh, onImported }) {
     if (showQr) { setShowQr(false); return }
     setBusy(true)
     try {
+      const { makeQrParts } = await _loadQrBackup()
       const qrUrl = await api.exportQrDeepLink().catch(() => null)
       if (qrUrl) {
         const parts = await makeQrParts(qrUrl)
@@ -1224,12 +1234,17 @@ function DataPanel({ onRefresh, onImported }) {
   }
 
   function ingest(data) {
+    const { createPartCollector } = qrModRef.current
     if (!collectorRef.current) collectorRef.current = createPartCollector()
     return collectorRef.current(data)
   }
 
   async function startScan() {
-    setMsg(''); setScanMsg(''); collectorRef.current = createPartCollector()
+    setMsg(''); setScanMsg('')
+    // Preload qrBackup before camera so scanFrame (rAF callback) has sync access
+    const qr = await _loadQrBackup()
+    qrModRef.current = qr
+    collectorRef.current = qr.createPartCollector()
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream; setScanning(true)
@@ -1247,6 +1262,7 @@ function DataPanel({ onRefresh, onImported }) {
     canvas.width = video.videoWidth; canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const { scanImageData } = qrModRef.current
     const data = scanImageData(ctx.getImageData(0, 0, canvas.width, canvas.height))
     if (data) {
       const r = ingest(data)
@@ -1258,11 +1274,14 @@ function DataPanel({ onRefresh, onImported }) {
   function onQrImage(e) {
     const file = e.target.files?.[0]; if (!file) return
     setMsg('')
-    decodeQrFromImageFile(file, (data) => {
-      const r = ingest(data)
-      if (r.complete) { setCode(r.text); setPreview(null); setScanMsg(''); collectorRef.current = null }
-      else setScanMsg(`Loaded part ${r.got} of ${r.total} — upload the next QR image`)
-    }, (err) => setMsg(err))
+    _loadQrBackup().then(({ decodeQrFromImageFile, createPartCollector }) => {
+      if (!collectorRef.current) collectorRef.current = createPartCollector()
+      decodeQrFromImageFile(file, (data) => {
+        const r = ingest(data)
+        if (r.complete) { setCode(r.text); setPreview(null); setScanMsg(''); collectorRef.current = null }
+        else setScanMsg(`Loaded part ${r.got} of ${r.total} — upload the next QR image`)
+      }, (err) => setMsg(err))
+    })
     e.target.value = ''
   }
 
@@ -1883,10 +1902,14 @@ function ConstellationMap() {
     }
 
     resize()
-    const ro = new ResizeObserver(resize)
+    let resizeTimer = null
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(resize, 150)
+    })
     ro.observe(canvas)
     draw()
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); themeObserver.disconnect() }
+    return () => { cancelAnimationFrame(raf); clearTimeout(resizeTimer); ro.disconnect(); themeObserver.disconnect() }
   }, [])
 
   return (
@@ -3048,6 +3071,16 @@ export default function Dashboard() {
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
+  // Pre-sorted top-3 gainers/losers — memoized so the two sort+filter+slice
+  // operations don't repeat on every Dashboard render.
+  const { topGainers, topLosers } = useMemo(() => {
+    const withChange = enriched.filter(h => prices[h.coin_id]?.usd_24h_change != null)
+    const sorted = [...withChange].sort((a, b) =>
+      (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0)
+    )
+    return { topGainers: sorted.slice(0, 3), topLosers: sorted.slice(-3).reverse() }
+  }, [enriched, prices])
+
   const tabs = [
     { id: 'overview', label: t('overview'), icon: Ico.overview },
     { id: 'tools',    label: 'Analysis',    icon: Ico.ai },
@@ -3309,7 +3342,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showVoiceImport && (
-                  <VoiceImport hideTrigger onImported={loadAll} />
+                  <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} /></Suspense>
                 )}
                 {showScreenshot && (
                   <div className="dvx-excel-import-panel glass-card">
@@ -4036,30 +4069,30 @@ export default function Dashboard() {
                           +${fmt(h.value * chg / 100)}
                         </div>
                       </div>
-                    )
-                  })}
+                      <div className="dvx-mover-impact" style={{ color:'var(--g)' }}>
+                        +${fmt(h.value * chg / 100)}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               <div className="dvx-movers-divider" />
               <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[a.coin_id]?.usd_24h_change ?? 0) - (prices[b.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
-                    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-                    return (
-                      <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
-                        <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
-                        <div className="dvx-mover-meta">
-                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                          <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
-                        </div>
-                        <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
-                          {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
-                        </div>
+                {topLosers.map(h => {
+                  const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+                  return (
+                    <div key={h.coin_id} className="dvx-mover-item dvx-mover-dn">
+                      <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} />
+                      <div className="dvx-mover-meta">
+                        <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                        <span style={{ color:'#f87171' }}>{chg.toFixed(2)}%</span>
                       </div>
-                    )
-                  })}
+                      <div className="dvx-mover-impact" style={{ color:'#f87171' }}>
+                        {chg < 0 ? '-' : ''}${fmt(Math.abs(h.value * chg / 100))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -4129,7 +4162,7 @@ export default function Dashboard() {
               <Icon name="bar-chart" size={15} /> Import Excel
             </button>
           </div>
-          {showVoiceImport && <VoiceImport hideTrigger onImported={loadAll} />}
+          {showVoiceImport && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} /></Suspense>}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
           {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
@@ -4253,7 +4286,7 @@ export default function Dashboard() {
                   display:'inline-flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.9rem',
                   background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontWeight:700, fontSize:'0.8rem',
                 }}>‹ Back</button>
-                {importMode === 'voice' && <VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} />}
+                {importMode === 'voice' && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'backup' && <DataPanel onRefresh={loadAll} onImported={() => { loadAll(); setImportChooser(false) }} />}

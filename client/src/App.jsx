@@ -285,7 +285,7 @@ function Drawer({ open, onClose }) {
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
                 }}>
-                  {th.logo ? <img src={th.logo} alt={th.name} style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
+                  {th.logo ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
                 </span>
                 <span className="wl-drawer-swatch-label">{th.name}</span>
               </button>
@@ -363,6 +363,13 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
+  useEffect(() => {
+    const id = typeof requestIdleCallback !== 'undefined'
+      ? requestIdleCallback(() => setShellReady(true), { timeout: 3000 })
+      : setTimeout(() => setShellReady(true), 1500)
+    return () => typeof requestIdleCallback !== 'undefined' ? cancelIdleCallback(id) : clearTimeout(id)
+  }, [])
+
   // Prefetch the highest-traffic app chunks during idle on the landing page
   // so the first navigation to any of them is instant.
   useEffect(() => {
@@ -373,10 +380,13 @@ export default function App() {
     const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
     // Dashboard first (most common destination), then Transactions and Coach
     // at lower priority so they don't compete with the critical render path.
+    // Blog and Academy are prefetched last — they're content-heavy but popular.
     const id1 = schedule(() => import('./pages/Dashboard'),    { timeout: 3000 })
     const id2 = schedule(() => import('./pages/Transactions'), { timeout: 5000 })
     const id3 = schedule(() => import('./pages/Coach'),        { timeout: 7000 })
-    return () => { cancel(id1); cancel(id2); cancel(id3) }
+    const id4 = schedule(() => import('./pages/Blog'),         { timeout: 9000 })
+    const id5 = schedule(() => import('./pages/Academy'),      { timeout: 11000 })
+    return () => { cancel(id1); cancel(id2); cancel(id3); cancel(id4); cancel(id5) }
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap
@@ -567,9 +577,9 @@ export default function App() {
         </nav>
       </footer>
 
-      <Suspense fallback={null}><WelcomeModal /></Suspense>
-      <Suspense fallback={null}><PWAInstallPrompt /></Suspense>
-      <Suspense fallback={null}><AssistantChat /></Suspense>
+      {shellReady && <Suspense fallback={null}><WelcomeModal /></Suspense>}
+      {shellReady && <Suspense fallback={null}><PWAInstallPrompt /></Suspense>}
+      {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
     </div>

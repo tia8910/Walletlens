@@ -13,8 +13,9 @@ const API_CACHE = `walletlens-api-${SW_VERSION}`
 const CDN_CACHE = 'walletlens-cdn-v1'
 
 // Static files to pre-cache at install time for instant first-load.
-// manifest.webmanifest is included so the install prompt works offline.
-const PRECACHE_URLS = ['/news.json', '/manifest.webmanifest']
+// stock-prices.json is updated every 30 min by GitHub Actions; caching it
+// avoids a network round-trip on the first price fetch after install.
+const PRECACHE_URLS = ['/news.json', '/stock-prices.json', '/manifest.webmanifest']
 
 // Price/market API origins we want to cache for offline fallback
 const PRICE_API_PATTERNS = [
@@ -39,7 +40,9 @@ const STATIC_CDN_PATTERNS = [
   'cdn.jsdelivr.net/npm/cryptocurrency-icons',
 ]
 
-const API_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const API_TTL_MS = 5 * 60 * 1000    // 5 minutes (price APIs)
+const NEWS_TTL_MS = 10 * 60 * 1000  // 10 min (news.json RSS feed)
+const STOCK_TTL_MS = 25 * 60 * 1000 // 25 min (stock-prices.json — matches GH Actions interval)
 
 function isPriceApi(url) {
   return PRICE_API_PATTERNS.some(p => url.hostname === p || url.hostname.endsWith('.' + p))
@@ -57,12 +60,22 @@ self.addEventListener('install', e => {
   )
 })
 
+const API_CACHE_MAX = 120 // max entries before oldest are evicted
+
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
         keys.filter(k => k !== STATIC && k !== API_CACHE && k !== CDN_CACHE).map(k => caches.delete(k))
       ))
+      .then(async () => {
+        // Trim API cache to prevent unbounded growth across long sessions.
+        const cache = await caches.open(API_CACHE)
+        const keys = await cache.keys()
+        if (keys.length > API_CACHE_MAX) {
+          await Promise.all(keys.slice(0, keys.length - API_CACHE_MAX).map(k => cache.delete(k)))
+        }
+      })
       .then(() => self.clients.claim())
   )
 })
@@ -165,6 +178,41 @@ self.addEventListener('fetch', e => {
             status: 503, headers: { 'Content-Type': 'application/json' }
           })
         }
+      })
+    )
+    return
+  }
+
+  // ── Periodically-updated same-origin JSON feeds: stale-while-revalidate
+  // news.json refreshes via RSS worker; stock-prices.json via GitHub Actions.
+  // Serve stale instantly then revalidate in background for fast perceived UX.
+  const feedTtl = url.pathname === '/news.json' ? NEWS_TTL_MS
+    : url.pathname === '/stock-prices.json' ? STOCK_TTL_MS
+    : null
+  if (url.origin === self.location.origin && feedTtl !== null) {
+    e.respondWith(
+      caches.open(API_CACHE).then(async cache => {
+        const cached = await cache.match(req)
+        const now = Date.now()
+        async function revalidate() {
+          try {
+            const fresh = await fetch(req)
+            if (fresh?.ok) {
+              const headers = new Headers(fresh.headers)
+              headers.set('sw-cached-at', String(now))
+              const body = await fresh.clone().arrayBuffer()
+              cache.put(req, new Response(body, { status: fresh.status, statusText: fresh.statusText, headers }))
+            }
+            return fresh
+          } catch { return null }
+        }
+        if (cached) {
+          const age = now - parseInt(cached.headers.get('sw-cached-at') || '0', 10)
+          if (age < feedTtl) return cached  // fresh — skip network
+          revalidate()                      // stale — serve immediately, refresh in background
+          return cached
+        }
+        return await revalidate() || new Response('{}', { status: 503 })
       })
     )
     return

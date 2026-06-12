@@ -37,7 +37,7 @@ export default defineConfig({
     // esnext: no transpilation overhead for modern browsers
     target: 'esnext',
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 400,
     reportCompressedSize: true,
     // Skip modulepreload polyfill — all target browsers support native modulepreload
     modulePreload: { polyfill: false },
@@ -57,6 +57,11 @@ export default defineConfig({
           }
           if (id.includes('node_modules/xlsx')) {
             return 'xlsx'
+          }
+          // QR libraries: only loaded when the user opens the backup/scan panel.
+          // Splitting them ensures Dashboard's main chunk doesn't carry their weight.
+          if (id.includes('node_modules/jsqr') || id.includes('node_modules/qrcode')) {
+            return 'qr-libs'
           }
           // i18n: 32 KB of translation strings — isolated so a copy change only
           // invalidates this chunk, not the whole app.
