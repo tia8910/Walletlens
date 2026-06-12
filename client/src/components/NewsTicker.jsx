@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { track } from '../analytics'
 
 function timeAgo(pubDate) {
@@ -104,7 +104,7 @@ export default function NewsTicker() {
 
   if (!items.length) return null
 
-  const doubled = [...items, ...items]
+  const doubled = useMemo(() => [...items, ...items], [items])
 
   return (
     <>

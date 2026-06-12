@@ -313,6 +313,11 @@ function _symbolForId(id, holdings) {
   if (h?.coin_symbol) return String(h.coin_symbol).toUpperCase();
   return null;
 }
+// Module-level in-memory mirror of the chart localStorage cache.
+// Keeps getChartData from parsing potentially large JSON on every call.
+const _CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
+let _chartCache = (() => { try { return JSON.parse(localStorage.getItem(_CHART_CACHE_KEY) || '{}'); } catch { return {}; } })();
+
 let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
@@ -1347,12 +1352,9 @@ export const api = {
     // Localstorage cache: 5 min TTL per (id, days). Returns cached series
     // immediately if fresh, otherwise tries CoinGecko, then CoinCap, then
     // falls back to whatever we have in 30d signals cache.
-    const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
     const CHART_TTL = 5 * 60 * 1000;
-    let chartCache = {};
-    try { chartCache = JSON.parse(localStorage.getItem(CHART_CACHE_KEY) || '{}'); } catch {}
     const cacheKey = `${id}::${days}`;
-    const hit = chartCache[cacheKey];
+    const hit = _chartCache[cacheKey];
     if (hit && Date.now() - hit.t < CHART_TTL && Array.isArray(hit.v) && hit.v.length > 0) {
       return hit.v;
     }
@@ -1365,8 +1367,8 @@ export const api = {
         price,
       }));
       try {
-        chartCache[cacheKey] = { t: Date.now(), v: series };
-        localStorage.setItem(CHART_CACHE_KEY, JSON.stringify(chartCache));
+        _chartCache[cacheKey] = { t: Date.now(), v: series };
+        localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache));
       } catch {}
       return series;
     };

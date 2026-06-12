@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { translations } from './i18n'
 
 const LanguageContext = createContext(null)
@@ -17,13 +17,14 @@ export function LanguageProvider({ children }) {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
   }, [lang])
 
-  const t = (key) => {
-    const val = translations[lang]?.[key] ?? translations.en[key] ?? key
-    return val
-  }
+  const t = useCallback((key) => {
+    return translations[lang]?.[key] ?? translations.en[key] ?? key
+  }, [lang])
+
+  const value = useMemo(() => ({ lang, setLang, t, isRtl: lang === 'ar' }), [lang, t])
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, isRtl: lang === 'ar' }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   )
