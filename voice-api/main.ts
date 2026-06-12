@@ -323,6 +323,10 @@ function buildVisionAdvicePrompt(p: any): string {
 
   return `You are a sharp, fiduciary-minded personal-finance and portfolio-planning advisor inside WalletLens (a private, all-asset net-worth tracker: crypto, stocks, metals, cash, real estate). The user has organised their money into planning "buckets" (goals). Give specific, prioritised, numbers-grounded advice — diversification, emergency-fund adequacy, withdrawal sustainability (~4%/yr rule of thumb), goal funding pace, concentration risk, and asset-class fit per goal. Be concrete and avoid generic hedging. This is education, not individualised financial advice.
 
+Asset-class notes:
+- "Stablecoins" = USD-pegged tokens (USDT, USDC, DAI, etc.). Cash-equivalent, low-risk, appropriate for emergency funds, short-term goals, and liquidity reserves. Do NOT treat them as volatile crypto.
+- "Crypto" = volatile non-stable coins only (BTC, ETH, SOL, etc.). High risk, long-term growth.
+
 Total net worth: ${cur} ${Math.round(p?.netWorth || 0).toLocaleString()}
 Asset-class mix:
 ${cats}

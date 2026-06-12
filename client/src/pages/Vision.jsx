@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { BUCKET_TYPES, BUCKET_COLORS, loadBuckets, saveBuckets, newBucket } from '../data/visionStorage'
 import { getVisionAdvice } from '../visionAdviceAi'
+import { isStablecoin } from '../stablecoins'
 import { track } from '../analytics'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -20,12 +21,16 @@ function getAssetCategory(coinId) {
 
 // Category for a holding — prefer the explicit category stored on the
 // transaction/holding, fall back to coin_id prefix parsing.
+// Stablecoins are detected by id/symbol and treated as their own category
+// (cash-equivalent) rather than volatile crypto — regardless of any "crypto"
+// tag the user may have applied.
 function holdingCategory(h) {
   const c = (h?.category || '').toLowerCase()
   if (c.includes('stock')) return 'stocks'
   if (c.includes('metal')) return 'metals'
   if (c.includes('real'))  return 'real_estate'
   if (c.includes('cash') || c.includes('fiat')) return 'cash'
+  if (isStablecoin(h?.coin_id, h?.coin_symbol || h?.symbol)) return 'stablecoins'
   if (c === 'crypto') return 'crypto'
   return getAssetCategory(h?.coin_id)
 }
@@ -45,11 +50,12 @@ function holdingValue(prices, h) {
 }
 
 const CATEGORIES = {
-  crypto:      { label: 'Crypto',      icon: '₿',  color: '#f7931a' },
-  stocks:      { label: 'Stocks',      icon: '📊', color: '#0ea5e9' },
-  metals:      { label: 'Metals',      icon: '🥇', color: '#f59e0b' },
-  cash:        { label: 'Cash',        icon: '💵', color: '#10b981' },
-  real_estate: { label: 'Real Estate', icon: '🏠', color: '#8b5cf6' },
+  crypto:      { label: 'Crypto',       icon: '₿',  color: '#f7931a' },
+  stablecoins: { label: 'Stablecoins',  icon: '🏦', color: '#64748b' },
+  stocks:      { label: 'Stocks',       icon: '📊', color: '#0ea5e9' },
+  metals:      { label: 'Metals',       icon: '🥇', color: '#f59e0b' },
+  cash:        { label: 'Cash',         icon: '💵', color: '#10b981' },
+  real_estate: { label: 'Real Estate',  icon: '🏠', color: '#8b5cf6' },
 }
 
 // ── Donut chart (pure SVG) ────────────────────────────────────────────
