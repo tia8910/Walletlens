@@ -587,7 +587,7 @@ async function fetchFiatRates() {
 
   // Primary: open.er-api.com — returns rates vs USD base
   try {
-    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', 8000);
     if (res.ok) {
       const data = await res.json();
       if (data?.rates) {
@@ -605,7 +605,7 @@ async function fetchFiatRates() {
 
   // Fallback: frankfurter.app (European Central Bank reference rates)
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const res = await fetchWithTimeout('https://api.frankfurter.app/latest?from=USD', 8000);
     if (res.ok) {
       const data = await res.json();
       if (data?.rates) {
@@ -815,7 +815,7 @@ function parseStooqCsv(text, days) {
 async function fetchStooqHistory(symbol, days = 30) {
   const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
   try {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, 5000);
     if (res.ok) {
       const out = parseStooqCsv(await res.text(), days);
       if (out.length > 0) return out;
@@ -823,7 +823,7 @@ async function fetchStooqHistory(symbol, days = 30) {
   } catch {}
   for (const wrap of CORS_PROXIES) {
     try {
-      const res = await fetch(wrap(url));
+      const res = await fetchWithTimeout(wrap(url), 5000);
       if (res.ok) {
         const out = parseStooqCsv(await res.text(), days);
         if (out.length > 0) return out;

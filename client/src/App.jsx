@@ -148,13 +148,58 @@ function PWATopbarButton() {
   )
 }
 
+// ── Cycling brand action labels ───────────────────────────────────────
+// Isolated into memo components so only these tiny nodes re-render on each
+// 1.8 s cycle tick — not the full App shell or Drawer tree.
+const TopbarCyclingActions = memo(function TopbarCyclingActions() {
+  const { lang } = useLanguage()
+  const idx = useCycleIdx()
+  return (
+    <div className="wl-topbar-brand-actions">
+      <span className={`wl-topbar-brand-action${idx === 0 ? ' active' : ''}`}>
+        {lang === 'ar' ? 'تتبع' : 'TRACK'}
+      </span>
+      <span className="wl-topbar-brand-sep">|</span>
+      <span className={`wl-topbar-brand-action${idx === 1 ? ' active' : ''}`}>
+        {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+      </span>
+      <span className="wl-topbar-brand-sep">|</span>
+      <span className={`wl-topbar-brand-action${idx === 2 ? ' active' : ''}`}>
+        {lang === 'ar' ? 'نمو' : 'GROW'}
+      </span>
+    </div>
+  )
+})
+
+const DrawerCyclingActions = memo(function DrawerCyclingActions() {
+  const { lang } = useLanguage()
+  const idx = useCycleIdx()
+  return (
+    <div className="wl-drawer-brand-actions">
+      <span className={`wl-drawer-brand-action${idx === 0 ? ' active' : ''}`}>
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+        {lang === 'ar' ? 'تتبع' : 'TRACK'}
+      </span>
+      <span className="wl-drawer-brand-sep">|</span>
+      <span className={`wl-drawer-brand-action${idx === 1 ? ' active' : ''}`}>
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 7V2a5 5 0 0 1 5 5H7z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" fillOpacity="0.25"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4"/></svg>
+        {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
+      </span>
+      <span className="wl-drawer-brand-sep">|</span>
+      <span className={`wl-drawer-brand-action${idx === 2 ? ' active' : ''}`}>
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 10l3.5-4 2.5 2.5L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 4h2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        {lang === 'ar' ? 'نمو' : 'GROW'}
+      </span>
+    </div>
+  )
+})
+
 // ── Slide-out drawer ──────────────────────────────────────────────────
 function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { t, lang } = useLanguage()
+  const { t } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
-  const actionIdx = useCycleIdx()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
 
@@ -168,22 +213,7 @@ function Drawer({ open, onClose }) {
             <div className="wl-drawer-brand-text">
               <div className="wl-drawer-name">WalletLens</div>
               <div className="wl-drawer-tag">{t('brandTag')}</div>
-              <div className="wl-drawer-brand-actions">
-                <span className={`wl-drawer-brand-action${actionIdx === 0 ? ' active' : ''}`}>
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/></svg>
-                  {lang === 'ar' ? 'تتبع' : 'TRACK'}
-                </span>
-                <span className="wl-drawer-brand-sep">|</span>
-                <span className={`wl-drawer-brand-action${actionIdx === 1 ? ' active' : ''}`}>
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 7V2a5 5 0 0 1 5 5H7z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" fillOpacity="0.25"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4"/></svg>
-                  {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
-                </span>
-                <span className="wl-drawer-brand-sep">|</span>
-                <span className={`wl-drawer-brand-action${actionIdx === 2 ? ' active' : ''}`}>
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 10l3.5-4 2.5 2.5L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 4h2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  {lang === 'ar' ? 'نمو' : 'GROW'}
-                </span>
-              </div>
+              <DrawerCyclingActions />
             </div>
           </div>
           <button className="wl-drawer-close" onClick={onClose}><IconClose /></button>
@@ -300,7 +330,6 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
-  const headerActionIdx = useCycleIdx()
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
@@ -430,19 +459,7 @@ export default function App() {
             </button>
             <div className="wl-topbar-brand-text">
               <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
-              <div className="wl-topbar-brand-actions">
-                <span className={`wl-topbar-brand-action${headerActionIdx === 0 ? ' active' : ''}`}>
-                  {lang === 'ar' ? 'تتبع' : 'TRACK'}
-                </span>
-                <span className="wl-topbar-brand-sep">|</span>
-                <span className={`wl-topbar-brand-action${headerActionIdx === 1 ? ' active' : ''}`}>
-                  {lang === 'ar' ? 'تحليل' : 'ANALYZE'}
-                </span>
-                <span className="wl-topbar-brand-sep">|</span>
-                <span className={`wl-topbar-brand-action${headerActionIdx === 2 ? ' active' : ''}`}>
-                  {lang === 'ar' ? 'نمو' : 'GROW'}
-                </span>
-              </div>
+              <TopbarCyclingActions />
             </div>
           </div>
           <div className="wl-topbar-right">
