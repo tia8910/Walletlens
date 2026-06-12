@@ -300,7 +300,7 @@ export default function Coach() {
       {activeSection === 'actions' && (
         <div style={{ padding: '1rem' }}>
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa' }}>
+            <div className="coach-action-icon" data-action="ai">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
             </div>
             <div className="coach-action-body">
@@ -311,7 +311,7 @@ export default function Coach() {
           </div>
 
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'targets' } }); track('coach_action', { action: 'targets' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
+            <div className="coach-action-icon" data-action="targets">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             </div>
             <div className="coach-action-body">
@@ -322,7 +322,7 @@ export default function Coach() {
           </div>
 
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'alerts' } }); track('coach_action', { action: 'alerts' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(0,200,83,0.13)', color: 'var(--g-ink)', fontWeight: 700 }}>
+            <div className="coach-action-icon" data-action="alerts">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </div>
             <div className="coach-action-body">
@@ -333,7 +333,7 @@ export default function Coach() {
           </div>
 
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }); track('coach_action', { action: 'risk' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(248,113,113,0.15)', color: '#f87171' }}>
+            <div className="coach-action-icon" data-action="risk">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div className="coach-action-body">
@@ -344,7 +344,7 @@ export default function Coach() {
           </div>
 
           <div className="glass-card coach-action-card" onClick={() => { setActiveSection('alpha'); track('coach_action', { action: 'alpha' }) }}>
-            <div className="coach-action-icon" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
+            <div className="coach-action-icon" data-action="alpha">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg>
             </div>
             <div className="coach-action-body">

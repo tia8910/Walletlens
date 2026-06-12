@@ -7,6 +7,7 @@ import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import { requestPortfolioNotifPermission } from '../portfolioNotify'
 import InstallExtension from '../components/InstallExtension'
+import PortfolioGuardian from '../components/PortfolioGuardian'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -228,6 +229,20 @@ export default function Settings() {
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />Security</h3>
         <BiometricToggle />
+      </div>
+
+      {/* ── Portfolio Guardian ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Portfolio Guardian
+        </h3>
+        <p className="settings-hint" style={{ marginBottom: '0.85rem' }}>
+          Dead Man's Switch — notifies your heirs if you stop opening WalletLens.
+        </p>
+        <PortfolioGuardian />
       </div>
 
       {/* ── About ── */}

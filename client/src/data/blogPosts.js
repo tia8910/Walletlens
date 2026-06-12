@@ -2691,7 +2691,7 @@ Track NVIDIA, Apple, Bitcoin, and every asset in one free dashboard at [walletle
   },
   {
     slug: 'what-is-roi-investing',
-    title: 'What Is ROI in Investing? (And How to Calculate It for Crypto, Stocks, and Gold)',
+    title: 'What Is ROI in Investing? How to Calculate It',
     date: 'June 2026',
     readTime: '5 min read',
     summary: 'ROI explained — the formula, what it means for different asset types, its limitations, and how to calculate it instantly.',
