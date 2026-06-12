@@ -383,6 +383,25 @@ async function fetchMetalsLive() {
   return metalCache || {};
 }
 
+// ─── Binance bStocks — tokenized 1:1-backed securities (launched June 2026) ───
+// These trade as /USDT pairs on the main Binance exchange (api.binance.com).
+// Map: WalletLens ticker (lowercase) → Binance symbol
+const BSTOCK_SYMBOLS = {
+  nvdab: 'NVDABUSDT',
+  tslab: 'TSLAB' + 'USDT',
+  mubb:  'MUBB'  + 'USDT',
+  sndkb: 'SNDKB' + 'USDT',
+  crclb: 'CRCLB' + 'USDT',
+}
+// For historical charts: map bStock → underlying US stock on Stooq
+const BSTOCK_UNDERLYING = {
+  'stock:nvdab': 'nvda.us',
+  'stock:tslab': 'tsla.us',
+  'stock:mubb':  'mu.us',
+  'stock:sndkb': 'sndk.us',
+  'stock:crclb': 'crcl.us',
+}
+
 // ─── Real-time US stock prices via Stooq (CORS-enabled CSV) ───
 // Returns { [coin_id]: { usd, usd_24h_change, name } } for the requested IDs.
 function parseStooqRow(csv) {
@@ -408,7 +427,26 @@ async function fetchStockLive(coinId) {
 
   const tickerUp = ticker.toUpperCase();
 
-  // ── 0. Static prices file served from same origin (no CORS, always works) ──
+  // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
+  const binanceSymbol = BSTOCK_SYMBOLS[ticker.toLowerCase()];
+  if (binanceSymbol) {
+    try {
+      const res = await fetchWithTimeout(
+        `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`, 5000);
+      if (res.ok) {
+        const data = await res.json();
+        const price = parseFloat(data.lastPrice);
+        const pct   = parseFloat(data.priceChangePercent);
+        if (isFinite(price) && price > 0) {
+          const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
+          stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+          return parsed;
+        }
+      }
+    } catch { /* fall through to static prices */ }
+  }
+
+  // ── 0b. Static prices file served from same origin (no CORS, always works) ──
   const staticPrices = await fetchStaticStockPrices()
   if (staticPrices?.[coinId]) {
     const p = staticPrices[coinId]
@@ -416,7 +454,7 @@ async function fetchStockLive(coinId) {
     return p;
   }
 
-  // ── 1. Stock price proxy (our own CORS-safe proxy, most reliable on mobile) ──
+  // ── 1. Stock price proxy (CORS-safe proxy, most reliable on mobile) ──
   if (STOCK_WORKER_URL) {
     try {
       const res = await fetchWithTimeout(`${STOCK_WORKER_URL}?symbol=${encodeURIComponent(tickerUp)}`, 7000);
@@ -726,6 +764,8 @@ function stooqSymbolFor(id) {
   if (id === SILVER_ID) return 'xagusd';
   if (id === COPPER_ID) return 'xcuusd';
   if (id === PLATINUM_ID) return 'xptusd';
+  // bStocks: use underlying stock history (NVDAB → nvda.us, etc.)
+  if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id];
   if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
   return null;
 }
