@@ -17,6 +17,32 @@ function getAssetCategory(coinId) {
   return 'crypto'
 }
 
+// Category for a holding — prefer the explicit category stored on the
+// transaction/holding, fall back to coin_id prefix parsing.
+function holdingCategory(h) {
+  const c = (h?.category || '').toLowerCase()
+  if (c.includes('stock')) return 'stocks'
+  if (c.includes('metal')) return 'metals'
+  if (c.includes('real'))  return 'real_estate'
+  if (c.includes('cash') || c.includes('fiat')) return 'cash'
+  if (c === 'crypto') return 'crypto'
+  return getAssetCategory(h?.coin_id)
+}
+
+// Live unit price for a holding — matches Dashboard's lookup (.usd then .price).
+function unitPrice(prices, id) {
+  return prices[id]?.usd ?? prices[id]?.price ?? 0
+}
+
+// Current value of a holding. Uses live price × amount when available, else
+// falls back to cost basis (total_invested) — exactly what the Dashboard shows
+// so Vision never reads $0 when live prices haven't loaded (stocks/metals/etc.).
+function holdingValue(prices, h) {
+  if (!h) return 0
+  const live = (h.amount || 0) * unitPrice(prices, h.coin_id)
+  return live > 0 ? live : (h.total_invested || 0)
+}
+
 const CATEGORIES = {
   crypto:      { label: 'Crypto',      icon: '₿',  color: '#f7931a' },
   stocks:      { label: 'Stocks',      icon: '📊', color: '#0ea5e9' },
@@ -63,12 +89,32 @@ function Runway({ value, monthly }) {
   return <span className="vp-runway">{label}</span>
 }
 
+// Months needed to reach `target` from `current` at `monthly` contribution.
+function monthsToTarget(current, target, monthly) {
+  if (!target || !monthly || monthly <= 0 || target <= current) return null
+  return Math.ceil((target - current) / monthly)
+}
+
+function etaLabel(months) {
+  if (months == null) return null
+  const y = Math.floor(months / 12)
+  const m = months % 12
+  const span = y > 0 ? `${y}y ${m}m` : `${m}m`
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  const when = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  return `${span} to goal · ${when}`
+}
+
 // ── Smart analysis per bucket ─────────────────────────────────────────
 function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
   const insights = []
 
-  if (!bucket.linkedAssets?.length && !bucket.isRest) {
-    insights.push({ level: 'info', msg: 'Link assets or select a category above to track live value' })
+  // Nothing to value yet AND no plan set — prompt the user.
+  const hasPlan = bucket.linkedAssets?.length || bucket.manualAmount > 0 ||
+    bucket.categories?.length || bucket.monthlyContribution > 0
+  if (!bucket.isRest && currentValue <= 0 && !hasPlan) {
+    insights.push({ level: 'info', msg: 'Set a current amount, link assets, or pick a category to start tracking' })
     return (
       <div className="vp-analysis">
         {insights.map((ins, i) => (
@@ -79,6 +125,22 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
         ))}
       </div>
     )
+  }
+
+  // Monthly contribution → time-to-goal projection
+  const target = bucket.isRest ? null
+    : bucket.targetPct != null ? (totalNW * bucket.targetPct / 100)
+    : bucket.targetAmount
+  if (bucket.monthlyContribution > 0) {
+    const m = monthsToTarget(currentValue, target, bucket.monthlyContribution)
+    if (m != null) {
+      const yearly = bucket.monthlyContribution * 12
+      insights.push({ level: 'ok', msg: `Adding ${fmt(bucket.monthlyContribution)}/mo (${fmt(yearly)}/yr) → on track to hit ${fmt(target)} in ${m === 1 ? '1 month' : m + ' months'}` })
+    } else if (target && currentValue >= target) {
+      insights.push({ level: 'ok', msg: `Target reached — you can pause the ${fmt(bucket.monthlyContribution)}/mo contribution ✓` })
+    } else {
+      insights.push({ level: 'info', msg: `Contributing ${fmt(bucket.monthlyContribution)}/mo (${fmt(bucket.monthlyContribution * 12)}/yr)` })
+    }
   }
 
   // Runway health
@@ -107,10 +169,10 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
     for (const id of bucket.linkedAssets) {
       const h = holdings.find(x => x.coin_id === id)
       if (!h) continue
-      const val = (h.amount || 0) * (prices[id]?.usd || 0)
+      const val = holdingValue(prices, h)
       if (val > maxVal) {
         maxVal = val
-        maxName = h.symbol?.toUpperCase() || h.name || id
+        maxName = h.coin_symbol?.toUpperCase() || h.symbol?.toUpperCase() || h.coin_name || h.name || id
       }
     }
     const concPct = Math.round((maxVal / currentValue) * 100)
@@ -122,9 +184,9 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
   // Category risk analysis — emergency fund should not be heavy crypto
   if (bucket.type === 'emergency' && currentValue > 0 && bucket.linkedAssets?.length) {
     const cryptoVal = bucket.linkedAssets.reduce((s, id) => {
-      if (getAssetCategory(id) !== 'crypto') return s
       const h = holdings.find(x => x.coin_id === id)
-      return s + (h ? (h.amount || 0) * (prices[id]?.usd || 0) : 0)
+      if (!h || holdingCategory(h) !== 'crypto') return s
+      return s + holdingValue(prices, h)
     }, 0)
     const cryptoPct = Math.round((cryptoVal / currentValue) * 100)
     if (cryptoPct > 50) {
@@ -189,8 +251,8 @@ function CategoryBreakdown({ holdings, prices }) {
   const cats = {}
   let total = 0
   for (const h of holdings) {
-    const cat = getAssetCategory(h.coin_id)
-    const val = (h.amount || 0) * (prices[h.coin_id]?.usd || 0)
+    const cat = holdingCategory(h)
+    const val = holdingValue(prices, h)
     cats[cat] = (cats[cat] || 0) + val
     total += val
   }
@@ -235,7 +297,13 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
   const progress = pct(currentValue, target)
   const nwShare = pct(currentValue, totalNW)
 
-  // Category composition badges
+  // ETA to target from monthly contribution (goal-progress projection)
+  const eta = etaLabel(monthsToTarget(currentValue, target, bucket.monthlyContribution))
+
+  // Planned (manual) asset-class focus — works without any linked holdings
+  const plannedCats = bucket.categories || []
+
+  // Live category composition badges (from linked holdings)
   const catBreakdown = useMemo(() => {
     if (!bucket.linkedAssets?.length) return []
     const cats = {}
@@ -243,11 +311,12 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
     for (const id of bucket.linkedAssets) {
       const h = holdings.find(x => x.coin_id === id)
       if (!h) continue
-      const val = (h.amount || 0) * (prices[id]?.usd || 0)
-      const cat = getAssetCategory(id)
+      const val = holdingValue(prices, h)
+      const cat = holdingCategory(h)
       cats[cat] = (cats[cat] || 0) + val
       total += val
     }
+    if (total === 0) return []
     return Object.entries(cats)
       .filter(([, v]) => v > 0)
       .sort((a, b) => b[1] - a[1])
@@ -275,7 +344,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
       <div className="vp-card-values">
         <span className="vp-val">{fmt(currentValue)}</span>
         {target != null && <span className="vp-target">/ {fmt(target)}</span>}
-        <span className="vp-nwshare">{nwShare}% of NW</span>
+        {nwShare > 0 && <span className="vp-nwshare">{nwShare}% of NW</span>}
         <Runway value={currentValue} monthly={bucket.monthlyWithdrawal} />
       </div>
 
@@ -286,11 +355,28 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
         </div>
       )}
 
-      {catBreakdown.length > 0 && (
+      {(bucket.monthlyContribution > 0 || eta) && (
+        <div className="vp-contrib">
+          {bucket.monthlyContribution > 0 && (
+            <span className="vp-contrib-amt">+{fmt(bucket.monthlyContribution)}/mo</span>
+          )}
+          {eta && <span className="vp-eta">{eta}</span>}
+        </div>
+      )}
+
+      {catBreakdown.length > 0 ? (
         <div className="vp-cat-badges">
           {catBreakdown.map(c => (
             <span key={c.key} className="vp-cat-badge" style={{ borderColor: c.color, color: c.color }}>
               {c.icon} {c.label} {c.pct}%
+            </span>
+          ))}
+        </div>
+      ) : plannedCats.length > 0 && (
+        <div className="vp-cat-badges">
+          {plannedCats.map(k => (
+            <span key={k} className="vp-cat-badge vp-cat-badge-planned" style={{ borderColor: CATEGORIES[k]?.color, color: CATEGORIES[k]?.color }}>
+              {CATEGORIES[k]?.icon} {CATEGORIES[k]?.label || k}
             </span>
           ))}
         </div>
@@ -320,6 +406,9 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
     targetAmount: bucket.targetAmount ?? '',
     targetPct: bucket.targetPct ?? '',
     monthlyWithdrawal: bucket.monthlyWithdrawal ?? '',
+    monthlyContribution: bucket.monthlyContribution ?? '',
+    manualAmount: bucket.manualAmount ?? '',
+    categories: bucket.categories || [],
     linkedAssets: bucket.linkedAssets || [],
     notes: bucket.notes || '',
   })
@@ -331,11 +420,16 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
       ? form.linkedAssets.filter(x => x !== id)
       : [...form.linkedAssets, id])
 
+  const togglePlanCategory = (cat) =>
+    set('categories', form.categories.includes(cat)
+      ? form.categories.filter(x => x !== cat)
+      : [...form.categories, cat])
+
   // Group holdings by category for quick-select
   const holdingsByCategory = useMemo(() => {
     const groups = {}
     for (const h of holdings) {
-      const cat = getAssetCategory(h.coin_id)
+      const cat = holdingCategory(h)
       if (!groups[cat]) groups[cat] = []
       groups[cat].push(h)
     }
@@ -374,6 +468,9 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
       targetAmount: form.targetMode === 'fixed' && form.targetAmount ? parseFloat(form.targetAmount) : null,
       targetPct: form.targetMode === 'pct' && form.targetPct ? parseFloat(form.targetPct) : null,
       monthlyWithdrawal: form.monthlyWithdrawal ? parseFloat(form.monthlyWithdrawal) : null,
+      monthlyContribution: form.monthlyContribution ? parseFloat(form.monthlyContribution) : null,
+      manualAmount: form.manualAmount ? parseFloat(form.manualAmount) : null,
+      categories: form.categories,
       linkedAssets: form.linkedAssets,
       notes: form.notes.trim(),
     }
@@ -438,11 +535,44 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
             )}
           </div>
 
-          <label className="vp-field">
-            <span>Monthly Withdrawal <span style={{ opacity: .5, fontWeight: 400 }}>(optional, for runway)</span></span>
-            <input type="number" min="0" value={form.monthlyWithdrawal} onChange={e => set('monthlyWithdrawal', e.target.value)}
-              placeholder="e.g. 500" className="vp-input" />
-          </label>
+          <div className="vp-field-row">
+            <label className="vp-field">
+              <span>Monthly Contribution <span style={{ opacity: .5, fontWeight: 400 }}>(adding)</span></span>
+              <input type="number" min="0" value={form.monthlyContribution} onChange={e => set('monthlyContribution', e.target.value)}
+                placeholder="e.g. 300" className="vp-input" />
+            </label>
+            <label className="vp-field">
+              <span>Monthly Withdrawal <span style={{ opacity: .5, fontWeight: 400 }}>(drawing)</span></span>
+              <input type="number" min="0" value={form.monthlyWithdrawal} onChange={e => set('monthlyWithdrawal', e.target.value)}
+                placeholder="e.g. 500" className="vp-input" />
+            </label>
+          </div>
+
+          {/* Plan by asset category — always available, no portfolio required */}
+          <div className="vp-field">
+            <span>Plan by category <span style={{ opacity: .5, fontWeight: 400 }}>(what this bucket holds)</span></span>
+            <div className="vp-cat-btns">
+              {Object.entries(CATEGORIES).map(([k, v]) => (
+                <button
+                  key={k}
+                  className={`vp-cat-btn${form.categories.includes(k) ? ' active' : ''}`}
+                  style={{ '--cat-color': v.color }}
+                  onClick={() => togglePlanCategory(k)}
+                >
+                  {v.icon} {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Manual current amount — for planning when assets aren't linked */}
+          {form.linkedAssets.length === 0 && (
+            <label className="vp-field">
+              <span>Current amount <span style={{ opacity: .5, fontWeight: 400 }}>(manual, if not linking assets)</span></span>
+              <input type="number" min="0" value={form.manualAmount} onChange={e => set('manualAmount', e.target.value)}
+                placeholder="e.g. 5000" className="vp-input" />
+            </label>
+          )}
 
           {holdings.length > 0 && (
             <div className="vp-field">
@@ -477,12 +607,11 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                       </div>
                     )}
                     {holdingsByCategory[cat].map(h => {
-                      const px = prices[h.coin_id]?.usd || 0
-                      const val = h.amount * px
+                      const val = holdingValue(prices, h)
                       return (
                         <label key={h.coin_id} className="vp-asset-check">
                           <input type="checkbox" checked={form.linkedAssets.includes(h.coin_id)} onChange={() => toggleAsset(h.coin_id)} />
-                          <span>{h.symbol?.toUpperCase() || h.name}</span>
+                          <span>{h.coin_symbol?.toUpperCase() || h.symbol?.toUpperCase() || h.coin_name || h.name}</span>
                           <span style={{ marginInlineStart: 'auto', opacity: .6, fontSize: '.78rem' }}>{fmtSmall(val)}</span>
                         </label>
                       )
@@ -497,7 +626,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                   {' · '}
                   {fmt(form.linkedAssets.reduce((s, id) => {
                     const h = holdings.find(x => x.coin_id === id)
-                    return s + (h ? (h.amount || 0) * (prices[id]?.usd || 0) : 0)
+                    return s + holdingValue(prices, h)
                   }, 0))} current value
                 </div>
               )}
@@ -553,31 +682,40 @@ export default function Vision() {
     return () => { alive = false }
   }, [])
 
-  const totalNW = holdings.reduce((s, h) => {
-    const px = prices[h.coin_id]?.usd || 0
-    return s + (h.amount || 0) * px
-  }, 0)
+  // Live net worth — uses the same value rule as the Dashboard (live price,
+  // falling back to cost basis) so Vision never shows $0 when prices lag.
+  const totalNW = holdings.reduce((s, h) => s + holdingValue(prices, h), 0)
 
   const getBucketValue = useCallback((bucket) => {
     if (!bucket.linkedAssets?.length) return null
     return bucket.linkedAssets.reduce((s, id) => {
       const h = holdings.find(x => x.coin_id === id)
-      const px = prices[id]?.usd || 0
-      return s + (h ? (h.amount || 0) * px : 0)
+      return s + holdingValue(prices, h)
     }, 0)
   }, [holdings, prices])
 
+  // A bucket's value: linked live assets if any, else the manual amount.
+  function bucketBaseValue(b) {
+    const linked = getBucketValue(b)
+    if (linked != null) return linked
+    return b.manualAmount || 0
+  }
+
   const allocatedValue = buckets
     .filter(b => !b.isRest)
-    .reduce((s, b) => s + (getBucketValue(b) || 0), 0)
+    .reduce((s, b) => s + bucketBaseValue(b), 0)
 
   const restValue = totalNW - allocatedValue
 
   function bucketCurrentValue(b) {
     if (b.isRest) return restValue >= 0 ? restValue : 0
-    const linked = getBucketValue(b)
-    return linked != null ? linked : 0
+    return bucketBaseValue(b)
   }
+
+  // Percentages fall back to the sum of bucket values when there are no live
+  // holdings, so a manual-only plan still shows meaningful shares (not 0%).
+  const effectiveNW = totalNW > 0 ? totalNW
+    : buckets.filter(b => !b.isRest).reduce((s, b) => s + bucketBaseValue(b), 0)
 
   const donutSlices = buckets.length > 0
     ? buckets.map(b => ({ color: b.color, value: bucketCurrentValue(b) })).filter(s => s.value > 0)
@@ -610,6 +748,11 @@ export default function Vision() {
 
   const totalMonthly = buckets.reduce((s, b) => s + (b.monthlyWithdrawal || 0), 0)
   const totalRunwayMonths = totalMonthly > 0 ? Math.floor(totalNW / totalMonthly) : null
+
+  // Monthly cash-flow plan across all buckets
+  const monthlyIn  = buckets.reduce((s, b) => s + (b.monthlyContribution || 0), 0)
+  const monthlyOut = totalMonthly
+  const monthlyNet = monthlyIn - monthlyOut
 
   return (
     <div className="page vp-page">
@@ -650,6 +793,28 @@ export default function Vision() {
             )}
           </div>
 
+          {/* ── Monthly plan ── */}
+          {(monthlyIn > 0 || monthlyOut > 0) && (
+            <div className="vp-summary vp-summary-monthly">
+              <div className="vp-stat">
+                <span className="vp-stat-label">Monthly In</span>
+                <span className="vp-stat-val" style={{ color: '#10b981' }}>+{fmt(monthlyIn)}</span>
+              </div>
+              <div className="vp-stat">
+                <span className="vp-stat-label">Monthly Out</span>
+                <span className="vp-stat-val" style={{ color: monthlyOut > 0 ? '#ef4444' : undefined }}>{monthlyOut > 0 ? '−' : ''}{fmt(monthlyOut)}</span>
+              </div>
+              <div className="vp-stat">
+                <span className="vp-stat-label">Net / Month</span>
+                <span className="vp-stat-val" style={{ color: monthlyNet >= 0 ? '#10b981' : '#ef4444' }}>{monthlyNet >= 0 ? '+' : '−'}{fmt(Math.abs(monthlyNet))}</span>
+              </div>
+              <div className="vp-stat">
+                <span className="vp-stat-label">Net / Year</span>
+                <span className="vp-stat-val" style={{ color: monthlyNet >= 0 ? '#10b981' : '#ef4444' }}>{monthlyNet >= 0 ? '+' : '−'}{fmt(Math.abs(monthlyNet) * 12)}</span>
+              </div>
+            </div>
+          )}
+
           {/* ── Category breakdown ── */}
           {holdings.length > 0 && <CategoryBreakdown holdings={holdings} prices={prices} />}
 
@@ -674,7 +839,7 @@ export default function Vision() {
                       <div key={b.id} className="vp-legend-row">
                         <span className="vp-legend-dot" style={{ background: b.color }} />
                         <span className="vp-legend-name">{b.name || BUCKET_TYPES[b.type]?.label}</span>
-                        <span className="vp-legend-pct">{pct(bucketCurrentValue(b), totalNW)}%</span>
+                        <span className="vp-legend-pct">{pct(bucketCurrentValue(b), effectiveNW)}%</span>
                       </div>
                     ))}
                   </div>
@@ -684,7 +849,7 @@ export default function Vision() {
                   {buckets.map(b => (
                     <BucketCard key={b.id} bucket={b}
                       currentValue={bucketCurrentValue(b)}
-                      totalNW={totalNW}
+                      totalNW={effectiveNW}
                       holdings={holdings}
                       prices={prices}
                       onEdit={setEditTarget}

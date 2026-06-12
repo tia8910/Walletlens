@@ -33,8 +33,11 @@ export function newBucket(overrides = {}) {
     targetAmount: null,   // fixed USD target
     targetPct: null,      // % of net worth target (0–100)
     isRest: false,        // true = auto shows everything not in other buckets
-    monthlyWithdrawal: null,
-    linkedAssets: [],     // array of coin_ids
+    monthlyWithdrawal: null,    // $ drawn down each month (runway)
+    monthlyContribution: null,  // $ added each month (goal progress)
+    manualAmount: null,         // manually-entered current value (planning without live holdings)
+    categories: [],             // planned asset-class focus, e.g. ['crypto','cash']
+    linkedAssets: [],     // array of coin_ids (live current value)
     color: BUCKET_COLORS[(id - 1) % BUCKET_COLORS.length],
     notes: '',
     createdAt: new Date().toISOString(),
