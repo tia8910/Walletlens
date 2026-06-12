@@ -255,7 +255,7 @@ function Drawer({ open, onClose }) {
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
                 }}>
-                  {th.logo ? <img src={th.logo} alt={th.name} style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
+                  {th.logo ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : th.icon}
                 </span>
                 <span className="wl-drawer-swatch-label">{th.name}</span>
               </button>
