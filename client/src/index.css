@@ -11530,3 +11530,55 @@ button:not(:disabled):active,
 
 /* Monthly plan summary tint */
 .vp-summary-monthly { margin-top: -.4rem; }
+
+/* ── Goal templates ── */
+.vp-templates { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
+.vp-tpl-btn { padding: .3rem .7rem; border-radius: 20px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: var(--text); font-size: .78rem; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s; white-space: nowrap; }
+.vp-tpl-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
+
+/* ── Drag and drop ── */
+.vp-drag-wrap { transition: opacity .15s; }
+.vp-drag-over { outline: 2px dashed rgba(255,255,255,.3); outline-offset: 3px; border-radius: 14px; }
+.vp-drag-handle { cursor: grab; font-size: 1rem; opacity: .3; padding: 0 .2rem; user-select: none; flex-shrink: 0; }
+.vp-drag-handle:hover { opacity: .7; }
+.vp-drag-handle:active { cursor: grabbing; }
+
+/* ── Bucket completion ── */
+.vp-card--done { opacity: .7; }
+.vp-card--done .vp-bar { background: #10b981 !important; }
+.vp-done-badge { font-size: .65rem; font-weight: 700; background: rgba(16,185,129,.18); color: #10b981; border: 1px solid rgba(16,185,129,.35); border-radius: 10px; padding: .1rem .45rem; letter-spacing: .03em; }
+.vp-goal-met { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.3); border-radius: 10px; margin-top: .5rem; font-size: .82rem; font-weight: 600; color: #10b981; }
+.vp-goal-met span { flex: 1; }
+.vp-goal-met-btn { padding: .2rem .6rem; border-radius: 8px; border: 1px solid rgba(16,185,129,.4); background: rgba(16,185,129,.15); color: #10b981; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.vp-goal-met-btn:hover { background: rgba(16,185,129,.28); }
+
+/* ── Auto-link suggestion ── */
+.vp-autolink-tip { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.25); border-radius: 10px; margin-bottom: .5rem; font-size: .8rem; color: var(--text); }
+.vp-autolink-tip span { flex: 1; opacity: .85; }
+.vp-autolink-btn { padding: .25rem .65rem; border-radius: 8px; border: 1px solid rgba(99,102,241,.4); background: rgba(99,102,241,.18); color: #a5b4fc; font-size: .75rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.vp-autolink-btn:hover { background: rgba(99,102,241,.32); }
+
+/* ── Empty-state tip ── */
+.vp-empty-tip { font-size: .84rem; opacity: .7; margin: .3rem 0 .8rem; line-height: 1.5; }
+
+/* ── Export PDF button ── */
+.vp-export-btn { display: flex; align-items: center; gap: .35rem; padding: .4rem .8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: var(--text-muted); font-size: .78rem; font-weight: 600; cursor: pointer; transition: background .15s; flex-shrink: 0; }
+.vp-export-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+
+/* ── Dashboard holding action buttons ── */
+.dvx-holding-actions { display: none; flex-direction: column; gap: 2px; margin-left: .35rem; flex-shrink: 0; }
+.dvx-holding:hover .dvx-holding-actions { display: flex; }
+.dvx-ha-btn { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); font-size: .8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .12s, border-color .12s; }
+.dvx-ha-btn:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.22); }
+
+/* ── Print / Export PDF ── */
+@media print {
+  .shell-nav, .shell-header, .dvx-tabs, .vp-btn-add,
+  .vp-export-btn, .back-btn, .vp-card-actions,
+  .vp-ai-btn, .vp-modal-backdrop, .vp-drag-handle { display: none !important; }
+  .vp-page { padding: 0 !important; background: #fff !important; color: #111 !important; }
+  .vp-card { break-inside: avoid; border: 1px solid #ddd !important; border-radius: 10px !important; background: #fff !important; box-shadow: none !important; }
+  .vp-summary { background: #f5f5f5 !important; border-radius: 10px; padding: .5rem 1rem; }
+  .vp-ai { break-inside: avoid; }
+  body { background: #fff !important; }
+}
