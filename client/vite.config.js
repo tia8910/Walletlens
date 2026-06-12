@@ -74,6 +74,20 @@ export default defineConfig({
           if (id.includes('/src/data/assets') || id.includes('/src/data/trackCoins')) {
             return 'asset-data'
           }
+          // Glossary (42 KB) — only used by Learn page; isolated so a term
+          // edit doesn't bust the Learn chunk or appear in any other bundle.
+          if (id.includes('/src/data/glossary')) {
+            return 'glossary-data'
+          }
+          // Comparisons (14 KB) — only used by Compare page.
+          if (id.includes('/src/data/comparisons')) {
+            return 'comparisons-data'
+          }
+          // Arabic blog posts (46 KB) — isolated from the English blog-data
+          // chunk so an Arabic content edit only invalidates this chunk.
+          if (id.includes('/src/data/arabicBlog')) {
+            return 'arabic-blog-data'
+          }
         },
       },
       // Suppress false-positive circular-dependency warnings from recharts internals

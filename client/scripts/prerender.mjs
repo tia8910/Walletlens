@@ -26,7 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
 const PUBLIC = resolve(__dirname, '..', 'public')
 const ORIGIN = 'https://walletlens.live'
-const OG_IMAGE = `${ORIGIN}/og-image.svg`
+const OG_IMAGE = `${ORIGIN}/og-image.png`
 const TODAY = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
 const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
@@ -116,8 +116,31 @@ function mdToHtml(text) {
 // "Page with redirect" and "Duplicate, Google chose different canonical".
 const withSlash = (p) => (p === '/' || p.endsWith('/') ? p : p + '/')
 
+// Keep meta descriptions within Google's ~160-char display window so the
+// snippet shown in search results ends cleanly instead of being truncated
+// mid-word by the engine. Prefers a sentence boundary; falls back to the last
+// word boundary + ellipsis. Anything already within budget is returned as-is.
+// Append the " | WalletLens" brand suffix to a title only when the result
+// still fits Google's ~60-char title display. For long editorial titles the
+// brand is dropped so the keyword-rich part shows in full instead of the brand
+// being truncated mid-word. (Brand is still conveyed via og:site_name + JSON-LD.)
+const BRAND_SUFFIX = ' | WalletLens'
+const brandTitle = (t) => (t.length + BRAND_SUFFIX.length <= 60 ? t + BRAND_SUFFIX : t)
+
+function clampDesc(s, max = 158) {
+  if (!s || s.length <= max) return s
+  const slice = s.slice(0, max + 1)
+  const sentEnd = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '))
+  if (sentEnd >= 100) return s.slice(0, sentEnd + 1).trim()
+  const sp = slice.lastIndexOf(' ')
+  // Trim a dangling word and any trailing connector punctuation so the snippet
+  // reads "fully free…" rather than "fully free,…".
+  return (sp > 0 ? s.slice(0, sp) : s.slice(0, max)).replace(/[\s,;:.—–-]+$/, '') + '…'
+}
+
 function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false }) {
   const url = ORIGIN + withSlash(path)
+  description = clampDesc(description)
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
     html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
@@ -267,55 +290,10 @@ write('/', buildPage({
   description: 'WalletLens is a free portfolio & net worth tracker with live prices for crypto, US stocks, gold and cash. No account — your data stays on your device.',
   bodyHtml: homeBody,
   jsonLd: [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'WalletLens',
-      alternateName: ['WalletLens Portfolio Tracker', 'WalletLens Net Worth Tracker'],
-      url: ORIGIN + '/',
-      description: 'Free, private net worth and portfolio tracker for crypto, US stocks, gold, silver, cash and FX. No account required — data stays on your device. Includes AI analysis, voice import, screenshot import, price alerts, and the Magic Indicator.',
-      applicationCategory: 'FinanceApplication',
-      applicationSubCategory: 'Portfolio Tracker',
-      operatingSystem: 'Web, iOS, Android, Windows, macOS, Linux',
-      browserRequirements: 'Modern browser',
-      isAccessibleForFree: true,
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      featureList: [
-        'Track crypto, stocks, gold, silver, cash and FX in one dashboard',
-        'No account or sign-up required',
-        'All portfolio data stored locally on device — never sent to a server',
-        'AI portfolio analysis with health score, risk scan, and trade recommendations',
-        'Import holdings from a screenshot of any exchange or broker app',
-        'Add holdings by voice in English or Arabic',
-        'Multi-target sell plans with live progress tracking',
-        'Magic Indicator: single direction (Buy/Sell) merging 5 on-chain and technical signals',
-        'Price alerts with push notifications',
-        'Chrome browser extension',
-        'Backup and restore with a single QR code — no account needed',
-        'Offline support via service worker',
-      ],
-      inLanguage: ['en', 'ar'],
-      screenshot: ORIGIN + '/og-image.svg',
-      author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN + '/' },
-      publisher: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN + '/' },
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.8',
-        ratingCount: '312',
-        bestRating: '5',
-        worstRating: '1',
-      },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'WalletLens',
-      url: ORIGIN + '/',
-      logo: ORIGIN + '/icon-512.png',
-      description: 'Free, private net worth tracker for crypto, US stocks, gold, silver, cash and FX. No account — your data stays on your device.',
-      sameAs: ['https://github.com/tia8910/walletlens'],
-      contactPoint: { '@type': 'ContactPoint', email: 'contact@walletlens.live', contactType: 'customer support' },
-    },
+    // WebApplication + Organization are emitted once site-wide from the global
+    // JSON-LD in index.html (single canonical instance, one aggregateRating).
+    // The homepage only adds its page-specific FAQPage to avoid duplicate /
+    // conflicting entities that Google flags as low-quality structured data.
     {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
@@ -370,20 +348,12 @@ ${compareRow('Installable app (PWA)', ['Yes', 'Yes', 'Web', 'Yes', 'No'])}
 `
 write('/free-net-worth-tracker', buildPage({
   path: '/free-net-worth-tracker',
-  title: 'Free Net Worth Tracker — Manage All Your Investments | WalletLens',
+  title: 'Free Net Worth Tracker — All Your Investments | WalletLens',
   description: 'A free net worth tracker to manage all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
   bodyHtml: fnwtBody,
   jsonLd: [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'WalletLens',
-      url: ORIGIN + '/',
-      description: 'Free net worth tracker for crypto, stocks, gold, cash and FX. No account — data stays on your device.',
-      applicationCategory: 'FinanceApplication',
-      isAccessibleForFree: true,
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-    },
+    // WebApplication is emitted once globally from index.html — not repeated
+    // here, to avoid a duplicate/conflicting entity for the same app.
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -454,7 +424,7 @@ ${faq.html}
 <p><a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/import-portfolio-from-screenshot', buildPage({
     path: '/import-portfolio-from-screenshot',
-    title: 'Import Your Portfolio From a Screenshot — Free, No Account | WalletLens',
+    title: 'Import Your Portfolio From a Screenshot — Free | WalletLens',
     description: 'WalletLens reads a screenshot of your holdings from any exchange, broker or wallet and turns it into a tracked portfolio automatically — free, no account, no CSV, data stays on your device. The only net-worth tracker with AI screenshot import.',
     bodyHtml: body,
     jsonLd: [
@@ -510,7 +480,7 @@ ${faq.html}
 <p><a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/add-holdings-by-voice', buildPage({
     path: '/add-holdings-by-voice',
-    title: 'Add Crypto & Stock Holdings by Voice — Free, English & Arabic | WalletLens',
+    title: 'Add Holdings by Voice — Free, English & Arabic | WalletLens',
     description: 'WalletLens lets you add your portfolio holdings just by speaking — AI turns your voice into structured holdings in English or Arabic. Free, no account, hands-free, data stays on your device. The only net-worth tracker with voice import.',
     bodyHtml: body,
     jsonLd: [
@@ -872,7 +842,7 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/learn/' + t.slug, buildPage({
     path: '/learn/' + t.slug,
-    title: `What Is ${t.term}? Definition & Example | WalletLens`,
+    title: `What Is ${t.term}? Definition & Example`,
     description: t.short,
     bodyHtml: learnBody,
     jsonLd: [
@@ -1022,7 +992,7 @@ ${POSTS.map(p => `
 `
 write('/blog', buildPage({
   path: '/blog',
-  title: 'Blog — Portfolio Tracking, Crypto Investing & Market Analysis | WalletLens',
+  title: 'Blog — Portfolio Tracking & Crypto Investing | WalletLens',
   description: 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.',
   bodyHtml: blogBody,
 }))
@@ -1079,7 +1049,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
   const hasAr = AR_POSTS.some(a => a.slug === p.slug)
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
-    title: `${p.title} | WalletLens`,
+    title: brandTitle(p.title),
     description: p.summary,
     bodyHtml: articleHtml,
     jsonLd,
@@ -1130,7 +1100,7 @@ for (const p of AR_POSTS) {
   ]
   write('/ar/blog/' + p.slug, buildPage({
     path: '/ar/blog/' + p.slug,
-    title: `${p.title} | WalletLens`,
+    title: brandTitle(p.title),
     description: p.summary,
     bodyHtml: articleHtml,
     lang: 'ar',
@@ -1158,7 +1128,7 @@ const aboutFaqs = [
 ]
 write('/about', buildPage({
   path: '/about',
-  title: 'About WalletLens — Free Net Worth Tracker for Crypto, Stocks & Gold',
+  title: 'About WalletLens — Free Private Net Worth Tracker',
   description: 'WalletLens is a free, private net worth tracker for all your investments — crypto, stocks, gold, silver, cash & FX in one dashboard. No account, no server, no data collection. Learn what it does, who it is for, and how it compares.',
   bodyHtml: `
 <h1>About WalletLens — The Free, Private Net Worth Tracker</h1>
@@ -1180,16 +1150,8 @@ write('/about', buildPage({
 ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 <p><a href="/dashboard">Open WalletLens free</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog/best-free-net-worth-tracker">Best free net worth tracker guide</a> · <a href="/blog">Read the blog</a> · <a href="/privacy">Privacy Policy</a> · <a href="mailto:contact@walletlens.live">contact@walletlens.live</a></p>
 `,
-  jsonLd: [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'WalletLens',
-      url: ORIGIN + '/',
-      logo: ORIGIN + '/icon-512.svg',
-      description: 'Free, private net worth tracker for crypto, stocks, gold, silver, cash and FX.',
-    },
-  ],
+  // Organization is emitted once globally from index.html (the richer instance
+  // with sameAs + contactPoint); the About page adds no duplicate of its own.
 }))
 
 // ── FAQ ──────────────────────────────────────────────────────────────────────
@@ -1458,6 +1420,27 @@ for (const r of APP_ROUTES) {
   }))
 }
 console.log(`Prerendered ${APP_ROUTES.length} app-route shells (noindex).`)
+
+// ── Deleted-route redirect stubs ───────────────────────────────────────────
+// GitHub Pages ignores _redirects. For removed pages that Googlebot has cached
+// (shows up in Search Console as "Not found 404"), we emit a prerendered HTML
+// stub with meta-refresh + canonical pointing to the replacement URL, plus
+// noindex,follow. This gives Googlebot a 200 with a clear redirect signal,
+// dequeuing the 404 from Search Console without creating a new indexable page.
+function writeRedirect(fromPath, toPath, title) {
+  const toUrl = ORIGIN + withSlash(toPath)
+  let html = template
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,    `$1${esc(toUrl)}$2`)
+  html = html.replace(/<meta name="robots" content="[^"]*"\s*\/?>/, '<meta name="robots" content="noindex, follow" />')
+  html = html.replace('</head>', `  <meta http-equiv="refresh" content="0;url=${esc(toUrl)}" />\n</head>`)
+  const seo = `<div id="prerender-content" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7"><p>This page has moved. <a href="${esc(toUrl)}">Continue →</a></p></div>`
+  html = html.replace('<div id="root">', `<div id="root">${seo}`)
+  write(fromPath, html)
+}
+
+writeRedirect('/market', '/dashboard', 'Market — WalletLens')
+console.log('Prerendered /market redirect stub → /dashboard.')
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.

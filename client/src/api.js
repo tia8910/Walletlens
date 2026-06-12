@@ -328,6 +328,11 @@ function _symbolForId(id, holdings) {
   if (h?.coin_symbol) return String(h.coin_symbol).toUpperCase();
   return null;
 }
+// Module-level in-memory mirror of the chart localStorage cache.
+// Keeps getChartData from parsing potentially large JSON on every call.
+const _CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
+let _chartCache = (() => { try { return JSON.parse(localStorage.getItem(_CHART_CACHE_KEY) || '{}'); } catch { return {}; } })();
+
 let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
@@ -399,6 +404,25 @@ async function fetchMetalsLive() {
   return metalCache || {};
 }
 
+// ─── Binance bStocks — tokenized 1:1-backed securities (launched June 2026) ───
+// These trade as /USDT pairs on the main Binance exchange (api.binance.com).
+// Map: WalletLens ticker (lowercase) → Binance symbol
+const BSTOCK_SYMBOLS = {
+  nvdab: 'NVDABUSDT',
+  tslab: 'TSLAB' + 'USDT',
+  mubb:  'MUBB'  + 'USDT',
+  sndkb: 'SNDKB' + 'USDT',
+  crclb: 'CRCLB' + 'USDT',
+}
+// For historical charts: map bStock → underlying US stock on Stooq
+const BSTOCK_UNDERLYING = {
+  'stock:nvdab': 'nvda.us',
+  'stock:tslab': 'tsla.us',
+  'stock:mubb':  'mu.us',
+  'stock:sndkb': 'sndk.us',
+  'stock:crclb': 'crcl.us',
+}
+
 // ─── Real-time US stock prices via Stooq (CORS-enabled CSV) ───
 // Returns { [coin_id]: { usd, usd_24h_change, name } } for the requested IDs.
 function parseStooqRow(csv) {
@@ -424,7 +448,30 @@ async function fetchStockLive(coinId) {
 
   const tickerUp = ticker.toUpperCase();
 
-  // ── 0. Static prices file served from same origin (no CORS, always works) ──
+  // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
+  // Route through Deno proxy first (bypasses CORS + regional Binance geo-blocks),
+  // then try direct as fallback.
+  const binanceSymbol = BSTOCK_SYMBOLS[ticker.toLowerCase()];
+  if (binanceSymbol) {
+    const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+    for (const url of [DENO_PROXY(binanceUrl), binanceUrl]) {
+      try {
+        const res = await fetchWithTimeout(url, 6000);
+        if (res.ok) {
+          const data = await res.json();
+          const price = parseFloat(data.lastPrice);
+          const pct   = parseFloat(data.priceChangePercent);
+          if (isFinite(price) && price > 0) {
+            const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
+            stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
+            return parsed;
+          }
+        }
+      } catch { /* try next */ }
+    }
+  }
+
+  // ── 0b. Static prices file served from same origin (no CORS, always works) ──
   const staticPrices = await fetchStaticStockPrices()
   if (staticPrices?.[coinId]) {
     const p = staticPrices[coinId]
@@ -432,7 +479,7 @@ async function fetchStockLive(coinId) {
     return p;
   }
 
-  // ── 1. Stock price proxy (our own CORS-safe proxy, most reliable on mobile) ──
+  // ── 1. Stock price proxy (CORS-safe proxy, most reliable on mobile) ──
   if (STOCK_WORKER_URL) {
     try {
       const res = await fetchWithTimeout(`${STOCK_WORKER_URL}?symbol=${encodeURIComponent(tickerUp)}`, 7000);
@@ -742,6 +789,8 @@ function stooqSymbolFor(id) {
   if (id === SILVER_ID) return 'xagusd';
   if (id === COPPER_ID) return 'xcuusd';
   if (id === PLATINUM_ID) return 'xptusd';
+  // bStocks: use underlying stock history (NVDAB → nvda.us, etc.)
+  if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id];
   if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
   return null;
 }
@@ -1319,12 +1368,9 @@ export const api = {
     // Localstorage cache: 5 min TTL per (id, days). Returns cached series
     // immediately if fresh, otherwise tries CoinGecko, then CoinCap, then
     // falls back to whatever we have in 30d signals cache.
-    const CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
     const CHART_TTL = 5 * 60 * 1000;
-    let chartCache = {};
-    try { chartCache = JSON.parse(localStorage.getItem(CHART_CACHE_KEY) || '{}'); } catch {}
     const cacheKey = `${id}::${days}`;
-    const hit = chartCache[cacheKey];
+    const hit = _chartCache[cacheKey];
     if (hit && Date.now() - hit.t < CHART_TTL && Array.isArray(hit.v) && hit.v.length > 0) {
       return hit.v;
     }
@@ -1337,8 +1383,8 @@ export const api = {
         price,
       }));
       try {
-        chartCache[cacheKey] = { t: Date.now(), v: series };
-        localStorage.setItem(CHART_CACHE_KEY, JSON.stringify(chartCache));
+        _chartCache[cacheKey] = { t: Date.now(), v: series };
+        localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache));
       } catch {}
       return series;
     };
