@@ -575,7 +575,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         <h2>Transactions</h2>
         <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
           background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(var(--g-rgb),0.15)',
-          color: showForm ? '#f87171' : 'var(--g)',
+          color: showForm ? '#f87171' : 'var(--g-ink)',
           border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(var(--g-rgb),0.3)'}`,
           borderRadius: '10px', padding: '0.4rem 0.85rem',
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
@@ -638,7 +638,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <div className="dropdown">
                       {coinResults.map(c => (
                         <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                          {c.thumb && <img src={c.thumb} alt="" width={24} height={24} loading="lazy" decoding="async" style={{ borderRadius: '50%' }} />}
+                          {c.thumb && <img src={c.thumb} alt={(c.symbol || "coin") + " logo"} width={24} height={24} style={{ borderRadius: '50%' }} />}
                           <span>{c.name}</span>
                           <small>{c.symbol.toUpperCase()}</small>
                         </div>
@@ -1002,7 +1002,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       {confirmNoneOpen && (
         <div className="bs-confirm-overlay" style={{ position: 'fixed', zIndex: 1000 }} onClick={() => setConfirmNoneOpen(false)}>
           <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
-            <div className="bs-confirm-icon" style={{ color: form.type === 'buy' ? 'var(--g)' : '#f87171' }}>
+            <div className="bs-confirm-icon" style={{ color: form.type === 'buy' ? 'var(--g-ink)' : '#f87171' }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
               </svg>
@@ -1109,7 +1109,7 @@ function TxLogo({ image, symbol, type, isPositive, badgeClass }) {
     return (
       <img
         src={image}
-        alt=""
+        alt={(sym || 'coin') + ' logo'}
         width={36}
         height={36}
         className="tx-coin-img"
@@ -1121,7 +1121,7 @@ function TxLogo({ image, symbol, type, isPositive, badgeClass }) {
     return (
       <img
         src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`}
-        alt=""
+        alt="coin logo"
         width={36}
         height={36}
         className="tx-coin-img"

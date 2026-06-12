@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react'
 
-// "Living Net Worth" landing background — LIGHT theme, on-brand & premium.
+// "Living Net Worth" landing background — DARK theme, on-brand & premium.
 // Layers (back → front):
-//  1. Soft mint-white brand gradient base + faint radial glow
-//  2. Pastel aurora orbs slowly drifting (premium depth)
-//  3. Two parallax "equity curve" lines flowing & trending upward with a
-//     green gradient area fill (your net worth growing)
+//  1. Deep green-black brand gradient base + emerald top glow
+//  2. Aurora orbs drifting (additive glow → they pop on dark)
+//  3. Two parallax "equity curve" lines trending upward with a glowing
+//     green area fill (your net worth growing)
 //  4. A live pulse dot riding the front curve's leading edge
-//  5. Floating gain labels (+$ / +%) that rise and fade
-//  6. Soft light scrim so dark text stays crystal clear
+//  5. Subtle floating gain labels (+$ / +%) that rise and fade
+//  6. Soft dark vignette so white text stays crystal clear
 // Respects prefers-reduced-motion and pauses when the tab is hidden.
 export default function LandingBackground() {
   const canvasRef = useRef(null)
@@ -34,23 +34,23 @@ export default function LandingBackground() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
-    // ── Soft mint-white brand base ──────────────────────────────────────────
+    // ── Deep green-black brand base ─────────────────────────────────────────
     function paintBase() {
       const g = ctx.createLinearGradient(0, 0, w * 0.4, h)
-      g.addColorStop(0,   '#f1f8f4')
-      g.addColorStop(0.5, '#e9f3ee')
-      g.addColorStop(1,   '#dfeee7')
+      g.addColorStop(0,   '#07140e')
+      g.addColorStop(0.5, '#040f0a')
+      g.addColorStop(1,   '#020b07')
       ctx.fillStyle = g
       ctx.fillRect(0, 0, w, h)
-      // Faint brand glow from the top
-      const rg = ctx.createRadialGradient(w * 0.5, h * 0.08, 0, w * 0.5, h * 0.08, h * 0.7)
-      rg.addColorStop(0, 'rgba(16,185,129,0.10)')
+      // Emerald glow from the top
+      const rg = ctx.createRadialGradient(w * 0.5, h * 0.06, 0, w * 0.5, h * 0.06, h * 0.75)
+      rg.addColorStop(0, 'rgba(16,185,129,0.16)')
       rg.addColorStop(1, 'rgba(16,185,129,0)')
       ctx.fillStyle = rg
       ctx.fillRect(0, 0, w, h)
     }
 
-    // ── Aurora orbs (pastel, normal blend so they read on light) ────────────
+    // ── Aurora orbs (additive blend → glow on dark) ─────────────────────────
     const ORB_COLORS = [
       [16, 185, 129],   // emerald
       [45, 212, 191],   // teal
@@ -71,17 +71,19 @@ export default function LandingBackground() {
       }))
     }
     function drawOrbs() {
+      ctx.globalCompositeOperation = 'lighter'
       for (const o of orbs) {
         o.x += o.vx; o.y += o.vy; o.phase += 0.01
         if (o.x < -o.r) o.x = w + o.r; if (o.x > w + o.r) o.x = -o.r
         if (o.y < -o.r) o.y = h + o.r; if (o.y > h + o.r) o.y = -o.r
-        const pulse = 0.09 + Math.sin(o.phase) * 0.03
+        const pulse = 0.10 + Math.sin(o.phase) * 0.035
         const grad = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r)
         grad.addColorStop(0, `rgba(${o.c[0]},${o.c[1]},${o.c[2]},${pulse})`)
         grad.addColorStop(1, `rgba(${o.c[0]},${o.c[1]},${o.c[2]},0)`)
         ctx.fillStyle = grad
         ctx.fillRect(o.x - o.r, o.y - o.r, o.r * 2, o.r * 2)
       }
+      ctx.globalCompositeOperation = 'source-over'
     }
 
     // ── Equity curves ───────────────────────────────────────────────────────
@@ -103,7 +105,7 @@ export default function LandingBackground() {
       // Area fill
       const fill = ctx.createLinearGradient(0, h * 0.5, 0, h)
       const c = layer === 0 ? '16,185,129' : '45,212,191'
-      fill.addColorStop(0, `rgba(${c},${layer === 0 ? 0.16 : 0.10})`)
+      fill.addColorStop(0, `rgba(${c},${layer === 0 ? 0.20 : 0.12})`)
       fill.addColorStop(1, `rgba(${c},0)`)
       ctx.beginPath()
       ctx.moveTo(0, h)
@@ -116,22 +118,22 @@ export default function LandingBackground() {
       // Glowing stroke
       ctx.beginPath()
       pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
-      ctx.strokeStyle = layer === 0 ? 'rgba(5,150,105,0.85)' : 'rgba(13,148,136,0.45)'
+      ctx.strokeStyle = layer === 0 ? 'rgba(52,211,153,0.95)' : 'rgba(45,212,191,0.5)'
       ctx.lineWidth = layer === 0 ? (mobile ? 2.2 : 3) : 1.6
       ctx.shadowColor = layer === 0 ? '#10b981' : '#2dd4bf'
-      ctx.shadowBlur = layer === 0 ? (mobile ? 8 : 14) : 6
+      ctx.shadowBlur = layer === 0 ? (mobile ? 10 : 16) : 7
       ctx.stroke()
       ctx.shadowBlur = 0
 
       return pts
     }
 
-    // ── Floating gain labels ────────────────────────────────────────────────
+    // ── Floating gain labels (subtle, kept toward the curves) ───────────────
     let labels = []
     function maybeSpawnLabel(frontPts) {
-      const cap = mobile ? 4 : 7
+      const cap = mobile ? 3 : 5
       if (labels.length >= cap) return
-      if (Math.random() > (mobile ? 0.018 : 0.03)) return
+      if (Math.random() > (mobile ? 0.012 : 0.02)) return
       const idx = Math.floor(Math.random() * frontPts.length)
       const [x, y] = frontPts[idx]
       const gold = Math.random() < 0.18
@@ -140,7 +142,7 @@ export default function LandingBackground() {
         ? `+${(Math.random() * 9 + 0.4).toFixed(1)}%`
         : `+$${(Math.random() * 4800 + 120).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
       labels.push({ x, y, text, alpha: 0, vy: 0.5 + Math.random() * 0.4, life: 0,
-        color: gold ? '#b8860b' : '#047857' })
+        color: gold ? '#fbbf24' : '#34d399' })
     }
     function drawLabels() {
       ctx.textAlign = 'center'
@@ -151,20 +153,19 @@ export default function LandingBackground() {
         l.y -= l.vy
         l.alpha = l.life < 20 ? l.life / 20 : Math.max(0, 1 - (l.life - 20) / 90)
         if (l.alpha <= 0) { labels.splice(i, 1); continue }
-        ctx.globalAlpha = l.alpha * 0.85
+        ctx.globalAlpha = l.alpha * 0.6
         ctx.fillStyle = l.color
         ctx.fillText(l.text, l.x, l.y)
         ctx.globalAlpha = 1
       }
     }
 
-    // ── Soft light scrim for text readability ───────────────────────────────
+    // ── Soft dark vignette so white text stays crisp ────────────────────────
     function drawScrim() {
-      const s = ctx.createLinearGradient(0, 0, 0, h)
-      s.addColorStop(0,    'rgba(244,250,247,0.35)')
-      s.addColorStop(0.4,  'rgba(244,250,247,0.5)')
-      s.addColorStop(0.66, 'rgba(244,250,247,0.32)')
-      s.addColorStop(1,    'rgba(244,250,247,0)')
+      const s = ctx.createRadialGradient(w * 0.5, h * 0.40, h * 0.08, w * 0.5, h * 0.45, h * 0.95)
+      s.addColorStop(0,   'rgba(2,11,7,0)')
+      s.addColorStop(0.7, 'rgba(2,11,7,0.18)')
+      s.addColorStop(1,   'rgba(2,11,7,0.45)')
       ctx.fillStyle = s
       ctx.fillRect(0, 0, w, h)
     }
@@ -185,9 +186,9 @@ export default function LandingBackground() {
         const pr = 4 + Math.sin(t * 6) * 1.5
         ctx.beginPath()
         ctx.arc(tip[0], tip[1], pr, 0, Math.PI * 2)
-        ctx.fillStyle = '#10b981'
+        ctx.fillStyle = '#34d399'
         ctx.shadowColor = '#10b981'
-        ctx.shadowBlur = 16
+        ctx.shadowBlur = 18
         ctx.fill()
         ctx.shadowBlur = 0
       }

@@ -87,7 +87,7 @@ export default function About() {
         </div>
 
         <h2>Get Started</h2>
-        <p>Ready to see your whole net worth in one place? <Link to="/dashboard">Open WalletLens free</Link> — no account needed. New to portfolio tracking? Start with our guide to the <Link to="/blog/best-free-net-worth-tracker">best free net worth tracker</Link>, or browse all our <Link to="/blog">investing guides on the blog</Link>.</p>
+        <p>Ready to see your whole net worth in one place? <Link to="/dashboard/">Open WalletLens free</Link> — no account needed. New to portfolio tracking? Start with our guide to the <Link to="/blog/best-free-net-worth-tracker/">best free net worth tracker</Link>, or browse all our <Link to="/blog/">investing guides on the blog</Link>.</p>
 
         <h2>Open Source</h2>
         <p>WalletLens is open source. You can inspect the code, report issues, or contribute on <a href="https://github.com/tia8910/walletlens" target="_blank" rel="noreferrer">GitHub</a>.</p>
@@ -97,8 +97,8 @@ export default function About() {
       </article>
       <footer className="doc-footer">
         <Link to="/">← Back to WalletLens</Link>
-        <Link to="/blog">Blog</Link>
-        <Link to="/privacy">Privacy Policy</Link>
+        <Link to="/blog/">Blog</Link>
+        <Link to="/privacy/">Privacy Policy</Link>
       </footer>
     </div>
   )

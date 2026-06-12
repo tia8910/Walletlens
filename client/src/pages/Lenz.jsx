@@ -91,7 +91,7 @@ export default function Lenz() {
           <span className="lz-chip">Use &amp; earn</span>
         </div>
         <div className="lz-cta">
-          <Link to="/airdrop" className="lz-btn lz-btn-primary">Earn $LENZ</Link>
+          <Link to="/airdrop/" className="lz-btn lz-btn-primary">Earn $LENZ</Link>
           <a href="#verify" className="lz-btn lz-btn-ghost">Verify on-chain</a>
           <a href="#hold" className="lz-btn lz-btn-ghost">How to hold</a>
         </div>
@@ -200,8 +200,8 @@ export default function Lenz() {
         <div className="lz-foot-brand"><LenzLogo size={26} /> <span>$LENZ · WalletLens</span></div>
         <nav className="lz-foot-links">
           <Link to="/">WalletLens</Link>
-          <Link to="/about">About</Link>
-          <Link to="/privacy">Privacy</Link>
+          <Link to="/about/">About</Link>
+          <Link to="/privacy/">Privacy</Link>
         </nav>
       </footer>
     </div>

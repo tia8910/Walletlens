@@ -70,117 +70,6 @@ function StepCard({ n, title, desc, delay = 0 }) {
   )
 }
 
-// ── Pain point card ───────────────────────────────────────────────────────
-function PainCard({ emoji, pain, solution, delay = 0, isRtl }) {
-  const ref = useRef(null)
-  const [vis, setVis] = useState(false)
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect() } }, { threshold: 0.15 })
-    obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [])
-  return (
-    <div ref={ref} className={`lp-pain-card ${vis ? 'lp-feat-vis' : ''}`} style={{ transitionDelay: `${delay}ms` }}>
-      <div className="lp-pain-emoji">{emoji}</div>
-      <p className="lp-pain-text">{pain}</p>
-      <div className="lp-pain-divider">{isRtl ? '←' : '→'}</div>
-      <p className="lp-pain-solution">{solution}</p>
-    </div>
-  )
-}
-
-// ── Live portfolio mockup: ticking counter + drawing SVG chart ────────────
-function LiveMockup({ label, change }) {
-  const [val, setVal]      = useState(248750.42)
-  const [points, setPoints] = useState([])
-  const [drawn, setDrawn]   = useState(0)
-  const pathRef = useRef(null)
-  const [pathLen, setPathLen] = useState(420)
-
-  // Live counter ticks up/down by tiny amounts so it feels alive
-  useEffect(() => {
-    const id = setInterval(() => {
-      setVal(v => Math.max(248000, v + (Math.random() - 0.35) * 14))
-    }, 900)
-    return () => clearInterval(id)
-  }, [])
-
-  // Generate a deterministic-ish upward-trending random walk for the chart
-  useEffect(() => {
-    const arr = []
-    let y = 78
-    for (let i = 0; i < 32; i++) {
-      y += (Math.random() - 0.62) * 7
-      y = Math.max(14, Math.min(86, y))
-      arr.push(y)
-    }
-    setPoints(arr)
-  }, [])
-
-  // Animate the line drawing itself
-  useEffect(() => {
-    if (points.length === 0) return
-    if (pathRef.current?.getTotalLength) setPathLen(pathRef.current.getTotalLength())
-    let raf
-    const t0 = performance.now()
-    const tick = (now) => {
-      const p = Math.min((now - t0) / 1800, 1)
-      setDrawn(p)
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [points])
-
-  if (points.length === 0) return null
-
-  const W = 320, H = 100
-  const step = W / (points.length - 1)
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${(i * step).toFixed(2)} ${p.toFixed(2)}`).join(' ')
-  const fill = `${line} L ${W} ${H} L 0 ${H} Z`
-  const tipX = (points.length - 1) * step
-  const tipY = points[points.length - 1]
-  const whole = Math.floor(val)
-  const cents = (val - whole).toFixed(2).slice(2)
-
-  return (
-    <div className="lp-live-card">
-      <div className="lp-live-header">
-        <span className="lp-live-label">{label}</span>
-        <span className="lp-live-status"><span className="lp-live-dot-anim" />LIVE</span>
-      </div>
-      <div className="lp-live-value">
-        ${whole.toLocaleString()}<span className="lp-live-cents">.{cents}</span>
-      </div>
-      <div className="lp-live-change">{change}</div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="lp-live-chart">
-        <defs>
-          <linearGradient id="lp-live-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#00ffaa" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#00ffaa" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={fill} fill="url(#lp-live-fill)" opacity={drawn} />
-        <path
-          ref={pathRef}
-          d={line}
-          fill="none"
-          stroke="#00ffaa"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={pathLen}
-          strokeDashoffset={pathLen * (1 - drawn)}
-          style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,170,0.55))' }}
-        />
-        {drawn > 0.96 && (
-          <circle cx={tipX} cy={tipY} r="4.5" fill="#00ffaa" className="lp-live-tip" />
-        )}
-      </svg>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────
 const ACCENT_PHRASES = {
   en: [
@@ -232,7 +121,7 @@ export default function Landing() {
   }, [])
 
   return (
-    <div className="lp lp-light">
+    <div className="lp">
       <LandingBackground />
 
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
@@ -309,27 +198,6 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="lp-hero-mockup">
-          <LiveMockup label={t('mockupLabel')} change={t('mockupChange')} />
-        </div>
-      </section>
-
-      {/* ══ PAIN POINTS / RESCUE ═══════════════════════════════════════ */}
-      <section className="lp-section lp-rescue-section">
-        <div className="lp-section-label">{t('painLabel')}</div>
-        <h2 className="lp-section-h2">
-          {t('painH2a')}<br />
-          <span style={{ color: 'var(--g)' }}>{t('painH2b')}</span>
-        </h2>
-        <p className="lp-section-sub" style={{ maxWidth: 560, margin: '0 auto 2.5rem' }}>
-          {t('painIntro')}
-        </p>
-        <div className="lp-pain-grid">
-          <PainCard delay={0}   isRtl={isRtl} emoji="😰" pain={t('pain1')} solution={t('sol1')} />
-          <PainCard delay={80}  isRtl={isRtl} emoji="💸" pain={t('pain2')} solution={t('sol2')} />
-          <PainCard delay={160} isRtl={isRtl} emoji="😴" pain={t('pain3')} solution={t('sol3')} />
-          <PainCard delay={240} isRtl={isRtl} emoji="🤯" pain={t('pain4')} solution={t('sol4')} />
-        </div>
       </section>
 
       {/* ══ STATS ══════════════════════════════════════════════════════ */}
@@ -352,49 +220,6 @@ export default function Landing() {
         <div className="lp-stat-item">
           <div className="lp-stat-val"><Counter to={4} /></div>
           <div className="lp-stat-lbl">{t('statClassesLbl')}</div>
-        </div>
-      </section>
-
-      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
-      <section className="lp-section lp-section-alt" id="browser-extension">
-        <div className="lp-section-label">Browser Extension</div>
-        <h2 className="lp-section-h2">
-          Your whole portfolio,<br />
-          <span style={{ color: 'var(--g)' }}>one click from your toolbar</span>
-        </h2>
-        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
-          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
-          24h change, holdings, market movers and buy/sell signals — right from your browser,
-          without opening the site. It syncs automatically and your data stays on your device.
-        </p>
-
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem', maxWidth: 860, margin: '0 auto 2rem', textAlign: 'left',
-        }}>
-          {[
-            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
-            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
-            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
-            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
-          ].map((b, i) => (
-            <div key={i} style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(74,222,128,0.15)',
-              borderRadius: '14px', padding: '1rem 1.1rem',
-            }}>
-              <div style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{b.e}</div>
-              <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{b.t}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5 }}>{b.d}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
-          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
-            Free · Works in Chrome, Edge, Brave &amp; Opera
-          </span>
         </div>
       </section>
 
@@ -547,7 +372,7 @@ export default function Landing() {
         <p className="lp-section-sub">{t('aiSub')}</p>
         <div className="lp-ai-grid">
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(0,255,170,0.12)',color:'#00ffaa'}}>
+            <div className="lp-ai-feat-icon" data-i="1">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div>
@@ -556,7 +381,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(255,215,0,0.12)',color:'#ffd700'}}>
+            <div className="lp-ai-feat-icon" data-i="2">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             </div>
             <div>
@@ -565,7 +390,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(239,68,68,0.12)',color:'#f87171'}}>
+            <div className="lp-ai-feat-icon" data-i="3">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <div>
@@ -574,7 +399,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(168,85,247,0.12)',color:'#c084fc'}}>
+            <div className="lp-ai-feat-icon" data-i="4">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             </div>
             <div>
@@ -583,7 +408,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(59,130,246,0.12)',color:'#60a5fa'}}>
+            <div className="lp-ai-feat-icon" data-i="5">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>
             </div>
             <div>
@@ -592,7 +417,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(20,184,166,0.12)',color:'#2dd4bf'}}>
+            <div className="lp-ai-feat-icon" data-i="6">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
             </div>
             <div>
@@ -601,7 +426,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(251,146,60,0.12)',color:'#fb923c'}}>
+            <div className="lp-ai-feat-icon" data-i="7">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div>
@@ -610,7 +435,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="lp-ai-feat">
-            <div className="lp-ai-feat-icon" style={{background:'rgba(167,139,250,0.12)',color:'#a78bfa'}}>
+            <div className="lp-ai-feat-icon" data-i="8">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div>
@@ -640,25 +465,62 @@ export default function Landing() {
         <h2 className="lp-section-h2">{t('assetTitle')}</h2>
         <div className="lp-asset-grid">
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(247,147,26,0.12)', color: '#f7931a' }}>₿</div>
+            <div className="lp-asset-icon" data-asset="btc">₿</div>
             <div className="lp-asset-name">{t('assetCrypto')}</div>
             <div className="lp-asset-desc">{t('assetCryptoDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(255,215,0,0.12)', color: '#ffd700' }}>Au</div>
+            <div className="lp-asset-icon" data-asset="gold">Au</div>
             <div className="lp-asset-name">{t('assetGold')}</div>
             <div className="lp-asset-desc">{t('assetGoldDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(192,192,192,0.12)', color: '#c0c0c0' }}>Ag</div>
+            <div className="lp-asset-icon" data-asset="silver">Ag</div>
             <div className="lp-asset-name">{t('assetSilver')}</div>
             <div className="lp-asset-desc">{t('assetSilverDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>$</div>
+            <div className="lp-asset-icon" data-asset="stocks">$</div>
             <div className="lp-asset-name">{t('assetStocks')}</div>
             <div className="lp-asset-desc">{t('assetStocksDesc')}</div>
           </div>
+        </div>
+      </section>
+
+      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
+      <section className="lp-section lp-section-alt" id="browser-extension">
+        <div className="lp-section-label">Browser Extension</div>
+        <h2 className="lp-section-h2">
+          Your whole portfolio,<br />
+          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>one click from your toolbar</span>
+        </h2>
+        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
+          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
+          24h change, holdings, market movers and buy/sell signals — right from your browser,
+          without opening the site. It syncs automatically and your data stays on your device.
+        </p>
+
+        <div className="lp-ext-feat-grid">
+          {[
+            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
+            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
+            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
+            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
+          ].map((b, i) => (
+            <div key={i} className="lp-ext-feat">
+              <div className="lp-ext-feat-icon">{b.e}</div>
+              <div className="lp-ext-feat-title">{b.t}</div>
+              <div className="lp-ext-feat-desc">{b.d}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
+          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
+            Free · Works in Chrome, Edge, Brave &amp; Opera
+          </span>
         </div>
       </section>
 
@@ -769,7 +631,7 @@ export default function Landing() {
       <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
         <div className="lp-section-label">Stay ahead</div>
         <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
-          Get market insights &<br /><span style={{ color:'var(--g)' }}>new features first</span>
+          Get market insights &<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>new features first</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
           Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
@@ -787,11 +649,14 @@ export default function Landing() {
           <span>WalletLens © {new Date().getFullYear()}</span>
         </div>
         <nav className="lp-footer-links">
-          <Link to="/free-net-worth-tracker" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
-          <Link to="/about" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
-          <Link to="/lenz" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
-          <Link to="/blog" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
-          <Link to="/privacy" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/free-net-worth-tracker/" onClick={() => track('landing_footer_nav', { to: 'free-net-worth-tracker' })}>Free Net Worth Tracker</Link>
+          <Link to="/about/" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
+          <Link to="/faq/" onClick={() => track('landing_footer_nav', { to: 'faq' })}>FAQ</Link>
+          <Link to="/lenz/" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
+          <Link to="/blog/" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
+          <Link to="/privacy/" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
+          <Link to="/terms/" onClick={() => track('landing_footer_nav', { to: 'terms' })}>{t('terms')}</Link>
+          <a href="mailto:contact@walletlens.live" onClick={() => track('landing_footer_nav', { to: 'contact' })}>Contact</a>
         </nav>
       </footer>
     </div>

@@ -7,11 +7,12 @@ import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import { requestPortfolioNotifPermission } from '../portfolioNotify'
 import InstallExtension from '../components/InstallExtension'
+import PortfolioGuardian from '../components/PortfolioGuardian'
 
 const SETTINGS_KEY = 'wl_settings'
 
 const ACCENTS = [
-  { id: 'green',  label: 'Green',  color: 'var(--g)' },
+  { id: 'green',  label: 'Green',  color: 'var(--g-ink)', fontWeight: 700 },
   { id: 'blue',   label: 'Blue',   color: '#38bdf8' },
   { id: 'purple', label: 'Purple', color: '#a78bfa' },
   { id: 'gold',   label: 'Gold',   color: '#fbbf24' },
@@ -230,6 +231,20 @@ export default function Settings() {
         <BiometricToggle />
       </div>
 
+      {/* ── Portfolio Guardian ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Portfolio Guardian
+        </h3>
+        <p className="settings-hint" style={{ marginBottom: '0.85rem' }}>
+          Dead Man's Switch — notifies your heirs if you stop opening WalletLens.
+        </p>
+        <PortfolioGuardian />
+      </div>
+
       {/* ── About ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title">ℹ️ About</h3>
@@ -239,7 +254,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Data storage</span><span style={{ color:'var(--g)' }}>100% local · never uploaded</span>
+            <span>Data storage</span><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>100% local · never uploaded</span>
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -247,7 +262,7 @@ export default function Settings() {
           </div>
           <div className="settings-divider"/>
           <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>
-            <a href="/privacy" style={{ color:'var(--g)', textDecoration:'none' }}>Privacy Policy</a>
+            <a href="/privacy" style={{ color: 'var(--g-ink)', fontWeight: 700, textDecoration:'none' }}>Privacy Policy</a>
           </div>
         </div>
       </div>
