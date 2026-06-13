@@ -15,7 +15,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   post-x:
@@ -35,14 +34,10 @@ jobs:
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
         run: node promo/post-x-agent.mjs
-      - name: Open review issue (draft mode only)
+      - name: Write draft to step summary
         if: ${{ hashFiles('promo/x-post.json') != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues" \
-            -d @promo/x-post.json > /dev/null \
-            && echo "X draft issue created."
+          echo "## 🐦 X Post Draft" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          node -e "const j=require('./promo/x-post.json'); console.log(j.body||j.title||JSON.stringify(j,null,2))" >> $GITHUB_STEP_SUMMARY
+          echo "Draft written to step summary (no issue created)."

@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  issues: write
+  contents: read
 
 jobs:
   generate-launch-copy:
@@ -33,14 +33,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node promo/launch-copy.mjs
 
-      - name: Open review issue (if copy was generated)
+      - name: Write draft to step summary
         if: ${{ hashFiles('promo/launch-copy.json') != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues" \
-            -d @promo/launch-copy.json > /dev/null \
-            && echo "Launch copy review issue created."
+          echo "## 🚀 Launch Copy Draft" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          node -e "const j=require('./promo/launch-copy.json'); console.log(j.body||j.title||JSON.stringify(j,null,2))" >> $GITHUB_STEP_SUMMARY
+          echo "Draft written to step summary (no issue created)."

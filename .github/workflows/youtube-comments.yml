@@ -38,9 +38,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Add social-draft label so these don't clutter the real bug/feature issues
+          node -e "
+            const fs = require('fs');
+            const j = JSON.parse(fs.readFileSync('promo/youtube-issue.json','utf8'));
+            j.labels = ['social-draft'];
+            fs.writeFileSync('promo/youtube-issue.json', JSON.stringify(j));
+          "
           curl -sf -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues" \
             -d @promo/youtube-issue.json > /dev/null \
-            && echo "Review issue created."
+            && echo "Review issue created (social-draft label applied)."
