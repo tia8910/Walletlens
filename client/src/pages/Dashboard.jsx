@@ -806,7 +806,7 @@ const EVAL_CATEGORIES = [
     color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
-      const avgPnlPct = totalValue > 0 ? enriched.reduce((s, h) => s + (h.pnl / Math.max(h.invested, 1)) * (h.value / totalValue), 0) * 100 : 0
+      const avgPnlPct = totalValue > 0 ? enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested, 1)) * (h.value / totalValue), 0) * 100 : 0
       if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
       if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
       if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits into stablecoins to lock in gains.` }
@@ -2794,7 +2794,8 @@ export default function Dashboard() {
       const pnl     = value - h.total_invested
       const pnlPct  = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
       const coin_image = h.coin_image || coinImages[h.coin_id] || ''
-      return { ...h, coin_image, price, value, pnl, pnlPct }
+      const pct24h  = prices[h.coin_id]?.usd_24h_change ?? 0
+      return { ...h, coin_image, price, value, pnl, pnlPct, pct24h }
     }).sort((a, b) => (b.value || b.total_invested) - (a.value || a.total_invested))
 
     const hasPortfolio = raw.length > 0
@@ -2806,8 +2807,10 @@ export default function Dashboard() {
     }
 
     const tv  = hasPrices ? raw.reduce((s, h) => s + h.value, 0) : raw.reduce((s, h) => s + h.total_invested, 0)
-    // Exclude stablecoins/cash from invested & P&L — they don't generate returns
-    const nonStables = raw.filter(h => categorizeAsset(h) !== 'cash')
+    // Exclude stablecoins/cash from invested & P&L — they don't generate returns.
+    // categorizeAsset() buckets stablecoins under 'crypto', so check isStablecoin
+    // explicitly too, otherwise USDT/USDC/DAI dilute the portfolio P&L%.
+    const nonStables = raw.filter(h => !isStablecoin(h.coin_id, h.coin_symbol) && categorizeAsset(h) !== 'cash')
     const ti  = nonStables.length > 0
       ? nonStables.reduce((s, h) => s + h.total_invested, 0)
       : raw.reduce((s, h) => s + h.total_invested, 0)

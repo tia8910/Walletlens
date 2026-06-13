@@ -910,7 +910,7 @@ export const api = {
         const avgCost = h.amount > 0 ? h.total_invested / h.amount : 0;
         const sold = Math.min(tx.amount, Math.max(0, h.amount));
         h.total_invested = Math.max(0, h.total_invested - avgCost * sold);
-        h.amount = Math.max(0, h.amount - tx.amount);
+        h.amount = Math.max(0, h.amount - sold);
       }
     }
 
