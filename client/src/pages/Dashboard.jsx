@@ -3905,7 +3905,8 @@ export default function Dashboard() {
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {grouped[cat].map(h => {
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
-                                const isStable      = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
+                                const isStable          = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
+                                const isCryptoOnly      = !isStable && categorizeAsset(h) === 'crypto'
                                 const hasPnl        = h.pnl !== 0 && !pricesFailed && !isStable
                                 const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
                                 const beDistance     = h.price > 0 && breakEvenPrice > 0
@@ -3992,6 +3993,18 @@ export default function Dashboard() {
                                           onClick={() => navigate('/vision', { state: { linkAsset: h.coin_id } })}>
                                           🗺️ Set Vision
                                         </button>
+                                        {isCryptoOnly && (
+                                          <button className="dvx-ha-btn"
+                                            onClick={() => navigate('/technicals')}>
+                                            📐 Technicals
+                                          </button>
+                                        )}
+                                        {isCryptoOnly && (
+                                          <button className="dvx-ha-btn"
+                                            onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } })}>
+                                            ✦ Magic Score
+                                          </button>
+                                        )}
                                       </div>
                                     )}
                                   </li>
