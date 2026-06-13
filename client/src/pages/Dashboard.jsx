@@ -13,6 +13,7 @@ import Logo from '../components/Logo'
 import Icon from '../components/Icon'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { applyMood } from '../moodEngine'
+import { getSoulGreeting } from '../soulGreeting'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
@@ -2495,7 +2496,7 @@ function AlertsSection({ enriched, prices, isDemo }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [portfolio, setPortfolio]         = useState([])
   const portfolioRef = useRef([])
   const [prices, setPrices]               = useState({})
@@ -2578,6 +2579,9 @@ export default function Dashboard() {
   })
   const tickerStart = useRef(null)
   const [tickerValue, setTickerValue] = useState(0)
+  // Brief "heartbeat" on the net-worth figure whenever a fresh price tick moves
+  // it — a small sign of life so the number feels live, not frozen.
+  const [valuePulse, setValuePulse] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [displayCurrency, setDisplayCurrency] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').displayCurrency || 'USD' } catch { return 'USD' }
@@ -2871,6 +2875,14 @@ export default function Dashboard() {
       if (ease < 1) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
+  }, [loaded, totalValue])
+
+  // Pulse the figure once whenever a fresh value lands (price poll / refresh).
+  useEffect(() => {
+    if (!loaded || totalValue <= 0) return
+    setValuePulse(true)
+    const id = setTimeout(() => setValuePulse(false), 900)
+    return () => clearTimeout(id)
   }, [loaded, totalValue])
 
   useEffect(() => {
@@ -3439,6 +3451,18 @@ export default function Dashboard() {
 
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
+            {!hidden && !isDemo && (() => {
+              const dayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
+              const dayBase = totalValue - dayPnLVal
+              const dayChangePct = dayBase > 0 ? (dayPnLVal / dayBase) * 100 : 0
+              const soul = getSoulGreeting({ dayChangePct, lang })
+              return (
+                <p className="dvx-soul" data-tone={soul.tone}>
+                  <span className="dvx-soul-emoji" aria-hidden="true">{soul.emoji}</span>
+                  <span className="dvx-soul-hello">{soul.hello}</span> — {soul.line}
+                </p>
+              )
+            })()}
             <p className="dvx-hero-label">
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
@@ -3475,7 +3499,7 @@ export default function Dashboard() {
                 }
               </button>
             </p>
-            <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''}`}>
+            <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''}`}>
               {hidden ? '••••••' : cv(loaded ? tickerValue : 0)}
             </h2>
             {wallets.length > 1 && (
