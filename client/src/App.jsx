@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo } from 'react'
+import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -196,7 +196,9 @@ const DrawerCyclingActions = memo(function DrawerCyclingActions() {
 })
 
 // ── Slide-out drawer ──────────────────────────────────────────────────
-function Drawer({ open, onClose }) {
+// Wrapped in memo so the drawer subtree doesn't re-render when unrelated App
+// state changes (e.g., quickStatsOpen, themeMenuOpen, shellReady).
+const Drawer = memo(function Drawer({ open, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
@@ -327,7 +329,7 @@ function Drawer({ open, onClose }) {
       </aside>
     </>
   )
-}
+})
 
 // ── App shell ─────────────────────────────────────────────────────────
 export default function App() {
@@ -347,6 +349,7 @@ export default function App() {
       p.startsWith('/ar/') || p.startsWith('/admin/')
   }, [location.pathname])
   const { locked, unlock } = useBiometricLock()
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
   const _guardianChecked = useRef(false)
   useEffect(() => {
@@ -540,7 +543,7 @@ export default function App() {
         </div>
       </header>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <Drawer open={drawerOpen} onClose={closeDrawer} />
 
       <main className="wl-content">
         <ErrorBoundary>

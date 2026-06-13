@@ -5,6 +5,7 @@ import App from './App'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack } from './analytics'
+import { initVitals } from './vitals'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -71,6 +72,8 @@ const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' 
 
 // Auto-track every click / selection across the app in GA.
 initAutoTrack()
+// Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
+initVitals()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

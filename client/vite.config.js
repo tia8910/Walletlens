@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { readFileSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -27,7 +28,18 @@ function swVersionPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), swVersionPlugin()],
+  plugins: [
+    react(),
+    swVersionPlugin(),
+    // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
+    process.env.ANALYZE && visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
+    }),
+  ].filter(Boolean),
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.
@@ -92,6 +104,17 @@ export default defineConfig({
           // chunk so an Arabic content edit only invalidates this chunk.
           if (id.includes('/src/data/arabicBlog')) {
             return 'arabic-blog-data'
+          }
+          // Technical analysis math (RSI, MACD, Bollinger, S/R) and the
+          // five-pillar composite indicator — only needed by Technicals page
+          // and Dashboard AI tab. Splitting keeps the main Dashboard chunk lean.
+          if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
+            return 'ta-libs'
+          }
+          // Arabic i18n extensions and calculator/price-asset lookup tables —
+          // small but only used by specific pages, so isolate for better cache hits.
+          if (id.includes('/src/data/arabic.') || id.includes('/src/data/calculators.') || id.includes('/src/data/priceAssets.')) {
+            return 'page-data'
           }
         },
       },

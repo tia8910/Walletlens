@@ -153,6 +153,12 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- Voice API (Deno Deploy) — prefetch so AI voice import connects faster -->
+    <link rel="dns-prefetch" href="https://walletlens.deno.dev" />
+    <!-- Coin image CDNs — icon fetches hit these on every portfolio load -->
+    <link rel="dns-prefetch" href="https://assets.coingecko.com" />
+    <link rel="dns-prefetch" href="https://coin-images.coingecko.com" />
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results
          and gives LLM answer engines a clean fact card to cite. -->
@@ -341,7 +347,7 @@
         </div>
       </div>
     </div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.jsx" fetchpriority="high"></script>
 
     <!-- X conversion tracking event — deferred to window load so it never
          competes with the initial render or module evaluation. -->
