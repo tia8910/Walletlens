@@ -11586,3 +11586,40 @@ button:not(:disabled):active,
   .vp-ai { break-inside: avoid; }
   body { background: #fff !important; }
 }
+
+/* ════════════════════════════════════════════════════
+   RENDERING PERFORMANCE
+   ════════════════════════════════════════════════════ */
+
+/* Drawer slides in via transform — own compositor layer avoids
+   layout recalcs on the page beneath it. */
+.wl-drawer {
+  will-change: transform;
+}
+/* Overlay fades opacity — isolate from the layout tree. */
+.wl-overlay {
+  will-change: opacity;
+}
+
+/* Topbar price ticker scrolls continuously — layout containment ensures
+   ticker repaints don't invalidate the whole header. */
+.wl-price-ticker {
+  contain: layout style;
+}
+
+/* Cards that contain charts benefit from layout containment so a chart
+   update doesn't trigger a full-page reflow. */
+.wl-card,
+.wl-summary-card,
+.wl-chart-card {
+  contain: layout style;
+}
+
+/* Page-level fallback: reserve vertical space while lazy pages suspend
+   to prevent cumulative layout shift on hydration. */
+.wl-page-fallback {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

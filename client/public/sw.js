@@ -35,9 +35,15 @@ const PRICE_API_PATTERNS = [
   'blockchain.info',
 ]
 
-// Static CDN assets (icons, images) — cached indefinitely in STATIC cache
+// Static CDN assets (coin icons, logos) — cached indefinitely in CDN_CACHE.
+// These are content-addressed by coin ID and never change for a given coin,
+// so caching them prevents re-fetching ~100+ icons on every page load.
 const STATIC_CDN_PATTERNS = [
   'cdn.jsdelivr.net/npm/cryptocurrency-icons',
+  'assets.coingecko.com/coins/',
+  'coin-images.coingecko.com/coins/',
+  'assets.coincap.io/assets/icons/',
+  's2.coinmarketcap.com/static/img/coins/',
 ]
 
 const API_TTL_MS = 5 * 60 * 1000    // 5 minutes (price APIs)
