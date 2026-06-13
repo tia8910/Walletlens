@@ -1,0 +1,43 @@
+name: Feature Request
+description: Suggest an idea or improvement for WalletLens
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? We'd love to hear it. Fill in the details below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem or limitation you're hitting.
+      placeholder: "I always have to manually check X because there's no way to..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      placeholder: "Add a button on the holding row that..."
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area of the app?
+      options:
+        - Dashboard / Portfolio
+        - Technical Analysis
+        - AI & Magic Indicator
+        - Goals / Vision
+        - Price Alerts
+        - Import / Export
+        - Mobile / PWA
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Mockups, examples from other apps, or additional context.

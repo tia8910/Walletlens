@@ -1,110 +1,174 @@
+<div align="center">
+
+<img src="https://walletlens.live/icon-192.png" alt="WalletLens Logo" width="88" height="88" />
+
 # WalletLens
 
-**A 100% free, no-account, privacy-first all-asset portfolio tracker.**
-Track crypto, US stocks, precious metals, fiat and real estate in one unified net-worth dashboard — with AI insights, technical analysis and live prices. All your data stays on your device.
+### The free, private, no-account portfolio tracker with AI analysis
 
-🔗 **Live:** [walletlens.live](https://walletlens.live)
+Track **crypto, stocks, gold, real estate and cash** in one unified net-worth dashboard.  
+Live P&L · Technical Analysis · Magic Indicator · AI Coach · Voice Import
+
+[![Live App](https://img.shields.io/badge/🌐%20Live%20App-walletlens.live-00c853?style=for-the-badge)](https://walletlens.live)
+[![Stars](https://img.shields.io/github/stars/tia8910/Walletlens?style=for-the-badge&color=fbbf24&label=⭐%20Stars)](https://github.com/tia8910/Walletlens/stargazers)
+[![Forks](https://img.shields.io/github/forks/tia8910/Walletlens?style=for-the-badge&color=60a5fa)](https://github.com/tia8910/Walletlens/forks)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/tia8910/Walletlens/deploy.yml?style=for-the-badge&label=Deploy)](https://github.com/tia8910/Walletlens/actions/workflows/deploy.yml)
+[![License](https://img.shields.io/github/license/tia8910/Walletlens?style=for-the-badge&color=a78bfa)](LICENSE)
+[![PWA](https://img.shields.io/badge/PWA-Installable-3b82f6?style=for-the-badge)](https://walletlens.live)
+
+> **⭐ If WalletLens helps you track your wealth, a GitHub star helps others find it — thank you!**
+
+</div>
 
 ---
 
-## Why WalletLens
+## Why WalletLens?
 
-- **Free forever** — no paid tier, no ads, no upsells.
-- **No account** — no sign-up, email, or wallet connection. Open it and start tracking.
-- **Private by design** — all portfolio data lives in your browser (localStorage / IndexedDB). Nothing about your holdings is ever sent to a server.
-- **All assets, one place** — crypto, stocks, gold/silver/platinum/copper, fiat currencies, real estate and cash.
-- **Installable PWA** — works on iOS, Android and desktop, with offline support.
-- **Bilingual** — full English and Arabic (RTL) UI.
+| | WalletLens | Most trackers |
+|---|---|---|
+| Account required | ❌ None | ✅ Sign-up required |
+| Data leaves device | ❌ Never | ✅ Stored on servers |
+| Free | ✅ Forever | ⚠️ Freemium / paywalled |
+| Asset types | Crypto · Stocks · Metals · Real Estate · Cash | Usually crypto only |
+| AI analysis | ✅ Built-in | ❌ Paid add-on |
+| Offline support | ✅ PWA | ❌ |
+| Open source | ✅ | ❌ |
+
+---
 
 ## Features
 
-### Portfolio
-- **Net-worth dashboard** broken down by asset category (Crypto · Metals · Stocks · Real Estate · Cash) with allocation donut, category cards and per-category P&L.
-- **Multi-wallet** — track several wallets and view net worth per wallet or combined.
-- **Transaction tracking** with average cost, realized/unrealized P&L and performance over time.
-- **Excel / CSV import** to bulk-load history from any exchange, plus a backup/restore code.
+### 📊 Portfolio Dashboard
+- **All-asset net worth** — crypto, US stocks, gold/silver/platinum, fiat currencies, real estate and cash in one view
+- **Live P&L** — realized/unrealized gains, average cost basis, and portfolio health score
+- **Multi-wallet** — track multiple portfolios separately or combined
+- **Performance charts** — 4H · 1D · 7D · 30D with real historical snapshots
+- **Category breakdown** — allocation donut, per-category cards and sector heatmap
 
-### Analysis & AI
-- **Technical analysis** — per-holding RSI, MACD, Bollinger Bands, moving averages, ATR, trend and support/resistance, computed from daily candles.
-- **Magic Indicator** — one direction per crypto holding (Strong Buy → Distribute) that merges **five** signals: technical, on-chain (flow/turnover/supply proxies), volume, whale accumulation and fundamentals — with a confidence score.
-- **Smart sell plans** — exit ladders generated from real support/resistance, RSI, MACD and trend.
-- **AI Coach & Alpha** — portfolio risk analysis, concentration flags and trade ideas.
-- **Voice / typed import** — say *"I bought 1 Bitcoin and 1 Ethereum"* in English or Arabic; Claude parses multiple trades from one sentence.
-- **Optional AI Verdict** — a Claude-written thesis (bull/bear + next action) per asset.
+### 🤖 AI & Analysis
+- **Magic Indicator** — one composite signal per holding (Strong Buy → Distribute) merging 5 pillars: technical, on-chain, volume, whale flow, and fundamentals
+- **Technical Analysis** — RSI, MACD, Bollinger Bands, moving averages, ATR, support/resistance from daily candles
+- **AI Sell Plans** — auto-generated exit ladders based on real S/R levels and momentum
+- **Risk Scanner** — concentration risk, liquidity risk, and portfolio health insights
+- **AI Coach** — personalized portfolio advice powered by Claude AI
+- **Voice / typed import** — *"I bought 2 ETH at $3200 and 0.5 BTC"* — Claude parses multi-trade sentences in English or Arabic
 
-### Markets
-- **Live market overview**, trending coins, Fear & Greed index and news.
-- **Whale tracker** — live large on-chain BTC/ETH transactions and exchange flows.
-- **Smart alerts** — price alerts delivered as PWA push notifications.
-- **Academy** — beginner-friendly investing & crypto lessons.
+### 🐋 Markets & Alerts
+- **Whale tracker** — live large on-chain BTC/ETH moves and exchange flows
+- **Price alerts** — PWA push notifications when targets are hit
+- **Smart alerts** — volatility and momentum-based notifications
+- **Live news** — crypto news feed with sentiment scoring
+- **Fear & Greed index** — real-time market sentiment
 
-## Tech stack
+### 🎯 Goals & Planning
+- **Vision Goals** — bucket-based financial planning (Emergency Fund, Retirement, Down Payment…)
+- **Price Targets** — per-asset take-profit and stop-loss targets
+- **Goal completion tracking** — auto-detect when a bucket hits its target
+- **Weekly Report** — shareable portfolio summary card
 
-- **Frontend:** React 18, React Router 6, Recharts, Vite
-- **State / storage:** client-side only (localStorage / IndexedDB) — no backend required
-- **Hosting:** GitHub Pages (static `client/dist`, published to the `gh-pages` branch)
-- **AI:** Claude (`claude-sonnet-4-6`) via a tiny serverless endpoint that keeps the API key server-side
-- **Tests:** Vitest
+---
 
-### Live data sources (all free, no key required)
-Crypto: CoinGecko, Binance, CryptoCompare, CoinCap · Stocks: Stooq, Yahoo Finance · Metals: gold-api · Fiat/FX: open.er-api, Frankfurter (ECB). Each has cascading fallbacks so the app never paints blank.
+## Screenshots
 
-## Project structure
+| Dashboard | AI Analysis | Goals |
+|:---:|:---:|:---:|
+| [![Dashboard](https://walletlens.live/og-image.png)](https://walletlens.live) | | |
 
-```
-client/            # The app (React + Vite) — this is what ships to production
-  src/
-    pages/         # Dashboard, Market, Whales, Alpha, Coach, Technicals, AssetDetail, …
-    components/    # TradeSheet, AISellPlan, VoiceImport, CoinLogo, …
-    api.js         # Data layer: prices, portfolio, signals, fundamentals (localStorage-backed)
-    technicals.js      # Pure TA math (RSI, MACD, Bollinger, S/R, trend)
-    magicIndicator.js  # Five-pillar composite → direction + confidence
-    magicAi.js / voiceAi.js  # Calls to the serverless Claude endpoint
-voice-api/         # Deno Deploy serverless endpoint (voice parsing + Magic AI verdict)
-scripts/           # Static prerender for SEO/AEO
-.github/workflows/ # deploy.yml (gh-pages), price/news updaters
-server/            # Legacy Express/SQLite server — optional local exchange sync only
-```
+> 📸 **[See the live app →](https://walletlens.live)**
 
-## Quick start
+---
+
+## Quick Start
 
 ```bash
-cd client
+git clone https://github.com/tia8910/Walletlens.git
+cd Walletlens/client
 npm install
-npm run dev          # http://localhost:5173
+npm run dev        # → http://localhost:5173
 ```
 
-Build & test:
-
+Build for production:
 ```bash
-npm run build        # vite build + static prerender → client/dist
-npm test             # vitest
+npm run build      # Vite build + static prerender → client/dist
+npm test           # Vitest
 ```
 
-## Deployment
+---
 
-Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds `client/`
-and publishes `client/dist` to the `gh-pages` branch. The custom domain is set
-via `CNAME` (`walletlens.live`).
+## Tech Stack
 
-## Optional: the AI endpoint
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 · React Router 6 · Recharts · Vite |
+| Storage | localStorage / IndexedDB — **100% client-side, no backend** |
+| Hosting | GitHub Pages (custom domain `walletlens.live`) |
+| AI | Claude `claude-sonnet-4-6` via serverless Deno Deploy endpoint |
+| Service Worker | Custom tiered caching (offline-first for assets, SWR for prices) |
+| Tests | Vitest |
 
-Smart voice/typed import and the Magic Indicator's AI Verdict are powered by
-Claude. Because the site is static, the Anthropic key can't live in the bundle —
-it sits as an env secret in a small [Deno Deploy](https://deno.com/deploy)
-function in [`voice-api/`](voice-api/). See [`voice-api/README.md`](voice-api/README.md)
-to deploy your own. If the endpoint is absent, the app falls back to its
-on-device parser and the deterministic indicators — everything still works.
+### Live data sources (all free, no API key required)
+**Crypto:** CoinGecko · Binance · CryptoCompare · CoinCap  
+**Stocks:** Stooq  
+**Metals:** gold-api.com  
+**FX/Fiat:** open.er-api · Frankfurter (ECB)
+
+Each has cascading fallbacks — the app never shows a blank panel.
+
+---
+
+## Project Structure
+
+```
+Walletlens/
+├── client/                    # React + Vite app (ships to production)
+│   └── src/
+│       ├── pages/             # Dashboard, Technicals, Whales, Vision, Coach…
+│       ├── components/        # TradeSheet, MagicAnalysisPanel, VoiceImport…
+│       ├── api.js             # Data layer: prices, portfolio, signals
+│       ├── technicals.js      # Pure TA math (RSI, MACD, Bollinger, S/R)
+│       ├── magicIndicator.js  # Five-pillar composite → direction + confidence
+│       └── magicAi.js         # Claude AI verdict per asset
+├── voice-api/                 # Deno Deploy serverless endpoint (voice + AI)
+├── scripts/                   # Static prerender for SEO
+└── .github/workflows/         # Deploy, price/news updaters, social posting
+```
+
+---
+
+## AI Endpoint (Optional)
+
+Voice import and the Magic AI Verdict use Claude. Since the app is fully static, the API key lives in a tiny [Deno Deploy](https://deno.com/deploy) function under [`voice-api/`](voice-api/). The app works fully without it — all TA indicators, P&L and portfolio tracking are 100% on-device.
+
+---
 
 ## Privacy
 
-WalletLens does not collect, store or transmit your holdings. Portfolio data
-never leaves your browser. The only outbound requests are to public market-data
-APIs (for prices) and — only if you use voice import or the AI Verdict — the
-Claude endpoint, which receives just the text/numbers needed for that one
-feature and nothing about your identity.
+WalletLens **never** collects, stores or transmits your holdings. Portfolio data never leaves your browser. The only outbound calls are to public market-data APIs for prices — and optionally the Claude endpoint for voice/AI features (it receives only the text you type, nothing about your identity or full portfolio).
+
+---
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+- 🐛 **Bug?** [Open an issue](https://github.com/tia8910/Walletlens/issues/new?template=bug_report.yml)
+- 💡 **Feature idea?** [Request it here](https://github.com/tia8910/Walletlens/issues/new?template=feature_request.yml)
+- ⭐ **Find it useful?** A star goes a long way!
+
+---
 
 ## Disclaimer
 
-WalletLens is a tracking and analysis tool, **not financial advice**. Indicators,
-sell plans and AI verdicts are informational only. Do your own research.
+WalletLens is a tracking and analysis tool — **not financial advice**. Indicators, sell plans and AI verdicts are informational only. Always do your own research.
+
+---
+
+<div align="center">
+
+**[walletlens.live](https://walletlens.live) · [Telegram](https://t.me/walletlenss) · [Twitter/X](https://x.com/wallet_lens) · [YouTube](https://youtube.com/@walletlens)**
+
+Made with ❤️ — Free forever, open source, private by design.
+
+⭐ **Star this repo to help others discover WalletLens!** ⭐
+
+</div>

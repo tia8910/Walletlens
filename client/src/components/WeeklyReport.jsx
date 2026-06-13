@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
+import EmailOptIn from './EmailOptIn'
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '$0'
@@ -319,6 +320,10 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
           </button>
         </div>
         <p className="share-hint">📱 On mobile the image attaches directly to your post.</p>
+        <div className="wr-email-section">
+          <p className="wr-email-label">📬 Get this report in your inbox every week</p>
+          <EmailOptIn source="weekly_report" compact />
+        </div>
       </div>
     </div>
   )

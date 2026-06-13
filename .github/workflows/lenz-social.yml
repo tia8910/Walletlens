@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   lenz-social:
@@ -47,14 +46,11 @@ jobs:
         with:
           name: lenz-card
           path: promo/lenz-drafts/*.png
-      - name: Open review issue (draft mode)
+      - name: Write draft to step summary
         if: ${{ hashFiles('promo/x-post.json') != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues" \
-            -d @promo/x-post.json > /dev/null \
-            && echo "Draft issue created (card is the 'lenz-card' artifact)."
+          echo "## ✦ \$LENZ Post Draft" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          node -e "const j=require('./promo/x-post.json'); console.log(j.body||j.title||JSON.stringify(j,null,2))" >> $GITHUB_STEP_SUMMARY
+          echo "_Card image is the 'lenz-card' artifact above._" >> $GITHUB_STEP_SUMMARY
+          echo "Draft written to step summary (no issue created)."
