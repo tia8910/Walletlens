@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Telegram Community
+    url: https://t.me/walletlenss
+    about: Chat with the community and get quick help
+  - name: 🌐 Live App
+    url: https://walletlens.live
+    about: Try WalletLens directly in your browser
