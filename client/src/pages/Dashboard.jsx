@@ -1667,6 +1667,30 @@ function FeatureSlideshow() {
 
 // ── Onboarding tutorial — animated vertical timeline that tracks REAL
 // progress (wallet created, first trade, holdings, AI viewed). Shown on the
+// ── Feature discovery nudge strip ────────────────────────────────────────
+const FN_DISMISS_KEY = 'wl_fn_dismissed_v1'
+function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
+  const [visible, setVisible] = useState(() => !localStorage.getItem(FN_DISMISS_KEY))
+  if (!visible) return null
+  function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
+  const items = [
+    { emoji: '🎯', label: 'Price Targets', action: () => { onGoToTargets(); dismiss() } },
+    { emoji: '🗺️', label: 'Goals', action: () => { onGoToVision(); dismiss() } },
+    { emoji: '📅', label: 'Weekly Report', action: () => { onWeeklyReport(); dismiss() } },
+  ]
+  return (
+    <div className="fn-strip">
+      <span className="fn-strip-label">💡 Try</span>
+      {items.map((item, i) => (
+        <button key={i} className="fn-strip-btn" onClick={() => { track('feature_nudge_click', { feature: item.label }); item.action() }}>
+          {item.emoji} {item.label}
+        </button>
+      ))}
+      <button className="fn-strip-close" onClick={dismiss} aria-label="Dismiss">×</button>
+    </div>
+  )
+}
+
 // Manage tab until all four steps are done or the user skips. ──────────────
 function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onViewDashboard, onOpenAI, onDismiss }) {
   const steps = [
@@ -3164,6 +3188,15 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Feature discovery nudge — only shown once, until dismissed */}
+          {!isDemo && enriched.length > 0 && (
+            <FeatureNudgeStrip
+              onGoToTargets={() => { setActiveTab('targets'); track('feature_nudge_click', { feature: 'targets' }) }}
+              onGoToVision={() => { navigate('/vision'); track('feature_nudge_click', { feature: 'vision' }) }}
+              onWeeklyReport={() => { setWeeklyOpen(true); track('feature_nudge_click', { feature: 'weekly_report' }) }}
+            />
+          )}
+
 {(() => {
             const importsBlock = (
               <>
@@ -4336,9 +4369,16 @@ export default function Dashboard() {
           onDone={() => {
             const wasFirstTrade = transactions.length === 0
             loadAll()
-            // First trade ever → jump to Overview so they watch their net
-            // worth populate, linking the onboarding flow end-to-end.
-            if (wasFirstTrade) setTimeout(() => setActiveTab('overview'), 200)
+            // First trade ever → jump to Overview + fire "set a target" nudge
+            if (wasFirstTrade) {
+              setTimeout(() => setActiveTab('overview'), 200)
+              setTimeout(() => {
+                const seen = new Set(JSON.parse(localStorage.getItem('wl_milestones_seen') || '[]'))
+                if (!seen.has('first_buy')) {
+                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: '🎯', title: 'First trade logged!', sub: 'Set a price target so you know exactly when to take profit or cut losses.', ctaLabel: '🎯 Set a Price Target' })
+                }
+              }, 1400)
+            }
           }}
           holdings={enriched}
           prefillCoin={sheetPrefill?.coin}
@@ -4405,6 +4445,7 @@ export default function Dashboard() {
           todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
           onShare={() => { setMilestone(null); setShareOpen(true) }}
           onDismiss={() => setMilestone(null)}
+          onCta={milestone.type === 'first_buy' ? () => { setActiveTab('targets'); track('first_buy_cta_targets') } : undefined}
         />
       )}
     </div>

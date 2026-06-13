@@ -235,9 +235,9 @@ function Drawer({ open, onClose }) {
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
             <IconTechnicals /><span style={{ color: '#60a5fa' }}>Analysis</span>
           </button>
-          <button className={active('/vision')} onClick={() => go('/vision')}>
+          <button className={active('/vision')} onClick={() => { localStorage.setItem('wl_vision_visited', '1'); go('/vision') }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            <span style={{ color: '#10b981' }}>Vision</span>
+            <span style={{ color: '#10b981' }}>Goals<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— Vision planner</span></span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>

@@ -63,7 +63,7 @@ export function dismissMilestone(key) {
   markSeen(key)
 }
 
-export default function MilestonePopup({ milestone, totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, onShare, onDismiss }) {
+export default function MilestonePopup({ milestone, totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, onShare, onDismiss, onCta }) {
   if (!milestone) return null
 
   function handleShare() {
@@ -78,6 +78,15 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
     onDismiss()
   }
 
+  function handleCta() {
+    track('milestone_cta_click', { milestone_type: milestone.type, cta: milestone.ctaLabel })
+    dismissMilestone(milestone.key)
+    onDismiss()
+    if (onCta) onCta()
+  }
+
+  const hasCta = milestone.ctaLabel && onCta
+
   return (
     <div className="ms-overlay" onClick={e => e.target === e.currentTarget && handleDismiss()}>
       <div className="ms-modal">
@@ -86,9 +95,15 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
         <h3 className="ms-title">{milestone.title}</h3>
         <p className="ms-sub">{milestone.sub}</p>
         <div className="ms-actions">
-          <button className="ms-btn ms-btn-share" onClick={handleShare}>
-            📤 Share this win
-          </button>
+          {hasCta ? (
+            <button className="ms-btn ms-btn-share" onClick={handleCta}>
+              {milestone.ctaLabel}
+            </button>
+          ) : (
+            <button className="ms-btn ms-btn-share" onClick={handleShare}>
+              📤 Share this win
+            </button>
+          )}
           <button className="ms-btn ms-btn-skip" onClick={handleDismiss}>
             Maybe later
           </button>

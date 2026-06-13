@@ -11575,6 +11575,18 @@ button:not(:disabled):active,
 .dvx-ha-btn { flex: 1; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); color: var(--text-muted); font-size: .75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .3rem; padding: 0 .5rem; transition: background .12s, border-color .12s, color .12s; white-space: nowrap; }
 .dvx-ha-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); color: var(--text); }
 
+/* ── Feature discovery nudge strip ── */
+.fn-strip { display: flex; align-items: center; gap: .35rem; padding: .5rem .75rem; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; margin: .35rem 0 .5rem; flex-wrap: wrap; }
+.fn-strip-label { font-size: .72rem; color: var(--text-muted); font-weight: 600; flex-shrink: 0; margin-inline-end: .1rem; }
+.fn-strip-btn { padding: .22rem .65rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07); color: var(--text); font-size: .75rem; font-weight: 600; cursor: pointer; transition: background .12s; white-space: nowrap; }
+.fn-strip-btn:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.22); }
+.fn-strip-close { margin-inline-start: auto; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0 .15rem; opacity: .5; line-height: 1; }
+.fn-strip-close:hover { opacity: 1; }
+
+/* ── Weekly report email opt-in ── */
+.wr-email-section { border-top: 1px solid rgba(255,255,255,.08); padding: 1rem 1.25rem .75rem; }
+.wr-email-label { font-size: .82rem; color: var(--text-muted); font-weight: 600; margin-bottom: .65rem; text-align: center; }
+
 /* ── Print / Export PDF ── */
 @media print {
   .shell-nav, .shell-header, .dvx-tabs, .vp-btn-add,

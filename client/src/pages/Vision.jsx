@@ -966,7 +966,7 @@ export default function Vision() {
           Back
         </button>
         <div className="vp-header-text">
-          <h1>🗺️ Portfolio Vision</h1>
+          <h1>🗺️ Goals</h1>
           <p>Plan every dollar — buckets, goals, and withdrawal runway in one view.</p>
         </div>
         <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
