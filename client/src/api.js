@@ -2063,10 +2063,16 @@ export const api = {
       const transactions = Array.isArray(data.t || data.transactions) ? (data.t || data.transactions) : [];
       // Reconstruct fields stripped by the compact export (coin_image, total_cost, created_at).
       // Old full exports still include them; this is a no-op for those.
+      // Also backfill wallet_id: very old backups (pre-multi-wallet) omit it, and a
+      // transaction with no wallet_id is silently dropped by any wallet-filtered
+      // view (parseInt(undefined) === NaN never matches), so restored holdings
+      // vanish the moment a specific wallet is selected. Pin them to the first wallet.
+      const fallbackWalletId = wallets[0]?.id ?? 1
       for (const tx of transactions) {
         if (tx.total_cost == null) tx.total_cost = (tx.amount || 0) * (tx.price_per_unit || 0)
         if (!tx.coin_image) tx.coin_image = ''
         if (!tx.created_at) tx.created_at = tx.date || new Date().toISOString()
+        if (tx.wallet_id == null) tx.wallet_id = fallbackWalletId
       }
       const exchanges = Array.isArray(data.e || data.exchanges) ? (data.e || data.exchanges) : [];
       const targets = (data.ct || data.coin_targets || {});

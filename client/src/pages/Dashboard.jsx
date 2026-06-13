@@ -2780,11 +2780,18 @@ export default function Dashboard() {
     const pending = sessionStorage.getItem('wl_pending_import')
     if (!pending) return
     sessionStorage.removeItem('wl_pending_import')
+    const failToManualImport = () => {
+      // Don't fail silently — a returning user restoring from a QR/deep-link
+      // would otherwise see their old (or empty) portfolio with no idea the
+      // restore failed. Drop them on the backup panel so they can retry/paste.
+      setActiveTab('manage')
+      setShowBackupCode(true)
+    }
     api.importCode(pending).then(result => {
-      if (result?.success === false) return // silently ignore, user can import manually
+      if (result?.success === false) { failToManualImport(); return }
       loadAll()
       setActiveTab('overview')
-    }).catch(() => {})
+    }).catch(() => { failToManualImport() })
   }, [])
 
   const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
@@ -3357,7 +3364,16 @@ export default function Dashboard() {
                 )}
               </>
             )
-            const isEmpty = !loaded || enriched.length === 0
+            // While the first load is in flight, show a lightweight loading
+            // line instead of the empty-state CTA — otherwise a returning user
+            // with holdings sees a blank flash on slow connections and may
+            // think their data was wiped.
+            if (!loaded) return (
+              <div className="dvx-loading-holdings" style={{ padding:'2.5rem 1rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.9rem' }}>
+                Loading your portfolio…
+              </div>
+            )
+            const isEmpty = enriched.length === 0
             return (
               <>
                 {isEmpty
