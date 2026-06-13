@@ -1,0 +1,9 @@
+# Support WalletLens development
+# Adding this shows a "Sponsor" button on the repository page.
+
+# Ko-fi — easiest to set up (no approval needed): https://ko-fi.com
+ko_fi: walletlens
+
+# Custom links (up to 4) — Buy Me a Coffee, your own site, etc.
+custom:
+  - https://walletlens.live
