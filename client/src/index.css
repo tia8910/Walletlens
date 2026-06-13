@@ -4473,6 +4473,33 @@ tr:last-child td { border-bottom: none; }
   letter-spacing: -0.04em; line-height: 1; color: #fff; margin: 0;
   text-shadow: 0 0 40px rgba(var(--g-rgb),0.2);
 }
+
+/* ── Soul: mood-aware greeting ── */
+.dvx-soul {
+  margin: 0 0 0.85rem; font-size: 0.86rem; font-weight: 500;
+  color: var(--text-muted, #94a3b8); line-height: 1.4;
+  display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+  animation: soul-fade-in 0.6s ease both;
+}
+.dvx-soul-emoji { font-size: 1.05rem; }
+.dvx-soul-hello { color: var(--text, #e2e8f0); font-weight: 700; }
+.dvx-soul[data-tone="bigup"] .dvx-soul-hello,
+.dvx-soul[data-tone="up"]    .dvx-soul-hello { color: var(--g-ink, #10b981); }
+.dvx-soul[data-tone="bigdown"] { color: var(--text-sub, #64748b); }
+@keyframes soul-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ── Soul: live "heartbeat" on the net-worth figure ── */
+.dvx-value-beat { animation: value-beat 0.9s ease; }
+@keyframes value-beat {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.022); text-shadow: 0 0 56px rgba(var(--g-rgb),0.38); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dvx-soul { animation: none; }
+  .dvx-value-beat { animation: none; }
+  .ms-confetti { display: none; }
+}
 .dvx-currency-switcher { display: flex; gap: 0.4rem; margin: 0.6rem 0 0; flex-wrap: wrap; align-items: center; }
 .dvx-currency-pill {
   padding: 0.18rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
@@ -9679,6 +9706,21 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 @keyframes ms-pop {
   from { transform: scale(0.8); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+/* ── Soul: celebratory confetti burst on real wins ── */
+.ms-confetti {
+  position: absolute; inset: 0; overflow: hidden;
+  border-radius: 24px; pointer-events: none;
+}
+.ms-confetti-bit {
+  position: absolute; top: -12px; width: 8px; height: 12px;
+  border-radius: 2px; opacity: 0;
+  animation: ms-confetti-fall 2.2s cubic-bezier(0.2,0.6,0.4,1) forwards;
+}
+@keyframes ms-confetti-fall {
+  0%   { opacity: 0; transform: translateY(-10px) rotate(0deg); }
+  12%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(360px) rotate(540deg); }
 }
 .ms-close {
   position: absolute; top: 0.9rem; right: 1rem; background: none; border: none;

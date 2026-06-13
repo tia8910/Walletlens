@@ -86,10 +86,29 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
   }
 
   const hasCta = milestone.ctaLabel && onCta
+  // Real celebration for wins — a quick confetti burst, skipped for nudge CTAs.
+  const celebrate = ['first_profit', 'round_number', 'green_day'].includes(milestone.type)
+  const CONFETTI = ['#10b981', '#fbbf24', '#60a5fa', '#f472b6', '#34d399', '#a78bfa']
 
   return (
     <div className="ms-overlay" onClick={e => e.target === e.currentTarget && handleDismiss()}>
       <div className="ms-modal">
+        {celebrate && (
+          <div className="ms-confetti" aria-hidden="true">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <span
+                key={i}
+                className="ms-confetti-bit"
+                style={{
+                  left: `${(i / 18) * 100}%`,
+                  background: CONFETTI[i % CONFETTI.length],
+                  animationDelay: `${(i % 6) * 0.08}s`,
+                  transform: `rotate(${i * 40}deg)`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         <button className="ms-close" onClick={handleDismiss}>✕</button>
         <div className="ms-emoji">{milestone.emoji}</div>
         <h3 className="ms-title">{milestone.title}</h3>
