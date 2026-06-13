@@ -4005,6 +4005,12 @@ export default function Dashboard() {
                                             ✦ Magic Score
                                           </button>
                                         )}
+                                        {!isStable && (
+                                          <button className="dvx-ha-btn"
+                                            onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } })}>
+                                            🔍 Risk Scan
+                                          </button>
+                                        )}
                                       </div>
                                     )}
                                   </li>
