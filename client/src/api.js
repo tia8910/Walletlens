@@ -192,23 +192,35 @@ setTimeout(() => {
         _saveCache(PRICE_CACHE_KEY, priceCache);
       }).catch(() => {});
   };
-  fetchWithTimeout('https://api.binance.com/api/v3/ticker/price', 5000).then(async r => {
-    if (!r?.ok) { _ccPrewarm(); return; }
-    const list = await r.json();
-    if (!Array.isArray(list)) { _ccPrewarm(); return; }
-    const wanted = new Set(TOP_BINANCE_TICKERS);
-    for (const row of list) {
-      if (!wanted.has(row.symbol)) continue;
-      const tkr = row.symbol.replace(/USDT$/, '');
-      const id = TOP_BINANCE_ID[tkr];
-      if (!id) continue;
-      const usd = parseFloat(row.price);
-      if (!isFinite(usd) || usd <= 0) continue;
-      priceCache[id] = { ...(priceCache[id] || {}), usd, symbol: tkr, source: 'binance' };
+  // Binance blocks direct browser CORS requests, so always route through the
+  // Deno proxy. The direct URL is kept as a fallback in case the proxy is down.
+  const _binanceUrl = 'https://api.binance.com/api/v3/ticker/price';
+  const _binanceAttempts = [DENO_PROXY(_binanceUrl), _binanceUrl];
+  const _tryBinance = async () => {
+    for (const url of _binanceAttempts) {
+      try {
+        const r = await fetchWithTimeout(url, 5000);
+        if (!r?.ok) continue;
+        const list = await r.json();
+        if (!Array.isArray(list)) continue;
+        const wanted = new Set(TOP_BINANCE_TICKERS);
+        for (const row of list) {
+          if (!wanted.has(row.symbol)) continue;
+          const tkr = row.symbol.replace(/USDT$/, '');
+          const id = TOP_BINANCE_ID[tkr];
+          if (!id) continue;
+          const usd = parseFloat(row.price);
+          if (!isFinite(usd) || usd <= 0) continue;
+          priceCache[id] = { ...(priceCache[id] || {}), usd, symbol: tkr, source: 'binance' };
+        }
+        lastPriceFetch = now;
+        _saveCache(PRICE_CACHE_KEY, priceCache);
+        return;
+      } catch { /* try next */ }
     }
-    lastPriceFetch = now;
-    _saveCache(PRICE_CACHE_KEY, priceCache);
-  }).catch(() => { _ccPrewarm(); });
+    _ccPrewarm();
+  };
+  _tryBinance();
 }, 800);
 
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
