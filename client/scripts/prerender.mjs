@@ -138,12 +138,25 @@ function clampDesc(s, max = 158) {
   return (sp > 0 ? s.slice(0, sp) : s.slice(0, max)).replace(/[\s,;:.—–-]+$/, '') + '…'
 }
 
-function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false }) {
+function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false, ogType = 'website', published, modified }) {
   const url = ORIGIN + withSlash(path)
   description = clampDesc(description)
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
     html = html.replace(/<html[^>]*>/, `<html lang="${lang}" dir="${dir}">`)
+  }
+  // og:type — "article" for blog posts gives social platforms (Facebook,
+  // LinkedIn, Discord, Slack) a rich article card and lets Google read the
+  // publish/modify dates from the page head as well as from JSON-LD.
+  if (ogType !== 'website') {
+    html = html.replace(/(<meta property="og:type" content=")[^"]*(")/, `$1${esc(ogType)}$2`)
+  }
+  if (ogType === 'article') {
+    const tags = []
+    if (published) tags.push(`  <meta property="article:published_time" content="${esc(published)}" />`)
+    if (modified)  tags.push(`  <meta property="article:modified_time" content="${esc(modified)}" />`)
+    tags.push(`  <meta property="article:publisher" content="${ORIGIN}/" />`)
+    if (tags.length) html = html.replace('</head>', `${tags.join('\n')}\n  </head>`)
   }
   // Templated SEO pages (track/price/calculator) are kept live for users but
   // excluded from Google's index to avoid "scaled content" / low-value flags
@@ -303,6 +316,9 @@ write('/', buildPage({
         { '@type': 'Question', name: 'Where is my portfolio data stored?', acceptedAnswer: { '@type': 'Answer', text: "Entirely in your browser's localStorage on your device. WalletLens has no backend database. Your financial data never leaves your device." } },
         { '@type': 'Question', name: 'What assets can I track with WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'Crypto (10,000+ coins including Bitcoin, Ethereum, Solana), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), gold, silver, platinum, fiat currencies, cash, bonds, and custom assets — all in one live dashboard.' } },
         { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice for a free net worth tracker: it covers every asset class (crypto, stocks, gold, cash), needs no account, keeps data private on your device, and includes AI analysis — all at no cost.' } },
+        { '@type': 'Question', name: 'Where can I see all my investments in one place?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens combines crypto, US stocks and ETFs, gold and silver, cash, bonds and FX into a single live dashboard with one net-worth total, an allocation breakdown and profit/loss — without linking a bank account and without any subscription.' } },
+        { '@type': 'Question', name: 'How can I check if my portfolio is too risky or not diversified?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens runs an on-device AI analysis that gives your portfolio a health score, a diversification grade, a concentration/risk scan and a correlation matrix, so you can see where you are over-exposed — all computed locally, with no account.' } },
+        { '@type': 'Question', name: 'What is a good free alternative to CoinStats, Kubera, or Empower?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative that tracks every asset class (not just crypto), keeps your data on your device, and includes AI analysis — with no paid tier, no bank login, and no exchange API connection required.' } },
         { '@type': 'Question', name: 'Can I import my portfolio from a screenshot?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens can read a screenshot of any exchange, broker, or wallet app and automatically extract each asset, amount and price into your portfolio — no manual typing, no CSV, no account required.' } },
         { '@type': 'Question', name: 'Does WalletLens support voice import?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Say your holdings naturally ("I have half a Bitcoin and 20 Apple shares") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic.' } },
       ],
@@ -1053,6 +1069,9 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
     description: p.summary,
     bodyHtml: articleHtml,
     jsonLd,
+    ogType: 'article',
+    published: iso,
+    modified: TODAY,
     alternates: hasAr ? hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug) : undefined,
   }))
 }
@@ -1106,6 +1125,9 @@ for (const p of AR_POSTS) {
     lang: 'ar',
     dir: 'rtl',
     jsonLd,
+    ogType: 'article',
+    published: iso,
+    modified: TODAY,
     alternates: hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug),
   }))
 }
@@ -1597,6 +1619,37 @@ const sitemapUrls = [
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
 console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track/calculator/price excluded as noindex).`)
+
+// ── rss.xml (blog feed) ──────────────────────────────────────────────────────
+// A real RSS 2.0 feed of every article. Feed readers, news aggregators, AI
+// ingestion pipelines and search engines use it to discover and re-crawl fresh
+// content fast — far quicker than waiting for a full site recrawl. Linked from
+// every page's <head> via <link rel="alternate" type="application/rss+xml">.
+const rssDate = (d) => new Date(d).toUTCString()
+// POSTS, newest first by parsed date (falls back to build date for unparseable).
+const sortedPosts = [...POSTS].sort((a, b) => new Date(postIsoDate(b.date)) - new Date(postIsoDate(a.date)))
+const rssItems = sortedPosts.map(p => `    <item>
+      <title>${esc(p.title)}</title>
+      <link>${ORIGIN}/blog/${p.slug}/</link>
+      <guid isPermaLink="true">${ORIGIN}/blog/${p.slug}/</guid>
+      <pubDate>${rssDate(postIsoDate(p.date))}</pubDate>
+      <description>${esc(p.summary)}</description>
+    </item>`).join('\n')
+const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>WalletLens Blog</title>
+    <link>${ORIGIN}/blog/</link>
+    <atom:link href="${ORIGIN}/rss.xml" rel="self" type="application/rss+xml" />
+    <description>Guides on tracking your net worth and managing crypto, stocks, gold and cash — from WalletLens, the free private all-asset portfolio tracker.</description>
+    <language>en</language>
+    <lastBuildDate>${rssDate(TODAY)}</lastBuildDate>
+${rssItems}
+  </channel>
+</rss>
+`
+writeFileSync(resolve(DIST, 'rss.xml'), rss, 'utf8')
+console.log(`Wrote rss.xml (${sortedPosts.length} articles).`)
 
 // ── llms.txt ───────────────────────────────────────────────────────────────
 // Keep the curated llms.txt body, but regenerate the "## Blog articles" list

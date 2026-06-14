@@ -40,10 +40,20 @@ Allow: /
 # DuckDuckGo AI
 User-agent: DuckAssistBot
 Allow: /
+# ByteDance / TikTok
+User-agent: Bytespider
+Allow: /
+User-agent: TikTokSpider
+Allow: /
+# Huawei Petal Search
+User-agent: PetalBot
+Allow: /
 # Others
 User-agent: Amazonbot
 Allow: /
 User-agent: Meta-ExternalAgent
+Allow: /
+User-agent: Meta-ExternalFetcher
 Allow: /
 User-agent: FacebookBot
 Allow: /
@@ -52,6 +62,77 @@ Allow: /
 User-agent: YouBot
 Allow: /
 User-agent: CCBot
+Allow: /
+User-agent: AI2Bot
+Allow: /
+User-agent: Diffbot
+Allow: /
+User-agent: ImagesiftBot
+Allow: /
+User-agent: Timpibot
+Allow: /
+User-agent: Omgilibot
+Allow: /
+User-agent: Webzio-Extended
+Allow: /
+User-agent: Andibot
+Allow: /
+User-agent: ProRataBot
+Allow: /
+User-agent: Kangaroo Bot
+Allow: /
+User-agent: MistralAI-User
+Allow: /
+User-agent: DeepSeekBot
+Allow: /
+
+# ── Other major search engines ───────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+User-agent: Googlebot-Image
+Allow: /
+User-agent: Slurp
+Allow: /
+User-agent: YandexBot
+Allow: /
+User-agent: Baiduspider
+Allow: /
+User-agent: SeznamBot
+Allow: /
+User-agent: Yeti
+Allow: /
+User-agent: MojeekBot
+Allow: /
+User-agent: DuckDuckBot
+Allow: /
+
+# ── Social media link-preview crawlers (fetch Open Graph / Twitter cards) ─────
+# Explicitly allowed so shared links render rich previews everywhere.
+User-agent: Twitterbot
+Allow: /
+User-agent: facebookexternalhit
+Allow: /
+User-agent: LinkedInBot
+Allow: /
+User-agent: Slackbot
+Allow: /
+User-agent: Slackbot-LinkExpanding
+Allow: /
+User-agent: Discordbot
+Allow: /
+User-agent: TelegramBot
+Allow: /
+User-agent: WhatsApp
+Allow: /
+User-agent: Pinterestbot
+Allow: /
+User-agent: redditbot
+Allow: /
+User-agent: Embedly
+Allow: /
+User-agent: Iframely
+Allow: /
+User-agent: SkypeUriPreview
 Allow: /
 
 Sitemap: https://walletlens.live/sitemap.xml
