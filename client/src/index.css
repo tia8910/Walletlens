@@ -11644,3 +11644,76 @@ button:not(:disabled):active,
   .vp-ai { break-inside: avoid; }
   body { background: #fff !important; }
 }
+
+/* ── WalletLens Market Index (public data page) ───────────────────────────── */
+.mki-page { padding: 1rem; }
+.mki-wrap { max-width: 880px; margin: 0 auto; }
+.mki-head { text-align: center; padding: 1.5rem 0.5rem 1rem; }
+.mki-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.22em; color: var(--g-ink); margin-bottom: 0.6rem; }
+.mki-h1 { font-size: clamp(1.7rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 0.6rem; line-height: 1.1; }
+.mki-lede { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 620px; margin: 0 auto; }
+.mki-loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+.mki-hero { display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center; }
+.mki-gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 150px; height: 150px; border-radius: 50%; border: 6px solid var(--mki-color, var(--g)); box-shadow: 0 0 50px -10px var(--mki-color, var(--g)); flex-shrink: 0; }
+.mki-score { font-size: 3.4rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
+.mki-outof { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+.mki-verdict { flex: 1; min-width: 220px; }
+.mki-label { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
+.mki-note { color: var(--text-muted); font-size: 0.92rem; line-height: 1.5; margin: 0 0 0.6rem; }
+.mki-updated { font-size: 0.72rem; color: var(--text-sub); }
+
+.mki-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.mki-pillar { padding: 0.9rem 1rem; }
+.mki-pillar-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+.mki-pillar-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+.mki-pillar-val { font-size: 1.4rem; font-weight: 800; }
+.mki-pillar-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.mki-pillar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.mki-pillar-sub { font-size: 0.7rem; color: var(--text-sub); margin-top: 0.4rem; }
+
+.mki-cite { padding: 1.1rem 1.25rem; margin-bottom: 1rem; border: 1px solid rgba(var(--g-rgb), 0.25); }
+.mki-cite-label { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; color: var(--g-ink); margin-bottom: 0.6rem; }
+.mki-cite-text { font-size: 0.85rem; line-height: 1.5; color: var(--text); background: var(--surface-2); border-radius: 10px; padding: 0.7rem 0.85rem; margin-bottom: 0.75rem; }
+.mki-cite-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.mki-btn { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 0.45rem 0.9rem; font-size: 0.8rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.15s; }
+.mki-btn:hover { border-color: rgba(var(--g-rgb), 0.4); }
+.mki-btn-primary { background: var(--g); color: #fff; border-color: var(--g); }
+.mki-cite-hint { font-size: 0.72rem; color: var(--text-sub); margin: 0.7rem 0 0; }
+.mki-cite-hint code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 5px; }
+
+.mki-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.mki-stat { padding: 0.85rem 1rem; }
+.mki-stat-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+.mki-stat-value { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+
+.mki-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+.mki-mover { padding: 1rem; }
+.mki-section-title { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.75rem; }
+.mki-mover-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.mki-mover-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.mki-mover-name { display: flex; align-items: center; gap: 0.4rem; }
+.mki-mover-name img { border-radius: 50%; }
+.mki-mover-price { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.mki-mover-chg { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+
+.mki-trending { padding: 1rem; margin-bottom: 1rem; }
+.mki-trend-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.mki-trend-chip { display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 0.3rem 0.7rem; font-size: 0.78rem; font-weight: 700; }
+.mki-trend-chip img { border-radius: 50%; }
+
+.mki-method { padding: 1.1rem 1.25rem; margin-bottom: 2rem; }
+.mki-method p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin: 0 0 0.7rem; }
+.mki-method strong { color: var(--text); }
+.mki-foot-cta { font-size: 0.9rem; }
+.mki-foot-cta a { color: var(--g-ink); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .mki-pillars { grid-template-columns: 1fr; }
+  .mki-stats { grid-template-columns: 1fr 1fr; }
+  .mki-movers { grid-template-columns: 1fr; }
+  .mki-hero { flex-direction: column; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mki-pillar-fill { transition: none; }
+}
