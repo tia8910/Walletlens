@@ -48,6 +48,53 @@ function parseSpreadsheet(file) {
   })
 }
 
+// Validate + filter image files from a FileList/array
+function filterImageFiles(files) {
+  return Array.from(files).filter(f => {
+    const ext = (f.name.split('.').pop() || '').toLowerCase()
+    return ['png','jpg','jpeg','webp','gif'].includes(ext)
+  })
+}
+
+// ── Multi-image drop zone ─────────────────────────────────────────────────────
+// Accepts multiple files at once — via drag-drop, file picker (Ctrl/Cmd+click),
+// or the camera roll on mobile.
+function MultiDragZone({ busy, onFiles, compact = false }) {
+  const [over, setOver] = useState(false)
+  const inputRef = useRef()
+
+  const handle = useCallback((fileList) => {
+    const imgs = filterImageFiles(fileList)
+    if (imgs.length) onFiles(imgs)
+  }, [onFiles])
+
+  return (
+    <div
+      className={`si-dropzone${over ? ' si-dropzone-over' : ''}${compact ? ' si-dropzone-compact' : ''}`}
+      onDragOver={e => { e.preventDefault(); setOver(true) }}
+      onDragLeave={() => setOver(false)}
+      onDrop={e => { e.preventDefault(); setOver(false); handle(e.dataTransfer.files) }}
+      onClick={() => !busy && inputRef.current?.click()}
+      style={{ opacity: busy ? 0.5 : 1, cursor: busy ? 'not-allowed' : 'pointer' }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={e => { handle(e.target.files); e.target.value = '' }}
+      />
+      <span className="si-dropzone-icon">{compact ? '➕' : '📸'}</span>
+      <span className="si-dropzone-label">
+        {compact ? 'Add more screenshots' : 'Drop screenshots here or tap to select'}
+      </span>
+      {!compact && <span className="si-dropzone-hint">PNG, JPG, WEBP · select multiple at once</span>}
+    </div>
+  )
+}
+
+// ── Single-file drop zone (spreadsheet) ──────────────────────────────────────
 function DragZone({ accept, label, icon, onFile, disabled }) {
   const [over, setOver] = useState(false)
   const inputRef = useRef()
@@ -55,13 +102,9 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
   const handle = useCallback((file) => {
     if (!file) return
     const ext = file.name.split('.').pop().toLowerCase()
-    if (accept === 'image') {
-      if (!['png','jpg','jpeg','webp','gif'].includes(ext)) return
-    } else {
-      if (!['xlsx','xls','csv'].includes(ext)) return
-    }
+    if (!['xlsx','xls','csv'].includes(ext)) return
     onFile(file)
-  }, [accept, onFile])
+  }, [onFile])
 
   return (
     <div
@@ -73,14 +116,35 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
       style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
     >
       <input ref={inputRef} type="file"
-        accept={accept === 'image' ? 'image/*' : '.xlsx,.xls,.csv'}
+        accept=".xlsx,.xls,.csv"
         style={{ display: 'none' }}
         onChange={e => handle(e.target.files[0])} />
       <span className="si-dropzone-icon">{icon}</span>
       <span className="si-dropzone-label">{label}</span>
-      <span className="si-dropzone-hint">
-        {accept === 'image' ? 'PNG, JPG, WEBP' : 'XLSX, XLS, CSV'}
-      </span>
+      <span className="si-dropzone-hint">XLSX, XLS, CSV</span>
+    </div>
+  )
+}
+
+// ── Thumbnail strip ──────────────────────────────────────────────────────────
+// Shows each screenshot with a status badge: ⏳ queued, spinning reading,
+// ✓ N found, ✗ error. Lets the user see exactly which screenshots were read
+// and how many holdings each one contributed.
+function ThumbStrip({ previews }) {
+  if (!previews.length) return null
+  return (
+    <div className="si-thumb-strip">
+      {previews.map((p, i) => (
+        <div key={i} className={`si-thumb si-thumb-${p.status}`}>
+          <img src={p.src} alt={`screenshot ${i + 1}`} />
+          <span className="si-thumb-badge">
+            {p.status === 'reading'  && <span className="si-thumb-spin" />}
+            {p.status === 'queued'   && '⏳'}
+            {p.status === 'done'     && `✓ ${p.count}`}
+            {p.status === 'error'    && '✗'}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -124,13 +188,13 @@ function ReviewTable({ rows, onChange, onRemove }) {
 }
 
 export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
-  const [rows, setRows] = useState([])
-  const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [msgType, setMsgType] = useState('')
+  const [rows, setRows]         = useState([])
+  const [busy, setBusy]         = useState(false)
+  const [msg, setMsg]           = useState('')
+  const [msgType, setMsgType]   = useState('')
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? '')
-  const [mode, setMode] = useState(defaultMode === 'screenshot' ? 'screenshot' : 'excel')
-  const [preview, setPreview] = useState(null)
+  const [mode, setMode]         = useState(defaultMode === 'screenshot' ? 'screenshot' : 'excel')
+  const [previews, setPreviews] = useState([])   // [{src, status, count}]
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -142,40 +206,79 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
   }
   function removeRow(i) { setRows(prev => prev.filter((_, idx) => idx !== i)) }
 
-  // ── Screenshot handler (Claude vision via owner-hosted endpoint) ──────────
-  async function handleScreenshot(file) {
+  // ── Multi-screenshot handler ───────────────────────────────────────────────
+  // Processes files sequentially so we don't hammer the AI endpoint in parallel.
+  // Each screenshot transitions through: queued → reading → done|error.
+  // Extracted rows are appended to the existing table so the user can build up
+  // the full picture from multiple exchanges / wallets before hitting Import.
+  async function handleScreenshots(files) {
+    if (!files.length) return
     clearMsg()
     setBusy(true)
-    setRows([])
-    const src = URL.createObjectURL(file)
-    setPreview({ src })
-    track('screenshot_import_start')
-    try {
-      const base64 = await fileToBase64(file)
-      const mediaType = file.type || 'image/png'
-      const extracted = await parseScreenshotWithClaude(base64, mediaType)
-      if (!Array.isArray(extracted) || !extracted.length) {
-        showMsg('No holdings detected. Try a clearer, tighter screenshot of the holdings/trades.')
-        return
+    track('screenshot_import_start', { count: files.length })
+
+    // Register all files as queued thumbnails first so the user sees them immediately
+    const startIdx = previews.length
+    const newPreviews = files.map(f => ({
+      src: URL.createObjectURL(f),
+      status: 'queued',
+      count: 0,
+    }))
+    setPreviews(prev => [...prev, ...newPreviews])
+
+    let totalAdded = 0
+    let errors = 0
+
+    for (let i = 0; i < files.length; i++) {
+      const thumbIdx = startIdx + i
+
+      // Mark as reading
+      setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'reading' } : p))
+
+      try {
+        const file = files[i]
+        const base64    = await fileToBase64(file)
+        const mediaType = file.type || 'image/png'
+        const extracted = await parseScreenshotWithClaude(base64, mediaType)
+
+        if (!Array.isArray(extracted) || !extracted.length) {
+          setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'error', count: 0 } : p))
+          errors++
+          continue
+        }
+
+        const newRows = extracted.map(r => ({
+          symbol: (r.symbol || '').toUpperCase(),
+          name:   r.name || r.symbol || '',
+          amount: Number(r.amount) || 0,
+          price:  Number(r.price)  || 0,
+          type:   r.type === 'sell' ? 'sell' : 'buy',
+          date:   r.date || today,
+        }))
+
+        setRows(prev => [...prev, ...newRows])
+        setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'done', count: extracted.length } : p))
+        totalAdded += extracted.length
+
+        track('screenshot_import_detected', { count: extracted.length, screenshot: i + 1 })
+      } catch {
+        setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'error' } : p))
+        errors++
       }
-      setRows(extracted.map(r => ({
-        symbol: (r.symbol || '').toUpperCase(),
-        name:   r.name || r.symbol || '',
-        amount: Number(r.amount) || 0,
-        price:  Number(r.price) || 0,
-        type:   r.type === 'sell' ? 'sell' : 'buy',
-        date:   r.date || today,
-      })))
-      track('screenshot_import_detected', { count: extracted.length })
-      showMsg(`Detected ${extracted.length} holding(s) — review and edit below.`, 'ok')
-    } catch (e) {
-      showMsg(e.message || 'Could not read that screenshot. Try again or use Excel/CSV.')
-    } finally {
-      setBusy(false)
+    }
+
+    setBusy(false)
+
+    if (totalAdded > 0 && errors === 0) {
+      showMsg(`Detected ${totalAdded} holding(s) from ${files.length} screenshot${files.length > 1 ? 's' : ''} — review and edit below.`, 'ok')
+    } else if (totalAdded > 0) {
+      showMsg(`Detected ${totalAdded} holding(s) — ${errors} screenshot${errors > 1 ? 's' : ''} could not be read. Review and edit below.`, 'ok')
+    } else {
+      showMsg('No holdings detected in any screenshot. Try clearer, tighter shots of the holdings list.')
     }
   }
 
-  // ── Spreadsheet handler ─────────────────────────────────────────────────
+  // ── Spreadsheet handler ───────────────────────────────────────────────────
   async function handleSpreadsheet(file) {
     clearMsg()
     setBusy(true)
@@ -184,7 +287,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       const raw = await parseSpreadsheet(file)
       if (raw.length < 2) { showMsg('File appears empty.'); return }
 
-      const headers = raw[0].map(h => String(h).toLowerCase().trim())
+      const headers   = raw[0].map(h => String(h).toLowerCase().trim())
       const colSymbol = detectColumn(headers, 'symbol')
       const colName   = detectColumn(headers, 'name')
       const colAmount = detectColumn(headers, 'amount')
@@ -224,7 +327,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     }
   }
 
-  // ── Import ──────────────────────────────────────────────────────────────
+  // ── Import ────────────────────────────────────────────────────────────────
   async function doImport() {
     if (!rows.length) return
     if (!walletId) { showMsg('Please select a wallet first.'); return }
@@ -236,18 +339,18 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       for (const r of valid) {
         const sym = r.symbol.toLowerCase()
         await api.addTransaction({
-          wallet_id:     walletId,
-          type:          r.type,
-          category:      'crypto',
-          coin_id:       sym,
-          coin_symbol:   r.symbol,
-          coin_name:     r.name || r.symbol,
-          coin_image:    '',
-          amount:        parseFloat(r.amount),
+          wallet_id:      walletId,
+          type:           r.type,
+          category:       'crypto',
+          coin_id:        sym,
+          coin_symbol:    r.symbol,
+          coin_name:      r.name || r.symbol,
+          coin_image:     '',
+          amount:         parseFloat(r.amount),
           price_per_unit: parseFloat(r.price) || 0,
-          exchange:      mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import',
-          notes:         '',
-          date:          r.date || today,
+          exchange:       mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import',
+          notes:          '',
+          date:           r.date || today,
         })
       }
       trackProfileCreated({
@@ -257,7 +360,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       })
       showMsg(`Imported ${valid.length} transaction(s) successfully!`, 'ok')
       setRows([])
-      setPreview(null)
+      setPreviews([])
       onImported?.()
     } catch (e) {
       showMsg('Import error: ' + e.message)
@@ -266,64 +369,69 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     }
   }
 
+  function handleClear() {
+    setRows([])
+    setPreviews([])
+    clearMsg()
+  }
+
   return (
     <div className="si-root">
-      {/* Mode toggle: Screenshot (AI) vs Excel / CSV */}
-      {!rows.length && (
+      {/* Mode toggle — hidden while reviewing rows */}
+      {!rows.length && !previews.length && (
         <div className="si-tabs">
           <button
             className={`si-tab${mode === 'screenshot' ? ' si-tab-active' : ''}`}
-            onClick={() => { setMode('screenshot'); clearMsg(); setPreview(null) }}
+            onClick={() => { setMode('screenshot'); clearMsg() }}
             disabled={busy}
           >📸 Screenshot</button>
           <button
             className={`si-tab${mode === 'excel' ? ' si-tab-active' : ''}`}
-            onClick={() => { setMode('excel'); clearMsg(); setPreview(null) }}
+            onClick={() => { setMode('excel'); clearMsg() }}
             disabled={busy}
           >📊 Excel / CSV</button>
         </div>
       )}
 
-      {/* Drop zone */}
-      {!rows.length && mode === 'screenshot' && (
-        <DragZone accept="image" icon="📸"
-          label={busy ? 'Reading screenshot…' : 'Drop or tap to upload a screenshot'}
-          onFile={handleScreenshot} disabled={busy} />
+      {/* Drop zones — screenshot accepts multiple, shown also when reviewing */}
+      {mode === 'screenshot' && !rows.length && !previews.length && (
+        <MultiDragZone busy={busy} onFiles={handleScreenshots} />
       )}
-      {!rows.length && mode === 'excel' && (
+      {mode === 'excel' && !rows.length && (
         <DragZone accept="spreadsheet" icon="📊"
           label={busy ? 'Parsing file…' : 'Drop your Excel or CSV file here'}
           onFile={handleSpreadsheet} disabled={busy} />
       )}
 
-      {/* Screenshot preview */}
-      {preview?.src && (
-        <div className="si-img-preview">
-          <img src={preview.src} alt="screenshot preview" />
-        </div>
+      {/* Thumbnail strip — shown during and after reading */}
+      {mode === 'screenshot' && previews.length > 0 && (
+        <ThumbStrip previews={previews} />
       )}
 
       {/* Status message */}
-      {msg && (
-        <div className={`si-msg si-msg-${msgType}`}>{msg}</div>
-      )}
+      {msg && <div className={`si-msg si-msg-${msgType}`}>{msg}</div>}
 
-      {/* Template hint */}
-      {!rows.length && !busy && mode === 'excel' && (
+      {/* Hints */}
+      {!rows.length && !busy && !previews.length && mode === 'excel' && (
         <p className="si-hint">
           Use column headers: <strong>Symbol, Name, Amount, Price, Date, Type</strong> (buy/sell). CSV and XLSX both supported.
         </p>
       )}
-      {!rows.length && !busy && mode === 'screenshot' && (
+      {!rows.length && !busy && !previews.length && mode === 'screenshot' && (
         <p className="si-hint">
-          Upload a screenshot of your exchange/wallet holdings or trade history — AI reads it and fills in the trades for you to review.
+          Select multiple screenshots at once — from different exchanges or wallets — and all holdings are combined into one import.
         </p>
       )}
 
-      {/* Review table */}
+      {/* Review table + add-more zone */}
       {rows.length > 0 && (
         <>
           <ReviewTable rows={rows} onChange={changeRow} onRemove={removeRow} />
+
+          {/* Add more screenshots while reviewing */}
+          {mode === 'screenshot' && (
+            <MultiDragZone busy={busy} onFiles={handleScreenshots} compact />
+          )}
 
           {/* Wallet selector + import */}
           <div className="si-import-bar">
@@ -333,9 +441,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
             <button className="dvx-btn dvx-btn-primary" onClick={doImport} disabled={busy || !rows.length}>
               {busy ? 'Importing…' : `Import ${rows.filter(r => r.symbol && r.amount > 0).length} Rows`}
             </button>
-            <button className="dvx-btn" onClick={() => { setRows([]); setPreview(null); clearMsg() }}>
-              Clear
-            </button>
+            <button className="dvx-btn" onClick={handleClear}>Clear</button>
           </div>
         </>
       )}
