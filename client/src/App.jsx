@@ -64,6 +64,7 @@ const Technicals   = lazy(() => import('./pages/Technicals'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog         = lazy(() => import('./pages/Blog'))
 const About        = lazy(() => import('./pages/About'))
+const MarketIndex  = lazy(() => import('./pages/MarketIndex'))
 const FAQ          = lazy(() => import('./pages/FAQ'))
 const Lenz         = lazy(() => import('./pages/Lenz'))
 const Airdrop      = lazy(() => import('./pages/Airdrop'))
@@ -341,7 +342,7 @@ export default function App() {
   const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = useMemo(() => {
     const p = location.pathname
-    return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/faq', '/privacy'].includes(p) ||
+    return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/market-index', '/faq', '/privacy'].includes(p) ||
       p.startsWith('/blog/') || p.startsWith('/track/') || p.startsWith('/calculator/') ||
       p.startsWith('/learn/') || p.startsWith('/vs/') || p.startsWith('/price/') ||
       p.startsWith('/ar/') || p.startsWith('/admin/')
@@ -433,6 +434,7 @@ export default function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
+          <Route path="/market-index" element={<MarketIndex />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/lenz" element={<Lenz />} />
           <Route path="/airdrop" element={<Airdrop />} />

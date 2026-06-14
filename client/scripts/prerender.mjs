@@ -1240,6 +1240,36 @@ ${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>$
   ],
 }))
 
+// ── Market Index (data page — press & citation magnet) ───────────────────────
+write('/market-index', buildPage({
+  path: '/market-index',
+  title: 'WalletLens Market Index — Live Crypto Market Sentiment Score (0–100)',
+  description: 'The WalletLens Market Index distills the whole crypto market into one number: a live 0–100 sentiment score from market breadth, momentum and large-cap leadership across the top 250 coins. Free to read and cite.',
+  bodyHtml: `
+<h1>WalletLens Market Index</h1>
+<p>The WalletLens Market Index distills the entire crypto market into a single number — a live <strong>0–100 sentiment score</strong> updated continuously. It is built from three public-data signals across the top 250 cryptocurrencies and is free for anyone to read, cite, and link.</p>
+<h2>How the index is calculated</h2>
+<p>The score is a weighted blend of <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h), <strong>momentum</strong> (35%, the average normalised 24h move of the top 50), and <strong>large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up). Scores above 75 indicate an overheated market; below 25 indicates extreme caution. All inputs are public market data — WalletLens stores no personal portfolio data on any server.</p>
+<h2>Citing the WalletLens Market Index</h2>
+<p>Journalists, researchers and bloggers may cite the index freely. Use the format: "WalletLens Market Index: [score]/100 ([label])" and link <a href="/market-index">walletlens.live/market-index</a>.</p>
+<p><a href="/dashboard">Open WalletLens free</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'WalletLens Market Index',
+      description: 'A live 0–100 crypto market sentiment index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.',
+      url: `${ORIGIN}/market-index`,
+      creator: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
+      license: `${ORIGIN}/terms`,
+      isAccessibleForFree: true,
+      variableMeasured: 'WalletLens Market Index (0–100)',
+    },
+  ],
+}))
+console.log('Prerendered /market-index data page.')
+
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
@@ -1530,6 +1560,7 @@ const STATIC_ROUTES = [
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
+  { path: '/market-index', changefreq: 'daily', priority: '0.8' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
