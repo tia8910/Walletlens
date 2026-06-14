@@ -40,7 +40,8 @@ Rules:
 - "amount" is the QUANTITY of units (coins/shares/oz), never the fiat value. If only a fiat value and a price are shown, divide to get units.
 - If a row shows a holding/balance with no explicit buy/sell, use "buy".
 - Use the ticker for "symbol" (BTC, ETH, SOL, AAPL, TSLA, XAU, …) in uppercase.
-- Ignore totals, fiat cash balances, ads, and UI chrome. Only real asset positions/trades.
+- INCLUDE stablecoins (USDT, USDC, BUSD, DAI, TUSD, FDUSD, PYUSD, etc.) — they are real crypto assets, not fiat cash.
+- Ignore only true fiat balances (USD, EUR, GBP labels that are wallet/bank deposits, not crypto tokens), ads, totals rows, and UI chrome.
 - If nothing can be read, return [].`
 
 function normalize(arr) {
