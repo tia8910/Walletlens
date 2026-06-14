@@ -9835,9 +9835,77 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .si-remove-btn { color: rgba(0,0,0,0.7); }
 [data-wl-light] .si-select { background: rgba(0,0,0,0.04); }
 
-/* ══════════════════════════════════════════════════════════
-   WELCOME MODAL v2 — Creative onboarding bottom sheet
-   ══════════════════════════════════════════════════════════ */
+/* ── SmartImport: multi-screenshot thumbnail strip ──────────────────────── */
+.si-dropzone-compact {
+  padding: 0.6rem 1rem;
+  flex-direction: row;
+  gap: 0.5rem;
+  border-style: dashed;
+  min-height: unset;
+}
+.si-dropzone-compact .si-dropzone-icon { font-size: 1rem; }
+.si-dropzone-compact .si-dropzone-label { font-size: 0.78rem; }
+
+.si-thumb-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.si-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+.si-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.si-thumb-queued  { border-color: rgba(255,255,255,0.15); opacity: 0.6; }
+.si-thumb-reading { border-color: #fbbf24; }
+.si-thumb-done    { border-color: #10b981; }
+.si-thumb-error   { border-color: #f87171; opacity: 0.7; }
+
+.si-thumb-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.48);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.si-thumb-done .si-thumb-badge   { background: rgba(16,185,129,0.45); }
+.si-thumb-error .si-thumb-badge  { background: rgba(248,113,113,0.5); font-size: 0.9rem; }
+
+/* Spinning indicator while reading */
+.si-thumb-spin {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: si-spin 0.7s linear infinite;
+}
+@keyframes si-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .si-thumb-spin { animation: none; border-top-color: rgba(255,255,255,0.6); }
+}
+
+[data-wl-light] .si-thumb-queued { border-color: rgba(0,0,0,0.15); }
+
 @keyframes wm-float-up {
   0%   { opacity: 0; transform: translateY(0) scale(0.7); }
   12%  { opacity: 0.75; }
