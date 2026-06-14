@@ -18,9 +18,35 @@ let marketCacheTime = 0;
 const MARKET_CACHE_TTL = 60_000; // 1 minute
 let pendingMarketFetch = null;
 
-// Search results cache: keyed by query string, TTL 5 minutes
+// Search results cache: keyed by query string, TTL 5 minutes.
+// Map insertion order is used as LRU order — on every cache hit the entry
+// is deleted and re-inserted so the most-recently-used keys sink to the end.
+// Eviction removes the first (oldest/least-recently-used) key.
 const searchCache = new Map();
 const SEARCH_CACHE_TTL = 5 * 60_000;
+const SEARCH_CACHE_MAX = 200;
+
+// Pending search deduplication: if the same query is already in-flight,
+// attach to that promise instead of firing a second upstream request.
+const pendingSearches = new Map();
+
+function searchCacheGet(key) {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  // Move to end (most recently used)
+  searchCache.delete(key);
+  searchCache.set(key, entry);
+  return entry;
+}
+
+function searchCacheSet(key, value) {
+  if (searchCache.has(key)) searchCache.delete(key);
+  else if (searchCache.size >= SEARCH_CACHE_MAX) {
+    // Evict least-recently-used (first entry)
+    searchCache.delete(searchCache.keys().next().value);
+  }
+  searchCache.set(key, value);
+}
 
 async function refreshPrices(ids) {
   if (pendingFetch) return pendingFetch;
@@ -75,36 +101,50 @@ router.get('/search', async (req, res) => {
   if (!q) return res.json([]);
 
   const cacheKey = q.toLowerCase().trim();
-  const cached = searchCache.get(cacheKey);
+  const cached = searchCacheGet(cacheKey);
   if (cached && Date.now() - cached.time < SEARCH_CACHE_TTL) {
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.set('X-Cache', 'HIT');
     return res.json(cached.data);
   }
 
-  try {
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`
-    );
-    const data = await response.json();
-    const coins = (data.coins || []).slice(0, 20).map(c => ({
-      id: c.id,
-      symbol: c.symbol,
-      name: c.name,
-      thumb: c.thumb,
-    }));
-    // Evict stale entries if cache grows large (>200 keys)
-    if (searchCache.size > 200) {
-      const oldestKey = searchCache.keys().next().value;
-      searchCache.delete(oldestKey);
+  // Deduplicate concurrent identical queries
+  if (pendingSearches.has(cacheKey)) {
+    try {
+      const coins = await pendingSearches.get(cacheKey);
+      res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+      res.set('X-Cache', 'DEDUP');
+      return res.json(coins);
+    } catch {
+      if (cached) return res.json(cached.data);
+      return res.status(503).json({ error: 'Search service unavailable' });
     }
-    searchCache.set(cacheKey, { data: coins, time: Date.now() });
+  }
+
+  const fetchPromise = fetch(
+    `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`
+  )
+    .then(async (response) => {
+      const data = await response.json();
+      return (data.coins || []).slice(0, 20).map(c => ({
+        id: c.id,
+        symbol: c.symbol,
+        name: c.name,
+        thumb: c.thumb,
+      }));
+    })
+    .finally(() => pendingSearches.delete(cacheKey));
+
+  pendingSearches.set(cacheKey, fetchPromise);
+
+  try {
+    const coins = await fetchPromise;
+    searchCacheSet(cacheKey, { data: coins, time: Date.now() });
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.set('X-Cache', 'MISS');
     res.json(coins);
   } catch (err) {
     console.error('Search error:', err.message);
-    // Serve stale cache on upstream failure rather than returning an error
     if (cached) return res.json(cached.data);
     res.status(503).json({ error: 'Search service unavailable' });
   }
