@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react'
+import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import { getCachedCoinImage } from '../api'
 
 // Known non-crypto asset icons rendered inline — no CDN needed
@@ -74,11 +74,11 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 
 // Robust coin-logo fallback chain. Each <img> uses onError to bump to
 // the next stage; onLoad clears the timeout so we never advance past a
-// successfully loaded image. A 2.5 s timer forces an advance only when
+// successfully loaded image. A 3 s timer forces an advance only when
 // the browser silently stalls (blocked extension, slow CDN).
 //
 // Order: provided URL → jsDelivr SVG → CoinGecko assets → CoinCap → cryptoicons → generated gradient
-const STAGE_TIMEOUT_MS = 8000
+const STAGE_TIMEOUT_MS = 3000
 
 const CoinLogo = memo(function CoinLogo({
   image,
@@ -137,14 +137,14 @@ const CoinLogo = memo(function CoinLogo({
   // Only fall back to symbol-based CDNs as last resort — they can return
   // wrong icons when the same symbol exists for multiple coins (WLD, NS, FET…).
   const cachedImg = coinId ? getCachedCoinImage(coinId) : null
-  const STAGES = [
+  const STAGES = useMemo(() => [
     image    ? `img:${image}` : null,
     cachedImg && cachedImg !== image ? `img:${cachedImg}` : null,
     sym      ? `jsdelivr:${sym}` : null,
     sym      ? `coincap:${sym}` : null,
     sym      ? `lcw:${sym}` : null,
     sym      ? `cryptoicons:${sym}` : null,
-  ].filter(Boolean)
+  ].filter(Boolean), [image, cachedImg, sym])
 
   const [stageIdx, setStageIdx] = useState(0)
   const stageIdxRef = useRef(stageIdx)
@@ -167,7 +167,7 @@ const CoinLogo = memo(function CoinLogo({
 
   const onLoad   = () => { loadedRef.current = true }
   const advance  = () => setStageIdx(s => s + 1)
-  const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', loading: 'lazy', onLoad }
+  const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', loading: 'lazy', decoding: 'async', onLoad }
 
   const currentStage = STAGES[stageIdx]
   if (!currentStage) {
