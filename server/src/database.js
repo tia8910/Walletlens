@@ -47,6 +47,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_transactions_date      ON transactions(date);
   CREATE INDEX IF NOT EXISTS idx_transactions_wallet_date ON transactions(wallet_id, date DESC);
   CREATE INDEX IF NOT EXISTS idx_transactions_coin_type   ON transactions(coin_id, type);
+  CREATE INDEX IF NOT EXISTS idx_transactions_wallet_coin_type ON transactions(wallet_id, coin_id, type);
 `);
 
 export default db;

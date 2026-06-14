@@ -4,6 +4,21 @@ import db from '../database.js';
 
 const router = Router();
 
+// Module-level prepared statements — compiled once, reused on every request.
+const stmts = {
+  countAll:          db.prepare('SELECT COUNT(*) as cnt FROM transactions'),
+  countByWallet:     db.prepare('SELECT COUNT(*) as cnt FROM transactions WHERE wallet_id = ?'),
+  pageAll:           db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC LIMIT ? OFFSET ?'),
+  pageByWallet:      db.prepare('SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC LIMIT ? OFFSET ?'),
+  allTx:             db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC'),
+  allByWallet:       db.prepare('SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC'),
+  portfolioAll:      db.prepare('SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost FROM transactions GROUP BY coin_id, type'),
+  portfolioByWallet: db.prepare('SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost FROM transactions WHERE wallet_id = ? GROUP BY coin_id, type'),
+  insertTx:          db.prepare('INSERT INTO transactions (wallet_id, type, coin_id, coin_symbol, amount, price_per_unit, total_cost, exchange, notes, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+  getTxById:         db.prepare('SELECT * FROM transactions WHERE id = ?'),
+  deleteTx:          db.prepare('DELETE FROM transactions WHERE id = ?'),
+};
+
 router.get('/', (req, res) => {
   const { wallet_id, page, limit } = req.query;
 
@@ -14,11 +29,11 @@ router.get('/', (req, res) => {
 
     let total, transactions;
     if (wallet_id) {
-      total        = db.prepare('SELECT COUNT(*) as cnt FROM transactions WHERE wallet_id = ?').get(wallet_id).cnt;
-      transactions = db.prepare('SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC LIMIT ? OFFSET ?').all(wallet_id, pageSize, offset);
+      total        = stmts.countByWallet.get(wallet_id).cnt;
+      transactions = stmts.pageByWallet.all(wallet_id, pageSize, offset);
     } else {
-      total        = db.prepare('SELECT COUNT(*) as cnt FROM transactions').get().cnt;
-      transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC LIMIT ? OFFSET ?').all(pageSize, offset);
+      total        = stmts.countAll.get().cnt;
+      transactions = stmts.pageAll.all(pageSize, offset);
     }
     res.set('X-Total-Count', String(total));
     res.set('X-Page', String(Math.max(1, parseInt(page) || 1)));
@@ -27,33 +42,17 @@ router.get('/', (req, res) => {
   }
 
   // Legacy: return all (unchanged behaviour for existing clients)
-  let transactions;
-  if (wallet_id) {
-    transactions = db.prepare(
-      'SELECT * FROM transactions WHERE wallet_id = ? ORDER BY date DESC, id DESC'
-    ).all(wallet_id);
-  } else {
-    transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC').all();
-  }
+  const transactions = wallet_id
+    ? stmts.allByWallet.all(wallet_id)
+    : stmts.allTx.all();
   res.json(transactions);
 });
 
 router.get('/portfolio', (req, res) => {
   const { wallet_id } = req.query;
-  let rows;
-  if (wallet_id) {
-    rows = db.prepare(`
-      SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost
-      FROM transactions WHERE wallet_id = ?
-      GROUP BY coin_id, type
-    `).all(wallet_id);
-  } else {
-    rows = db.prepare(`
-      SELECT coin_id, coin_symbol, type, SUM(amount) as total_amount, SUM(total_cost) as total_cost
-      FROM transactions
-      GROUP BY coin_id, type
-    `).all();
-  }
+  const rows = wallet_id
+    ? stmts.portfolioByWallet.all(wallet_id)
+    : stmts.portfolioAll.all();
 
   const holdings = {};
   for (const row of rows) {
@@ -87,17 +86,14 @@ router.post('/', (req, res) => {
   }
 
   const total_cost = amount * price_per_unit;
-  const result = db.prepare(`
-    INSERT INTO transactions (wallet_id, type, coin_id, coin_symbol, amount, price_per_unit, total_cost, exchange, notes, date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(wallet_id, type, coin_id, coin_symbol, amount, price_per_unit, total_cost, exchange || '', notes || '', date || new Date().toISOString().split('T')[0]);
+  const result = stmts.insertTx.run(wallet_id, type, coin_id, coin_symbol, amount, price_per_unit, total_cost, exchange || '', notes || '', date || new Date().toISOString().split('T')[0]);
 
-  const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(result.lastInsertRowid);
+  const transaction = stmts.getTxById.get(result.lastInsertRowid);
   res.status(201).json(transaction);
 });
 
 router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM transactions WHERE id = ?').run(req.params.id);
+  stmts.deleteTx.run(req.params.id);
   res.status(204).send();
 });
 
