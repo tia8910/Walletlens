@@ -3610,6 +3610,9 @@ tr:last-child td { border-bottom: none; }
   pointer-events: none;
   display: block;
   will-change: transform;
+  /* Isolate this canvas from the rest of the document — layout/paint/style
+     changes inside it never trigger recalculation of surrounding elements. */
+  contain: strict;
 }
 
 /* ═══ Generative brand reactivity — ambient mood aura ═══════════════════════
@@ -4905,6 +4908,17 @@ tr:last-child td { border-bottom: none; }
   color: rgba(255,255,255,0.75);
   font-size: 0.9rem;
 }
+.wl-page-fallback-spinner {
+  width: 30px;
+  height: 30px;
+  border: 2.5px solid rgba(var(--g-rgb), 0.15);
+  border-top-color: var(--g);
+  border-radius: 50%;
+  animation: wl-spin 0.75s linear infinite;
+  will-change: transform;
+  contain: layout style;
+}
+@keyframes wl-spin { to { transform: rotate(360deg); } }
 
 /* ── Overlay ── */
 .wl-overlay {

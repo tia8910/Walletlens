@@ -13,9 +13,11 @@ const API_CACHE = `walletlens-api-${SW_VERSION}`
 const CDN_CACHE = 'walletlens-cdn-v1'
 
 // Static files to pre-cache at install time for instant first-load.
+// '/' (the SPA shell HTML) is included so the app works offline from the
+// very first install, before any navigation has been served from cache.
 // stock-prices.json is updated every 30 min by GitHub Actions; caching it
 // avoids a network round-trip on the first price fetch after install.
-const PRECACHE_URLS = ['/news.json', '/stock-prices.json', '/manifest.webmanifest']
+const PRECACHE_URLS = ['/', '/news.json', '/stock-prices.json', '/manifest.webmanifest']
 
 // Price/market API origins we want to cache for offline fallback
 const PRICE_API_PATTERNS = [
