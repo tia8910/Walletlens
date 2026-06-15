@@ -3138,4 +3138,107 @@ Once you run this setup for 30 days, something changes: you stop reacting to pri
 That's the goal — not just tracking what you have, but knowing what it's all *for*.
 `,
   },
+  {
+    slug: 'how-to-track-investment-portfolio-multiple-currencies',
+    title: 'How to Track Your Investment Portfolio in Multiple Currencies',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Holding assets in USD, EUR, GBP, or crypto? Learn how to track your full portfolio net worth across multiple currencies accurately and for free.',
+    content: `
+If you hold investments across more than one country — or simply own crypto priced in USD while you live in Europe or the UK — currency conversion is one of the most quietly frustrating parts of tracking your net worth. You check your portfolio, see a number that looks great in dollars, then convert it to euros and feel considerably less enthusiastic. Without a clear system, your true net worth stays blurry.
+
+This guide explains exactly how multi-currency portfolio tracking works, what traps to avoid, and how to get an accurate, real-time picture of everything you own — regardless of where in the world it's denominated.
+
+## Why Currency Exposure Matters More Than Most Investors Realise
+
+Currency fluctuations can silently erode — or amplify — your returns without any of your underlying assets changing in price. A 10% appreciation of the US dollar against the euro, for example, increases the euro-denominated value of USD-priced assets by roughly the same amount, even if Bitcoin or an S&P 500 ETF didn't move at all. The reverse is equally true.
+
+This means your **real returns** in your home currency depend on two things: how your assets perform, and how the currencies they're priced in move relative to yours. Ignoring the second factor gives you an incomplete and potentially misleading picture.
+
+This is especially relevant for:
+
+- **Crypto investors** — virtually all crypto prices are quoted in USD, even if you're based in Australia, Germany, or Japan.
+- **International stock holders** — owning US tech stocks (Apple, NVIDIA, etc.) from the UK or EU means your returns are partially a currency bet.
+- **People with multiple bank accounts** in different countries or currencies.
+- **Precious metals holders** — gold is globally priced in USD per troy ounce; converting to your local currency affects your P&L meaningfully.
+
+## The Three Main Approaches to Multi-Currency Tracking
+
+### 1. Spreadsheet in Your Base Currency
+
+The most common DIY approach is to build a spreadsheet that lists every asset, its price in the original currency, today's exchange rate, and a converted value in your home currency. This works, but it has two major weaknesses: exchange rates go stale the moment you close the tab, and maintaining dozens of GOOGLEFINANCE or IMPORTXML formulas becomes a part-time job.
+
+### 2. Exchange API Connections (With Privacy Trade-offs)
+
+Some portfolio trackers pull live data directly from your exchange accounts and auto-convert everything. The convenience is real, but so is the risk — you're handing API keys (and sometimes read/write access) to a third-party server. Even "read-only" API keys expose your balances and transaction history to the tracker's servers. If you're privacy-conscious, this model is worth thinking twice about.
+
+### 3. Local-First, Privacy-Preserving Trackers
+
+A newer category of tools stores everything in your browser with no account, no login, and no data ever sent to a server. Live prices are fetched in real time, but your holdings and trades remain entirely on your device. This is the most private approach, and it removes the risk of a data breach on the tracker's side entirely.
+
+## What "Base Currency" Actually Means in Portfolio Tracking
+
+Your **base currency** is the currency you use to measure your net worth — typically the one you earn, spend, and pay taxes in. If you're in the UK, that's GBP. Germany, that's EUR. The US, USD. Australia, AUD.
+
+A good multi-currency tracker does the following automatically:
+
+1. Stores each asset in its **native pricing currency** (e.g., BTC in USD, a Frankfurt-listed ETF in EUR, a London property in GBP).
+2. Fetches **live exchange rates** so everything is converted consistently at the current rate.
+3. Displays your **total net worth in your base currency**, with drill-down showing per-asset values in both native and base currency.
+
+This matters for cost basis too. If you bought ETH at a time when 1 USD = 0.85 EUR, and you sell when 1 USD = 0.92 EUR, your profit in USD and your profit in EUR are different numbers — and the EUR figure is what matters for EU-based tax purposes.
+
+*(Note: this article is educational, not financial or tax advice. Always consult a qualified tax professional for your specific situation.)*
+
+## Tracking Crypto Across Currencies: Practical Steps
+
+Here's a straightforward process for getting your multi-currency portfolio organised:
+
+1. **Choose your base currency first.** Decide which currency your final net worth number should appear in. Everything else converts to this.
+2. **List every asset with its native currency.** Crypto is USD. European ETFs may be EUR. Property in Spain is EUR. UK ISA holdings are GBP. Be explicit.
+3. **Record your purchase price in the native currency.** This is critical for accurate cost basis. Don't convert at the time of entry — record the original trade price in the original currency.
+4. **Let the tool handle live conversion.** Manually updating exchange rates daily is unsustainable. Use a tracker that pulls live FX rates automatically.
+5. **Review currency exposure as part of your allocation.** Your portfolio isn't just "X% crypto, Y% stocks" — it's also "Z% USD-denominated, W% EUR-denominated." Both views are useful.
+
+## What a Multi-Currency Portfolio Snapshot Should Show You
+
+A well-designed portfolio view for multi-currency holders should surface:
+
+| What You Need | Why It Matters |
+|---|---|
+| Total net worth in base currency | Your actual financial position |
+| Per-asset value in native + base currency | Spot currency impact on individual holdings |
+| Cost basis in original purchase currency | Accurate P&L and tax calculation |
+| Unrealised P&L in base currency | True gain/loss including FX movement |
+| Allocation by asset class | Understand diversification at a glance |
+
+[WalletLens](https://walletlens.live) handles this natively — tracking 10,000+ crypto assets alongside stocks, ETFs, gold, silver, real estate, and cash in a single net-worth dashboard. Because all data is stored locally in your browser with no account required, your holdings never leave your device. You can log trades manually (including voice entry — just say "I bought 0.5 ETH at 3200") or import via CSV/Excel, and the live price engine handles currency conversion automatically so your allocation donut and unrealised P&L always reflect real market rates.
+
+## Common Multi-Currency Tracking Mistakes to Avoid
+
+**Using yesterday's exchange rate.** FX markets move constantly. A tracker that updates prices once a day can show you a net worth that's hundreds or thousands off by afternoon.
+
+**Mixing up native and converted cost basis.** If you bought Bitcoin at $28,000 and your tracker stores that as €25,800 (the conversion at the time), but now computes P&L using today's exchange rate applied to the dollar price, the numbers will be inconsistent. Record the original trade in its original currency.
+
+**Ignoring FX as part of your risk.** If 90% of your investments are USD-denominated but you spend in GBP, you have meaningful USD/GBP currency risk that isn't visible in a simple "stocks vs crypto" pie chart.
+
+**Not backing up your data.** If you use a local-first tool, make sure you export a backup regularly. WalletLens uses a compact WLZ export code — no cloud sync required, but also no safety net if you don't save it. Export after every significant update.
+
+## How to Think About Currency Diversification
+
+Currency diversification is the idea of deliberately holding assets denominated in multiple currencies so no single currency crisis can wipe out your entire net worth. In practice:
+
+- **Hard assets** like gold and Bitcoin are useful here — gold is USD-priced globally, but it tends to hold real purchasing power across currencies over time. Bitcoin is similar in that its value is global, not tied to one country's monetary policy.
+- **Real estate** is naturally denominated in local currency — owning property in Spain gives you EUR exposure without actively managing FX.
+- **Cash positions** in two or three major currencies (USD, EUR, GBP) act as a buffer if one weakens significantly.
+
+The key is to know what currency exposure you actually have — which requires the kind of multi-currency view described above.
+
+## Conclusion
+
+Tracking a portfolio that spans multiple currencies isn't just an accounting exercise — it's how you see your **real** financial picture. A gain that looks impressive in USD might be flat or negative in EUR, and that distinction matters for both decision-making and tax reporting.
+
+The core habits are straightforward: choose a base currency, record trades in their native currency, use a tool that fetches live FX rates, and review your currency exposure alongside your asset-class allocation. Whether you're a UK investor heavy in US tech stocks, a European crypto holder, or someone with assets in three different countries, getting this right turns a confusing pile of numbers into genuine financial clarity.
+    `
+  },
 ]
