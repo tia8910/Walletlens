@@ -138,8 +138,15 @@ function clampDesc(s, max = 158) {
   return (sp > 0 ? s.slice(0, sp) : s.slice(0, max)).replace(/[\s,;:.—–-]+$/, '') + '…'
 }
 
-function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false, ogType = 'website', published, modified }) {
-  const url = ORIGIN + withSlash(path)
+// canonicalOverride: use a different URL for the canonical tag than `path`
+//   (e.g. Arabic /ar/vs/ pages → English /vs/ canonical to avoid "Duplicate,
+//   Google chose different canonical").
+// ogType: 'article' | 'website' (default). Blog posts pass 'article'.
+// published / modified: ISO date strings for article:published_time /
+//   article:modified_time — only emitted when ogType === 'article'.
+function buildPage({ path, canonicalOverride, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false, ogType = 'website', published, modified }) {
+  const canonUrl = ORIGIN + withSlash(canonicalOverride || path)
+  const pageUrl  = ORIGIN + withSlash(path)
   description = clampDesc(description)
   let html = template
   if (lang !== 'en' || dir !== 'ltr') {
@@ -169,10 +176,10 @@ function buildPage({ path, title, description, bodyHtml, jsonLd, lang = 'en', di
   }
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
   html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
-  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         `$1${esc(url)}$2`)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         `$1${esc(canonUrl)}$2`)
   html = html.replace(/(<meta property="og:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
   html = html.replace(/(<meta property="og:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
-  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    `$1${esc(url)}$2`)
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    `$1${esc(pageUrl)}$2`)
   html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
   if (alternates && alternates.length) {
@@ -591,6 +598,12 @@ ${arFaq.html}
 <p><a href="/ar/free-net-worth-tracker">متتبّع الثروة المجاني</a> · <a href="/vs/${c.slug}">English</a></p>`
   write('/ar/vs/' + c.slug, buildPage({
     path: '/ar/vs/' + c.slug,
+    // Canonical → English URL: Google was overriding the Arabic self-referencing
+    // canonical with the English version anyway ("Duplicate, Google chose different
+    // canonical"). Pointing it to the English URL explicitly resolves the conflict
+    // and turns the status to "Alternate page with proper canonical tag", which is
+    // the correct hreflang pattern.
+    canonicalOverride: '/vs/' + c.slug,
     title: `WalletLens مقابل ${ar.name} — متتبّع صافي ثروة مجاني`,
     description: `مقارنة بين WalletLens و${ar.name}: بديل مجاني وبلا حساب لتتبّع صافي ثروتك عبر العملات الرقمية والأسهم والمعادن والنقد، مع بقاء بياناتك على جهازك.`,
     bodyHtml: body,

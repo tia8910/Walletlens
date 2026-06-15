@@ -1498,6 +1498,126 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
   )
 }
 
+// ── Risk Profile ─────────────────────────────────────────────────────────
+
+function getRiskLevel(h) {
+  const cat = categorizeAsset(h)
+  if (cat === 'cash' || cat === 'metals' || cat === 'realestate') return 'low'
+  if (isStablecoin(h.coin_id, h.coin_symbol)) return 'low'
+  const id = (h.coin_id || '').toLowerCase()
+  if (cat === 'stocks') return 'medium'
+  if (KNOWN_MEGA.has(id) || KNOWN_LARGE.has(id)) return 'medium'
+  return 'high'
+}
+
+function computeRiskProfile(enriched, totalValue) {
+  if (!enriched.length || !totalValue) return null
+  let low = 0, medium = 0, high = 0
+  enriched.forEach(h => {
+    const val = h.value > 0 ? h.value : (h.total_invested || 0)
+    const lvl = getRiskLevel(h)
+    if (lvl === 'low') low += val
+    else if (lvl === 'medium') medium += val
+    else high += val
+  })
+  const total = low + medium + high
+  if (!total) return null
+  const lowPct  = (low    / total) * 100
+  const medPct  = (medium / total) * 100
+  const highPct = (high   / total) * 100
+  let traderType, traderColor, traderDesc
+  if (lowPct >= 60) {
+    traderType = 'Conservative Trader'
+    traderColor = '#fbbf24'
+    traderDesc = 'Your portfolio is primarily in low-risk, stable assets.'
+  } else if (highPct >= 50) {
+    traderType = 'Aggressive Trader'
+    traderColor = '#f87171'
+    traderDesc = 'You hold significant high-risk positions.'
+  } else {
+    traderType = 'Moderate Trader'
+    traderColor = '#10b981'
+    traderDesc = 'Balanced mix of risk levels across your portfolio.'
+  }
+  return { lowPct, medPct, highPct, traderType, traderColor, traderDesc }
+}
+
+function RiskGauge({ pct, color, label }) {
+  const R = 36, cx = 50, cy = 50
+  const circ = 2 * Math.PI * R
+  const dash = circ * Math.min(pct / 100, 1)
+  const gap  = circ - dash
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.45rem' }}>
+      <svg viewBox="0 0 100 100" style={{ width:90, height:90 }}>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9"/>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={color} strokeWidth="9"
+          strokeDasharray={`${dash} ${gap}`} strokeLinecap="round"
+          transform="rotate(-90 50 50)"/>
+        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+          fontSize="12" fontWeight="800" fill={color} fontFamily="Inter,sans-serif">
+          {pct.toFixed(2)}%
+        </text>
+      </svg>
+      <span style={{ fontSize:'0.72rem', color:'var(--text-muted)', textAlign:'center', lineHeight:1.3, maxWidth:80 }}>{label}</span>
+    </div>
+  )
+}
+
+function RiskProfileCard({ enriched, totalValue }) {
+  const profile = useMemo(() => computeRiskProfile(enriched, totalValue), [enriched, totalValue])
+  if (!profile) return null
+  const { lowPct, medPct, highPct, traderType, traderColor, traderDesc } = profile
+
+  const iconPath = traderColor === '#f87171'
+    ? 'M13 2L3 14h9l-1 8 10-12h-9l1-8z'      // aggressive: lightning
+    : traderColor === '#10b981'
+      ? 'M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z'  // moderate: star
+      : 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' // conservative: shield-star
+
+  return (
+    <div className="glass-card" style={{ marginTop:'0.75rem' }}>
+      <h3 style={{ margin:'0 0 1rem', display:'inline-flex', alignItems:'center', gap:'0.4em', fontSize:'0.95rem', fontWeight:700 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Risk Profile
+      </h3>
+
+      {/* Trader type hero */}
+      <div style={{
+        borderRadius:'12px', padding:'0.9rem 1.1rem', marginBottom:'1.2rem',
+        background:`linear-gradient(135deg, ${traderColor}1a, ${traderColor}0a)`,
+        border:`1px solid ${traderColor}40`,
+        display:'flex', alignItems:'center', gap:'1rem',
+      }}>
+        <div style={{
+          width:44, height:44, borderRadius:'50%', flexShrink:0,
+          border:`2px solid ${traderColor}`, background:`${traderColor}22`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={traderColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d={iconPath}/>
+          </svg>
+        </div>
+        <div>
+          <div style={{ fontSize:'1rem', fontWeight:800, color:traderColor }}>{traderType}</div>
+          <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.4 }}>{traderDesc}</div>
+        </div>
+      </div>
+
+      {/* Three gauges */}
+      <div style={{ display:'flex', justifyContent:'space-around', gap:'0.5rem', paddingBottom:'0.25rem' }}>
+        <RiskGauge pct={lowPct}  color="#fbbf24" label="Low-risk products" />
+        <RiskGauge pct={medPct}  color="#10b981" label="Medium risk products" />
+        <RiskGauge pct={highPct} color="#60a5fa" label="High-risk products" />
+      </div>
+
+      <p style={{ fontSize:'0.7rem', color:'var(--text-sub)', textAlign:'center', margin:'0.75rem 0 0', lineHeight:1.5 }}>
+        Based on asset type and market capitalization
+      </p>
+    </div>
+  )
+}
+
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
   { tag:'ALL ASSETS',    icon:'globe', color:'var(--g-ink)', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
@@ -4228,6 +4348,11 @@ export default function Dashboard() {
               totalValue={totalValue}
               totalInvested={totalInvested}
             /></Suspense>
+          )}
+
+          {/* Risk Profile */}
+          {!isDemo && enriched.length > 0 && (
+            <RiskProfileCard enriched={enriched} totalValue={totalValue} />
           )}
 
           {/* Wallet Evaluation */}
