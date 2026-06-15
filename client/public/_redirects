@@ -1,1 +1,4 @@
+# www → apex (eliminates "www.walletlens.live" from Search Console duplicate reports)
+https://www.walletlens.live/* https://walletlens.live/:splat 301
+
 /* /index.html 200
