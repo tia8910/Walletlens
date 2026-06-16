@@ -145,6 +145,8 @@
     <link rel="preconnect" href="https://api.binance.com" crossorigin />
     <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
 
     <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
          full preconnect (TLS included) cuts ~200 ms off the first API call. -->
@@ -153,6 +155,8 @@
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <link rel="dns-prefetch" href="https://api.gold-api.com" />
     <link rel="dns-prefetch" href="https://stooq.com" />
     <link rel="dns-prefetch" href="https://open.er-api.com" />
