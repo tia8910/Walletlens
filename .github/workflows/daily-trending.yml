@@ -1,0 +1,49 @@
+name: Daily Trending Post
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 09:00 UTC daily (distinct from lenz-social at 15:00)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install promo deps
+        working-directory: ./promo
+        run: npm install
+
+      - name: Generate and post trending update
+        working-directory: ./promo
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
+        run: node daily-trending.mjs
+
+      # If no X creds, open a review issue so the post can be sent manually
+      - name: Open review issue (draft mode only)
+        if: ${{ env.X_API_KEY == '' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const path = 'promo/x-trending.json'
+            if (!fs.existsSync(path)) { console.log('No draft file — post was sent directly.'); return }
+            const { title, body } = JSON.parse(fs.readFileSync(path, 'utf8'))
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['x-draft'] })
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}

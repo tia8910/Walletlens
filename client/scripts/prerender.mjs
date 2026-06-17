@@ -307,7 +307,7 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 write('/', buildPage({
   path: '/',
   title: 'WalletLens — Free Portfolio Tracker with Live Prices',
-  description: 'WalletLens is a free portfolio & net worth tracker with live prices for crypto, US stocks, gold and cash. No account — your data stays on your device.',
+  description: 'Track crypto, stocks, gold & cash in one free dashboard — live prices, AI analysis, fear & greed index. No account. Your data stays on your device. 100% free.',
   bodyHtml: homeBody,
   jsonLd: [
     // WebApplication + Organization are emitted once site-wide from the global
@@ -1021,8 +1021,8 @@ ${POSTS.map(p => `
 `
 write('/blog', buildPage({
   path: '/blog',
-  title: 'Blog — Portfolio Tracking & Crypto Investing | WalletLens',
-  description: 'Free guides on tracking your crypto, stocks and gold portfolio, reading whale transactions, the Fear & Greed Index, diversification, and setting profit targets.',
+  title: 'Blog — Fear & Greed, Portfolio Tracking & Crypto Investing | WalletLens',
+  description: 'Crypto fear and greed index explained, DCA strategy, gold vs Bitcoin, portfolio diversification, net worth tracking — free investing guides from WalletLens.',
   bodyHtml: blogBody,
 }))
 
@@ -1278,32 +1278,127 @@ ${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>$
 // ── Market Index (data page — press & citation magnet) ───────────────────────
 write('/market-index', buildPage({
   path: '/market-index',
-  title: 'WalletLens Market Index — Live Crypto Market Sentiment Score (0–100)',
-  description: 'The WalletLens Market Index distills the whole crypto market into one number: a live 0–100 sentiment score from market breadth, momentum and large-cap leadership across the top 250 coins. Free to read and cite.',
+  title: 'Crypto Fear & Greed Index — Live Market Sentiment Score | WalletLens',
+  description: 'Live crypto fear and greed index — a 0–100 sentiment score updated continuously from market breadth, momentum and large-cap leadership across 250 coins. See if markets are fearful or greedy.',
   bodyHtml: `
-<h1>WalletLens Market Index</h1>
-<p>The WalletLens Market Index distills the entire crypto market into a single number — a live <strong>0–100 sentiment score</strong> updated continuously. It is built from three public-data signals across the top 250 cryptocurrencies and is free for anyone to read, cite, and link.</p>
-<h2>How the index is calculated</h2>
-<p>The score is a weighted blend of <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h), <strong>momentum</strong> (35%, the average normalised 24h move of the top 50), and <strong>large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up). Scores above 75 indicate an overheated market; below 25 indicates extreme caution. All inputs are public market data — WalletLens stores no personal portfolio data on any server.</p>
+<h1>Crypto Fear & Greed Index — WalletLens Market Sentiment Score</h1>
+<p>The WalletLens Market Index is a live <strong>0–100 fear and greed score</strong> for the crypto market — updated continuously from three public-data signals across the top 250 cryptocurrencies. It is free for anyone to read, cite, and link.</p>
+<h2>How the fear and greed score is calculated</h2>
+<p>The score is a weighted blend of <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h), <strong>momentum</strong> (35%, the average normalised 24h move of the top 50), and <strong>large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up). All inputs are public market data.</p>
+<h2>How to read the score</h2>
+<ul>
+<li><strong>0–24 — Extreme Fear:</strong> most participants are selling. Historically a contrarian buy signal.</li>
+<li><strong>25–49 — Fear:</strong> market pessimistic; may be oversold.</li>
+<li><strong>50 — Neutral:</strong> balanced sentiment.</li>
+<li><strong>51–74 — Greed:</strong> positive momentum; watch for overextension.</li>
+<li><strong>75–100 — Extreme Greed:</strong> often precedes corrections.</li>
+</ul>
 <h2>Citing the WalletLens Market Index</h2>
 <p>Journalists, researchers and bloggers may cite the index freely. Use the format: "WalletLens Market Index: [score]/100 ([label])" and link <a href="/market-index">walletlens.live/market-index</a>.</p>
-<p><a href="/dashboard">Open WalletLens free</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>
+<p><a href="/fear-and-greed-index">Fear and Greed Index guide</a> · <a href="/dashboard">Open WalletLens free</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>
 `,
   jsonLd: [
     {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
-      name: 'WalletLens Market Index',
-      description: 'A live 0–100 crypto market sentiment index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.',
+      name: 'WalletLens Crypto Fear & Greed Index',
+      description: 'A live 0–100 crypto fear and greed index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.',
       url: `${ORIGIN}/market-index`,
       creator: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
       license: `${ORIGIN}/terms`,
       isAccessibleForFree: true,
-      variableMeasured: 'WalletLens Market Index (0–100)',
+      variableMeasured: 'Crypto Fear and Greed Index (0–100)',
+      keywords: 'fear and greed index, crypto sentiment, market mood, crypto fear greed',
     },
   ],
 }))
 console.log('Prerendered /market-index data page.')
+
+// ── Fear & Greed Index (dedicated SEO landing — targets 73 impressions/0 clicks) ──
+const fgFaq = faqBlock([
+  {
+    q: 'What is the crypto fear and greed index?',
+    a: 'The crypto fear and greed index is a 0–100 sentiment score that measures whether market participants are currently fearful (selling, pessimistic) or greedy (buying, optimistic). Scores below 25 indicate extreme fear; above 75 indicate extreme greed. It is used as a contrarian indicator — extreme fear often precedes rallies, while extreme greed often precedes corrections.',
+  },
+  {
+    q: 'What does an extreme fear reading mean?',
+    a: 'Extreme fear (0–24) means the majority of market participants are selling or holding cash out of fear. Historically, extreme fear readings in crypto have often preceded market recoveries, though fear can deepen before reversing. Many investors treat it as a potential buying opportunity, following Warren Buffett\'s principle: "be fearful when others are greedy and greedy when others are fearful."',
+  },
+  {
+    q: 'What does an extreme greed reading mean?',
+    a: 'Extreme greed (75–100) signals that the market is overheated — most participants are buying aggressively and FOMO is elevated. Historically, sustained extreme greed readings have often preceded price corrections. Risk-aware investors use this as a signal to reduce exposure or tighten stop-losses.',
+  },
+  {
+    q: 'How often is the fear and greed index updated?',
+    a: 'The WalletLens fear and greed index is updated continuously in real time from live market data across the top 250 cryptocurrencies by market cap.',
+  },
+  {
+    q: 'What is a good fear and greed index number to buy?',
+    a: 'There is no universal "good" number — it depends on your strategy and risk tolerance. Contrarian investors typically look for readings below 25 (extreme fear) as potential entry points. Long-term investors often ignore short-term sentiment and focus on fundamentals. The index is a supporting tool, not a standalone buy or sell signal.',
+  },
+  {
+    q: 'How is the WalletLens fear and greed index calculated?',
+    a: 'The WalletLens index is a weighted blend of market breadth (45% — the share of top 100 coins up over 24h), momentum (35% — the average normalised 24h price move of the top 50 coins), and large-cap leadership (20% — the share of the top 10 coins by market cap that are up). All data comes from public market sources.',
+  },
+  {
+    q: 'Where can I see the live fear and greed index?',
+    a: 'The live WalletLens fear and greed index is displayed on the Market Index page at walletlens.live/market-index and inside the WalletLens dashboard at walletlens.live/dashboard — free, no account required.',
+  },
+])
+write('/fear-and-greed-index', buildPage({
+  path: '/fear-and-greed-index',
+  title: 'Fear and Greed Index — Live Crypto Sentiment Score | WalletLens',
+  description: 'Live fear and greed index for crypto: a 0–100 sentiment score from market breadth, momentum and volume across 250 coins. See if markets are in extreme fear or extreme greed right now — free.',
+  bodyHtml: `
+<h1>Fear and Greed Index — Live Crypto Market Sentiment</h1>
+<p>The <strong>fear and greed index</strong> is a 0–100 score that captures whether crypto market participants are currently driven by fear (selling, panic) or greed (buying, FOMO). The WalletLens index is updated continuously from live market data across the top 250 cryptocurrencies.</p>
+<p><a href="/market-index">→ See the live score on the Market Index page</a></p>
+
+<h2>How to read the fear and greed scale</h2>
+<ul>
+<li><strong>0–24 — Extreme Fear:</strong> Market participants are panic-selling or holding cash. Historically a contrarian buy opportunity.</li>
+<li><strong>25–49 — Fear:</strong> Pessimism dominates. Market may be oversold but sellers are still in control.</li>
+<li><strong>50 — Neutral:</strong> Balanced sentiment between buyers and sellers.</li>
+<li><strong>51–74 — Greed:</strong> Optimism and positive momentum. Watch for overextension.</li>
+<li><strong>75–100 — Extreme Greed:</strong> FOMO-driven buying. Historically precedes corrections.</li>
+</ul>
+
+<h2>How the WalletLens fear and greed index works</h2>
+<p>The score is calculated from three signals across the top 250 cryptocurrencies:</p>
+<ul>
+<li><strong>Market breadth (45%):</strong> the share of the top 100 coins that are up over 24 hours. When most coins are rising, sentiment is greedy; when most are falling, fearful.</li>
+<li><strong>Momentum (35%):</strong> the average normalised 24-hour price move of the top 50 coins. Strong up-moves push the score toward greed; sharp declines push toward fear.</li>
+<li><strong>Large-cap leadership (20%):</strong> the share of the top 10 coins by market cap that are up. Bitcoin and Ethereum leading up signals broader confidence.</li>
+</ul>
+
+<h2>How to use the fear and greed index in your investing</h2>
+<p>The fear and greed index is a <strong>contrarian sentiment tool</strong> — it tells you what the crowd is doing so you can decide whether to follow or fade them:</p>
+<ul>
+<li><strong>Extreme fear as a buying signal:</strong> When the index is below 25, fear is peak. Historically, buying during extreme fear and holding has outperformed buying during greed in most crypto cycles.</li>
+<li><strong>Extreme greed as a risk-reduction signal:</strong> When the index is above 75, assess whether to reduce exposure, set tighter stop-losses, or take partial profits.</li>
+<li><strong>Confirm with technicals:</strong> Sentiment alone is not a trading signal. Combine with price structure, support/resistance levels, and your own time horizon.</li>
+<li><strong>Ignore short-term noise:</strong> Daily swings in the fear and greed index are common. The signal is most useful at extremes (below 20 or above 80) and when sustained for multiple days.</li>
+</ul>
+
+<h2>Track your portfolio alongside the fear and greed index</h2>
+<p><a href="https://walletlens.live">WalletLens</a> shows the live fear and greed index inside the dashboard alongside your full portfolio — crypto, stocks, gold, and cash — so you always know the market sentiment context when you are looking at your holdings. It is 100% free, needs no account, and keeps all your data on your device.</p>
+<p><a href="/market-index">Live fear and greed score →</a> · <a href="/dashboard">Open portfolio dashboard →</a> · <a href="/blog">Read the blog →</a></p>
+
+${fgFaq.html}
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${ORIGIN}/` },
+        { '@type': 'ListItem', position: 2, name: 'Fear and Greed Index', item: `${ORIGIN}/fear-and-greed-index/` },
+      ],
+    },
+    fgFaq.jsonLd,
+  ],
+}))
+console.log('Prerendered /fear-and-greed-index landing page.')
 
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
@@ -1595,7 +1690,8 @@ const STATIC_ROUTES = [
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
-  { path: '/market-index', changefreq: 'daily', priority: '0.8' },
+  { path: '/market-index', changefreq: 'daily', priority: '0.9' },
+  { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },
