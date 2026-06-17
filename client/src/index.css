@@ -552,7 +552,7 @@ input, select, textarea {
 /* ── Ticker ── */
 [data-wl-light] .tick-name { color: var(--text); }
 [data-wl-light] .ticker-strip { background: var(--bg3); border-color: rgba(0,0,0,0.06); }
-[data-wl-light] .wl-topbar .ticker-strip { border-bottom-color: rgba(0,0,0,0.7); }
+[data-wl-light] .wl-topbar .ticker-strip { border-bottom-color: rgba(0,0,0,0.08); }
 
 /* ── Misc white text patterns ── */
 [data-wl-light] .tips-title { color: var(--text); }
@@ -636,7 +636,7 @@ input, select, textarea {
 [data-wl-light] .tips-dot:hover:not(.tips-dot-active) { background: rgba(0,0,0,0.35); }
 
 /* ── Theme strip ── */
-[data-wl-light] .wl-topbar { border-bottom-color: rgba(0,0,0,0.7); }
+[data-wl-light] .wl-topbar { border-bottom-color: rgba(0,0,0,0.08); }
 [data-wl-light] .theme-strip { background: var(--bg3); border-bottom-color: rgba(0,0,0,0.08); }
 [data-wl-light] .theme-strip-heading { color: var(--text-sub); }
 [data-wl-light] .theme-strip-btn:hover { background: rgba(0,0,0,0.06); }
