@@ -80,6 +80,9 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />

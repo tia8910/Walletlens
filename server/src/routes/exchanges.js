@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/', (req, res) => {
   const exchanges = db.prepare('SELECT id, name, is_connected, created_at FROM exchanges ORDER BY created_at DESC').all();
+  res.set('Cache-Control', 'private, no-cache');
   res.json(exchanges);
 });
 

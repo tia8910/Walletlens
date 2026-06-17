@@ -370,10 +370,35 @@ function Drawer({ open, onClose }) {
   )
 }
 
+// ── Memoized app footer — re-renders only when language changes, not on every App state update ──
+const AppFooter = memo(function AppFooter() {
+  const navigate = useNavigate()
+  const { t } = useLanguage()
+  return (
+    <footer className="wl-app-footer">
+      <div className="wl-app-footer-brand">
+        <Logo size={22} />
+        <span>WalletLens © {CURRENT_YEAR}</span>
+      </div>
+      <nav className="wl-app-footer-links">
+        <button onClick={() => navigate('/lenz')}>$LENZ on Sui</button>
+        <button onClick={() => navigate('/about')}>{t('about')}</button>
+        <button onClick={() => navigate('/faq')}>FAQ</button>
+        <button onClick={() => navigate('/blog')}>{t('blog')}</button>
+        <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
+        <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
+      </nav>
+    </footer>
+  )
+})
+
 // ── App shell ─────────────────────────────────────────────────────────
 export default function App() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  // Only mount the Drawer DOM tree after the user first opens it — saves the
+  // initial mount cost on every page load when the drawer is never opened.
+  const [drawerMounted, setDrawerMounted] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [shellReady, setShellReady] = useState(false)
@@ -406,6 +431,7 @@ export default function App() {
   }, [])
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
+  useEffect(() => { if (drawerOpen) setDrawerMounted(true) }, [drawerOpen])
 
   useEffect(() => {
     const id = typeof requestIdleCallback !== 'undefined'
@@ -605,7 +631,7 @@ export default function App() {
         </div>
       </header>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
       <main className="wl-content">
         <ErrorBoundary>
@@ -637,20 +663,7 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      <footer className="wl-app-footer">
-        <div className="wl-app-footer-brand">
-          <Logo size={22} />
-          <span>WalletLens © {CURRENT_YEAR}</span>
-        </div>
-        <nav className="wl-app-footer-links">
-          <button onClick={() => navigate('/lenz')}>$LENZ on Sui</button>
-          <button onClick={() => navigate('/about')}>{t('about')}</button>
-          <button onClick={() => navigate('/faq')}>FAQ</button>
-          <button onClick={() => navigate('/blog')}>{t('blog')}</button>
-          <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
-          <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
-        </nav>
-      </footer>
+      <AppFooter />
 
       {shellReady && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><PWAInstallPrompt /></Suspense>}

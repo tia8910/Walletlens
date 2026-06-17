@@ -2615,6 +2615,20 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   )
 }
 
+// ── Static card config — defined at module level to avoid recreating on every render ──
+const CARD_CONFIG = [
+  { id:'pnl_chart',          label:'P&L by Asset' },
+  { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
+  { id:'goal_tracker',       label:'Goal Tracker' },
+  { id:'allocation',         label:'Allocation' },
+  { id:'net_worth_history',  label:'Net Worth History' },
+  { id:'market_mood',        label:'Market Mood' },
+  { id:'movers',             label:"Today's Movers" },
+  { id:'correlation',        label:'Correlation Matrix' },
+  { id:'sector_heatmap',     label:'Sector Heatmap' },
+]
+const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
+
 // ── Main Dashboard ────────────────────────────────────────────────────────
 function AlertsSection({ enriched, prices, isDemo }) {
   const [alertTab, setAlertTab] = useState('smart')
@@ -2745,18 +2759,6 @@ export default function Dashboard() {
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
-  const CARD_CONFIG = [
-    { id:'pnl_chart',          label:'P&L by Asset' },
-    { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
-    { id:'goal_tracker',       label:'Goal Tracker' },
-    { id:'allocation',         label:'Allocation' },
-    { id:'net_worth_history',  label:'Net Worth History' },
-    { id:'market_mood',        label:'Market Mood' },
-    { id:'movers',             label:"Today's Movers" },
-    { id:'correlation',        label:'Correlation Matrix' },
-    { id:'sector_heatmap',     label:'Sector Heatmap' },
-  ]
-  const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
   const [cardVis, setCardVis] = useState(() => {
     try { return { ...DEFAULT_VIS, ...JSON.parse(localStorage.getItem('wl_card_vis') || '{}') } }
     catch { return DEFAULT_VIS }

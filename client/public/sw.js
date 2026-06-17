@@ -17,7 +17,16 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // very first install, before any navigation has been served from cache.
 // stock-prices.json is updated every 30 min by GitHub Actions; caching it
 // avoids a network round-trip on the first price fetch after install.
-const PRECACHE_URLS = ['/', '/news.json', '/stock-prices.json', '/manifest.webmanifest']
+// Icons are cached so the PWA home-screen experience works offline immediately.
+const PRECACHE_URLS = [
+  '/',
+  '/news.json',
+  '/stock-prices.json',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+]
 
 // Price/market API origins we want to cache for offline fallback
 const PRICE_API_PATTERNS = [

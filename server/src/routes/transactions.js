@@ -38,6 +38,7 @@ router.get('/', (req, res) => {
     res.set('X-Total-Count', String(total));
     res.set('X-Page', String(Math.max(1, parseInt(page) || 1)));
     res.set('X-Page-Size', String(pageSize));
+    res.set('Cache-Control', 'private, no-cache');
     return res.json(transactions);
   }
 
@@ -45,6 +46,7 @@ router.get('/', (req, res) => {
   const transactions = wallet_id
     ? stmts.allByWallet.all(wallet_id)
     : stmts.allTx.all();
+  res.set('Cache-Control', 'private, no-cache');
   res.json(transactions);
 });
 
