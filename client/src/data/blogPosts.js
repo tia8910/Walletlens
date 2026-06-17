@@ -1,6 +1,8 @@
 // Blog post content — shared by the Blog page (client render) and the
 // build-time prerender script (scripts/prerender.mjs) so crawlers get real HTML.
 
+import { DAILY_RECAPS } from './dailyRecaps.js'
+
 // Stop-words ignored when scoring topical relatedness between posts.
 const STOP = new Set('the a an and or of to in for your you how what is are be on with that this it as at by from across into not but new — your guide complete'.split(' '))
 function topicWords(p) {
@@ -33,7 +35,7 @@ export function relatedPosts(slug, n = 3) {
     .map(x => x.p)
 }
 
-export const POSTS = [
+const EVERGREEN = [
   {
     slug: 'how-to-track-crypto-portfolio-free',
     title: 'How to Track Your Crypto Portfolio for Free in 2026',
@@ -3242,3 +3244,8 @@ The core habits are straightforward: choose a base currency, record trades in th
     `
   },
 ]
+
+// Hand-written evergreen guides first, then the auto-generated daily market
+// recaps (newest first). Merging here means every consumer of POSTS — the blog
+// index, prerender, sitemap, RSS feed and llms.txt — gets the recaps for free.
+export const POSTS = [...EVERGREEN, ...DAILY_RECAPS]

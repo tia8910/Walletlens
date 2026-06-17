@@ -3779,6 +3779,8 @@ tr:last-child td { border-bottom: none; }
   flex-shrink: 0;
 }
 .wl-logo-btn:hover { transform: scale(1.1); }
+.wl-logo-btn:focus { outline: none; }
+.wl-logo-btn:focus-visible { outline: 2px solid var(--g); outline-offset: 3px; }
 .wl-logo-btn.burst { transform: scale(1.35); transition: transform 0.18s ease; }
 
 @media (prefers-reduced-motion: reduce) {

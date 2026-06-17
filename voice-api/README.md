@@ -12,11 +12,16 @@ WalletLens static site:
    to the right page/tab. `POST { mode: "assistant", lang, messages: [{role,content}] }`
    → `{ ok, reply }`. The reply may contain `[[nav:/route|Label]]` markers the
    client turns into one-tap buttons.
+4. **Daily market recap** — writes one dated, data-grounded all-markets recap
+   (crypto + stocks + metals) for the blog. `POST { mode: "recap", snapshotText,
+   date, year }` → `{ ok, title, summary, readTime, content }`. The prompt is
+   built server-side, so this stays a constrained recap generator. Called by the
+   `Daily Market Recap` GitHub workflow — no Anthropic secret in GitHub needed.
 
-> ⚠️ If you already deployed this for voice, **redeploy** (or push) to pick up
-> the `analyze` and `assistant` modes — older deployments only handle voice and
-> those features gracefully show "unavailable" until then. Voice keeps working
-> regardless.
+> ⚠️ If you already deployed this, **redeploy** (or push) to pick up the
+> `analyze`, `assistant` and `recap` modes — older deployments only handle the
+> earlier modes and those features gracefully show "unavailable" until then.
+> Voice keeps working regardless.
 
 The site itself is static (GitHub Pages) and **cannot** hold a secret key, so
 this one function lives separately. Your Anthropic key stays here as an env
