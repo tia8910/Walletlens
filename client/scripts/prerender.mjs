@@ -41,6 +41,12 @@ const esc = (s = '') => String(s)
 const MONTHS = { january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8, september:9, october:10, november:11, december:12 }
 function postIsoDate(date) {
   if (!date) return TODAY
+  // "Month DD, YYYY" (daily recaps) — keep the exact day.
+  const dm = String(date).match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/)
+  if (dm && MONTHS[dm[1].toLowerCase()]) {
+    return `${dm[3]}-${String(MONTHS[dm[1].toLowerCase()]).padStart(2, '0')}-${String(dm[2]).padStart(2, '0')}`
+  }
+  // "Month YYYY" (evergreen guides) — default to the 1st.
   const m = String(date).match(/([A-Za-z]+)\s+(\d{4})/)
   if (!m) return TODAY
   const mon = MONTHS[m[1].toLowerCase()]

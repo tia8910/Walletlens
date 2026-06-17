@@ -1,0 +1,52 @@
+name: Daily Market Recap
+
+# Automated daily content/SEO agent: each day Claude writes a fresh, data-grounded
+# all-markets recap (crypto + stocks + precious metals) into
+# client/src/data/dailyRecaps.js. The commit to main then triggers the Deploy
+# workflow, whose prerender step turns the recap into crawlable static HTML and
+# refreshes sitemap.xml / rss.xml — so fresh daily content ships with zero human
+# involvement.
+#
+# Requires repo secret ANTHROPIC_API_KEY (Settings → Secrets and variables →
+# Actions). The key stays a secret — it is never written to the repo.
+
+on:
+  schedule:
+    - cron: '0 22 * * *'   # 22:00 UTC daily (after US market close)
+  workflow_dispatch:         # allow manual runs from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-recap
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate today's market recap with Claude
+        working-directory: ./client
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/generate-daily-recap.mjs
+
+      - name: Commit new recap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add client/src/data/dailyRecaps.js
+          # Only commit if a recap was actually added. No [skip ci] —
+          # we WANT the Deploy workflow to run, prerender and publish it.
+          git diff --staged --quiet || git commit -m "content: add daily market recap"
+          git push
