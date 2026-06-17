@@ -11778,6 +11778,13 @@ button:not(:disabled):active,
 .mki-stat-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; }
 .mki-stat-value { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
 
+.mki-ext-section { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.mki-ext-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+.mki-ext-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+.mki-ext-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.mki-ext-val { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+.mki-ext-chg { font-size: 0.78rem; font-weight: 700; }
+
 .mki-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
 .mki-mover { padding: 1rem; }
 .mki-section-title { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.75rem; }

@@ -15,6 +15,53 @@ const REFRESH_MS = 3 * 60 * 1000 // 3 min
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n))
 const ch24 = c => c.price_change_percentage_24h ?? c.price_change_percentage_24h_in_currency ?? 0
 
+const INDICES = [
+  { sym: '^spx',  label: 'S&P 500',  fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+  { sym: '^ndq',  label: 'Nasdaq',   fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+  { sym: '^dji',  label: 'Dow Jones', fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+]
+const METALS = [
+  { sym: 'xauusd', label: 'Gold (oz)',   fmt: n => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` },
+  { sym: 'xagusd', label: 'Silver (oz)', fmt: n => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` },
+]
+
+// Fetch live quotes from Stooq for US indices + metals (direct, CORS proxies as fallback)
+const STOOQ_PROXIES = [
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+]
+async function fetchStooqQuotes(symbols) {
+  const url = `https://stooq.com/q/l/?s=${encodeURIComponent(symbols.join(','))}&f=sd2t2ohlc&h&e=csv`
+  const tryFetch = async (u) => {
+    const res = await Promise.race([fetch(u), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 6000))])
+    if (!res.ok) throw new Error(res.status)
+    return res.text()
+  }
+  let csv = null
+  try { csv = await tryFetch(url) } catch {}
+  if (!csv) {
+    for (const wrap of STOOQ_PROXIES) {
+      try { csv = await tryFetch(wrap(url)); break } catch {}
+    }
+  }
+  if (!csv) return null
+  const lines = csv.trim().split('\n')
+  if (lines.length < 2) return null
+  const headers = lines[0].split(',')
+  const out = {}
+  for (const line of lines.slice(1)) {
+    const vals = line.split(',')
+    const row = {}
+    headers.forEach((h, i) => { row[h.trim()] = (vals[i] || '').trim() })
+    const sym = (row.Symbol || '').toLowerCase()
+    const close = parseFloat(row.Close)
+    const open  = parseFloat(row.Open)
+    if (!sym || !isFinite(close) || close <= 0) continue
+    out[sym] = { close, change: isFinite(open) && open > 0 ? ((close - open) / open) * 100 : null }
+  }
+  return out
+}
+
 // Composite index from a market snapshot. Three transparent, citable pillars:
 //   • Breadth      — % of the top 100 coins green over 24h
 //   • Momentum     — average 24h move of the top 50, mapped from [-8%,+8%]
@@ -77,6 +124,7 @@ const fmtPrice = n => n >= 1 ? `$${n.toLocaleString(undefined, { maximumFraction
 export default function MarketIndex() {
   const [snapshot, setSnapshot] = useState([])
   const [trending, setTrending] = useState([])
+  const [markets, setMarkets]   = useState(null)
   const [loading, setLoading]   = useState(true)
   const [updated, setUpdated]   = useState(null)
   const [copied, setCopied]     = useState(false)
@@ -92,12 +140,15 @@ export default function MarketIndex() {
 
   async function load() {
     try {
-      const [snap, trend] = await Promise.all([
+      const allSyms = [...INDICES, ...METALS].map(x => x.sym)
+      const [snap, trend, mkts] = await Promise.all([
         api.getWhaleMarketSnapshot().catch(() => []),
         api.getTrendingCoins().catch(() => []),
+        fetchStooqQuotes(allSyms).catch(() => null),
       ])
       if (snap?.length) setSnapshot(snap)
       if (trend?.length) setTrending(trend.slice(0, 7))
+      if (mkts) setMarkets(mkts)
       setUpdated(new Date())
     } finally {
       setLoading(false)
@@ -165,10 +216,10 @@ export default function MarketIndex() {
         {/* Header */}
         <header className="mki-head">
           <div className="mki-eyebrow">📊 WALLETLENS MARKET INDEX</div>
-          <h1 className="mki-h1">The whole crypto market, in one number.</h1>
+          <h1 className="mki-h1">All markets, one page.</h1>
           <p className="mki-lede">
-            A live 0–100 sentiment score built from market breadth, momentum and large-cap
-            leadership across the top 250 cryptocurrencies. Free to read, free to cite, updated continuously.
+            Crypto sentiment score (0–100), live US indices, and precious metals prices — updated continuously.
+            Free to read, free to cite.
           </p>
         </header>
 
@@ -213,13 +264,57 @@ export default function MarketIndex() {
               <p className="mki-cite-hint">Writers & researchers: link <code>walletlens.live/market-index</code> — free, no attribution barrier.</p>
             </section>
 
-            {/* Market stats */}
+            {/* Crypto stats */}
             <section className="mki-stats">
               <Stat label="Total market cap" value={fmtBig(idx.totalMcap)} />
               <Stat label="BTC dominance" value={idx.btcDom != null ? `${idx.btcDom.toFixed(1)}%` : '—'} />
               <Stat label="24h gainers" value={`${idx.gainers}`} accent="#10b981" />
               <Stat label="24h losers" value={`${idx.losers}`} accent="#f87171" />
             </section>
+
+            {/* US Indices */}
+            {markets && INDICES.some(x => markets[x.sym]) && (
+              <section className="mki-ext-section glass-card">
+                <div className="mki-section-title">🏛 US Indices</div>
+                <div className="mki-ext-grid">
+                  {INDICES.map(({ sym, label, fmt }) => {
+                    const d = markets[sym]
+                    if (!d) return null
+                    const chg = d.change
+                    const chgColor = chg == null ? 'var(--text-muted)' : chg >= 0 ? '#10b981' : '#f87171'
+                    return (
+                      <div key={sym} className="mki-ext-cell">
+                        <div className="mki-ext-label">{label}</div>
+                        <div className="mki-ext-val">{fmt(d.close)}</div>
+                        {chg != null && <div className="mki-ext-chg" style={{ color: chgColor }}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Precious Metals */}
+            {markets && METALS.some(x => markets[x.sym]) && (
+              <section className="mki-ext-section glass-card">
+                <div className="mki-section-title">🥇 Precious Metals</div>
+                <div className="mki-ext-grid">
+                  {METALS.map(({ sym, label, fmt }) => {
+                    const d = markets[sym]
+                    if (!d) return null
+                    const chg = d.change
+                    const chgColor = chg == null ? 'var(--text-muted)' : chg >= 0 ? '#10b981' : '#f87171'
+                    return (
+                      <div key={sym} className="mki-ext-cell">
+                        <div className="mki-ext-label">{label}</div>
+                        <div className="mki-ext-val">{fmt(d.close)}</div>
+                        {chg != null && <div className="mki-ext-chg" style={{ color: chgColor }}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
 
             {/* Movers */}
             <div className="mki-movers">
