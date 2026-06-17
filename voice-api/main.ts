@@ -348,6 +348,40 @@ Return STRICT JSON ONLY — no markdown, no commentary:
 Give 3-6 insights and 2-4 actions. Every point must reference the user's actual numbers/buckets above. If a bucket is underfunded for its timeframe, say by how much per month. If an emergency fund is missing or thin, flag it. If one asset class dominates, call out the concentration.`
 }
 
+// ── Daily market recap (mode: "recap") ─────────────────────────────────────
+// Writes one dated, data-grounded all-markets recap (crypto + stocks + metals)
+// for the blog. The caller (the daily-recap GitHub workflow) sends only a
+// pre-formatted market snapshot + the date; the prompt is built HERE so this
+// stays a constrained recap generator, not an open text endpoint. Returns the
+// parsed article fields. The Anthropic key never leaves this server.
+function buildRecapPrompt(snapshotText: string, dateStr: string, year: number): { system: string; prompt: string } {
+  const system = `You are the senior markets writer for WalletLens (walletlens.live), a free, private, browser-based portfolio tracker for crypto, stocks, precious metals, real estate and cash — all in one net-worth view, no account, all data on-device. You write concise, accurate daily market recaps. Educational, never financial advice. Never invent numbers — use ONLY the data provided. Never promise or predict prices.`
+
+  const prompt = `Write today's all-markets daily recap for ${dateStr}.
+
+Today's live snapshot (use these exact numbers — do not invent others):
+${snapshotText}
+
+Write a tight, scannable recap (450-650 words) covering crypto, US stocks and precious metals together, so a reader sees the whole picture in one place. Requirements:
+- Open with 1-2 plain paragraphs summarising the day's cross-market mood (NO H1 — the title is rendered separately).
+- Use ## H2 sections. Suggested: "Crypto", "Stocks", "Precious Metals", then a short "What It Means" wrap-up.
+- Include a Markdown table summarising the key moves (asset, level/price, 24h change).
+- Reference the crypto Fear & Greed reading and what that sentiment band signals (no prediction).
+- Mention WalletLens naturally ONCE or TWICE where it genuinely helps (e.g. tracking crypto + stocks + metals in one net-worth view), and link [walletlens.live](https://walletlens.live) once and the [Fear & Greed Index](/fear-and-greed-index) once.
+- End with a one-line educational-not-advice note.
+- Use the year ${year} where natural.
+
+Return EXACTLY this plain-text format. Begin your reply immediately with "TITLE:" — output nothing before it, no preamble, no code fences:
+
+TITLE: <specific, <=70 chars, includes the date, e.g. "Markets Today — ${dateStr}: ...">
+SUMMARY: <1-2 sentence meta description, 120-160 chars, mentions crypto, stocks and metals>
+READTIME: <N min read>
+BODY:
+<the full recap body in Markdown>`
+
+  return { system, prompt }
+}
+
 // ── Portfolio Guardian cron ───────────────────────────────────────────────
 // Scans all guardian records every 6 h and emails heirs when the user's
 // check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
@@ -850,6 +884,60 @@ Rules:
       return new Response(JSON.stringify({ ok: true, advice }), { headers })
     } catch (e) {
       console.error("vision_advice error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
+  // ── Daily market recap (mode: "recap") ────────────────────────────────────
+  if (body?.mode === "recap") {
+    const snapshotText = (body.snapshotText || "").toString().slice(0, 2000)
+    const dateStr = (body.date || "").toString().slice(0, 40)
+    const year = Number(body.year) || new Date().getUTCFullYear()
+    if (!snapshotText || !dateStr) {
+      return new Response(JSON.stringify({ error: "missing_snapshot_or_date" }), { status: 400, headers })
+    }
+    try {
+      const { system, prompt } = buildRecapPrompt(snapshotText, dateStr, year)
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 3000,
+          system,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (recap):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      let out = (data.content?.[0]?.text || "")
+      const tStart = out.indexOf("TITLE:")
+      if (tStart === -1) throw new Error("no TITLE: header")
+      out = out.slice(tStart)
+      const bodyIdx = out.indexOf("\nBODY:")
+      if (bodyIdx === -1) throw new Error("no BODY: marker")
+      const headerText = out.slice(0, bodyIdx)
+      let content = out.slice(bodyIdx + "\nBODY:".length).replace(/^\r?\n/, "")
+      content = content.replace(/^```[a-z]*\s*\n/i, "").replace(/\n?```\s*$/i, "").trim()
+      const field = (name: string) => {
+        const m = headerText.match(new RegExp("^" + name + ":\\s*(.+)$", "mi"))
+        return m ? m[1].trim() : ""
+      }
+      const title = field("TITLE")
+      const summary = field("SUMMARY")
+      const readTime = field("READTIME") || "4 min read"
+      if (!title || !content || content.length < 400) throw new Error("recap too short")
+      return new Response(JSON.stringify({ ok: true, title, summary, readTime, content }), { headers })
+    } catch (e) {
+      console.error("recap error:", e)
       return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
     }
   }

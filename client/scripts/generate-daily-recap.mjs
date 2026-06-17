@@ -2,15 +2,17 @@
 //
 // Pulls a live cross-market snapshot — crypto (CoinGecko), precious metals and
 // US stock indices (Stooq) — computes a quick crypto fear/greed read, then asks
-// Claude to write ONE dated, data-grounded recap article. The post is prepended
-// to src/data/dailyRecaps.js (newest first, capped) which blogPosts.js merges
-// into POSTS, so the deploy workflow's prerender turns it into crawlable static
-// HTML and refreshes the sitemap / RSS / llms.txt automatically.
+// the owner-hosted Deno endpoint (mode: "recap") to write ONE dated,
+// data-grounded recap article. The post is prepended to src/data/dailyRecaps.js
+// (newest first, capped) which blogPosts.js merges into POSTS, so the deploy
+// workflow's prerender turns it into crawlable static HTML and refreshes the
+// sitemap / RSS / llms.txt automatically.
 //
-// The Anthropic key is read from ANTHROPIC_API_KEY (a GitHub Actions secret) —
-// it is NEVER committed to the repo or shipped to the browser.
+// The Anthropic key is NOT needed here — it lives only on the Deno endpoint
+// (the same one that powers voice/vision/analyze). Override the endpoint with
+// the WL_VOICE_API env var if you host it elsewhere.
 //
-// Run:  ANTHROPIC_API_KEY=sk-ant-... node scripts/generate-daily-recap.mjs
+// Run:  node scripts/generate-daily-recap.mjs
 
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -18,7 +20,7 @@ import { dirname, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const RECAPS_FILE = resolve(__dirname, '../src/data/dailyRecaps.js')
-const MODEL = 'claude-sonnet-4-6'
+const VOICE_API = (process.env.WL_VOICE_API || 'https://walletlens-voice-parse.tia8910.deno.net/').trim()
 const MAX_RECAPS = 30 // keep the feed bounded — newest 30 daily recaps
 
 function note(msg) {
@@ -34,9 +36,6 @@ function fail(msg) {
   if (f) { try { appendFileSync(f, `\n**❌ ${oneLine}**\n`) } catch {} }
   process.exit(1)
 }
-
-const apiKey = process.env.ANTHROPIC_API_KEY
-if (!apiKey) fail('ANTHROPIC_API_KEY is not set. Add it as a repository secret (Settings → Secrets and variables → Actions).')
 
 // ── Formatting helpers ───────────────────────────────────────────────────────
 const fmtUsd = n => {
@@ -137,54 +136,31 @@ function snapshotText(s) {
   return lines.join('\n')
 }
 
+// Ask the owner-hosted Deno endpoint (which holds the Anthropic key) to write
+// the recap. We send only the formatted snapshot + date; the prompt is built
+// server-side. Returns { title, summary, readTime, content }.
 async function generatePost(snap, dateStr, year) {
-  const system = `You are the senior markets writer for WalletLens (walletlens.live), a free, private, browser-based portfolio tracker for crypto, stocks, precious metals, real estate and cash — all in one net-worth view, no account, all data on-device. You write concise, accurate daily market recaps. Educational, never financial advice. Never invent numbers — use ONLY the data provided. Never promise or predict prices.`
-
-  const prompt = `Write today's all-markets daily recap for ${dateStr}.
-
-Today's live snapshot (use these exact numbers — do not invent others):
-${snapshotText(snap)}
-
-Write a tight, scannable recap (450-650 words) covering crypto, US stocks and precious metals together, so a reader sees the whole picture in one place. Requirements:
-- Open with 1-2 plain paragraphs summarising the day's cross-market mood (NO H1 — the title is rendered separately).
-- Use ## H2 sections. Suggested: "Crypto", "Stocks", "Precious Metals", then a short "What It Means" wrap-up.
-- Include a Markdown table summarising the key moves (asset, level/price, 24h change).
-- Reference the crypto Fear & Greed reading and what that sentiment band signals (no prediction).
-- Mention WalletLens naturally ONCE or TWICE where it genuinely helps (e.g. tracking crypto + stocks + metals in one net-worth view), and link [walletlens.live](https://walletlens.live) once and the [Fear & Greed Index](/fear-and-greed-index) once.
-- End with a one-line educational-not-advice note.
-- Use the year ${year} where natural.
-
-Return EXACTLY this plain-text format. Begin your reply immediately with "TITLE:" — output nothing before it, no preamble, no code fences:
-
-TITLE: <specific, <=70 chars, includes the date, e.g. "Markets Today — ${dateStr}: ...">
-SLUG: market-recap-${snap._slugDate}
-SUMMARY: <1-2 sentence meta description, 120-160 chars, mentions crypto, stocks and metals>
-READTIME: <N min read>
-BODY:
-<the full recap body in Markdown>`
-
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, messages: [{ role: 'user', content: prompt }] }),
-  })
-  if (!resp.ok) fail(`Claude API ${resp.status}: ${(await resp.text().catch(() => '')).slice(0, 400)}`)
-  const data = await resp.json()
-  let out = data.content?.[0]?.text || ''
-  const tStart = out.indexOf('TITLE:')
-  if (tStart === -1) fail('Response has no TITLE: header. First 400 chars: ' + out.slice(0, 400))
-  out = out.slice(tStart)
-
-  const bodyIdx = out.indexOf('\nBODY:')
-  if (bodyIdx === -1) fail('Response missing BODY: marker. First 400 chars: ' + out.slice(0, 400))
-  const headerText = out.slice(0, bodyIdx)
-  let content = out.slice(bodyIdx + '\nBODY:'.length).replace(/^\r?\n/, '')
-  const field = name => {
-    const m = headerText.match(new RegExp('^' + name + ':\\s*(.+)$', 'mi'))
-    return m ? m[1].trim() : ''
+  let resp
+  try {
+    resp = await fetch(VOICE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'recap', snapshotText: snapshotText(snap), date: dateStr, year }),
+    })
+  } catch (e) {
+    fail(`Could not reach the recap endpoint (${VOICE_API}): ${e.message}`)
   }
-  content = content.replace(/^```[a-z]*\s*\n/i, '').replace(/\n?```\s*$/i, '').trim()
-  return { title: field('TITLE'), summary: field('SUMMARY'), readTime: field('READTIME') || '4 min read', content }
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok || !data?.ok) {
+    if (data?.error === 'not_configured') fail('Deno endpoint has no ANTHROPIC_API_KEY set — add it in the Deno Deploy project settings.')
+    fail(`Recap endpoint ${resp.status}: ${JSON.stringify(data).slice(0, 400)}`)
+  }
+  return {
+    title: (data.title || '').trim(),
+    summary: (data.summary || '').trim(),
+    readTime: (data.readTime || '4 min read').trim(),
+    content: (data.content || '').trim(),
+  }
 }
 
 // ── Read / write the recaps file (JSON-safe array literal) ────────────────────
