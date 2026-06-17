@@ -342,7 +342,7 @@ export default function App() {
   const { t, lang } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = useMemo(() => {
-    const p = location.pathname
+    const p = location.pathname.replace(/\/+$/, '') || '/'
     return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/market-index', '/fear-and-greed-index', '/faq', '/privacy'].includes(p) ||
       p.startsWith('/blog/') || p.startsWith('/track/') || p.startsWith('/calculator/') ||
       p.startsWith('/learn/') || p.startsWith('/vs/') || p.startsWith('/price/') ||
@@ -561,6 +561,8 @@ export default function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
+              <Route path="/market-index" element={<MarketIndex />} />
+              <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/lenz" element={<Lenz />} />
               <Route path="/airdrop" element={<Airdrop />} />
