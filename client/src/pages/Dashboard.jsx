@@ -4212,7 +4212,7 @@ export default function Dashboard() {
                       <PieChart>
                         <Pie data={catAllocData} dataKey="value" cx="50%" cy="50%"
                           innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
-                          {catAllocData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]}/>)}
+                          {catAllocData.map((d, i) => <Cell key={i} fill={CATEGORY_COLOR[d.cat] || PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
                         <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [cv(v), n]}/>
                       </PieChart>
@@ -4220,7 +4220,7 @@ export default function Dashboard() {
                     <ul className="dvx-legend">
                       {catAllocData.map((d, i) => (
                         <li key={d.name} className="dvx-legend-item">
-                          <span className="dvx-legend-dot" style={{ background: PALETTE[i % PALETTE.length] }}/>
+                          <span className="dvx-legend-dot" style={{ background: CATEGORY_COLOR[d.cat] || PALETTE[i % PALETTE.length] }}/>
                           <span className="dvx-legend-name">{d.name}</span>
                           <span className="dvx-legend-val">{d.pct.toFixed(1)}%</span>
                         </li>
