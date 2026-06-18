@@ -69,6 +69,18 @@ export default defineConfig({
           if (id.includes('node_modules/jsqr') || id.includes('node_modules/qrcode')) {
             return 'qr-libs'
           }
+          // api.js is the 100 KB central API client imported by virtually every
+          // page. Isolating it means a page-code change doesn't bust this chunk —
+          // returning users keep it from cache across deployments.
+          if (id.includes('/src/api.')) {
+            return 'api-core'
+          }
+          // Technical-analysis utilities (~32 KB combined) are only consumed by the
+          // Technicals page and the MagicAnalysisPanel. Splitting them out keeps
+          // api-core lean and lets algorithm changes bust only this chunk.
+          if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
+            return 'technicals-utils'
+          }
           // i18n: 32 KB of translation strings — isolated so a copy change only
           // invalidates this chunk, not the whole app.
           if (id.includes('/src/i18n.')) {
