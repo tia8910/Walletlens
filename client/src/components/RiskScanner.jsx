@@ -4,7 +4,7 @@ import CoinLogo from './CoinLogo'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 const GOPLUS_BASE    = 'https://api.gopluslabs.io/api/v1'
-const CACHE_KEY      = 'wl_risk_cache_v2'
+const CACHE_KEY      = 'wl_risk_cache_v3'
 const CACHE_TTL      = 6 * 60 * 60 * 1000 // 6 hours
 
 // Established blue-chips — skip API scoring
@@ -19,6 +19,16 @@ const SAFE_IDS = new Set([
   'internet-computer','hedera-hashgraph','vechain','theta-token',
   'render-token','fetch-ai','worldcoin-wld','ondo-finance',
   'mantle','cronos','flow','gala','sandbox',
+  // Additional established tokens
+  'arweave','zksync','stacks','kaspa','thorchain','jupiter-exchange-solana',
+  'raydium','jito-governance-token','bonk','dogwifcoin','pepe',
+  'wrapped-bitcoin','lido-dao','rocket-pool','curve-dao-token',
+  'convex-finance','frax-share','balancer','yearn-finance',
+  'synthetix-network-token','0x','1inch','pancakeswap-token',
+  'blur','dydx','gmx','gains-network','pendle',
+  'layerzero','wormhole','celestia','eigenlayer',
+  'hyperliquid','virtuals-protocol','ai16z',
+  'leo-token','bitget-token','okb','gate-2',
 ])
 
 // Stablecoins — low risk by design
@@ -30,14 +40,21 @@ const STABLECOINS = new Set([
   'usde','ethena-usde','mountain-protocol-usdm',
 ])
 
-// Ticker symbols for the blue-chips above — some holdings store coin_id as a
-// symbol (e.g. "eth" instead of "ethereum"), so we match on symbol too.
+// Ticker symbols — some holdings store coin_id as a symbol (e.g. "eth" not
+// "ethereum"), so we match on symbol too.
 const SAFE_SYMBOLS = new Set([
   'btc','eth','bnb','sol','xrp','ada','dot','avax','link','matic','pol',
   'ltc','doge','shib','trx','uni','xlm','xmr','atom','algo','xtz','fil',
   'aave','comp','mkr','grt','mana','sand','axs','bch','etc','near','apt',
   'sui','arb','op','imx','inj','sei','icp','hbar','vet','theta','rndr',
   'render','fet','wld','ondo','mnt','cro','flow','gala',
+  // Additional
+  'ar','zk','stx','kas','rune','jup','ray','jto','bonk','wif','pepe',
+  'wbtc','ldo','rpl','crv','cvx','bal','yfi','snx','zrx','1inch',
+  'cake','blur','dydx','gmx','gns','pendle',
+  'zro','w','tia','eigen',
+  'hype','virtual','ai16z',
+  'leo','bgb','okb','gt',
 ])
 const STABLECOIN_SYMBOLS = new Set([
   'usdt','usdc','dai','busd','tusd','frax','usdp','gusd','lusd','usdd',
