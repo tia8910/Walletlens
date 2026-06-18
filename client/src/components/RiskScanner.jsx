@@ -30,6 +30,20 @@ const STABLECOINS = new Set([
   'usde','ethena-usde','mountain-protocol-usdm',
 ])
 
+// Ticker symbols for the blue-chips above — some holdings store coin_id as a
+// symbol (e.g. "eth" instead of "ethereum"), so we match on symbol too.
+const SAFE_SYMBOLS = new Set([
+  'btc','eth','bnb','sol','xrp','ada','dot','avax','link','matic','pol',
+  'ltc','doge','shib','trx','uni','xlm','xmr','atom','algo','xtz','fil',
+  'aave','comp','mkr','grt','mana','sand','axs','bch','etc','near','apt',
+  'sui','arb','op','imx','inj','sei','icp','hbar','vet','theta','rndr',
+  'render','fet','wld','ondo','mnt','cro','flow','gala',
+])
+const STABLECOIN_SYMBOLS = new Set([
+  'usdt','usdc','dai','busd','tusd','frax','usdp','gusd','lusd','usdd',
+  'fdusd','pyusd','eurc','eurs','usds','usde',
+])
+
 const CHAIN_MAP = {
   'ethereum': 1, 'binance-smart-chain': 56, 'polygon-pos': 137,
   'avalanche': 43114, 'arbitrum-one': 42161, 'optimistic-ethereum': 10,
@@ -54,8 +68,10 @@ async function fetchJSON(url) {
 }
 
 // Returns { score 0-100, grade, color, signals[], breakdown{} }
-async function scoreToken(coinId, forceRefresh = false) {
-  if (STABLECOINS.has(coinId)) {
+async function scoreToken(coinId, forceRefresh = false, symbol = '') {
+  const sym = (symbol || '').toLowerCase()
+
+  if (STABLECOINS.has(coinId) || STABLECOIN_SYMBOLS.has(sym)) {
     return { score: 90, grade: 'SAFE', color: 'var(--g-ink)', fontWeight: 700, signals: [
       { label: 'Fiat-pegged stablecoin — no rug risk', status: 'good' },
       { label: 'High liquidity by design', status: 'good' },
@@ -63,7 +79,7 @@ async function scoreToken(coinId, forceRefresh = false) {
     ], breakdown: { cg: 90, gp: null }}
   }
 
-  if (SAFE_IDS.has(coinId)) {
+  if (SAFE_IDS.has(coinId) || SAFE_SYMBOLS.has(sym)) {
     return { score: 95, grade: 'SAFE', color: 'var(--g-ink)', fontWeight: 700, signals: [
       { label: 'Established blue-chip asset', status: 'good' },
       { label: 'High liquidity across major exchanges', status: 'good' },
@@ -151,6 +167,25 @@ async function scoreToken(coinId, forceRefresh = false) {
   const cgData = await fetchJSON(
     `${COINGECKO_BASE}/coins/${coinId}?localization=false&tickers=false&community_data=true&developer_data=true`
   )
+
+  // No market data → DO NOT fabricate a "DANGER" verdict from empty fallbacks.
+  // The token may be unlisted/new, the coin_id may not match CoinGecko, or the
+  // free API is rate-limited. Return a neutral "no data" state and don't cache
+  // a transient failure.
+  if (!cgData) {
+    return {
+      score: null,
+      grade: 'NO DATA',
+      color: '#6b7280',
+      noData: true,
+      signals: [
+        { label: 'Market data unavailable — could not analyze', status: 'warn' },
+        { label: 'Token may be unlisted/new, or the data provider is rate-limited', status: 'info' },
+        { label: 'Tap ↻ to re-scan in a moment', status: 'info' },
+      ],
+      breakdown: { cg: null, gp: null },
+    }
+  }
 
   // Age (20 pts)
   maxPoints += 20
@@ -327,7 +362,7 @@ async function scoreToken(coinId, forceRefresh = false) {
 function PortfolioRiskSummary({ results, holdings }) {
   if (!results || Object.keys(results).length === 0) return null
 
-  const scanned = holdings.filter(h => results[h.coin_id])
+  const scanned = holdings.filter(h => results[h.coin_id] && results[h.coin_id].score != null)
   if (scanned.length === 0) return null
 
   const totalValue = scanned.reduce((s, h) => s + (h.value || 0), 0)
@@ -397,8 +432,8 @@ function PortfolioRiskSummary({ results, holdings }) {
 
 // ── Signal badge ──────────────────────────────────────────────────────────
 function SignalBadge({ status, label }) {
-  const colors = { good: 'var(--g)', warn: '#f59e0b', bad: '#f87171' }
-  const icons  = { good: '✓', warn: '⚠', bad: '✕' }
+  const colors = { good: 'var(--g)', warn: '#f59e0b', bad: '#f87171', info: 'var(--text-muted)' }
+  const icons  = { good: '✓', warn: '⚠', bad: '✕', info: 'ℹ' }
   return (
     <div className="risk-signal">
       <span className="risk-signal-icon" style={{ color: colors[status] }}>{icons[status]}</span>
@@ -434,7 +469,7 @@ function RiskCard({ holding, onResult, forceRefresh }) {
   const runScan = useCallback((refresh = false) => {
     setLoading(true)
     setResult(null)
-    scoreToken(holding.coin_id, refresh).then(r => {
+    scoreToken(holding.coin_id, refresh, holding.coin_symbol).then(r => {
       setResult(r)
       setLoading(false)
       if (r) {
@@ -471,7 +506,9 @@ function RiskCard({ holding, onResult, forceRefresh }) {
           {loading && <div className="risk-spinner" />}
           {result && (
             <>
-              <ScoreRing score={result.score} color={result.color} />
+              {result.score == null
+                ? <span className="risk-nodata-icon" style={{ color: result.color, fontSize: '1.4rem' }}>—</span>
+                : <ScoreRing score={result.score} color={result.color} />}
               <div className="risk-grade" style={{ color: result.color }}>{result.grade}</div>
               <button className="risk-rescan-btn" onClick={handleRescan} title="Re-scan">↻</button>
               <span className="risk-chevron" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}>
