@@ -4064,7 +4064,12 @@ export default function Dashboard() {
                               </div>
                             )}
                             <ul className="dvx-holdings" style={{ margin:0 }}>
-                              {grouped[cat].map(h => {
+                              {(() => {
+                                const symCount = {}
+                                grouped[cat].forEach(h => { const s = (h.coin_symbol||'').toUpperCase(); symCount[s] = (symCount[s]||0) + 1 })
+                                const dupSymbols = new Set(Object.keys(symCount).filter(s => symCount[s] > 1))
+                                return grouped[cat].map(h => {
+                                const isDupTicker = dupSymbols.has((h.coin_symbol||'').toUpperCase())
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested
                                 const isStable          = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
                                 const isCryptoOnly      = !isStable && categorizeAsset(h) === 'crypto'
@@ -4093,6 +4098,7 @@ export default function Dashboard() {
                                         <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                         {isStable && <span className="dvx-stable-badge">STABLE</span>}
                                         {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
+                                        {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}>⚠ dup</span>}
                                         {(() => {
                                           const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id)
                                           if (!u) return null
@@ -4176,7 +4182,8 @@ export default function Dashboard() {
                                     )}
                                   </li>
                                 )
-                              })}
+                              })
+                            })()}
                             </ul>
                           </div>
                         )})
