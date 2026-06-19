@@ -83,9 +83,9 @@ describe('api.getPortfolio', () => {
     ]
     localStorage.setItem('crypto_tracker_transactions', JSON.stringify(txs))
     const portfolio = await api.getPortfolio()
-    // BTC fully sold, only ETH remains
+    // BTC fully sold, only ETH remains. coin_id normalized to canonical CoinGecko ID.
     expect(portfolio.length).toBe(1)
-    expect(portfolio[0].coin_id).toBe('eth')
+    expect(portfolio[0].coin_id).toBe('ethereum')
     expect(portfolio[0].amount).toBe(1)
   })
   it('filters by walletId when provided', async () => {
@@ -96,9 +96,9 @@ describe('api.getPortfolio', () => {
     localStorage.setItem('crypto_tracker_transactions', JSON.stringify(txs))
     const w1 = await api.getPortfolio(1)
     expect(w1.length).toBe(1)
-    expect(w1[0].coin_id).toBe('btc')
+    expect(w1[0].coin_id).toBe('bitcoin')
     const w2 = await api.getPortfolio(2)
-    expect(w2[0].coin_id).toBe('eth')
+    expect(w2[0].coin_id).toBe('ethereum')
   })
 })
 

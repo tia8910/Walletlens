@@ -1003,9 +1003,15 @@ export const api = {
 
     const holdings = {};
     for (const tx of txs) {
-      if (!holdings[tx.coin_id]) {
-        holdings[tx.coin_id] = {
-          coin_id: tx.coin_id,
+      // Normalize crypto IDs so legacy/mis-IDed transactions (e.g. "avalanche")
+      // fold into the same holding as the canonical ID ("avalanche-2"). Non-crypto
+      // assets use prefixed IDs (stock:, fiat:, metal:) and are left untouched.
+      const cid = (tx.category === 'crypto' || !tx.category)
+        ? normalizeCoinId(tx.coin_id, tx.coin_symbol)
+        : tx.coin_id;
+      if (!holdings[cid]) {
+        holdings[cid] = {
+          coin_id: cid,
           coin_symbol: tx.coin_symbol,
           coin_name: tx.coin_name || '',
           coin_image: tx.coin_image || '',
@@ -1015,15 +1021,15 @@ export const api = {
         };
       }
       // Latest non-empty metadata wins
-      if (tx.coin_name) holdings[tx.coin_id].coin_name = tx.coin_name;
-      if (tx.coin_image) holdings[tx.coin_id].coin_image = tx.coin_image;
-      if (tx.category) holdings[tx.coin_id].category = tx.category;
+      if (tx.coin_name) holdings[cid].coin_name = tx.coin_name;
+      if (tx.coin_image) holdings[cid].coin_image = tx.coin_image;
+      if (tx.category) holdings[cid].category = tx.category;
 
       if (tx.type === 'buy' || tx.type === 'deposit') {
-        holdings[tx.coin_id].amount += tx.amount;
-        holdings[tx.coin_id].total_invested += tx.total_cost;
+        holdings[cid].amount += tx.amount;
+        holdings[cid].total_invested += tx.total_cost;
       } else if (tx.type === 'sell' || tx.type === 'withdraw') {
-        const h = holdings[tx.coin_id];
+        const h = holdings[cid];
         // Deduct cost basis (avg_cost × sold_qty) not sell proceeds, so avg buy price stays correct.
         // Clamp the sold quantity to the running balance — an oversell (typo or
         // missing buy record) must not drive the holding negative, which would
