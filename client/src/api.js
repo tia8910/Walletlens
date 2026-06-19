@@ -168,6 +168,115 @@ let lastImageFetch = 0;
 // so the trade sheet gets an instant cache hit instead of waiting on fetch.
 const TOP_BINANCE_TICKERS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','ADAUSDT','DOGEUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','LTCUSDT','BCHUSDT','NEARUSDT','ARBUSDT','OPUSDT','SUIUSDT'];
 const TOP_BINANCE_ID = {'BTC':'bitcoin','ETH':'ethereum','BNB':'binancecoin','SOL':'solana','XRP':'ripple','ADA':'cardano','DOGE':'dogecoin','AVAX':'avalanche-2','DOT':'polkadot','LINK':'chainlink','LTC':'litecoin','BCH':'bitcoin-cash','NEAR':'near','ARB':'arbitrum','OP':'optimism','SUI':'sui'};
+
+// Maps naive coin_id values (produced by coin.toLowerCase().replace(/ /g,'-')) to the
+// canonical CoinGecko ID. Prevents mis-IDed holdings that fetch no price or the wrong price.
+const COIN_ID_ALIASES = {
+  // Common name-derived wrong IDs → canonical CoinGecko ID
+  'avalanche':         'avalanche-2',
+  'avalanche-coin':    'avalanche-2',
+  'polygon':           'matic-network',
+  'matic':             'matic-network',
+  'pol':               'matic-network',
+  'shib':              'shiba-inu',
+  'shiba':             'shiba-inu',
+  'bnb':               'binancecoin',
+  'xrp':               'ripple',
+  'doge':              'dogecoin',
+  'xlm':               'stellar',
+  'ada':               'cardano',
+  'dot':               'polkadot',
+  'atom':              'cosmos',
+  'uni':               'uniswap',
+  'link':              'chainlink',
+  'ltc':               'litecoin',
+  'trx':               'tron',
+  'eth':               'ethereum',
+  'btc':               'bitcoin',
+  'sol':               'solana',
+  'vet':               'vechain',
+  'algo':              'algorand',
+  'xtz':               'tezos',
+  'fil':               'filecoin',
+  'hbar':              'hedera-hashgraph',
+  'hedera':            'hedera-hashgraph',
+  'icp':               'internet-computer',
+  'internet-computer-protocol': 'internet-computer',
+  'apt':               'aptos',
+  'arb':               'arbitrum',
+  'op':                'optimism',
+  'inj':               'injective-protocol',
+  'injective':         'injective-protocol',
+  'sei':               'sei-network',
+  'imx':               'immutable-x',
+  'immutable':         'immutable-x',
+  'zk':                'zksync',
+  'zksync-era':        'zksync',
+  'stx':               'stacks',
+  'kas':               'kaspa',
+  'rune':              'thorchain',
+  'jup':               'jupiter-exchange-solana',
+  'jupiter':           'jupiter-exchange-solana',
+  'ldo':               'lido-dao',
+  'lido':              'lido-dao',
+  'render':            'render-token',
+  'rndr':              'render-token',
+  'grt':               'the-graph',
+  'the-graph':         'the-graph',
+  'mana':              'decentraland',
+  'sand':              'the-sandbox',
+  'mkr':               'maker',
+  'aave':              'aave',
+  'crv':               'curve-dao-token',
+  'curve':             'curve-dao-token',
+  'comp':              'compound-governance-token',
+  'compound':          'compound-governance-token',
+  'near-protocol':     'near',
+  'wbtc':              'wrapped-bitcoin',
+  'wrapped-btc':       'wrapped-bitcoin',
+  'fet':               'fetch-ai',
+  'fetch':             'fetch-ai',
+  'wld':               'worldcoin-wld',
+  'worldcoin':         'worldcoin-wld',
+  'ondo':              'ondo-finance',
+  'mnt':               'mantle',
+  'cro':               'cronos',
+  'theta':             'theta-token',
+  'pepe-coin':         'pepe',
+  'bonk-coin':         'bonk',
+  'wif-coin':          'dogwifcoin',
+  'dogwif':            'dogwifcoin',
+};
+
+// Symbol-level fallback (uppercase symbol → CoinGecko ID) for cases where coin_id
+// doesn't match anything in COIN_ID_ALIASES.
+const SYMBOL_TO_ID = {
+  'AVAX':'avalanche-2','MATIC':'matic-network','POL':'matic-network',
+  'SHIB':'shiba-inu','BNB':'binancecoin','XRP':'ripple','DOGE':'dogecoin',
+  'XLM':'stellar','ADA':'cardano','DOT':'polkadot','ATOM':'cosmos',
+  'UNI':'uniswap','LINK':'chainlink','LTC':'litecoin','TRX':'tron',
+  'VET':'vechain','ALGO':'algorand','XTZ':'tezos','FIL':'filecoin',
+  'HBAR':'hedera-hashgraph','ICP':'internet-computer','APT':'aptos',
+  'ARB':'arbitrum','OP':'optimism','INJ':'injective-protocol',
+  'SEI':'sei-network','IMX':'immutable-x','ZK':'zksync','STX':'stacks',
+  'KAS':'kaspa','RUNE':'thorchain','JUP':'jupiter-exchange-solana',
+  'LDO':'lido-dao','RENDER':'render-token','RNDR':'render-token',
+  'GRT':'the-graph','MANA':'decentraland','SAND':'the-sandbox',
+  'MKR':'maker','CRV':'curve-dao-token','COMP':'compound-governance-token',
+  'WBTC':'wrapped-bitcoin','FET':'fetch-ai','WLD':'worldcoin-wld',
+  'ONDO':'ondo-finance','MNT':'mantle','CRO':'cronos','THETA':'theta-token',
+};
+
+function normalizeCoinId(coinId, symbol) {
+  if (!coinId) return coinId;
+  const lower = coinId.toLowerCase();
+  if (COIN_ID_ALIASES[lower]) return COIN_ID_ALIASES[lower];
+  if (symbol) {
+    const upper = symbol.toUpperCase();
+    if (SYMBOL_TO_ID[upper]) return SYMBOL_TO_ID[upper];
+  }
+  return coinId;
+}
 setTimeout(() => {
   if (Object.keys(priceCache).length > 0) return; // already warm
   const now = Date.now();
@@ -933,12 +1042,15 @@ export const api = {
     const txs = loadData('transactions');
     const totalCost = data.amount * data.price_per_unit;
     const category = data.category || 'crypto';
+    const coin_id = category === 'crypto'
+      ? normalizeCoinId(data.coin_id, data.coin_symbol)
+      : data.coin_id;
     const tx = {
       id: bumpId('crypto_tracker_next_tx_id'),
       wallet_id: parseInt(data.wallet_id),
       type: data.type,
       category,
-      coin_id: data.coin_id,
+      coin_id,
       coin_symbol: data.coin_symbol,
       coin_name: data.coin_name || '',
       coin_image: data.coin_image || '',
