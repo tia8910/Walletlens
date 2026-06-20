@@ -263,16 +263,34 @@ function write(routePath, html) {
 
 // ── Homepage ─────────────────────────────────────────────────────────────────
 const homeBody = `
-<h1>WalletLens — Free Net Worth &amp; Portfolio Tracker</h1>
-<p>WalletLens is a free, private, browser-based <strong>net worth tracker and all-asset portfolio tracker</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one dashboard. It is a free tool for personal investment management: track and manage all your investments in one place, with no account, no subscription, and your data kept on your device.</p>
+<h1>WalletLens — Free Portfolio Tracker: Crypto, Stocks, Gold &amp; Net Worth</h1>
+<p>WalletLens is a <strong>free portfolio tracker</strong> and <strong>free net worth tracker</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track and manage all your investments in one place with no account, no subscription, and your data kept on your device. The best free alternative to Kubera, CoinStats, and Personal Capital.</p>
+<h2>Why WalletLens is the best free portfolio tracker</h2>
+<ul>
+<li><strong>No account required</strong> — open the app and start tracking instantly. No sign-up, no email, no password.</li>
+<li><strong>Track crypto and stocks together</strong> — Bitcoin, Ethereum, and 10,000+ coins alongside Apple, Tesla, Nvidia, ETFs, gold, silver, and cash in one net-worth total.</li>
+<li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
+<li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage. Nothing is sent to a server.</li>
+<li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
+<li><strong>Import from screenshot</strong> — photograph any exchange, broker or wallet screen; AI reads it into your portfolio.</li>
+<li><strong>Voice import (English &amp; Arabic)</strong> — speak your trades hands-free, AI logs them instantly.</li>
+</ul>
 <h2>What you can do with WalletLens</h2>
 <ul>
 <li><strong>Track your whole net worth</strong> across every asset class in a single dashboard with live prices.</li>
-<li><strong>See your P&amp;L</strong> in dollars and percentage, broken down by asset and category.</li>
+<li><strong>Investment performance tracker</strong> — see your P&amp;L, ROI, and cost basis in dollars and percentage, broken down by asset and category.</li>
 <li><strong>AI portfolio analysis</strong> — health score, personalised Fear &amp; Greed gauge, stress tests, entry quality, and a rebalance planner, all computed on your device.</li>
-<li><strong>Multi-target sell plans</strong> — set price targets and the percentage of each holding to sell, with live progress bars.</li>
+<li><strong>Multi-target sell plans</strong> — set crypto price targets and the percentage of each holding to sell, with live progress bars.</li>
 <li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
-<li><strong>Private by design</strong> — manual entry with local-first storage; no exchange API keys required.</li>
+<li><strong>Private by design</strong> — portfolio tracker with no bank account link required; no exchange API keys needed.</li>
+</ul>
+<h2>Free portfolio tracker vs paid alternatives</h2>
+<p>WalletLens is a free alternative to every paid portfolio tracker:</p>
+<ul>
+<li><strong>Free alternative to Kubera</strong> — Kubera costs $199/yr. WalletLens is free forever, covers the same asset classes, and keeps data on your device.</li>
+<li><strong>Free alternative to CoinStats</strong> — WalletLens is free with no account; CoinStats requires sign-up and a paid plan for full features.</li>
+<li><strong>Free alternative to Personal Capital / Empower</strong> — WalletLens requires no bank login and no account; Empower upsells wealth-management services.</li>
+<li><strong>Free alternative to CoinTracker / Delta</strong> — WalletLens tracks stocks, gold and FX too, not just crypto, and stores everything locally.</li>
 </ul>
 <h2>Track popular cryptocurrencies free</h2>
 <ul>
@@ -334,6 +352,14 @@ write('/', buildPage({
         { '@type': 'Question', name: 'What is a good free alternative to CoinStats, Kubera, or Empower?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative that tracks every asset class (not just crypto), keeps your data on your device, and includes AI analysis — with no paid tier, no bank login, and no exchange API connection required.' } },
         { '@type': 'Question', name: 'Can I import my portfolio from a screenshot?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens can read a screenshot of any exchange, broker, or wallet app and automatically extract each asset, amount and price into your portfolio — no manual typing, no CSV, no account required.' } },
         { '@type': 'Question', name: 'Does WalletLens support voice import?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Say your holdings naturally ("I have half a Bitcoin and 20 Apple shares") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic.' } },
+        { '@type': 'Question', name: 'Can I track crypto and stocks in the same portfolio?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens tracks Bitcoin, Ethereum, Solana, and 10,000+ crypto coins alongside US stocks (Apple, Tesla, Nvidia), ETFs, gold, silver, bonds, cash and FX — all in one free dashboard with a single net-worth total.' } },
+        { '@type': 'Question', name: 'Is there a free portfolio tracker with no sign up?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens is a free portfolio tracker that requires no sign-up, no email, and no account. Open it and start tracking immediately. All your data stays in your browser.' } },
+        { '@type': 'Question', name: 'What is the best free alternative to Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is the best free alternative to Kubera. It tracks the same asset classes (crypto, stocks, gold, fiat), keeps data on your device, requires no account, and is completely free — versus Kubera at $199/year.' } },
+        { '@type': 'Question', name: 'What is the best free alternative to CoinStats?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative to CoinStats. It covers crypto, stocks, gold and FX, stores data locally, and has AI analysis — all without a subscription or sign-up.' } },
+        { '@type': 'Question', name: 'How do I track my investment ROI for free?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free investment ROI tracker: enter your purchase price and quantity for any asset (crypto, stock, gold, etc.) and it shows your profit/loss in dollars and percentage, with AI insights — no account needed.' } },
+        { '@type': 'Question', name: 'Is there a portfolio tracker that does not link to my bank account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is a private portfolio tracker that never links to a bank account, exchange API, or wallet. You enter holdings manually (or via screenshot/voice import) and all data stays on your device.' } },
+        { '@type': 'Question', name: 'What is the best free portfolio tracker in 2026?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is one of the best free portfolio trackers in 2026: it covers every major asset class, requires no account, provides AI analysis, and is 100% free with no paid tier — comparing favorably to Kubera, CoinStats, Delta, and Empower.' } },
+        { '@type': 'Question', name: 'Can I analyze portfolio risk for free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens includes a free AI portfolio risk analyzer that scans every holding for concentration risk, volatility grade and health score. It also shows a correlation matrix and diversification grade — all on your device, no account required.' } },
       ],
     },
   ],
