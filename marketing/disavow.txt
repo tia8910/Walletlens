@@ -1,0 +1,38 @@
+# Google Disavow File for walletlens.live
+#
+# WHAT THIS IS
+# A list of spam/toxic domains and links to tell Google to ignore when
+# assessing walletlens.live. Google treats every line starting with
+# "domain:" as "ignore ALL links from this domain".
+#
+# HOW TO USE
+# 1. Set up Google Search Console for walletlens.live (verify via DNS TXT
+#    record or the existing /.well-known — DNS is easiest).
+# 2. Export your full backlink list:
+#       - Search Console > Links > External links > Top linking sites > Export, OR
+#       - Ahrefs > Backlinks > export referring domains (the screenshots came
+#         from the free Ahrefs checker; the paid/trial export gives the full list).
+# 3. Add every spam referring DOMAIN below as a new "domain:" line.
+# 4. Upload this file at: https://search.google.com/search-console/disavow-links
+#    (select the walletlens.live property, then "Upload disavow list").
+#
+# RULES
+# - One entry per line.
+# - "domain:example.com" disavows the whole domain (preferred for spam/PBNs).
+# - A bare URL disavows just that single page.
+# - Lines starting with "#" are comments and are ignored by Google.
+# - Re-uploading REPLACES the previous file, so keep this as the master copy.
+#
+# ── Confirmed spam / PBN domains (from Ahrefs backlink screenshots) ──
+# Casino/crypto spam + PBN networks pointing at walletlens.live.
+domain:master-rank-forge-pbn-league.store
+domain:seoexpress.org
+domain:trackawesomelist.com
+#
+# ── ADD THE REST OF YOUR SPAM DOMAINS BELOW THIS LINE ──
+# Paste each toxic referring domain from your Search Console / Ahrefs export.
+# Typical patterns to disavow on sight:
+#   - anchor text mentioning "casino", "SEO backlinks", "buy backlinks", "PBN"
+#   - random .store / .xyz / .online / .top domains with no real content
+#   - sites in unrelated languages/niches linking with money-keyword anchors
+# domain:
