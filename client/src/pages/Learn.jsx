@@ -20,7 +20,8 @@ export default function Learn() {
   useEffect(() => {
     if (term) {
       track('learn_view', { slug })
-      document.title = `What Is ${term.term}? — WalletLens`
+      const articlePrefix = term.article ? `${term.article} ` : ''
+      document.title = `What Is ${articlePrefix}${term.term}? — WalletLens`
     } else {
       navigate('/dashboard', { replace: true })
     }
@@ -32,6 +33,7 @@ export default function Learn() {
   const related = (term.related || [])
     .map(s => GLOSSARY.find(t => t.slug === s))
     .filter(Boolean)
+  const articlePrefix = term.article ? `${term.article} ` : ''
 
   return (
     <div className="wl-app wl-app-landing">
@@ -43,14 +45,29 @@ export default function Learn() {
         </header>
 
         <section className="tc-hero">
-          <h1 className="tc-h1">What Is {term.term}?</h1>
+          <h1 className="tc-h1">What Is {articlePrefix}{term.term}?</h1>
           <p className="tc-sub">{term.short}</p>
+          {term.featuredLink && (
+            <Link to={term.featuredLink.href} className="tc-featured-link">{term.featuredLink.label}</Link>
+          )}
         </section>
 
         <section className="tc-section">
           <h2>Definition</h2>
           {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
         </section>
+
+        {term.faqs?.length > 0 && (
+          <section className="tc-section">
+            <h2>Frequently Asked Questions</h2>
+            {term.faqs.map((f, i) => (
+              <div key={i} className="tc-faq">
+                <h3>{f.q}</h3>
+                <p>{f.a}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
         <section className="tc-section">
           <h2>Track it in WalletLens</h2>

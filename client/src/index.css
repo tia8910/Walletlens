@@ -6569,6 +6569,10 @@ select.bs-input option { background: var(--bg3); }
 .calc-neg strong { color:#ef4444; }
 .calc-hint { text-align:center; color: rgba(255,255,255,0.75); font-size:0.84rem; margin-top:0.9rem; padding-top:0.75rem; border-top:1px solid rgba(0,230,118,0.12); }
 .tc-section h3 { font-size:1.05rem; font-weight:700; margin:1.2rem 0 0.4rem; color: var(--text); }
+.tc-faq { border-left: 3px solid var(--g-ink); padding-left: 1rem; margin-top: 1.2rem; }
+.tc-faq h3 { margin-top: 0; }
+.tc-featured-link { display: inline-block; margin-top: 0.8rem; color: var(--g-ink); font-weight: 700; text-decoration: none; font-size: 0.95rem; }
+.tc-featured-link:hover { text-decoration: underline; }
 
 /* ── Final CTA ── */
 .lp-final {

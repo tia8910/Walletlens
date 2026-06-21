@@ -891,19 +891,36 @@ console.log(`Prerendered ${CALCULATORS.length} /calculator pages.`)
 for (const t of GLOSSARY) {
   const paras = t.body.split('\n\n')
   const related = (t.related || []).map(s => GLOSSARY.find(g => g.slug === s)).filter(Boolean)
+  const articlePrefix = t.article ? `${t.article} ` : ''
+  const pageTitle = `What Is ${articlePrefix}${t.term}?`
+  const faqHtml = t.faqs?.length ? `
+<h2>Frequently Asked Questions</h2>
+${t.faqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}` : ''
+  const featuredLinkHtml = t.featuredLink ? `<p><a href="${t.featuredLink.href}">${esc(t.featuredLink.label)}</a></p>` : ''
   const learnBody = `
-<h1>What Is ${esc(t.term)}?</h1>
+<h1>${esc(pageTitle)}</h1>
 <p>${esc(t.short)}</p>
+${featuredLinkHtml}
 <h2>Definition</h2>
 ${paras.map(p => `<p>${esc(p)}</p>`).join('\n')}
+${faqHtml}
 <h2>Track it in WalletLens</h2>
 <p>WalletLens is a free, private net-worth tracker that puts concepts like this into practice — it tracks your crypto, stocks, gold and cash in one dashboard, computing cost basis, P&amp;L and allocation automatically with live prices. No account, and your data stays on your device.</p>
 <p><a href="/dashboard">Open the free tracker →</a></p>
 ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a href="/learn/${r.slug}">${esc(r.term)}</a></li>`).join('\n')}\n</ul>` : ''}
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+  const faqJsonLd = t.faqs?.length ? [{
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: t.faqs.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  }] : []
   write('/learn/' + t.slug, buildPage({
     path: '/learn/' + t.slug,
-    title: `What Is ${t.term}? Definition & Example`,
+    title: `${pageTitle} Definition & Guide`,
     description: t.short,
     bodyHtml: learnBody,
     jsonLd: [
@@ -920,9 +937,10 @@ ${related.length ? `<h2>Related terms</h2>\n<ul>\n${related.map(r => `<li><a hre
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
-          { '@type': 'ListItem', position: 2, name: `What is ${t.term}?`, item: `${ORIGIN}/learn/${t.slug}/` },
+          { '@type': 'ListItem', position: 2, name: pageTitle, item: `${ORIGIN}/learn/${t.slug}/` },
         ],
       },
+      ...faqJsonLd,
     ],
   }))
 }
