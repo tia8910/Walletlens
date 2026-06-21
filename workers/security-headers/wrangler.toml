@@ -1,0 +1,12 @@
+name = "walletlens-security-headers"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Bind the worker to the apex zone so every request to the static site passes
+# through it and receives the hardened security headers. The route must be on a
+# zone whose DNS for walletlens.live is PROXIED through Cloudflare (orange cloud).
+# The origin behind that record stays GitHub Pages (185.199.108–111.153).
+routes = [
+  { pattern = "walletlens.live/*", zone_name = "walletlens.live" },
+  { pattern = "www.walletlens.live/*", zone_name = "walletlens.live" },
+]

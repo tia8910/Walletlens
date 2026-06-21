@@ -50,6 +50,7 @@ const MagicAnalysisPanel = lazy(() => import('../components/MagicAnalysisPanel')
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
+const Watchlist      = lazy(() => import('../components/Watchlist'))
 
 function TabFallback() {
   return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>Loading…</div>
@@ -73,7 +74,8 @@ const Ico = {
   close:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   search:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   ai:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2M3 17h2M19 17h2"/></svg>,
-  qr:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 20h3v1h-3z"/></svg>,
+  qr:        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 20h3v1h-3z"/></svg>,
+  watchlist: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
 }
 
 // ── Market-cap tier classifier ────────────────────────────────────────────
@@ -3289,17 +3291,19 @@ export default function Dashboard() {
   }, [enriched, prices])
 
   const tabs = [
-    { id: 'overview', label: t('overview'), icon: Ico.overview },
-    { id: 'tools',    label: 'Analysis',    icon: Ico.ai },
-    { id: 'alerts',   label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
-    { id: 'targets',  label: t('targets'),  icon: Ico.target },
-    { id: 'manage',   label: 'Manage',      icon: Ico.wallet },
+    { id: 'overview',   label: t('overview'), icon: Ico.overview },
+    { id: 'watchlist',  label: 'Watchlist',   icon: Ico.watchlist },
+    { id: 'tools',      label: 'Analysis',    icon: Ico.ai },
+    { id: 'alerts',     label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
+    { id: 'targets',    label: t('targets'),  icon: Ico.target },
+    { id: 'manage',     label: 'Manage',      icon: Ico.wallet },
   ]
 
   // Map legacy tab names from location.state to new names
   const normalizeTab = (id) => {
     if (id === 'ai' || id === 'risk' || id === 'eval') return 'tools'
     if (id === 'wallets' || id === 'data') return 'manage'
+    if (id === 'watch') return 'watchlist'
     return id
   }
 
@@ -4420,6 +4424,13 @@ export default function Dashboard() {
         </>
       )}
 
+
+      {/* ══ WATCHLIST ══ */}
+      {activeTab === 'watchlist' && (
+        <Suspense fallback={<TabFallback />}>
+          <Watchlist portfolioPrices={prices} />
+        </Suspense>
+      )}
 
       {/* ══ SELL TARGETS ══ */}
       {activeTab === 'targets' && (
