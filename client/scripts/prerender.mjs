@@ -272,8 +272,10 @@ const homeBody = `
 <li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
 <li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage. Nothing is sent to a server.</li>
 <li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
-<li><strong>Import from screenshot</strong> — photograph any exchange, broker or wallet screen; AI reads it into your portfolio.</li>
-<li><strong>Voice import (English &amp; Arabic)</strong> — speak your trades hands-free, AI logs them instantly.</li>
+<li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot">photograph any exchange, broker or wallet screen</a>; AI reads it into your portfolio.</li>
+<li><strong>Voice import (English &amp; Arabic)</strong> — <a href="/add-holdings-by-voice">speak your trades hands-free</a>, AI logs them instantly.</li>
+<li><strong>Excel / CSV import &amp; export</strong> — <a href="/export-portfolio-to-excel">download your portfolio as a CSV</a> for Excel, Google Sheets, or your accountant; import a spreadsheet to bulk-add holdings.</li>
+<li><strong>Crypto tax report export</strong> — <a href="/crypto-portfolio-tax-report">export your full transaction history</a> as a CSV for Koinly, CoinTracker, TurboTax, or your tax professional.</li>
 </ul>
 <h2>What you can do with WalletLens</h2>
 <ul>
@@ -441,11 +443,12 @@ write('/free-net-worth-tracker', buildPage({
 // Screenshot import
 {
   const steps = [
-    'Open WalletLens — no account, email or sign-up required.',
+    'Open WalletLens at walletlens.live — no account, email or sign-up required.',
     'Take a screenshot of your portfolio, holdings list, or trade history from any exchange, broker or wallet app.',
-    'Tap Smart Import and upload (or paste) the screenshot.',
-    'WalletLens reads the image with AI and extracts each asset, amount and price into structured holdings.',
-    'Review the detected holdings and confirm — they are added to your net-worth dashboard instantly.',
+    'Tap the Smart Import button (camera icon) in the WalletLens dashboard.',
+    'Upload or paste your screenshot — the AI reads the image and identifies every asset, quantity and price it contains.',
+    'Review the extracted holdings in the confirmation panel, edit any field if needed, and tap Confirm.',
+    'Your holdings are instantly added to your live net-worth dashboard with real-time price tracking.',
   ]
   const faq = faqBlock([
     {
@@ -453,34 +456,86 @@ write('/free-net-worth-tracker', buildPage({
       a: 'Yes. WalletLens lets you import holdings directly from a screenshot of any exchange, broker or wallet app. Its AI vision reads the image and extracts each asset, amount and price automatically — no manual typing, no CSV, and no account required.',
     },
     {
-      q: 'Which apps can I screenshot to import from?',
-      a: 'Any of them. Because WalletLens reads the picture rather than connecting to an API, you can screenshot Binance, Coinbase, MetaMask, Robinhood, a broker statement, a trade confirmation, or even a handwritten list — and it turns the image into structured holdings.',
+      q: 'Which apps and exchanges can I screenshot to import from?',
+      a: 'Any of them. Because WalletLens reads the picture rather than connecting to an API, you can screenshot Binance, Coinbase, Kraken, MetaMask, Robinhood, Fidelity, a broker statement, a trade confirmation, or even a handwritten list — and it turns the image into structured holdings. The AI handles a wide variety of layouts and formats.',
     },
     {
       q: 'Do I need an API key or to connect my exchange?',
-      a: 'No. Screenshot import is free and server-hosted, so you do not need your own AI key, and you never connect or log in to an exchange. Your portfolio data stays on your device.',
+      a: 'No. Screenshot import is free and requires no API key, no exchange login, and no account. You never hand over credentials to anyone — just a picture of what you already see on your screen.',
     },
     {
       q: 'Is screenshot import free?',
-      a: 'Yes — it is completely free with no account, like the rest of WalletLens.',
+      a: 'Yes — completely free with no account, no subscription, and no hidden limits, just like everything else in WalletLens.',
+    },
+    {
+      q: 'What if the AI misreads a number in my screenshot?',
+      a: 'You always get a review step before anything is saved. The extracted holdings are shown in an editable panel so you can correct any field — asset name, quantity, price, or date — before confirming.',
+    },
+    {
+      q: 'Can I import a screenshot that shows multiple assets?',
+      a: 'Yes. If your screenshot shows a full holdings page with ten or twenty assets, the AI reads them all at once and creates a holding entry for each. You review and confirm the full list in one step.',
+    },
+    {
+      q: 'Is my screenshot uploaded to a server?',
+      a: 'The image is sent to the WalletLens AI service for processing but is not stored — it is processed once to extract the holdings data and then discarded. The extracted holdings are saved only to your browser\'s local storage, not to any server.',
     },
   ])
   const body = `
 <h1>Import Your Portfolio From a Screenshot</h1>
-<p>WalletLens is the free net-worth tracker that builds your portfolio from a <strong>screenshot</strong> — no manual entry, no CSV upload, no account. Screenshot your holdings on any exchange, broker or wallet app and WalletLens reads the image with AI and extracts every asset, amount and price for you.</p>
+<p>WalletLens is the only free net-worth tracker that can build your entire portfolio from a <strong>screenshot</strong>. Photograph or capture your holdings on any exchange, broker or wallet app, and WalletLens reads the image with AI — extracting every asset, quantity and price automatically. No manual entry. No CSV. No account. No API key. Just a picture.</p>
 <p><a href="/dashboard">Try screenshot import free →</a></p>
+
+<h2>Why screenshot import changes how people track portfolios</h2>
+<p>The biggest barrier to portfolio tracking is the setup. If you hold assets on three exchanges, a broker, and a hardware wallet, manually entering every holding takes 30–60 minutes. Most people give up partway through and end up tracking only part of their portfolio — which makes the data almost useless.</p>
+<p>Screenshot import eliminates that barrier entirely. Instead of typing "I hold 0.3412 BTC, 2.5 ETH, 150 ADA…" you open each exchange app, take a screenshot of the holdings page, and upload it to WalletLens. The AI reads the image and creates the entries for you. A full five-exchange portfolio migration can take under three minutes.</p>
+<p>The other reason screenshot import is uniquely powerful is that it works with <em>anything</em>. Most "automatic import" solutions require an API integration — which means the tracker only works with whichever exchanges have partnered with it, and you must create API keys with read access to your account. Screenshot import has no such limitation. If you can see it on your screen, WalletLens can read it.</p>
+
 <h2>How to import a portfolio from a screenshot</h2>
 <ol>
 ${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
 </ol>
-<p>It works with crypto exchanges, stock brokers, wallets, trade confirmations — anything you can screenshot. Your extracted holdings join your full net worth across crypto, stocks, metals and cash, with all data kept on your device.</p>
+<p>The entire process — from opening the app to seeing your holdings tracked live with real-time prices — takes under two minutes for most portfolios.</p>
 <p><a href="/dashboard">Open WalletLens and import a screenshot →</a></p>
+
+<h2>What exchanges and apps are supported</h2>
+<p>Screenshot import works with any exchange, broker, or wallet app — because it reads the visual layout of the screen rather than connecting to an API. Supported sources include:</p>
+<ul>
+<li><strong>Crypto exchanges:</strong> Binance, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate.io, Bitfinex, Gemini, Crypto.com</li>
+<li><strong>Wallets:</strong> MetaMask, Trust Wallet, Phantom, Ledger Live, Exodus, Atomic Wallet, Rainbow</li>
+<li><strong>Stock brokers:</strong> Robinhood, Fidelity, Charles Schwab, TD Ameritrade, Interactive Brokers, eToro, Trading 212</li>
+<li><strong>Other:</strong> Brokerage account statements, trade confirmation emails, bank statements showing investment balances, handwritten or printed holding lists</li>
+</ul>
+<p>If the layout is unusual or the AI misses a field, the editable review step lets you correct it before saving — so even unsupported formats work in practice.</p>
+
+<h2>What asset types can be extracted</h2>
+<p>WalletLens tracks crypto, US stocks, metals (gold, silver, platinum), and cash. Screenshot import supports all of them:</p>
+<ul>
+<li><strong>Cryptocurrency:</strong> Bitcoin (BTC), Ethereum (ETH), Solana (SOL), and thousands of altcoins by ticker or full name</li>
+<li><strong>US stocks and ETFs:</strong> Any asset with a valid ticker symbol (AAPL, TSLA, SPY, QQQ, etc.)</li>
+<li><strong>Precious metals:</strong> Gold and silver in grams, troy ounces, or kilograms</li>
+<li><strong>Stablecoins:</strong> USDT, USDC, DAI — tracked separately from invested assets so your P&amp;L stays honest</li>
+</ul>
+
+<h2>Screenshot import vs other import methods</h2>
+<p>WalletLens offers several ways to add holdings. Here is how they compare:</p>
+<ul>
+<li><strong>Screenshot import</strong> — fastest for migrating from another app or importing a full exchange balance at once. Works with any source. Best for: initial setup, periodic bulk imports.</li>
+<li><strong><a href="/add-holdings-by-voice">Voice import</a></strong> — fastest for adding individual trades as you make them. Say "I bought 0.5 ETH at $3,200" and the trade is logged. Best for: recording trades hands-free on mobile.</li>
+<li><strong>Manual entry</strong> — most precise, best for correcting an entry or entering a single asset with exact historical dates. Best for: fine-grained control.</li>
+<li><strong>On-chain wallet import</strong> — paste an Ethereum, Bitcoin, or Solana address and WalletLens fetches live balances automatically. Best for: self-custody wallets without an exchange UI.</li>
+</ul>
+
+<h2>Privacy and data security</h2>
+<p>Your screenshot is sent to the WalletLens AI processing service only to extract the holdings data. It is not stored, logged, or shared. Once the AI returns the extracted data, the image is discarded. The extracted holdings are saved exclusively to your browser's local storage — they never reach a WalletLens server, and they are not associated with any account (because there are no accounts).</p>
+<p>This means your financial data is as private as anything stored on your own device. No employee of WalletLens can see your holdings, and there is no database to be breached.</p>
+
 ${faq.html}
-<p><a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+
+<p><strong>Related:</strong> <a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/export-portfolio-to-excel">Export portfolio to Excel</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>`
   write('/import-portfolio-from-screenshot', buildPage({
     path: '/import-portfolio-from-screenshot',
     title: 'Import Your Portfolio From a Screenshot — Free | WalletLens',
-    description: 'WalletLens reads a screenshot of your holdings from any exchange, broker or wallet and turns it into a tracked portfolio automatically — free, no account, no CSV, data stays on your device. The only net-worth tracker with AI screenshot import.',
+    description: 'WalletLens reads a screenshot of any exchange, broker or wallet and extracts every holding automatically — no manual entry, no API key, no account. Free AI screenshot portfolio import.',
     bodyHtml: body,
     jsonLd: [
       {
@@ -501,42 +556,106 @@ ${faq.html}
 // Voice import
 {
   const steps = [
-    'Open WalletLens — no account or sign-up needed.',
-    'Tap Voice Import and allow microphone access.',
-    'Say your holdings naturally, for example: "I have half a Bitcoin and twenty Apple shares".',
-    'WalletLens transcribes and parses your speech with AI into structured holdings — in English or Arabic.',
-    'Review and confirm, and the holdings are added to your net-worth dashboard.',
+    'Open WalletLens at walletlens.live — no account or sign-up needed.',
+    'Tap the microphone (Voice Import) button in the dashboard.',
+    'Allow microphone access when your browser prompts — required only for recording.',
+    'Say your holdings or trades naturally: "I bought half a Bitcoin at sixty-five thousand, and twenty Apple shares at one eighty-five."',
+    'WalletLens transcribes your speech with AI, parses each asset, quantity and price, and shows you the results in a review panel.',
+    'Edit any field if needed, then confirm — the holdings are added to your live net-worth dashboard instantly.',
   ]
   const faq = faqBlock([
     {
       q: 'Can I add my holdings by voice?',
-      a: 'Yes. WalletLens lets you add holdings just by speaking — say something like "I bought half a Bitcoin at 45,000 and ten Tesla shares" and its AI parses your speech into structured holdings. No typing and no account required.',
+      a: 'Yes. WalletLens lets you add holdings just by speaking — say something like "I bought half a Bitcoin at 45,000 and ten Tesla shares at 250" and its AI parses your speech into structured holdings. No typing and no account required.',
     },
     {
       q: 'Does voice import work in Arabic?',
-      a: 'Yes. WalletLens supports voice import in both English and Arabic, with handling for Arabic letter and number variations, so you can speak your portfolio in either language.',
+      a: 'Yes. WalletLens supports voice import in both English and Arabic, with full handling for Arabic number words, asset name transliterations, and regional phrasing. You can speak your portfolio in either language and the AI understands both.',
     },
     {
       q: 'Is voice import free?',
-      a: 'Yes — voice import is completely free with no account, like everything else in WalletLens, and your data stays on your device.',
+      a: 'Yes — completely free, no subscription, no account, no API key required. Voice import is built into WalletLens and works the same as every other feature.',
+    },
+    {
+      q: 'Can I record multiple trades in one sentence?',
+      a: 'Yes. You can say "I have half a Bitcoin, twenty Apple shares, and two ounces of gold" and WalletLens will parse all three into separate holdings in one recording. You can also add trades one at a time.',
+    },
+    {
+      q: 'What assets can I add by voice?',
+      a: 'Any asset WalletLens tracks — Bitcoin, Ethereum, Solana, and thousands of cryptocurrencies; US stocks and ETFs by company name or ticker; gold and silver in any common unit; and stablecoins. If you are not sure of the exact name, just say what you know and the AI will match it.',
+    },
+    {
+      q: 'Does voice import work on iPhone and Android?',
+      a: 'Yes. Voice import uses the browser\'s built-in Web Speech API, which is supported in Chrome on Android and Safari on iOS. For the best experience on iOS, use Safari; on Android, use Chrome.',
+    },
+    {
+      q: 'What happens to my audio recording?',
+      a: 'Your audio is transcribed by the browser\'s speech API (no audio leaves your device at the recording stage). The resulting text transcript is sent to the WalletLens AI service to extract structured holdings — it is processed once and not stored. Your portfolio data is saved only in your browser\'s local storage.',
     },
   ])
   const body = `
 <h1>Add Your Holdings by Voice</h1>
-<p>WalletLens is the free net-worth tracker you can update just by <strong>talking</strong>. Say your trades and holdings out loud and WalletLens turns your speech into structured portfolio entries with AI — in <strong>English or Arabic</strong>. No typing, no spreadsheets, no account.</p>
+<p>WalletLens is the only free net-worth tracker you can update just by <strong>speaking</strong>. Say your trades out loud — "I bought half a Bitcoin at 65K and twenty Apple shares at 185" — and WalletLens AI turns your speech into structured portfolio entries automatically. Works in <strong>English and Arabic</strong>. No typing, no spreadsheet, no account.</p>
 <p><a href="/dashboard">Try voice import free →</a></p>
+
+<h2>Why voice is the fastest way to log a trade</h2>
+<p>Recording a trade manually involves opening an app, searching for the asset, typing the quantity, entering the price, selecting a date, and saving. That is five to eight taps for each trade. If you made three trades today, that is 15–25 taps before your portfolio is up to date.</p>
+<p>With voice import, the entire flow collapses into one sentence. While the trade is still fresh — right after you execute it on your exchange — you say what you did and WalletLens logs it. No navigating menus, no keyboard, no risk of a typo in a price. It works while you are walking, commuting, or have your hands full.</p>
+<p>For active traders who execute multiple positions per week, voice import saves meaningful time every session. For casual investors who make one or two trades per month, it makes updating the portfolio feel effortless rather than a chore to defer.</p>
+
 <h2>How to add holdings by voice</h2>
 <ol>
 ${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
 </ol>
-<p>Voice import understands natural phrasing and amounts, so you can build your whole portfolio hands-free. Holdings join your full net worth across crypto, stocks, metals and cash, with all data kept on your device.</p>
+<p>The review step is designed so you can quickly scan the AI's interpretation and fix anything in seconds. Most of the time, no edits are needed.</p>
 <p><a href="/dashboard">Open WalletLens and add holdings by voice →</a></p>
+
+<h2>Natural language phrases the AI understands</h2>
+<p>You do not need to memorise a command syntax. Voice import understands conversational English and Arabic including many natural variations:</p>
+<ul>
+<li>"I bought half a Bitcoin at sixty-five thousand dollars last Tuesday."</li>
+<li>"Add twenty shares of Apple at one eighty-five."</li>
+<li>"I have two ounces of gold and one ounce of platinum."</li>
+<li>"I bought 0.3 ETH at three thousand two hundred and fifty SOL at one forty."</li>
+<li>"I picked up ten thousand USDT as a stablecoin reserve."</li>
+<li>"Sold five Tesla shares at two twenty."</li>
+</ul>
+<p>You can record a single holding or an entire portfolio summary in one utterance. The AI parses each distinct asset–quantity–price group and creates a separate entry for each.</p>
+
+<h2>Supported languages: English and Arabic</h2>
+<p>WalletLens voice import is available in two languages, making it the only multilingual voice-import portfolio tracker available free:</p>
+<ul>
+<li><strong>English</strong> — standard US/UK English, including informal phrasing like "sixty-five K" for $65,000, "half a Bitcoin" for 0.5 BTC, and "a grand" for $1,000.</li>
+<li><strong>Arabic (العربية)</strong> — full support for Arabic number words, fractional expressions, and asset name transliterations. The Arabic voice import page is at <a href="/ar/add-holdings-by-voice">/ar/add-holdings-by-voice</a> for Arabic-speaking users.</li>
+</ul>
+
+<h2>What asset types you can add by voice</h2>
+<ul>
+<li><strong>Cryptocurrency:</strong> Bitcoin (BTC), Ethereum (ETH), Solana (SOL), and thousands of others by name or ticker</li>
+<li><strong>US stocks and ETFs:</strong> Any stock by company name ("Apple", "Tesla") or ticker ("AAPL", "TSLA")</li>
+<li><strong>Precious metals:</strong> Gold and silver in grams, ounces, kilograms, or troy ounces</li>
+<li><strong>Stablecoins:</strong> USDT, USDC, DAI — treated as cash in your net worth</li>
+</ul>
+
+<h2>Voice import vs other import methods</h2>
+<p>WalletLens gives you several ways to build your portfolio. Choose based on your situation:</p>
+<ul>
+<li><strong>Voice import</strong> — fastest for recording individual trades as you make them. Best for: staying up to date hands-free.</li>
+<li><strong><a href="/import-portfolio-from-screenshot">Screenshot import</a></strong> — fastest for bulk-importing an entire exchange balance at once. Best for: initial portfolio setup or migrating from another app.</li>
+<li><strong>Manual entry</strong> — best for precise control, exact historical dates, or correcting an entry. Best for: fine-tuning.</li>
+<li><strong>On-chain wallet import</strong> — paste a wallet address and WalletLens auto-imports all holdings. Best for: self-custody wallets.</li>
+</ul>
+
+<h2>Privacy and data security</h2>
+<p>Your microphone audio is processed by your browser's built-in speech recognition — no raw audio is transmitted from your device to WalletLens. The text transcript is sent to the WalletLens AI service to extract structured trade data. This transcript is processed once and not stored. Your final portfolio data is saved only in your browser's local storage and never reaches any WalletLens server.</p>
+
 ${faq.html}
-<p><a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
+
+<p><strong>Related:</strong> <a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/export-portfolio-to-excel">Export portfolio to Excel</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>`
   write('/add-holdings-by-voice', buildPage({
     path: '/add-holdings-by-voice',
     title: 'Add Holdings by Voice — Free, English & Arabic | WalletLens',
-    description: 'WalletLens lets you add your portfolio holdings just by speaking — AI turns your voice into structured holdings in English or Arabic. Free, no account, hands-free, data stays on your device. The only net-worth tracker with voice import.',
+    description: 'WalletLens lets you log trades just by speaking — AI turns your voice into structured holdings in English or Arabic. Free, no account, hands-free, data stays on device.',
     bodyHtml: body,
     jsonLd: [
       {
@@ -551,6 +670,207 @@ ${faq.html}
       faq.jsonLd,
     ],
     alternates: hreflangPair('/add-holdings-by-voice', '/ar/add-holdings-by-voice'),
+  }))
+}
+
+// ── Export feature pages ──────────────────────────────────────────────────────
+// Three high-intent export pages targeting users who want to take their data out
+// of WalletLens (or bring it in via spreadsheet). These keywords have almost no
+// competition for a free, no-account tool and capture users at the "committed
+// tracker" stage — the highest-retention user segment.
+
+// Export to Excel / CSV
+{
+  const steps = [
+    'Open WalletLens at walletlens.live — no account needed.',
+    'Go to the Settings tab (gear icon) in the dashboard.',
+    'Tap "Export CSV" under the Data section.',
+    'Your browser downloads a .csv file containing all your holdings: asset, quantity, average cost, current price, P&L, and allocation percentage.',
+    'Open the file in Microsoft Excel, Google Sheets, LibreOffice Calc, or any spreadsheet app to analyse or reformat your data.',
+  ]
+  const faq = faqBlock([
+    {
+      q: 'Can I export my portfolio to Excel for free?',
+      a: 'Yes. WalletLens exports your complete portfolio as a CSV file — compatible with Microsoft Excel, Google Sheets, and any other spreadsheet app — entirely free, with no account or subscription required.',
+    },
+    {
+      q: 'What data is included in the CSV export?',
+      a: 'The export includes each asset\'s name, ticker, quantity, average cost basis, current live price, unrealised P&L in dollars and percentage, and your allocation percentage. Transaction history is also available as a separate export.',
+    },
+    {
+      q: 'Can I import the CSV back into WalletLens?',
+      a: 'Yes. WalletLens can read back a CSV or Excel file you have exported or edited, so you can make bulk changes in a spreadsheet and re-import them. This is useful for correcting historical cost basis across many holdings at once.',
+    },
+    {
+      q: 'Can I use the export for tax purposes?',
+      a: 'The CSV export gives you a complete record of your holdings and average cost basis, which is useful as input for a tax calculation. For a full capital-gains tax report including buy/sell dates and proceeds, see the transaction history export. WalletLens does not give tax advice; consult a qualified tax professional for your specific situation.',
+    },
+    {
+      q: 'Does the export work in Google Sheets?',
+      a: 'Yes. Download the CSV and upload it to Google Drive, then open it with Google Sheets. All columns import cleanly. You can also connect it to a Google Sheets IMPORTDATA formula if you want to keep the data refreshing automatically.',
+    },
+  ])
+  const body = `
+<h1>Export Your Portfolio to Excel or CSV — Free</h1>
+<p>WalletLens lets you export your entire portfolio as a <strong>CSV file</strong> — ready to open in Microsoft Excel, Google Sheets, or any spreadsheet app. Free, instant, no account required. Your holdings, cost basis, live prices, and P&amp;L in one downloadable file.</p>
+<p><a href="/dashboard">Open WalletLens and export your portfolio →</a></p>
+
+<h2>Why export your portfolio to Excel?</h2>
+<p>WalletLens does the live tracking. Sometimes you need the data in a spreadsheet — to build a custom analysis, prepare for tax season, share with a financial advisor, or create a report in a format your accountant expects. The CSV export bridges that gap without you having to manually copy numbers out of a screen.</p>
+<p>Common uses for the portfolio CSV export:</p>
+<ul>
+<li><strong>Tax preparation:</strong> Import into a tax tool or share with your accountant as the starting point for a capital-gains calculation.</li>
+<li><strong>Custom analysis:</strong> Build a pivot table, a charting dashboard, or a rebalancing model in Excel using your real position data.</li>
+<li><strong>Record-keeping:</strong> Keep dated snapshots of your portfolio in a folder. Run an export at month-end each month and you have a full year of performance history without any manual work.</li>
+<li><strong>Sharing:</strong> Send a clean spreadsheet to a partner, a tax professional, or an estate planner who needs to see your assets without accessing the app.</li>
+<li><strong>Migration:</strong> Moving to a different tracker? Export your data first so you do not lose your cost basis history.</li>
+</ul>
+
+<h2>How to export your portfolio to Excel</h2>
+<ol>
+${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
+</ol>
+<p><a href="/dashboard">Download your portfolio CSV now →</a></p>
+
+<h2>What the CSV export contains</h2>
+<p>The holdings export includes one row per asset with these columns:</p>
+<ul>
+<li><strong>Asset</strong> — full name (e.g. Bitcoin) and ticker (BTC)</li>
+<li><strong>Quantity</strong> — how much you hold</li>
+<li><strong>Average cost basis</strong> — your weighted average buy price</li>
+<li><strong>Current price</strong> — live market price at time of export</li>
+<li><strong>Current value</strong> — quantity × current price</li>
+<li><strong>Unrealised P&amp;L</strong> — gain or loss in dollars and as a percentage</li>
+<li><strong>Allocation</strong> — this asset as a percentage of your total portfolio</li>
+</ul>
+<p>A separate transaction history export lists every individual buy, sell or transfer with its date, quantity, price, and total cost — useful for reconstructing a full trading ledger.</p>
+
+<h2>Import from Excel or CSV</h2>
+<p>WalletLens also accepts CSV imports. If you already track your portfolio in a spreadsheet, you can import it directly rather than entering each holding manually. The expected format matches the export format, so you can edit an exported file and re-import it — useful for bulk-correcting cost basis records or cleaning up historical data.</p>
+<p>You can also combine import methods: use screenshot import or voice import for new trades, and fall back to CSV import for a bulk historical migration.</p>
+
+<h2>Privacy: your data never touches our servers</h2>
+<p>The CSV export is generated entirely in your browser from your local data. No data is transmitted to WalletLens servers during the export. The file downloads directly to your device. Your portfolio data stays under your full control at every step.</p>
+
+${faq.html}
+
+<p><strong>Related:</strong> <a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/crypto-portfolio-tax-report">Crypto tax report export</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/">Home</a></p>`
+  write('/export-portfolio-to-excel', buildPage({
+    path: '/export-portfolio-to-excel',
+    title: 'Export Portfolio to Excel or CSV Free — WalletLens',
+    description: 'Download your WalletLens portfolio as a CSV — holdings, cost basis, P&L, allocation — ready for Excel, Google Sheets, or your accountant. Free, no account, instant download.',
+    bodyHtml: body,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Export Portfolio to Excel', item: ORIGIN + '/export-portfolio-to-excel/' },
+        ],
+      },
+      howToJsonLd('How to export a portfolio to Excel or CSV', steps),
+      faq.jsonLd,
+    ],
+  }))
+}
+
+// Crypto portfolio tax report export
+{
+  const steps = [
+    'Open WalletLens at walletlens.live — no account or sign-up required.',
+    'Make sure all your trades are logged (use screenshot import, voice import, or manual entry to add any missing transactions).',
+    'Go to Settings → Export and tap "Transaction History CSV".',
+    'Your browser downloads a CSV with every buy, sell, and transfer: date, asset, quantity, price per unit, and total value.',
+    'Open the file in Excel or Google Sheets, or upload it directly to a tax tool like Koinly, CoinTracker, or TurboTax.',
+  ]
+  const faq = faqBlock([
+    {
+      q: 'Can I generate a crypto tax report for free?',
+      a: 'WalletLens exports your complete transaction history as a free CSV — the foundation of any crypto tax calculation. The CSV is free with no account. For automatic gain/loss calculations, you can import the CSV into a dedicated tax tool like Koinly or CoinTracker.',
+    },
+    {
+      q: 'What information does the tax report CSV contain?',
+      a: 'Each row covers one transaction: date and time, asset name and ticker, quantity, price per unit at time of transaction, total value, and transaction type (buy, sell, or transfer). This gives a tax professional or tax tool everything needed to calculate short-term and long-term capital gains.',
+    },
+    {
+      q: 'Which tax tools accept the WalletLens CSV export?',
+      a: 'The CSV format is compatible with most major crypto tax platforms including Koinly, CoinTracker, CryptoTaxCalculator, TaxBit, and ZenLedger. You may need to map the column headers to the format each tool expects — this is a one-time step usually covered in their import documentation.',
+    },
+    {
+      q: 'Does WalletLens calculate my capital gains?',
+      a: 'WalletLens shows your unrealised gain or loss per holding (the difference between your average cost basis and the current price). It does not calculate realised capital gains for tax purposes. For an official tax report with short/long-term gain split, import the transaction CSV into a dedicated tax tool.',
+    },
+    {
+      q: 'Is my transaction history private?',
+      a: 'Yes. Your transaction data is stored only in your browser\'s local storage. When you export, the CSV is generated in your browser and downloaded directly to your device. No transaction data is transmitted to WalletLens servers.',
+    },
+  ])
+  const body = `
+<h1>Crypto Portfolio Tax Report — Free Export</h1>
+<p>WalletLens exports your complete <strong>transaction history as a free CSV</strong> — every buy, sell, and transfer with date, asset, quantity and price. Use it to prepare your crypto tax return, import into a tax tool like Koinly or CoinTracker, or share with your accountant. No account, no subscription, no API key.</p>
+<p><a href="/dashboard">Open WalletLens and export your transaction history →</a></p>
+
+<h2>Why crypto tax reporting starts with accurate transaction records</h2>
+<p>Crypto tax authorities (IRS, HMRC, ATO, and others) treat cryptocurrency as a taxable asset — every sale, trade, and in some cases transfer is a taxable event. To calculate your tax liability, you need a complete, accurate record of every transaction: what asset, how much, at what price, and on what date.</p>
+<p>The challenge is that most people hold crypto across multiple exchanges and wallets. Manually assembling a complete transaction log is tedious, error-prone, and easy to defer until tax season — when reconstructing months of trades becomes genuinely painful.</p>
+<p>WalletLens solves this by acting as the single place you log every trade as you make it, using whatever input method is fastest: voice, screenshot, or manual entry. At tax time, you export one clean CSV instead of logging into six exchanges and downloading six separate reports.</p>
+
+<h2>How to export your crypto transaction history for tax</h2>
+<ol>
+${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
+</ol>
+<p><a href="/dashboard">Export your transaction history now →</a></p>
+
+<h2>What the tax export CSV contains</h2>
+<p>Each row in the transaction history export represents one transaction:</p>
+<ul>
+<li><strong>Date &amp; time</strong> — exact timestamp of the trade</li>
+<li><strong>Asset</strong> — name and ticker (e.g. Bitcoin / BTC)</li>
+<li><strong>Type</strong> — Buy, Sell, or Transfer</li>
+<li><strong>Quantity</strong> — how much was bought or sold</li>
+<li><strong>Price per unit</strong> — the price at time of transaction (your cost basis for buys)</li>
+<li><strong>Total value</strong> — quantity × price</li>
+<li><strong>Notes</strong> — any label you added to the trade</li>
+</ul>
+<p>This format gives a tax professional or software tool everything needed to compute short-term and long-term capital gains under any accounting method (FIFO, LIFO, average cost).</p>
+
+<h2>How to use the export with tax tools</h2>
+<p>After downloading the CSV, you have several options:</p>
+<ul>
+<li><strong>Koinly:</strong> Import → Custom CSV → map the WalletLens columns. Koinly calculates gains, generates tax reports, and supports most countries.</li>
+<li><strong>CoinTracker:</strong> Accepts CSV uploads directly. Free tier covers up to 25 transactions.</li>
+<li><strong>TurboTax:</strong> Import as a CSV under the cryptocurrency section. Works with the standard column format.</li>
+<li><strong>Your accountant:</strong> Simply email the CSV. Any accountant who handles crypto will know how to use a transaction log in this format.</li>
+<li><strong>Excel / Google Sheets:</strong> Do your own FIFO calculation using the date-sorted transaction list and standard spreadsheet formulas.</li>
+</ul>
+
+<h2>Cost basis tracking in WalletLens</h2>
+<p>WalletLens tracks your <strong>average cost basis</strong> per asset automatically — updated with every new buy or sell you record. This is the weighted average price you paid across all your purchases, which is the most commonly used method for crypto tax in many jurisdictions. You can see your cost basis per holding directly in the dashboard at any time, without waiting for tax season.</p>
+
+<h2>Privacy: your transaction data stays on your device</h2>
+<p>WalletLens stores your transaction history in your browser's local storage only. No transaction data is transmitted to any server — not when you log a trade, not when you view your history, and not when you export. The CSV is generated locally and downloaded directly to your device.</p>
+
+${faq.html}
+
+<p><strong>Related:</strong> <a href="/export-portfolio-to-excel">Export holdings to Excel</a> · <a href="/import-portfolio-from-screenshot">Import from a screenshot</a> · <a href="/add-holdings-by-voice">Add holdings by voice</a> · <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/">Home</a></p>`
+  write('/crypto-portfolio-tax-report', buildPage({
+    path: '/crypto-portfolio-tax-report',
+    title: 'Crypto Portfolio Tax Report — Free CSV Export | WalletLens',
+    description: 'Export your complete crypto transaction history as a free CSV — date, asset, quantity, price — for tax tools like Koinly, CoinTracker, or your accountant. No account needed.',
+    bodyHtml: body,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+          { '@type': 'ListItem', position: 2, name: 'Crypto Portfolio Tax Report', item: ORIGIN + '/crypto-portfolio-tax-report/' },
+        ],
+      },
+      howToJsonLd('How to export a crypto transaction history for tax', steps),
+      faq.jsonLd,
+    ],
   }))
 }
 
@@ -1747,6 +2067,8 @@ const STATIC_ROUTES = [
   { path: '/free-net-worth-tracker', changefreq: 'weekly', priority: '0.9' },
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
+  { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
+  { path: '/crypto-portfolio-tax-report', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/market-index', changefreq: 'daily', priority: '0.9' },
   { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },

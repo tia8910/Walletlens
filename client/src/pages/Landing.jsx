@@ -459,6 +459,49 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ IMPORT & EXPORT ═════════════════════════════════════════════ */}
+      <section className="lp-section">
+        <div className="lp-section-label">Import &amp; Export</div>
+        <h2 className="lp-section-h2">Add holdings your way.<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>Your data, your format.</span></h2>
+        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
+          No other free tracker gives you this many ways to get data in — and out. Pick whatever fits your workflow.
+        </p>
+        <div className="lp-feat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem' }}>
+          <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(52,211,153,0.18)' }}>
+            <div className="lp-feat-icon" style={{ background: 'rgba(52,211,153,0.12)', color: 'rgb(52,211,153)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
+            <h3 className="lp-feat-title">Voice Import</h3>
+            <p className="lp-feat-desc">Say "I bought 0.5 BTC at 65K" and the trade is logged. Works in English and Arabic. The only free tracker with AI voice input.</p>
+            <Link to="/add-holdings-by-voice" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
+          </div>
+          <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(96,165,250,0.18)' }}>
+            <div className="lp-feat-icon" style={{ background: 'rgba(96,165,250,0.12)', color: 'rgb(96,165,250)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <h3 className="lp-feat-title">Screenshot Import</h3>
+            <p className="lp-feat-desc">Screenshot any exchange, broker, or wallet. AI reads the image and extracts every holding automatically. Works with Binance, Coinbase, Robinhood, and more.</p>
+            <Link to="/import-portfolio-from-screenshot" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
+          </div>
+          <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(251,146,60,0.18)' }}>
+            <div className="lp-feat-icon" style={{ background: 'rgba(251,146,60,0.12)', color: 'rgb(251,146,60)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <h3 className="lp-feat-title">Excel / CSV Import</h3>
+            <p className="lp-feat-desc">Already tracking in a spreadsheet? Upload your CSV and WalletLens imports all your holdings and historical cost basis in seconds.</p>
+            <Link to="/export-portfolio-to-excel" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
+          </div>
+          <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(167,139,250,0.18)' }}>
+            <div className="lp-feat-icon" style={{ background: 'rgba(167,139,250,0.12)', color: 'rgb(167,139,250)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <h3 className="lp-feat-title">Export to Excel / Tax CSV</h3>
+            <p className="lp-feat-desc">Download your portfolio or full transaction history as a CSV. Share with your accountant, import into Koinly, or open in Excel. Free, instant, no server.</p>
+            <Link to="/crypto-portfolio-tax-report" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Tax export →</Link>
+          </div>
+        </div>
+      </section>
+
       {/* ══ ASSET CLASSES ═══════════════════════════════════════════════ */}
       <section className="lp-section">
         <div className="lp-section-label">{t('assetLabel')}</div>
