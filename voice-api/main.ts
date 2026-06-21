@@ -22,7 +22,7 @@ function corsHeaders(origin: string | null): HeadersInit {
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "*",
     "Vary": "Origin",
     "Content-Type": "application/json",
   }

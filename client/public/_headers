@@ -34,3 +34,6 @@
 
 /*.png
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

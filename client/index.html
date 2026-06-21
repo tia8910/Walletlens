@@ -120,8 +120,8 @@
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com data:;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
       img-src 'self' data: blob: https:;
       connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
       frame-src 'none';
@@ -131,14 +131,9 @@
       upgrade-insecure-requests;
     " />
 
-    <!-- Fonts — loaded asynchronously so the stylesheet never blocks rendering.
-         The media="print" trick fetches at low priority (non-blocking) then the
-         onload handler switches it to screen so it applies immediately.
-         noscript provides a synchronous fallback for crawlers without JS. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&family=DM+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&family=DM+Mono:wght@400&display=swap" /></noscript>
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
          crossorigin is required because all fetches to these origins are CORS requests —
