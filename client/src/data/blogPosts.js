@@ -167,6 +167,7 @@ Track your Bitcoin portfolio and whale signals free at [walletlens.live](https:/
   {
     slug: 'fear-and-greed-index-crypto-explained',
     title: 'The Fear & Greed Index for Crypto: What It Is and How to Use It',
+    seoTitle: 'Crypto Fear & Greed Index: What It Is & How to Use It',
     date: 'May 2026',
     readTime: '4 min read',
     summary: 'The Fear & Greed Index is one of the most watched sentiment indicators in crypto. Learn what drives it, how to read it, and how WalletLens calculates a personalised version for your own portfolio.',
@@ -224,6 +225,7 @@ See your personalised Fear & Greed gauge and portfolio analytics at [walletlens.
   {
     slug: 'portfolio-diversification-crypto-stocks-gold',
     title: 'How to Diversify Your Portfolio Across Crypto, Stocks, and Gold',
+    seoTitle: 'How to Diversify Across Crypto, Stocks & Gold',
     date: 'May 2026',
     readTime: '6 min read',
     summary: 'Diversification across asset classes reduces risk without necessarily reducing returns. Here\'s a practical framework for balancing crypto, equities, and hard assets.',
@@ -296,6 +298,7 @@ Most portfolio trackers only cover one asset class. WalletLens was specifically 
   {
     slug: 'how-to-set-crypto-profit-targets',
     title: 'How to Set Crypto Profit Targets (And Actually Stick to Them)',
+    seoTitle: 'How to Set Crypto Profit Targets That Stick',
     date: 'May 2026',
     readTime: '5 min read',
     summary: 'Most crypto investors buy well but sell poorly — either too early or, more often, too late. A systematic profit-taking plan removes emotion from the decision.',
@@ -369,6 +372,7 @@ Set your sell targets and track live P&L free at [walletlens.live](https://walle
   {
     slug: 'dollar-cost-averaging-crypto-guide',
     title: 'Dollar-Cost Averaging in Crypto: A Complete Beginner’s Guide',
+    seoTitle: 'Dollar-Cost Averaging in Crypto: Beginner’s Guide',
     date: 'May 2026',
     readTime: '6 min read',
     summary: 'Dollar-cost averaging removes the impossible task of timing the market by spreading your buys over time. Here is how DCA works, when it beats lump-sum investing, and how to track it accurately.',
@@ -547,6 +551,7 @@ Track your cost basis and realized P&L free at [walletlens.live](https://walletl
   {
     slug: 'stablecoins-explained-usdt-usdc',
     title: 'Stablecoins Explained: USDT, USDC, and Why They Are Dry Powder',
+    seoTitle: 'Stablecoins Explained: USDT, USDC & Dry Powder',
     date: 'May 2026',
     readTime: '5 min read',
     summary: 'Stablecoins are the backbone of crypto trading, but they behave nothing like Bitcoin. Here is what backs them, the risks to watch, and why your tracker should treat them as cash rather than profit.',
@@ -1049,6 +1054,7 @@ Track every asset and watch your net worth grow at [walletlens.live](https://wal
   {
     slug: 'how-to-track-net-worth-across-all-assets',
     title: 'How to Track Your Net Worth Across Crypto, Stocks, Gold, and Cash',
+    seoTitle: 'Track Net Worth Across Crypto, Stocks, Gold & Cash',
     date: 'May 2026',
     readTime: '5 min read',
     summary: 'Your financial picture is scattered across wallets, brokerages, bank accounts, and metal holdings. Here is how to bring it all into one live net worth view without spreadsheets or subscriptions.',
@@ -1140,6 +1146,7 @@ Your net worth is the sum of everything across all the accounts and assets you h
   {
     slug: 'is-it-safe-to-connect-exchange-api-to-portfolio-tracker',
     title: 'Is It Safe to Connect Your Exchange API to a Portfolio Tracker?',
+    seoTitle: 'Is It Safe to Connect Exchange API to a Tracker?',
     date: 'May 2026',
     readTime: '7 min read',
     summary: 'Thinking about linking your exchange API to a portfolio tracker? Learn the real risks, what to check, and safer alternatives before you connect.',
@@ -2071,6 +2078,7 @@ Visit [walletlens.live](https://walletlens.live) to track AAPL alongside your en
   {
     slug: 'gold-silver-portfolio-tracker',
     title: 'Gold and Silver Portfolio Tracker — Track Precious Metals for Free',
+    seoTitle: 'Gold & Silver Portfolio Tracker — Free',
     date: 'June 2026',
     readTime: '5 min read',
     summary: 'Track your gold and silver holdings for free alongside crypto and stocks — see your precious metals P&L with live prices.',
@@ -2190,6 +2198,7 @@ Track your actual crypto allocation alongside stocks, gold, and cash at [walletl
   {
     slug: 'best-free-investment-tracker-2026',
     title: 'The Best Free Investment Tracker for Stocks, Crypto, and Gold (2026)',
+    seoTitle: 'Best Free Investment Tracker for 2026',
     date: 'June 2026',
     readTime: '5 min read',
     summary: 'What to look for in a free investment portfolio tracker and why most popular options still have significant trade-offs.',
@@ -2436,6 +2445,7 @@ See your live allocation breakdown and rebalance signals free at [walletlens.liv
   {
     slug: 'build-first-investment-portfolio',
     title: 'How to Build Your First Investment Portfolio and Track It Free',
+    seoTitle: 'How to Build Your First Investment Portfolio',
     date: 'June 2026',
     readTime: '6 min read',
     summary: 'A beginner-friendly guide to building a diversified first portfolio with index funds, crypto, and a gold allocation — and how to track it all for free.',
@@ -2560,6 +2570,7 @@ The biggest advantage is seeing your crypto alongside everything else. Once your
   {
     slug: 'precious-metals-vs-crypto',
     title: 'Precious Metals vs Crypto: Which to Hold (and How to Track Both)',
+    seoTitle: 'Precious Metals vs Crypto: Which to Hold?',
     date: 'June 2026',
     readTime: '6 min read',
     summary: 'Gold, silver, Bitcoin, and Ethereum compared as store-of-value assets — different risk profiles, different roles, and why many investors hold both.',
@@ -2981,6 +2992,7 @@ Set your vision. Link your holdings. Let the math do the rest.
   {
     slug: 'crypto-withdrawal-strategy',
     title: 'Crypto Withdrawal Strategy: How to Plan a Sustainable Drawdown',
+    seoTitle: 'Crypto Withdrawal Strategy: Plan a Drawdown',
     date: 'June 2026',
     readTime: '7 min read',
     summary: 'A step-by-step guide to planning when and how to withdraw from your crypto portfolio — without running out too soon or leaving too much on the table.',
@@ -3068,6 +3080,7 @@ Don't wait until you need the money to figure out how to access it. Plan the wit
   {
     slug: 'net-worth-goal-buckets',
     title: 'How to Split Your Net Worth Into Goals (and Actually Stick to Them)',
+    seoTitle: 'How to Split Your Net Worth Into Goals',
     date: 'June 2026',
     readTime: '5 min read',
     summary: 'Stop treating your portfolio as one big number. This guide shows how to divide your net worth into goal-based buckets that give every dollar a purpose and keep you disciplined.',
@@ -3143,6 +3156,7 @@ That's the goal — not just tracking what you have, but knowing what it's all *
   {
     slug: 'how-to-track-investment-portfolio-multiple-currencies',
     title: 'How to Track Your Investment Portfolio in Multiple Currencies',
+    seoTitle: 'Track Your Portfolio in Multiple Currencies',
     date: 'June 2026',
     readTime: '7 min read',
     summary: 'Holding assets in USD, EUR, GBP, or crypto? Learn how to track your full portfolio net worth across multiple currencies accurately and for free.',

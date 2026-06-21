@@ -897,12 +897,20 @@ for (const t of GLOSSARY) {
 <h2>Frequently Asked Questions</h2>
 ${t.faqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}` : ''
   const featuredLinkHtml = t.featuredLink ? `<p><a href="${t.featuredLink.href}">${esc(t.featuredLink.label)}</a></p>` : ''
+  const keyPointsHtml = t.keyPoints?.length ? `
+<h2>Key takeaways</h2>
+<ul>\n${t.keyPoints.map(k => `<li>${esc(k)}</li>`).join('\n')}\n</ul>` : ''
+  const exampleHtml = t.example ? `
+<h2>Example</h2>
+<p>${esc(t.example)}</p>` : ''
   const learnBody = `
 <h1>${esc(pageTitle)}</h1>
 <p>${esc(t.short)}</p>
 ${featuredLinkHtml}
 <h2>Definition</h2>
 ${paras.map(p => `<p>${esc(p)}</p>`).join('\n')}
+${keyPointsHtml}
+${exampleHtml}
 ${faqHtml}
 <h2>Track it in WalletLens</h2>
 <p>WalletLens is a free, private net-worth tracker that puts concepts like this into practice — it tracks your crypto, stocks, gold and cash in one dashboard, computing cost basis, P&amp;L and allocation automatically with live prices. No account, and your data stays on your device.</p>
@@ -991,7 +999,7 @@ ${vsFaq.html}
 <p><a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/blog">Blog</a> · <a href="/about">About</a> · <a href="/">Home</a></p>`
   write('/vs/' + c.slug, buildPage({
     path: '/vs/' + c.slug,
-    title: `WalletLens vs ${c.competitor} — Free Net Worth Tracker Compared`,
+    title: `WalletLens vs ${c.competitor} — Free Comparison`,
     description: c.summary,
     bodyHtml: vsBody,
     jsonLd: [
@@ -1071,7 +1079,7 @@ ${POSTS.map(p => `
 `
 write('/blog', buildPage({
   path: '/blog',
-  title: 'Blog — Fear & Greed, Portfolio Tracking & Crypto Investing | WalletLens',
+  title: 'WalletLens Blog — Crypto & Investing Guides',
   description: 'Crypto fear and greed index explained, DCA strategy, gold vs Bitcoin, portfolio diversification, net worth tracking — free investing guides from WalletLens.',
   bodyHtml: blogBody,
 }))
@@ -1128,7 +1136,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
   const hasAr = AR_POSTS.some(a => a.slug === p.slug)
   write('/blog/' + p.slug, buildPage({
     path: '/blog/' + p.slug,
-    title: brandTitle(p.title),
+    title: brandTitle(p.seoTitle || p.title),
     description: p.summary,
     bodyHtml: articleHtml,
     jsonLd,
@@ -1328,8 +1336,8 @@ ${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>$
 // ── Market Index (data page — press & citation magnet) ───────────────────────
 write('/market-index', buildPage({
   path: '/market-index',
-  title: 'Crypto Fear & Greed Index — Live Market Sentiment Score | WalletLens',
-  description: 'Live crypto fear and greed index — a 0–100 sentiment score updated continuously from market breadth, momentum and large-cap leadership across 250 coins. See if markets are fearful or greedy.',
+  title: 'WalletLens Market Index — Live Crypto Sentiment Data',
+  description: 'A free, citable live crypto market sentiment dataset — a 0–100 score from market breadth, momentum and large-cap leadership across the top 250 coins. Open data for journalists and researchers.',
   bodyHtml: `
 <h1>Crypto Fear & Greed Index — WalletLens Market Sentiment Score</h1>
 <p>The WalletLens Market Index is a live <strong>0–100 fear and greed score</strong> for the crypto market — updated continuously from three public-data signals across the top 250 cryptocurrencies. It is free for anyone to read, cite, and link.</p>
