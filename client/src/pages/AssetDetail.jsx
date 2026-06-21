@@ -14,6 +14,15 @@ function isNonCryptoId(id) {
   const k = assetClass(id)
   return k !== 'crypto'
 }
+// Technical analysis works for any asset with a daily price feed — crypto plus
+// stocks, ETFs and precious metals (gold/silver/copper/platinum). Only truly
+// feedless classes (fiat, bonds, real estate, cash, "other") have no chart.
+function hasTechnicals(id) {
+  if (!id) return false
+  const k = assetClass(id)
+  return k === 'crypto' || k === 'stock' ||
+    k === 'gold' || k === 'silver' || k === 'copper' || k === 'platinum'
+}
 function categoryFor(id) {
   return assetClass(id)
 }
@@ -56,7 +65,7 @@ export default function AssetDetail() {
   }, [coinId])
   useEffect(() => {
     setTa(null)
-    if (!coinId || isNonCryptoId(coinId)) return
+    if (!coinId || !hasTechnicals(coinId)) return
     api.getBulkTechnicals([coinId]).then(res => setTa(res?.[coinId] || null)).catch(() => {})
   }, [coinId])
 
