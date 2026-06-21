@@ -1,33 +1,57 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 
-// ── Wallet Evaluation (mirrored from Dashboard for standalone use) ─────────
+// ── Asset-mix helpers ──────────────────────────────────────────────────────
+// The wallet evaluation adapts to what's actually in the portfolio: a stock
+// investor should never be told to "buy Bitcoin", and a crypto investor
+// shouldn't be graded on equity sectors. We compute the value share of each
+// asset class first, then only run the checks that are relevant.
+const STABLE_IDS = ['tether','usd-coin','dai','binance-usd','true-usd','frax','usdd','gemini-dollar','paxos-standard']
+const STABLE_SYMS = ['usdt','usdc','dai','busd','tusd','frax','usdd','gusd','usdp','pyusd','fdusd']
+const isStable = (h) => STABLE_IDS.includes(h.coin_id) || STABLE_SYMS.includes(h.coin_symbol?.toLowerCase())
+const isMetalClass = (k) => k === 'gold' || k === 'silver' || k === 'copper' || k === 'platinum'
+
+function assetMix(enriched, totalValue) {
+  const mix = { crypto: 0, stock: 0, metal: 0, cash: 0, bond: 0, other: 0 }
+  if (!totalValue) return mix
+  for (const h of enriched) {
+    const k = assetClass(h.coin_id)
+    const share = h.value / totalValue
+    if (isStable(h) || k === 'fiat') mix.cash += share
+    else if (k === 'crypto') mix.crypto += share
+    else if (k === 'stock') mix.stock += share
+    else if (isMetalClass(k)) mix.metal += share
+    else if (k === 'bond') mix.bond += share
+    else mix.other += share
+  }
+  return mix
+}
+
+// ── Wallet Evaluation — adaptive checks ────────────────────────────────────
+// Each check declares `applies(mix)`: only relevant checks are scored, so the
+// overall grade reflects the right rubric for crypto-heavy, stock-heavy, or
+// genuinely mixed portfolios. Universal checks always apply.
 const EVAL_CATEGORIES = [
+  // ── Universal ──
   {
-    id: 'btc_anchor', label: 'BTC Anchor', icon: '₿', color: '#f7931a',
-    check: (enriched, totalValue) => {
-      const btc = enriched.find(h => h.coin_id === 'bitcoin' || h.coin_symbol?.toLowerCase() === 'btc')
-      if (!btc) return { pass: false, score: 0, tip: 'Add Bitcoin as a portfolio anchor. BTC historically acts as a safe haven during crypto downturns and gives your portfolio a stability base.' }
-      const w = btc.value / totalValue * 100
-      if (w < 5) return { pass: false, score: 40, tip: `BTC is only ${w.toFixed(1)}% of your portfolio. Consider increasing to at least 20% — it reduces volatility and acts as a hedge.` }
-      if (w > 70) return { pass: true, score: 70, tip: `BTC is ${w.toFixed(1)}% of your portfolio — heavily concentrated. Consider diversifying to other quality assets.` }
-      return { pass: true, score: 100, tip: `Solid BTC anchor at ${w.toFixed(1)}% — gives your portfolio a stable foundation.` }
-    },
-  },
-  {
-    id: 'eth_exposure', label: 'ETH / Smart Contract', icon: 'Ξ', color: '#627eea',
-    check: (enriched, totalValue) => {
-      const eth = enriched.find(h => h.coin_id === 'ethereum' || h.coin_symbol?.toLowerCase() === 'eth')
-      const hasAlt = enriched.some(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
-      if (!eth && !hasAlt) return { pass: false, score: 0, tip: 'No smart-contract layer exposure. ETH (or SOL/ADA/AVAX) drives DeFi, NFTs, and Web3 — missing this entire sector.' }
-      const asset = eth || enriched.find(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
-      const w = asset.value / totalValue * 100
-      return { pass: true, score: 90, tip: `Good — ${asset.coin_symbol?.toUpperCase()} covers your smart-contract exposure at ${w.toFixed(1)}%.` }
+    id: 'asset_mix', label: 'Asset-Class Balance', icon: '🧩', color: 'var(--g-ink)', fontWeight: 700,
+    check: (enriched, totalValue, mix) => {
+      const classes = Object.entries(mix).filter(([, v]) => v >= 0.03)
+      const n = classes.length
+      const top = Math.max(...Object.values(mix))
+      if (n <= 1) {
+        const only = (classes[0]?.[0] || 'one asset class')
+        return { pass: false, score: 25, tip: `Everything is in ${only}. Spreading across uncorrelated classes (e.g. crypto + stocks + gold + cash) is the single biggest way to cut portfolio risk.` }
+      }
+      if (top > 0.85) return { pass: false, score: 55, tip: `${(top*100).toFixed(0)}% sits in one asset class. Adding a second or third class (stocks, gold, or cash) would hedge a downturn in your dominant one.` }
+      if (n >= 3) return { pass: true, score: 100, tip: `Balanced across ${n} asset classes — crypto, equities, metals and cash hedge each other well.` }
+      return { pass: true, score: 85, tip: `Spread across ${n} asset classes. A third (e.g. gold or cash) would add another hedge.` }
     },
   },
   {
@@ -36,33 +60,20 @@ const EVAL_CATEGORIES = [
       const n = enriched.length
       const weights = enriched.map(h => h.value / totalValue)
       const hhi = weights.reduce((s, w) => s + w * w, 0)
-      if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 assets to reduce single-coin risk.` }
-      if (hhi > 0.5) return { pass: false, score: 30, tip: `One coin dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single asset exceeds 50%.` }
-      if (n < 5) return { pass: false, score: 60, tip: `${n} holdings is okay but aim for 5–10. Add 1–2 more quality assets from different sectors.` }
-      return { pass: true, score: 95, tip: `Well diversified across ${n} assets with balanced weights.` }
+      if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 positions to reduce single-name risk.` }
+      if (hhi > 0.5) return { pass: false, score: 30, tip: `One position dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single holding exceeds 50%.` }
+      if (n < 5) return { pass: false, score: 60, tip: `${n} holdings is okay but aim for 5–10. Add 1–2 more quality positions from different sectors or classes.` }
+      return { pass: true, score: 95, tip: `Well diversified across ${n} positions with balanced weights.` }
     },
   },
   {
-    id: 'stablecoin', label: 'Stablecoin Reserve', icon: '🏦', color: '#60a5fa',
-    check: (enriched, totalValue) => {
-      const stables = ['tether','usd-coin','dai','binance-usd','true-usd','frax']
-      const sv = enriched.filter(h => stables.includes(h.coin_id) || ['usdt','usdc','dai','busd','tusd','frax'].includes(h.coin_symbol?.toLowerCase())).reduce((s,h) => s+h.value, 0)
-      const pct = sv / totalValue * 100
-      if (pct === 0) return { pass: false, score: 0, tip: 'No stablecoin reserve. Holding 5–15% in USDT/USDC gives you dry powder to buy dips without selling at a loss.' }
-      if (pct < 5)  return { pass: false, score: 50, tip: `Only ${pct.toFixed(1)}% in stablecoins. Increase to 5–15% for a proper "buy the dip" reserve.` }
-      if (pct > 40) return { pass: true,  score: 65, tip: `${pct.toFixed(1)}% in stablecoins is high — you might be over-hedged and missing upside. Deploy some into quality assets.` }
-      return { pass: true, score: 100, tip: `${pct.toFixed(1)}% stablecoin reserve — perfect dry powder for opportunities.` }
-    },
-  },
-  {
-    id: 'large_cap', label: 'Large-Cap Weight', icon: '🐋', color: '#3b82f6',
-    check: (enriched, totalValue) => {
-      const lc = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
-      const lcVal = enriched.filter(h => lc.has(h.coin_id)).reduce((s,h) => s+h.value, 0)
-      const pct = lcVal / totalValue * 100
-      if (pct < 40) return { pass: false, score: 20, tip: `Only ${pct.toFixed(1)}% in large-cap coins. Heavy small-cap exposure means higher risk of total loss — add more BTC/ETH/SOL.` }
-      if (pct < 60) return { pass: false, score: 70, tip: `${pct.toFixed(1)}% large-cap. Aim for at least 60% in proven coins to anchor your portfolio against micro-cap wipeouts.` }
-      return { pass: true, score: 95, tip: `${pct.toFixed(1)}% large-cap — solid foundation that absorbs volatility.` }
+    id: 'cash_reserve', label: 'Cash & Dry Powder', icon: '🏦', color: '#60a5fa',
+    check: (enriched, totalValue, mix) => {
+      const pct = mix.cash * 100
+      if (pct === 0) return { pass: false, score: 30, tip: 'No cash or stablecoin reserve. Holding 5–15% in cash/stablecoins gives you dry powder to buy dips without selling at a loss.' }
+      if (pct < 5)  return { pass: false, score: 60, tip: `Only ${pct.toFixed(1)}% in cash/stablecoins. Increasing to 5–15% gives you a proper "buy the dip" reserve.` }
+      if (pct > 50) return { pass: true,  score: 65, tip: `${pct.toFixed(1)}% in cash is high — you may be missing market upside. Consider deploying some into quality assets.` }
+      return { pass: true, score: 100, tip: `${pct.toFixed(1)}% cash reserve — healthy dry powder for opportunities.` }
     },
   },
   {
@@ -72,17 +83,74 @@ const EVAL_CATEGORIES = [
       const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested || h.invested || 1, 1)) * (h.value / totalValue), 0) * 100
       if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
       if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
-      if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits into stablecoins to lock in gains.` }
+      if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits to lock in gains.` }
       return { pass: true, score: 90, tip: `Portfolio up ${avgPnlPct.toFixed(1)}% — healthy. Keep managing risk.` }
+    },
+  },
+
+  // ── Crypto sleeve (only when crypto is a meaningful part) ──
+  {
+    id: 'btc_anchor', label: 'BTC Anchor', icon: '₿', color: '#f7931a',
+    applies: (mix) => mix.crypto >= 0.1,
+    check: (enriched, totalValue, mix) => {
+      const cryptoVal = mix.crypto * totalValue
+      const btc = enriched.find(h => h.coin_id === 'bitcoin' || h.coin_symbol?.toLowerCase() === 'btc')
+      if (!btc) return { pass: false, score: 20, tip: 'No Bitcoin in your crypto sleeve. BTC acts as a safe haven during crypto downturns — consider it as a stability anchor.' }
+      const w = btc.value / cryptoVal * 100  // share of the crypto sleeve
+      if (w < 20) return { pass: false, score: 50, tip: `BTC is only ${w.toFixed(1)}% of your crypto. Increasing toward 30–40% of the crypto sleeve reduces altcoin volatility.` }
+      if (w > 80) return { pass: true, score: 75, tip: `BTC is ${w.toFixed(1)}% of your crypto — a strong anchor, though adding ETH/SOL would broaden crypto exposure.` }
+      return { pass: true, score: 100, tip: `Solid BTC anchor at ${w.toFixed(1)}% of your crypto sleeve.` }
+    },
+  },
+  {
+    id: 'large_cap', label: 'Large-Cap Crypto', icon: '🐋', color: '#3b82f6',
+    applies: (mix) => mix.crypto >= 0.1,
+    check: (enriched, totalValue, mix) => {
+      const cryptoVal = mix.crypto * totalValue
+      const lc = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
+      const lcVal = enriched.filter(h => lc.has(h.coin_id)).reduce((s,h) => s+h.value, 0)
+      const pct = lcVal / cryptoVal * 100
+      if (pct < 40) return { pass: false, score: 30, tip: `Only ${pct.toFixed(1)}% of your crypto is large-cap. Heavy small-cap exposure raises wipeout risk — anchor with more BTC/ETH/SOL.` }
+      if (pct < 60) return { pass: false, score: 70, tip: `${pct.toFixed(1)}% large-cap crypto. Aim for 60%+ in proven coins to absorb micro-cap volatility.` }
+      return { pass: true, score: 95, tip: `${pct.toFixed(1)}% of your crypto is large-cap — a solid, volatility-absorbing base.` }
+    },
+  },
+
+  // ── Stock sleeve (only when stocks are a meaningful part) ──
+  {
+    id: 'stock_sectors', label: 'Stock Sector Spread', icon: '📊', color: '#818cf8',
+    applies: (mix) => mix.stock >= 0.1,
+    check: (enriched) => {
+      const stocks = enriched.filter(h => assetClass(h.coin_id) === 'stock')
+      const sectors = new Set(stocks.map(h => getStockSector(h.coin_id)).filter(Boolean))
+      const n = sectors.size
+      if (stocks.length < 2) return { pass: false, score: 40, tip: 'Only one stock position. Single-name risk is high — add 2–3 stocks from different sectors (e.g. Tech, Healthcare, Finance).' }
+      if (n === 1) return { pass: false, score: 35, tip: `All your stocks are in ${[...sectors][0]}. Sector concentration is risky — diversify into Healthcare, Finance, Energy, or Consumer.` }
+      if (n === 2) return { pass: false, score: 70, tip: `Stocks span 2 sectors (${[...sectors].join(', ')}). Adding a third sector would smooth out sector-specific drawdowns.` }
+      return { pass: true, score: 100, tip: `Stocks span ${n} sectors (${[...sectors].join(', ')}) — well diversified across the equity market.` }
+    },
+  },
+  {
+    id: 'equity_quality', label: 'Equity vs Crypto Balance', icon: '🏛️', color: '#38bdf8',
+    applies: (mix) => mix.stock >= 0.1 && mix.crypto >= 0.1,
+    check: (enriched, totalValue, mix) => {
+      const ratio = mix.stock / (mix.stock + mix.crypto)
+      const pct = ratio * 100
+      if (pct < 15) return { pass: false, score: 60, tip: `Equities are just ${pct.toFixed(0)}% of your risk assets — the rest is crypto. More stocks would dampen crypto's swings.` }
+      if (pct > 85) return { pass: true, score: 80, tip: `Equities are ${pct.toFixed(0)}% of your risk assets — a small crypto allocation can add asymmetric upside.` }
+      return { pass: true, score: 100, tip: `Healthy ${pct.toFixed(0)}/${(100-pct).toFixed(0)} split between stocks and crypto — they hedge each other's cycles.` }
     },
   },
 ]
 
 function computeEval(enriched, totalValue) {
   if (!enriched.length) return null
-  const results = EVAL_CATEGORIES.map(cat => ({ ...cat, ...cat.check(enriched, totalValue) }))
+  const mix = assetMix(enriched, totalValue)
+  const results = EVAL_CATEGORIES
+    .filter(cat => !cat.applies || cat.applies(mix))
+    .map(cat => ({ ...cat, ...cat.check(enriched, totalValue, mix) }))
   const overall = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-  return { results, overall, missing: results.filter(r => !r.pass), strong: results.filter(r => r.pass) }
+  return { results, overall, missing: results.filter(r => !r.pass), strong: results.filter(r => r.pass), mix }
 }
 
 function ScoreRing({ score }) {

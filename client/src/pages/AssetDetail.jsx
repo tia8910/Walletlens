@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } from '../api'
+import { getAnnualDividend, getDividendYield } from '../data/assets'
 import { track } from '../analytics'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
@@ -13,6 +14,15 @@ function isNonCryptoId(id) {
   if (!id) return false
   const k = assetClass(id)
   return k !== 'crypto'
+}
+// Technical analysis works for any asset with a daily price feed — crypto plus
+// stocks, ETFs and precious metals (gold/silver/copper/platinum). Only truly
+// feedless classes (fiat, bonds, real estate, cash, "other") have no chart.
+function hasTechnicals(id) {
+  if (!id) return false
+  const k = assetClass(id)
+  return k === 'crypto' || k === 'stock' ||
+    k === 'gold' || k === 'silver' || k === 'copper' || k === 'platinum'
 }
 function categoryFor(id) {
   return assetClass(id)
@@ -56,7 +66,7 @@ export default function AssetDetail() {
   }, [coinId])
   useEffect(() => {
     setTa(null)
-    if (!coinId || isNonCryptoId(coinId)) return
+    if (!coinId || !hasTechnicals(coinId)) return
     api.getBulkTechnicals([coinId]).then(res => setTa(res?.[coinId] || null)).catch(() => {})
   }, [coinId])
 
@@ -280,6 +290,11 @@ export default function AssetDetail() {
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
 
+      {/* Dividend / income (dividend-paying stocks & ETFs only) */}
+      {getAnnualDividend(coinId) != null && (
+        <DividendCard coinId={coinId} price={coin?.price || 0} amount={amount} symbol={coin?.symbol} />
+      )}
+
       {/* Technical analysis */}
       {ta && <TechnicalsCard ta={ta} />}
 
@@ -497,6 +512,52 @@ function WhalePanel({ s, symbol }) {
           color="#4d7a59"
         />
       </div>
+    </div>
+  )
+}
+
+// Dividend & income card — shown for dividend-paying stocks/ETFs. Yield is
+// derived live from the current price; projected income uses the holding size.
+function DividendCard({ coinId, price, amount, symbol }) {
+  const dps = getAnnualDividend(coinId)
+  if (dps == null) return null
+  const yieldPct = getDividendYield(coinId, price)
+  const annualIncome = amount > 0 ? dps * amount : 0
+  const sym = (symbol || '').toUpperCase()
+  return (
+    <div className="whale-panel">
+      <div className="whale-panel-head">
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+          <Icon name="bank" size={17} style={{ color: 'var(--g-ink)' }} />Dividend &amp; Income
+        </h3>
+        <span className="whale-panel-window">est. annual</span>
+      </div>
+      <div className="ta-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', padding:'0.25rem 0' }}>
+        <div className="ta-stat">
+          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Dividend yield</div>
+          <div className="ta-stat-value" style={{ fontSize:'1.35rem', fontWeight:700, color:'var(--g-ink)' }}>
+            {yieldPct != null ? yieldPct.toFixed(2) + '%' : '—'}
+          </div>
+        </div>
+        <div className="ta-stat">
+          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Per share / yr</div>
+          <div className="ta-stat-value" style={{ fontSize:'1.35rem', fontWeight:700 }}>${dps.toFixed(2)}</div>
+        </div>
+        {amount > 0 && (
+          <div className="ta-stat" style={{ gridColumn:'1 / -1' }}>
+            <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>
+              Your projected annual income ({amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {sym})
+            </div>
+            <div className="ta-stat-value" style={{ fontSize:'1.35rem', fontWeight:700, color:'var(--g-ink)' }}>
+              ${annualIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span style={{ fontSize:'0.8rem', fontWeight:500, color:'var(--text-muted)' }}> /yr · ~${(annualIncome/12).toFixed(2)}/mo</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="whale-score-desc" style={{ marginTop:'0.5rem', fontSize:'0.74rem', color:'var(--text-muted)' }}>
+        Estimated from trailing 12-month payouts. Actual dividends vary with company policy and ex-dividend dates.
+      </p>
     </div>
   )
 }

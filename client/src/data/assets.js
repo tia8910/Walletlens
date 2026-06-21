@@ -326,6 +326,48 @@ export function getStockSector(coinId) {
   return found?.sector || 'Stock'
 }
 
+// ── Dividends ───────────────────────────────────────────────────────────────
+// Trailing 12-month dividend per share (USD), curated for the popular tickers.
+// We store the per-share amount (the most stable figure — it changes ~quarterly)
+// and derive the YIELD live from the current price, so the percentage always
+// reflects today's quote. Values are approximate/estimated; non-payers (most
+// growth tech) are simply omitted. ETF figures are trailing distributions.
+export const STOCK_DIVIDENDS = {
+  // Mega-cap tech (token payers)
+  AAPL: 1.00, MSFT: 3.32, NVDA: 0.04, AVGO: 2.36, ORCL: 1.60, IBM: 6.68,
+  QCOM: 3.40, TXN: 5.44, CSCO: 1.64, TSM: 2.20,
+  // Finance
+  JPM: 5.00, V: 2.36, MA: 3.04, BAC: 1.04, GS: 12.00, MS: 3.70, WFC: 1.60,
+  AXP: 2.88, C: 2.24, SCHW: 1.00, BLK: 20.40, PGR: 0.40,
+  // Healthcare
+  LLY: 6.00, UNH: 8.40, JNJ: 4.96, ABBV: 6.56, PFE: 1.72, MRK: 3.24,
+  AMGN: 9.52, ABT: 2.36, GILD: 3.16, TMO: 1.72,
+  // Consumer
+  WMT: 0.83, COST: 4.64, MCD: 7.08, NKE: 1.60, SBUX: 2.44, KO: 2.04,
+  PEP: 5.42, TGT: 4.48, HD: 9.00, LOW: 4.60, DIS: 1.00, CMCSA: 1.24,
+  // Energy / Industrial / Defense
+  XOM: 3.96, CVX: 6.52, COP: 3.12, OXY: 0.96, NEE: 2.06,
+  CAT: 5.64, DE: 6.20, LMT: 13.20, RTX: 2.52, GE: 1.12,
+  // ETFs (trailing annual distributions)
+  SPY: 6.80, VOO: 6.50, VTI: 3.60, QQQ: 2.70, DIA: 7.00, SCHD: 1.04,
+  JEPI: 4.80, JEPQ: 5.00, TLT: 3.30, IWM: 1.90,
+}
+
+// Annual dividend per share for a holding id ('stock:aapl'). null if none/unknown.
+export function getAnnualDividend(coinId) {
+  if (!coinId?.startsWith('stock:')) return null
+  const ticker = coinId.replace('stock:', '').toUpperCase()
+  return STOCK_DIVIDENDS[ticker] ?? null
+}
+
+// Live dividend yield (%) given a current price. null when no dividend data
+// or no valid price.
+export function getDividendYield(coinId, price) {
+  const dps = getAnnualDividend(coinId)
+  if (dps == null || !price || !isFinite(price) || price <= 0) return null
+  return (dps / price) * 100
+}
+
 // Get crypto category for a coin_id
 export function getCryptoCategory(coinId) {
   if (!coinId) return null

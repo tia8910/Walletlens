@@ -1775,46 +1775,60 @@ export const api = {
   },
 
   // Bulk technical analysis (RSI, MACD, Bollinger, trend, support/resistance)
-  // per crypto holding, computed from ~`days` of daily closes. Non-crypto IDs
-  // are skipped (no reliable OHLC feed). 1h localStorage cache.
+  // per holding, computed from ~`days` of daily closes. Crypto closes come from
+  // CoinGecko; stocks, ETFs and precious metals come from Stooq daily history
+  // (same indicator math — price action is asset-agnostic). Truly price-feedless
+  // assets (fiat, bonds, real estate, cash, "other") return null. 1h cache.
   getBulkTechnicals: async (coinIds, days = 180) => {
     const out = {};
     if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
-    const isNonCrypto = (id) =>
-      !id ||
-      id === GOLD_ID || id === SILVER_ID || id === COPPER_ID || id === PLATINUM_ID ||
-      id.startsWith(STOCK_PREFIX) || id.startsWith(FIAT_PREFIX) ||
-      id.startsWith('bond:') || id.startsWith('other:') ||
-      id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:');
+    // Classify each id: 'crypto' → CoinGecko, 'stooq' → Stooq CSV, null → skip.
+    const sourceFor = (id) => {
+      if (!id) return null;
+      // Stocks, ETFs and metals all have a Stooq symbol mapping.
+      if (stooqSymbolFor(id)) return 'stooq';
+      // Anything else without a daily price feed can't be analysed.
+      if (id.startsWith(FIAT_PREFIX) || id.startsWith('bond:') ||
+          id.startsWith('other:') || id.startsWith('real:') || id.startsWith('cash:')) return null;
+      return 'crypto';
+    };
 
-    const CACHE_KEY = 'crypto_tracker_ta_cache_v1';
+    const CACHE_KEY = 'crypto_tracker_ta_cache_v2';
     const TTL_MS = 60 * 60 * 1000;
     let cache = {};
     try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
     const now = Date.now();
     const toFetch = [];
     for (const id of coinIds) {
-      if (isNonCrypto(id)) { out[id] = null; continue; }
+      const src = sourceFor(id);
+      if (!src) { out[id] = null; continue; }
       const hit = cache[id];
       if (hit && now - hit.t < TTL_MS) { out[id] = hit.v; continue; }
-      toFetch.push(id);
+      toFetch.push({ id, src });
     }
     const CONCURRENCY = 3;
     for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
       const batch = toFetch.slice(i, i + CONCURRENCY);
-      await Promise.all(batch.map(async id => {
+      await Promise.all(batch.map(async ({ id, src }) => {
         try {
-          const data = await fetchJSON(
-            `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
-          );
-          const prices = Array.isArray(data?.prices) ? data.prices : [];
-          if (prices.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
-          // Collapse to one close per calendar day for stable daily indicators.
-          const daily = {};
-          for (const [ts, p] of prices) daily[new Date(ts).toISOString().slice(0, 10)] = p;
-          const closes = Object.entries(daily)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([, p]) => p);
+          let closes = [];
+          if (src === 'stooq') {
+            // Stooq daily CSV — already one close per trading day, ascending.
+            const hist = await fetchStooqHistory(stooqSymbolFor(id), days);
+            closes = hist.map(r => r.price).filter(p => isFinite(p) && p > 0);
+          } else {
+            const data = await fetchJSON(
+              `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
+            );
+            const prices = Array.isArray(data?.prices) ? data.prices : [];
+            // Collapse to one close per calendar day for stable daily indicators.
+            const daily = {};
+            for (const [ts, p] of prices) daily[new Date(ts).toISOString().slice(0, 10)] = p;
+            closes = Object.entries(daily)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([, p]) => p);
+          }
+          if (closes.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
           const ta = analyzeTechnicals(closes, closes[closes.length - 1]);
           out[id] = ta;
           cache[id] = { t: now, v: ta };

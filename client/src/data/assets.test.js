@@ -4,6 +4,7 @@ import {
   GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX,
   PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
   assetClass, isCrypto,
+  getAnnualDividend, getDividendYield,
 } from './assets'
 
 describe('asset constants', () => {
@@ -50,5 +51,28 @@ describe('assetClass + isCrypto', () => {
     expect(assetClass('bitcoin')).toBe('crypto')
     expect(assetClass(null)).toBe('crypto')
     expect(isCrypto('bitcoin')).toBe(true)
+  })
+})
+
+describe('dividends', () => {
+  it('returns annual dividend for known payers', () => {
+    expect(getAnnualDividend('stock:KO')).toBeGreaterThan(0)
+    expect(getAnnualDividend('stock:ko')).toBeGreaterThan(0) // case-insensitive
+  })
+  it('returns null for non-payers and non-stocks', () => {
+    expect(getAnnualDividend('stock:TSLA')).toBeNull()  // no dividend
+    expect(getAnnualDividend('bitcoin')).toBeNull()
+    expect(getAnnualDividend(GOLD_ID)).toBeNull()
+    expect(getAnnualDividend(null)).toBeNull()
+  })
+  it('derives yield live from price', () => {
+    const dps = getAnnualDividend('stock:KO')
+    const y = getDividendYield('stock:KO', 50)
+    expect(y).toBeCloseTo((dps / 50) * 100, 5)
+  })
+  it('returns null yield for invalid price or no dividend', () => {
+    expect(getDividendYield('stock:KO', 0)).toBeNull()
+    expect(getDividendYield('stock:KO', -5)).toBeNull()
+    expect(getDividendYield('stock:TSLA', 100)).toBeNull()
   })
 })
