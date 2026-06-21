@@ -57,6 +57,22 @@ export default function Learn() {
           {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
         </section>
 
+        {term.keyPoints?.length > 0 && (
+          <section className="tc-section">
+            <h2>Key takeaways</h2>
+            <ul className="tc-list">
+              {term.keyPoints.map((k, i) => <li key={i}>{k}</li>)}
+            </ul>
+          </section>
+        )}
+
+        {term.example && (
+          <section className="tc-section">
+            <h2>Example</h2>
+            <p>{term.example}</p>
+          </section>
+        )}
+
         {term.faqs?.length > 0 && (
           <section className="tc-section">
             <h2>Frequently Asked Questions</h2>
