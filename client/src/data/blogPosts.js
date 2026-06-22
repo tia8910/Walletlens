@@ -3545,4 +3545,100 @@ The core habits are straightforward: choose a base currency, record trades in th
 // Hand-written evergreen guides first, then the auto-generated daily market
 // recaps (newest first). Merging here means every consumer of POSTS — the blog
 // index, prerender, sitemap, RSS feed and llms.txt — gets the recaps for free.
-export const POSTS = [...EVERGREEN, ...DAILY_RECAPS]
+export const POSTS = [...EVERGREEN, ...DAILY_RECAPS  {
+    slug: 'how-to-read-portfolio-allocation-chart',
+    title: 'How to Read a Portfolio Allocation Chart (And Act on It)',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to read a portfolio allocation chart, understand what your asset mix is telling you, and use it to make smarter rebalancing decisions.',
+    content: `
+Most investors check their portfolio balance regularly. Far fewer stop to study their allocation chart — that colourful donut or pie graphic tucked beneath the numbers. That's a mistake, because the allocation chart is often the single most actionable visual in your entire portfolio view. It tells you not just what you own, but whether your money is arranged in a way that matches your goals and risk tolerance.
+
+This article breaks down exactly how to read an allocation chart, what the numbers mean, and what to do when the picture doesn't match the plan you had in mind.
+
+## What Is a Portfolio Allocation Chart?
+
+A portfolio allocation chart is a visual representation of how your total investable wealth is divided across different asset classes, sectors, or individual holdings. The most common format is a **donut chart** or pie chart, where each slice corresponds to one category — crypto, stocks, gold, cash, real estate, and so on.
+
+Each slice is sized proportionally to that category's current market value relative to your total portfolio. If your portfolio is worth $50,000 and $20,000 of it is in Bitcoin and Ethereum, the crypto slice takes up 40% of the donut.
+
+The key word is *current*. Allocation charts reflect live market values, not what you originally invested. This is why your chart can drift dramatically even if you haven't bought or sold anything — markets move, and so does the shape of your portfolio.
+
+## The Four Numbers to Focus On
+
+When you open an allocation chart, four figures matter most:
+
+1. **Percentage per category** — What fraction of your net worth is in each asset class?
+2. **Absolute value per slice** — What is the actual dollar amount, not just the percentage?
+3. **Target vs actual** — How far is each slice from your intended allocation?
+4. **Concentration risk** — Is any single asset or category dangerously oversized?
+
+Many trackers show the first two but not the last two. If you're using [walletlens.live](https://walletlens.live), the allocation donut breaks down by category in real time and sits alongside the AI-powered rebalance planner, so you can see both the current state and the suggested action in the same view.
+
+## How to Interpret Common Allocation Patterns
+
+Understanding what you're looking at requires recognising a few common shapes and what they usually signal.
+
+### The Single-Dominant Slice
+
+If one slice takes up 60% or more of your chart, you have concentration risk. This isn't automatically bad — a younger investor who believes strongly in crypto's long-term upside might intentionally hold 70% in digital assets. But it means a sharp decline in that one category can devastate your overall net worth. The question to ask is: *is this concentration intentional and do I understand the downside scenario?*
+
+### The Balanced-but-Unplanned Donut
+
+Sometimes a chart looks nicely diversified — five or six roughly equal slices — but the diversification happened by accident rather than design. Each position grew at different rates until the chart reached a superficially pleasant shape. Accidental diversification isn't the same as strategic diversification. Without a target allocation in mind, you have no benchmark to measure drift against.
+
+### The Cash-Heavy Chart
+
+A large cash or stablecoin slice can mean two very different things. It might signal a deliberate "dry powder" strategy — waiting for better entry points across other asset classes. Or it might mean procrastination dressed up as caution. If your cash slice has been sitting above 30% for more than a year, it's worth asking whether inaction is costing you real purchasing power.
+
+### The Thin Slice Problem
+
+A slice that represents less than 2-3% of your portfolio barely moves the needle even if it doubles. Thin slices often persist because investors added a small position speculatively and forgot about it. These deserve a periodic review: either add conviction and size up, or cut the position and redeploy the capital somewhere that actually matters to your outcome.
+
+## Drift: Why Your Chart Changes Without You Doing Anything
+
+Portfolio drift is one of the most underappreciated concepts in personal finance. Suppose you set an allocation of 40% crypto, 40% stocks, and 20% gold at the start of 2025. By mid-2026, crypto has outperformed significantly. Without any trades, your crypto slice might now represent 60% of the portfolio while stocks and gold have shrunk relatively. The chart looks completely different, yet you made no decisions.
+
+Drift isn't inherently harmful, but it does mean your actual risk profile has changed. A portfolio with 60% in volatile crypto assets behaves very differently from one with 40%. If that shift happened passively, it's worth asking whether you'd have chosen it consciously.
+
+**How to track drift:**
+
+| Category | Target % | Current % | Drift |
+|----------|----------|-----------|-------|
+| Crypto | 40% | 58% | +18% |
+| Stocks/ETFs | 40% | 29% | -11% |
+| Gold/Silver | 15% | 10% | -5% |
+| Cash | 5% | 3% | -2% |
+
+A simple table like this turns the visual chart into an actionable to-do list.
+
+## Using the Allocation Chart to Trigger Rebalancing
+
+Most financial frameworks suggest reviewing your allocation on a fixed schedule (quarterly or annually) or whenever any single category drifts more than 5-10 percentage points from its target. The allocation chart is your early-warning system for both.
+
+When you spot meaningful drift, you have three rebalancing options:
+
+- **Trim the oversized slice** — Sell a portion of the winning asset class and move proceeds into underweight categories.
+- **Top up the underweight slices** — If you have fresh capital to deploy, direct new contributions toward lagging categories rather than adding to what's already large.
+- **Do nothing consciously** — Sometimes drift reflects a genuine change in your view. If you've decided you want 60% crypto going forward, update your target rather than forcing a trade you don't believe in.
+
+WalletLens includes an on-device rebalance planner that calculates exactly how much of each asset you'd need to buy or sell to return to any target allocation — without sending your data anywhere.
+
+## Reading Allocation Within a Category
+
+The donut chart usually shows top-level categories, but it's equally important to look at allocation *within* each category. Inside your crypto slice, is 90% of the value sitting in a single altcoin? Inside your stock slice, are you effectively 80% in one sector?
+
+Nested concentration risk is the version most investors miss because the top-level chart looks balanced. Drilling down into individual holdings — and checking which assets dominate within each slice — gives you the complete picture.
+
+## A Note on Allocation and Taxes
+
+Rebalancing by selling appreciated assets can trigger taxable events depending on your jurisdiction and how long you've held each position. This article is educational and not financial or tax advice. Before executing any rebalance based on your allocation chart, it's worth understanding your local cost basis rules and whether tax-loss harvesting opportunities exist alongside the trades you're planning. A tracker that shows your unrealised P&L per asset — including average cost basis — makes this analysis much easier to do before you pull the trigger.
+
+## Conclusion
+
+An allocation chart is more than a colourful summary of what you own. Read correctly, it tells you how much risk you're carrying, whether your portfolio has drifted from your original intention, and exactly which categories need attention. The habit of reviewing your allocation chart — not just your total balance — is one of the highest-leverage practices in personal finance.
+
+Start by identifying your target allocation, then compare it to the current picture at least once a quarter. Track drift, watch for concentration in any single asset or sub-category, and make sure every slice in that donut is there by choice rather than by chance.
+    `
+  },
+]
