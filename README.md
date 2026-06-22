@@ -7,7 +7,8 @@
 ### The free, private, no-account portfolio tracker with AI analysis
 
 Track **crypto, stocks, gold, real estate and cash** in one unified net-worth dashboard.  
-Live P&L · Technical Analysis · Magic Indicator · AI Coach · Voice Import
+**Add holdings by voice, screenshot, Excel/CSV or wallet address — then export to Excel or a tax-ready CSV.**  
+Live P&L · Technical Analysis · Magic Indicator · AI Coach
 
 [![Live App](https://img.shields.io/badge/🌐%20Live%20App-walletlens.live-00c853?style=for-the-badge)](https://walletlens.live)
 [![Stars](https://img.shields.io/github/stars/tia8910/Walletlens?style=for-the-badge&color=fbbf24&label=⭐%20Stars)](https://github.com/tia8910/Walletlens/stargazers)
@@ -29,6 +30,8 @@ Live P&L · Technical Analysis · Magic Indicator · AI Coach · Voice Import
 | Account required | ❌ None | ✅ Sign-up required |
 | Data leaves device | ❌ Never | ✅ Stored on servers |
 | Free | ✅ Forever | ⚠️ Freemium / paywalled |
+| Add holdings by | 🎙️ Voice · 📸 Screenshot · 📄 Excel/CSV · 🔗 Wallet address · ⌨️ Manual | ⌨️ Manual or exchange API only |
+| Export | ✅ Excel/CSV + tax-ready transaction CSV | ⚠️ Often paywalled |
 | Asset types | Crypto · Stocks · Metals · Real Estate · Cash | Usually crypto only |
 | AI analysis | ✅ Built-in | ❌ Paid add-on |
 | Offline support | ✅ PWA | ❌ |
@@ -37,6 +40,17 @@ Live P&L · Technical Analysis · Magic Indicator · AI Coach · Voice Import
 ---
 
 ## Features
+
+### 📥 Smart Import & Export — the features no other tracker has
+> You never have to type holdings one by one. WalletLens gives you **five ways to add holdings and two ways to export** — none of which require an account, an exchange API key, or a paid plan. Manual entry is *optional*, not the default.
+
+- **🎙️ AI Voice Import (English & Arabic)** — say *"I bought half a Bitcoin at 65K and twenty Apple shares"* and Claude parses multiple trades from one sentence. The only free tracker with multilingual voice input. → [add-holdings-by-voice](https://walletlens.live/add-holdings-by-voice)
+- **📸 AI Screenshot Import** — screenshot your holdings on **any** exchange, broker or wallet (Binance, Coinbase, MetaMask, Robinhood, a broker statement — even a handwritten list) and Claude vision reads each asset, amount and price into your portfolio. No API key, no connection. → [import-portfolio-from-screenshot](https://walletlens.live/import-portfolio-from-screenshot)
+- **📄 Excel / CSV Import** — bulk-import your holdings or transaction history from a spreadsheet in seconds.
+- **🔗 On-chain Wallet Import** — paste any Ethereum, Bitcoin or Solana address and WalletLens auto-fetches live balances. No API key.
+- **⌨️ Manual Entry** — precise control when you want it, with exact dates and cost basis.
+- **📤 Export to Excel / CSV** — download your full portfolio (holdings, cost basis, P&L, allocation) for Excel or Google Sheets. → [export-portfolio-to-excel](https://walletlens.live/export-portfolio-to-excel)
+- **🧾 Crypto Tax Report Export** — export your complete transaction history as a CSV ready for Koinly, CoinTracker, TurboTax, or your accountant. → [crypto-portfolio-tax-report](https://walletlens.live/crypto-portfolio-tax-report)
 
 ### 📊 Portfolio Dashboard
 - **All-asset net worth** — crypto, US stocks, gold/silver/platinum, fiat currencies, real estate and cash in one view
