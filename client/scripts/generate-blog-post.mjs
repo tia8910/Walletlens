@@ -188,12 +188,18 @@ ${content}
   },
 `
 
-// Insert the new post at the END of the POSTS array (before the final "]").
-const closeIdx = raw.lastIndexOf(']')
-if (closeIdx === -1) {
-  fail('Could not find the closing "]" of the POSTS array in blogPosts.js.')
+// Insert the new post at the START of the EVERGREEN array (newest first).
+// NB: POSTS is `[...EVERGREEN, ...DAILY_RECAPS]`, a spread array — NOT a literal
+// list of post objects. The old logic inserted before the file's last "]",
+// which closes that spread array, producing invalid syntax
+// (`[...EVERGREEN, ...DAILY_RECAPS {…}]`). We must target the EVERGREEN literal.
+const anchor = 'const EVERGREEN = ['
+const aIdx = raw.indexOf(anchor)
+if (aIdx === -1) {
+  fail('Could not find the EVERGREEN array declaration in blogPosts.js.')
 }
-const updated = raw.slice(0, closeIdx) + block + raw.slice(closeIdx)
+const insertAt = aIdx + anchor.length
+const updated = raw.slice(0, insertAt) + '\n' + block + raw.slice(insertAt)
 writeFileSync(POSTS_FILE, updated, 'utf8')
 
 note(`✓ Added new post: "${title}" (slug: ${slug}, ${content.split(/\s+/).length} words)`)
