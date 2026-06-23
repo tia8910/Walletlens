@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
+import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -1484,7 +1484,7 @@ function DataPanel({ onRefresh, onImported }) {
 }
 
 // ── Summary stat card ─────────────────────────────────────────────────────
-function StatCard({ label, value, sub, color }) {
+const StatCard = memo(function StatCard({ label, value, sub, color }) {
   return (
     <div className="dvx-stat-card glass-card">
       <span className="dvx-stat-label">{label}</span>
@@ -1492,10 +1492,10 @@ function StatCard({ label, value, sub, color }) {
       {sub && <span className="dvx-stat-sub">{sub}</span>}
     </div>
   )
-}
+})
 
 // ── Portfolio Heatmap ─────────────────────────────────────────────────────
-function PortfolioHeatmap({ enriched, prices, totalValue }) {
+const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
   const cells = enriched
     .filter(h => h.value > 0)
     .map(h => {
@@ -1546,7 +1546,7 @@ function PortfolioHeatmap({ enriched, prices, totalValue }) {
       </div>
     </div>
   )
-}
+})
 
 // ── Risk Profile ─────────────────────────────────────────────────────────
 
@@ -1592,7 +1592,7 @@ function computeRiskProfile(enriched, totalValue) {
   return { lowPct, medPct, highPct, traderType, traderColor, traderDesc }
 }
 
-function RiskGauge({ pct, color, label }) {
+const RiskGauge = memo(function RiskGauge({ pct, color, label }) {
   const R = 36, cx = 50, cy = 50
   const circ = 2 * Math.PI * R
   const dash = circ * Math.min(pct / 100, 1)
@@ -1612,9 +1612,9 @@ function RiskGauge({ pct, color, label }) {
       <span style={{ fontSize:'0.72rem', color:'var(--text-muted)', textAlign:'center', lineHeight:1.3, maxWidth:80 }}>{label}</span>
     </div>
   )
-}
+})
 
-function RiskProfileCard({ enriched, totalValue }) {
+const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) {
   const profile = useMemo(() => computeRiskProfile(enriched, totalValue), [enriched, totalValue])
   if (!profile) return null
   const { lowPct, medPct, highPct, traderType, traderColor, traderDesc } = profile
@@ -1666,7 +1666,7 @@ function RiskProfileCard({ enriched, totalValue }) {
       </p>
     </div>
   )
-}
+})
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
@@ -1866,7 +1866,6 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
 
   return (
     <div className="glass-card dvx-form-card" style={{ position:'relative', overflow:'hidden', padding:'1.6rem 1.25rem 1.4rem' }}>
-
       {/* Aurora glow background */}
       <div className="ob-anim" aria-hidden="true" style={{
         position:'absolute', top:'-50%', left:'-25%', width:'150%', height:'150%',
@@ -2169,21 +2168,6 @@ const QUICK_ADD_ASSETS = [
 
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   if (!loaded) return null
-
-  // Inject keyframes once
-  if (typeof document !== 'undefined' && !document.getElementById('ep-kf')) {
-    const s = document.createElement('style')
-    s.id = 'ep-kf'
-    s.textContent = `
-      @keyframes ep-shimmer{ 0%{background-position:200% center} 100%{background-position:-200% center} }
-      @keyframes ep-bounce { 0%,100%{transform:translateY(0) scale(1)} 40%{transform:translateY(-6px) scale(1.04)} 60%{transform:translateY(-3px) scale(1.02)} }
-      @keyframes ep-node-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 14px currentColor} 50%{transform:scale(1.12);box-shadow:0 0 22px currentColor} }
-      @keyframes ep-glow-pulse { 0%,100%{box-shadow:0 0 0 3px rgba(var(--g-rgb),.07),0 4px 18px rgba(0,0,0,.22)} 50%{box-shadow:0 0 0 5px rgba(var(--g-rgb),.15),0 0 28px rgba(var(--g-rgb),.22),0 4px 18px rgba(0,0,0,.22)} }
-      @keyframes ep-sweep { 0%{left:-60%} 100%{left:160%} }
-      @keyframes ep-icon-ring { 0%,100%{box-shadow:0 0 8px rgba(var(--g-rgb),.3)} 50%{box-shadow:0 0 20px rgba(var(--g-rgb),.6)} }
-    `
-    document.head.appendChild(s)
-  }
 
   return (
     <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
@@ -2660,6 +2644,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t, lang } = useLanguage()
+  const [isTabPending, startTabTransition] = useTransition()
   const [portfolio, setPortfolio]         = useState([])
   const portfolioRef = useRef([])
   const [prices, setPrices]               = useState({})
@@ -3304,12 +3289,15 @@ export default function Dashboard() {
       <div className="dvx-tabs">
         {tabs.map(tab => (
           <button key={tab.id} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}>
+            onClick={() => startTabTransition(() => setActiveTab(tab.id))}>
             <span className="dvx-tab-icon">{tab.icon}</span>
             <span>{tab.label}</span>
           </button>
         ))}
       </div>
+
+      {/* Tab content — opacity fades slightly during lazy-load transitions */}
+      <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
 
       {/* ══ OVERVIEW ══ */}
       {activeTab === 'overview' && (
@@ -4561,6 +4549,8 @@ export default function Dashboard() {
           prefillStockTicker={sheetPrefill?.stockTicker}
         />
       </Suspense>
+
+      </div>{/* end tab-content transition wrapper */}
 
       {/* ── Nudge toast — appears after 20s idle ── */}
       {nudgeVisible && !sheetOpen && (
