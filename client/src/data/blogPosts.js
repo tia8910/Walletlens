@@ -3545,7 +3545,7 @@ The core habits are straightforward: choose a base currency, record trades in th
 // Hand-written evergreen guides first, then the auto-generated daily market
 // recaps (newest first). Merging here means every consumer of POSTS — the blog
 // index, prerender, sitemap, RSS feed and llms.txt — gets the recaps for free.
-export const POSTS = [...EVERGREEN, ...DAILY_RECAPS  {
+export const POSTS = [...EVERGREEN, ...DAILY_RECAPS, {
     slug: 'how-to-read-portfolio-allocation-chart',
     title: 'How to Read a Portfolio Allocation Chart (And Act on It)',
     date: 'June 2026',
