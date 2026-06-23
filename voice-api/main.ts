@@ -17,8 +17,19 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:4173",
 ])
 
+// Cloudflare Pages serves the site from a project subdomain plus a per-deploy
+// (and per-branch) preview subdomain, e.g. https://walletlenslive1.pages.dev,
+// https://<hash>.walletlenslive.pages.dev, https://<branch>.walletlenslive.pages.dev.
+// Allow the whole project so previews can reach the API too — scoped to our
+// project name, not all of *.pages.dev.
+const PAGES_PREVIEW = /^https:\/\/([a-z0-9-]+\.)?walletlenslive1?\.pages\.dev$/
+
+function isAllowedOrigin(origin: string | null): boolean {
+  return !!origin && (ALLOWED_ORIGINS.has(origin) || PAGES_PREVIEW.test(origin))
+}
+
 function corsHeaders(origin: string | null): HeadersInit {
-  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://walletlens.live"
+  const allow = isAllowedOrigin(origin) ? (origin as string) : "https://walletlens.live"
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
