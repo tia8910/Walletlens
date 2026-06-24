@@ -106,13 +106,15 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 99) {
 }
 
 // Render a single asset's analysis card to a PNG canvas. When verdict
-// (AI Detailed Analysis) is available it extends the canvas to 1080×1440
+// (AI Detailed Analysis) is available it extends the canvas to 1080×1800
 // and adds a one-liner + bull/bear section below the pillar bars.
+// 1800px gives enough headroom for 3 bullets × 3 wrapped lines each plus
+// the action line, all well above the footer brand at H-96.
 async function drawShareCard(canvas, item, verdict) {
   const m = item.magic
   const logo = await loadCoinLogo(item)
   const W = 1080
-  const H = verdict ? 1440 : 1080
+  const H = verdict ? 1800 : 1080
   const dpr = 2
   canvas.width = W * dpr; canvas.height = H * dpr
   const ctx = canvas.getContext('2d')
