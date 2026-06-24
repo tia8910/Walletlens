@@ -3043,7 +3043,7 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.7rem; font-weight: 600; color: var(--text2);
   background: var(--bg3); border-radius: 6px; padding: 0.12rem 0.45rem;
 }
-.magic-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
+.magic-card-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
 .magic-foot-actions { display: flex; align-items: center; gap: 0.65rem; margin-left: auto; }
 .magic-detail-link {
   background: none; border: none; color: var(--g-ink); font-weight: 700; font-size: 0.78rem; font-weight: 700;
