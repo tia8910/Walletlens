@@ -143,8 +143,10 @@
     <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 
-    <!-- corsproxy.io is the first CORS proxy tried for every external price fetch;
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
          full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -916,7 +916,7 @@ function EvalScoreRing({ score }) {
   )
 }
 
-function WalletEvalTab({ enriched, totalValue, targets }) {
+const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets }) {
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
   const [expanded, setExpanded] = useState(null)
 
@@ -988,7 +988,7 @@ function WalletEvalTab({ enriched, totalValue, targets }) {
       </div>
     </div>
   )
-}
+})
 
 const TIMEFRAMES = [
   { id: '4H',  label: '4H',  pts: 48 },
@@ -1697,7 +1697,7 @@ const FEATURE_SLIDES = [
 
 const FS_SLIDE_MS = 4500
 
-function FeatureSlideshow() {
+const FeatureSlideshow = memo(function FeatureSlideshow() {
   const [idx, setIdx]         = useState(0)
   const [dir, setDir]         = useState(1)
   const [animKey, setAnimKey] = useState(0)
@@ -1731,19 +1731,6 @@ function FeatureSlideshow() {
         touchX.current = null; setPaused(false)
       }}
     >
-      <style>{`
-        @keyframes fs-in-right{from{transform:translateX(46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
-        @keyframes fs-in-left {from{transform:translateX(-46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
-        @keyframes fs-aurora{0%{transform:translate(-12%,-8%) rotate(0deg)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-8%) rotate(360deg)}}
-        @keyframes fs-orb{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.06)}}
-        @keyframes fs-icon-pop{0%{transform:scale(0.4) rotate(-12deg);opacity:0}60%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1) rotate(0);opacity:1}}
-        @keyframes fs-tag-shine{0%{background-position:-150% 0}100%{background-position:250% 0}}
-        @keyframes fs-bar{from{width:0}to{width:100%}}
-        @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
-        @media (prefers-reduced-motion: reduce){
-          .fs-aurora,.fs-orb,.fs-icon,.fs-bar{animation:none!important}
-        }
-      `}</style>
       <div style={{ position:'relative', padding:'0 20px' }}>
         <button onClick={prev} aria-label="Previous" style={{
           position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:3,
@@ -1835,7 +1822,7 @@ function FeatureSlideshow() {
       </div>
     </div>
   )
-}
+})
 
 // ── Onboarding tutorial — animated vertical timeline that tracks REAL
 // progress (wallet created, first trade, holdings, AI viewed). Shown on the
@@ -1879,15 +1866,6 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
 
   return (
     <div className="glass-card dvx-form-card" style={{ position:'relative', overflow:'hidden', padding:'1.6rem 1.25rem 1.4rem' }}>
-      <style>{`
-        @keyframes ob-aurora{0%{transform:translate(-12%,-10%) rotate(0)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-10%) rotate(360deg)}}
-        @keyframes ob-logo-pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
-        @keyframes ob-orb{0%,100%{transform:scale(1);opacity:0.75}50%{transform:scale(1.12);opacity:1}}
-        @keyframes ob-row{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
-        @keyframes ob-check{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
-        @keyframes ob-bar{from{width:0}}
-        @media (prefers-reduced-motion: reduce){.ob-anim{animation:none!important}}
-      `}</style>
 
       {/* Aurora glow background */}
       <div className="ob-anim" aria-hidden="true" style={{

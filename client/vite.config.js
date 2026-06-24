@@ -96,6 +96,13 @@ export default defineConfig({
           if (id.includes('/src/data/arabicBlog')) {
             return 'arabic-blog-data'
           }
+          // Technical analysis engine (RSI, MACD, Bollinger Bands, ATR) and the
+          // Magic Indicator composite signal. Both are heavy computation modules
+          // only needed on the Technicals/Alpha pages — keeping them out of the
+          // main bundle means Dashboard loads without carrying their weight.
+          if (id.includes('/src/technicals') || id.includes('/src/magicIndicator') || id.includes('/src/magicAi')) {
+            return 'technicals'
+          }
         },
       },
       // Suppress false-positive circular-dependency warnings from recharts internals
