@@ -7491,6 +7491,19 @@ input[type="date"] { color-scheme: dark; }
 .blog-cta-box { background: rgba(var(--g-rgb),0.07); border: 1px solid rgba(var(--g-rgb),0.2); border-radius: 12px; padding: 1.5rem; margin-top: 2rem; }
 .blog-cta-box p { margin: .4rem 0 1rem; color: var(--text-muted); }
 .blog-cta-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.4rem; background: linear-gradient(135deg, #047857, #10b981); color: #fff; font-weight: 700; border-radius: 10px; text-decoration: none; font-size: .9rem; box-shadow: 0 3px 12px rgba(5,150,105,0.35); transition: transform .15s, box-shadow .15s, filter .15s; }
+.blog-binance-ref {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.85rem 1rem; margin-top: 0.75rem;
+  background: rgba(240,185,11,0.08); border: 1.5px solid rgba(240,185,11,0.28);
+  border-radius: 12px; text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.blog-binance-ref:hover { background: rgba(240,185,11,0.13); border-color: rgba(240,185,11,0.45); }
+.blog-binance-ref-icon { font-size: 1.5rem; flex-shrink: 0; }
+.blog-binance-ref-text { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+.blog-binance-ref-text strong { font-size: 0.88rem; font-weight: 800; color: var(--text); line-height: 1.2; }
+.blog-binance-ref-text span { font-size: 0.72rem; color: var(--text-muted); }
+.blog-binance-ref-cta { margin-left: auto; color: #f0b90b; font-weight: 800; font-size: 0.82rem; flex-shrink: 0; }
 
 .blog-related { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
 .blog-related-title { font-size: 1.05rem; font-weight: 800; margin: 0 0 1rem; }
