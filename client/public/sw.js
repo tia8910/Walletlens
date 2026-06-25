@@ -23,8 +23,6 @@ const PRICE_API_PATTERNS = [
   'api.binance.com',
   'rest.coincap.io',
   'api.coinpaprika.com',
-  'assets.coincap.io',
-  'lcw.nyc3.cdn.digitaloceanspaces.com',
   // Metals & FX
   'api.gold-api.com',
   'open.er-api.com',
@@ -35,9 +33,17 @@ const PRICE_API_PATTERNS = [
   'blockchain.info',
 ]
 
-// Static CDN assets (icons, images) — cached indefinitely in STATIC cache
+// Static CDN assets (coin icons, images) — cached indefinitely in version-independent
+// CDN cache. These are content-addressed by symbol and never change, so they should
+// survive SW updates rather than being busted every deploy like the price API cache.
 const STATIC_CDN_PATTERNS = [
   'cdn.jsdelivr.net/npm/cryptocurrency-icons',
+  // CoinCap icon CDN — primary coin logo source
+  'assets.coincap.io',
+  // LiveCoinWatch CDN — first fallback for coin logos
+  'lcw.nyc3.cdn.digitaloceanspaces.com',
+  // spothq GitHub CDN — second fallback for coin logos
+  'raw.githubusercontent.com/spothq/cryptocurrency-icons',
 ]
 
 const API_TTL_MS = 5 * 60 * 1000    // 5 minutes (price APIs)
