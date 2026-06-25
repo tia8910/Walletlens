@@ -4495,7 +4495,7 @@ export default function Dashboard() {
                   <span style={{ fontSize:'1.5rem', flexShrink:0 }}>🟡</span>
                   <div style={{ minWidth:0 }}>
                     <div style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', lineHeight:1.2 }}>Don't have Binance yet?</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>Create a free account &amp; get a fee rebate</div>
+                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>15% trade rebates + $100 new user bonus</div>
                   </div>
                   <span style={{ marginLeft:'auto', color:'#f0b90b', fontWeight:800, fontSize:'0.82rem', flexShrink:0 }}>Sign Up →</span>
                 </a>

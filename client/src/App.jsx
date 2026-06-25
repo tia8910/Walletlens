@@ -333,7 +333,7 @@ function Drawer({ open, onClose }) {
             <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🟡</span>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text)', lineHeight: 1.2 }}>Don't have Binance?</div>
-              <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Sign up free · fee rebate included</div>
+              <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>15% trade rebates + $100 new user bonus</div>
             </div>
             <span style={{ marginLeft: 'auto', color: '#f0b90b', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0 }}>Open →</span>
           </a>
