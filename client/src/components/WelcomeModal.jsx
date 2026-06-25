@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { track } from '../analytics'
 import Logo from './Logo'
+import { useTheme, THEMES } from '../ThemeContext'
 
 const KEY = 'wl_welcomed_v2'
 
@@ -29,6 +30,20 @@ const STEPS = [
       { icon: '🆓', label: 'Free Forever' },
     ],
     cta: 'Show me around',
+  },
+  {
+    id: 'theme',
+    grad: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
+    accent: '#00e676',
+    glow: 'rgba(0,230,118,0.22)',
+    ring: 'rgba(0,230,118,0.45)',
+    particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'],
+    icon: '🎨',
+    eyebrow: 'PERSONALISE',
+    title: 'Make it yours',
+    desc: 'Pick your look. You can always change this in Settings.',
+    cta: 'Looks great →',
+    isThemeStep: true,
   },
   {
     id: 'portfolio',
@@ -86,6 +101,7 @@ export default function WelcomeModal() {
   const [step, setStep]       = useState(0)
   const [visible, setVisible] = useState(false)
   const [animKey, setAnimKey] = useState(0)
+  const { theme, mode, setTheme, setMode } = useTheme()
 
   useEffect(() => {
     if (localStorage.getItem(KEY)) return
@@ -173,6 +189,51 @@ export default function WelcomeModal() {
                   <span>{f.icon}</span>{f.label}
                 </div>
               ))}
+            </div>
+          )}
+
+          {s.isThemeStep && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', margin: '0.2rem 0 0.5rem' }}>
+              {/* Dark / Light toggle */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                {['dark', 'light'].map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
+                      padding: '0.7rem 0.5rem',
+                      background: mode === m ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.04)',
+                      border: `1.5px solid ${mode === m ? 'rgba(0,230,118,0.55)' : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.35rem' }}>{m === 'dark' ? '🌙' : '☀️'}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: mode === m ? '#00e676' : 'rgba(255,255,255,0.7)', textTransform: 'capitalize' }}>{m}</span>
+                  </button>
+                ))}
+              </div>
+              {/* Color theme swatches */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+                {THEMES.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    title={t.name}
+                    style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      background: t.swatch,
+                      border: `2.5px solid ${theme === t.id ? '#fff' : 'transparent'}`,
+                      outline: theme === t.id ? `2px solid ${t.swatch}` : 'none',
+                      outlineOffset: '2px',
+                      cursor: 'pointer', transition: 'all 0.16s ease',
+                      transform: theme === t.id ? 'scale(1.18)' : 'scale(1)',
+                      flexShrink: 0,
+                    }}
+                    aria-label={t.name}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
