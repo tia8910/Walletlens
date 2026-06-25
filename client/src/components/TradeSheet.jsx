@@ -446,6 +446,26 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       const valueTier = valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100'
       const assetCat = asset.category || category || 'crypto'
 
+      // Sell-only metrics: how much of the position was exited and the realized
+      // P&L, so GA can answer "are people taking profit or cutting losses?" and
+      // "do they trim or fully exit?". Buys don't have a prior position, so these
+      // are computed only for sells (left undefined for buys → omitted by GA4).
+      let pctOfPosition, positionPctTier, fullExit, realizedPnlPct, pnlOutcome
+      if (!isBuy && holdingForCoin && Number(holdingForCoin.amount) > 0) {
+        const heldBefore = Number(holdingForCoin.amount)
+        pctOfPosition = Math.round(Math.min(100, (amt / heldBefore) * 100))
+        fullExit = amt >= heldBefore - 1e-9 ? 'yes' : 'no'
+        positionPctTier = pctOfPosition >= 100 ? '100' : pctOfPosition >= 50 ? '50-99' : pctOfPosition >= 25 ? '25-49' : '<25'
+        const invested = Number(holdingForCoin.total_invested)
+        if (isFinite(invested) && invested > 0) {
+          const avgCost = invested / heldBefore
+          if (avgCost > 0) {
+            realizedPnlPct = Math.round(((ppu - avgCost) / avgCost) * 100)
+            pnlOutcome = realizedPnlPct > 1 ? 'profit' : realizedPnlPct < -1 ? 'loss' : 'flat'
+          }
+        }
+      }
+
       // Fire specific buy/sell event for GA4 funnels
       track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
         asset_symbol:    asset.symbol?.toUpperCase(),
@@ -458,6 +478,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         wallet_id:       wid,
         paid_with:       isBuy ? (buyWith === 'NONE' ? 'none' : buyWith) : undefined,
         received_as:     !isBuy ? (sellFor === 'REMOVE' ? 'removed' : sellFor) : undefined,
+        pct_of_position: pctOfPosition,
+        position_pct_tier: positionPctTier,
+        full_exit:       fullExit,
+        realized_pnl_pct: realizedPnlPct,
+        pnl_outcome:     pnlOutcome,
       })
 
       // Also keep the combined event for backwards compat
