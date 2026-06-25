@@ -315,6 +315,30 @@ function Drawer({ open, onClose }) {
           </button>
         </div>
 
+        {/* Binance referral */}
+        <div className="wl-drawer-section" style={{ paddingBottom: 0 }}>
+          <a
+            href="https://www.binance.com/register?ref=WALLETLENS"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('binance_referral_click', { source: 'drawer' })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.65rem',
+              padding: '0.7rem 0.85rem',
+              background: 'rgba(240,185,11,0.09)', border: '1.5px solid rgba(240,185,11,0.28)',
+              borderRadius: '12px', textDecoration: 'none',
+              transition: 'background 0.15s',
+            }}
+          >
+            <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🟡</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text)', lineHeight: 1.2 }}>Don't have Binance?</div>
+              <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Sign up free · fee rebate included</div>
+            </div>
+            <span style={{ marginLeft: 'auto', color: '#f0b90b', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0 }}>Open →</span>
+          </a>
+        </div>
+
         <div className="wl-drawer-footer">
           <span className="wl-live-dot" /> {t('live')} · walletlens.live
           <a className="wl-drawer-tg" href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer">
