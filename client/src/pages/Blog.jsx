@@ -271,6 +271,19 @@ export default function Blog() {
             <p>WalletLens is 100% free, no account required, and all your data stays on your device.</p>
             <Link to="/dashboard/" className="blog-cta-btn">Open WalletLens →</Link>
           </div>
+          <a
+            href="https://www.binance.com/register?ref=WALLETLENS"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="blog-binance-ref"
+          >
+            <span className="blog-binance-ref-icon">🟡</span>
+            <div className="blog-binance-ref-text">
+              <strong>Don't have Binance yet?</strong>
+              <span>Sign up free — 15% trade rebates + $100 new user bonus</span>
+            </div>
+            <span className="blog-binance-ref-cta">Sign Up →</span>
+          </a>
           <RelatedPosts slug={post.slug} />
         </article>
         <footer className="doc-footer">
