@@ -3428,7 +3428,7 @@ export default function Dashboard() {
                         background: active ? 'rgba(0,230,118,0.09)' : 'rgba(255,255,255,0.03)',
                         border: `1px solid rgba(0,230,118,${active ? '0.38' : '0.12'})`,
                         borderRadius: '12px',
-                        cursor: 'pointer', color: '#fff',
+                        cursor: 'pointer', color: 'var(--text)',
                         transition: 'transform 0.15s ease, border-color 0.15s ease, background 0.15s ease',
                         textAlign: 'left',
                         boxShadow: active ? 'inset 0 0 0 1px rgba(0,230,118,0.12)' : 'none',
@@ -3445,7 +3445,7 @@ export default function Dashboard() {
                         {icon}
                       </span>
                       <span style={{ display: 'flex', flexDirection: 'column', gap: '0.12rem', minWidth: 0 }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.84rem', lineHeight: 1.2, color: '#fff' }}>{label}</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.84rem', lineHeight: 1.2, color: 'var(--text)' }}>{label}</span>
                         <span style={{ fontSize: '0.69rem', color: 'var(--text2)', lineHeight: 1.3 }}>{sub}</span>
                       </span>
                     </button>
