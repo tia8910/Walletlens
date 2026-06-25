@@ -213,25 +213,37 @@ export default function WelcomeModal() {
                   </button>
                 ))}
               </div>
-              {/* Color theme swatches */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
-                {THEMES.map(t => (
+              {/* Color theme cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem' }}>
+                {THEMES.map(th => (
                   <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    title={t.name}
+                    key={th.id}
+                    onClick={() => setTheme(th.id)}
+                    aria-label={th.name}
                     style={{
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      background: t.swatch,
-                      border: `2.5px solid ${theme === t.id ? '#fff' : 'transparent'}`,
-                      outline: theme === t.id ? `2px solid ${t.swatch}` : 'none',
-                      outlineOffset: '2px',
-                      cursor: 'pointer', transition: 'all 0.16s ease',
-                      transform: theme === t.id ? 'scale(1.18)' : 'scale(1)',
-                      flexShrink: 0,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
+                      padding: '0.55rem 0.4rem 0.5rem',
+                      background: theme === th.id ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                      border: `1.5px solid ${theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '12px', cursor: 'pointer',
+                      transition: 'all 0.16s ease',
+                      transform: theme === th.id ? 'scale(1.04)' : 'scale(1)',
+                      boxShadow: theme === th.id ? `0 0 12px ${th.swatch}44` : 'none',
                     }}
-                    aria-label={t.name}
-                  />
+                  >
+                    <span style={{
+                      width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+                      background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '1.05rem', overflow: 'hidden',
+                      boxShadow: theme === th.id ? `0 0 8px ${th.swatch}88` : 'none',
+                    }}>
+                      {th.logo
+                        ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                        : th.icon}
+                    </span>
+                    <span style={{ fontSize: '0.67rem', fontWeight: 700, color: theme === th.id ? th.swatch : 'rgba(255,255,255,0.65)', lineHeight: 1 }}>{th.name}</span>
+                  </button>
                 ))}
               </div>
             </div>
