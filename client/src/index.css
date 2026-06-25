@@ -877,8 +877,32 @@ input, select, textarea {
 [data-wl-light] .dvx-input { background: rgba(0,0,0,0.04); color: var(--text); border-color: rgba(0,0,0,0.15); }
 [data-wl-light] .dvx-btn { color: var(--text-muted); }
 [data-wl-light] .dvx-btn:hover { color: var(--text); }
-[data-wl-light] .dvx-btn-primary { color: #000; }
-[data-wl-light] .dvx-btn-primary:hover { color: #000; }
+/* In light mode every theme's --g accent flips to a DEEP, saturated colour
+   (e.g. bitcoin #c2590a, emerald #059669) — so the on-accent text must be
+   white, not black. Black-on-dark-accent is the low-contrast bug we're fixing.
+   Covers the full unified accent-button set, not just .dvx-btn-primary. */
+[data-wl-light] .dvx-btn-primary,
+[data-wl-light] .dvx-btn-primary:hover,
+[data-wl-light] .btn-add-target,
+[data-wl-light] .btn-add-target:hover,
+[data-wl-light] .dash-v2-cta,
+[data-wl-light] .dash-v2-cta:hover,
+[data-wl-light] .landing-cta,
+[data-wl-light] .landing-cta:hover,
+[data-wl-light] .lp-cta-primary,
+[data-wl-light] .lp-cta-primary:hover,
+[data-wl-light] .dvx-hero-cta-buy,
+[data-wl-light] .dvx-hero-cta-buy:hover,
+[data-wl-light] .data-export-btn,
+[data-wl-light] .data-export-btn:hover,
+[data-wl-light] .ms-btn-share,
+[data-wl-light] .ms-btn-share:hover,
+[data-wl-light] .blog-cta-btn,
+[data-wl-light] .blog-cta-btn:hover,
+[data-wl-light] .buy-btn,
+[data-wl-light] .buy-btn:hover,
+[data-wl-light] .submit-btn.buy,
+[data-wl-light] .submit-btn.buy:hover { color: #fff; }
 [data-wl-light] .dvx-btn-ghost { border-color: rgba(0,0,0,0.7); color: var(--text-muted); }
 
 /* ── Token Unlock Alerts (tua) ── */
@@ -918,6 +942,15 @@ input, select, textarea {
 [data-wl-light] .sa-signal-extra { color: var(--text-sub); }
 [data-wl-light] .sa-dismiss      { color: var(--text-sub); }
 [data-wl-light] .sa-dismiss:hover { color: var(--text-muted); background: var(--surface-1); }
+/* Smart-alert toast: was hardcoded dark (rgba(10,10,18,.97)) with a --g-ink
+   title that flips dark in light mode → dark-on-dark, invisible. Make it a
+   proper light card with readable dark text in light mode. */
+[data-wl-light] .sa-toast {
+  background: var(--card-bg);
+  border-color: rgba(var(--g-rgb),0.45);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(var(--g-rgb),0.2);
+}
+[data-wl-light] .sa-toast-title  { color: var(--text); }
 [data-wl-light] .sa-toast-body   { color: var(--text-muted); }
 [data-wl-light] .sa-empty        { color: var(--text-muted); }
 [data-wl-light] .sa-empty-sub    { color: var(--text-sub); }
