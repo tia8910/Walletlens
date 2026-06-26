@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, memo } from 'react'
 
 // Detect low-power devices (mobile or < 4 logical CPUs) so we can throttle
 // the particle simulation before it affects frame rate.
@@ -17,7 +17,7 @@ const _mqlMobile = typeof window !== 'undefined'
 const _lowPower = typeof navigator !== 'undefined'
   && navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4
 
-export default function DynamicBackground({
+const DynamicBackground = memo(function DynamicBackground({
   particleCount = 100,
   linkDistance = 140,
   color = null,
@@ -176,4 +176,6 @@ export default function DynamicBackground({
   }, [effectiveCount, linkDistance, color, reduceMotion, useShadow])
 
   return <canvas ref={canvasRef} className="dynamic-bg" aria-hidden="true" />
-}
+})
+
+export default DynamicBackground
