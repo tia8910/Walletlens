@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { readFileSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -27,7 +28,18 @@ function swVersionPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), swVersionPlugin()],
+  plugins: [
+    react(),
+    swVersionPlugin(),
+    // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
+    process.env.ANALYZE && visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
+    }),
+  ].filter(Boolean),
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.
