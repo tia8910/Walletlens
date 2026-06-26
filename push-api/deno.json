@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --unstable-kv --unstable-cron main.ts"
+  },
+  "deploy": {
+    "entrypoint": "main.ts",
+    "include": ["main.ts"]
+  }
+}

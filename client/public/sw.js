@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v159'
+const SW_VERSION = 'v160'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -226,4 +226,39 @@ self.addEventListener('fetch', e => {
         .catch(() => caches.match(req))
     )
   }
+})
+
+// ── Web Push: show a notification even when the app is fully closed ──────────
+// The push-api Deno service sends a JSON payload { title, body, tag, url }.
+self.addEventListener('push', e => {
+  let data = {}
+  try { data = e.data ? e.data.json() : {} } catch { data = { body: e.data && e.data.text() } }
+  const title = data.title || 'WalletLens'
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || 'walletlens',
+      renotify: true,
+      data: { url: data.url || '/' },
+    })
+  )
+})
+
+// Tapping a notification focuses an open tab (navigating it) or opens a new one.
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const target = (e.notification.data && e.notification.data.url) || '/'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if ('focus' in c) {
+          if ('navigate' in c) { try { c.navigate(target) } catch { /* cross-origin guard */ } }
+          return c.focus()
+        }
+      }
+      return self.clients.openWindow(target)
+    })
+  )
 })
