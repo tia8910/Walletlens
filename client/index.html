@@ -170,6 +170,9 @@
     <!-- Coin icon CDN fallbacks -->
     <link rel="dns-prefetch" href="https://assets.coincap.io" />
     <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
 
     <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
          stock price proxy. This is one of the highest-latency origins because
@@ -366,7 +369,7 @@
         </div>
       </div>
     </div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.jsx" fetchpriority="high"></script>
 
     <!-- X conversion tracking event — deferred to window load so it never
          competes with the initial render or module evaluation. -->
