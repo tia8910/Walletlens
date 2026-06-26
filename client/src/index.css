@@ -12107,3 +12107,25 @@ button:not(:disabled):active,
 [data-wl-light] .wlw-price-input  { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
 [data-wl-light] .wlw-sug-sym, [data-wl-light] .wlw-item-sym, [data-wl-light] .wlw-empty-title { color: var(--text); }
 [data-wl-light] .wlw-price-usd { color: var(--text); }
+
+/* ── FeatureSlideshow keyframes (moved from inline <style> to prevent CSS re-parsing on every render) ── */
+@keyframes fs-in-right{from{transform:translateX(46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes fs-in-left{from{transform:translateX(-46px) scale(0.97);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes fs-aurora{0%{transform:translate(-12%,-8%) rotate(0deg)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-8%) rotate(360deg)}}
+@keyframes fs-orb{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.06)}}
+@keyframes fs-icon-pop{0%{transform:scale(0.4) rotate(-12deg);opacity:0}60%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes fs-tag-shine{0%{background-position:-150% 0}100%{background-position:250% 0}}
+@keyframes fs-bar{from{width:0}to{width:100%}}
+@keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  .fs-aurora,.fs-orb,.fs-icon,.fs-bar{animation:none!important}
+}
+
+/* ── OnboardingTutorial keyframes (moved from inline <style> to prevent CSS re-parsing on every render) ── */
+@keyframes ob-aurora{0%{transform:translate(-12%,-10%) rotate(0)}50%{transform:translate(10%,8%) rotate(180deg)}100%{transform:translate(-12%,-10%) rotate(360deg)}}
+@keyframes ob-logo-pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes ob-orb{0%,100%{transform:scale(1);opacity:0.75}50%{transform:scale(1.12);opacity:1}}
+@keyframes ob-row{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes ob-check{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes ob-bar{from{width:0}}
+@media (prefers-reduced-motion: reduce){.ob-anim{animation:none!important}}
