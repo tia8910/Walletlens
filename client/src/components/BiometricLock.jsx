@@ -3,11 +3,28 @@ import { track } from '../analytics'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'
 const SESSION_KEY  = 'wl_biometric_unlocked'
+const CRED_KEY     = 'wl_biometric_cred'   // base64url of the registered credential id
 
 // Module-level guard: true while a WebAuthn prompt is on screen. The system
 // biometric sheet briefly backgrounds the page (visibilitychange → hidden),
 // which would otherwise re-lock us mid-authentication and loop forever.
 let authInProgress = false
+
+// ── base64url <-> ArrayBuffer helpers (for storing/restoring the credential id)
+function bufToB64url(buf) {
+  let s = ''
+  const bytes = new Uint8Array(buf)
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i])
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+function b64urlToBuf(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/')
+  const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : ''
+  const bin = atob(b64 + pad)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes.buffer
+}
 
 // Detect WebAuthn platform-authenticator support
 const supportsWebAuthn = () =>
@@ -53,24 +70,30 @@ export function useBiometricLock() {
     if (!supported) return false
     authInProgress = true
     try {
-      // Register a platform passkey bound to this device + origin
-      await navigator.credentials.create({
+      // Register a platform passkey bound to this device + origin.
+      // residentKey:'required' makes it a DISCOVERABLE credential and we also
+      // store the credential id, so unlock() can target it explicitly — this is
+      // why a freshly enabled lock can actually be found on the same device.
+      const cred = await navigator.credentials.create({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rp: { name: 'WalletLens', id: location.hostname },
           user: {
-            id: new TextEncoder().encode('walletlens-user'),
+            id: crypto.getRandomValues(new Uint8Array(16)),
             name: 'WalletLens User',
             displayName: 'WalletLens User',
           },
           pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
           authenticatorSelection: {
             authenticatorAttachment: 'platform',
+            residentKey: 'required',
+            requireResidentKey: true,
             userVerification: 'required',
           },
           timeout: 60000,
         },
       })
+      if (cred?.rawId) localStorage.setItem(CRED_KEY, bufToB64url(cred.rawId))
       localStorage.setItem(ENABLED_KEY, '1')
       sessionStorage.setItem(SESSION_KEY, '1')
       setEnabled(true)
@@ -88,10 +111,18 @@ export function useBiometricLock() {
   async function unlock() {
     authInProgress = true
     try {
+      // Target the exact credential we registered (works even if the platform
+      // didn't keep it discoverable). Fall back to discoverable lookup if we
+      // somehow have no stored id (e.g. enabled before this fix).
+      const savedId = localStorage.getItem(CRED_KEY)
+      const allowCredentials = savedId
+        ? [{ id: b64urlToBuf(savedId), type: 'public-key', transports: ['internal'] }]
+        : undefined
       await navigator.credentials.get({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rpId: location.hostname,
+          allowCredentials,
           userVerification: 'required',
           timeout: 60000,
         },
@@ -109,6 +140,7 @@ export function useBiometricLock() {
 
   function disable() {
     localStorage.removeItem(ENABLED_KEY)
+    localStorage.removeItem(CRED_KEY)
     sessionStorage.removeItem(SESSION_KEY)
     setEnabled(false)
     setLocked(false)
@@ -156,6 +188,14 @@ export function BiometricLockScreen({ onUnlock }) {
   useEffect(() => {
     if (autoRan.current) return
     autoRan.current = true
+    // If the lock was enabled before a usable credential was stored on this
+    // device (older build / cross-context), there is nothing to authenticate
+    // against — skip the futile prompt and offer recovery straight away.
+    if (!localStorage.getItem(CRED_KEY)) {
+      setRecover(true)
+      setError('No passkey is registered on this device. Disable the lock to continue, then re-enable it from Data → Security.')
+      return
+    }
     attempt()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
