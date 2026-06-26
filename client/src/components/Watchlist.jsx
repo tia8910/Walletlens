@@ -3,6 +3,7 @@ import { api } from '../api'
 import { POPULAR_TICKERS, PRESET_ASSETS, assetClass } from '../data/assets'
 import CoinLogo from './CoinLogo'
 import { track } from '../analytics'
+import { syncAlerts } from '../push'
 
 const WATCHLIST_KEY = 'wl_watchlist'
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
@@ -103,7 +104,9 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const searchRef  = useRef(null)
   alertsRef.current = alerts
 
-  useEffect(() => { saveAlerts(alerts) }, [alerts])
+  // Persist locally and mirror rules to the push server (no-op if push is off)
+  // so price targets can fire even when the app is closed.
+  useEffect(() => { saveAlerts(alerts); syncAlerts() }, [alerts])
 
   const fetchPrices = useCallback(async () => {
     if (!items.length) return

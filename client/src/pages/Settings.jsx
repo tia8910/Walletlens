@@ -6,6 +6,7 @@ import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import { requestPortfolioNotifPermission } from '../portfolioNotify'
+import PushToggle from '../components/PushToggle'
 import InstallExtension from '../components/InstallExtension'
 import PortfolioGuardian from '../components/PortfolioGuardian'
 
@@ -201,6 +202,9 @@ export default function Settings() {
       {/* ── Notifications ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />Notifications</h3>
+
+        <PushToggle />
+        <div className="settings-divider"/>
 
         {[
           { key:'notifPortfolio', label:'Portfolio Moves',  hint:'Alert when your wallet is up or down ±5%', val: notifPortfolio, needsPerm: true },
