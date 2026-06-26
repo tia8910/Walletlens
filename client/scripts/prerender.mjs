@@ -311,6 +311,7 @@ ${TRACK_METALS.map(c => `<li><a href="/track/${c.slug}">Track ${esc(c.name)} (${
 ${CALCULATORS.filter(c => c.type !== 'general').map(c => `<li><a href="/calculator/${c.slug}">${esc(c.name)}${c.type === 'stock' ? ' stock' : ''} profit calculator</a></li>`).join('\n')}
 <li><a href="/calculator/crypto-profit-calculator">Crypto profit calculator (any coin)</a></li>
 <li><a href="/calculator/investment-profit-calculator">Investment profit calculator (any asset)</a></li>
+<li><a href="/rebalancing-calculator">Portfolio rebalancing calculator</a></li>
 </ul>
 <h2>Live prices</h2>
 <ul>
@@ -1778,6 +1779,81 @@ ${fgFaq.html}
 }))
 console.log('Prerendered /fear-and-greed-index landing page.')
 
+// ── Portfolio rebalancing calculator (/rebalancing-calculator) ───────────────
+// Targets high-impression, zero-click rebalancing queries seen in Search
+// Console: "how to rebalance a crypto portfolio", "asset rebalancing",
+// "rebalancing portfolio", "portfolio rebalancing calculator". An interactive
+// tool page that gives searchers exactly what they want.
+const rbFaq = faqBlock([
+  {
+    q: 'How do I calculate how much to rebalance?',
+    a: 'For each asset, multiply your target percentage by your total portfolio value to get its target dollar value, then subtract its current value. A positive result means buy that amount; a negative result means sell it. The WalletLens rebalancing calculator does this for every asset instantly.',
+  },
+  {
+    q: 'How often should I rebalance my portfolio?',
+    a: 'Common approaches are rebalancing on a fixed schedule — quarterly or annually — or whenever an allocation drifts beyond a set threshold like 5%. Rebalancing too often raises trading costs and taxes; too rarely lets risk build up. A threshold-based check every quarter is a popular middle ground.',
+  },
+  {
+    q: 'How do I rebalance a crypto portfolio without selling?',
+    a: 'Use new contributions. Instead of selling overweight coins, direct fresh cash only into the underweight assets until your allocation is back on target. This avoids triggering capital-gains tax. The calculator has a "new cash to invest" field that rebalances using contributions first.',
+  },
+  {
+    q: 'Does rebalancing improve returns?',
+    a: 'Rebalancing is primarily about controlling risk, not maximising returns. It keeps your portfolio aligned with your plan and enforces a buy-low, sell-high discipline. In a long one-way bull market it can lag a portfolio left untouched, but it meaningfully reduces drawdowns when trends reverse.',
+  },
+  {
+    q: 'Is the rebalancing calculator free?',
+    a: 'Yes — the WalletLens portfolio rebalancing calculator is 100% free, requires no account or sign-up, and runs entirely in your browser. Nothing you enter is stored or sent to a server.',
+  },
+])
+write('/rebalancing-calculator', buildPage({
+  path: '/rebalancing-calculator',
+  title: 'Portfolio Rebalancing Calculator — Free & Instant | WalletLens',
+  description: 'Free portfolio rebalancing calculator. Enter your holdings and target allocation to see exactly how much of each asset to buy or sell — crypto, stocks, metals and cash. No account needed.',
+  bodyHtml: `
+<h1>Portfolio Rebalancing Calculator — Free &amp; Instant</h1>
+<p>Enter your holdings and your target allocation, and this <strong>portfolio rebalancing calculator</strong> shows exactly how much of each asset to <strong>buy or sell</strong> to get back to your plan — crypto, stocks, metals and cash in one place. Free, no account, nothing leaves your browser.</p>
+
+<h2>How to rebalance your portfolio</h2>
+<ol>
+<li>List each <strong>asset</strong> you hold — Bitcoin, Ethereum, stocks, gold, cash, anything.</li>
+<li>Enter its <strong>current value</strong> in dollars.</li>
+<li>Set your <strong>target allocation %</strong> for each asset (these should add up to 100%).</li>
+<li>Optionally add <strong>new cash</strong> you plan to invest — the calculator rebalances with it first, which avoids selling and reduces taxes.</li>
+<li>Read the <strong>action</strong> for each asset: the exact dollar amount to buy or sell.</li>
+</ol>
+
+<h2>What is portfolio rebalancing?</h2>
+<p>Rebalancing is the discipline of periodically restoring your portfolio to its target allocation. Over time, winning assets grow to take up a larger share than you intended, which quietly raises your risk. Rebalancing trims overweight winners and tops up underweight positions, enforcing a built-in buy-low, sell-high habit and keeping your risk consistent with your plan.</p>
+<p>Most investors rebalance on a schedule (quarterly or annually) or when an allocation drifts past a threshold such as 5%. If you add money regularly, you can often rebalance with new contributions alone — buying only the underweight assets — so you never have to sell and trigger capital-gains tax.</p>
+
+<h2>Track your allocation live — beyond the calculator</h2>
+<p>This calculator is perfect for a one-off rebalance, but your allocation drifts every day as prices move. <a href="https://walletlens.live">WalletLens</a> shows your live allocation across crypto, stocks, metals and cash automatically — so you see the moment a position drifts and can decide whether to rebalance. It is 100% free, needs no account, and your data stays on your device.</p>
+<p><a href="/dashboard">Open the free portfolio tracker →</a> · <a href="/learn/portfolio-rebalancing">What is rebalancing?</a> · <a href="/learn/asset-allocation">Asset allocation</a> · <a href="/blog/how-to-rebalance-crypto-stock-portfolio">Rebalancing guide</a></p>
+
+${rbFaq.html}
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${ORIGIN}/` },
+        { '@type': 'ListItem', position: 2, name: 'Portfolio Rebalancing Calculator', item: `${ORIGIN}/rebalancing-calculator/` },
+      ],
+    },
+    howToJsonLd('How to rebalance your portfolio', [
+      'List each asset you hold — crypto, stocks, gold, cash.',
+      'Enter the current dollar value of each asset.',
+      'Set your target allocation percentage for each asset, totalling 100%.',
+      'Optionally add new cash to invest, which rebalances with contributions first.',
+      'Read the action for each asset: the exact dollar amount to buy or sell.',
+    ]),
+    rbFaq.jsonLd,
+  ],
+}))
+console.log('Prerendered /rebalancing-calculator tool page.')
+
 // ── $LENZ token ──────────────────────────────────────────────────────────────
 const lenzFaqs = [
   { q: 'What is $LENZ?',
@@ -2072,6 +2148,7 @@ const STATIC_ROUTES = [
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/market-index', changefreq: 'daily', priority: '0.9' },
   { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },
+  { path: '/rebalancing-calculator', changefreq: 'monthly', priority: '0.85' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/lenz',    changefreq: 'monthly', priority: '0.6' },
   { path: '/airdrop', changefreq: 'weekly',  priority: '0.7' },

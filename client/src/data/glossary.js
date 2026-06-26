@@ -341,12 +341,14 @@ export const GLOSSARY = [
     slug: 'portfolio-rebalancing',
     term: 'Portfolio Rebalancing',
     short: 'Rebalancing is periodically adjusting your holdings back to your target allocation by buying underweight assets and trimming overweight ones.',
-    body: 'Portfolio rebalancing is the process of bringing your asset mix back in line with your target allocation after market movements have shifted it.\n\nOver time, winning assets grow to take up a larger share of your portfolio than you intended, increasing your risk. Rebalancing means selling some of the overweight positions and buying the underweight ones to restore your plan.\n\nThis enforces a disciplined buy-low, sell-high habit and keeps your risk level consistent with your goals. Investors typically rebalance on a schedule, such as quarterly, or when an allocation drifts beyond a set threshold.\n\nWalletLens shows your live allocation across crypto, stocks, metals and cash, so you can see at a glance when a position has drifted and decide whether to rebalance.',
+    body: 'Portfolio rebalancing is the process of bringing your asset mix back in line with your target allocation after market movements have shifted it.\n\nOver time, winning assets grow to take up a larger share of your portfolio than you intended, increasing your risk. Rebalancing means selling some of the overweight positions and buying the underweight ones to restore your plan.\n\nThis enforces a disciplined buy-low, sell-high habit and keeps your risk level consistent with your goals. Investors typically rebalance on a schedule, such as quarterly, or when an allocation drifts beyond a set threshold like 5%.\n\nTo work out the exact trades, multiply each target percentage by your total portfolio value to get its target dollar amount, then subtract its current value — a positive number means buy, a negative number means sell. The free WalletLens rebalancing calculator does this for every asset instantly, and can rebalance using new contributions first so you avoid selling and reduce taxes.\n\nWalletLens also shows your live allocation across crypto, stocks, metals and cash, so you can see at a glance when a position has drifted and decide whether to rebalance.',
+    featuredLink: { href: '/rebalancing-calculator/', label: 'Use the free Rebalancing Calculator →' },
     keyPoints: [
       'Rebalancing restores your holdings to their target allocation after market drift.',
       'It trims overweight winners and tops up underweight positions.',
       'This enforces a disciplined buy-low, sell-high habit and keeps risk consistent.',
       'Investors commonly rebalance on a schedule or when allocations drift past a threshold.',
+      'Rebalancing with new contributions avoids selling and reduces capital-gains tax.',
     ],
     example: 'Suppose your target is 60% stocks and 40% crypto. After a strong crypto rally, your mix drifts to 50% stocks and 50% crypto, raising your risk. Rebalancing means selling enough crypto and buying stocks to return to 60/40, locking in some crypto gains in the process.',
     faqs: [
