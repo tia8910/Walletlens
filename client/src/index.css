@@ -1420,6 +1420,9 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-inner { animation-play-state: paused; }
+}
 .tick {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.72rem; font-family: var(--mono);
@@ -1439,11 +1442,13 @@ body::before {
   opacity: 1;
   will-change: transform;
 }
-/* Subtle top glow on black */
+/* Subtle top glow on black — promoted to its own GPU layer to avoid
+   triggering repaints when nearby elements change opacity or transform. */
 body::after {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(900px 400px at 50% -5%, rgba(var(--g-rgb),0.07), transparent 70%);
+  will-change: opacity;
 }
 @keyframes mesh-float {
   0%   { transform: translate(0,0) rotate(0deg) scale(1); }
@@ -4914,8 +4919,12 @@ tr:last-child td { border-bottom: none; }
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s;
+  will-change: opacity;
 }
 .wl-overlay-open { opacity: 1; pointer-events: all; }
+@media (prefers-reduced-motion: reduce) {
+  .wl-overlay { transition: none; }
+}
 
 /* ── Drawer ── */
 .wl-drawer {
@@ -4931,8 +4940,13 @@ tr:last-child td { border-bottom: none; }
   transform: translateX(-100%);
   transition: transform 0.28s cubic-bezier(0.23,1,0.32,1);
   overflow-y: auto;
+  will-change: transform;
+  contain: layout style;
 }
 .wl-drawer-open { transform: translateX(0); }
+@media (prefers-reduced-motion: reduce) {
+  .wl-drawer { transition: none; }
+}
 
 .wl-drawer-head {
   display: flex;
@@ -4966,7 +4980,7 @@ tr:last-child td { border-bottom: none; }
   background: none; border: 1px solid rgba(var(--g-rgb),0.2);
   color: rgba(255,255,255,0.8); border-radius: 8px;
   padding: 0.3rem 0.4rem; cursor: pointer; display: flex;
-  transition: background .18s,color .18s,border-color .18s,box-shadow .18s,transform .18s,opacity .18s,filter .18s;
+  transition: background .18s, color .18s, border-color .18s;
 }
 .wl-drawer-close:hover { color: #fff; border-color: rgba(var(--g-rgb),0.5); }
 
@@ -4992,7 +5006,7 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background .18s,color .18s,border-color .18s,box-shadow .18s,transform .18s,opacity .18s,filter .18s;
+  transition: background .18s, color .18s;
   text-align: left;
 }
 .wl-drawer-item:hover { background: rgba(var(--g-rgb),0.08); color: #fff; }

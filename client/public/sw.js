@@ -78,6 +78,7 @@ self.addEventListener('install', e => {
 })
 
 const API_CACHE_MAX = 120 // max entries before oldest are evicted
+const CDN_CACHE_MAX = 500 // coin icons: large but bounded (one per asset)
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -91,6 +92,15 @@ self.addEventListener('activate', e => {
         const keys = await cache.keys()
         if (keys.length > API_CACHE_MAX) {
           await Promise.all(keys.slice(0, keys.length - API_CACHE_MAX).map(k => cache.delete(k)))
+        }
+      })
+      .then(async () => {
+        // Trim CDN cache (coin icons, Google Fonts) — unbounded without a cap
+        // as users add new assets over time.
+        const cdnCache = await caches.open(CDN_CACHE)
+        const cdnKeys = await cdnCache.keys()
+        if (cdnKeys.length > CDN_CACHE_MAX) {
+          await Promise.all(cdnKeys.slice(0, cdnKeys.length - CDN_CACHE_MAX).map(k => cdnCache.delete(k)))
         }
       })
       .then(() => self.clients.claim())
