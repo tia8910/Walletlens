@@ -121,8 +121,9 @@ export function useBiometricLock() {
 // Full-screen lock overlay. Auto-prompts on mount for a native app feel.
 export function BiometricLockScreen({ onUnlock }) {
   const [trying, setTrying] = useState(false)
-  const [error, setError] = useState('')      // user-facing retry message
-  const [recover, setRecover] = useState(false) // show the recovery escape hatch
+  const [error, setError] = useState('')
+  const [recover, setRecover] = useState(false)
+  const attemptCount = useRef(0)
   const autoRan = useRef(false)
 
   async function attempt() {
@@ -131,13 +132,20 @@ export function BiometricLockScreen({ onUnlock }) {
     try {
       await onUnlock()
     } catch (e) {
-      // NotAllowedError = cancelled / timed out → let them simply retry.
-      // Anything else = the authenticator is unusable on this device → recovery.
-      if (e && e.name && e.name !== 'NotAllowedError') {
+      attemptCount.current += 1
+      const noPasskeys =
+        (e?.message || '').toLowerCase().includes('no passkeys') ||
+        (e?.message || '').toLowerCase().includes('no credentials') ||
+        e?.name === 'InvalidStateError'
+      if (noPasskeys || (e?.name && e.name !== 'NotAllowedError')) {
+        // Device has no registered passkey for this origin, or authenticator error → escape hatch
         setRecover(true)
-        setError('Biometric authentication is unavailable on this device.')
+        setError('No passkey found for this app. Disable the lock to continue.')
       } else {
-        setError('Authentication cancelled. Try again.')
+        // NotAllowedError = user cancelled/timed out
+        setError('Authentication cancelled. Tap to try again.')
+        // Show escape hatch after 2 failed attempts so user is never truly stuck
+        if (attemptCount.current >= 2) setRecover(true)
       }
     } finally {
       setTrying(false)
@@ -195,12 +203,12 @@ export function BiometricLockScreen({ onUnlock }) {
           </div>
           {recover && (
             <button onClick={recoverEntry} style={{
-              background: 'transparent', color: 'var(--text-muted)',
+              background: 'rgba(255,255,255,0.07)', color: 'var(--text-muted)',
               border: '1px solid var(--border)',
-              borderRadius: '8px', padding: '0.45rem 1rem',
-              fontSize: '0.82rem', cursor: 'pointer',
+              borderRadius: '8px', padding: '0.5rem 1.1rem',
+              fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.25rem',
             }}>
-              Disable lock &amp; enter
+              Disable lock &amp; enter app
             </button>
           )}
         </div>
