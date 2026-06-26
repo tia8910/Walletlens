@@ -87,7 +87,11 @@ const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const Vision       = lazy(() => import('./pages/Vision'))
 
 function PageFallback() {
-  return <div className="wl-page-fallback"><p>Loading…</p></div>
+  return (
+    <div className="wl-page-fallback" role="status" aria-label="Loading">
+      <div className="wl-page-fallback-spinner" aria-hidden="true" />
+    </div>
+  )
 }
 
 function IconHome()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5l9-7 9 7V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg> }

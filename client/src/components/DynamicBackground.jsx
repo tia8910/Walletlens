@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react'
 
 // Detect low-power devices (mobile or < 4 logical CPUs) so we can throttle
-// the O(n²) particle simulation before it affects frame rate.
+// the particle simulation before it affects frame rate.
 function getParticleCount(requested, reducedMotion, mobile, lowPower) {
   if (reducedMotion) return 0
   if (mobile || lowPower) return Math.min(requested, 40)
@@ -82,23 +82,48 @@ export default function DynamicBackground({
       }
     }
 
+    // Reuse one Map per effect lifetime — avoids creating a new object each frame.
+    // Bucket arrays inside are recreated on clear(), but Map itself stays stable.
+    const gridCells = new Map()
+
     function step() {
       ctx.clearRect(0, 0, w, h)
 
-      // Batch ALL connecting lines into one beginPath/stroke call.
-      // Previously: O(n²) individual stroke() calls ≈ 24,000/frame with 220 particles.
-      // Now: 1 stroke() call regardless of particle count.
+      // Build spatial grid in O(n). Cell size equals linkDistance so that any
+      // two particles within connection range differ by at most ±1 cell in each
+      // axis — checking the 3×3 neighbourhood is both necessary and sufficient.
+      gridCells.clear()
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i]
+        const key = (Math.floor(p.x / linkDistance) | 0) * 10000 + (Math.floor(p.y / linkDistance) | 0)
+        const b = gridCells.get(key)
+        if (b) b.push(i); else gridCells.set(key, [i])
+      }
+
+      // Draw connecting lines — O(n × avg_neighbours) instead of O(n²).
+      // With 100 particles on a typical 1920×1080 canvas and linkDistance=140,
+      // this cuts per-frame distance checks from ~5 000 to ~400 (12× speedup).
       ctx.strokeStyle = `rgba(${rgb}, 0.14)`
       ctx.lineWidth = 0.9
       ctx.beginPath()
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i]
-        for (let j = i + 1; j < particles.length; j++) {
-          const b = particles[j]
-          const dx = a.x - b.x, dy = a.y - b.y
-          if (dx * dx + dy * dy < D2) {
-            ctx.moveTo(a.x, a.y)
-            ctx.lineTo(b.x, b.y)
+        const cx = Math.floor(a.x / linkDistance) | 0
+        const cy = Math.floor(a.y / linkDistance) | 0
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const nbrs = gridCells.get((cx + dx) * 10000 + (cy + dy))
+            if (!nbrs) continue
+            for (let k = 0; k < nbrs.length; k++) {
+              const j = nbrs[k]
+              if (j <= i) continue
+              const b = particles[j]
+              const ex = a.x - b.x, ey = a.y - b.y
+              if (ex * ex + ey * ey < D2) {
+                ctx.moveTo(a.x, a.y)
+                ctx.lineTo(b.x, b.y)
+              }
+            }
           }
         }
       }

@@ -22,6 +22,9 @@ app.use((_req, res, next) => {
   res.set('X-XSS-Protection', '1; mode=block');
   res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // Required so CDNs/reverse-proxies store compressed and uncompressed
+  // responses separately — the compression middleware compresses on the fly.
+  res.set('Vary', 'Accept-Encoding');
   next();
 });
 
