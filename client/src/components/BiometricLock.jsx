@@ -35,12 +35,19 @@ const supportsWebAuthn = () =>
 export function useBiometricLock() {
   const [enabled, setEnabled] = useState(() => localStorage.getItem(ENABLED_KEY) === '1')
   const [locked, setLocked] = useState(false)
+  // `available` = WebAuthn API exists at all (synchronous, reliable).
+  // `supported` = platform authenticator confirmed present (async, can be a
+  // false negative inside some Android webviews / TWAs). We OFFER the lock
+  // whenever the API is available and let navigator.credentials.create() be
+  // the real source of truth — pre-hiding the option on the async check left
+  // capable devices stuck on "not available on this device".
+  const [available] = useState(() => supportsWebAuthn())
   const [supported, setSupported] = useState(false)
 
   useEffect(() => {
     if (!supportsWebAuthn()) return
     window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-      .then(available => setSupported(available))
+      .then(avail => setSupported(avail))
       .catch(() => {})
   }, [])
 
@@ -67,7 +74,10 @@ export function useBiometricLock() {
   }, [])
 
   async function enable() {
-    if (!supported) return false
+    // Gate on the API being present, not on the (sometimes false-negative)
+    // platform-authenticator probe. If the device genuinely can't, the
+    // create() call below throws and we return false cleanly.
+    if (!available) return false
     authInProgress = true
     try {
       // Register a platform passkey bound to this device + origin.
@@ -147,7 +157,7 @@ export function useBiometricLock() {
     track('biometric_disabled')
   }
 
-  return { enabled, locked, supported, enable, unlock, disable }
+  return { enabled, locked, supported, available, enable, unlock, disable }
 }
 
 // Full-screen lock overlay. Auto-prompts on mount for a native app feel.

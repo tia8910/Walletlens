@@ -117,15 +117,18 @@ export default function WelcomeModal() {
   const [visible, setVisible] = useState(false)
   const [animKey, setAnimKey] = useState(0)
   const [bioBusy, setBioBusy] = useState(false)
+  const [bioError, setBioError] = useState('')
   const { theme, mode, setTheme, setMode } = useTheme()
-  const { enabled: bioEnabled, supported: bioSupported, enable: enableBio } = useBiometricLock()
+  const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
 
   async function enableBiometric() {
     if (bioBusy) return
     setBioBusy(true)
+    setBioError('')
     try {
       const ok = await enableBio()
       if (ok) { track('biometric_enabled_onboarding'); next() }
+      else setBioError('Couldn’t set up fingerprint lock. Make sure a fingerprint or face is enrolled in your device settings, then try again.')
     } finally {
       setBioBusy(false)
     }
@@ -279,7 +282,7 @@ export default function WelcomeModal() {
 
           {s.isSecurityStep && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', margin: '0.1rem 0 0.3rem' }}>
-              {!bioSupported ? (
+              {!bioAvailable ? (
                 <div style={{
                   fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center',
                   padding: '0.7rem', background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
@@ -314,6 +317,14 @@ export default function WelcomeModal() {
                   </svg>
                   {bioBusy ? 'Setting up…' : 'Enable fingerprint lock'}
                 </button>
+              )}
+              {bioError && (
+                <div style={{
+                  fontSize: '0.78rem', color: 'rgba(255,180,180,0.9)', textAlign: 'center',
+                  lineHeight: 1.5, padding: '0.1rem 0.3rem',
+                }}>
+                  {bioError}
+                </div>
               )}
             </div>
           )}
