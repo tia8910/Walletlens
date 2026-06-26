@@ -6601,6 +6601,40 @@ select.bs-input option { background: var(--bg3); }
 .calc-pos strong { color: var(--g-ink); font-weight: 700; }
 .calc-neg strong { color:#ef4444; }
 .calc-hint { text-align:center; color: rgba(255,255,255,0.75); font-size:0.84rem; margin-top:0.9rem; padding-top:0.75rem; border-top:1px solid rgba(0,230,118,0.12); }
+
+/* ── Rebalancing calculator widget ── */
+.rb-widget { width:100%; max-width:620px; margin:1.4rem auto 0; background:rgba(14,22,18,0.92); border:1px solid rgba(0,230,118,0.25); border-radius:14px; padding:1.2rem; text-align:left; }
+.rb-table { display:flex; flex-direction:column; gap:0.5rem; }
+.rb-row { display:grid; grid-template-columns: 1.3fr 1fr 0.7fr 1.2fr 24px; gap:0.5rem; align-items:center; }
+.rb-row-head { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.03em; color:rgba(255,255,255,0.55); font-weight:700; padding:0 0.1rem; }
+.rb-input { background:rgba(255,255,255,0.04); border:1px solid rgba(0,230,118,0.2); border-radius:8px; padding:0.5rem 0.55rem; font-size:0.9rem; color:#fff; width:100%; outline:none; transition:border-color 0.15s; min-width:0; }
+.rb-input:focus { border-color:rgba(0,230,118,0.6); }
+.rb-input::placeholder { color: rgba(255,255,255,0.45); }
+.rb-c-action { font-size:0.85rem; font-weight:700; }
+.rb-buy { color: var(--g-ink); }
+.rb-sell { color:#ef4444; }
+.rb-hold { color: rgba(255,255,255,0.55); font-weight:600; }
+.rb-del { background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:0.85rem; padding:0.2rem; line-height:1; transition:color 0.15s; }
+.rb-del:hover { color:#ef4444; }
+.rb-controls { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-top:0.9rem; flex-wrap:wrap; }
+.rb-add { background:rgba(0,230,118,0.1); border:1px solid rgba(0,230,118,0.3); color:var(--g-ink); font-weight:700; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem; cursor:pointer; transition:background 0.15s; }
+.rb-add:hover { background:rgba(0,230,118,0.18); }
+.rb-contrib { display:flex; flex-direction:column; gap:0.3rem; font-size:0.78rem; color:rgba(255,255,255,0.75); }
+.rb-contrib input { background:rgba(255,255,255,0.04); border:1px solid rgba(0,230,118,0.2); border-radius:8px; padding:0.5rem 0.6rem; font-size:0.9rem; color:#fff; outline:none; max-width:200px; }
+.rb-contrib input:focus { border-color:rgba(0,230,118,0.6); }
+.rb-summary { margin-top:1.1rem; border-top:1px solid rgba(0,230,118,0.15); padding-top:1rem; display:flex; flex-direction:column; gap:0.5rem; }
+.rb-sum-row { display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; color:rgba(255,255,255,0.8); }
+.rb-sum-row strong { color:#fff; }
+.rb-sum-row.rb-ok strong { color: var(--g-ink); }
+.rb-sum-row.rb-warn strong { color:#fbbf24; font-weight:700; }
+.rb-hint { text-align:center; color: rgba(255,255,255,0.75); font-size:0.84rem; margin-top:0.9rem; }
+@media (max-width:560px) {
+  .rb-row-head { display:none; }
+  .rb-row { grid-template-columns: 1fr 1fr; gap:0.4rem 0.5rem; padding-bottom:0.7rem; margin-bottom:0.2rem; border-bottom:1px solid rgba(255,255,255,0.07); position:relative; }
+  .rb-row > .rb-input.rb-c-name { grid-column: 1 / span 2; padding-right:1.8rem; }   /* name input: full-width top row */
+  .rb-row > .rb-c-action { grid-column: 1 / span 2; text-align:left; padding-top:0.1rem; } /* action: full-width bottom row */
+  .rb-del { position:absolute; top:0.55rem; right:0; }
+}
 .tc-section h3 { font-size:1.05rem; font-weight:700; margin:1.2rem 0 0.4rem; color: var(--text); }
 .tc-faq { border-left: 3px solid var(--g-ink); padding-left: 1rem; margin-top: 1.2rem; }
 .tc-faq h3 { margin-top: 0; }
