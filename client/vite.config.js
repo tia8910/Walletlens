@@ -41,8 +41,11 @@ export default defineConfig({
     reportCompressedSize: true,
     // Skip modulepreload polyfill — all target browsers support native modulepreload
     modulePreload: { polyfill: false },
-    // Inline assets smaller than 4 KB as data URIs (fewer round-trips)
-    assetsInlineLimit: 4096,
+    // Don't emit source maps in production — halves the output directory size.
+    sourcemap: false,
+    // Inline assets smaller than 8 KB as data URIs — covers most small SVG icons
+    // and avoids extra round-trips for them without meaningfully inflating chunks.
+    assetsInlineLimit: 8192,
     minify: 'esbuild',
     rollupOptions: {
       output: {

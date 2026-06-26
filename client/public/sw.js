@@ -44,8 +44,15 @@ const API_TTL_MS = 5 * 60 * 1000    // 5 minutes (price APIs)
 const NEWS_TTL_MS = 10 * 60 * 1000  // 10 min (news.json RSS feed)
 const STOCK_TTL_MS = 25 * 60 * 1000 // 25 min (stock-prices.json — matches GH Actions interval)
 
+// Set gives O(1) exact-hostname lookup; only fall through to subdomain scan
+// when no direct hit — avoids O(n) .some() on every intercepted request.
+const PRICE_API_SET = new Set(PRICE_API_PATTERNS)
 function isPriceApi(url) {
-  return PRICE_API_PATTERNS.some(p => url.hostname === p || url.hostname.endsWith('.' + p))
+  const h = url.hostname
+  if (PRICE_API_SET.has(h)) return true
+  // Handle subdomains: www.stooq.com → parent 'stooq.com' must be in the set.
+  const dot = h.indexOf('.')
+  return dot !== -1 && PRICE_API_SET.has(h.slice(dot + 1))
 }
 
 function isStaticCdn(url) {
