@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { track } from '../analytics'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'
-const LOCKED_KEY   = 'wl_biometric_locked'
 const SESSION_KEY  = 'wl_biometric_unlocked'
 
-// Detect WebAuthn support
+// Module-level guard: true while a WebAuthn prompt is on screen. The system
+// biometric sheet briefly backgrounds the page (visibilitychange → hidden),
+// which would otherwise re-lock us mid-authentication and loop forever.
+let authInProgress = false
+
+// Detect WebAuthn platform-authenticator support
 const supportsWebAuthn = () =>
   typeof window !== 'undefined' &&
   window.PublicKeyCredential !== undefined &&
@@ -23,16 +27,33 @@ export function useBiometricLock() {
       .catch(() => {})
   }, [])
 
+  // Cold open / new tab: lock if there's no unlocked session token.
   useEffect(() => {
-    if (!enabled) return
-    // Lock if session token is missing (new tab / cold open)
-    if (!sessionStorage.getItem(SESSION_KEY)) setLocked(true)
-  }, [enabled])
+    if (localStorage.getItem(ENABLED_KEY) === '1' && !sessionStorage.getItem(SESSION_KEY)) {
+      setLocked(true)
+    }
+  }, [])
+
+  // Re-lock whenever the app is backgrounded (switch apps, lock phone, etc.).
+  // Reads localStorage live so enabling the lock in Settings takes effect
+  // immediately on the next background, without a reload.
+  useEffect(() => {
+    function onHide() {
+      if (document.visibilityState !== 'hidden') return
+      if (authInProgress) return
+      if (localStorage.getItem(ENABLED_KEY) !== '1') return
+      sessionStorage.removeItem(SESSION_KEY)
+      setLocked(true)
+    }
+    document.addEventListener('visibilitychange', onHide)
+    return () => document.removeEventListener('visibilitychange', onHide)
+  }, [])
 
   async function enable() {
-    if (!supported) return
+    if (!supported) return false
+    authInProgress = true
     try {
-      // Register a passkey credential bound to this device
+      // Register a platform passkey bound to this device + origin
       await navigator.credentials.create({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
@@ -55,12 +76,17 @@ export function useBiometricLock() {
       setEnabled(true)
       setLocked(false)
       track('biometric_enabled')
+      return true
     } catch (e) {
       if (e.name !== 'NotAllowedError') console.warn('Biometric enable:', e)
+      return false
+    } finally {
+      authInProgress = false
     }
   }
 
   async function unlock() {
+    authInProgress = true
     try {
       await navigator.credentials.get({
         publicKey: {
@@ -76,6 +102,8 @@ export function useBiometricLock() {
     } catch (e) {
       track('biometric_unlock_fail')
       throw e
+    } finally {
+      authInProgress = false
     }
   }
 
@@ -90,23 +118,42 @@ export function useBiometricLock() {
   return { enabled, locked, supported, enable, unlock, disable }
 }
 
-// Full-screen lock overlay
+// Full-screen lock overlay. Auto-prompts on mount for a native app feel.
 export function BiometricLockScreen({ onUnlock }) {
   const [trying, setTrying] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [error, setError] = useState('')      // user-facing retry message
+  const [recover, setRecover] = useState(false) // show the recovery escape hatch
+  const autoRan = useRef(false)
 
   async function attempt() {
     setTrying(true)
-    setFailed(false)
+    setError('')
     try {
       await onUnlock()
-    } catch {
-      setFailed(true)
+    } catch (e) {
+      // NotAllowedError = cancelled / timed out → let them simply retry.
+      // Anything else = the authenticator is unusable on this device → recovery.
+      if (e && e.name && e.name !== 'NotAllowedError') {
+        setRecover(true)
+        setError('Biometric authentication is unavailable on this device.')
+      } else {
+        setError('Authentication cancelled. Try again.')
+      }
+    } finally {
+      setTrying(false)
     }
-    setTrying(false)
   }
 
-  function disableAndEnter() {
+  // Auto-trigger the biometric prompt once when the lock screen appears.
+  useEffect(() => {
+    if (autoRan.current) return
+    autoRan.current = true
+    attempt()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function recoverEntry() {
+    // Last-resort: only reachable when the device genuinely can't authenticate.
     localStorage.removeItem('wl_biometric_enabled')
     sessionStorage.removeItem('wl_biometric_unlocked')
     window.location.reload()
@@ -117,7 +164,7 @@ export function BiometricLockScreen({ onUnlock }) {
       position: 'fixed', inset: 0, zIndex: 99999,
       background: 'linear-gradient(135deg, #040d0a 0%, #061410 100%)',
       display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: '1.5rem',
+      alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '1.5rem',
     }}>
       <div style={{ fontSize: '3.5rem' }}>🔒</div>
       <div style={{ textAlign: 'center' }}>
@@ -139,36 +186,51 @@ export function BiometricLockScreen({ onUnlock }) {
           opacity: trying ? 0.7 : 1,
         }}>
         <span style={{ fontSize: '1.2rem' }}>👆</span>
-        {trying ? 'Verifying…' : 'Use Face ID / Touch ID'}
+        {trying ? 'Verifying…' : 'Unlock with fingerprint'}
       </button>
-      {failed && (
-        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-sub)', marginBottom: '0.75rem' }}>
-            Passkey not available on this device
+      {error && (
+        <div style={{ textAlign: 'center', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-sub)', marginBottom: recover ? '0.75rem' : 0 }}>
+            {error}
           </div>
-          <button onClick={disableAndEnter} style={{
-            background: 'transparent', color: 'var(--text-muted)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px', padding: '0.45rem 1rem',
-            fontSize: '0.82rem', cursor: 'pointer',
-          }}>
-            Disable lock &amp; enter
-          </button>
+          {recover && (
+            <button onClick={recoverEntry} style={{
+              background: 'transparent', color: 'var(--text-muted)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px', padding: '0.45rem 1rem',
+              fontSize: '0.82rem', cursor: 'pointer',
+            }}>
+              Disable lock &amp; enter
+            </button>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-// Settings toggle (embed in Settings/Data page)
+// Settings toggle — embed in the Data/Security panel.
 export function BiometricToggle() {
   const { enabled, supported, enable, disable } = useBiometricLock()
+  const [busy, setBusy] = useState(false)
 
-  if (!supported) return null
+  async function onToggle() {
+    if (busy) return
+    setBusy(true)
+    try {
+      if (enabled) disable()
+      else await enable()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const unavailable = !supported
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: '0.75rem',
       padding: '0.85rem 1rem',
       background: 'rgba(var(--g-rgb),0.05)',
       border: '1px solid rgba(var(--g-rgb),0.15)',
@@ -176,23 +238,31 @@ export function BiometricToggle() {
     }}>
       <div>
         <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
-          🔒 Face ID / Touch ID Lock
+          🔒 App Lock — Fingerprint / Face
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-          {enabled ? 'App locks when you switch away' : 'Require biometrics to open WalletLens'}
+          {unavailable
+            ? 'Not available on this device or browser'
+            : enabled
+              ? 'Requires your fingerprint each time you open the app'
+              : 'Require your fingerprint to open WalletLens'}
         </div>
       </div>
       <button
-        onClick={enabled ? disable : enable}
+        onClick={onToggle}
+        disabled={unavailable || busy}
         style={{
+          flexShrink: 0,
           background: enabled ? 'var(--g)' : 'rgba(255,255,255,0.08)',
           color: enabled ? '#000' : 'rgba(255,255,255,0.6)',
           border: 'none', borderRadius: '8px',
           padding: '0.4rem 0.9rem',
-          fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+          fontWeight: 700, fontSize: '0.82rem',
+          cursor: (unavailable || busy) ? 'not-allowed' : 'pointer',
+          opacity: unavailable ? 0.5 : 1,
           transition: 'all 0.2s',
         }}>
-        {enabled ? 'Enabled ✓' : 'Enable'}
+        {busy ? '…' : enabled ? 'Enabled ✓' : 'Enable'}
       </button>
     </div>
   )

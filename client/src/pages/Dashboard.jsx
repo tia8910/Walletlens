@@ -26,6 +26,7 @@ import MarketMood from '../components/MarketMood'
 import GoalTracker from '../components/GoalTracker'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import InstallExtension from '../components/InstallExtension'
+import { BiometricToggle } from '../components/BiometricLock'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -1360,6 +1361,13 @@ function DataPanel({ onRefresh, onImported }) {
 
   return (
     <div className="dvx-panel">
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>
+          Security
+        </div>
+        <BiometricToggle />
+      </div>
+
       <p className="dvx-data-hint">
         Your data is stored as a short backup code (WLZ format). Export it to save or transfer to another device. Paste a code to restore.
       </p>
