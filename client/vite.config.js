@@ -38,7 +38,7 @@ export default defineConfig({
     target: 'esnext',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 400,
-    reportCompressedSize: true,
+    reportCompressedSize: process.env.CI === 'true',
     // Skip modulepreload polyfill — all target browsers support native modulepreload
     modulePreload: { polyfill: false },
     // Don't emit source maps in production — halves the output directory size.
