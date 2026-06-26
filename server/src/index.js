@@ -31,7 +31,8 @@ app.use('/api/prices', pricesRouter);
 app.use('/api/exchanges', exchangesRouter);
 app.use('/api/ai', aiRouter);
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
