@@ -4192,6 +4192,15 @@ export default function Dashboard() {
                         </li>
                       ))}
                     </ul>
+                    <button
+                      onClick={() => { track('rebalancing_calculator_open', { source: 'dashboard_allocation' }); navigate('/rebalancing-calculator') }}
+                      style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', width:'100%', marginTop:'0.85rem', padding:'0.55rem 0.75rem', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.25)', borderRadius:'10px', color:'var(--g)', fontWeight:700, fontSize:'0.78rem', cursor:'pointer', transition:'background 0.15s' }}
+                      onMouseOver={e => e.currentTarget.style.background='rgba(var(--g-rgb),0.18)'}
+                      onMouseOut={e => e.currentTarget.style.background='rgba(var(--g-rgb),0.1)'}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                      Rebalance my portfolio
+                    </button>
                   </>
                 }
               </div>}
