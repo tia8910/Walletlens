@@ -5,12 +5,14 @@ const router = Router();
 
 router.get('/', (req, res) => {
   const wallets = db.prepare('SELECT * FROM wallets ORDER BY created_at DESC').all();
+  res.set('Cache-Control', 'private, no-cache');
   res.json(wallets);
 });
 
 router.get('/:id', (req, res) => {
   const wallet = db.prepare('SELECT * FROM wallets WHERE id = ?').get(req.params.id);
   if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
+  res.set('Cache-Control', 'private, no-cache');
   res.json(wallet);
 });
 

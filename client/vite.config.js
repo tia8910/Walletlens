@@ -125,6 +125,11 @@ export default defineConfig({
         if (warning.code === 'CIRCULAR_DEPENDENCY') return
         warn(warning)
       },
+      // Stricter tree-shaking: removes more dead code by trusting that
+      // modules without a `sideEffects: false` in their package.json are
+      // actually side-effect-free (esbuild's minifier can't cross module
+      // boundaries, but Rollup's tree-shaker can).
+      treeshake: { preset: 'recommended' },
     },
   },
   esbuild: {
