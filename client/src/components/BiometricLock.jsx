@@ -208,51 +208,74 @@ export function BiometricLockScreen({ onUnlock }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999,
-      background: 'linear-gradient(135deg, #040d0a 0%, #061410 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '1.5rem',
-    }}>
-      <div style={{ fontSize: '3.5rem' }}>🔒</div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.4rem' }}>
-          WalletLens is locked
+    <div className="bl-screen">
+      <BiometricLockStyles />
+
+      {/* Ambient brand glow + grid texture */}
+      <div className="bl-glow" aria-hidden="true" />
+      <div className="bl-grid" aria-hidden="true" />
+
+      <div className="bl-content">
+        {/* Brand wordmark */}
+        <div className="bl-brand">
+          <span className="bl-brand-dot" />
+          WALLETLENS
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Authenticate to view your portfolio
-        </div>
-      </div>
-      <button
-        onClick={attempt}
-        disabled={trying}
-        style={{
-          background: 'var(--g)', color: '#000', border: 'none',
-          borderRadius: '50px', padding: '0.85rem 2.5rem',
-          fontWeight: 700, fontSize: '1rem', cursor: trying ? 'default' : 'pointer',
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
-          opacity: trying ? 0.7 : 1,
-        }}>
-        <span style={{ fontSize: '1.2rem' }}>👆</span>
-        {trying ? 'Verifying…' : 'Unlock with fingerprint'}
-      </button>
-      {error && (
-        <div style={{ textAlign: 'center', marginTop: '0.25rem' }}>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-sub)', marginBottom: recover ? '0.75rem' : 0 }}>
-            {error}
+
+        {/* Animated fingerprint with concentric pulse rings */}
+        <button
+          className={`bl-fp${trying ? ' bl-fp-busy' : ''}`}
+          onClick={attempt}
+          disabled={trying}
+          aria-label="Unlock with fingerprint"
+        >
+          <span className="bl-ring bl-ring-1" aria-hidden="true" />
+          <span className="bl-ring bl-ring-2" aria-hidden="true" />
+          <span className="bl-ring bl-ring-3" aria-hidden="true" />
+          <span className="bl-fp-core">
+            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 11a1 1 0 0 0-1 1v1a7 7 0 0 0 .5 2.6" />
+              <path d="M12 7a5 5 0 0 1 5 5v1a13 13 0 0 0 .4 3.2" />
+              <path d="M8 6.5A5 5 0 0 0 7 12v1a8 8 0 0 1-.5 2.8" />
+              <path d="M12 3a9 9 0 0 1 9 9v1" />
+              <path d="M3 13v-1a9 9 0 0 1 4-7.5" />
+              <path d="M9.5 13.5a2.5 2.5 0 0 1 5 0v.5a17 17 0 0 0 .3 3.3" />
+              <path d="M12 19.5v.5" />
+            </svg>
+          </span>
+        </button>
+
+        {/* Title + subtitle */}
+        <div className="bl-titles">
+          <div className="bl-title">WalletLens is locked</div>
+          <div className="bl-sub">
+            {trying ? 'Verifying your identity…' : 'Authenticate to view your portfolio'}
           </div>
-          {recover && (
-            <button onClick={recoverEntry} style={{
-              background: 'rgba(255,255,255,0.07)', color: 'var(--text-muted)',
-              border: '1px solid var(--border)',
-              borderRadius: '8px', padding: '0.5rem 1.1rem',
-              fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.25rem',
-            }}>
-              Disable lock &amp; enter app
-            </button>
-          )}
         </div>
-      )}
+
+        {/* Primary unlock button */}
+        <button className="bl-cta" onClick={attempt} disabled={trying}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          {trying ? 'Verifying…' : 'Unlock'}
+        </button>
+
+        {/* Error + recovery */}
+        {error && (
+          <div className="bl-error">
+            <div className="bl-error-text">{error}</div>
+            {recover && (
+              <button className="bl-recover" onClick={recoverEntry}>
+                Disable lock &amp; enter app
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -313,5 +336,128 @@ export function BiometricToggle() {
         {busy ? '…' : enabled ? 'Enabled ✓' : 'Enable'}
       </button>
     </div>
+  )
+}
+
+// Premium lock-screen styles — injected once when the lock screen mounts.
+function BiometricLockStyles() {
+  return (
+    <style>{`
+      .bl-screen{
+        position:fixed; inset:0; z-index:99999;
+        background:
+          radial-gradient(120% 80% at 50% -10%, #0a2418 0%, #051710 38%, #020a06 100%);
+        display:flex; align-items:center; justify-content:center;
+        padding:1.5rem; overflow:hidden;
+        animation:bl-fade .45s ease both;
+      }
+      @keyframes bl-fade{ from{opacity:0} to{opacity:1} }
+      .bl-glow{
+        position:absolute; top:-25%; left:50%; transform:translateX(-50%);
+        width:130%; height:70%;
+        background:radial-gradient(circle at 50% 50%, rgba(0,200,83,0.22), rgba(0,200,83,0) 60%);
+        filter:blur(20px); pointer-events:none;
+      }
+      .bl-grid{
+        position:absolute; inset:0; pointer-events:none; opacity:.5;
+        background-image:
+          linear-gradient(rgba(0,200,83,0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,200,83,0.05) 1px, transparent 1px);
+        background-size:42px 42px;
+        mask-image:radial-gradient(circle at 50% 38%, #000 0%, transparent 72%);
+        -webkit-mask-image:radial-gradient(circle at 50% 38%, #000 0%, transparent 72%);
+      }
+      .bl-content{
+        position:relative; z-index:2;
+        display:flex; flex-direction:column; align-items:center;
+        gap:1.4rem; width:100%; max-width:340px; text-align:center;
+      }
+      .bl-brand{
+        display:flex; align-items:center; gap:.45rem;
+        font-size:.72rem; font-weight:800; letter-spacing:.32em;
+        color:rgba(180,220,200,0.7); margin-bottom:.2rem;
+      }
+      .bl-brand-dot{
+        width:7px; height:7px; border-radius:50%;
+        background:#00e676; box-shadow:0 0 10px #00e676;
+        animation:bl-blink 2.4s ease-in-out infinite;
+      }
+      @keyframes bl-blink{ 0%,100%{opacity:1} 50%{opacity:.35} }
+
+      /* Fingerprint button + rings */
+      .bl-fp{
+        position:relative; width:150px; height:150px;
+        background:none; border:none; cursor:pointer; padding:0;
+        display:flex; align-items:center; justify-content:center;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .bl-fp:disabled{ cursor:default; }
+      .bl-ring{
+        position:absolute; border-radius:50%;
+        border:1.5px solid rgba(0,230,118,0.4);
+      }
+      .bl-ring-1{ inset:0; animation:bl-pulse 2.6s ease-out infinite; }
+      .bl-ring-2{ inset:14px; animation:bl-pulse 2.6s ease-out infinite .5s; border-color:rgba(0,230,118,0.28); }
+      .bl-ring-3{ inset:28px; animation:bl-pulse 2.6s ease-out infinite 1s; border-color:rgba(0,230,118,0.18); }
+      @keyframes bl-pulse{
+        0%{ transform:scale(.85); opacity:.0 }
+        30%{ opacity:.9 }
+        100%{ transform:scale(1.18); opacity:0 }
+      }
+      .bl-fp-core{
+        position:relative; z-index:2;
+        width:96px; height:96px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        color:#7dffb4;
+        background:
+          radial-gradient(circle at 50% 35%, rgba(0,230,118,0.18), rgba(0,230,118,0.04) 70%),
+          rgba(255,255,255,0.03);
+        border:1.5px solid rgba(0,230,118,0.45);
+        box-shadow:
+          0 0 0 1px rgba(0,230,118,0.12),
+          0 0 32px rgba(0,200,83,0.35),
+          inset 0 0 24px rgba(0,200,83,0.18);
+        backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+        transition:transform .2s ease, box-shadow .2s ease;
+      }
+      .bl-fp:active .bl-fp-core{ transform:scale(.93); }
+      .bl-fp-busy .bl-fp-core{
+        animation:bl-breathe 1.1s ease-in-out infinite;
+        box-shadow:0 0 0 1px rgba(0,230,118,0.2), 0 0 46px rgba(0,200,83,0.55), inset 0 0 26px rgba(0,200,83,0.28);
+      }
+      @keyframes bl-breathe{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.06) } }
+
+      .bl-titles{ display:flex; flex-direction:column; gap:.35rem; }
+      .bl-title{ font-size:1.32rem; font-weight:800; color:#f2fff8; letter-spacing:-.01em; }
+      .bl-sub{ font-size:.9rem; color:rgba(170,205,188,0.75); }
+
+      .bl-cta{
+        margin-top:.2rem;
+        display:flex; align-items:center; justify-content:center; gap:.5rem;
+        padding:.9rem 2.6rem; border:none; border-radius:50px;
+        font-size:1rem; font-weight:800; color:#012; cursor:pointer;
+        background:linear-gradient(135deg, #00e676 0%, #00c853 50%, #00a040 100%);
+        box-shadow:0 6px 24px rgba(0,200,83,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+        transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+      }
+      .bl-cta:hover{ transform:translateY(-1px); box-shadow:0 8px 30px rgba(0,200,83,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
+      .bl-cta:active{ transform:translateY(0) scale(.98); }
+      .bl-cta:disabled{ opacity:.65; cursor:default; }
+
+      .bl-error{ display:flex; flex-direction:column; align-items:center; gap:.7rem; margin-top:.25rem; animation:bl-fade .3s ease both; }
+      .bl-error-text{ font-size:.83rem; color:rgba(200,215,208,0.8); line-height:1.5; max-width:300px; }
+      .bl-recover{
+        background:rgba(255,255,255,0.06); color:rgba(220,235,228,0.85);
+        border:1px solid rgba(255,255,255,0.14); border-radius:10px;
+        padding:.6rem 1.3rem; font-size:.85rem; font-weight:600; cursor:pointer;
+        transition:background .15s ease;
+      }
+      .bl-recover:hover{ background:rgba(255,255,255,0.12); }
+
+      @media (prefers-reduced-motion:reduce){
+        .bl-ring,.bl-brand-dot,.bl-fp-busy .bl-fp-core{ animation:none !important; }
+        .bl-ring{ opacity:.4; }
+      }
+    `}</style>
   )
 }
