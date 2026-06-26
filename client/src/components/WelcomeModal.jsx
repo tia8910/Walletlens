@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { track } from '../analytics'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
+import { useBiometricLock } from './BiometricLock'
 
 const KEY = 'wl_welcomed_v2'
 
@@ -72,6 +73,20 @@ const STEPS = [
     cta: 'Love it →',
   },
   {
+    id: 'security',
+    grad: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
+    accent: '#00e676',
+    glow: 'rgba(0,230,118,0.3)',
+    ring: 'rgba(0,230,118,0.55)',
+    particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'],
+    icon: '🔐',
+    eyebrow: 'PRIVATE & SECURE',
+    title: 'Lock with your fingerprint',
+    desc: 'Require your fingerprint or face each time WalletLens opens. Your data already stays on your device — this keeps it for your eyes only.',
+    cta: 'Maybe later',
+    isSecurityStep: true,
+  },
+  {
     id: 'go',
     grad: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
     accent: '#22c55e',
@@ -101,7 +116,20 @@ export default function WelcomeModal() {
   const [step, setStep]       = useState(0)
   const [visible, setVisible] = useState(false)
   const [animKey, setAnimKey] = useState(0)
+  const [bioBusy, setBioBusy] = useState(false)
   const { theme, mode, setTheme, setMode } = useTheme()
+  const { enabled: bioEnabled, supported: bioSupported, enable: enableBio } = useBiometricLock()
+
+  async function enableBiometric() {
+    if (bioBusy) return
+    setBioBusy(true)
+    try {
+      const ok = await enableBio()
+      if (ok) { track('biometric_enabled_onboarding'); next() }
+    } finally {
+      setBioBusy(false)
+    }
+  }
 
   useEffect(() => {
     if (localStorage.getItem(KEY)) return
@@ -249,6 +277,47 @@ export default function WelcomeModal() {
             </div>
           )}
 
+          {s.isSecurityStep && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', margin: '0.1rem 0 0.3rem' }}>
+              {!bioSupported ? (
+                <div style={{
+                  fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center',
+                  padding: '0.7rem', background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  Fingerprint lock isn’t available on this device — you can still continue.
+                </div>
+              ) : bioEnabled ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  fontSize: '0.92rem', fontWeight: 700, color: '#00e676',
+                  padding: '0.85rem', background: 'rgba(0,230,118,0.1)', borderRadius: '14px',
+                  border: '1.5px solid rgba(0,230,118,0.45)',
+                }}>
+                  ✓ Fingerprint lock enabled
+                </div>
+              ) : (
+                <button
+                  onClick={enableBiometric}
+                  disabled={bioBusy}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem',
+                    width: '100%', padding: '0.95rem', borderRadius: '14px', border: 'none',
+                    background: 'linear-gradient(135deg, #00e676 0%, #00c853 50%, #00a040 100%)',
+                    color: '#012', fontWeight: 800, fontSize: '0.98rem', cursor: bioBusy ? 'default' : 'pointer',
+                    boxShadow: '0 5px 20px rgba(0,200,83,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+                    opacity: bioBusy ? 0.7 : 1, transition: 'all 0.15s ease',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  {bioBusy ? 'Setting up…' : 'Enable fingerprint lock'}
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="wm-progress-track">
             <div className="wm-progress-fill" style={{ width: `${progress}%`, background: s.accent }} />
           </div>
@@ -269,7 +338,7 @@ export default function WelcomeModal() {
             }}
             onClick={next}
           >
-            {s.cta}
+            {s.isSecurityStep && bioEnabled ? 'Continue →' : s.cta}
           </button>
 
           {!s.final && <button className="wm-skip" onClick={skip}>Skip tour</button>}
