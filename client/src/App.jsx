@@ -26,6 +26,16 @@ import { initMood } from './moodEngine'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
+// Module-level Set for O(1) path lookup (vs O(n) array .includes() per render).
+const LANDING_PATH_SET = new Set([
+  '/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot',
+  '/add-holdings-by-voice', '/blog', '/about', '/market-index',
+  '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
+])
+const LANDING_PREFIXES = [
+  '/blog/', '/track/', '/calculator/', '/learn/', '/vs/', '/price/', '/ar/', '/admin/',
+]
+
 // Module-level cycling state shared between App topbar and Drawer.
 // A single setInterval drives both so we avoid two redundant timers.
 let _cycleListeners = []
@@ -368,10 +378,7 @@ export default function App() {
   const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = useMemo(() => {
     const p = location.pathname.replace(/\/+$/, '') || '/'
-    return ['/', '/free-net-worth-tracker', '/import-portfolio-from-screenshot', '/add-holdings-by-voice', '/blog', '/about', '/market-index', '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy'].includes(p) ||
-      p.startsWith('/blog/') || p.startsWith('/track/') || p.startsWith('/calculator/') ||
-      p.startsWith('/learn/') || p.startsWith('/vs/') || p.startsWith('/price/') ||
-      p.startsWith('/ar/') || p.startsWith('/admin/')
+    return LANDING_PATH_SET.has(p) || LANDING_PREFIXES.some(pfx => p.startsWith(pfx))
   }, [location.pathname])
   const { locked, unlock } = useBiometricLock()
 
@@ -403,23 +410,47 @@ export default function App() {
     return () => typeof requestIdleCallback !== 'undefined' ? cancelIdleCallback(id) : clearTimeout(id)
   }, [])
 
-  // Prefetch the highest-traffic app chunks during idle on the landing page
-  // so the first navigation to any of them is instant.
+  // Prefetch page chunks during idle based on the current route so the next
+  // likely navigation is instant. On the landing page we pre-warm all core app
+  // pages; from within the app we prefetch the most common next destinations.
   useEffect(() => {
-    if (location.pathname !== '/') return
     const schedule = requestIdleCallback
       ? (fn, opts) => requestIdleCallback(fn, opts)
       : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
     const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
-    // Dashboard first (most common destination), then Transactions and Coach
-    // at lower priority so they don't compete with the critical render path.
-    // Blog and Academy are prefetched last — they're content-heavy but popular.
-    const id1 = schedule(() => import('./pages/Dashboard'),    { timeout: 3000 })
-    const id2 = schedule(() => import('./pages/Transactions'), { timeout: 5000 })
-    const id3 = schedule(() => import('./pages/Coach'),        { timeout: 7000 })
-    const id4 = schedule(() => import('./pages/Blog'),         { timeout: 9000 })
-    const id5 = schedule(() => import('./pages/Academy'),      { timeout: 11000 })
-    return () => { cancel(id1); cancel(id2); cancel(id3); cancel(id4); cancel(id5) }
+
+    const path = location.pathname
+    const ids = []
+
+    if (path === '/') {
+      // Landing: prime all primary app chunks in priority order.
+      ids.push(
+        schedule(() => import('./pages/Dashboard'),    { timeout: 3000 }),
+        schedule(() => import('./pages/Transactions'), { timeout: 5000 }),
+        schedule(() => import('./pages/Coach'),        { timeout: 7000 }),
+        schedule(() => import('./pages/Blog'),         { timeout: 9000 }),
+        schedule(() => import('./pages/Academy'),      { timeout: 11000 }),
+      )
+    } else if (path === '/dashboard') {
+      ids.push(
+        schedule(() => import('./pages/Transactions'), { timeout: 2000 }),
+        schedule(() => import('./pages/Coach'),        { timeout: 4000 }),
+        schedule(() => import('./pages/Technicals'),   { timeout: 6000 }),
+        schedule(() => import('./pages/Alpha'),        { timeout: 8000 }),
+      )
+    } else if (path === '/transactions') {
+      ids.push(
+        schedule(() => import('./pages/Dashboard'),    { timeout: 2000 }),
+        schedule(() => import('./pages/Coach'),        { timeout: 4000 }),
+      )
+    } else if (path === '/coach') {
+      ids.push(
+        schedule(() => import('./pages/Dashboard'),    { timeout: 2000 }),
+        schedule(() => import('./pages/Technicals'),   { timeout: 4000 }),
+      )
+    }
+
+    return () => ids.forEach(id => cancel(id))
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap

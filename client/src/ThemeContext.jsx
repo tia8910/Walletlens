@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 
 const GOLD_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23c49a08'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23f7d44a'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.18)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.55)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAu%3C/text%3E%3C/svg%3E`
 
@@ -82,51 +82,50 @@ const PALETTE = {
   },
 }
 
-function buildCSS(p) {
-  return `:root {
-    --g:${p.g};--gd:${p.gd};--g-rgb:${p.gRgb};--gd-rgb:${p.gdRgb};
-    --gl:${p.gl};--ink3:${p.ink3};
-    --bg:${p.bg};--card-bg:${p.cardBg};--bg2:${p.cardBg};--bg3:${p.bg3};--bg4:${p.bg4};
-    --border:${p.border};--ink:${p.ink};--ink2:${p.ink2};
-    --text:${p.text};--text2:${p.text2};
-    --text-muted:${p.textMuted};--text-sub:${p.textSub};
-    --surface-1:${p.surface1};--surface-2:${p.surface2};--surface-3:${p.surface3};
-    --accent:${p.accent};--accent2:${p.accent2};--accent3:${p.accent};
-    --accent-bg:${p.accentBg};--accent2-bg:${p.accentBg};--accent3-bg:${p.accentBg};
-    --green:${p.green};--green-bg:${p.greenBg};
-    --header-gradient:${p.hg};--header-gradient-alt:${p.hga};
-    --mesh-1:${p.mesh1};--mesh-2:${p.mesh2};--mesh-3:${p.mesh3};
-    --shadow-glow:${p.glow};
-  }`
-}
-
+// CSS variables written as inline styles on <html> — these always win over any
+// stylesheet rule including index.css fallbacks (inline style > specificity).
+// The previous approach also wrote a <style> tag with a :root block, which was
+// redundant (same vars, lower specificity) and caused a second style recalculation
+// on every theme change. Dropped in favour of a single setProperty pass.
 function applyTheme(id, mode) {
   const theme = PALETTE[id] || PALETTE.emerald
   const p = theme[mode] || theme.dark
-  let el = document.getElementById('wl-theme-vars')
-  if (!el) {
-    el = document.createElement('style')
-    el.id = 'wl-theme-vars'
-    document.head.appendChild(el)
-  }
-  el.textContent = buildCSS(p)
-  // index.css defines fallback :root vars — inline styles must override them.
   const r = document.documentElement
-  const vars = {
-    '--g': p.g, '--gd': p.gd, '--g-rgb': p.gRgb, '--gd-rgb': p.gdRgb,
-    '--gl': p.gl, '--ink3': p.ink3,
-    '--bg': p.bg, '--card-bg': p.cardBg, '--bg2': p.cardBg, '--bg3': p.bg3, '--bg4': p.bg4,
-    '--border': p.border, '--ink': p.ink, '--ink2': p.ink2,
-    '--text': p.text, '--text2': p.text2,
-    '--text-muted': p.textMuted, '--text-sub': p.textSub,
-    '--surface-1': p.surface1, '--surface-2': p.surface2, '--surface-3': p.surface3,
-    '--accent': p.accent, '--accent2': p.accent2, '--accent3': p.accent,
-    '--accent-bg': p.accentBg, '--green': p.green, '--green-bg': p.greenBg,
-    '--shadow-glow': p.glow,
-    '--header-gradient': p.hg, '--header-gradient-alt': p.hga,
-    '--mesh-1': p.mesh1, '--mesh-2': p.mesh2, '--mesh-3': p.mesh3,
-  }
-  for (const [k, v] of Object.entries(vars)) r.style.setProperty(k, v)
+  r.style.setProperty('--g',            p.g)
+  r.style.setProperty('--gd',           p.gd)
+  r.style.setProperty('--g-rgb',        p.gRgb)
+  r.style.setProperty('--gd-rgb',       p.gdRgb)
+  r.style.setProperty('--gl',           p.gl)
+  r.style.setProperty('--ink3',         p.ink3)
+  r.style.setProperty('--bg',           p.bg)
+  r.style.setProperty('--card-bg',      p.cardBg)
+  r.style.setProperty('--bg2',          p.cardBg)
+  r.style.setProperty('--bg3',          p.bg3)
+  r.style.setProperty('--bg4',          p.bg4)
+  r.style.setProperty('--border',       p.border)
+  r.style.setProperty('--ink',          p.ink)
+  r.style.setProperty('--ink2',         p.ink2)
+  r.style.setProperty('--text',         p.text)
+  r.style.setProperty('--text2',        p.text2)
+  r.style.setProperty('--text-muted',   p.textMuted)
+  r.style.setProperty('--text-sub',     p.textSub)
+  r.style.setProperty('--surface-1',    p.surface1)
+  r.style.setProperty('--surface-2',    p.surface2)
+  r.style.setProperty('--surface-3',    p.surface3)
+  r.style.setProperty('--accent',       p.accent)
+  r.style.setProperty('--accent2',      p.accent2)
+  r.style.setProperty('--accent3',      p.accent)
+  r.style.setProperty('--accent-bg',    p.accentBg)
+  r.style.setProperty('--accent2-bg',   p.accentBg)
+  r.style.setProperty('--accent3-bg',   p.accentBg)
+  r.style.setProperty('--green',        p.green)
+  r.style.setProperty('--green-bg',     p.greenBg)
+  r.style.setProperty('--shadow-glow',  p.glow)
+  r.style.setProperty('--header-gradient',     p.hg)
+  r.style.setProperty('--header-gradient-alt', p.hga)
+  r.style.setProperty('--mesh-1',       p.mesh1)
+  r.style.setProperty('--mesh-2',       p.mesh2)
+  r.style.setProperty('--mesh-3',       p.mesh3)
   document.body.style.background = p.bg
   document.body.style.color = p.text
   document.body.style.transition = 'background 0.35s,color 0.35s'
@@ -135,7 +134,6 @@ function applyTheme(id, mode) {
   } else {
     r.removeAttribute('data-wl-light')
   }
-  // Notify consumers (e.g. canvas animations) that the palette has changed.
   document.dispatchEvent(new CustomEvent('wl-theme'))
 }
 
@@ -145,17 +143,26 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
   const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'dark')
 
+  // Refs hold the current state values so the stable callbacks below can read
+  // them without closing over a stale value — avoids recreating setTheme/setMode
+  // on every mode or theme change, which would force all useTheme() consumers
+  // to re-render even when their own slice of state didn't change.
+  const themeRef = useRef(theme)
+  themeRef.current = theme
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+
   const setTheme = useCallback((id) => {
     setThemeState(id)
     localStorage.setItem('wl_theme', id)
-    applyTheme(id, mode)
-  }, [mode])
+    applyTheme(id, modeRef.current)
+  }, []) // stable — never recreated
 
   const setMode = useCallback((m) => {
     setModeState(m)
     localStorage.setItem('wl_mode', m)
-    applyTheme(theme, m)
-  }, [theme])
+    applyTheme(themeRef.current, m)
+  }, []) // stable — never recreated
 
   useEffect(() => { applyTheme(theme, mode) }, []) // eslint-disable-line
 
