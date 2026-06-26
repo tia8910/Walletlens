@@ -15,13 +15,14 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // Static files to pre-cache at install time for instant first-load.
 // '/' (the SPA shell HTML) is included so the app works offline from the
 // very first install, before any navigation has been served from cache.
-// stock-prices.json is updated every 30 min by GitHub Actions; caching it
-// avoids a network round-trip on the first price fetch after install.
+// stock-prices.json and market.json are updated every 30 min by GitHub Actions;
+// caching them avoids a network round-trip on the first price fetch after install.
 // Icons are cached so the PWA home-screen experience works offline immediately.
 const PRECACHE_URLS = [
   '/',
   '/news.json',
   '/stock-prices.json',
+  '/market.json',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon-192.png',
@@ -61,9 +62,10 @@ const STATIC_CDN_PATTERNS = [
   'raw.githubusercontent.com/spothq/cryptocurrency-icons',
 ]
 
-const API_TTL_MS = 5 * 60 * 1000    // 5 minutes (price APIs)
-const NEWS_TTL_MS = 10 * 60 * 1000  // 10 min (news.json RSS feed)
-const STOCK_TTL_MS = 25 * 60 * 1000 // 25 min (stock-prices.json — matches GH Actions interval)
+const API_TTL_MS = 5 * 60 * 1000      // 5 minutes (price APIs)
+const NEWS_TTL_MS = 10 * 60 * 1000    // 10 min (news.json RSS feed)
+const STOCK_TTL_MS = 25 * 60 * 1000   // 25 min (stock-prices.json — matches GH Actions interval)
+const MARKET_TTL_MS = 25 * 60 * 1000  // 25 min (market.json — same GH Actions cron)
 
 // Set gives O(1) exact-hostname lookup; only fall through to subdomain scan
 // when no direct hit — avoids O(n) .some() on every intercepted request.
@@ -226,6 +228,7 @@ self.addEventListener('fetch', e => {
   // Serve stale instantly then revalidate in background for fast perceived UX.
   const feedTtl = url.pathname === '/news.json' ? NEWS_TTL_MS
     : url.pathname === '/stock-prices.json' ? STOCK_TTL_MS
+    : url.pathname === '/market.json' ? MARKET_TTL_MS
     : null
   if (url.origin === self.location.origin && feedTtl !== null) {
     e.respondWith(
