@@ -64,6 +64,9 @@ export default defineConfig({
         // Removes all unnecessary whitespace/newlines from minified output on
         // top of esbuild's identifier shortening — saves ~1-3 KB per chunk.
         compact: true,
+        // Use const bindings instead of var in generated chunk glue code —
+        // gives engines better static analysis and lets minifiers inline more.
+        generatedCode: { constBindings: true },
         // Granular vendor splitting: each chunk is individually cacheable.
         // react-vendor changes rarely; charts only on chart pages; pages by route.
         manualChunks(id) {
