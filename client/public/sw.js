@@ -93,6 +93,20 @@ self.addEventListener('install', e => {
 const API_CACHE_MAX = 120 // max entries before oldest are evicted
 const CDN_CACHE_MAX = 500 // coin icons: large but bounded (one per asset)
 
+// Proactively trim a cache to maxEntries whenever a new entry is added.
+// Called after every PUT so the cache never drifts past its ceiling between
+// deployments (activate-only trimming misses long-lived sessions).
+async function trimCacheIfNeeded(cacheName, maxEntries) {
+  try {
+    const cache = await caches.open(cacheName)
+    const keys = await cache.keys()
+    if (keys.length > maxEntries) {
+      // Evict oldest entries (FIFO by insertion order).
+      await Promise.all(keys.slice(0, keys.length - maxEntries).map(k => cache.delete(k)))
+    }
+  } catch { /* non-fatal — cache trimming is best-effort */ }
+}
+
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -167,7 +181,10 @@ self.addEventListener('fetch', e => {
         const cached = await cache.match(req)
         if (cached) return cached
         const fresh = await fetch(req)
-        if (fresh?.ok) cache.put(req, fresh.clone())
+        if (fresh?.ok) {
+          cache.put(req, fresh.clone())
+          trimCacheIfNeeded(CDN_CACHE, CDN_CACHE_MAX)
+        }
         return fresh
       })
     )
@@ -181,7 +198,10 @@ self.addEventListener('fetch', e => {
         const cached = await cache.match(req)
         if (cached) return cached
         const fresh = await fetch(req)
-        if (fresh?.ok) cache.put(req, fresh.clone())
+        if (fresh?.ok) {
+          cache.put(req, fresh.clone())
+          trimCacheIfNeeded(CDN_CACHE, CDN_CACHE_MAX)
+        }
         return fresh
       })
     )
@@ -210,6 +230,7 @@ self.addEventListener('fetch', e => {
             headers.set('sw-cached-at', String(now))
             const body = await fresh.clone().arrayBuffer()
             cache.put(req, new Response(body, { status: fresh.status, statusText: fresh.statusText, headers }))
+            trimCacheIfNeeded(API_CACHE, API_CACHE_MAX)
           }
           return fresh
         } catch {
@@ -243,6 +264,7 @@ self.addEventListener('fetch', e => {
               headers.set('sw-cached-at', String(now))
               const body = await fresh.clone().arrayBuffer()
               cache.put(req, new Response(body, { status: fresh.status, statusText: fresh.statusText, headers }))
+              trimCacheIfNeeded(API_CACHE, API_CACHE_MAX)
             }
             return fresh
           } catch { return null }
