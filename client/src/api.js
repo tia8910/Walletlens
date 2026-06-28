@@ -45,7 +45,6 @@ import {
   runSchemaMigrations,
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings, aggregatePortfolio } from './data/portfolio';
-import { analyzeTechnicals } from './technicals';
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -1807,6 +1806,9 @@ export const api = {
       toFetch.push({ id, src });
     }
     const CONCURRENCY = 3;
+    // Dynamic import keeps the technicals chunk out of api-core so pages that
+    // never call getBulkTechnicals don't pay the parse cost for the TA engine.
+    const { analyzeTechnicals } = await import('./technicals');
     for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
       const batch = toFetch.slice(i, i + CONCURRENCY);
       await Promise.all(batch.map(async ({ id, src }) => {

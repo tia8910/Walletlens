@@ -9,7 +9,7 @@ const PricePage     = lazy(() => import('./pages/PricePage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
 import ErrorBoundary from './components/ErrorBoundary'
-import DynamicBackground from './components/DynamicBackground'
+const DynamicBackground = lazy(() => import('./components/DynamicBackground'))
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 // Non-critical shell components — lazy-loaded after the app shell renders
@@ -540,7 +540,7 @@ export default function App() {
 
   return (
     <div className="wl-app">
-      <DynamicBackground />
+      <Suspense fallback={null}><DynamicBackground /></Suspense>
       <div className="wl-mood-aura" aria-hidden="true" />
 
       <header className="wl-topbar">
