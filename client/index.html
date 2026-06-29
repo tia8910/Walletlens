@@ -80,9 +80,6 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
@@ -134,8 +131,10 @@
       upgrade-insecure-requests;
     " />
 
-    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
-    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css.
+         fetchpriority=high on the primary UI font so it competes with scripts
+         for bandwidth and renders text on first paint without a FOUT flash. -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high" />
     <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
@@ -149,15 +148,16 @@
     <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
     <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
-
-    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
-         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <!-- Deno proxy — first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call.
+         Also used by voice import and AI analysis (Deno Deploy cold-starts). -->
     <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
-    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <!-- corsproxy.io: fallback CORS proxy; preconnect ensures TLS is ready -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
-    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect — no TLS handshake) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
-    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
     <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <link rel="dns-prefetch" href="https://api.gold-api.com" />
     <link rel="dns-prefetch" href="https://stooq.com" />
@@ -165,21 +165,17 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
-    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
-    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
-    <!-- Coin icon CDN fallbacks -->
-    <link rel="dns-prefetch" href="https://assets.coincap.io" />
-    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
     <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
     <link rel="dns-prefetch" href="https://cors.eu.org" />
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
-
-    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
-         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
-         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Deno secondary endpoint and additional API sources -->
     <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+    <!-- CoinPaprika — used as a price fallback for long-tail coins -->
+    <link rel="dns-prefetch" href="https://api.coinpaprika.com" />
+    <!-- Blockchair — used for whale transaction feed -->
+    <link rel="dns-prefetch" href="https://api.blockchair.com" />
+    <!-- GoPlus Labs — used for on-chain token risk scoring -->
+    <link rel="dns-prefetch" href="https://api.gopluslabs.io" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results
          and gives LLM answer engines a clean fact card to cite. -->
