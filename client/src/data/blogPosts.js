@@ -37,6 +37,103 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-stress-test-your-investment-portfolio',
+    title: 'How to Stress-Test Your Investment Portfolio Before a Crash',
+    date: 'June 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to stress-test your portfolio against market crashes before they happen, so you can protect gains and sleep at night.',
+    content: `
+Most investors only discover how vulnerable their portfolio is after a crash has already started. Prices drop 30%, panic sets in, and suddenly the allocation that looked fine on paper reveals its hidden risks: too much concentration in one sector, no hedge against volatility, no plan for what to do next. Stress-testing your portfolio is the discipline of running those scenarios *before* they cost you real money.
+
+This is not about predicting the future. It is about understanding how your current holdings would behave under conditions that have already happened — and will likely happen again. Whether you hold crypto, stocks, gold, or some combination, a simple stress-test routine can tell you whether your portfolio is genuinely resilient or just lucky so far.
+
+## What Does "Stress-Testing" Actually Mean?
+
+In institutional finance, a stress test applies hypothetical but historically grounded shocks to a portfolio and measures the outcome. Banks do this with regulatory requirements. Individual investors can do a simpler version with the same goal: find the weak points before markets find them for you.
+
+For a retail investor, a stress test answers three core questions:
+
+- **How much would my portfolio drop** if asset X fell by Y%?
+- **Which positions are most correlated** — so that one bad event hits me everywhere at once?
+- **What is the worst realistic scenario** based on past market events?
+
+You don't need a Bloomberg terminal. You need clear data about what you own, current prices, and some mental models for historical crashes.
+
+## Step 1: Get a Complete, Accurate Picture of What You Hold
+
+You cannot stress-test a portfolio you cannot see. The first step is building a single, honest view of every position — crypto, stocks, ETFs, gold, silver, real estate equity, and cash reserves. Many investors are surprised to find they are far more concentrated than they thought once everything is in one place.
+
+A tool like [walletlens.live](https://walletlens.live) is useful here because it aggregates all of these asset classes — crypto, stocks, precious metals, and cash — into a single net-worth view with allocation percentages by category. Everything stays local in your browser with no account required, so you see the real picture without worrying about where your data goes. Once you have an accurate breakdown, the stress-test math becomes straightforward.
+
+## Step 2: Apply Historical Crash Scenarios
+
+The most grounded stress tests use scenarios that have already occurred. Here are five worth running against your current portfolio:
+
+| Scenario | Asset Class | Drawdown |
+|---|---|---|
+| COVID crash (March 2020) | Global equities | -34% in 33 days |
+| Crypto bear (2022) | Bitcoin/altcoins | BTC -77%, many alts -90%+ |
+| Dot-com bust (2000-2002) | Tech stocks | Nasdaq -78% |
+| 2008 financial crisis | Broad equities | S&P 500 -57% |
+| Gold correction (2011-2015) | Gold | -45% from peak |
+
+For each scenario, multiply your current position value by the drawdown percentage. If you hold $40,000 in Bitcoin and you run the 2022 scenario, you are looking at a potential drop to roughly $9,200. Do that for every position. Sum the total. That is your stress-tested portfolio value.
+
+The number is usually uncomfortable — which is exactly the point.
+
+## Step 3: Check Your Correlation Clusters
+
+Correlation is where many portfolios fail silently. Two assets that appear to diversify each other may actually move together under stress. In 2022, both crypto *and* growth tech stocks fell sharply together as liquidity tightened, leaving investors who thought they were diversified with no real hedge.
+
+Ask yourself:
+
+- Do I hold multiple altcoins that all correlate closely with Bitcoin?
+- Are my stock picks concentrated in one sector — AI, energy, semiconductors?
+- Does gold or silver make up any meaningful percentage, or is it all risk-on assets?
+
+**A simple rule of thumb**: if more than 60% of your portfolio would be hit by the same macro trigger (rising interest rates, risk-off sentiment, regulatory crackdown), your diversification is weaker than your allocation chart suggests.
+
+## Step 4: Identify Your Actual Breaking Point
+
+Beyond the percentage drawdown, the more personal question is: at what portfolio value would I make emotional decisions? For many investors, there is a number — a figure that, if they saw it on screen, would trigger panic selling at exactly the wrong moment.
+
+Name that number honestly. Then check whether any of your historical scenarios would take you below it. If the 2022 crypto scenario drops your total net worth below the level where you would hold steady, you are carrying more risk than your psychology can absorb.
+
+This is not a weakness — it is data. And it should directly inform your position sizing and cash reserves.
+
+## Step 5: Run a "What If I Am Wrong" Test
+
+Stress-testing is not only about crashes. Run an inverse scenario: what if your most bearish position doubles? What if the asset you have been trimming becomes the year's top performer? This prevents the mirror-image mistake of being so defensive that you miss a significant recovery.
+
+The goal is not to eliminate risk. It is to make sure your upside and downside are both intentional rather than accidental.
+
+## Using On-Device AI to Automate the Heavy Lifting
+
+Running these scenarios manually with a spreadsheet is possible but tedious. WalletLens includes an on-device AI stress-test feature that models portfolio drawdowns across multiple scenarios — all computed locally without sending your data anywhere. It also generates a portfolio health score and a rebalance planner that suggests adjustments based on your current allocation and risk profile.
+
+The key advantage of on-device computation is privacy: your position sizes, entry prices, and total net worth never leave your browser. That matters when the numbers are real and the stakes are personal.
+
+## What to Do With the Results
+
+A stress test is only useful if it produces action. After running yours, consider the following responses:
+
+1. **Reduce concentration** in any single asset that represents more than 30-40% of your portfolio, unless you have a deliberate, documented reason for the overweight.
+2. **Raise your cash buffer** if any realistic scenario would take your portfolio below your psychological breaking point. Cash is not a wasted position — it is optionality.
+3. **Add genuine hedges** — gold, stablecoins, or short-duration bonds can behave differently from equities and crypto in a liquidity crunch.
+4. **Set sell targets in advance** so that profit-taking is automatic and unemotional. Knowing you will sell 25% of a position at a 3x gain removes the pressure of deciding in the moment.
+5. **Document your plan** — write down what you will do if Bitcoin drops 50%, if the S&P 500 falls 30%, or if a single position you hold loses 80%. Having the plan before the event is the entire advantage.
+
+*Note: This article is educational and not financial advice. Tax and regulatory treatment of investment decisions varies by jurisdiction — consult a qualified professional before making changes based on scenario analysis.*
+
+## Conclusion
+
+Stress-testing is one of the highest-value habits an investor can build, and it requires no special tools or expertise — only honesty about what you own and what has happened before. The investors who weathered 2020, 2022, and every prior downturn without panic were not necessarily smarter. They had simply asked the uncomfortable questions in advance.
+
+Start with a complete picture of your holdings, apply a handful of historical scenarios, check your correlation clusters, and identify the number that would break your discipline. Then adjust until the answers no longer frighten you. That is a resilient portfolio — not one that never falls, but one built to survive the fall and recover.
+    `
+  },
+
+  {
     slug: 'how-to-import-crypto-portfolio-by-voice',
     title: 'How to Import Your Crypto Portfolio by Voice — No Typing Required',
     seoTitle: 'Import Crypto Portfolio by Voice Free — WalletLens',
