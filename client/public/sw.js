@@ -160,6 +160,23 @@ self.addEventListener('fetch', e => {
     return
   }
 
+  // ── Self-hosted fonts (/fonts/): cache-first in version-independent CDN cache.
+  // Fonts are hashed at the filename level but served from /fonts/ not /assets/,
+  // so they bypass the hashed-assets handler above. Caching them here prevents
+  // repeat loads from re-downloading the ~30 KB of woff2 files on every visit.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/fonts/')) {
+    e.respondWith(
+      caches.open(CDN_CACHE).then(async cache => {
+        const cached = await cache.match(req)
+        if (cached) return cached
+        const fresh = await fetch(req)
+        if (fresh?.ok) cache.put(req, fresh.clone())
+        return fresh
+      })
+    )
+    return
+  }
+
   // ── Google Fonts: cache-first in version-independent CDN cache
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(

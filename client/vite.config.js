@@ -93,8 +93,17 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
-          // invalidates this chunk, not the whole app.
+          // i18n: translation strings split by language so English users never
+          // download Arabic (~16 KB savings). English is always statically
+          // imported; Arabic is lazy-loaded only when the user switches language.
+          if (id.includes('/src/i18n.en.')) {
+            return 'i18n-en'
+          }
+          if (id.includes('/src/i18n.ar.')) {
+            return 'i18n-ar'
+          }
+          // Legacy i18n.js (still on disk but no longer imported) — keep rule
+          // so any accidental import doesn't bloat the main chunk.
           if (id.includes('/src/i18n.')) {
             return 'i18n'
           }
