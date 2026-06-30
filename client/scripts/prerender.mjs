@@ -433,7 +433,110 @@ write('/free-net-worth-tracker', buildPage({
   alternates: hreflangPair('/free-net-worth-tracker', '/ar/free-net-worth-tracker'),
 }))
 
-// ── Unique-feature landing pages ─────────────────────────────────────────────
+// ── Long-tail landing pages ──────────────────────────────────────────────────
+// Two genuinely unique, high-intent pages a new domain can realistically rank
+// for (far less competition than the "free net worth tracker" head term):
+//   1. crypto + stocks together — most trackers do one OR the other
+//   2. no-account / no-sign-up — WalletLens's strongest differentiator
+// Each is substantial, hand-written content (NOT templated) with its own
+// Breadcrumb + FAQ schema, so it adds indexed quality instead of diluting it.
+
+const cryptoStockBody = `
+<h1>Crypto &amp; Stock Portfolio Tracker — Track Both in One App</h1>
+<p>Most portfolio trackers force a choice: a crypto app for your coins, a separate broker app for your stocks, and a spreadsheet to glue them together. <strong>WalletLens tracks crypto and stocks side by side</strong> — Bitcoin, Ethereum and 10,000+ coins next to Apple, Tesla, Nvidia and any US stock or ETF — in one live dashboard with a single net-worth total. It's <strong>free</strong>, needs <strong>no account</strong>, and keeps your data on your device.</p>
+<h2>Why track crypto and stocks together</h2>
+<ul>
+<li><strong>One real net-worth number.</strong> Your true financial picture isn't "crypto P&amp;L" and "stock P&amp;L" in two apps — it's both combined. WalletLens adds crypto, stocks, gold, cash and FX into one total.</li>
+<li><strong>See your real allocation.</strong> Most people don't realise they're 90% crypto until a crash. A combined view shows your crypto-vs-stocks split instantly so you can rebalance.</li>
+<li><strong>One P&amp;L, one cost basis.</strong> Track profit, loss and ROI in dollars and percent across every asset class, not per-app.</li>
+<li><strong>Uncorrelated by design.</strong> Stocks and crypto don't always move together — seeing them in one place makes diversification obvious.</li>
+</ul>
+<h2>How WalletLens tracks both</h2>
+<ul>
+<li><strong>Crypto:</strong> 10,000+ coins with live prices — <a href="/track/bitcoin">Bitcoin</a>, <a href="/track/ethereum">Ethereum</a>, <a href="/track/solana">Solana</a> and more.</li>
+<li><strong>US stocks &amp; ETFs:</strong> live quotes for <a href="/track/apple">Apple</a>, <a href="/track/tesla">Tesla</a>, <a href="/track/nvidia">Nvidia</a> and thousands more.</li>
+<li><strong>Gold, silver, cash &amp; FX:</strong> round out your full net worth in the same dashboard.</li>
+<li><strong>Fast import:</strong> <a href="/import-portfolio-from-screenshot">snap a screenshot</a> of your exchange or broker, or <a href="/add-holdings-by-voice">add holdings by voice</a> — AI does the data entry.</li>
+<li><strong>AI analysis:</strong> a health score, diversification grade and risk scan across crypto and stocks together, computed on your device.</li>
+</ul>
+<h2>Free, private, no account</h2>
+<p>WalletLens is 100% free with no paid tier, requires no sign-up or email, and stores your portfolio in your browser — never on a server. It's a private alternative to CoinStats, Delta, Kubera and Empower that covers <em>both</em> crypto and stocks.</p>
+<p><strong>Related:</strong> <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/portfolio-tracker-no-account">Portfolio tracker with no account</a> · <a href="/dashboard">Open WalletLens free</a> · <a href="/">Home</a></p>
+`
+write('/crypto-and-stock-portfolio-tracker', buildPage({
+  path: '/crypto-and-stock-portfolio-tracker',
+  title: 'Crypto & Stock Portfolio Tracker in One App',
+  description: 'Track crypto and stocks together in one free dashboard — Bitcoin, Ethereum & 10,000+ coins next to Apple, Tesla, Nvidia and any US stock or ETF. One net-worth total, no account, data stays on your device.',
+  bodyHtml: cryptoStockBody,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Crypto & Stock Portfolio Tracker', item: ORIGIN + '/crypto-and-stock-portfolio-tracker/' },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'Can I track crypto and stocks in the same app?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens tracks Bitcoin, Ethereum and 10,000+ crypto coins alongside US stocks and ETFs like Apple, Tesla and Nvidia — plus gold, silver, cash and FX — in one free dashboard with a single net-worth total.' } },
+        { '@type': 'Question', name: 'Is there a free app that tracks both crypto and stocks?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens is completely free with no paid tier and no account. It combines crypto and stock holdings into one live portfolio with combined P&L, ROI and allocation.' } },
+        { '@type': 'Question', name: 'Do I need a broker or exchange API to track stocks and crypto?', acceptedAnswer: { '@type': 'Answer', text: 'No. WalletLens needs no API keys and no bank or broker login. Add holdings manually, by voice, or by screenshot. Your data stays in your browser on your device.' } },
+      ],
+    },
+  ],
+}))
+
+const noAccountBody = `
+<h1>Portfolio Tracker With No Account — No Sign-Up Required</h1>
+<p>Every other portfolio tracker wants your email, a password, and often a bank or exchange login before you can see a single number. <strong>WalletLens needs none of it.</strong> Open it and start tracking instantly — no account, no sign-up, no email. Your portfolio lives in your browser on your device and is never uploaded to a server.</p>
+<h2>Why a no-account tracker matters</h2>
+<ul>
+<li><strong>Nothing to hack or leak.</strong> There's no account database, so there's no honeypot of users' net worth for attackers to steal.</li>
+<li><strong>Your holdings stay private.</strong> Your portfolio is stored locally in your browser — WalletLens has no backend that can see what you own.</li>
+<li><strong>No lock-outs.</strong> No forgotten passwords, no email verification, no two-factor dance. Just open and track.</li>
+<li><strong>Start in seconds.</strong> Add your first holding the moment the app loads.</li>
+</ul>
+<h2>What you can do without an account</h2>
+<ul>
+<li><strong>Track everything:</strong> crypto, US stocks &amp; ETFs, gold, silver, cash and FX in one net-worth dashboard.</li>
+<li><strong>AI portfolio analysis:</strong> health score, diversification grade, risk scan and stress test — all computed on your device.</li>
+<li><strong>Import fast:</strong> <a href="/import-portfolio-from-screenshot">from a screenshot</a> or <a href="/add-holdings-by-voice">by voice</a> — no typing.</li>
+<li><strong>Back up &amp; restore:</strong> export your portfolio as a single shareable backup code or an Excel/CSV file — you own your data, not us.</li>
+</ul>
+<h2>How is it free <em>and</em> private?</h2>
+<p>WalletLens has no servers storing your data, so there's nothing to monetise from your holdings and no subscription to charge. It's a genuinely free, no-sign-up alternative to CoinStats, Kubera and Empower — all of which require accounts and store your data on their servers.</p>
+<p><strong>Related:</strong> <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/crypto-and-stock-portfolio-tracker">Crypto &amp; stock tracker</a> · <a href="/dashboard">Open WalletLens free</a> · <a href="/">Home</a></p>
+`
+write('/portfolio-tracker-no-account', buildPage({
+  path: '/portfolio-tracker-no-account',
+  title: 'Portfolio Tracker With No Account — No Sign-Up',
+  description: 'A free portfolio tracker with no account and no sign-up. Track crypto, stocks, gold and cash instantly — your data stays private in your browser, never uploaded to a server. No email, no password, no bank login.',
+  bodyHtml: noAccountBody,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Portfolio Tracker With No Account', item: ORIGIN + '/portfolio-tracker-no-account/' },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'Is there a portfolio tracker that needs no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens requires no account, no sign-up and no email. Open it and start tracking immediately. Your portfolio is stored in your browser and never sent to a server.' } },
+        { '@type': 'Question', name: 'Is a no-account portfolio tracker safe?', acceptedAnswer: { '@type': 'Answer', text: 'It is safer in one key way: with no account database, there is no central store of users\\u2019 net worth for attackers to breach. Your data stays on your own device.' } },
+        { '@type': 'Question', name: 'Can I back up my portfolio if there is no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens lets you export your whole portfolio as a single shareable backup code or an Excel/CSV file, and import it on any device — so you keep your data without an account.' } },
+      ],
+    },
+  ],
+}))
+
+
 // WalletLens has two capabilities no mainstream tracker offers: importing
 // holdings from a screenshot (Claude vision) and adding holdings by voice
 // (English + Arabic). These have effectively zero keyword competition, which
@@ -2141,6 +2244,8 @@ console.log('Prerendered /market redirect stub → /dashboard.')
 const STATIC_ROUTES = [
   { path: '/',        changefreq: 'weekly',  priority: '1.0' },
   { path: '/free-net-worth-tracker', changefreq: 'weekly', priority: '0.9' },
+  { path: '/crypto-and-stock-portfolio-tracker', changefreq: 'weekly', priority: '0.9' },
+  { path: '/portfolio-tracker-no-account', changefreq: 'weekly', priority: '0.9' },
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
