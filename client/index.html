@@ -80,9 +80,6 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
@@ -165,20 +162,10 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
-    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
-    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
-    <!-- Coin icon CDN fallbacks -->
-    <link rel="dns-prefetch" href="https://assets.coincap.io" />
-    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
     <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
     <link rel="dns-prefetch" href="https://cors.eu.org" />
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
 
-    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
-         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
-         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results

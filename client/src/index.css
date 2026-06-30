@@ -6456,6 +6456,8 @@ select.bs-input option { background: var(--bg3); }
   padding: 5rem 1.25rem;
   max-width: 1100px;
   margin: 0 auto;
+  content-visibility: auto;
+  contain-intrinsic-block-size: 600px;
 }
 .lp-section-alt {
   max-width: 100%;
@@ -6463,6 +6465,8 @@ select.bs-input option { background: var(--bg3); }
   border-top: 1px solid rgba(var(--g-rgb),0.08);
   border-bottom: 1px solid rgba(var(--g-rgb),0.08);
   padding: 5rem 1.25rem;
+  content-visibility: auto;
+  contain-intrinsic-block-size: 500px;
 }
 .lp-section-alt > * { max-width: 800px; margin-left: auto; margin-right: auto; }
 .lp-section-label {
@@ -6935,6 +6939,22 @@ select.bs-input option { background: var(--bg3); }
 @keyframes lp-mockup-float {
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(-12px); }
+}
+
+/* ── Landing page: respect prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .lp-glow-1, .lp-glow-2 { animation: none; }
+  .lp-cta-primary { animation: none; }
+  .lp-live-dot-anim { animation: none; }
+  .lp-live-tip { animation: none; filter: none; }
+  .lp-stat-val { animation: none; filter: none; }
+  .lp-halo, .lp-ring { animation: none; }
+  .lp-logo-orb .wl-logo { animation: none !important; }
+  .lp-hero-mockup { animation: none; }
+  /* Reveal cards/steps instantly — IntersectionObserver still adds .lp-feat-vis
+     but no visual transition plays, satisfying the motion preference. */
+  .lp-feat-card { transition: none; opacity: 1; transform: none; }
+  .lp-step { transition: none; opacity: 1; transform: none; }
 }
 
 /* ── Bug fixes ─────────────────────────────────────────────────────────── */
