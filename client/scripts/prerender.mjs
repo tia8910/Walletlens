@@ -263,8 +263,8 @@ function write(routePath, html) {
 
 // ── Homepage ─────────────────────────────────────────────────────────────────
 const homeBody = `
-<h1>WalletLens — Free Portfolio Tracker: Crypto, Stocks, Gold &amp; Net Worth</h1>
-<p>WalletLens is a <strong>free portfolio tracker</strong> and <strong>free net worth tracker</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track and manage all your investments in one place with no account, no subscription, and your data kept on your device. The best free alternative to Kubera, CoinStats, and Personal Capital.</p>
+<h1>WalletLens — Private Net Worth Tracker &amp; Investment Management Tool</h1>
+<p>WalletLens is a <strong>privacy-first net worth tracker</strong> and <strong>investment management tool</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track <em>and manage</em> all your investments in one place with no account, no subscription, and your data kept on your device. A free, private alternative to Kubera, CoinStats, and Personal Capital.</p>
 <h2>Why WalletLens is the best free portfolio tracker</h2>
 <ul>
 <li><strong>No account required</strong> — open the app and start tracking instantly. No sign-up, no email, no password.</li>
@@ -333,8 +333,8 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 `
 write('/', buildPage({
   path: '/',
-  title: 'WalletLens — Free Portfolio Tracker with Live Prices',
-  description: 'Track crypto, stocks, gold & cash in one free dashboard — live prices, AI analysis, fear & greed index. No account. Your data stays on your device. 100% free.',
+  title: 'WalletLens — Private Net Worth & Investment Manager',
+  description: 'A privacy-first net worth tracker & investment management tool. Track and manage crypto, stocks, gold & cash in one place — AI analysis, no account, 100% free. Your data stays on your device.',
   bodyHtml: homeBody,
   jsonLd: [
     // WebApplication + Organization are emitted once site-wide from the global
