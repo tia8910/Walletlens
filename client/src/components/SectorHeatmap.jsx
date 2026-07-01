@@ -44,6 +44,9 @@ function buildSectorResult(byId, changeKey) {
 }
 
 const PROXIES = [
+  // Our own Deno proxy first — reliable and allowlists CoinGecko. The public
+  // proxies below are flaky/rate-limited and only used as fallbacks.
+  u => 'https://walletlens-voice-parse.tia8910.deno.net/proxy?url=' + encodeURIComponent(u),
   u => 'https://corsproxy.io/?' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://cors.eu.org/' + u,
