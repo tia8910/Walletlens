@@ -144,6 +144,12 @@ const CoinLogo = memo(function CoinLogo({
     sym      ? `coincap:${sym}` : null,
     sym      ? `lcw:${sym}` : null,
     sym      ? `cryptoicons:${sym}` : null,
+    // Deno-proxied fallbacks — ad blockers / privacy extensions and some
+    // networks block the icon CDNs directly (coincap, jsdelivr are common
+    // targets). The proxy allowlists these CDNs and returns the image with
+    // permissive CORS, so logos still load when direct requests are blocked.
+    sym      ? `dproxy:https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg` : null,
+    sym      ? `dproxy:https://assets.coincap.io/assets/icons/${sym}@2x.png` : null,
   ].filter(Boolean), [image, cachedImg, sym])
 
   const [stageIdx, setStageIdx] = useState(0)
@@ -183,6 +189,9 @@ const CoinLogo = memo(function CoinLogo({
     return <img {...common} src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`} onError={advance} />
   } else if (currentStage.startsWith('cryptoicons:')) {
     return <img {...common} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
+  } else if (currentStage.startsWith('dproxy:')) {
+    const target = currentStage.slice(7)
+    return <img {...common} src={`https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(target)}`} onError={advance} />
   }
   return (
     <GeneratedIcon
