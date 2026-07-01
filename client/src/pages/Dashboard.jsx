@@ -2246,7 +2246,12 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
               transition:'border-color 0.15s, background 0.15s',
             }}>
               {a.imgSrc || goldLogo
-                ? <img src={a.imgSrc || goldLogo} alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
+                ? <img
+                    src={a.imgSrc
+                      ? `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(a.imgSrc)}`
+                      : goldLogo}
+                    onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
+                    alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
                 : <span style={{
                     width:22, height:22, borderRadius:'50%', background:a.bg,
                     display:'inline-flex', alignItems:'center', justifyContent:'center',
