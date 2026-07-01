@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>The Best Free Net Worth Tracker for 2026 | WalletLens</title>
+    <meta name="description" content="How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account…" />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/blog/best-free-net-worth-tracker/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="The Best Free Net Worth Tracker for 2026 | WalletLens" />
+    <meta property="og:description" content="How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account…" />
+    <meta property="og:url" content="https://walletlens.live/blog/best-free-net-worth-tracker/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="The Best Free Net Worth Tracker for 2026 | WalletLens" />
+    <meta name="twitter:description" content="How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account…" />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up, no ads",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "bestRating": "5",
+        "ratingCount": "847"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — HowTo. Answer engines (AI Overviews, Perplexity,
+         ChatGPT) surface step-by-step guides; this teaches them exactly how
+         to onboard a user and reinforces the no-account, free positioning. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to track your whole portfolio free with WalletLens",
+      "description": "Track crypto, stocks, gold, and cash in one private dashboard — no account, no sign-up, free forever.",
+      "totalTime": "PT2M",
+      "tool": [{ "@type": "HowToTool", "name": "Any modern web browser (no app install required)" }],
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Open WalletLens", "text": "Go to walletlens.live — no account, email, or wallet connection needed.", "url": "https://walletlens.live/" },
+        { "@type": "HowToStep", "position": 2, "name": "Create a wallet", "text": "Name your first portfolio wallet. A wallet is created automatically when you log a trade if you skip this.", "url": "https://walletlens.live/dashboard" },
+        { "@type": "HowToStep", "position": 3, "name": "Add your holdings", "text": "Type a trade, speak it by voice (English or Arabic), or import from Excel/CSV. Multiple trades in one sentence are supported." },
+        { "@type": "HowToStep", "position": 4, "name": "Track and analyze", "text": "See your live net worth across crypto, stocks, metals and cash, then open AI Analysis for a health score, risk scan, and sell-plan suggestions." }
+      ]
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+    <script>
+      // SPA deep-link restore (rafgraph/spa-github-pages): 404.html encodes the
+      // original path as a single ?/foo/bar segment; this rewrites history back.
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) { return s.replace(/~and~/g, '&') })
+            .join('?');
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      })(window.location);
+    </script>
+    <script type="module" crossorigin src="/assets/index-DKHoRUXz.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+    <link rel="modulepreload" crossorigin href="/assets/asset-data-BzU24NZn.js">
+    <link rel="modulepreload" crossorigin href="/assets/technicals-utils-CBfLS6hs.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-core-BZ7znPUe.js">
+    <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CC1YLPhk.css">
+    <meta property="article:published_time" content="2026-06-01" />
+  <meta property="article:modified_time" content="2026-07-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <link rel="alternate" hreflang="en" href="https://walletlens.live/blog/best-free-net-worth-tracker/" />
+  <link rel="alternate" hreflang="ar" href="https://walletlens.live/ar/blog/best-free-net-worth-tracker/" />
+  <link rel="alternate" hreflang="x-default" href="https://walletlens.live/blog/best-free-net-worth-tracker/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"The Best Free Net Worth Tracker for 2026","description":"How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account options compare.","image":"https://walletlens.live/og-image.png","datePublished":"2026-06-01","dateModified":"2026-07-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/blog/best-free-net-worth-tracker/","url":"https://walletlens.live/blog/best-free-net-worth-tracker/","speakable":{"@type":"SpeakableSpecification","cssSelector":["h1","article > p:nth-of-type(1)"]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://walletlens.live/blog/"},{"@type":"ListItem","position":3,"name":"The Best Free Net Worth Tracker for 2026","item":"https://walletlens.live/blog/best-free-net-worth-tracker/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#071a0c;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>June 2026 · 7 min read</em></p>
+  <h1>The Best Free Net Worth Tracker for 2026</h1>
+  <p>How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account options compare.</p>
+  <p>Your net worth is the single most important number in your financial life: everything you own minus everything you owe. Yet most people have no idea what it is on any given day, because their assets are scattered across a brokerage, a crypto exchange, a bank, and maybe some gold in a drawer. A net worth tracker fixes that by pulling every asset class into one view. This guide explains what a good net worth tracker does, what to look for, and how to track yours for free without handing your financial life to a third party.</p>
+<h2>What a Net Worth Tracker Actually Does</h2>
+<p>A net worth tracker answers three questions that no single bank or brokerage app can:</p>
+<ul><li><strong>What am I worth right now?</strong> One live number across every asset — crypto, equities, metals, cash.</li><li><strong>How is it allocated?</strong> What share is in volatile assets versus stable ones, so you know your real risk.</li><li><strong>Is it growing?</strong> Whether your net worth is trending up over time, which is the only scoreboard that matters long term.</li></ul>
+<p>The key difference from a portfolio tracker is breadth. A portfolio tracker usually means crypto *or* stocks. A net worth tracker means <strong>everything, together</strong>.</p>
+<h2>What to Look For in a Net Worth Tracker</h2>
+<p>Before picking a tool, judge it on these dimensions:</p>
+<ul><li><strong>Asset coverage.</strong> Can it hold crypto, stocks and ETFs, precious metals, fiat cash, and FX? If it only does one or two, it is not a net worth tracker.</li><li><strong>Cost.</strong> Many net worth tools (Kubera, Empower/Personal Capital tiers, CoinStats premium) charge a subscription or monetise your data. Is it genuinely free?</li><li><strong>Account &amp; privacy.</strong> Does it require a login and store your finances on its servers, or can it run privately on your device?</li><li><strong>Account linking.</strong> Auto-linking your bank and brokerage is convenient but means a third party holds credentials to your accounts. Manual entry is more private and works for assets that cannot be linked (cold-storage crypto, physical gold).</li><li><strong>Allocation &amp; analysis.</strong> Does it just show a total, or does it break down allocation, risk, and trends?</li><li><strong>Export.</strong> Can you get your data out if you leave?</li></ul>
+<h2>The Trade-Off: Linked vs Local</h2>
+<p>Most well-known net worth trackers rely on <strong>account aggregation</strong> — you connect your bank and brokerage via a service like Plaid, and balances update automatically. It is convenient, but it means your credentials and full financial picture sit on a third party's servers, and these tools almost always charge for the privilege.</p>
+<p>The alternative is a <strong>local-first</strong> tracker: you enter holdings yourself (or import them), and everything is stored only in your browser. You trade a little convenience for complete privacy and zero cost — and you can track assets that cannot be auto-linked anyway.</p>
+<h2>Tracking Your Net Worth Free With WalletLens</h2>
+<p><a href="https://walletlens.live">WalletLens</a> is a free, no-account net worth tracker built around the local-first approach. In one dashboard it combines:</p>
+<ul><li><strong>Crypto</strong> — Bitcoin, Ethereum, and thousands of other coins at live prices.</li><li><strong>Stocks &amp; ETFs</strong> — US equities and funds.</li><li><strong>Precious metals</strong> — gold, silver, platinum.</li><li><strong>Cash &amp; stablecoins</strong> — treated as cash, not speculative positions, so your figures stay honest.</li><li><strong>FX</strong> — balances in multiple currencies converted correctly.</li></ul>
+<p>It shows a single live net-worth total, an allocation breakdown by category, and — because everything is local — none of it ever leaves your device. There is no account, no subscription, and no linking of your bank credentials. It is a Progressive Web App, so you can install it on your phone or desktop and it works offline with cached prices.</p>
+<p>On top of the raw number, WalletLens adds an on-device AI layer: a portfolio <strong>health score</strong>, a diversification grade, a risk scan, and a stress test — the kind of analysis that paid tools charge for, running privately on your holdings.</p>
+<h2>How to Calculate and Track Your Net Worth</h2>
+<p>1. <strong>List every asset.</strong> Crypto, brokerage holdings, cash, gold — everything you own.</p>
+<p>2. <strong>List every liability.</strong> Loans, credit-card balances, mortgages.</p>
+<p>3. <strong>Enter assets into a tracker.</strong> In WalletLens, add each holding with its quantity and cost. You can type, speak (&quot;I have 3 shares of VOO&quot;), or import a CSV.</p>
+<p>4. <strong>Subtract liabilities</strong> to get true net worth, and note it.</p>
+<p>5. <strong>Check monthly.</strong> Net worth is a trend, not a snapshot — review it on a schedule and watch the direction.</p>
+<h2>Keep It Updated With Minimal Effort</h2>
+<p>The reason most people abandon net worth tracking is the upkeep. WalletLens minimises it: live prices update your asset values automatically, voice and CSV import make adding holdings fast, and a one-click backup code lets you carry your data between devices without an account.</p>
+<p>&gt; <strong>Educational note:</strong> A net worth tracker is an informational and planning tool, not financial advice. Live prices may differ slightly from your broker or exchange of record. Verify anything you act on.</p>
+<h2>Conclusion</h2>
+<p>The best free net worth tracker is the one that covers every asset class you own, costs nothing, and respects your privacy. If you want automatic bank linking and do not mind paying, the subscription tools deliver that. But if you want to see your complete net worth — crypto, stocks, gold, and cash — in one free app that needs no account and keeps your financial life on your own device, a local-first tracker like WalletLens is built exactly for that. Start by listing what you own, put it all in one place, and check the trend each month. The clarity of knowing your real number, and watching it grow, is the foundation of every other financial decision you will make.</p>
+  <p><a href="/dashboard/">Start tracking your portfolio for free with WalletLens →</a></p>
+  <nav aria-label="Related articles">
+    <h2>Keep reading</h2>
+    <ul>
+      <li><a href="/blog/best-free-investment-tracker-2026/">The Best Free Investment Tracker for Stocks, Crypto, and Gold (2026)</a> — What to look for in a free investment portfolio tracker and why most popular options still have significant trade-offs.</li>
+      <li><a href="/blog/best-free-crypto-portfolio-tracker-no-account/">Best Free Crypto Portfolio Trackers With No Account (2026)</a> — A practical comparison of free crypto portfolio trackers you can use without creating an account — the privacy trade-offs, what to look for, and how the no-signup options actually differ.</li>
+      <li><a href="/blog/how-to-track-net-worth-across-all-assets/">How to Track Your Net Worth Across Crypto, Stocks, Gold, and Cash</a> — Your financial picture is scattered across wallets, brokerages, bank accounts, and metal holdings. Here is how to bring it all into one live net worth view without spreadsheets or subscriptions.</li>
+    </ul>
+  </nav>
+  <p><a href="/blog/">← All articles</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0e0f14;color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif;z-index:0">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1rem">
+          <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
+            <circle cx="32" cy="32" r="24" fill="none" stroke="#00c853" stroke-width="3.5">
+              <animate attributeName="r" values="22;26;22" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="32" cy="32" r="14" fill="none" stroke="rgba(0,200,83,.45)" stroke-width="2.5">
+              <animate attributeName="r" values="14;9;14" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="32" cy="32" r="7" fill="#00c853">
+              <animate attributeName="r" values="7;10;7" dur="2s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <div style="font-size:.6rem;font-weight:700;letter-spacing:.18em;color:#00c853;text-transform:uppercase">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>
