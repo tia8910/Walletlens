@@ -160,7 +160,9 @@ const QR_CHUNK = 1200
 
 async function makeQrDataUrl(data) {
   return QRCode.toDataURL(data, {
-    errorCorrectionLevel: 'L', margin: 2, width: 400,
+    // scale (px/module) not fixed width — dense codes forced into 400px fell
+    // to ~2px per module and became hard for cameras/decoders to read.
+    errorCorrectionLevel: 'L', margin: 2, scale: 5,
     color: { dark: '#000000', light: '#ffffff' },
   }).catch(() => '')
 }
