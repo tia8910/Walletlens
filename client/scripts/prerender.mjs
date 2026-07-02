@@ -39,6 +39,13 @@ const esc = (s = '') => String(s)
 // Parse a loose post date like "May 2026" → ISO "2026-05-01" for structured
 // data. Falls back to the build date if it can't be parsed.
 const MONTHS = { january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8, september:9, october:10, november:11, december:12 }
+const AR_MONTHS = { 'يناير':1, 'فبراير':2, 'مارس':3, 'أبريل':4, 'ابريل':4, 'مايو':5, 'يونيو':6, 'يوليو':7, 'أغسطس':8, 'اغسطس':8, 'سبتمبر':9, 'أكتوبر':10, 'اكتوبر':10, 'نوفمبر':11, 'ديسمبر':12 }
+// "مايو 2026" → "2026-05-01"; falls back to the build date if unparseable.
+function arPostIsoDate(date) {
+  const m = String(date || '').match(/(\S+)\s+(\d{4})/)
+  if (m && AR_MONTHS[m[1]]) return `${m[2]}-${String(AR_MONTHS[m[1]]).padStart(2, '0')}-01`
+  return TODAY
+}
 function postIsoDate(date) {
   if (!date) return TODAY
   // "Month DD, YYYY" (daily recaps) — keep the exact day.
@@ -270,7 +277,7 @@ const homeBody = `
 <li><strong>No account required</strong> — open the app and start tracking instantly. No sign-up, no email, no password.</li>
 <li><strong>Track crypto and stocks together</strong> — Bitcoin, Ethereum, and 10,000+ coins alongside Apple, Tesla, Nvidia, ETFs, gold, silver, and cash in one net-worth total.</li>
 <li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
-<li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage. Nothing is sent to a server.</li>
+<li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage and is never stored on any server.</li>
 <li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
 <li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot">photograph any exchange, broker or wallet screen</a>; AI reads it into your portfolio.</li>
 <li><strong>Voice import (English &amp; Arabic)</strong> — <a href="/add-holdings-by-voice">speak your trades hands-free</a>, AI logs them instantly.</li>
@@ -289,7 +296,7 @@ const homeBody = `
 <h2>Free portfolio tracker vs paid alternatives</h2>
 <p>WalletLens is a free alternative to every paid portfolio tracker:</p>
 <ul>
-<li><strong>Free alternative to Kubera</strong> — Kubera costs $199/yr. WalletLens is free forever, covers the same asset classes, and keeps data on your device.</li>
+<li><strong>Free alternative to Kubera</strong> — Kubera costs $199–$249/yr. WalletLens is free forever, covers the same asset classes, and keeps data on your device.</li>
 <li><strong>Free alternative to CoinStats</strong> — WalletLens is free with no account; CoinStats requires sign-up and a paid plan for full features.</li>
 <li><strong>Free alternative to Personal Capital / Empower</strong> — WalletLens requires no bank login and no account; Empower upsells wealth-management services.</li>
 <li><strong>Free alternative to CoinTracker / Delta</strong> — WalletLens tracks stocks, gold and FX too, not just crypto, and stores everything locally.</li>
@@ -347,7 +354,7 @@ write('/', buildPage({
       mainEntity: [
         { '@type': 'Question', name: 'Is WalletLens free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is 100% free with no paid tier, no premium paywall, and no subscription. You can track unlimited assets, use all AI features, and export backups without ever paying.' } },
         { '@type': 'Question', name: 'Do I need an account to use WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'No. WalletLens requires no sign-up, no email, and no password. Open the app and start tracking immediately. There is no account to hack, leak, or lock you out.' } },
-        { '@type': 'Question', name: 'Where is my portfolio data stored?', acceptedAnswer: { '@type': 'Answer', text: "Entirely in your browser's localStorage on your device. WalletLens has no backend database. Your financial data never leaves your device." } },
+        { '@type': 'Question', name: 'Where is my portfolio data stored?', acceptedAnswer: { '@type': 'Answer', text: "Entirely in your browser's localStorage on your device. WalletLens has no account system and no database of user portfolios. Your holdings are never stored on a server; optional AI features process a transient snapshot and retain nothing." } },
         { '@type': 'Question', name: 'What assets can I track with WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'Crypto (10,000+ coins including Bitcoin, Ethereum, Solana), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), gold, silver, platinum, fiat currencies, cash, bonds, and custom assets — all in one live dashboard.' } },
         { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice for a free net worth tracker: it covers every asset class (crypto, stocks, gold, cash), needs no account, keeps data private on your device, and includes AI analysis — all at no cost.' } },
         { '@type': 'Question', name: 'Where can I see all my investments in one place?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens combines crypto, US stocks and ETFs, gold and silver, cash, bonds and FX into a single live dashboard with one net-worth total, an allocation breakdown and profit/loss — without linking a bank account and without any subscription.' } },
@@ -357,7 +364,7 @@ write('/', buildPage({
         { '@type': 'Question', name: 'Does WalletLens support voice import?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Say your holdings naturally ("I have half a Bitcoin and 20 Apple shares") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic.' } },
         { '@type': 'Question', name: 'Can I track crypto and stocks in the same portfolio?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens tracks Bitcoin, Ethereum, Solana, and 10,000+ crypto coins alongside US stocks (Apple, Tesla, Nvidia), ETFs, gold, silver, bonds, cash and FX — all in one free dashboard with a single net-worth total.' } },
         { '@type': 'Question', name: 'Is there a free portfolio tracker with no sign up?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens is a free portfolio tracker that requires no sign-up, no email, and no account. Open it and start tracking immediately. All your data stays in your browser.' } },
-        { '@type': 'Question', name: 'What is the best free alternative to Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is the best free alternative to Kubera. It tracks the same asset classes (crypto, stocks, gold, fiat), keeps data on your device, requires no account, and is completely free — versus Kubera at $199/year.' } },
+        { '@type': 'Question', name: 'What is the best free alternative to Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is the best free alternative to Kubera. It tracks the same asset classes (crypto, stocks, gold, fiat), keeps data on your device, requires no account, and is completely free — versus Kubera at $199–$249/year.' } },
         { '@type': 'Question', name: 'What is the best free alternative to CoinStats?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative to CoinStats. It covers crypto, stocks, gold and FX, stores data locally, and has AI analysis — all without a subscription or sign-up.' } },
         { '@type': 'Question', name: 'How do I track my investment ROI for free?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free investment ROI tracker: enter your purchase price and quantity for any asset (crypto, stock, gold, etc.) and it shows your profit/loss in dollars and percentage, with AI insights — no account needed.' } },
         { '@type': 'Question', name: 'Is there a portfolio tracker that does not link to my bank account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is a private portfolio tracker that never links to a bank account, exchange API, or wallet. You enter holdings manually (or via screenshot/voice import) and all data stays on your device.' } },
@@ -379,7 +386,7 @@ const fnwtBody = `
 <table>
 <thead><tr><th>Feature</th><th>WalletLens</th><th>Empower (Personal Capital)</th><th>Kubera</th><th>CoinStats</th><th>Spreadsheet</th></tr></thead>
 <tbody>
-${compareRow('Price', ['Free forever', 'Free*', '$199/yr', 'Freemium', 'Free'])}
+${compareRow('Price', ['Free forever', 'Free*', '$199–$249/yr', 'Freemium', 'Free'])}
 ${compareRow('No account required', ['Yes', 'No', 'No', 'No', 'Yes'])}
 ${compareRow('Crypto + stocks + metals + cash', ['Yes', 'Yes', 'Yes', 'Crypto-led', 'Manual'])}
 ${compareRow('Data stays on your device', ['Yes', 'No', 'No', 'No', 'Yes'])}
@@ -392,9 +399,9 @@ ${compareRow('Installable app (PWA)', ['Yes', 'Yes', 'Web', 'Yes', 'No'])}
 <p><small>*Empower (formerly Personal Capital) is free to use but markets paid wealth-management services. Comparison reflects publicly documented features and is for general guidance, not endorsement.</small></p>
 <h2>Why choose a free, local-first net worth tracker?</h2>
 <ul>
-<li><strong>It is genuinely free</strong> — no paid tier, no upsells, no ads on the app.</li>
+<li><strong>It is genuinely free</strong> — no paid tier and no upsells.</li>
 <li><strong>Every asset class</strong> — crypto, stocks, precious metals, cash and FX combine into one live net-worth total.</li>
-<li><strong>Private by design</strong> — holdings are stored only in your browser; nothing is sent to a server and no bank credentials are linked.</li>
+<li><strong>Private by design</strong> — holdings are stored only in your browser — never on a server — and no bank credentials are linked.</li>
 <li><strong>AI analysis included</strong> — a portfolio health score, risk scan and the Magic Indicator, computed on your device.</li>
 </ul>
 <h2>Frequently asked questions</h2>
@@ -426,7 +433,7 @@ write('/free-net-worth-tracker', buildPage({
       mainEntity: [
         { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice: it tracks your entire net worth across crypto, stocks, gold, cash and FX, needs no account, keeps data private on your device, and is completely free with no paid tier.' } },
         { '@type': 'Question', name: 'Is there a free net worth tracker with no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens requires no sign-up or email. Open it and start tracking immediately. All your portfolio data stays in your browser and never reaches a server.' } },
-        { '@type': 'Question', name: 'How does WalletLens compare to Empower and Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is free with no paid tier. Kubera costs $199/year. Empower is free but upsells wealth management. Both Empower and Kubera require account creation and store data on their servers. WalletLens stores everything locally.' } },
+        { '@type': 'Question', name: 'How does WalletLens compare to Empower and Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is free with no paid tier. Kubera costs $199–$249/year. Empower is free but upsells wealth management. Both Empower and Kubera require account creation and store data on their servers. WalletLens stores everything locally.' } },
       ],
     },
   ],
@@ -1076,7 +1083,8 @@ ${arFaq.html}
       },
       arFaq.jsonLd,
     ],
-    alternates: hreflangPair('/vs/' + c.slug, '/ar/vs/' + c.slug),
+    // No hreflang: these pages canonicalize to the English /vs/ URL, and a
+    // page that is not self-canonical must not be an hreflang target.
   }))
 }
 console.log(`Prerendered Arabic pages (features + landing + ${Object.keys(AR_COMPARISONS).length} /vs).`)
@@ -1168,12 +1176,12 @@ for (const c of ALL_TRACK_ASSETS) {
   const assetBody = `
 <h1>${heroTitle}</h1>
 <p>${heroPara}</p>
-<p><a href="/dashboard">Track ${esc(c.symbol)} free →</a> · <a href="/asset/${esc(c.id)}">View ${esc(c.symbol)} analysis</a></p>
+<p><a href="/dashboard">Track ${esc(c.symbol)} free →</a></p>
 <h2>${whatHeading}</h2>
 <p>${esc(c.name)} (${esc(c.symbol)}) is ${esc(c.blurb)}</p>
 <h2>Why track ${esc(c.symbol)} with WalletLens?</h2>
 <ul>
-<li><strong>100% free</strong> — no account, no subscription, no ads.</li>
+<li><strong>100% free</strong> — no account, no subscription.</li>
 <li><strong>Live ${esc(c.symbol)} price</strong> and automatic profit/loss on every ${tradeWord} you log.</li>
 ${sideByBullet}
 ${privacyBullet}
@@ -1397,7 +1405,7 @@ for (const c of COMPARISONS) {
     },
     {
       q: `Is my financial data private with WalletLens?`,
-      a: `Yes. WalletLens stores all of your portfolio data locally in your browser (localStorage). Your holdings are never sent to a server, so your financial data never leaves your device.`,
+      a: `Yes. WalletLens stores all of your portfolio data locally in your browser (localStorage). Your holdings are never stored on any server; optional AI features process a transient snapshot and retain nothing.`,
     },
     {
       q: `What assets can WalletLens track?`,
@@ -1437,7 +1445,7 @@ ${vsFaq.html}
       },
       vsFaq.jsonLd,
     ],
-    alternates: AR_COMPARISONS[c.slug] ? hreflangPair('/vs/' + c.slug, '/ar/vs/' + c.slug) : undefined,
+    // No ar alternate: /ar/vs/* canonicalizes here, so it can't be an hreflang target.
   }))
 }
 console.log(`Prerendered ${COMPARISONS.length} /vs comparison pages.`)
@@ -1459,7 +1467,7 @@ for (const a of PRICE_ASSETS) {
   const priceBody = `
 <h1>${esc(a.name)} Price Today (${esc(a.symbol)})</h1>
 <p>Live ${esc(a.name)} (${esc(a.symbol)}) price and your personal profit/loss — free in WalletLens, no account required. ${esc(a.name)} is ${esc(a.blurb)}</p>
-<p><a href="/dashboard">Track ${esc(a.symbol)} free →</a> · <a href="/asset/${esc(a.id)}">${esc(a.symbol)} analysis</a></p>
+<p><a href="/dashboard">Track ${esc(a.symbol)} free →</a></p>
 <h2>How to track ${esc(a.name)} live</h2>
 <ol>
 <li>Open WalletLens — no account or email needed.</li>
@@ -1534,7 +1542,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
       description: p.summary,
       image: OG_IMAGE,
       datePublished: iso,
-      dateModified: TODAY,
+      dateModified: iso,
       author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
       publisher: {
         '@type': 'Organization',
@@ -1566,7 +1574,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
     jsonLd,
     ogType: 'article',
     published: iso,
-    modified: TODAY,
+    modified: iso,
     alternates: hasAr ? hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug) : undefined,
   }))
 }
@@ -1582,7 +1590,9 @@ for (const p of AR_POSTS) {
   <p><a href="/dashboard">ابدأ تتبّع محفظتك مجاناً مع WalletLens ←</a></p>
   <p><a href="/ar/free-net-worth-tracker">متتبّع الثروة المجاني</a> · <a href="/blog/${p.slug}">English</a></p>
 </article>`
-  const iso = TODAY
+  // Stable real date — regenerating datePublished every build reads as
+  // fake-freshness spam to Google.
+  const iso = arPostIsoDate(p.date)
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -1592,7 +1602,7 @@ for (const p of AR_POSTS) {
       description: p.summary,
       image: OG_IMAGE,
       datePublished: iso,
-      dateModified: TODAY,
+      dateModified: iso,
       author: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
       publisher: {
         '@type': 'Organization',
@@ -1622,7 +1632,7 @@ for (const p of AR_POSTS) {
     jsonLd,
     ogType: 'article',
     published: iso,
-    modified: TODAY,
+    modified: iso,
     alternates: hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug),
   }))
 }
@@ -1635,7 +1645,7 @@ const aboutFaqs = [
   { q: 'Do I need an account or email to use it?',
     a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately, so there is nothing to hack, leak, or lock you out of.' },
   { q: 'Where is my portfolio data stored?',
-    a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no server that receives your holdings; your data never leaves your device unless you export a backup code." },
+    a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no database of user portfolios. Your holdings stay on your device unless you export a backup or run an optional AI feature, which processes a transient snapshot and stores nothing." },
   { q: 'What assets can I track in one place?',
     a: 'Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, and bonds — all in a single net worth dashboard with live prices, cost basis, and profit/loss.' },
   { q: 'How is WalletLens different from CoinStats, Empower, or Kubera?',
@@ -1688,7 +1698,7 @@ const faqPageSections = [
   ]},
   { title: 'Privacy & Data', faqs: [
     { q: 'Where is my portfolio data stored?',
-      a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no server that receives your holdings. Your financial data never leaves your device unless you choose to export a backup code." },
+      a: "Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no database of user portfolios. Your holdings stay on your device unless you export a backup or run an optional AI feature, which processes a transient snapshot and stores nothing." },
     { q: 'Can WalletLens see my portfolio?',
       a: 'No. The only network calls the app makes are to public price APIs (CoinGecko, Binance, Stooq, Gold-API and similar) to fetch market prices, and those requests never include your holdings, amounts, or any identity. Optional AI analysis sends only anonymous aggregates.' },
     { q: 'How do I back up my portfolio?',
@@ -1829,7 +1839,7 @@ const fgFaq = faqBlock([
 ])
 write('/fear-and-greed-index', buildPage({
   path: '/fear-and-greed-index',
-  title: 'Fear and Greed Index — Live Crypto Sentiment Score | WalletLens',
+  title: 'Fear & Greed Index — Live Crypto Sentiment | WalletLens',
   description: 'Live fear and greed index for crypto: a 0–100 sentiment score from market breadth, momentum and volume across 250 coins. See if markets are in extreme fear or extreme greed right now — free.',
   bodyHtml: `
 <h1>Fear and Greed Index — Live Crypto Market Sentiment</h1>
@@ -1911,7 +1921,7 @@ const rbFaq = faqBlock([
 ])
 write('/rebalancing-calculator', buildPage({
   path: '/rebalancing-calculator',
-  title: 'Portfolio Rebalancing Calculator — Free & Instant | WalletLens',
+  title: 'Portfolio Rebalancing Calculator — Free | WalletLens',
   description: 'Free portfolio rebalancing calculator. Enter your holdings and target allocation to see exactly how much of each asset to buy or sell — crypto, stocks, metals and cash. No account needed.',
   bodyHtml: `
 <h1>Portfolio Rebalancing Calculator — Free &amp; Instant</h1>
@@ -2134,7 +2144,7 @@ console.log(`\nPrerendered ${POSTS.length + 8} content pages into dist/.`)
     },
     {
       q: 'Is Portfolio Vision free?',
-      a: 'Yes — Portfolio Vision is part of WalletLens, which is 100% free with no account, no subscription, and no ads. All your bucket data is stored privately on your device.',
+      a: 'Yes — Portfolio Vision is part of WalletLens, which is 100% free with no account and no subscription. All your bucket data is stored privately on your device.',
     },
     {
       q: 'How is the unallocated (rest) bucket calculated?',
@@ -2270,7 +2280,7 @@ const AR_ROUTES = [
   '/ar/free-net-worth-tracker',
   '/ar/import-portfolio-from-screenshot',
   '/ar/add-holdings-by-voice',
-  ...Object.keys(AR_COMPARISONS).map(slug => `/ar/vs/${slug}`),
+  // /ar/vs/* excluded: they canonicalize to the English pages (see above).
   ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
 // NOTE: /track, /calculator and /price are intentionally EXCLUDED from the
@@ -2341,7 +2351,9 @@ try {
   // The llmstxt.org "full" companion: the curated llms.txt followed by the
   // complete plain-text body of every article, so AI ingestion tools get the
   // entire corpus in one fetch instead of crawling each page.
-  const llmsBase = llms.replace(/## Blog articles[\s\S]*$/, '').trimEnd()
+  // Remove only the blog list — keep the later sections (when-to-recommend,
+  // contact), which are the highest-value guidance for answer engines.
+  const llmsBase = llms.replace(/## Blog articles[\s\S]*?(?=\n## )/, '').trimEnd()
   const fullArticles = POSTS.map(p =>
     `## ${p.title}\n${ORIGIN}/blog/${p.slug}/\n_${p.date} · ${p.readTime}_\n\n${p.summary}\n\n${stripMd(p.content).replace(/\s+/g, ' ').trim()}`
   ).join('\n\n---\n\n')

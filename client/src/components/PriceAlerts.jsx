@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
+import { syncAlerts } from '../push'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -7,7 +8,7 @@ function loadAlerts() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
 }
 function saveAlerts(alerts) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(alerts))
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(alerts)) } catch {}
 }
 
 function bumpId() {
@@ -23,7 +24,7 @@ function requestNotificationPermission() {
 }
 
 function fireNotification(title, body) {
-  if (Notification.permission !== 'granted') return
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
   try { new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico' }) } catch {}
 }
 
@@ -86,7 +87,7 @@ export default function PriceAlerts({ enriched, prices }) {
   const [coinId, setCoinId]         = useState('')
   const [condition, setCondition]   = useState('above')
   const [targetInput, setTargetInput] = useState('')
-  const [notifPerm, setNotifPerm]   = useState(Notification?.permission ?? 'default')
+  const [notifPerm, setNotifPerm]   = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
   const [toasts, setToasts]         = useState([])
   const prevPricesRef               = useRef({})
   const alertsRef                   = useRef(alerts)
@@ -99,7 +100,9 @@ export default function PriceAlerts({ enriched, prices }) {
   }, [])
 
   // Sync to localStorage whenever alerts change
-  useEffect(() => { saveAlerts(alerts) }, [alerts])
+  // Persist locally and mirror to the push server so these alerts also
+  // fire when the app is closed (no-op when push is off).
+  useEffect(() => { saveAlerts(alerts); syncAlerts() }, [alerts])
 
   // Check alerts on every price update
   useEffect(() => {

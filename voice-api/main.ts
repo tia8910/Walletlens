@@ -461,16 +461,45 @@ Deno.cron("guardian-sweep", "0 */6 * * *", async () => {
   try { await runGuardianCron() } catch (e) { console.error("Guardian cron failed:", e) }
 })
 
+// ── Per-IP rate limiting ────────────────────────────────────────────────────
+// The AI modes are unauthenticated (CORS only stops browsers, not scripts) and
+// each call spends real Anthropic API money. This in-memory limiter is per
+// isolate — not a hard guarantee — but turns "free unlimited abuse" into
+// "throttled abuse" at zero latency cost. Buckets: AI calls are expensive
+// (tight limit), email-sending modes are spam vectors (very tight), the
+// GET /proxy is cheap (loose).
+const rlBuckets = new Map<string, { n: number; reset: number }>()
+function rateLimited(ip: string, bucket: string, max: number, windowMs = 60_000): boolean {
+  const key = bucket + ":" + ip
+  const now = Date.now()
+  const b = rlBuckets.get(key)
+  if (!b || now > b.reset) {
+    if (rlBuckets.size > 20_000) rlBuckets.clear()
+    rlBuckets.set(key, { n: 1, reset: now + windowMs })
+    return false
+  }
+  b.n++
+  return b.n > max
+}
+const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap"])
+const EMAIL_MODES = new Set(["email", "guardian_setup"])
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
   const headers = corsHeaders(origin)
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
 
+  const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+
+
   // Server-side price proxy — GET /proxy?url=<allowlisted upstream>
   if (req.method === "GET") {
     const reqUrl = new URL(req.url)
     if (reqUrl.pathname === "/proxy") {
+      if (rateLimited(ip, "proxy", 300)) {
+        return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
+      }
       return await handleProxy(reqUrl.searchParams.get("url"), headers)
     }
     return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers })
@@ -486,6 +515,21 @@ Deno.serve(async (req: Request) => {
     body = await req.json()
   } catch {
     return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers })
+  }
+
+  // Throttle the expensive / abusable modes before any work happens.
+  const mode = typeof body?.mode === "string" ? body.mode : "voice"
+  if (AI_MODES.has(mode) || mode === "voice") {
+    if (rateLimited(ip, "ai", 20)) {
+      return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
+    }
+  } else if (EMAIL_MODES.has(mode)) {
+    // Email-sending modes are spam vectors from our verified domain.
+    if (rateLimited(ip, "mail", 5, 10 * 60_000)) {
+      return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
+    }
+  } else if (rateLimited(ip, "misc", 60)) {
+    return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
   }
 
   // ── Newsletter / waitlist signup (mode: "email") ──────────────────────────

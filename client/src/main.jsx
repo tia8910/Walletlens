@@ -28,10 +28,14 @@ function chunkReload() {
     sessionStorage.setItem(RETRY_KEY, String(n + 1))
   } catch {}
   if ('caches' in window) {
-    // Only nuke API/versioned caches — preserve the static-asset cache so the
-    // reload doesn't re-download every hashed JS/CSS chunk from scratch.
+    // Only nuke API/versioned caches — preserve the static-asset cache (so the
+    // reload doesn't re-download every hashed JS/CSS chunk) AND the
+    // version-independent CDN cache (up to 500 coin icons that never change).
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => !k.startsWith('walletlens-static-')).map(k => caches.delete(k))))
+      .then(keys => Promise.all(
+        keys.filter(k => !k.startsWith('walletlens-static-') && !k.startsWith('walletlens-cdn-'))
+          .map(k => caches.delete(k))
+      ))
       .finally(() => window.location.reload())
   } else {
     window.location.reload()

@@ -20,6 +20,7 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // Icons are cached so the PWA home-screen experience works offline immediately.
 const PRECACHE_URLS = [
   '/',
+  '/dashboard',
   '/news.json',
   '/stock-prices.json',
   '/market.json',
@@ -91,6 +92,7 @@ self.addEventListener('install', e => {
 })
 
 const API_CACHE_MAX = 120 // max entries before oldest are evicted
+const STATIC_CACHE_MAX = 200 // HTML + assets + misc same-origin files
 const CDN_CACHE_MAX = 500 // coin icons: large but bounded (one per asset)
 
 self.addEventListener('activate', e => {
@@ -105,6 +107,14 @@ self.addEventListener('activate', e => {
         const keys = await cache.keys()
         if (keys.length > API_CACHE_MAX) {
           await Promise.all(keys.slice(0, keys.length - API_CACHE_MAX).map(k => cache.delete(k)))
+        }
+      })
+      .then(async () => {
+        // Trim STATIC (HTML pages + same-origin files) — grows per blog page visited.
+        const st = await caches.open(STATIC)
+        const stKeys = await st.keys()
+        if (stKeys.length > STATIC_CACHE_MAX) {
+          await Promise.all(stKeys.slice(0, stKeys.length - STATIC_CACHE_MAX).map(k => st.delete(k)))
         }
       })
       .then(async () => {
@@ -130,7 +140,11 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(req)
         .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
-        .catch(() => caches.match(req) || caches.match('/') || new Response('Offline', { status: 503 }))
+        .catch(() =>
+          caches.match(req)
+            .then(r => r || caches.match('/'))
+            .then(r => r || new Response('Offline', { status: 503 }))
+        )
     )
     return
   }
@@ -146,29 +160,13 @@ self.addEventListener('fetch', e => {
           if (fresh?.ok) {
             cache.put(req, fresh.clone())
           } else if (fresh?.status === 404) {
-            // Chunk no longer exists — new deployment. Tell all clients to reload.
-            self.clients.matchAll({ includeUncontrolled: true }).then(clients =>
-              clients.forEach(c => c.postMessage({ type: 'CHUNK_404' }))
-            )
+            // Chunk no longer exists — new deployment. Tell the requesting tab to reload.
+            if (e.clientId) self.clients.get(e.clientId).then(c => c && c.postMessage({ type: 'CHUNK_404' }))
           }
           return fresh
         } catch {
           return new Response('Asset unavailable offline', { status: 503 })
         }
-      })
-    )
-    return
-  }
-
-  // ── Google Fonts: cache-first in version-independent CDN cache
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.open(CDN_CACHE).then(async cache => {
-        const cached = await cache.match(req)
-        if (cached) return cached
-        const fresh = await fetch(req)
-        if (fresh?.ok) cache.put(req, fresh.clone())
-        return fresh
       })
     )
     return
@@ -210,8 +208,10 @@ self.addEventListener('fetch', e => {
             headers.set('sw-cached-at', String(now))
             const body = await fresh.clone().arrayBuffer()
             cache.put(req, new Response(body, { status: fresh.status, statusText: fresh.statusText, headers }))
+            return fresh
           }
-          return fresh
+          // Rate-limited / upstream error — prefer stale data over an error payload
+          return cached || fresh
         } catch {
           // Offline — return stale cache if available, regardless of TTL
           return cached || new Response(JSON.stringify({ error: 'offline' }), {
@@ -250,10 +250,13 @@ self.addEventListener('fetch', e => {
         if (cached) {
           const age = now - parseInt(cached.headers.get('sw-cached-at') || '0', 10)
           if (age < feedTtl) return cached  // fresh — skip network
-          revalidate()                      // stale — serve immediately, refresh in background
+          e.waitUntil(revalidate())         // stale — serve now, refresh in background
           return cached
         }
-        return await revalidate() || new Response('{}', { status: 503 })
+        // Cold cache: network first, then the install-time precopy in STATIC.
+        return await revalidate()
+          || await caches.match(req)
+          || new Response('{}', { status: 503 })
       })
     )
     return
@@ -293,12 +296,10 @@ self.addEventListener('notificationclick', e => {
   const target = (e.notification.data && e.notification.data.url) || '/'
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) {
-        if ('focus' in c) {
-          if ('navigate' in c) { try { c.navigate(target) } catch { /* cross-origin guard */ } }
-          return c.focus()
-        }
-      }
+      // Prefer a tab already showing the target; otherwise open a new one
+      // rather than yanking an unrelated tab away from what the user had open.
+      const existing = list.find(c => { try { return new URL(c.url).pathname === target } catch { return false } })
+      if (existing && 'focus' in existing) return existing.focus()
       return self.clients.openWindow(target)
     })
   )
