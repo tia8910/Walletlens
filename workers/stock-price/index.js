@@ -29,7 +29,7 @@ export default {
     try {
       const res = await fetch(
         `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000) }
       )
       if (res.ok) {
         const data = await res.json()
@@ -49,7 +49,8 @@ export default {
     // Try Stooq CSV
     try {
       const res = await fetch(
-        `https://stooq.com/q/l/?s=${encodeURIComponent(symbol.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`
+        `https://stooq.com/q/l/?s=${encodeURIComponent(symbol.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`,
+        { signal: AbortSignal.timeout(8000) }
       )
       if (res.ok) {
         const text = await res.text()
