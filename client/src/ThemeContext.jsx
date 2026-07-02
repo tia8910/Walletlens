@@ -4,6 +4,7 @@ const GOLD_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 
 const SILVER_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23808898'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23e8ecf4'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.14)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.5)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAg%3C/text%3E%3C/svg%3E`
 
+const ETH_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23161b33'/%3E%3Cpath d='M20 5L20 16.1 29 20.2Z' fill='%23627eea' opacity='0.75'/%3E%3Cpath d='M20 5L11 20.2 20 16.1Z' fill='%238fa4f3'/%3E%3Cpath d='M20 17.9L11 22 20 27.3 29 22Z' fill='%23627eea'/%3E%3Cpath d='M20 29.2L11 23.9 20 36 29 23.9Z' fill='%238fa4f3' opacity='0.9'/%3E%3C/svg%3E`
 const SOLANA_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231a0a2e'/%3E%3Cpath d='M6,31L28,31L34,25L12,25Z' fill='%239945ff'/%3E%3Cpath d='M6,23L28,23L34,17L12,17Z' fill='%239945ff'/%3E%3Cpath d='M6,15L28,15L34,9L12,9Z' fill='%239945ff'/%3E%3C/svg%3E`
 
 export const THEMES = [
@@ -11,7 +12,7 @@ export const THEMES = [
   { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: '🥇', logo: GOLD_BAR_SVG },
   { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: '🥈', logo: SILVER_BAR_SVG },
   { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿'  },
-  { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: 'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/eth.svg' },
+  { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG },
   { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎',  logo: SOLANA_SVG },
 ]
 
