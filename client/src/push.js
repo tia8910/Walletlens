@@ -11,6 +11,7 @@
 const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
+const PA_ALERTS_KEY = 'walletlens_price_alerts'  // Dashboard 'Alerts' tab store
 
 export function isPushSupported() {
   return typeof navigator !== 'undefined' &&
@@ -30,7 +31,12 @@ function urlBase64ToUint8Array(base64) {
 }
 
 function readAlerts() {
-  try { return JSON.parse(localStorage.getItem(WL_ALERTS_KEY) || '[]') } catch { return [] }
+  const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]') } catch { return [] } }
+  // Merge both alert stores; prefix ids so the two sequences can't collide.
+  return [
+    ...read(WL_ALERTS_KEY).map(a => ({ ...a, id: `wl-${a.id}` })),
+    ...read(PA_ALERTS_KEY).filter(a => !a.triggered).map(a => ({ ...a, id: `pa-${a.id}` })),
+  ].filter(a => a.coin_id && a.targetPrice > 0)
 }
 
 async function getSubscription() {
@@ -65,7 +71,11 @@ export async function enablePush() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ subscription: sub.toJSON(), alerts: readAlerts() }),
   })
-  if (!res.ok) throw new Error('Couldn’t reach the notification server. Please try again.')
+  if (!res.ok) {
+    // Roll back so isPushEnabled() doesn't report a half-registered state.
+    try { await sub.unsubscribe() } catch {}
+    throw new Error('Couldn’t reach the notification server. Please try again.')
+  }
   return { ok: true }
 }
 

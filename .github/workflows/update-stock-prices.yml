@@ -2,10 +2,11 @@ name: Update Stock Prices
 
 on:
   schedule:
-    # Every 30 minutes Mon-Fri during US market hours (13:30–21:00 UTC)
-    - cron: '*/30 13-21 * * 1-5'
-    # Once at market open (pre-market snapshot)
-    - cron: '0 13 * * 1-5'
+    # Three snapshots per US market day (open / midday / close). The site is
+    # served by Cloudflare Pages from main, so the file lives in client/public/
+    # and each update commits without [skip ci] so it actually deploys,
+    # without burning the Pages build quota.
+    - cron: '35 13,17,21 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch stock prices from Stooq
@@ -136,7 +137,7 @@ jobs:
             "prices": result
           }
 
-          with open("stock-prices.json", "w") as f:
+          with open("client/public/stock-prices.json", "w") as f:
             json.dump(output, f)
 
           print(f"Fetched {len(result)}/{len(TICKERS)} tickers")
@@ -150,6 +151,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add stock-prices.json
-          git diff --staged --quiet || git commit -m "chore: update stock prices [skip ci]"
+          git add client/public/stock-prices.json
+          git diff --staged --quiet || git commit -m "chore: update stock prices"
           git push

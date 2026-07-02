@@ -15,7 +15,7 @@ export const COMPARISONS = [
     tagline: 'A free, private, no-account net-worth tracker vs. a paid all-asset wealth tracker.',
     summary: 'WalletLens vs Kubera: both track your whole net worth across crypto, stocks and more, but WalletLens is free with no account and keeps data on your device, while Kubera is a paid subscription that links your accounts for automatic syncing.',
     rows: [
-      { feature: 'Price', walletlens: 'Free forever', them: 'Paid (~$199/yr, publicly listed)' },
+      { feature: 'Price', walletlens: 'Free forever', them: 'Paid (~$199–$249/yr, publicly listed)' },
       { feature: 'Account required', walletlens: 'No account', them: 'Account required' },
       { feature: 'Crypto support', walletlens: 'Yes', them: 'Yes' },
       { feature: 'Stocks & ETFs', walletlens: 'Yes', them: 'Yes' },

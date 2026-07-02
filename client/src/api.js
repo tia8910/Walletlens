@@ -44,7 +44,7 @@ import {
   loadData as _loadData, saveData as _saveData, bumpId as _bumpId,
   runSchemaMigrations,
 } from './data/storage';
-import { foldBalances as _foldBalancesPure, diffHoldings, aggregatePortfolio } from './data/portfolio';
+import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
 
 export {
@@ -902,7 +902,8 @@ async function fetchBatchStocks(tickers) {
     }
   }
 
-  batchStockCacheTime = now;
+  // Mark fresh only if we actually have data; a fully-failed poll must retry.
+  if (Object.keys(batchStockCache).length > 0) batchStockCacheTime = now;
   return batchStockCache;
 }
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
@@ -952,6 +953,18 @@ async function fetchStooqHistory(symbol, days = 30) {
     } catch {}
   }
   return [];
+}
+
+// Per-wallet holdings for QR snapshots — getPortfolio() aggregates across
+// wallets (no wallet_id on holdings), which previously collapsed multi-wallet
+// portfolios into the first wallet on restore.
+async function holdingsPerWallet(wallets) {
+  const out = []
+  for (const w of wallets) {
+    const hs = await api.getPortfolio(w.id)
+    for (const h of hs) out.push({ ...h, wallet_id: w.id })
+  }
+  return out
 }
 
 export const api = {
@@ -1393,7 +1406,7 @@ export const api = {
           }
         }
         for (const id of cryptoIds) {
-          if (priceCache[id]) result[id] = { ...priceCache[id], source: 'coingecko' };
+          if (priceCache[id]) result[id] = { ...priceCache[id], source: priceCache[id].source || 'coingecko' };
         }
       })());
     }
@@ -2058,12 +2071,14 @@ export const api = {
     }
   },
 
+
+
   // Compact QR snapshot — only current holdings (no transaction history).
   // Always fits in a single QR code regardless of how many transactions exist.
   // Prefix 'WLQS:' distinguishes it from a full backup code on import.
   exportQrSnapshot: async () => {
     const wallets = loadData('wallets')
-    const holdings = await api.getPortfolio()
+    const holdings = await holdingsPerWallet(wallets)
     const manualPrices = loadData('manual_prices', {})
     const snapshot = {
       sv: 1,
@@ -2103,7 +2118,7 @@ export const api = {
   // Uses URL-safe base64 (no +/=) so the ?wqi= param needs no percent-encoding.
   exportQrDeepLink: async () => {
     const wallets = loadData('wallets')
-    const holdings = await api.getPortfolio()
+    const holdings = await holdingsPerWallet(wallets)
     const manualPrices = loadData('manual_prices', {})
     const snapshot = {
       sv: 1,

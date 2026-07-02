@@ -2,7 +2,11 @@ name: Update Market Snapshot
 
 on:
   schedule:
-    - cron: '*/30 * * * *'   # every 30 minutes
+    # Every 6 hours. Site is served by Cloudflare Pages from main, so the
+    # snapshot lives in client/public/ and each update must trigger a real
+    # deploy (CF Pages skips builds for [skip ci] commits). 6h stays far
+    # under the Pages build quota.
+    - cron: '15 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch top-250 market data from CoinGecko
@@ -50,15 +54,15 @@ jobs:
             "count": len(coins),
             "coins": coins,
           }
-          with open("market.json", "w") as f:
+          with open("client/public/market.json", "w") as f:
             json.dump(output, f)
-          print(f"Saved {len(coins)} coins to market.json")
+          print(f"Saved {len(coins)} coins to client/public/market.json")
           EOF
 
       - name: Commit updated market snapshot
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add market.json
-          git diff --staged --quiet || git commit -m "chore: update market snapshot [skip ci]"
+          git add client/public/market.json
+          git diff --staged --quiet || git commit -m "chore: update market snapshot"
           git push

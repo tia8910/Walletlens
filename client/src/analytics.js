@@ -1,7 +1,9 @@
-// GA4 analytics wrapper
-// All events automatically include page_path and session context.
-// Register custom dimensions in GA4: Admin → Custom Definitions → Custom Dimensions
-// Recommended dims: page, asset_count, portfolio_value_tier, tab, symbol, source
+// GA4 analytics wrapper — PRIVACY CONTRACT:
+// WalletLens is marketed as privacy-first, so NOTHING that describes the
+// user's portfolio may leave the device: no symbols, no value tiers, no
+// asset counts, no asset-class mix, no profit/loss signals, no user-typed
+// text. Events describe WHICH features are used — never WHAT the user owns.
+// If you add an event, keep every param free of portfolio-derived data.
 
 export function track(eventName, params = {}) {
   if (typeof window.gtag !== 'function') return
@@ -11,11 +13,16 @@ export function track(eventName, params = {}) {
   })
 }
 
-// ── Auto-track EVERY user action ───────────────────────────────────────────
-// Delegated listeners fire a GA event on every click and every selection /
-// toggle across the whole app — so no interaction goes unmeasured, on top of
-// the named events above. Text-input *values* are intentionally never read,
-// to avoid logging anything sensitive the user types.
+// Redact digits from any captured on-screen text so amounts/prices that
+// happen to sit inside a clicked element can never reach analytics.
+function redactNumbers(s) {
+  return s.replace(/\d[\d,.]*/g, '#')
+}
+
+// ── Auto-track user actions ─────────────────────────────────────────────────
+// Delegated listeners fire a GA event on clicks and toggles. Free-text input
+// values are never read, captured labels have numbers redacted, and select
+// values are not transmitted (the element name alone identifies the control).
 function safeClassName(el) {
   return typeof el.className === 'string' ? el.className : ''
 }
@@ -25,7 +32,7 @@ function actionLabel(el) {
   const title= el.getAttribute?.('title')
   let txt = (dt || aria || title || el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ')
   if (!txt && el.tagName === 'A') txt = el.getAttribute('href') || ''
-  return txt.slice(0, 80)
+  return redactNumbers(txt).slice(0, 80)
 }
 function elementId(el) {
   return (el.getAttribute?.('data-track-id') || el.id || safeClassName(el) || el.tagName).toString().slice(0, 100)
@@ -56,60 +63,38 @@ export function initAutoTrack() {
     } catch {}
   }, { capture: true, passive: true })
 
-  // Selections & toggles (NOT free-text inputs — values are never captured there).
+  // Toggles: report WHICH control changed, never the chosen value — select
+  // values can encode currencies/assets, which is user financial context.
   document.addEventListener('change', (e) => {
     try {
       const el = e.target
       if (!el?.matches?.('select, input[type="checkbox"], input[type="radio"], input[type="range"]')) return
-      const value = el.type === 'checkbox'
-        ? (el.checked ? 'on' : 'off')
-        : String(el.value ?? '').slice(0, 80)
       track('ui_change', {
         element: (el.name || el.id || safeClassName(el) || el.tagName).toString().slice(0, 100),
-        value,
+        ...(el.type === 'checkbox' ? { value: el.checked ? 'on' : 'off' } : {}),
         tag: el.tagName.toLowerCase(),
       })
     } catch {}
   }, { capture: true, passive: true })
 }
 
-// ── Portfolio-level tracking ──────────────────────────────────────────────────
-
-// Call once after holdings are loaded to record portfolio snapshot
-export function trackPortfolioLoaded({ assetCount, totalValue, hasProfit, assetTypes }) {
-  if (typeof window.gtag !== 'function') return
-  const valueTier =
-    totalValue >= 100000 ? '100k+' :
-    totalValue >= 10000  ? '10k-100k' :
-    totalValue >= 1000   ? '1k-10k' :
-    totalValue >= 100    ? '100-1k' : '<100'
-
-  gtag('event', 'portfolio_loaded', {
-    page: window.location.pathname,
-    asset_count: assetCount,
-    portfolio_value_tier: valueTier,
-    has_profit: hasProfit ? 'yes' : 'no',
-    asset_types: assetTypes || 'crypto_only',   // e.g. 'crypto+metals+stocks'
-  })
+// ── Portfolio-level tracking ─────────────────────────────────────────────────
+// Deliberately parameter-free: fires so funnels show the dashboard loaded with
+// data, but transmits nothing about size, value, profit, or composition.
+export function trackPortfolioLoaded() {
+  track('portfolio_loaded')
 }
 
-// Track when user adds a holding
-export function trackHoldingAdded({ symbol, assetClass, valueUsd, isFirstHolding }) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'holding_added', {
-    page: window.location.pathname,
-    symbol: symbol?.toUpperCase(),
-    asset_class: assetClass || 'crypto',
-    value_tier: valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
+// Track when user adds a holding — method funnel only, no symbol/value/class.
+export function trackHoldingAdded({ isFirstHolding } = {}) {
+  track('holding_added', {
     is_first_holding: isFirstHolding ? 'yes' : 'no',
   })
 }
 
 // Track feature engagement depth
 export function trackFeatureEngagement(feature, depth = 1) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'feature_engagement', {
-    page: window.location.pathname,
+  track('feature_engagement', {
     feature_name: feature,
     engagement_depth: depth,
   })
@@ -117,58 +102,43 @@ export function trackFeatureEngagement(feature, depth = 1) {
 
 // ── Profile creation tracking ──────────────────────────────────────────────
 // Fires ONCE whenever a user populates their portfolio, tagged with the exact
-// METHOD they used. This is the single funnel-completion event to watch in GA4
-// Realtime to see HOW users build their profiles.
+// METHOD they used (the funnel-completion event to watch in GA4 Realtime).
 //   method: 'backup_code' | 'qr_scan' | 'screenshot' | 'voice' |
 //           'manual_trade' | 'extension_sync' | 'demo'
-export function trackProfileCreated({ method, assetCount, source }) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'profile_created', {
-    page: window.location.pathname,
+export function trackProfileCreated({ method, source } = {}) {
+  track('profile_created', {
     method,
-    asset_count: assetCount ?? 0,
     source: source || method,
   })
 }
 
-// Track referral link clicks with full context
-export function trackReferral({ exchange, source, assetContext }) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'referral_click', {
-    page: window.location.pathname,
+// Track referral link clicks
+export function trackReferral({ exchange, source }) {
+  track('referral_click', {
     exchange_name: exchange,
     referral_source: source,
-    asset_context: assetContext || 'none',
   })
 }
 
-// Track search / market browsing
-export function trackSearch({ query, resultsCount, source }) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'search', {
-    search_term: query,
+// Track search / market browsing (count only — the typed query is not sent).
+export function trackSearch({ resultsCount, source } = {}) {
+  track('search', {
     results_count: resultsCount,
     search_source: source || 'market',
   })
 }
 
-// Track wallet creation
-export function trackWalletCreated({ walletName, isFirst } = {}) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'wallet_created', {
-    page: window.location.pathname,
-    wallet_name: walletName || 'unnamed',
+// Track wallet creation (the user-typed wallet name is not sent).
+export function trackWalletCreated({ isFirst } = {}) {
+  track('wallet_created', {
     is_first_wallet: isFirst ? 'yes' : 'no',
   })
 }
 
-// Track AI feature usage
-export function trackAI({ action, assetCount, planGenerated }) {
-  if (typeof window.gtag !== 'function') return
-  gtag('event', 'ai_interaction', {
-    page: window.location.pathname,
+// Track AI feature usage — which feature ran, never portfolio contents.
+export function trackAI({ action, planGenerated } = {}) {
+  track('ai_interaction', {
     ai_action: action,
-    asset_count: assetCount,
     plan_generated: planGenerated ? 'yes' : 'no',
   })
 }

@@ -2967,8 +2967,9 @@ export default function Dashboard() {
     const raw = portfolio.map(h => {
       const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
       const value   = h.amount * price
-      const pnl     = value - h.total_invested
-      const pnlPct  = h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
+      // No price yet ≠ worthless: neutralize P&L until a real quote arrives.
+      const pnl     = price > 0 ? value - h.total_invested : 0
+      const pnlPct  = price > 0 && h.total_invested > 0 ? (pnl / h.total_invested) * 100 : 0
       const coin_image = h.coin_image || coinImages[h.coin_id] || ''
       const pct24h  = prices[h.coin_id]?.usd_24h_change ?? 0
       return { ...h, coin_image, price, value, pnl, pnlPct, pct24h }
@@ -2982,7 +2983,10 @@ export default function Dashboard() {
         totalPnL: 0, totalPnLPct: 0, isDemo: false, pricesFailed: false }
     }
 
-    const tv  = hasPrices ? raw.reduce((s, h) => s + h.value, 0) : raw.reduce((s, h) => s + h.total_invested, 0)
+    // Holdings with a failed quote count at cost so the total isn't understated.
+    const tv  = hasPrices
+      ? raw.reduce((s, h) => s + (h.price > 0 ? h.value : h.total_invested), 0)
+      : raw.reduce((s, h) => s + h.total_invested, 0)
     // Exclude stablecoins/cash from invested & P&L — they don't generate returns.
     // categorizeAsset() buckets stablecoins under 'crypto', so check isStablecoin
     // explicitly too, otherwise USDT/USDC/DAI dilute the portfolio P&L%.
@@ -2990,12 +2994,15 @@ export default function Dashboard() {
     const ti  = nonStables.length > 0
       ? nonStables.reduce((s, h) => s + h.total_invested, 0)
       : raw.reduce((s, h) => s + h.total_invested, 0)
-    const pnl = hasPrices && nonStables.length > 0
-      ? nonStables.reduce((s, h) => s + h.pnl, 0)
+    // P&L only over holdings that actually have a live quote.
+    const priced = nonStables.filter(h => h.price > 0)
+    const pnl = hasPrices && priced.length > 0
+      ? priced.reduce((s, h) => s + h.pnl, 0)
       : 0
+    const pricedTi = priced.reduce((s, h) => s + h.total_invested, 0)
     return {
       enriched: raw, totalValue: tv, totalInvested: ti,
-      totalPnL: pnl, totalPnLPct: hasPrices && ti > 0 ? (pnl / ti) * 100 : 0,
+      totalPnL: pnl, totalPnLPct: hasPrices && pricedTi > 0 ? (pnl / pricedTi) * 100 : 0,
       isDemo: false, pricesFailed: hasPortfolio && !hasPrices && loaded && !pricesLoading,
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
@@ -3028,7 +3035,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
-  }, [loaded, totalValue])
+  }, [loaded, totalValue, totalInvested])
 
   // Portfolio move notifications (±5%)
   useEffect(() => {

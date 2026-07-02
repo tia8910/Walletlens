@@ -37,6 +37,48 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
 
 const kv = await Deno.openKv()
 
+// ── Abuse guards ────────────────────────────────────────────────────────────
+// Push endpoints must belong to a real browser push service — otherwise the
+// cron becomes a free HTTP cannon aimed at attacker-chosen URLs.
+const PUSH_HOST_ALLOW = [
+  /(^|\.)fcm\.googleapis\.com$/,          // Chrome / Chromium
+  /(^|\.)android\.googleapis\.com$/,
+  /(^|\.)push\.services\.mozilla\.com$/,  // Firefox
+  /(^|\.)notify\.windows\.com$/,           // Edge legacy
+  /(^|\.)push\.apple\.com$/,               // Safari
+]
+function isRealPushEndpoint(endpoint: string): boolean {
+  try {
+    const u = new URL(endpoint)
+    return u.protocol === "https:" && PUSH_HOST_ALLOW.some(re => re.test(u.hostname))
+  } catch { return false }
+}
+
+const MAX_ALERTS = 50
+function sanitizeAlerts(raw: unknown): StoredSub["alerts"] {
+  if (!Array.isArray(raw)) return []
+  return raw.slice(0, MAX_ALERTS).flatMap(a => {
+    const id = String(a?.id ?? "").slice(0, 40)
+    const coin_id = String(a?.coin_id ?? "").slice(0, 80)
+    const coin_symbol = String(a?.coin_symbol ?? "").slice(0, 20)
+    const condition = a?.condition === "below" ? "below" as const : "above" as const
+    const targetPrice = Number(a?.targetPrice)
+    if (!id || !coin_id || !Number.isFinite(targetPrice) || targetPrice <= 0) return []
+    return [{ id, coin_id, coin_symbol, condition, targetPrice }]
+  })
+}
+
+// Best-effort per-IP rate limit (in-memory, per isolate — cheap first line).
+const rlBuckets = new Map<string, { n: number; reset: number }>()
+function rateLimited(ip: string, max = 30, windowMs = 60_000): boolean {
+  const now = Date.now()
+  const b = rlBuckets.get(ip)
+  if (!b || now > b.reset) { rlBuckets.set(ip, { n: 1, reset: now + windowMs }); return false }
+  b.n++
+  if (rlBuckets.size > 10_000) rlBuckets.clear()
+  return b.n > max
+}
+
 // ── CORS (same allowlist style as voice-api) ────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
   "https://walletlens.live",
@@ -156,10 +198,17 @@ async function readJson(req: Request): Promise<Record<string, unknown>> {
   try { return await req.json() } catch { return {} }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req, info) => {
   const origin = req.headers.get("origin")
   const headers = corsHeaders(origin)
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
+
+  const ip = req.headers.get("cf-connecting-ip")
+    || (info as { remoteAddr?: { hostname?: string } })?.remoteAddr?.hostname
+    || "unknown"
+  if (req.method !== "GET" && rateLimited(ip)) {
+    return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
+  }
 
   const url = new URL(req.url)
   const path = url.pathname
@@ -174,11 +223,14 @@ Deno.serve(async (req) => {
     if (!subscription?.endpoint) {
       return new Response(JSON.stringify({ error: "missing_subscription" }), { status: 400, headers })
     }
+    if (!isRealPushEndpoint(subscription.endpoint)) {
+      return new Response(JSON.stringify({ error: "invalid_endpoint" }), { status: 400, headers })
+    }
     const k = await endpointKey(subscription.endpoint)
     const existing = (await kv.get<StoredSub>(["sub", k])).value
     const stored: StoredSub = {
       subscription,
-      alerts: (body.alerts as StoredSub["alerts"]) ?? existing?.alerts ?? [],
+      alerts: body.alerts !== undefined ? sanitizeAlerts(body.alerts) : existing?.alerts ?? [],
       fired: existing?.fired ?? {},
       createdAt: existing?.createdAt ?? Date.now(),
     }
@@ -193,7 +245,7 @@ Deno.serve(async (req) => {
     const k = await endpointKey(endpoint)
     const existing = (await kv.get<StoredSub>(["sub", k])).value
     if (!existing) return new Response(JSON.stringify({ error: "unknown_subscription" }), { status: 404, headers })
-    const nextAlerts = (body.alerts as StoredSub["alerts"]) ?? []
+    const nextAlerts = sanitizeAlerts(body.alerts)
     // Prune fired flags for alerts that no longer exist.
     const liveIds = new Set(nextAlerts.map(a => String(a.id)))
     const fired: Record<string, number> = {}

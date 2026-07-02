@@ -99,7 +99,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const [alertFormId, setAlertFormId] = useState(null)
   const [alertCond, setAlertCond]     = useState('above')
   const [alertPrice, setAlertPrice]   = useState('')
-  const [notifPerm, setNotifPerm] = useState(Notification?.permission ?? 'default')
+  const [notifPerm, setNotifPerm] = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
   alertsRef.current = alerts
