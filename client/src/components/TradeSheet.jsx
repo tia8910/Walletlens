@@ -511,7 +511,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <div className="bs-type-dot" style={{ background: accent }} />
             <h3 className="bs-title" style={{ color: accent }}>{isBuy ? 'Buy Asset' : 'Sell Asset'}</h3>
           </div>
-          <button className="bs-close" onClick={onClose}>{IcoClose}</button>
+          <button className="bs-close" style={{ '--bs-acc': accent }} onClick={onClose} aria-label="Close">{IcoClose}</button>
         </div>
 
         {success ? (
