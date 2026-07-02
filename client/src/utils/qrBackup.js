@@ -11,8 +11,11 @@ export const QR_CHUNK = 2000
 
 export async function makeQr(data) {
   try {
+    // scale (px per module) instead of a fixed width: a near-capacity v40
+    // code is 177×177 modules — forcing it into 260px gave ~1.4px/module,
+    // an image no decoder (including ours) could read back.
     return await QRCode.toDataURL(data, {
-      errorCorrectionLevel: 'L', margin: 1, width: 260,
+      errorCorrectionLevel: 'L', margin: 2, scale: 5,
       color: { dark: '#000000', light: '#ffffff' },
     })
   } catch { return '' }
@@ -61,21 +64,53 @@ export function scanImageData(imageData) {
   return code?.data || null
 }
 
-// Decode a QR from an uploaded image file (downscaled for memory safety).
+// Native QR detector (Android/Chrome) — far more robust than jsQR on dense
+// or slightly blurry images. Returns null where unsupported (iOS Safari).
+async function detectNative(canvas) {
+  try {
+    if (typeof BarcodeDetector === 'undefined') return null
+    const det = new BarcodeDetector({ formats: ['qr_code'] })
+    const codes = await det.detect(canvas)
+    return codes?.[0]?.rawValue || null
+  } catch { return null }
+}
+
+// Decode a QR from an uploaded image file. Tries the native detector first,
+// then jsQR across several nearest-neighbor upscales: small/dense exports can
+// sit near 1px per module, and jsQR needs roughly 3px+ per module to lock on.
 export function decodeQrFromImageFile(file, onResult, onError) {
   const url = URL.createObjectURL(file)
   const img = new Image()
-  img.onload = () => {
+  img.onload = async () => {
     try {
-      const canvas = document.createElement('canvas')
-      const maxDim = 1600
-      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight))
-      canvas.width = Math.round(img.naturalWidth * scale)
-      canvas.height = Math.round(img.naturalHeight * scale)
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const decoded = scanImageData(data)
+      const w = img.naturalWidth, h = img.naturalHeight
+      const long = Math.max(w, h)
+      const MAX = 3000 // canvas cap — keeps peak memory sane on low-end phones
+      const draw = (scale) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(w * scale))
+        canvas.height = Math.max(1, Math.round(h * scale))
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        ctx.imageSmoothingEnabled = false // keep module edges crisp when upscaling
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        return canvas
+      }
+      const scales = [...new Set(
+        [Math.min(1, MAX / long), 2, 3, 4]
+          .map(s => Math.min(s, MAX / long))
+          .filter(s => s > 0)
+      )]
+      let decoded = null
+      for (const s of scales) {
+        const canvas = draw(s)
+        decoded = await detectNative(canvas)
+        if (!decoded) {
+          const ctx = canvas.getContext('2d')
+          const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          decoded = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })?.data || null
+        }
+        if (decoded) break
+      }
       if (decoded) onResult(decoded)
       else onError('No QR code found in that image. Try a clearer, more cropped image.')
     } catch { onError('Could not read that image.') }
