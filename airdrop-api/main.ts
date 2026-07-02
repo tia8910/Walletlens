@@ -62,17 +62,28 @@ async function onchainOk(address: string): Promise<boolean> {
   }
 }
 
+// /stats is public and unauthenticated, so anyone (or a scraper hitting it
+// on a loop) triggers a full KV table scan. Cache the result briefly —
+// registration counts don't need to be real-time to the second.
+const STATS_CACHE_MS = 30_000;
+let statsCache: { body: { total: number; eligible: number }; at: number } | null = null;
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   // ── GET /stats ────────────────────────────────────────────────────────────
   if (req.method === "GET" && url.pathname === "/stats") {
+    if (statsCache && Date.now() - statsCache.at < STATS_CACHE_MS) {
+      return json(statsCache.body);
+    }
     let total = 0, eligible = 0;
     for await (const e of kv.list({ prefix: ["reg"] })) {
       total++; if ((e.value as any).eligible) eligible++;
     }
-    return json({ total, eligible });
+    const body = { total, eligible };
+    statsCache = { body, at: Date.now() };
+    return json(body);
   }
 
   // ── GET /status ───────────────────────────────────────────────────────────

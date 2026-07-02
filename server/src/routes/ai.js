@@ -63,7 +63,7 @@ router.post('/analyze', async (req, res) => {
         role: 'user',
         content: `${ctx}\n\nGive me a comprehensive portfolio analysis with these sections:\n\n## Portfolio Health: [Grade] — [verdict]\nOne honest paragraph.\n\n## 🔴 Top Risks\n3–5 specific risks based on actual holdings and percentages.\n\n## 🟢 Opportunities\n3–5 specific opportunities or optimizations.\n\n## ⚡ Priority Actions\n3–5 concrete actions ranked by urgency. Name the asset, price level, and reasoning.\n\n## 📊 Stress Test\nBear case (BTC -50%), Sideways (6 months), Bull case (BTC +100%) — estimated portfolio impact each.\n\n## 💡 Contrarian Insight\nOne surprising insight most retail investors miss about this specific portfolio.`,
       }],
-    });
+    }, { timeout: 60000 });
 
     const text = message.content.find(b => b.type === 'text')?.text || '';
     res.json({ analysis: text, model: message.model });
@@ -102,7 +102,7 @@ router.post('/chat', async (req, res) => {
       thinking: { type: 'adaptive' },
       system: systemWithPortfolio,
       messages: history,
-    });
+    }, { timeout: 120000 });
 
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {

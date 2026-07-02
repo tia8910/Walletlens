@@ -31,7 +31,7 @@ export async function onRequestGet({ request }) {
       try {
         const res = await fetch(
           `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
-          { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' } }
+          { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(8000) }
         )
         if (!res.ok) continue
         const meta = (await res.json())?.chart?.result?.[0]?.meta
@@ -50,7 +50,8 @@ export async function onRequestGet({ request }) {
     // Fallback: Stooq CSV
     try {
       const res = await fetch(
-        `https://stooq.com/q/l/?s=${encodeURIComponent(sym.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`
+        `https://stooq.com/q/l/?s=${encodeURIComponent(sym.toLowerCase())}.us&f=sd2t2ohlcvn&h&e=csv`,
+        { signal: AbortSignal.timeout(8000) }
       )
       if (res.ok) {
         const text = await res.text()
