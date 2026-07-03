@@ -16,13 +16,9 @@ function explainMailReason(reason) {
     return 'Email isn\'t set up on the server yet (missing RESEND_API_KEY). Add it in the Deno project settings.'
   if (r.includes('not verified') || r.includes('domain'))
     return 'The walletlens.live email domain isn\'t verified in Resend yet, so mail can only go to the account owner. Verify the domain in the Resend dashboard, then try again.'
-  if (r.includes('invalid_phone'))
-    return 'That WhatsApp number looks invalid — use the full international format, e.g. +14155552671.'
-  if (r.includes('whatsapp'))
-    return 'Couldn\'t send the WhatsApp message. WhatsApp isn\'t enabled on the server yet, or the number can\'t receive messages right now.'
   if (r.includes('network'))
-    return 'Couldn\'t reach the notification service. Check your connection and try again.'
-  return 'Couldn\'t send the test notification. Double-check the heir details and try again.'
+    return 'Couldn\'t reach the email service. Check your connection and try again.'
+  return 'Couldn\'t send the test email. Double-check the heir addresses and try again.'
 }
 
 function getOrCreateDeviceId() {
@@ -163,7 +159,6 @@ function Field({ label, hint, error, children }) {
 }
 
 function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
-  const channel = heir.channel === 'whatsapp' ? 'whatsapp' : 'email'
   return (
     <div className="pg-heir-row">
       <div className="pg-heir-num">{idx + 1}</div>
@@ -176,42 +171,13 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
           maxLength={80}
           onChange={e => onChange(idx, { ...heir, name: e.target.value })}
         />
-        <div className="pg-channel-toggle" role="group" aria-label="Notify by">
-          <button
-            type="button"
-            className={`pg-channel-opt ${channel === 'email' ? 'active' : ''}`}
-            onClick={() => onChange(idx, { ...heir, channel: 'email' })}
-          >
-            ✉️ Email
-          </button>
-          <button
-            type="button"
-            className={`pg-channel-opt ${channel === 'whatsapp' ? 'active' : ''}`}
-            onClick={() => onChange(idx, { ...heir, channel: 'whatsapp' })}
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.9 1.13-.17.19-.33.22-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.6-2-.17-.3-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.55-.88-2.12-.23-.55-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36s-1 .98-1 2.38 1.02 2.76 1.17 2.95c.15.19 2.01 3.07 4.87 4.3.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34zM12 2a10 10 0 0 0-8.5 15.28L2 22l4.85-1.27A10 10 0 1 0 12 2z"/></svg>
-            WhatsApp
-          </button>
-        </div>
-        {channel === 'whatsapp' ? (
-          <input
-            key="wa"
-            type="tel"
-            className="pg-input"
-            placeholder="WhatsApp e.g. +14155552671"
-            value={heir.whatsapp || ''}
-            onChange={e => onChange(idx, { ...heir, whatsapp: e.target.value })}
-          />
-        ) : (
-          <input
-            key="email"
-            type="email"
-            className="pg-input"
-            placeholder="email@example.com"
-            value={heir.email}
-            onChange={e => onChange(idx, { ...heir, email: e.target.value })}
-          />
-        )}
+        <input
+          type="email"
+          className="pg-input"
+          placeholder="email@example.com"
+          value={heir.email}
+          onChange={e => onChange(idx, { ...heir, email: e.target.value })}
+        />
       </div>
       {showRemove && (
         <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title="Remove heir">
@@ -225,60 +191,34 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
 // ── Setup Form ───────────────────────────────────────────────────────────────
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRe = /^\+?[1-9]\d{7,14}$/
-function normalizePhone(raw) {
-  const digits = String(raw || '').replace(/[^\d+]/g, '')
-  const e164 = digits.startsWith('+') ? digits : '+' + digits
-  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : ''
-}
 
-// Clean heirs for the API. Each heir is reached on their chosen channel only —
-// email OR WhatsApp — so we keep just that channel's contact.
+// Clean heirs for the API — keep those with a valid email address.
 function cleanHeirList(heirs) {
   return heirs
-    .map(h => {
-      const out = { name: h.name.trim() }
-      if (h.channel === 'whatsapp') {
-        const whatsapp = normalizePhone(h.whatsapp)
-        if (whatsapp) out.whatsapp = whatsapp
-      } else {
-        const email = h.email.trim().toLowerCase()
-        if (email && emailRe.test(email)) out.email = email
-      }
-      return out
-    })
-    .filter(h => h.email || h.whatsapp)
+    .map(h => ({ name: h.name.trim(), email: h.email.trim().toLowerCase() }))
+    .filter(h => h.email && emailRe.test(h.email))
 }
 
 function SetupForm({ onSuccess }) {
   const [ownerName, setOwnerName] = useState('')
-  const [heirs, setHeirs] = useState([{ name: '', email: '', whatsapp: '', channel: 'email' }])
+  const [heirs, setHeirs] = useState([{ name: '', email: '' }])
   const [message, setMessage] = useState('')
   const [intervalDays, setIntervalDays] = useState(90)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle') // idle | saving | error
   const [testStatus, setTestStatus] = useState('idle') // idle | sending | sent | error
   const [testErr, setTestErr] = useState('')
-  const [testNote, setTestNote] = useState('') // soft note on success (e.g. WhatsApp not enabled)
 
   function validate() {
     const errs = {}
-    const valOf = h => h.channel === 'whatsapp' ? String(h.whatsapp || '').trim() : h.email.trim()
-    // A row counts once the chosen channel's field has something in it.
-    const touched = heirs.filter(h => valOf(h))
+    const touched = heirs.filter(h => h.email.trim())
     if (touched.length === 0) {
-      errs.heirs = 'Add at least one heir and choose Email or WhatsApp for them.'
+      errs.heirs = 'Add at least one heir email.'
       return errs
     }
     for (const h of touched) {
-      if (h.channel === 'whatsapp') {
-        const wa = String(h.whatsapp || '').trim()
-        if (!phoneRe.test(wa.replace(/[\s()-]/g, ''))) {
-          errs.heirs = `"${wa}" is not a valid phone number — use the full international format, e.g. +14155552671.`; break
-        }
-      } else {
-        const email = h.email.trim()
-        if (!emailRe.test(email)) { errs.heirs = `"${email}" is not a valid email.`; break }
+      if (!emailRe.test(h.email.trim())) {
+        errs.heirs = `"${h.email.trim()}" is not a valid email.`; break
       }
     }
     return errs
@@ -287,7 +227,7 @@ function SetupForm({ onSuccess }) {
   async function sendTestEmail() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    setErrors({}); setTestErr(''); setTestNote(''); setTestStatus('sending')
+    setErrors({}); setTestErr(''); setTestStatus('sending')
     const cleanHeirs = cleanHeirList(heirs)
     try {
       const data = await apiCall({
@@ -296,18 +236,7 @@ function SetupForm({ onSuccess }) {
         heirs: cleanHeirs, message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
       })
-      if (data?.ok) {
-        // WhatsApp was requested but the server has no WhatsApp credentials —
-        // email still went, so this is a success with a heads-up, not an error.
-        if (data.waUnconfigured) {
-          setTestNote('Email sent ✓ — WhatsApp isn\'t enabled on the server yet (add WHATSAPP_TOKEN & WHATSAPP_PHONE_ID in Deno to enable it).')
-        } else if (data.waSent > 0 && data.sent > 0) {
-          setTestNote('Sent by email and WhatsApp ✓')
-        } else if (data.waSent > 0) {
-          setTestNote('Sent by WhatsApp ✓')
-        }
-        setTestStatus('sent')
-      }
+      if (data?.ok) { setTestStatus('sent') }
       else { setTestErr(explainMailReason(data?.reason)); setTestStatus('error') }
       track('guardian_test_email', { heirs: cleanHeirs.length })
     } catch (e) {
@@ -353,14 +282,14 @@ function SetupForm({ onSuccess }) {
     if (errors.heirs) setErrors(e => ({ ...e, heirs: undefined }))
   }
   function removeHeir(idx) { setHeirs(h => h.filter((_, i) => i !== idx)) }
-  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', whatsapp: '', channel: 'email' }]) }
+  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '' }]) }
 
   const portfolio = getPortfolioSnapshot()
 
   return (
     <form className="pg-form" onSubmit={handleSubmit} noValidate>
       <p className="pg-intro">
-        Portfolio Guardian notifies your chosen heirs — each by email or WhatsApp — with your personal message and portfolio information if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
+        Portfolio Guardian emails your chosen heirs your personal message and portfolio information if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
         No wallet keys or private data are ever shared — only the total value and asset list you confirm below.
       </p>
 
@@ -385,7 +314,7 @@ function SetupForm({ onSuccess }) {
         />
       </Field>
 
-      <Field label="Heirs" hint="Up to 3 people — notify each by email or WhatsApp" error={errors.heirs}>
+      <Field label="Heirs" hint="Up to 3 people to notify by email" error={errors.heirs}>
         <div className="pg-heirs-list">
           {heirs.map((h, i) => (
             <HeirRow key={i} idx={i} heir={h} onChange={updateHeir} onRemove={removeHeir} showRemove={heirs.length > 1} />
@@ -430,10 +359,10 @@ function SetupForm({ onSuccess }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test notification to my heirs now'}
+        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
       </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test sent — ask your heirs to check their inbox (and spam){testNote.includes('WhatsApp isn\'t') ? '' : ' and WhatsApp'} to confirm it arrived.{testNote ? ` ${testNote}` : ''}</p>}
-      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test notification. Check the details and try again.'}</p>}
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
+      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check the addresses and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}
@@ -532,8 +461,7 @@ function StatusCard({ config, onCheckin, onCancel }) {
         <div className="pg-heirs-chips">
           {config.heirs.map((h, i) => (
             <span key={i} className="pg-heir-chip">
-              {h.name || (h.email ? h.email.split('@')[0] : h.whatsapp) || 'Heir'}
-              {h.whatsapp && <span className="pg-heir-wa-badge" title={`WhatsApp: ${h.whatsapp}`}> · WhatsApp</span>}
+              {h.name || (h.email ? h.email.split('@')[0] : 'Heir')}
             </span>
           ))}
         </div>
