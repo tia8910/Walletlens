@@ -23,6 +23,48 @@ const SUGGESTIONS = {
   ],
 }
 
+// ── Minimal markdown rendering for assistant replies ────────────────────────
+// The model replies with light markdown (**bold**, *italic*, `code`, and "- "
+// bullet lists). We render a safe subset as React nodes — no dangerouslySet
+// HTML — so the chat doesn't show raw asterisks.
+function renderInline(text) {
+  const nodes = []
+  const re = /\*\*(.+?)\*\*|`(.+?)`|\*(.+?)\*|_(.+?)_/g
+  let last = 0, m, k = 0
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    if (m[1] != null) nodes.push(<strong key={k++}>{m[1]}</strong>)
+    else if (m[2] != null) nodes.push(<code key={k++} className="wlc-md-code">{m[2]}</code>)
+    else if (m[3] != null) nodes.push(<em key={k++}>{m[3]}</em>)
+    else if (m[4] != null) nodes.push(<em key={k++}>{m[4]}</em>)
+    last = re.lastIndex
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
+function MarkdownText({ text }) {
+  const lines = String(text || '').split('\n')
+  const blocks = []
+  let list = null
+  for (const line of lines) {
+    const bullet = /^\s*[-*•]\s+(.*)$/.exec(line)
+    if (bullet) {
+      if (!list) list = []
+      list.push(bullet[1])
+      continue
+    }
+    if (list) { blocks.push({ type: 'ul', items: list }); list = null }
+    if (line.trim()) blocks.push({ type: 'p', text: line })
+  }
+  if (list) blocks.push({ type: 'ul', items: list })
+  return blocks.map((b, i) =>
+    b.type === 'ul'
+      ? <ul key={i} className="wlc-md-list">{b.items.map((it, j) => <li key={j}>{renderInline(it)}</li>)}</ul>
+      : <p key={i} className="wlc-md-p">{renderInline(b.text)}</p>
+  )
+}
+
 // Turn a "/dashboard?tab=ai" style route into navigate(path, { state }).
 function go(navigate, route) {
   const [path, query] = route.split('?')
@@ -218,7 +260,11 @@ export default function AssistantChat() {
 
             {messages.map((m, i) => (
               <div key={i} className={`wlc-msg wlc-msg-${m.role}`}>
-                {m.text && <div className="wlc-msg-text">{m.text}</div>}
+                {m.text && (
+                  <div className="wlc-msg-text">
+                    {m.role === 'assistant' ? <MarkdownText text={m.text} /> : m.text}
+                  </div>
+                )}
                 {m.navs?.length > 0 && (
                   <div className="wlc-navs">
                     {m.navs.map((n, j) => (
