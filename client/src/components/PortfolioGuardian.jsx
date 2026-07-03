@@ -153,6 +153,7 @@ function SetupForm({ onSuccess }) {
   const [intervalDays, setIntervalDays] = useState(90)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle') // idle | saving | error
+  const [testStatus, setTestStatus] = useState('idle') // idle | sending | sent | error
 
   function validate() {
     const errs = {}
@@ -166,6 +167,24 @@ function SetupForm({ onSuccess }) {
       }
     }
     return errs
+  }
+
+  async function sendTestEmail() {
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    setErrors({}); setTestStatus('sending')
+    const cleanHeirs = heirs.filter(h => h.email.trim())
+    try {
+      const data = await apiCall({
+        mode: 'guardian_test',
+        heirs: cleanHeirs, message: message.trim(),
+        portfolioSummary: getPortfolioSnapshot(),
+      })
+      setTestStatus(data?.ok ? 'sent' : 'error')
+      track('guardian_test_email', { heirs: cleanHeirs.length })
+    } catch {
+      setTestStatus('error')
+    }
   }
 
   async function handleSubmit(e) {
@@ -267,6 +286,12 @@ function SetupForm({ onSuccess }) {
       </Field>
 
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
+
+      <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
+        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
+      </button>
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
+      {testStatus === 'error' && <p className="pg-error">Couldn't send the test email. Check the addresses and try again.</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}

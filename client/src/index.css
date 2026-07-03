@@ -11365,6 +11365,30 @@ button:not(:disabled):active,
   transition: opacity .15s, transform .15s;
 }
 .pg-submit:hover  { opacity: 0.9; transform: translateY(-1px); }
+
+/* Guardian: 'send a test email now' — secondary button so users can verify
+   the heir notification instantly instead of waiting for the interval. */
+.pg-test-btn {
+  width: 100%;
+  padding: 0.7rem;
+  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--g-rgb), 0.4);
+  background: rgba(var(--g-rgb), 0.08);
+  color: var(--g-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .15s, opacity .15s;
+}
+.pg-test-btn:hover  { background: rgba(var(--g-rgb), 0.14); transform: translateY(-1px); }
+.pg-test-btn:disabled { opacity: 0.6; cursor: default; }
+.pg-test-ok {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--g-ink);
+}
 .pg-submit:active { transform: translateY(0); opacity: 0.85; }
 .pg-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 

@@ -482,7 +482,7 @@ function rateLimited(ip: string, bucket: string, max: number, windowMs = 60_000)
   return b.n > max
 }
 const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap"])
-const EMAIL_MODES = new Set(["email", "guardian_setup"])
+const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test"])
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
@@ -677,7 +677,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
     }
     // Validate interval
-    const validIntervals = [30, 60, 90, 180]
+    const validIntervals = [1, 7, 30, 60, 90, 180]
     const interval = validIntervals.includes(Number(intervalDays)) ? Number(intervalDays) : 90
 
     // Validate message
@@ -711,6 +711,50 @@ Deno.serve(async (req: Request) => {
       console.error("Guardian setup error:", e)
       return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
     }
+  }
+
+  if (body?.mode === "guardian_test") {
+    // Immediately send a clearly-labeled TEST of the heir notification so the
+    // owner can verify Portfolio Guardian works without waiting for the
+    // interval. Uses the form data directly (no KV lookup needed).
+    const { heirs, message, portfolioSummary } = body
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const cleanHeirs = (Array.isArray(heirs) ? heirs : [])
+      // deno-lint-ignore no-explicit-any
+      .filter((h: any) => h && typeof h.email === "string" && emailRe.test(String(h.email).trim()))
+      .slice(0, 3)
+      // deno-lint-ignore no-explicit-any
+      .map((h: any) => ({ name: String(h.name || "").trim().slice(0, 80) || "Heir", email: String(h.email).trim().toLowerCase() }))
+    if (cleanHeirs.length === 0) {
+      return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
+    }
+    const cleanMessage = String(message || "").trim().slice(0, 500)
+    // deno-lint-ignore no-explicit-any
+    const ps: any = (portfolioSummary && typeof portfolioSummary === "object") ? portfolioSummary : {}
+    const totalUsd = typeof ps.totalUsd === "number" ? Math.round(Math.abs(ps.totalUsd)) : 0
+    const currency = String(ps.currency || "USD").slice(0, 5).toUpperCase()
+    // deno-lint-ignore no-explicit-any
+    const assetSymbols = Array.isArray(ps.assetSymbols) ? ps.assetSymbols.slice(0, 20).map((x: any) => String(x).slice(0, 10)) : []
+    const valueStr = totalUsd > 0 ? `approximately ${currency} ${totalUsd.toLocaleString()}` : "an undisclosed amount"
+    const assetStr = assetSymbols.length ? assetSymbols.join(", ") : "various assets"
+
+    const html = emailShell(`
+      <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:10px;padding:12px 16px;margin:0 0 20px">
+        <p style="margin:0;color:#fde68a;font-weight:700;font-size:14px">✅ THIS IS A TEST</p>
+        <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">The WalletLens owner sent this to check that Portfolio Guardian works. No action is needed — they are fine.</p>
+      </div>
+      <h1 style="margin:0 0 16px;font-size:22px;color:#fff">A message from someone you care about (test)</h1>
+      ${cleanMessage ? `<div style="background:#1a2210;border-left:3px solid #4ade80;padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 22px"><p style="margin:0;line-height:1.7;color:#d1fae5;font-style:italic">"${cleanMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}"</p></div>` : ""}
+      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">If this were real, you would be told that a person who set you as their heir has not checked in — and how to access their portfolio worth ${valueStr} including: <b style="color:#e2e8f0">${assetStr}</b>.</p>
+      <p style="margin:0;line-height:1.6;color:#7d8794;font-size:13px">Questions? <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a></p>
+    `)
+    let sent = 0, failed = 0
+    for (const heir of cleanHeirs) {
+      const ok = await sendEmail(heir.email, "[TEST] WalletLens Portfolio Guardian — verification", html)
+      ok ? sent++ : failed++
+      await new Promise((r) => setTimeout(r, 120))
+    }
+    return new Response(JSON.stringify({ ok: sent > 0, sent, failed }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {
