@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
+import { api } from '../api'
+import { makeQr } from '../utils/qrBackup'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 const GUARDIAN_KEY = 'wl_guardian'
@@ -91,6 +93,22 @@ function getPortfolioSnapshot() {
   }
 }
 
+// Build the "view the portfolio" QR as a base64 PNG (no data-URL prefix) so the
+// server can attach it to the heir email. It encodes a walletlens.live/?wqi=…
+// deep link — scanning it with any phone camera opens WalletLens and loads the
+// portfolio. Returns null if the snapshot is too big for a single QR or on any
+// error (the email then just falls back to the manual restore steps).
+async function buildGuardianQr() {
+  try {
+    const url = await api.exportQrDeepLink()
+    const dataUrl = await makeQr(url)
+    if (!dataUrl) return null
+    const b64 = dataUrl.split(',')[1] || ''
+    // Guard against oversized payloads that would blow the server KV value limit.
+    return b64 && b64.length < 45000 ? b64 : null
+  } catch { return null }
+}
+
 function daysUntilDeadline(lastCheckin, intervalDays) {
   if (!lastCheckin) return intervalDays
   const elapsed = (Date.now() - new Date(lastCheckin).getTime()) / 86400000
@@ -134,7 +152,8 @@ export async function silentCheckin() {
   saveGuardianLocal({ ...local, lastCheckin: nowIso })
   try {
     const portfolioSummary = getPortfolioSnapshot()
-    const data = await apiCall({ mode: 'guardian_checkin', deviceId, portfolioSummary })
+    const qrPng = await buildGuardianQr()
+    const data = await apiCall({ mode: 'guardian_checkin', deviceId, portfolioSummary, qrPng })
     if (data.ok) {
       saveGuardianLocal({ ...loadGuardianLocal(), lastCheckin: data.lastCheckin || nowIso })
     }
@@ -235,6 +254,7 @@ function SetupForm({ onSuccess }) {
         ownerName: ownerName.trim(),
         heirs: cleanHeirs, message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
+        qrPng: await buildGuardianQr(),
       })
       if (data?.ok) { setTestStatus('sent') }
       else { setTestErr(explainMailReason(data?.reason)); setTestStatus('error') }
@@ -259,6 +279,7 @@ function SetupForm({ onSuccess }) {
         ownerName: ownerName.trim(),
         heirs: cleanHeirs, message: message.trim(),
         intervalDays, portfolioSummary,
+        qrPng: await buildGuardianQr(),
       })
       const record = {
         active: true, deviceId,
@@ -289,8 +310,8 @@ function SetupForm({ onSuccess }) {
   return (
     <form className="pg-form" onSubmit={handleSubmit} noValidate>
       <p className="pg-intro">
-        Portfolio Guardian emails your chosen heirs your personal message and portfolio information if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
-        No wallet keys or private data are ever shared — only the total value and asset list you confirm below.
+        Portfolio Guardian emails your chosen heirs your personal message and a scannable QR of your portfolio if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
+        Wallet keys and passwords are never included — the QR holds only your holdings snapshot (assets, amounts and cost basis), so heirs can view your portfolio in WalletLens.
       </p>
 
       {portfolio.assetSymbols.length > 0 && (
@@ -394,7 +415,8 @@ function StatusCard({ config, onCheckin, onCancel }) {
     if (!deviceId) { setChecking(false); return }
     try {
       const portfolioSummary = getPortfolioSnapshot()
-      const data = await apiCall({ mode: 'guardian_checkin', deviceId, portfolioSummary })
+      const qrPng = await buildGuardianQr()
+      const data = await apiCall({ mode: 'guardian_checkin', deviceId, portfolioSummary, qrPng })
       if (data.ok) {
         const updated = { ...config, lastCheckin: data.lastCheckin || new Date().toISOString() }
         saveGuardianLocal(updated)
