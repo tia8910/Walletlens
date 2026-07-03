@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { track } from '../analytics'
+import { loadSnapshots } from '../snapshots'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 const GUARDIAN_KEY = 'wl_guardian'
@@ -46,24 +47,43 @@ function clearGuardianLocal() {
 function getPortfolioSnapshot() {
   try {
     const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
-    const prices = JSON.parse(localStorage.getItem('crypto_tracker_price_cache_v1') || '{}')
+    // Crypto quotes live in the crypto price cache; stocks, metals and cash
+    // (fiat) are tracked as manual prices — the old code only read the crypto
+    // cache, so every non-crypto asset was valued at $0 and the detected total
+    // came out far below the real net worth shown on the dashboard.
+    const cryptoPrices = JSON.parse(localStorage.getItem('crypto_tracker_price_cache_v1') || '{}')
+    const manualPrices = JSON.parse(localStorage.getItem('crypto_tracker_manual_prices') || '{}')
     const settings = JSON.parse(localStorage.getItem('wl_settings') || '{}')
     const currency = settings.currency || 'USD'
 
     const holdings = {}
     for (const tx of txs) {
-      if (!holdings[tx.coin_id]) holdings[tx.coin_id] = { symbol: tx.coin_symbol || tx.coin_id, amount: 0 }
-      if (tx.type === 'buy' || tx.type === 'deposit') holdings[tx.coin_id].amount += Number(tx.amount) || 0
-      else if (tx.type === 'sell' || tx.type === 'withdraw') holdings[tx.coin_id].amount -= Number(tx.amount) || 0
+      const id = tx.coin_id
+      if (!holdings[id]) holdings[id] = { symbol: tx.coin_symbol || id, amount: 0 }
+      if (tx.coin_symbol) holdings[id].symbol = tx.coin_symbol
+      if (tx.type === 'buy' || tx.type === 'deposit') holdings[id].amount += Number(tx.amount) || 0
+      else if (tx.type === 'sell' || tx.type === 'withdraw') holdings[id].amount -= Number(tx.amount) || 0
     }
 
-    let totalUsd = 0
+    let computedUsd = 0
     const symbols = []
     for (const [id, h] of Object.entries(holdings)) {
       if (h.amount <= 0.00000001) continue
       symbols.push((h.symbol || id).toUpperCase())
-      totalUsd += h.amount * (prices[id]?.usd || 0)
+      const usd = cryptoPrices[id]?.usd ?? cryptoPrices[id]?.price ?? manualPrices[id]?.usd ?? 0
+      computedUsd += h.amount * usd
     }
+
+    // The dashboard persists the exact USD net worth it displays as a snapshot.
+    // Prefer the most recent snapshot as the source of truth so the figure heirs
+    // see always matches what the user sees on screen; the per-asset computation
+    // above is the fallback for a device that hasn't opened the dashboard yet.
+    let totalUsd = computedUsd
+    try {
+      const snaps = loadSnapshots()
+      const last = snaps[snaps.length - 1]
+      if (last && Number(last.v) > 0) totalUsd = Number(last.v)
+    } catch { /* keep computed fallback */ }
 
     return { totalUsd: Math.round(totalUsd), assetSymbols: symbols.slice(0, 20), currency }
   } catch {
@@ -95,18 +115,28 @@ async function apiCall(body) {
   return data
 }
 
-// Silent check-in — called on every app open if guardian is active.
-// No UI feedback on success, console.error on failure.
+// Silent check-in — called on every app open (i.e. every time the user "logs
+// in" to WalletLens) if guardian is active. It resets the dead-man's-switch
+// countdown so simply using the app keeps heirs from being notified.
+//
+// The local deadline is reset optimistically FIRST, so the countdown the user
+// sees resets the moment they open the app even if they're offline or the
+// server is slow. The server sync then persists the check-in; if it fails we
+// keep the optimistic local reset (the cron is server-side and will still fire
+// on the previous deadline, but a following successful open re-syncs it).
 export async function silentCheckin() {
   const local = loadGuardianLocal()
   if (!local?.active) return
   const deviceId = localStorage.getItem(DEVICE_ID_KEY)
   if (!deviceId) return
+  // Optimistic local reset on open.
+  const nowIso = new Date().toISOString()
+  saveGuardianLocal({ ...local, lastCheckin: nowIso })
   try {
     const portfolioSummary = getPortfolioSnapshot()
     const data = await apiCall({ mode: 'guardian_checkin', deviceId, portfolioSummary })
     if (data.ok) {
-      saveGuardianLocal({ ...local, lastCheckin: data.lastCheckin || new Date().toISOString() })
+      saveGuardianLocal({ ...loadGuardianLocal(), lastCheckin: data.lastCheckin || nowIso })
     }
   } catch (e) {
     console.error('Guardian checkin failed:', e.message)
@@ -148,6 +178,13 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
           value={heir.email}
           onChange={e => onChange(idx, { ...heir, email: e.target.value })}
         />
+        <input
+          type="tel"
+          className="pg-input pg-heir-wa"
+          placeholder="WhatsApp e.g. +14155552671 (optional)"
+          value={heir.whatsapp || ''}
+          onChange={e => onChange(idx, { ...heir, whatsapp: e.target.value })}
+        />
       </div>
       {showRemove && (
         <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title="Remove heir">
@@ -160,8 +197,32 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
 
 // ── Setup Form ───────────────────────────────────────────────────────────────
 
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phoneRe = /^\+?[1-9]\d{7,14}$/
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/[^\d+]/g, '')
+  const e164 = digits.startsWith('+') ? digits : '+' + digits
+  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : ''
+}
+
+// Keep only heirs that have at least one valid contact channel, cleaned for the
+// API. Email and/or WhatsApp — either is enough.
+function cleanHeirList(heirs) {
+  return heirs
+    .map(h => {
+      const email = h.email.trim().toLowerCase()
+      const whatsapp = normalizePhone(h.whatsapp)
+      const out = { name: h.name.trim() }
+      if (email && emailRe.test(email)) out.email = email
+      if (whatsapp) out.whatsapp = whatsapp
+      return out
+    })
+    .filter(h => h.email || h.whatsapp)
+}
+
 function SetupForm({ onSuccess }) {
-  const [heirs, setHeirs] = useState([{ name: '', email: '' }])
+  const [ownerName, setOwnerName] = useState('')
+  const [heirs, setHeirs] = useState([{ name: '', email: '', whatsapp: '' }])
   const [message, setMessage] = useState('')
   const [intervalDays, setIntervalDays] = useState(90)
   const [errors, setErrors] = useState({})
@@ -171,14 +232,20 @@ function SetupForm({ onSuccess }) {
 
   function validate() {
     const errs = {}
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const validHeirs = heirs.filter(h => h.email.trim())
-    if (validHeirs.length === 0) errs.heirs = 'Add at least one heir email.'
-    for (const h of validHeirs) {
-      if (!emailRe.test(h.email.trim())) {
-        errs.heirs = `"${h.email.trim()}" is not a valid email.`
-        break
+    // A row counts if it has any contact detail entered.
+    const touched = heirs.filter(h => h.email.trim() || String(h.whatsapp || '').trim())
+    if (touched.length === 0) {
+      errs.heirs = 'Add at least one heir with an email or WhatsApp number.'
+      return errs
+    }
+    for (const h of touched) {
+      const email = h.email.trim()
+      const wa = String(h.whatsapp || '').trim()
+      if (email && !emailRe.test(email)) { errs.heirs = `"${email}" is not a valid email.`; break }
+      if (wa && !phoneRe.test(wa.replace(/[\s()-]/g, ''))) {
+        errs.heirs = `"${wa}" is not a valid phone number — use the full international format, e.g. +14155552671.`; break
       }
+      if (!email && !wa) { errs.heirs = 'Each heir needs an email or a WhatsApp number.'; break }
     }
     return errs
   }
@@ -187,10 +254,11 @@ function SetupForm({ onSuccess }) {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setErrors({}); setTestErr(''); setTestStatus('sending')
-    const cleanHeirs = heirs.filter(h => h.email.trim())
+    const cleanHeirs = cleanHeirList(heirs)
     try {
       const data = await apiCall({
         mode: 'guardian_test',
+        ownerName: ownerName.trim(),
         heirs: cleanHeirs, message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
       })
@@ -209,16 +277,18 @@ function SetupForm({ onSuccess }) {
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setErrors({}); setStatus('saving')
     const deviceId = getOrCreateDeviceId()
-    const cleanHeirs = heirs.filter(h => h.email.trim())
+    const cleanHeirs = cleanHeirList(heirs)
     const portfolioSummary = getPortfolioSnapshot()
     try {
       const data = await apiCall({
         mode: 'guardian_setup', deviceId,
+        ownerName: ownerName.trim(),
         heirs: cleanHeirs, message: message.trim(),
         intervalDays, portfolioSummary,
       })
       const record = {
         active: true, deviceId,
+        ownerName: ownerName.trim(),
         heirs: cleanHeirs, message: message.trim(),
         intervalDays: data.interval || intervalDays,
         lastCheckin: new Date().toISOString(),
@@ -238,14 +308,14 @@ function SetupForm({ onSuccess }) {
     if (errors.heirs) setErrors(e => ({ ...e, heirs: undefined }))
   }
   function removeHeir(idx) { setHeirs(h => h.filter((_, i) => i !== idx)) }
-  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '' }]) }
+  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', whatsapp: '' }]) }
 
   const portfolio = getPortfolioSnapshot()
 
   return (
     <form className="pg-form" onSubmit={handleSubmit} noValidate>
       <p className="pg-intro">
-        Portfolio Guardian sends your chosen heirs an email with your personal message and portfolio information if you stop opening WalletLens for your chosen interval.
+        Portfolio Guardian notifies your chosen heirs by email and/or WhatsApp — with your personal message and portfolio information — if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
         No wallet keys or private data are ever shared — only the total value and asset list you confirm below.
       </p>
 
@@ -259,7 +329,18 @@ function SetupForm({ onSuccess }) {
         </div>
       )}
 
-      <Field label="Heirs" hint="Up to 3 people to notify" error={errors.heirs}>
+      <Field label="Your name" hint="Optional — shown to your heirs so they know who reached out">
+        <input
+          type="text"
+          className="pg-input"
+          placeholder="e.g. Alex Morgan"
+          value={ownerName}
+          maxLength={80}
+          onChange={e => setOwnerName(e.target.value)}
+        />
+      </Field>
+
+      <Field label="Heirs" hint="Up to 3 people — reach them by email, WhatsApp, or both" error={errors.heirs}>
         <div className="pg-heirs-list">
           {heirs.map((h, i) => (
             <HeirRow key={i} idx={i} heir={h} onChange={updateHeir} onRemove={removeHeir} showRemove={heirs.length > 1} />
@@ -304,10 +385,10 @@ function SetupForm({ onSuccess }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
+        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test notification to my heirs now'}
       </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
-      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check the addresses and try again.'}</p>}
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test sent — ask your heirs to check their inbox (and spam) and WhatsApp to confirm it arrived.</p>}
+      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test notification. Check the details and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}
@@ -390,7 +471,8 @@ function StatusCard({ config, onCheckin, onCancel }) {
         <div className="pg-heirs-chips">
           {config.heirs.map((h, i) => (
             <span key={i} className="pg-heir-chip">
-              {h.name || h.email.split('@')[0]}
+              {h.name || (h.email ? h.email.split('@')[0] : h.whatsapp) || 'Heir'}
+              {h.whatsapp && <span className="pg-heir-wa-badge" title={`WhatsApp: ${h.whatsapp}`}> · WhatsApp</span>}
             </span>
           ))}
         </div>
@@ -422,6 +504,16 @@ function StatusCard({ config, onCheckin, onCancel }) {
 export default function PortfolioGuardian() {
   const [config, setConfig] = useState(() => loadGuardianLocal())
   const [showSetup, setShowSetup] = useState(false)
+
+  // Opening the Guardian screen counts as a check-in — reset the deadline and
+  // reflect it immediately so the visible countdown is always up to date.
+  useEffect(() => {
+    let cancelled = false
+    if (loadGuardianLocal()?.active) {
+      silentCheckin().finally(() => { if (!cancelled) setConfig(loadGuardianLocal()) })
+    }
+    return () => { cancelled = true }
+  }, [])
 
   const handleSuccess = useCallback((record) => {
     setConfig(record)
