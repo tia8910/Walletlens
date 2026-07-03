@@ -12335,6 +12335,8 @@ button:not(:disabled):active,
 }
 .ip-chip:active { transform: scale(0.96); }
 .ip-chip-emoji { font-size: 1rem; line-height: 1; }
+/* Glyph icons (₿, $) that carry a category colour — render bold like an icon */
+.ip-chip-glyph { font-weight: 900; font-size: 1.05rem; }
 .ip-chip-on {
   background: rgba(var(--g-rgb), 0.16);
   border-color: rgba(var(--g-rgb), 0.65);
@@ -12388,6 +12390,12 @@ button:not(:disabled):active,
   flex: 1 1 auto; min-width: 0; width: 100%; background: none; border: none; outline: none;
   padding: 0.75rem 0; color: var(--text); font-size: 1.05rem; font-weight: 700; font-family: inherit;
 }
+/* The wrap already shows the focus ring — suppress the global input/select ring
+   so we don't get a double box. */
+.wls-input:focus, .wls-cur-select:focus { box-shadow: none; }
+/* Asset logos used as field icons (USDT, Gold) */
+.wls-ic { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; flex-shrink: 0; display: inline-block; }
+.wls-label .wls-ic { width: 17px; height: 17px; margin-right: 1px; }
 [data-wl-light] .wls-input { color: #0f172a; }
 .wls-suffix { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
 /* Hide the native number spinner arrows for a clean field */
@@ -12402,6 +12410,15 @@ button:not(:disabled):active,
 }
 .wls-cur-select:focus { border-color: rgba(var(--g-rgb), 0.6); }
 [data-wl-light] .wls-cur-select { background: #eef2f7; border-color: #e2e8f0; color: #0f172a; }
+/* Unit picker (gold oz/gram) — same look as the currency picker, a touch narrower */
+.wls-unit-select {
+  flex: 0 0 auto; width: 74px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16); border-radius: 8px;
+  color: var(--text); font-weight: 800; font-size: 0.78rem; font-family: inherit;
+  padding: 6px 6px; cursor: pointer; outline: none;
+}
+.wls-unit-select:focus { box-shadow: none; border-color: rgba(var(--g-rgb), 0.6); }
+[data-wl-light] .wls-unit-select { background: #eef2f7; border-color: #e2e8f0; color: #0f172a; }
 .wls-prefix-gold { font-size: 1rem; }
 .wls-prefix-btc { color: #f7931a; font-weight: 800; }
 .wls-privacy { margin: 14px 0 0; text-align: center; font-size: 0.75rem; color: var(--text-muted); }

@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { api } from '../api'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
+import { THEMES } from '../ThemeContext'
 import { track, trackProfileCreated } from '../analytics'
+
+// Match the dashboard/trade icons. Self-contained data URIs so they always
+// render (no CDN dependency): a teal Tether ₮ coin and the "Au" gold bar.
+const USDT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%2326a17b'/%3E%3Crect x='9' y='11' width='22' height='4.2' rx='1' fill='white'/%3E%3Crect x='17.4' y='11' width='5.2' height='20' rx='1.2' fill='white'/%3E%3Crect x='12.5' y='16.4' width='15' height='3.4' rx='1' fill='white'/%3E%3C/svg%3E"
+const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
 
 // ── First-run "start with your balances" ────────────────────────────────────
 // A warm, premium welcome shown once to a brand-new user (no holdings yet).
@@ -24,6 +30,7 @@ export default function WelcomeStart({ onDone }) {
   const [cash, setCash] = useState('')
   const [usdt, setUsdt] = useState('')
   const [gold, setGold] = useState('')
+  const [goldUnit, setGoldUnit] = useState('oz') // 'oz' | 'g'
   const [btc, setBtc] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -78,10 +85,12 @@ export default function WelcomeStart({ onDone }) {
         count++
       }
       if (goldN > 0) {
+        // Gold is priced per troy ounce — convert grams if that's what they entered.
+        const goldOz = goldUnit === 'g' ? goldN / 31.1034768 : goldN
         await api.addTransaction({
           wallet_id: wallet.id, type: 'buy', category: 'gold',
           coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold (1 oz)',
-          amount: goldN, price_per_unit: px(GOLD_ID, 0), date,
+          amount: goldOz, price_per_unit: px(GOLD_ID, 0), date,
         })
         count++
       }
@@ -140,9 +149,9 @@ export default function WelcomeStart({ onDone }) {
 
         {/* USDT */}
         <div className="wls-field">
-          <label className="wls-label">💠 USDT balance <span className="wls-opt">optional</span></label>
+          <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance <span className="wls-opt">optional</span></label>
           <div className="wls-input-wrap">
-            <span className="wls-prefix wls-prefix-usdt">₮</span>
+            <span className="wls-prefix"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
             <input
               className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
               value={usdt} onChange={e => setUsdt(e.target.value)} onKeyDown={onKeyDown}
@@ -153,14 +162,20 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Gold */}
         <div className="wls-field">
-          <label className="wls-label">🥇 Gold <span className="wls-opt">optional</span></label>
+          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold <span className="wls-opt">optional</span></label>
           <div className="wls-input-wrap">
-            <span className="wls-prefix wls-prefix-gold">🥇</span>
+            <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'}</span>
             <input
               className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
               value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
             />
-            <span className="wls-suffix">oz</span>
+            <select
+              className="wls-unit-select" value={goldUnit}
+              onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
+            >
+              <option value="oz">oz</option>
+              <option value="g">gram</option>
+            </select>
           </div>
         </div>
 
