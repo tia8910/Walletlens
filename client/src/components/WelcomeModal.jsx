@@ -23,7 +23,7 @@ const STEPS = [
     title: 'WalletLens',
     gradTitle: true,
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    desc: 'Smart crypto tracking — no account, no server. Your data stays on your device forever.',
+    desc: 'Your private net-worth tracker & investment manager — crypto, stocks, gold, cash & more, all in one place. No account, no server; your data stays on your device forever.',
     features: [
       { icon: '🔒', label: '100% Private' },
       { icon: '📊', label: 'Live P&L' },
@@ -94,10 +94,10 @@ const STEPS = [
     ring: 'rgba(34,197,94,0.55)',
     particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'],
     icon: '🚀',
-    eyebrow: "YOU'RE ALL SET",
-    title: "Let's Go!",
-    desc: "Add your first trade or explore live market prices. Building your portfolio takes just seconds.",
-    cta: 'Start Now',
+    eyebrow: 'LAST STEP',
+    title: 'Set up your portfolio',
+    desc: "Now pick what you track and pop in your balances — your net worth fills in instantly. Takes just seconds.",
+    cta: "Let's set it up →",
     final: true,
   },
 ]

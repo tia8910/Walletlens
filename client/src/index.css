@@ -12337,6 +12337,8 @@ button:not(:disabled):active,
 .ip-chip-emoji { font-size: 1rem; line-height: 1; }
 /* Glyph icons (₿, $) that carry a category colour — render bold like an icon */
 .ip-chip-glyph { font-weight: 900; font-size: 1.05rem; }
+/* Logo icons (Au/Ag bars, Tether coin) */
+.ip-chip-img { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; display: inline-block; }
 .ip-chip-on {
   background: rgba(var(--g-rgb), 0.16);
   border-color: rgba(var(--g-rgb), 0.65);

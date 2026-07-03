@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { track } from '../analytics'
 import { ASSET_CATEGORIES } from '../data/assets'
+import { THEMES } from '../ThemeContext'
+
+// Metal bar logos ("Au" / "Ag") so gold & silver match the trade category.
+const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
+const SILVER_LOGO = THEMES.find(t => t.id === 'silver')?.logo || ''
+// Tether ₮ coin for stablecoins (self-contained, matches the balances step).
+const USDT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%2326a17b'/%3E%3Crect x='9' y='11' width='22' height='4.2' rx='1' fill='white'/%3E%3Crect x='17.4' y='11' width='5.2' height='20' rx='1.2' fill='white'/%3E%3Crect x='12.5' y='16.4' width='15' height='3.4' rx='1' fill='white'/%3E%3C/svg%3E"
 
 // ── First-run "what do you track?" ──────────────────────────────────────────
 // A friendly chip-cloud where a new user taps the asset classes they care
@@ -16,11 +23,11 @@ const C = ASSET_CATEGORIES
 // id must line up with INTEREST_TO_CAT in the dashboard quick-add ordering.
 const OPTIONS = [
   { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, label: 'Crypto' },
-  { id: 'stablecoins', emoji: '💠', label: 'Stablecoins' },
+  { id: 'stablecoins', img: USDT_LOGO, label: 'Stablecoins' },
   { id: 'stocks',      emoji: C.stock.icon, label: 'Stocks' },
   { id: 'etfs',        emoji: '🧺', label: 'ETFs' },
-  { id: 'gold',        emoji: C.gold.icon, label: 'Gold' },
-  { id: 'silver',      emoji: C.silver.icon, label: 'Silver' },
+  { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, label: 'Gold' },
+  { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, label: 'Silver' },
   { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, label: 'Cash' },
   { id: 'realestate',  emoji: '🏠', label: 'Real estate' },
   { id: 'bonds',       emoji: C.bond.icon, label: 'Bonds' },
@@ -80,11 +87,13 @@ export default function InterestPicker({ onDone }) {
                 aria-pressed={on}
                 onClick={() => toggle(o.id)}
               >
-                <span
-                  className={`ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
-                  style={o.color ? { color: o.color } : undefined}
-                  aria-hidden="true"
-                >{o.emoji}</span>
+                {o.img
+                  ? <img className="ip-chip-img" src={o.img} alt="" aria-hidden="true" />
+                  : <span
+                      className={`ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
+                      style={o.color ? { color: o.color } : undefined}
+                      aria-hidden="true"
+                    >{o.emoji}</span>}
                 {o.label}
                 {on && (
                   <span className="ip-chip-check" aria-hidden="true">
