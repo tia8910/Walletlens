@@ -127,21 +127,37 @@ async function handleProxy(target: string | null, headers: HeadersInit): Promise
 // env secret and a verified walletlens.live domain in the Resend dashboard.
 const MAIL_FROM = "WalletLens <contact@walletlens.live>"
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+// Returns the raw send result so callers that need to explain a failure to the
+// user (e.g. the Guardian test-email) can surface Resend's actual reason
+// instead of a generic error. `reason` is null on success.
+async function sendEmailResult(
+  to: string, subject: string, html: string,
+): Promise<{ ok: boolean; reason: string | null }> {
   const key = Deno.env.get("RESEND_API_KEY")
-  if (!key) return false
+  if (!key) return { ok: false, reason: "mail_not_configured" }
   try {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
       body: JSON.stringify({ from: MAIL_FROM, to, subject, html, reply_to: "contact@walletlens.live" }),
     })
-    if (!resp.ok) console.error("Resend error:", resp.status, await resp.text())
-    return resp.ok
+    if (resp.ok) return { ok: true, reason: null }
+    const detail = await resp.text().catch(() => "")
+    console.error("Resend error:", resp.status, detail)
+    // Resend puts a human-readable "message" in its JSON error body — the most
+    // common being "domain is not verified" (blocks sending to non-owner
+    // addresses). Pass it through so the UI can tell the user what to fix.
+    let msg = ""
+    try { msg = JSON.parse(detail)?.message || "" } catch { /* non-JSON */ }
+    return { ok: false, reason: msg || `resend_${resp.status}` }
   } catch (e) {
     console.error("Resend exception:", e)
-    return false
+    return { ok: false, reason: "network_error" }
   }
+}
+
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  return (await sendEmailResult(to, subject, html)).ok
 }
 
 // Branded HTML shell so every email looks consistent.
@@ -748,13 +764,18 @@ Deno.serve(async (req: Request) => {
       <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">If this were real, you would be told that a person who set you as their heir has not checked in — and how to access their portfolio worth ${valueStr} including: <b style="color:#e2e8f0">${assetStr}</b>.</p>
       <p style="margin:0;line-height:1.6;color:#7d8794;font-size:13px">Questions? <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a></p>
     `)
-    let sent = 0, failed = 0
+    let sent = 0, failed = 0, lastReason: string | null = null
     for (const heir of cleanHeirs) {
-      const ok = await sendEmail(heir.email, "[TEST] WalletLens Portfolio Guardian — verification", html)
-      ok ? sent++ : failed++
-      await new Promise((r) => setTimeout(r, 120))
+      const r = await sendEmailResult(heir.email, "[TEST] WalletLens Portfolio Guardian — verification", html)
+      r.ok ? sent++ : (failed++, lastReason = r.reason)
+      await new Promise((res) => setTimeout(res, 120))
     }
-    return new Response(JSON.stringify({ ok: sent > 0, sent, failed }), { status: 200, headers })
+    // When nothing went out, report the concrete reason (mail not configured,
+    // Resend domain not verified, etc.) rather than a generic failure.
+    if (sent === 0) {
+      return new Response(JSON.stringify({ ok: false, sent, failed, reason: lastReason || "send_failed" }), { status: 200, headers })
+    }
+    return new Response(JSON.stringify({ ok: true, sent, failed, reason: lastReason }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {
