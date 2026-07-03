@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
 import { track, trackProfileCreated } from '../analytics'
 
 // ── First-run "start with your balances" ────────────────────────────────────
 // A warm, premium welcome shown once to a brand-new user (no holdings yet).
-// It gently asks for a cash and USDT balance so the dashboard isn't an empty
-// $0 the first time they land — then seeds those as real holdings. Fully
-// skippable; it never blocks the dashboard.
+// It gently asks for a few balances — cash (in a currency they choose), USDT,
+// gold and Bitcoin — so the dashboard isn't an empty $0 the first time they
+// land. Each is seeded at its live price so P&L starts at zero. Fully skippable.
 
 const STARTED_KEY = 'wl_started'
 
@@ -15,19 +16,21 @@ function readCurrency() {
   catch { return 'USD' }
 }
 
-// A tiny symbol for the common currencies; falls back to the code.
-const CUR_SYMBOL = { USD: '$', EUR: '€', GBP: '£', EGP: 'E£', AED: 'د.إ', SAR: '﷼', INR: '₹', JPY: '¥', TRY: '₺' }
-
 export default function WelcomeStart({ onDone }) {
-  const cur = readCurrency()
-  const sym = CUR_SYMBOL[cur] || cur
+  const [currency, setCurrency] = useState(() => {
+    const cur = readCurrency()
+    return POPULAR_FIAT.some(f => f.code === cur) ? cur : 'USD'
+  })
   const [cash, setCash] = useState('')
   const [usdt, setUsdt] = useState('')
+  const [gold, setGold] = useState('')
+  const [btc, setBtc] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const cashNum = Math.max(0, parseFloat(cash) || 0)
-  const usdtNum = Math.max(0, parseFloat(usdt) || 0)
-  const hasAny = cashNum > 0 || usdtNum > 0
+  const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
+  const n = v => Math.max(0, parseFloat(v) || 0)
+  const cashN = n(cash), usdtN = n(usdt), goldN = n(gold), btcN = n(btc)
+  const hasAny = cashN > 0 || usdtN > 0 || goldN > 0 || btcN > 0
 
   function finish() {
     try { localStorage.setItem(STARTED_KEY, '1') } catch {}
@@ -45,26 +48,55 @@ export default function WelcomeStart({ onDone }) {
     try {
       const wallet = await api.ensureWallet()
       const date = new Date().toISOString().split('T')[0]
-      if (cashNum > 0) {
+      const fiatId = `fiat:${currency.toLowerCase()}`
+
+      // Fetch live prices so cost basis ≈ current value (P&L starts ~0).
+      const ids = []
+      if (cashN > 0) ids.push(fiatId)
+      if (usdtN > 0) ids.push('tether')
+      if (goldN > 0) ids.push(GOLD_ID)
+      if (btcN > 0)  ids.push('bitcoin')
+      let prices = {}
+      try { prices = ids.length ? await api.getPrices(ids.join(',')) : {} } catch {}
+      const px = (id, fallback) => (prices[id]?.usd ?? prices[id]?.price ?? fallback)
+
+      let count = 0
+      if (cashN > 0) {
         await api.addTransaction({
           wallet_id: wallet.id, type: 'buy', category: 'fiat',
-          coin_id: `fiat:${cur.toLowerCase()}`, coin_symbol: cur, coin_name: `${cur} Cash`,
-          amount: cashNum, price_per_unit: 1, date,
+          coin_id: fiatId, coin_symbol: currency, coin_name: `${currency} Cash`,
+          amount: cashN, price_per_unit: px(fiatId, 1), date,
         })
+        count++
       }
-      if (usdtNum > 0) {
+      if (usdtN > 0) {
         await api.addTransaction({
           wallet_id: wallet.id, type: 'buy', category: 'crypto',
           coin_id: 'tether', coin_symbol: 'USDT', coin_name: 'Tether',
-          amount: usdtNum, price_per_unit: 1, date,
+          amount: usdtN, price_per_unit: px('tether', 1), date,
         })
+        count++
       }
-      const assetCount = (cashNum > 0 ? 1 : 0) + (usdtNum > 0 ? 1 : 0)
-      track('welcome_start_seed', { cash: cashNum > 0, usdt: usdtNum > 0 })
-      trackProfileCreated({ method: 'welcome_balances', assetCount, source: 'welcome_start' })
+      if (goldN > 0) {
+        await api.addTransaction({
+          wallet_id: wallet.id, type: 'buy', category: 'gold',
+          coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold (1 oz)',
+          amount: goldN, price_per_unit: px(GOLD_ID, 0), date,
+        })
+        count++
+      }
+      if (btcN > 0) {
+        await api.addTransaction({
+          wallet_id: wallet.id, type: 'buy', category: 'crypto',
+          coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin',
+          amount: btcN, price_per_unit: px('bitcoin', 0), date,
+        })
+        count++
+      }
+      track('welcome_start_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0, currency })
+      trackProfileCreated({ method: 'welcome_balances', assetCount: count, source: 'welcome_start' })
       finish()
     } catch {
-      // Even if seeding fails, don't trap the user on this screen.
       finish()
     } finally { setBusy(false) }
   }
@@ -74,8 +106,8 @@ export default function WelcomeStart({ onDone }) {
   return (
     <div className="wls-overlay" role="dialog" aria-modal="true" aria-label="Welcome to WalletLens">
       <div className="wls-card">
-        <button className="wls-skip-x" onClick={skip} aria-label="Skip for now" title="Skip">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <button className="wlm-close" onClick={skip} aria-label="Close" title="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
         <div className="wls-badge" aria-hidden="true">
@@ -84,10 +116,11 @@ export default function WelcomeStart({ onDone }) {
 
         <h2 className="wls-title">Welcome to WalletLens 👋</h2>
         <p className="wls-sub">
-          Let's bring your dashboard to life. Pop in what you're holding in <b>cash</b> and <b>USDT</b> and you'll
-          see your net worth instantly — you can add crypto, stocks, gold and more in a moment.
+          Let's bring your dashboard to life. Add whatever you're holding and you'll see your net worth
+          instantly — all optional, and you can add stocks and more in a moment.
         </p>
 
+        {/* Cash — pick the currency */}
         <div className="wls-field">
           <label className="wls-label">💵 Cash balance <span className="wls-opt">optional</span></label>
           <div className="wls-input-wrap">
@@ -96,10 +129,16 @@ export default function WelcomeStart({ onDone }) {
               className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
               value={cash} onChange={e => setCash(e.target.value)} onKeyDown={onKeyDown} autoFocus
             />
-            <span className="wls-suffix">{cur}</span>
+            <select
+              className="wls-cur-select" value={currency}
+              onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
+            >
+              {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
+            </select>
           </div>
         </div>
 
+        {/* USDT */}
         <div className="wls-field">
           <label className="wls-label">💠 USDT balance <span className="wls-opt">optional</span></label>
           <div className="wls-input-wrap">
@@ -109,6 +148,32 @@ export default function WelcomeStart({ onDone }) {
               value={usdt} onChange={e => setUsdt(e.target.value)} onKeyDown={onKeyDown}
             />
             <span className="wls-suffix">USDT</span>
+          </div>
+        </div>
+
+        {/* Gold */}
+        <div className="wls-field">
+          <label className="wls-label">🥇 Gold <span className="wls-opt">optional</span></label>
+          <div className="wls-input-wrap">
+            <span className="wls-prefix wls-prefix-gold">🥇</span>
+            <input
+              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+              value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
+            />
+            <span className="wls-suffix">oz</span>
+          </div>
+        </div>
+
+        {/* Bitcoin */}
+        <div className="wls-field">
+          <label className="wls-label">₿ Bitcoin <span className="wls-opt">optional</span></label>
+          <div className="wls-input-wrap">
+            <span className="wls-prefix wls-prefix-btc">₿</span>
+            <input
+              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+              value={btc} onChange={e => setBtc(e.target.value)} onKeyDown={onKeyDown}
+            />
+            <span className="wls-suffix">BTC</span>
           </div>
         </div>
 

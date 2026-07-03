@@ -58,8 +58,8 @@ export default function InterestPicker({ onDone }) {
   return (
     <div className="ip-overlay" role="dialog" aria-modal="true" aria-label="Select what you track">
       <div className="ip-card">
-        <button className="ip-skip-x" onClick={skip} aria-label="Skip for now" title="Skip">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <button className="wlm-close" onClick={skip} aria-label="Close" title="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
         <h2 className="ip-title">What do you want to track?</h2>

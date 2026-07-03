@@ -12297,13 +12297,23 @@ button:not(:disabled):active,
   box-shadow: 0 24px 70px rgba(0,0,0,0.18);
 }
 
-.ip-skip-x, .wls-skip-x {
-  position: absolute; top: 14px; right: 14px;
-  background: rgba(255,255,255,0.06); border: none; border-radius: 10px;
-  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s;
+/* Bare, bold close X — matches the trade window's .bs-close. Explicit svg size
+   + flex-shrink:0 so it never collapses to an empty box. */
+.wlm-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 40px; height: 40px; flex-shrink: 0; padding: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); opacity: 0.9;
+  display: flex; align-items: center; justify-content: center;
+  transition: color .18s, transform .15s, opacity .18s;
+  -webkit-tap-highlight-color: transparent;
 }
-.ip-skip-x:hover, .wls-skip-x:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.wlm-close svg { width: 24px; height: 24px; flex-shrink: 0; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4)); }
+.wlm-close:hover, .wlm-close:focus-visible { color: var(--text); opacity: 1; outline: none; }
+.wlm-close:hover svg { transform: rotate(90deg); transition: transform .28s cubic-bezier(0.34,1.56,0.64,1); }
+.wlm-close:active { transform: scale(0.88); }
+[data-wl-light] .wlm-close { color: rgba(0,0,0,0.6); }
+[data-wl-light] .wlm-close svg { filter: none; }
 
 .ip-title, .wls-title, .pg-modal-title {
   margin: 0 0 8px; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text);
@@ -12375,11 +12385,25 @@ button:not(:disabled):active,
 .wls-prefix { font-weight: 800; color: var(--text-muted); font-size: 0.95rem; }
 .wls-prefix-usdt { color: #26a17b; }
 .wls-input {
-  flex: 1; min-width: 0; background: none; border: none; outline: none;
+  flex: 1 1 auto; min-width: 0; width: 100%; background: none; border: none; outline: none;
   padding: 0.75rem 0; color: var(--text); font-size: 1.05rem; font-weight: 700; font-family: inherit;
 }
 [data-wl-light] .wls-input { color: #0f172a; }
-.wls-suffix { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+.wls-suffix { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+/* Hide the native number spinner arrows for a clean field */
+.wls-input::-webkit-outer-spin-button, .wls-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.wls-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+/* Currency picker inside the cash field — fixed width so the amount input keeps its space */
+.wls-cur-select {
+  flex: 0 0 auto; width: 82px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16); border-radius: 8px;
+  color: var(--text); font-weight: 800; font-size: 0.78rem; font-family: inherit;
+  padding: 6px 6px; cursor: pointer; outline: none;
+}
+.wls-cur-select:focus { border-color: rgba(var(--g-rgb), 0.6); }
+[data-wl-light] .wls-cur-select { background: #eef2f7; border-color: #e2e8f0; color: #0f172a; }
+.wls-prefix-gold { font-size: 1rem; }
+.wls-prefix-btc { color: #f7931a; font-weight: 800; }
 .wls-privacy { margin: 14px 0 0; text-align: center; font-size: 0.75rem; color: var(--text-muted); }
 
 /* ── Guardian activation popup ── */

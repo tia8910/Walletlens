@@ -522,6 +522,9 @@ function ActivatedModal({ intervalDays, onClose }) {
   return (
     <div className="pg-modal-overlay" role="dialog" aria-modal="true" aria-label="Portfolio Guardian activated" onClick={onClose}>
       <div className="pg-modal" onClick={e => e.stopPropagation()}>
+        <button className="wlm-close" onClick={onClose} aria-label="Close" title="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+        </button>
         <div className="pg-modal-icon">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
