@@ -2695,6 +2695,14 @@ export default function Dashboard() {
     window.addEventListener('wl-welcome-done', onWelcomeDone)
     return () => window.removeEventListener('wl-welcome-done', onWelcomeDone)
   }, [])
+  // Track first-run onboarding progress (privacy-safe: step name only).
+  const obStepSeen = useRef(new Set())
+  useEffect(() => {
+    if (obStep === 'wait' || obStepSeen.current.has(obStep)) return
+    obStepSeen.current.add(obStep)
+    if (obStep === 'interests' || obStep === 'balances') track('onboarding_step_view', { step: obStep })
+    else if (obStep === 'done' && obStepSeen.current.size > 1) track('onboarding_complete')
+  }, [obStep])
   // Onboarding tutorial progress flags
   const [onboardDismissed, setOnboardDismissed] = useState(() => { try { return localStorage.getItem('wl_onboard_dismissed') === '1' } catch { return false } })
   const [aiSeen, setAiSeen]               = useState(() => { try { return localStorage.getItem('wl_onboard_ai_seen') === '1' } catch { return false } })
