@@ -279,18 +279,27 @@ Rules:
 // points users at the right page/tab via [[nav:/route|Label]] markers that the
 // client turns into one-tap buttons. Uses Haiku for speed/cost.
 const ASSISTANT_FEATURES = [
-  "- Dashboard (/dashboard): Net worth overview, P&L, allocation donut, holdings by category.",
-  "- AI Analysis (/dashboard?tab=ai): Portfolio health score, Fear & Greed gauge, stress test, rebalance planner, entry quality, risk scanner.",
-  "- Sell Targets (/dashboard?tab=targets): Set price targets per asset and track progress toward taking profit.",
+  "- Dashboard (/dashboard): Net-worth overview across crypto, stocks, precious metals, cash & real estate — total value, all-time & 24h P&L, allocation donut, holdings by category, and a shareable gains card. Tap any holding to open its detail page (chart, your position, signals).",
+  "- Add a trade / Buy & Sell (/dashboard): Log a buy or sell. You can also import holdings from a screenshot (AI reads it), an Excel/CSV file, or by voice — just speak your trades.",
+  "- Watchlist (/dashboard?tab=watchlist): Follow coins you don't own yet with live prices.",
+  "- AI Analysis (/dashboard?tab=ai): Portfolio health score, Fear & Greed gauge, stress test, rebalance planner, entry-quality check, risk scanner and a full wallet evaluation.",
   "- Price Alerts (/dashboard?tab=alerts): Get notified when an asset crosses a price you choose.",
-  "- Wallets & Backup (/dashboard?tab=manage): Manage wallets and export/import your data as a backup code.",
-  "- Transactions (/transactions): Log buys/sells and view full trade history.",
+  "- Sell Targets (/dashboard?tab=targets): Set price targets per asset and track progress toward taking profit.",
+  "- Wallets & Backup (/dashboard?tab=manage): Manage multiple wallets and export/import your data as a WLZ backup code or QR.",
+  "- Transactions (/transactions): Your full buy/sell history — edit, filter and review every trade.",
+  "- Portfolio Vision (/vision): Plan goals with 'buckets' (emergency fund, savings targets, monthly cash-flow) and get AI planning advice on funding pace, diversification and withdrawal safety.",
   "- Whale Tracker (/whales): Large on-chain transactions and smart-money / volume signals.",
-  "- Alpha (/alpha): Deep-dive portfolio analytics and correlation/sector views.",
-  "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve, P&L health.",
+  "- Alpha (/alpha): Deep-dive analytics — correlations, sector/asset-class views and concentration risk.",
+  "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve and P&L health.",
   "- Technicals (/technicals): RSI, MACD, Bollinger Bands and trend signals per asset.",
-  "- Academy (/academy): Educational guides on investing and using WalletLens.",
-  "- Settings (/settings): Theme, display currency, language, biometric lock, backup/export.",
+  "- Rebalancing Calculator (/rebalancing-calculator): Work out the exact trades to reach a target allocation.",
+  "- Fear & Greed Index (/fear-and-greed-index): The live crypto market-sentiment gauge and what each band signals.",
+  "- Market Index (/market-index): A broad market overview across assets.",
+  "- Academy (/academy): Educational guides on investing and getting the most out of WalletLens.",
+  "- Portfolio Guardian (/settings): A dead-man's switch — if you stop opening WalletLens for your chosen interval, it emails your chosen heirs your message and a scannable QR of your portfolio. Set it up in Settings. Just opening the app resets the countdown.",
+  "- Settings (/settings): Display currency, language, light/dark mode & color themes, biometric app lock, backup/restore, and Portfolio Guardian.",
+  "- LENZ token & Airdrop (/airdrop): The LENZ token, airdrop and reward quests. Token details live at /lenz.",
+  "- Blog (/blog), About (/about) and FAQ (/faq): Daily market recaps, product info and common questions.",
 ].join("\n")
 
 function buildAssistantSystem(lang: string): string {
