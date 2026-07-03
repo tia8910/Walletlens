@@ -11270,20 +11270,11 @@ button:not(:disabled):active,
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 @media (max-width: 480px) {
   .pg-heir-inputs { grid-template-columns: 1fr; }
-}
-
-/* WhatsApp number spans the full width beneath name + email */
-.pg-heir-wa { grid-column: 1 / -1; }
-
-.pg-heir-wa-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #25d366;
-  opacity: 0.9;
 }
 
 .pg-heir-remove {
@@ -11532,12 +11523,44 @@ button:not(:disabled):active,
   flex-wrap: wrap;
 }
 
+/* Automatic check-in reassurance note */
+.pg-auto-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(var(--g-rgb), 0.08);
+  border: 1px solid rgba(var(--g-rgb), 0.18);
+  color: var(--g-ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.pg-auto-note svg { flex-shrink: 0; margin-top: 0.12rem; opacity: 0.9; }
+
 /* Actions */
 .pg-actions {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
 }
+.pg-actions .pg-cancel-btn { flex: 1; text-align: center; }
+
+/* Optional manual reset — subtle link now that check-in is automatic */
+.pg-checkin-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  transition: color .15s;
+}
+.pg-checkin-link:hover:not(:disabled) { color: var(--text-sub); }
+.pg-checkin-link:disabled { cursor: default; text-decoration: none; opacity: 0.75; }
 
 .pg-checkin-btn {
   flex: 1;

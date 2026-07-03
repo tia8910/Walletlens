@@ -422,17 +422,24 @@ export default function App() {
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
       track('pwa_session', { installed: true })
     }
-    // Silent guardian check-in — fires once per session, well after app load
-    if (!_guardianChecked.current) {
-      _guardianChecked.current = true
-      const local = (() => { try { return JSON.parse(localStorage.getItem('wl_guardian') || 'null') } catch { return null } })()
-      if (local?.active) {
-        setTimeout(() => {
-          import('./components/PortfolioGuardian').then(m => m.silentCheckin()).catch(() => {})
-        }, 4000)
-      }
-    }
   }, [])
+
+  // Automatic Portfolio Guardian check-in on sign-in. "Signing in" to WalletLens
+  // means opening the app and, if App Lock is on, passing the fingerprint/face
+  // unlock — that's the proof-of-life we reset the dead-man's-switch on, so the
+  // user never has to press "I'm here". When App Lock is on we wait for unlock
+  // (`locked` flips false); when it's off, `locked` is already false on open.
+  useEffect(() => {
+    if (locked) return
+    if (_guardianChecked.current) return
+    const local = (() => { try { return JSON.parse(localStorage.getItem('wl_guardian') || 'null') } catch { return null } })()
+    if (local?.active) {
+      _guardianChecked.current = true
+      setTimeout(() => {
+        import('./components/PortfolioGuardian').then(m => m.silentCheckin()).catch(() => {})
+      }, 3000)
+    }
+  }, [locked])
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
   useEffect(() => { if (drawerOpen) setDrawerMounted(true) }, [drawerOpen])

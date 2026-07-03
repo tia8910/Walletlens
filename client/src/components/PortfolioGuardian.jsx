@@ -178,13 +178,6 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
           value={heir.email}
           onChange={e => onChange(idx, { ...heir, email: e.target.value })}
         />
-        <input
-          type="tel"
-          className="pg-input pg-heir-wa"
-          placeholder="WhatsApp e.g. +14155552671 (optional)"
-          value={heir.whatsapp || ''}
-          onChange={e => onChange(idx, { ...heir, whatsapp: e.target.value })}
-        />
       </div>
       {showRemove && (
         <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title="Remove heir">
@@ -198,31 +191,17 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
 // ── Setup Form ───────────────────────────────────────────────────────────────
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRe = /^\+?[1-9]\d{7,14}$/
-function normalizePhone(raw) {
-  const digits = String(raw || '').replace(/[^\d+]/g, '')
-  const e164 = digits.startsWith('+') ? digits : '+' + digits
-  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : ''
-}
 
-// Keep only heirs that have at least one valid contact channel, cleaned for the
-// API. Email and/or WhatsApp — either is enough.
+// Clean heirs for the API — keep those with a valid email address.
 function cleanHeirList(heirs) {
   return heirs
-    .map(h => {
-      const email = h.email.trim().toLowerCase()
-      const whatsapp = normalizePhone(h.whatsapp)
-      const out = { name: h.name.trim() }
-      if (email && emailRe.test(email)) out.email = email
-      if (whatsapp) out.whatsapp = whatsapp
-      return out
-    })
-    .filter(h => h.email || h.whatsapp)
+    .map(h => ({ name: h.name.trim(), email: h.email.trim().toLowerCase() }))
+    .filter(h => h.email && emailRe.test(h.email))
 }
 
 function SetupForm({ onSuccess }) {
   const [ownerName, setOwnerName] = useState('')
-  const [heirs, setHeirs] = useState([{ name: '', email: '', whatsapp: '' }])
+  const [heirs, setHeirs] = useState([{ name: '', email: '' }])
   const [message, setMessage] = useState('')
   const [intervalDays, setIntervalDays] = useState(90)
   const [errors, setErrors] = useState({})
@@ -232,20 +211,15 @@ function SetupForm({ onSuccess }) {
 
   function validate() {
     const errs = {}
-    // A row counts if it has any contact detail entered.
-    const touched = heirs.filter(h => h.email.trim() || String(h.whatsapp || '').trim())
+    const touched = heirs.filter(h => h.email.trim())
     if (touched.length === 0) {
-      errs.heirs = 'Add at least one heir with an email or WhatsApp number.'
+      errs.heirs = 'Add at least one heir email.'
       return errs
     }
     for (const h of touched) {
-      const email = h.email.trim()
-      const wa = String(h.whatsapp || '').trim()
-      if (email && !emailRe.test(email)) { errs.heirs = `"${email}" is not a valid email.`; break }
-      if (wa && !phoneRe.test(wa.replace(/[\s()-]/g, ''))) {
-        errs.heirs = `"${wa}" is not a valid phone number — use the full international format, e.g. +14155552671.`; break
+      if (!emailRe.test(h.email.trim())) {
+        errs.heirs = `"${h.email.trim()}" is not a valid email.`; break
       }
-      if (!email && !wa) { errs.heirs = 'Each heir needs an email or a WhatsApp number.'; break }
     }
     return errs
   }
@@ -308,14 +282,14 @@ function SetupForm({ onSuccess }) {
     if (errors.heirs) setErrors(e => ({ ...e, heirs: undefined }))
   }
   function removeHeir(idx) { setHeirs(h => h.filter((_, i) => i !== idx)) }
-  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', whatsapp: '' }]) }
+  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '' }]) }
 
   const portfolio = getPortfolioSnapshot()
 
   return (
     <form className="pg-form" onSubmit={handleSubmit} noValidate>
       <p className="pg-intro">
-        Portfolio Guardian notifies your chosen heirs by email and/or WhatsApp — with your personal message and portfolio information — if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
+        Portfolio Guardian emails your chosen heirs your personal message and portfolio information if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
         No wallet keys or private data are ever shared — only the total value and asset list you confirm below.
       </p>
 
@@ -340,7 +314,7 @@ function SetupForm({ onSuccess }) {
         />
       </Field>
 
-      <Field label="Heirs" hint="Up to 3 people — reach them by email, WhatsApp, or both" error={errors.heirs}>
+      <Field label="Heirs" hint="Up to 3 people to notify by email" error={errors.heirs}>
         <div className="pg-heirs-list">
           {heirs.map((h, i) => (
             <HeirRow key={i} idx={i} heir={h} onChange={updateHeir} onRemove={removeHeir} showRemove={heirs.length > 1} />
@@ -385,10 +359,10 @@ function SetupForm({ onSuccess }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test notification to my heirs now'}
+        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
       </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test sent — ask your heirs to check their inbox (and spam) and WhatsApp to confirm it arrived.</p>}
-      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test notification. Check the details and try again.'}</p>}
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
+      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check the addresses and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}
@@ -406,6 +380,13 @@ function StatusCard({ config, onCheckin, onCancel }) {
   const [checking, setChecking] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [checkedIn, setCheckedIn] = useState(false)
+  // Whether App Lock (fingerprint/face) is on — affects the "sign in" wording.
+  const lockEnabled = (() => { try { return localStorage.getItem('wl_biometric_enabled') === '1' } catch { return false } })()
+  // The app auto-checks in on open/unlock; if that just happened, reflect it.
+  const justCheckedIn = (() => {
+    try { return Date.now() - new Date(config.lastCheckin).getTime() < 10 * 60 * 1000 }
+    catch { return false }
+  })()
 
   async function handleCheckin() {
     setChecking(true)
@@ -460,19 +441,27 @@ function StatusCard({ config, onCheckin, onCancel }) {
       {(isWarning || isUrgent) && (
         <div className={`pg-deadline-banner ${isUrgent ? 'urgent' : 'warning'}`}>
           {isUrgent
-            ? `Your heirs will be notified in ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft) !== 1 ? 's' : ''}. Tap "I'm here" to reset the clock.`
-            : `${Math.ceil(daysLeft)} days until your heirs are notified. Check in to reset the deadline.`
+            ? `Your heirs will be notified in ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft) !== 1 ? 's' : ''} if WalletLens isn't opened. Just opening the app resets this automatically.`
+            : `${Math.ceil(daysLeft)} days until your heirs are notified. Opening WalletLens resets the countdown automatically.`
           }
         </div>
       )}
+
+      <div className="pg-auto-note">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span>
+          Resets automatically every time you open{lockEnabled ? ' and unlock' : ''} WalletLens{checkedIn || justCheckedIn ? ' — done for now ✓' : ''}. No need to check in by hand.
+        </span>
+      </div>
 
       <div className="pg-heirs-summary">
         <span className="pg-heirs-label">Heirs</span>
         <div className="pg-heirs-chips">
           {config.heirs.map((h, i) => (
             <span key={i} className="pg-heir-chip">
-              {h.name || (h.email ? h.email.split('@')[0] : h.whatsapp) || 'Heir'}
-              {h.whatsapp && <span className="pg-heir-wa-badge" title={`WhatsApp: ${h.whatsapp}`}> · WhatsApp</span>}
+              {h.name || (h.email ? h.email.split('@')[0] : 'Heir')}
             </span>
           ))}
         </div>
@@ -484,17 +473,21 @@ function StatusCard({ config, onCheckin, onCancel }) {
       </div>
 
       <div className="pg-actions">
-        <button
-          className="pg-checkin-btn"
-          onClick={handleCheckin}
-          disabled={checking || checkedIn}
-        >
-          {checking ? 'Checking in…' : checkedIn ? "You're checked in ✓" : "I'm here — reset deadline"}
-        </button>
         <button className="pg-cancel-btn" onClick={handleCancel} disabled={cancelling}>
           {cancelling ? 'Cancelling…' : 'Cancel Guardian'}
         </button>
       </div>
+
+      {/* Manual reset is now optional — the app checks in on its own. Kept as a
+          subtle escape hatch for anyone who wants to force it. */}
+      <button
+        type="button"
+        className="pg-checkin-link"
+        onClick={handleCheckin}
+        disabled={checking || checkedIn}
+      >
+        {checking ? 'Resetting…' : checkedIn ? 'Deadline reset ✓' : 'Reset the deadline manually'}
+      </button>
     </div>
   )
 }

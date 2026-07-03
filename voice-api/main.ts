@@ -145,7 +145,13 @@ async function sendEmailResult(
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({ from, to, subject, html, reply_to: replyTo }),
+      body: JSON.stringify({
+        from, to, subject, html, reply_to: replyTo,
+        // A List-Unsubscribe header materially improves inbox placement (Gmail
+        // and Outlook both weigh it). Points at contact@ so unsubscribe works
+        // even for mail sent from the no-reply address.
+        headers: { "List-Unsubscribe": "<mailto:contact@walletlens.live?subject=unsubscribe>" },
+      }),
     })
     if (resp.ok) return { ok: true, reason: null }
     const detail = await resp.text().catch(() => "")
@@ -168,73 +174,19 @@ async function sendEmail(
   return (await sendEmailResult(to, subject, html, from)).ok
 }
 
-// ── WhatsApp sending (Meta WhatsApp Cloud API) ───────────────────────────────
-// Optional second notification channel for Portfolio Guardian. Requires the
-// WHATSAPP_TOKEN and WHATSAPP_PHONE_ID env secrets (a WhatsApp Business number
-// on the Meta Cloud API). Absent config is a graceful no-op — email still goes.
-// Note: outside the 24-hour customer-service window Meta only delivers approved
-// message *templates*; set WHATSAPP_TEMPLATE to a template name to use one,
-// otherwise we send free-form text (delivered when the recipient has messaged
-// the business number recently, e.g. for the test send).
-function normalizePhone(raw: unknown): string | null {
-  const digits = String(raw || "").replace(/[^\d+]/g, "")
-  const e164 = digits.startsWith("+") ? digits : "+" + digits
-  // E.164: leading +, 8–15 digits, first digit non-zero.
-  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null
-}
-
-async function sendWhatsAppResult(
-  to: string, text: string,
-): Promise<{ ok: boolean; reason: string | null }> {
-  const token = Deno.env.get("WHATSAPP_TOKEN")
-  const phoneId = Deno.env.get("WHATSAPP_PHONE_ID")
-  if (!token || !phoneId) return { ok: false, reason: "whatsapp_not_configured" }
-  const phone = normalizePhone(to)
-  if (!phone) return { ok: false, reason: "invalid_phone" }
-  try {
-    const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: phone.replace(/^\+/, ""),
-        type: "text",
-        text: { preview_url: false, body: text.slice(0, 4096) },
-      }),
-    })
-    if (resp.ok) return { ok: true, reason: null }
-    const detail = await resp.text().catch(() => "")
-    console.error("WhatsApp error:", resp.status, detail)
-    let msg = ""
-    try { msg = JSON.parse(detail)?.error?.message || "" } catch { /* non-JSON */ }
-    return { ok: false, reason: msg || `whatsapp_${resp.status}` }
-  } catch (e) {
-    console.error("WhatsApp exception:", e)
-    return { ok: false, reason: "network_error" }
-  }
-}
-
-// Normalise + validate an heir list. Each heir may be reachable by email,
-// WhatsApp, or both — keep any heir that has at least one valid channel.
+// Normalise + validate an heir list — keep heirs with a valid email address.
 // deno-lint-ignore no-explicit-any
-function sanitizeHeirs(heirs: any): { name: string; email?: string; whatsapp?: string }[] {
+function sanitizeHeirs(heirs: any): { name: string; email: string }[] {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return (Array.isArray(heirs) ? heirs : [])
     .slice(0, 3)
     // deno-lint-ignore no-explicit-any
-    .map((h: any) => {
-      const email = typeof h?.email === "string" && emailRe.test(h.email.trim())
-        ? h.email.trim().toLowerCase() : undefined
-      const whatsapp = normalizePhone(h?.whatsapp) || undefined
-      if (!email && !whatsapp) return null
-      const cleaned: { name: string; email?: string; whatsapp?: string } = {
-        name: String(h?.name || "").trim().slice(0, 80) || "Heir",
-      }
-      if (email) cleaned.email = email
-      if (whatsapp) cleaned.whatsapp = whatsapp
-      return cleaned
-    })
-    .filter((h): h is { name: string; email?: string; whatsapp?: string } => h !== null)
+    .filter((h: any) => h && typeof h.email === "string" && emailRe.test(h.email.trim()))
+    // deno-lint-ignore no-explicit-any
+    .map((h: any) => ({
+      name: String(h.name || "").trim().slice(0, 80) || "Heir",
+      email: String(h.email).trim().toLowerCase(),
+    }))
 }
 
 // Branded HTML shell so every email looks consistent.
@@ -487,8 +439,8 @@ BODY:
 }
 
 // ── Portfolio Guardian notification content ─────────────────────────────────
-// One place that builds the heir-facing message so the live notification, the
-// test send, and the WhatsApp text all stay in sync.
+// One place that builds the heir-facing email so the live notification and the
+// test send stay in sync.
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
@@ -501,7 +453,7 @@ function guardianContent(opts: {
   lastSeen: string
   intervalDays?: number
   isTest?: boolean
-}): { subject: string; html: string; whatsapp: string } {
+}): { subject: string; html: string } {
   const { message = "", valueStr, assetStr, lastSeen, isTest = false } = opts
   const owner = (opts.ownerName || "").trim()
   const testBanner = isTest ? `
@@ -560,28 +512,12 @@ function guardianContent(opts: {
     ? "✅ Test: you're set up as a WalletLens heir"
     : `${owner ? owner + " — " : ""}an important WalletLens Portfolio Guardian alert`
 
-  const waLines = [
-    isTest ? "✅ WalletLens Portfolio Guardian — TEST (no action needed)" : "🛡️ WalletLens Portfolio Guardian",
-    "",
-    isTest
-      ? `${owner ? owner : "Someone"} set you as an heir and is testing that we can reach you. Nothing has happened — they're fine.`
-      : `${owner ? owner : "Someone who trusts you"} named you as an heir and has not opened WalletLens since ${lastSeen}.`,
-    message ? `\nTheir message: "${message}"` : "",
-    "",
-    `Portfolio value: ${valueStr}`,
-    `Assets: ${assetStr}`,
-    "",
-    "To access their portfolio, find their WalletLens backup code (starts with WLZ) or QR code, then open walletlens.live → Settings → Backup → Restore and paste/scan it.",
-    "",
-    "Questions? contact@walletlens.live",
-  ]
-  return { subject, html, whatsapp: waLines.filter(l => l !== undefined).join("\n") }
+  return { subject, html }
 }
 
 // ── Portfolio Guardian cron ───────────────────────────────────────────────
-// Scans all guardian records every 6 h and notifies heirs (email + optional
-// WhatsApp) when the user's check-in deadline has passed. Also callable via
-// POST { mode:"guardian_cron_trigger" }.
+// Scans all guardian records every 6 h and emails heirs when the user's
+// check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
 async function runGuardianCron(): Promise<{ scanned: number; notified: number }> {
   const kv = await Deno.openKv()
   const now = Date.now()
@@ -601,17 +537,16 @@ async function runGuardianCron(): Promise<{ scanned: number; notified: number }>
     const assetStr = ps.assetSymbols.length > 0 ? ps.assetSymbols.join(", ") : "various assets"
     const lastSeen = new Date(rec.lastCheckin as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-    const { subject, html, whatsapp } = guardianContent({
+    const { subject, html } = guardianContent({
       ownerName: rec.ownerName as string | undefined,
       message: (rec.message as string) || "",
       valueStr, assetStr, lastSeen,
       intervalDays: rec.intervalDays as number,
     })
 
-    const heirs = rec.heirs as { name: string; email?: string; whatsapp?: string }[]
+    const heirs = rec.heirs as { name: string; email: string }[]
     for (const heir of heirs) {
       if (heir.email) await sendEmail(heir.email, subject, html, GUARDIAN_FROM)
-      if (heir.whatsapp) await sendWhatsAppResult(heir.whatsapp, whatsapp)
     }
     await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() })
     notified++
@@ -892,37 +827,22 @@ Deno.serve(async (req: Request) => {
     const assetStr = assetSymbols.length ? assetSymbols.join(", ") : "various assets"
     const lastSeen = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-    const { subject, html, whatsapp } = guardianContent({
+    const { subject, html } = guardianContent({
       ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true,
     })
 
-    let sent = 0, failed = 0, waSent = 0, waFailed = 0
-    let lastReason: string | null = null, lastWaReason: string | null = null
+    let sent = 0, failed = 0, lastReason: string | null = null
     for (const heir of cleanHeirs) {
-      if (heir.email) {
-        const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM)
-        r.ok ? sent++ : (failed++, lastReason = r.reason)
-      }
-      if (heir.whatsapp) {
-        const w = await sendWhatsAppResult(heir.whatsapp, whatsapp)
-        w.ok ? waSent++ : (waFailed++, lastWaReason = w.reason)
-      }
+      const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM)
+      r.ok ? sent++ : (failed++, lastReason = r.reason)
       await new Promise((res) => setTimeout(res, 120))
     }
-    const anyEmail = cleanHeirs.some((h) => h.email)
-    const anyWhatsapp = cleanHeirs.some((h) => h.whatsapp)
-    // Success if every requested channel delivered at least once. When email was
-    // requested but nothing went out, surface the concrete reason (mail not
-    // configured, domain not verified, WhatsApp not configured, etc.).
-    const emailOk = !anyEmail || sent > 0
-    const waOk = !anyWhatsapp || waSent > 0
-    if (!emailOk || !waOk) {
-      return new Response(JSON.stringify({
-        ok: false, sent, failed, waSent, waFailed,
-        reason: (!emailOk ? lastReason : lastWaReason) || "send_failed",
-      }), { status: 200, headers })
+    // When nothing went out, report the concrete reason (mail not configured,
+    // Resend domain not verified, etc.) rather than a generic failure.
+    if (sent === 0) {
+      return new Response(JSON.stringify({ ok: false, sent, failed, reason: lastReason || "send_failed" }), { status: 200, headers })
     }
-    return new Response(JSON.stringify({ ok: true, sent, failed, waSent, waFailed, reason: lastReason || lastWaReason }), { status: 200, headers })
+    return new Response(JSON.stringify({ ok: true, sent, failed, reason: lastReason }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {
