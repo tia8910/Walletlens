@@ -4,6 +4,12 @@ import { track } from '../analytics'
 const ENABLED_KEY  = 'wl_biometric_enabled'
 const SESSION_KEY  = 'wl_biometric_unlocked'
 const CRED_KEY     = 'wl_biometric_cred'   // base64url of the registered credential id
+const HIDDEN_AT    = 'wl_biometric_hidden_at'  // timestamp the app was last backgrounded
+
+// Grace period: returning within this window (quick app-switch, screen blink,
+// the OS biometric sheet backgrounding us) does NOT re-prompt. A real absence
+// still locks. Matches how banking apps behave.
+const RELOCK_GRACE_MS = 60 * 1000
 
 // Module-level guard: true while a WebAuthn prompt is on screen. The system
 // biometric sheet briefly backgrounds the page (visibilitychange → hidden),
@@ -58,19 +64,29 @@ export function useBiometricLock() {
     }
   }, [])
 
-  // Re-lock whenever the app is backgrounded (switch apps, lock phone, etc.).
+  // Re-lock when the app is backgrounded for longer than the grace period.
+  // On hide we only record the timestamp; on return we lock only if the app
+  // was away long enough — so a quick app-switch (or the OS biometric sheet
+  // itself backgrounding us) doesn't demand a fresh unlock every time.
   // Reads localStorage live so enabling the lock in Settings takes effect
-  // immediately on the next background, without a reload.
+  // immediately, without a reload.
   useEffect(() => {
-    function onHide() {
-      if (document.visibilityState !== 'hidden') return
-      if (authInProgress) return
+    function onVisibility() {
       if (localStorage.getItem(ENABLED_KEY) !== '1') return
-      sessionStorage.removeItem(SESSION_KEY)
-      setLocked(true)
+      if (authInProgress) return
+      if (document.visibilityState === 'hidden') {
+        try { sessionStorage.setItem(HIDDEN_AT, String(Date.now())) } catch {}
+        return
+      }
+      // Became visible again — lock only if we were away past the grace window.
+      const away = Date.now() - parseInt(sessionStorage.getItem(HIDDEN_AT) || '0', 10)
+      if (away >= RELOCK_GRACE_MS) {
+        sessionStorage.removeItem(SESSION_KEY)
+        setLocked(true)
+      }
     }
-    document.addEventListener('visibilitychange', onHide)
-    return () => document.removeEventListener('visibilitychange', onHide)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
   async function enable() {
