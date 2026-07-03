@@ -516,9 +516,33 @@ function StatusCard({ config, onCheckin, onCancel }) {
 
 // ── Main Export ───────────────────────────────────────────────────────────────
 
+// One-time popup shown right after the user activates Guardian, explaining how
+// the dead-man's switch works so the shield in the header makes sense.
+function ActivatedModal({ intervalDays, onClose }) {
+  return (
+    <div className="pg-modal-overlay" role="dialog" aria-modal="true" aria-label="Portfolio Guardian activated" onClick={onClose}>
+      <div className="pg-modal" onClick={e => e.stopPropagation()}>
+        <div className="pg-modal-icon">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h3 className="pg-modal-title">Portfolio Guardian is on 🛡️</h3>
+        <p className="pg-modal-text">Here's how it protects your loved ones:</p>
+        <ul className="pg-modal-list">
+          <li><b>Just keep using WalletLens.</b> Every time you open the app, your countdown resets automatically — nothing to remember.</li>
+          <li>If you don't open it for <b>{intervalDays} day{intervalDays !== 1 ? 's' : ''}</b>, we email your heirs your personal message and a scannable QR of your portfolio.</li>
+          <li>A <b>shield</b> now sits in your dashboard header showing days left — green when you're safe, amber then red as the deadline nears.</li>
+          <li>Your keys and passwords are never shared, and you can cancel anytime here in Settings.</li>
+        </ul>
+        <button className="pg-modal-cta" onClick={onClose}>Got it</button>
+      </div>
+    </div>
+  )
+}
+
 export default function PortfolioGuardian() {
   const [config, setConfig] = useState(() => loadGuardianLocal())
   const [showSetup, setShowSetup] = useState(false)
+  const [activated, setActivated] = useState(null)
 
   // Opening the Guardian screen counts as a check-in — reset the deadline and
   // reflect it immediately so the visible countdown is always up to date.
@@ -533,6 +557,8 @@ export default function PortfolioGuardian() {
   const handleSuccess = useCallback((record) => {
     setConfig(record)
     setShowSetup(false)
+    setActivated(record) // show the "how it works" popup once
+    track('guardian_activated_popup')
   }, [])
 
   const handleCheckin = useCallback((updated) => {
@@ -544,8 +570,9 @@ export default function PortfolioGuardian() {
     setShowSetup(false)
   }, [])
 
+  let content
   if (config?.active && !showSetup) {
-    return (
+    content = (
       <div className="pg-wrapper">
         <StatusCard config={config} onCheckin={handleCheckin} onCancel={handleCancel} />
         <button className="pg-reconfigure-link" onClick={() => setShowSetup(true)}>
@@ -553,10 +580,8 @@ export default function PortfolioGuardian() {
         </button>
       </div>
     )
-  }
-
-  if (showSetup || !config?.active) {
-    return (
+  } else if (showSetup || !config?.active) {
+    content = (
       <div className="pg-wrapper">
         {config?.active && (
           <button className="pg-back-link" onClick={() => setShowSetup(false)}>
@@ -566,16 +591,25 @@ export default function PortfolioGuardian() {
         <SetupForm onSuccess={handleSuccess} />
       </div>
     )
+  } else {
+    content = (
+      <div className="pg-wrapper">
+        <button className="pg-activate-btn" onClick={() => setShowSetup(true)}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Set Up Portfolio Guardian
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="pg-wrapper">
-      <button className="pg-activate-btn" onClick={() => setShowSetup(true)}>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        Set Up Portfolio Guardian
-      </button>
-    </div>
+    <>
+      {content}
+      {activated && (
+        <ActivatedModal intervalDays={activated.intervalDays} onClose={() => setActivated(null)} />
+      )}
+    </>
   )
 }

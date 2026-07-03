@@ -144,6 +144,7 @@ export default function WelcomeModal() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
     track('welcome_modal_finished', { steps_seen: step + 1 })
+    try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
   function next() {
@@ -157,6 +158,7 @@ export default function WelcomeModal() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
     track('welcome_modal_skipped', { at_step: step })
+    try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
   if (!visible) return null
