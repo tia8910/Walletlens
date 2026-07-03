@@ -135,23 +135,28 @@ const GUARDIAN_FROM = "WalletLens Portfolio Guardian <noreply@walletlens.live>"
 // Returns the raw send result so callers that need to explain a failure to the
 // user (e.g. the Guardian test-email) can surface Resend's actual reason
 // instead of a generic error. `reason` is null on success.
+type MailAttachment = { filename: string; content: string } // content = base64
 async function sendEmailResult(
   to: string, subject: string, html: string,
   from: string = MAIL_FROM, replyTo: string = "contact@walletlens.live",
+  attachments?: MailAttachment[],
 ): Promise<{ ok: boolean; reason: string | null }> {
   const key = Deno.env.get("RESEND_API_KEY")
   if (!key) return { ok: false, reason: "mail_not_configured" }
   try {
+    // deno-lint-ignore no-explicit-any
+    const payload: any = {
+      from, to, subject, html, reply_to: replyTo,
+      // A List-Unsubscribe header materially improves inbox placement (Gmail
+      // and Outlook both weigh it). Points at contact@ so unsubscribe works
+      // even for mail sent from the no-reply address.
+      headers: { "List-Unsubscribe": "<mailto:contact@walletlens.live?subject=unsubscribe>" },
+    }
+    if (attachments && attachments.length) payload.attachments = attachments
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({
-        from, to, subject, html, reply_to: replyTo,
-        // A List-Unsubscribe header materially improves inbox placement (Gmail
-        // and Outlook both weigh it). Points at contact@ so unsubscribe works
-        // even for mail sent from the no-reply address.
-        headers: { "List-Unsubscribe": "<mailto:contact@walletlens.live?subject=unsubscribe>" },
-      }),
+      body: JSON.stringify(payload),
     })
     if (resp.ok) return { ok: true, reason: null }
     const detail = await resp.text().catch(() => "")
@@ -170,9 +175,21 @@ async function sendEmailResult(
 
 async function sendEmail(
   to: string, subject: string, html: string, from: string = MAIL_FROM,
+  attachments?: MailAttachment[],
 ): Promise<boolean> {
-  return (await sendEmailResult(to, subject, html, from)).ok
+  return (await sendEmailResult(to, subject, html, from, "contact@walletlens.live", attachments)).ok
 }
+
+// Validate a client-supplied base64 QR PNG before we store/attach it.
+function sanitizeQrPng(raw: unknown): string | null {
+  if (typeof raw !== "string") return null
+  const s = raw.trim()
+  // Base64 only, and small enough to sit comfortably under Deno KV's 64 KiB
+  // value limit alongside the rest of the record.
+  if (!s || s.length > 45000 || !/^[A-Za-z0-9+/=]+$/.test(s)) return null
+  return s
+}
+const QR_FILENAME = "walletlens-portfolio.png"
 
 // Normalise + validate an heir list — keep heirs with a valid email address.
 // deno-lint-ignore no-explicit-any
@@ -453,8 +470,9 @@ function guardianContent(opts: {
   lastSeen: string
   intervalDays?: number
   isTest?: boolean
+  hasQr?: boolean
 }): { subject: string; html: string } {
-  const { message = "", valueStr, assetStr, lastSeen, isTest = false } = opts
+  const { message = "", valueStr, assetStr, lastSeen, isTest = false, hasQr = false } = opts
   const owner = (opts.ownerName || "").trim()
   const testBanner = isTest ? `
     <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
@@ -493,8 +511,16 @@ function guardianContent(opts: {
         <td style="padding:16px 20px;font-size:14px;color:#e2e8f0;text-align:right">${lastSeen}</td>
       </tr>
     </table>
+    ${hasQr ? `
+    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:20px;margin:0 0 20px;text-align:center">
+      <p style="margin:0 0 6px;font-weight:800;color:#4ade80;font-size:15px">📎 Fastest way — scan the attached QR</p>
+      <p style="margin:0;line-height:1.7;color:#c4cdd6;font-size:13px">
+        This email has an image attached called <b style="color:#e2e8f0">${QR_FILENAME}</b>.
+        Open it and <b>scan it with your phone's camera</b> — it opens WalletLens and loads ${owner ? escapeHtml(owner) + "'s" : "the"} full portfolio instantly. No code to type, no account to create.
+      </p>
+    </div>` : ""}
     <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
-      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">How to access their portfolio</p>
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">${hasQr ? "Or open it manually" : "How to access their portfolio"}</p>
       <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
         <li>Find their <b style="color:#e2e8f0">WalletLens backup code</b> (starts with <code style="color:#4ade80">WLZ</code>) or a QR code — check their notes app, password manager, photos, printed documents or messages.</li>
         <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
@@ -503,7 +529,7 @@ function guardianContent(opts: {
       </ol>
     </div>
     <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
-      WalletLens keeps no financial data on its servers — everything lives on the owner's own device, which is why the backup code is what unlocks it. If you can't find one, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
+      WalletLens keeps no financial data on its own servers — the portfolio in the QR came from the owner's device. If the attachment doesn't work, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
       Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
     </p>
   `)
@@ -537,16 +563,20 @@ async function runGuardianCron(): Promise<{ scanned: number; notified: number }>
     const assetStr = ps.assetSymbols.length > 0 ? ps.assetSymbols.join(", ") : "various assets"
     const lastSeen = new Date(rec.lastCheckin as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
+    const qrPng = sanitizeQrPng(rec.qrPng)
+    const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined
+
     const { subject, html } = guardianContent({
       ownerName: rec.ownerName as string | undefined,
       message: (rec.message as string) || "",
       valueStr, assetStr, lastSeen,
       intervalDays: rec.intervalDays as number,
+      hasQr: !!qrPng,
     })
 
     const heirs = rec.heirs as { name: string; email: string }[]
     for (const heir of heirs) {
-      if (heir.email) await sendEmail(heir.email, subject, html, GUARDIAN_FROM)
+      if (heir.email) await sendEmail(heir.email, subject, html, GUARDIAN_FROM, attachments)
     }
     await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() })
     notified++
@@ -794,6 +824,7 @@ Deno.serve(async (req: Request) => {
         message: cleanMessage,
         intervalDays: interval,
         portfolioSummary: summary,
+        qrPng: sanitizeQrPng(body.qrPng),
         lastCheckin: new Date().toISOString(),
         notifiedAt: null,
         active: true,
@@ -827,13 +858,16 @@ Deno.serve(async (req: Request) => {
     const assetStr = assetSymbols.length ? assetSymbols.join(", ") : "various assets"
     const lastSeen = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
+    const qrPng = sanitizeQrPng(body.qrPng)
+    const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined
+
     const { subject, html } = guardianContent({
-      ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true,
+      ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true, hasQr: !!qrPng,
     })
 
     let sent = 0, failed = 0, lastReason: string | null = null
     for (const heir of cleanHeirs) {
-      const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM)
+      const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM, "contact@walletlens.live", attachments)
       r.ok ? sent++ : (failed++, lastReason = r.reason)
       await new Promise((res) => setTimeout(res, 120))
     }
@@ -868,6 +902,10 @@ Deno.serve(async (req: Request) => {
           currency: String(portfolioSummary.currency || (entry.value.portfolioSummary as { currency: string }).currency || "USD").slice(0, 5).toUpperCase(),
         }
       }
+      // Refresh the stored portfolio QR so the emailed snapshot stays current as
+      // of the owner's most recent visit.
+      const freshQr = sanitizeQrPng(body.qrPng)
+      if (freshQr) updated.qrPng = freshQr
       await kv.set(["guardian", deviceId], updated)
       return new Response(JSON.stringify({ ok: true, lastCheckin: updated.lastCheckin }), { status: 200, headers })
     } catch (e) {
