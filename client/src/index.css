@@ -712,6 +712,24 @@ input, select, textarea {
 [data-wl-light] .settings-chip:hover { background: rgba(0,0,0,0.08); }
 [data-wl-light] .settings-chip.active { background: rgba(var(--g-rgb),0.12); border-color: var(--g); }
 
+/* ── Settings fixes (light-mode legibility + mobile layout + new toggles) ── */
+/* Section titles were hardcoded white → invisible on the light background. */
+[data-wl-light] .settings-label > span:first-child { color: var(--text); }
+[data-wl-light] .settings-hint { color: var(--text-muted); }
+/* On narrow screens, stack label above its chips so labels never wrap one
+   character per line (the old 'Accent Color' vertical-text bug). */
+@media (max-width: 560px) {
+  .settings-row:not(.settings-row-toggle) { flex-direction: column; align-items: stretch; }
+  .settings-row:not(.settings-row-toggle) .settings-chips { justify-content: flex-start; }
+}
+/* Price Ticker toggle — hide the scrolling strip when the user turns it off. */
+[data-hide-ticker] .ticker-strip { display: none !important; }
+/* Compact Mode — tighter spacing so more fits on screen. */
+[data-compact] .glass-card { padding: 0.95rem 1rem; }
+[data-compact] .settings-section { padding: 0.95rem 1rem; }
+[data-compact] .dvx-card, [data-compact] .wl-card { padding: 0.85rem 0.9rem; }
+[data-compact] .settings-divider { margin: 0.5rem 0; }
+
 /* ── Bottom nav ── */
 [data-wl-light] .wl-nav { border-top-color: rgba(0,0,0,0.7); background: var(--bg3); }
 

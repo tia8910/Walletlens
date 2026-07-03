@@ -12,15 +12,6 @@ import PortfolioGuardian from '../components/PortfolioGuardian'
 
 const SETTINGS_KEY = 'wl_settings'
 
-const ACCENTS = [
-  { id: 'green',  label: 'Green',  color: 'var(--g-ink)', fontWeight: 700 },
-  { id: 'blue',   label: 'Blue',   color: '#38bdf8' },
-  { id: 'purple', label: 'Purple', color: '#a78bfa' },
-  { id: 'gold',   label: 'Gold',   color: '#fbbf24' },
-  { id: 'red',    label: 'Red',    color: '#f87171' },
-  { id: 'white',  label: 'White',  color: '#e2e8f0' },
-]
-
 const FONT_SIZES = [
   { id: 'sm',  label: 'Small',  size: '14px' },
   { id: 'md',  label: 'Medium', size: '16px' },
@@ -50,7 +41,6 @@ export default function Settings() {
     track('settings_change', { key, val })
   }
 
-  const accent = settings.accent || 'green'
   const fontSize = settings.fontSize || 'md'
   const notifPrice     = settings.notifPrice     ?? true
   const notifNews      = settings.notifNews      ?? true
@@ -70,6 +60,7 @@ export default function Settings() {
   }
   const compactMode = settings.compactMode ?? false
   const hideValues  = settings.hideValues  ?? false
+  const showTicker  = !(settings.hideTicker ?? false)
 
   return (
     <div className="page settings-page">
@@ -137,24 +128,6 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="settings-divider"/>
-
-        <div className="settings-row">
-          <div className="settings-label">
-            <span>Accent Color</span>
-            <span className="settings-hint">Highlights, buttons, charts</span>
-          </div>
-          <div className="settings-chips">
-            {ACCENTS.map(a => (
-              <button key={a.id}
-                className={`settings-chip ${accent === a.id ? 'active' : ''}`}
-                onClick={() => update('accent', a.id)}>
-                <span className="settings-chip-swatch" style={{ background: a.color, border: accent === a.id ? `2px solid white` : '2px solid transparent' }}/>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="settings-divider"/>
 
@@ -194,6 +167,18 @@ export default function Settings() {
             <span className="settings-hint">Blur portfolio amounts by default</span>
           </div>
           <button className={`settings-toggle ${hideValues ? 'on' : ''}`} onClick={() => update('hideValues', !hideValues)}>
+            <span className="settings-toggle-thumb"/>
+          </button>
+        </div>
+
+        <div className="settings-divider"/>
+
+        <div className="settings-row settings-row-toggle">
+          <div className="settings-label">
+            <span>Price Ticker</span>
+            <span className="settings-hint">Scrolling live prices at the top</span>
+          </div>
+          <button className={`settings-toggle ${showTicker ? 'on' : ''}`} onClick={() => update('hideTicker', showTicker)}>
             <span className="settings-toggle-thumb"/>
           </button>
         </div>
