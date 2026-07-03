@@ -4044,7 +4044,11 @@ export default function Dashboard() {
                                         </span>
                                       ) : (
                                         <span className="muted">
-                                          {h.price > 0 ? cv(h.price) : `inv ${cv(h.total_invested)}`}
+                                          {h.price > 0 ? (() => {
+                                            const ch = Number(h.pct24h) || 0
+                                            const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
+                                            return <span className="dvx-live-price" style={{ fontWeight:700, color: priceColor }}>{cv(h.price)}</span>
+                                          })() : `inv ${cv(h.total_invested)}`}
                                           {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg ${cv(breakEvenPrice)}`}
                                           {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}
                                         </span>
