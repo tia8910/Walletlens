@@ -10878,6 +10878,16 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .wlc-msg-assistant { align-self: flex-start; background: rgba(255,255,255,0.05); color: var(--text, #e7e9ea); border-bottom-left-radius: 4px; }
 .wlc-msg-user { align-self: flex-end; background: linear-gradient(135deg, #047857, #10b981); color: #fff; border-bottom-right-radius: 4px; }
 .wlc-msg-text { margin: 0; }
+/* Rendered markdown inside assistant replies */
+.wlc-md-p { margin: 0 0 0.45rem; }
+.wlc-md-p:last-child { margin-bottom: 0; }
+.wlc-md-list { margin: 0.15rem 0 0.45rem; padding-inline-start: 1.15rem; }
+.wlc-md-list:last-child { margin-bottom: 0; }
+.wlc-md-list li { margin: 0.12rem 0; }
+.wlc-msg-text strong { font-weight: 700; }
+.wlc-msg-text em { font-style: italic; }
+.wlc-md-code { background: rgba(255,255,255,0.12); padding: 0.05rem 0.32rem; border-radius: 5px; font-size: 0.82em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+[data-wl-light] .wlc-md-code { background: rgba(0,0,0,0.08); }
 
 .wlc-suggestions { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.2rem; }
 .wlc-suggestion {
