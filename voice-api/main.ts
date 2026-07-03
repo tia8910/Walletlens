@@ -145,7 +145,13 @@ async function sendEmailResult(
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({ from, to, subject, html, reply_to: replyTo }),
+      body: JSON.stringify({
+        from, to, subject, html, reply_to: replyTo,
+        // A List-Unsubscribe header materially improves inbox placement (Gmail
+        // and Outlook both weigh it). Points at contact@ so unsubscribe works
+        // even for mail sent from the no-reply address.
+        headers: { "List-Unsubscribe": "<mailto:contact@walletlens.live?subject=unsubscribe>" },
+      }),
     })
     if (resp.ok) return { ok: true, reason: null }
     const detail = await resp.text().catch(() => "")
@@ -911,18 +917,25 @@ Deno.serve(async (req: Request) => {
     }
     const anyEmail = cleanHeirs.some((h) => h.email)
     const anyWhatsapp = cleanHeirs.some((h) => h.whatsapp)
-    // Success if every requested channel delivered at least once. When email was
-    // requested but nothing went out, surface the concrete reason (mail not
-    // configured, domain not verified, WhatsApp not configured, etc.).
+    // WhatsApp is an optional bonus channel: if the server simply has no WhatsApp
+    // credentials, that's not a failure of the test — email is the primary
+    // channel. So treat "whatsapp_not_configured" as skipped, not failed, and
+    // report it separately so the UI can nudge the user without crying wolf.
+    const waUnconfigured = anyWhatsapp && waSent === 0 && lastWaReason === "whatsapp_not_configured"
     const emailOk = !anyEmail || sent > 0
-    const waOk = !anyWhatsapp || waSent > 0
-    if (!emailOk || !waOk) {
+    // A hard WhatsApp failure is one that isn't just "not configured".
+    const waHardOk = !anyWhatsapp || waSent > 0 || waUnconfigured
+    if (!emailOk || !waHardOk) {
       return new Response(JSON.stringify({
-        ok: false, sent, failed, waSent, waFailed,
+        ok: false, sent, failed, waSent, waFailed, waUnconfigured,
         reason: (!emailOk ? lastReason : lastWaReason) || "send_failed",
       }), { status: 200, headers })
     }
-    return new Response(JSON.stringify({ ok: true, sent, failed, waSent, waFailed, reason: lastReason || lastWaReason }), { status: 200, headers })
+    return new Response(JSON.stringify({
+      ok: true, sent, failed, waSent, waFailed, waUnconfigured,
+      // Surface a soft note when WhatsApp was requested but couldn't go out.
+      reason: waUnconfigured ? "whatsapp_not_configured" : (lastReason || lastWaReason),
+    }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {

@@ -16,9 +16,13 @@ function explainMailReason(reason) {
     return 'Email isn\'t set up on the server yet (missing RESEND_API_KEY). Add it in the Deno project settings.'
   if (r.includes('not verified') || r.includes('domain'))
     return 'The walletlens.live email domain isn\'t verified in Resend yet, so mail can only go to the account owner. Verify the domain in the Resend dashboard, then try again.'
+  if (r.includes('invalid_phone'))
+    return 'That WhatsApp number looks invalid — use the full international format, e.g. +14155552671.'
+  if (r.includes('whatsapp'))
+    return 'Couldn\'t send the WhatsApp message. WhatsApp isn\'t enabled on the server yet, or the number can\'t receive messages right now.'
   if (r.includes('network'))
-    return 'Couldn\'t reach the email service. Check your connection and try again.'
-  return 'Couldn\'t send the test email. Double-check the heir addresses and try again.'
+    return 'Couldn\'t reach the notification service. Check your connection and try again.'
+  return 'Couldn\'t send the test notification. Double-check the heir details and try again.'
 }
 
 function getOrCreateDeviceId() {
@@ -229,6 +233,7 @@ function SetupForm({ onSuccess }) {
   const [status, setStatus] = useState('idle') // idle | saving | error
   const [testStatus, setTestStatus] = useState('idle') // idle | sending | sent | error
   const [testErr, setTestErr] = useState('')
+  const [testNote, setTestNote] = useState('') // soft note on success (e.g. WhatsApp not enabled)
 
   function validate() {
     const errs = {}
@@ -253,7 +258,7 @@ function SetupForm({ onSuccess }) {
   async function sendTestEmail() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    setErrors({}); setTestErr(''); setTestStatus('sending')
+    setErrors({}); setTestErr(''); setTestNote(''); setTestStatus('sending')
     const cleanHeirs = cleanHeirList(heirs)
     try {
       const data = await apiCall({
@@ -262,7 +267,18 @@ function SetupForm({ onSuccess }) {
         heirs: cleanHeirs, message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
       })
-      if (data?.ok) { setTestStatus('sent') }
+      if (data?.ok) {
+        // WhatsApp was requested but the server has no WhatsApp credentials —
+        // email still went, so this is a success with a heads-up, not an error.
+        if (data.waUnconfigured) {
+          setTestNote('Email sent ✓ — WhatsApp isn\'t enabled on the server yet (add WHATSAPP_TOKEN & WHATSAPP_PHONE_ID in Deno to enable it).')
+        } else if (data.waSent > 0 && data.sent > 0) {
+          setTestNote('Sent by email and WhatsApp ✓')
+        } else if (data.waSent > 0) {
+          setTestNote('Sent by WhatsApp ✓')
+        }
+        setTestStatus('sent')
+      }
       else { setTestErr(explainMailReason(data?.reason)); setTestStatus('error') }
       track('guardian_test_email', { heirs: cleanHeirs.length })
     } catch (e) {
@@ -387,7 +403,7 @@ function SetupForm({ onSuccess }) {
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
         {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test notification to my heirs now'}
       </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test sent — ask your heirs to check their inbox (and spam) and WhatsApp to confirm it arrived.</p>}
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test sent — ask your heirs to check their inbox (and spam){testNote.includes('WhatsApp isn\'t') ? '' : ' and WhatsApp'} to confirm it arrived.{testNote ? ` ${testNote}` : ''}</p>}
       {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test notification. Check the details and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
