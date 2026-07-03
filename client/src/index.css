@@ -8267,6 +8267,8 @@ input[type="date"] { color-scheme: dark; }
 .wl-topbar-x:hover svg { transform: rotate(-8deg) scale(1.25); }
 /* Topbar mode/theme controls are <button> — reset native button chrome */
 button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inherit; }
+/* Settings gear: pin the icon size so it can't collapse to 0 width in the flex row */
+.wl-topbar-gear svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* Mood + theme controls: accent-tinted bordered pills so they stand out from
    the plain social icons and read clearly as interactive controls. */

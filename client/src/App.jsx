@@ -572,7 +572,7 @@ export default function App() {
           </div>
           <div className="wl-topbar-right">
             <button
-              className="wl-topbar-x"
+              className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
               title="Settings"
               aria-label="Open settings"
