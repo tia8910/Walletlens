@@ -34,5 +34,12 @@ export function applySettings() {
     root.style.setProperty('--accent', accent.color)
     root.style.setProperty('--accent-dim', accent.color + '22')
     root.style.setProperty('--font-size-base', font.size)
+    // The app is sized in rem, so scaling the root font-size scales all text at
+    // once — this is what actually makes the Font Size setting take effect.
+    root.style.fontSize = font.size
+    // Compact spacing + ticker visibility are driven by CSS off these root
+    // attributes, so toggling them applies instantly with no React re-render.
+    root.toggleAttribute('data-compact', !!s.compactMode)
+    root.toggleAttribute('data-hide-ticker', !!s.hideTicker)
   } catch {}
 }

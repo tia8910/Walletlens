@@ -251,7 +251,7 @@ function SetupForm({ onSuccess }) {
 
       <Field label="Check-in interval">
         <div className="pg-interval-chips">
-          {[30, 60, 90, 180].map(d => (
+          {[1, 7, 30, 90, 180].map(d => (
             <button
               key={d} type="button"
               className={`pg-interval-chip ${intervalDays === d ? 'active' : ''}`}
@@ -262,7 +262,7 @@ function SetupForm({ onSuccess }) {
           ))}
         </div>
         <p className="pg-interval-hint">
-          If you don't open WalletLens for <b>{intervalDays} days</b>, your heirs will be notified.
+          If you don't open WalletLens for <b>{intervalDays} day{intervalDays !== 1 ? 's' : ''}</b>, your heirs will be notified.
         </p>
       </Field>
 
