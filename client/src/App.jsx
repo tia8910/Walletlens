@@ -403,11 +403,9 @@ export default function App() {
   // initial mount cost on every page load when the drawer is never opened.
   const [drawerMounted, setDrawerMounted] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [shellReady, setShellReady] = useState(false)
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
-  const { theme, mode, setTheme, setMode } = useTheme()
   const isLanding = useMemo(() => {
     const p = location.pathname.replace(/\/+$/, '') || '/'
     return LANDING_PATH_SET.has(p) || LANDING_PREFIXES.some(pfx => p.startsWith(pfx))
@@ -573,62 +571,17 @@ export default function App() {
             </div>
           </div>
           <div className="wl-topbar-right">
-            <a
-              className="wl-topbar-install"
-              href="https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn"
-              target="_blank" rel="noopener noreferrer"
-              title="Add WalletLens to Chrome"
-              onClick={() => track('extension_install_click', { source: 'app_header' })}
-            >
-              <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
-                <circle cx="24" cy="24" r="11" fill="#fff" />
-                <path fill="#4caf50" d="M24 13h17.6A23.9 23.9 0 0 0 24 0 24 24 0 0 0 3.4 11.8L12 26.7A12 12 0 0 1 24 13z" />
-                <path fill="#ffc107" d="M41.6 13H24a12 12 0 0 1 10.4 18l-8.6 14.9A24 24 0 0 0 41.6 13z" />
-                <path fill="#f44336" d="M12 26.7 3.4 11.8A24 24 0 0 0 25.8 47.9L34.4 33A12 12 0 0 1 12 26.7z" />
-                <circle cx="24" cy="24" r="6" fill="#2196f3" />
-              </svg>
-              <span className="wl-topbar-install-label">Add to Chrome</span>
-            </a>
             <button
               className="wl-topbar-x wl-topbar-ctrl"
-              onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next, source: 'topbar' }) }}
-              title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label="Toggle light or dark mode"
+              onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
+              title="Settings"
+              aria-label="Open settings"
             >
-              <span className="wl-topbar-ctrl-emoji">{mode === 'dark' ? '☀️' : '🌙'}</span>
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
             </button>
-            <div className="wl-topbar-theme-wrap">
-              <button
-                className="wl-topbar-x wl-topbar-ctrl"
-                onClick={() => setThemeMenuOpen(o => !o)}
-                title="Change color theme"
-                aria-label="Change color theme"
-                aria-expanded={themeMenuOpen}
-              >
-                <span className="wl-topbar-ctrl-emoji">🎨</span>
-              </button>
-              {themeMenuOpen && (
-                <>
-                  <div className="wl-topbar-theme-backdrop" onClick={() => setThemeMenuOpen(false)} />
-                  <div className="wl-topbar-theme-pop" role="menu">
-                    {THEMES.map(th => (
-                      <button
-                        key={th.id}
-                        className={`wl-topbar-theme-swatch${theme === th.id ? ' active' : ''}`}
-                        onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id, source: 'topbar' }); setThemeMenuOpen(false) }}
-                        title={th.name}
-                        role="menuitem"
-                      >
-                        <span className="wl-topbar-theme-dot" style={{ background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})` }}>
-                          {th.logo ? <img src={th.logo} alt="coin logo" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }} /> : th.icon}
-                        </span>
-                        <span>{th.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
             <PWATopbarButton />
             <a className="wl-topbar-x" href="https://x.com/wallet_lens" target="_blank" rel="noopener noreferrer" title="Follow @wallet_lens on X">
               <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
