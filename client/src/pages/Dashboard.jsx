@@ -27,6 +27,8 @@ import GoalTracker from '../components/GoalTracker'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import InstallExtension from '../components/InstallExtension'
 import { BiometricToggle } from '../components/BiometricLock'
+import InterestPicker, { interestsDone } from '../components/InterestPicker'
+import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2063,6 +2065,24 @@ function ConstellationMap() {
   )
 }
 
+// Map an interest id (from InterestPicker) to a quick-add prefill category.
+const INTEREST_TO_CAT = { crypto:'crypto', stablecoins:'crypto', stocks:'stock', etfs:'stock', gold:'gold', silver:'gold', cash:'fiat' }
+function readInterests() {
+  try { const v = JSON.parse(localStorage.getItem('wl_interests') || 'null'); return Array.isArray(v) ? v : [] }
+  catch { return [] }
+}
+// Reorder the quick-add chips so the classes the user said they track lead.
+function orderQuickAdd(list) {
+  const interests = readInterests()
+  if (!interests.length) return list
+  const wanted = new Set(interests.map(i => INTEREST_TO_CAT[i]).filter(Boolean))
+  return list.map((a, i) => [a, i]).sort((x, y) => {
+    const xm = wanted.has(x[0].prefill.category) ? 0 : 1
+    const ym = wanted.has(y[0].prefill.category) ? 0 : 1
+    return xm - ym || x[1] - y[1] // stable: keep original order within a group
+  }).map(p => p[0])
+}
+
 const QUICK_ADD_ASSETS = [
   { label:'USDT', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdt.svg', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
   { label:'USDC', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdc.svg', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
@@ -2072,6 +2092,34 @@ const QUICK_ADD_ASSETS = [
   { label:'NVDA', bg:'#000', icon:'NVDA', iconColor:'#76b900', iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'NVDA' } },
   { label:'AAPL', bg:'#1d1d1f', icon:'AAPL', iconColor:'#fff',  iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'AAPL' } },
 ]
+
+// Header shield shown when Portfolio Guardian is active. Colour + days-left
+// reflect the countdown; tapping opens Settings to manage it.
+function GuardianBadge() {
+  const navigate = useNavigate()
+  const [g, setG] = useState(() => { try { return JSON.parse(localStorage.getItem('wl_guardian') || 'null') } catch { return null } })
+  useEffect(() => {
+    const refresh = () => { try { setG(JSON.parse(localStorage.getItem('wl_guardian') || 'null')) } catch {} }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => { window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh) }
+  }, [])
+  if (!g?.active) return null
+  const elapsed = g.lastCheckin ? (Date.now() - new Date(g.lastCheckin).getTime()) / 86400000 : 0
+  const daysLeft = Math.max(0, Math.ceil((g.intervalDays || 0) - elapsed))
+  const state = daysLeft <= 2 ? 'urgent' : daysLeft <= 7 ? 'warning' : 'ok'
+  return (
+    <button
+      className={`dvx-eye-btn dvx-guardian-badge dvx-guardian-${state}`}
+      title={`Portfolio Guardian active — ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left. Opening the app resets it. Tap to manage.`}
+      onClick={() => { track('guardian_badge_click'); navigate('/settings') }}
+      aria-label="Portfolio Guardian active"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span className="dvx-guardian-days">{daysLeft}</span>
+    </button>
+  )
+}
 
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   if (!loaded) return null
@@ -2141,7 +2189,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         Or quickly add
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
-        {QUICK_ADD_ASSETS.map(a => {
+        {orderQuickAdd(QUICK_ADD_ASSETS).map(a => {
           const goldLogo = a.useGoldLogo ? THEMES.find(t => t.id === 'gold')?.logo : null
           return (
             <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
@@ -2629,6 +2677,24 @@ export default function Dashboard() {
   // Import-method chooser shown after creating a wallet
   const [importChooser, setImportChooser] = useState(false)
   const [importMode, setImportMode]       = useState('menu') // 'menu' | 'voice' | 'screenshot' | 'excel' | 'backup'
+  // First-run flow for brand-new users: (welcome tour) → interests → cash/USDT.
+  // We wait for the global welcome tour to finish so the modals don't stack.
+  const [obStep, setObStep] = useState(() => {
+    if (hasStarted()) return 'done'
+    let welcomed = false
+    try { welcomed = localStorage.getItem('wl_welcomed_v2') === '1' } catch {}
+    if (!welcomed) return 'wait'
+    return interestsDone() ? 'balances' : 'interests'
+  })
+  useEffect(() => {
+    const onWelcomeDone = () => setObStep(s => {
+      if (s !== 'wait') return s
+      if (hasStarted()) return 'done'
+      return interestsDone() ? 'balances' : 'interests'
+    })
+    window.addEventListener('wl-welcome-done', onWelcomeDone)
+    return () => window.removeEventListener('wl-welcome-done', onWelcomeDone)
+  }, [])
   // Onboarding tutorial progress flags
   const [onboardDismissed, setOnboardDismissed] = useState(() => { try { return localStorage.getItem('wl_onboard_dismissed') === '1' } catch { return false } })
   const [aiSeen, setAiSeen]               = useState(() => { try { return localStorage.getItem('wl_onboard_ai_seen') === '1' } catch { return false } })
@@ -3473,6 +3539,7 @@ export default function Dashboard() {
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 }
               </button>
+              <GuardianBadge />
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''}`}>
               {hidden ? '••••••' : cv(loaded ? tickerValue : 0)}
@@ -4531,6 +4598,15 @@ export default function Dashboard() {
           onDismiss={() => setMilestone(null)}
           onCta={milestone.type === 'first_buy' ? () => { setActiveTab('targets'); track('first_buy_cta_targets') } : undefined}
         />
+      )}
+
+      {/* First-run flow for a brand-new user: interests → cash/USDT balances.
+          Both steps are skippable and only show while there are no holdings. */}
+      {loaded && !isDemo && transactions.length === 0 && obStep === 'interests' && (
+        <InterestPicker onDone={() => setObStep(hasStarted() ? 'done' : 'balances')} />
+      )}
+      {loaded && !isDemo && transactions.length === 0 && obStep === 'balances' && (
+        <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
       )}
     </div>
   )
