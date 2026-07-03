@@ -422,6 +422,13 @@ function StatusCard({ config, onCheckin, onCancel }) {
   const [checking, setChecking] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [checkedIn, setCheckedIn] = useState(false)
+  // Whether App Lock (fingerprint/face) is on — affects the "sign in" wording.
+  const lockEnabled = (() => { try { return localStorage.getItem('wl_biometric_enabled') === '1' } catch { return false } })()
+  // The app auto-checks in on open/unlock; if that just happened, reflect it.
+  const justCheckedIn = (() => {
+    try { return Date.now() - new Date(config.lastCheckin).getTime() < 10 * 60 * 1000 }
+    catch { return false }
+  })()
 
   async function handleCheckin() {
     setChecking(true)
@@ -476,11 +483,20 @@ function StatusCard({ config, onCheckin, onCancel }) {
       {(isWarning || isUrgent) && (
         <div className={`pg-deadline-banner ${isUrgent ? 'urgent' : 'warning'}`}>
           {isUrgent
-            ? `Your heirs will be notified in ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft) !== 1 ? 's' : ''}. Tap "I'm here" to reset the clock.`
-            : `${Math.ceil(daysLeft)} days until your heirs are notified. Check in to reset the deadline.`
+            ? `Your heirs will be notified in ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft) !== 1 ? 's' : ''} if WalletLens isn't opened. Just opening the app resets this automatically.`
+            : `${Math.ceil(daysLeft)} days until your heirs are notified. Opening WalletLens resets the countdown automatically.`
           }
         </div>
       )}
+
+      <div className="pg-auto-note">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span>
+          Resets automatically every time you open{lockEnabled ? ' and unlock' : ''} WalletLens{checkedIn || justCheckedIn ? ' — done for now ✓' : ''}. No need to check in by hand.
+        </span>
+      </div>
 
       <div className="pg-heirs-summary">
         <span className="pg-heirs-label">Heirs</span>
@@ -500,17 +516,21 @@ function StatusCard({ config, onCheckin, onCancel }) {
       </div>
 
       <div className="pg-actions">
-        <button
-          className="pg-checkin-btn"
-          onClick={handleCheckin}
-          disabled={checking || checkedIn}
-        >
-          {checking ? 'Checking in…' : checkedIn ? "You're checked in ✓" : "I'm here — reset deadline"}
-        </button>
         <button className="pg-cancel-btn" onClick={handleCancel} disabled={cancelling}>
           {cancelling ? 'Cancelling…' : 'Cancel Guardian'}
         </button>
       </div>
+
+      {/* Manual reset is now optional — the app checks in on its own. Kept as a
+          subtle escape hatch for anyone who wants to force it. */}
+      <button
+        type="button"
+        className="pg-checkin-link"
+        onClick={handleCheckin}
+        disabled={checking || checkedIn}
+      >
+        {checking ? 'Resetting…' : checkedIn ? 'Deadline reset ✓' : 'Reset the deadline manually'}
+      </button>
     </div>
   )
 }
