@@ -64,57 +64,74 @@ export function scanImageData(imageData) {
   return code?.data || null
 }
 
-// Native QR detector (Android/Chrome) — far more robust than jsQR on dense
-// or slightly blurry images. Returns null where unsupported (iOS Safari).
-async function detectNative(canvas) {
+// Native QR detector (Android/Chrome/desktop Chromium) — best at locating a QR
+// anywhere in a photo or screenshot. Returns null where unsupported/failed.
+async function detectNative(source) {
   try {
     if (typeof BarcodeDetector === 'undefined') return null
     const det = new BarcodeDetector({ formats: ['qr_code'] })
-    const codes = await det.detect(canvas)
+    const codes = await det.detect(source)
     return codes?.[0]?.rawValue || null
   } catch { return null }
 }
 
-// Decode a QR from an uploaded image file. Tries the native detector first,
-// then jsQR across several nearest-neighbor upscales: small/dense exports can
-// sit near 1px per module, and jsQR needs roughly 3px+ per module to lock on.
+// jsQR one attempt at a given canvas — never throws.
+function jsqrAt(img, targetLong) {
+  try {
+    const w = img.naturalWidth, h = img.naturalHeight
+    const long = Math.max(w, h) || 1
+    const scale = targetLong / long
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(w * scale))
+    canvas.height = Math.max(1, Math.round(h * scale))
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    return jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })?.data || null
+  } catch { return null }
+}
+
+// Decode a QR from an uploaded image. Tries the native detector on the raw
+// bitmap first (handles QRs embedded in full-screen screenshots), then jsQR at
+// several target sizes: the native resolution, a ~1000px sweet spot (jsQR is
+// most reliable there), and 2×/3× upscales for tiny/dense exported codes.
+// Every step is guarded so a genuinely-unreadable image reports "no QR found"
+// rather than the misleading "could not read".
 export function decodeQrFromImageFile(file, onResult, onError) {
   const url = URL.createObjectURL(file)
   const img = new Image()
   img.onload = async () => {
     try {
-      const w = img.naturalWidth, h = img.naturalHeight
-      const long = Math.max(w, h)
-      const MAX = 3000 // canvas cap — keeps peak memory sane on low-end phones
-      const draw = (scale) => {
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.max(1, Math.round(w * scale))
-        canvas.height = Math.max(1, Math.round(h * scale))
-        const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        ctx.imageSmoothingEnabled = false // keep module edges crisp when upscaling
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        return canvas
-      }
-      const scales = [...new Set(
-        [Math.min(1, MAX / long), 2, 3, 4]
-          .map(s => Math.min(s, MAX / long))
-          .filter(s => s > 0)
-      )]
+      const long = Math.max(img.naturalWidth, img.naturalHeight) || 1
       let decoded = null
-      for (const s of scales) {
-        const canvas = draw(s)
-        decoded = await detectNative(canvas)
-        if (!decoded) {
-          const ctx = canvas.getContext('2d')
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          decoded = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })?.data || null
+
+      // 1) Native detector on the raw image (createImageBitmap → detect).
+      try {
+        const bmp = await createImageBitmap(img)
+        decoded = await detectNative(bmp)
+        bmp.close?.()
+      } catch { /* fall through */ }
+
+      // 2) jsQR at a ladder of target sizes (capped at 3000px for phone memory).
+      if (!decoded) {
+        const targets = [...new Set(
+          [long, 1000, Math.min(long * 2, 3000), Math.min(long * 3, 3000)]
+            .map(t => Math.min(Math.max(1, Math.round(t)), 3000))
+        )]
+        for (const t of targets) {
+          decoded = jsqrAt(img, t)
+          if (decoded) break
         }
-        if (decoded) break
       }
+
       if (decoded) onResult(decoded)
-      else onError('No QR code found in that image. Try a clearer, more cropped image.')
-    } catch { onError('Could not read that image.') }
-    finally { URL.revokeObjectURL(url) }
+      else onError('No QR code found in that image. Make sure it is the WalletLens backup QR, cropped and not blurry.')
+    } catch {
+      onError('Could not read that image.')
+    } finally {
+      URL.revokeObjectURL(url)
+    }
   }
   img.onerror = () => { URL.revokeObjectURL(url); onError('Could not open that image file.') }
   img.src = url
