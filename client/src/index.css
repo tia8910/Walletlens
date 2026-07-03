@@ -2277,6 +2277,12 @@ select option { background: var(--bg3); color: var(--text); }
 .tx-cost span { font-size: 0.7rem; }
 .tx-delete { background: none; border: none; color: var(--text2); padding: 0.3rem; cursor: pointer; opacity: 0.4; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s; flex-shrink: 0; }
 .tx-delete:hover { opacity: 1; color: var(--red); background: none; }
+.tx-load-more {
+  background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+  padding: 0.7rem; border-radius: var(--radius); font-weight: 600; font-size: 0.85rem;
+  cursor: pointer; margin-top: 0.2rem;
+}
+.tx-load-more:hover { border-color: var(--accent); }
 
 /* ─── Market List ─── */
 .market-list { display: flex; flex-direction: column; gap: 0.4rem; }

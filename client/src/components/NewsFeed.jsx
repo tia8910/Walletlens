@@ -137,7 +137,7 @@ function NewsCard({ article, matchedCoins }) {
     >
       {article.thumbnail && (
         <div className="news-card-thumb">
-          <img src={article.thumbnail} alt="coin logo" onError={e => { e.target.style.display = 'none' }} />
+          <img src={article.thumbnail} alt="coin logo" width={88} height={66} loading="lazy" decoding="async" onError={e => { e.target.style.display = 'none' }} />
         </div>
       )}
       <div className="news-card-body">

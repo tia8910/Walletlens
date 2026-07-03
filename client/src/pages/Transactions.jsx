@@ -218,7 +218,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
 
+  // Render transactions in batches — mounting hundreds of tx-card rows (each
+  // with its own CoinLogo instance) at once blocks the main thread on
+  // wallets with a long history.
+  const TX_PAGE_SIZE = 60
+  const [visibleCount, setVisibleCount] = useState(TX_PAGE_SIZE)
+
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(TX_PAGE_SIZE) }, [transactions])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1058,7 +1065,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1092,6 +1099,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {visibleCount < transactions.length && (
+            <button className="tx-load-more" onClick={() => setVisibleCount(c => c + TX_PAGE_SIZE)}>
+              Load more ({transactions.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
     </div>

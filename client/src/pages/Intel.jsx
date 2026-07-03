@@ -184,7 +184,7 @@ function GemsTab({ market }) {
                   strokeWidth="3" strokeDasharray={`${(c.gemScore/100)*94.2} 94.2`}
                   strokeLinecap="round" transform="rotate(-90 18 18)" />
               </svg>
-              <img src={c.image} alt="coin logo" className="gem-img" onError={e => { e.currentTarget.style.display = 'none' }} />
+              <img src={c.image} alt="coin logo" className="gem-img" width={28} height={28} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} />
             </div>
             <div className="gem-info">
               <div className="gem-name">{c.name}</div>
