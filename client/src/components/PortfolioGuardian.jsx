@@ -163,6 +163,7 @@ function Field({ label, hint, error, children }) {
 }
 
 function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
+  const channel = heir.channel === 'whatsapp' ? 'whatsapp' : 'email'
   return (
     <div className="pg-heir-row">
       <div className="pg-heir-num">{idx + 1}</div>
@@ -175,20 +176,42 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
           maxLength={80}
           onChange={e => onChange(idx, { ...heir, name: e.target.value })}
         />
-        <input
-          type="email"
-          className="pg-input"
-          placeholder="email@example.com"
-          value={heir.email}
-          onChange={e => onChange(idx, { ...heir, email: e.target.value })}
-        />
-        <input
-          type="tel"
-          className="pg-input pg-heir-wa"
-          placeholder="WhatsApp e.g. +14155552671 (optional)"
-          value={heir.whatsapp || ''}
-          onChange={e => onChange(idx, { ...heir, whatsapp: e.target.value })}
-        />
+        <div className="pg-channel-toggle" role="group" aria-label="Notify by">
+          <button
+            type="button"
+            className={`pg-channel-opt ${channel === 'email' ? 'active' : ''}`}
+            onClick={() => onChange(idx, { ...heir, channel: 'email' })}
+          >
+            ✉️ Email
+          </button>
+          <button
+            type="button"
+            className={`pg-channel-opt ${channel === 'whatsapp' ? 'active' : ''}`}
+            onClick={() => onChange(idx, { ...heir, channel: 'whatsapp' })}
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.7-.84-1.96-.94-.26-.1-.45-.15-.64.15-.19.29-.74.94-.9 1.13-.17.19-.33.22-.62.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.6-2-.17-.3-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.48.1-.19.05-.36-.02-.51-.07-.15-.64-1.55-.88-2.12-.23-.55-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.36s-1 .98-1 2.38 1.02 2.76 1.17 2.95c.15.19 2.01 3.07 4.87 4.3.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.7-.69 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.19-.55-.34zM12 2a10 10 0 0 0-8.5 15.28L2 22l4.85-1.27A10 10 0 1 0 12 2z"/></svg>
+            WhatsApp
+          </button>
+        </div>
+        {channel === 'whatsapp' ? (
+          <input
+            key="wa"
+            type="tel"
+            className="pg-input"
+            placeholder="WhatsApp e.g. +14155552671"
+            value={heir.whatsapp || ''}
+            onChange={e => onChange(idx, { ...heir, whatsapp: e.target.value })}
+          />
+        ) : (
+          <input
+            key="email"
+            type="email"
+            className="pg-input"
+            placeholder="email@example.com"
+            value={heir.email}
+            onChange={e => onChange(idx, { ...heir, email: e.target.value })}
+          />
+        )}
       </div>
       {showRemove && (
         <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title="Remove heir">
@@ -209,16 +232,19 @@ function normalizePhone(raw) {
   return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : ''
 }
 
-// Keep only heirs that have at least one valid contact channel, cleaned for the
-// API. Email and/or WhatsApp — either is enough.
+// Clean heirs for the API. Each heir is reached on their chosen channel only —
+// email OR WhatsApp — so we keep just that channel's contact.
 function cleanHeirList(heirs) {
   return heirs
     .map(h => {
-      const email = h.email.trim().toLowerCase()
-      const whatsapp = normalizePhone(h.whatsapp)
       const out = { name: h.name.trim() }
-      if (email && emailRe.test(email)) out.email = email
-      if (whatsapp) out.whatsapp = whatsapp
+      if (h.channel === 'whatsapp') {
+        const whatsapp = normalizePhone(h.whatsapp)
+        if (whatsapp) out.whatsapp = whatsapp
+      } else {
+        const email = h.email.trim().toLowerCase()
+        if (email && emailRe.test(email)) out.email = email
+      }
       return out
     })
     .filter(h => h.email || h.whatsapp)
@@ -226,7 +252,7 @@ function cleanHeirList(heirs) {
 
 function SetupForm({ onSuccess }) {
   const [ownerName, setOwnerName] = useState('')
-  const [heirs, setHeirs] = useState([{ name: '', email: '', whatsapp: '' }])
+  const [heirs, setHeirs] = useState([{ name: '', email: '', whatsapp: '', channel: 'email' }])
   const [message, setMessage] = useState('')
   const [intervalDays, setIntervalDays] = useState(90)
   const [errors, setErrors] = useState({})
@@ -237,20 +263,23 @@ function SetupForm({ onSuccess }) {
 
   function validate() {
     const errs = {}
-    // A row counts if it has any contact detail entered.
-    const touched = heirs.filter(h => h.email.trim() || String(h.whatsapp || '').trim())
+    const valOf = h => h.channel === 'whatsapp' ? String(h.whatsapp || '').trim() : h.email.trim()
+    // A row counts once the chosen channel's field has something in it.
+    const touched = heirs.filter(h => valOf(h))
     if (touched.length === 0) {
-      errs.heirs = 'Add at least one heir with an email or WhatsApp number.'
+      errs.heirs = 'Add at least one heir and choose Email or WhatsApp for them.'
       return errs
     }
     for (const h of touched) {
-      const email = h.email.trim()
-      const wa = String(h.whatsapp || '').trim()
-      if (email && !emailRe.test(email)) { errs.heirs = `"${email}" is not a valid email.`; break }
-      if (wa && !phoneRe.test(wa.replace(/[\s()-]/g, ''))) {
-        errs.heirs = `"${wa}" is not a valid phone number — use the full international format, e.g. +14155552671.`; break
+      if (h.channel === 'whatsapp') {
+        const wa = String(h.whatsapp || '').trim()
+        if (!phoneRe.test(wa.replace(/[\s()-]/g, ''))) {
+          errs.heirs = `"${wa}" is not a valid phone number — use the full international format, e.g. +14155552671.`; break
+        }
+      } else {
+        const email = h.email.trim()
+        if (!emailRe.test(email)) { errs.heirs = `"${email}" is not a valid email.`; break }
       }
-      if (!email && !wa) { errs.heirs = 'Each heir needs an email or a WhatsApp number.'; break }
     }
     return errs
   }
@@ -324,14 +353,14 @@ function SetupForm({ onSuccess }) {
     if (errors.heirs) setErrors(e => ({ ...e, heirs: undefined }))
   }
   function removeHeir(idx) { setHeirs(h => h.filter((_, i) => i !== idx)) }
-  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', whatsapp: '' }]) }
+  function addHeir() { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', whatsapp: '', channel: 'email' }]) }
 
   const portfolio = getPortfolioSnapshot()
 
   return (
     <form className="pg-form" onSubmit={handleSubmit} noValidate>
       <p className="pg-intro">
-        Portfolio Guardian notifies your chosen heirs by email and/or WhatsApp — with your personal message and portfolio information — if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
+        Portfolio Guardian notifies your chosen heirs — each by email or WhatsApp — with your personal message and portfolio information if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
         No wallet keys or private data are ever shared — only the total value and asset list you confirm below.
       </p>
 
@@ -356,7 +385,7 @@ function SetupForm({ onSuccess }) {
         />
       </Field>
 
-      <Field label="Heirs" hint="Up to 3 people — reach them by email, WhatsApp, or both" error={errors.heirs}>
+      <Field label="Heirs" hint="Up to 3 people — notify each by email or WhatsApp" error={errors.heirs}>
         <div className="pg-heirs-list">
           {heirs.map((h, i) => (
             <HeirRow key={i} idx={i} heir={h} onChange={updateHeir} onRemove={removeHeir} showRemove={heirs.length > 1} />
