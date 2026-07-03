@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import QRCode from 'qrcode'
-import jsQR from 'jsqr'
+import { decodeQrFromImageFile } from '../utils/qrBackup'
 import { trackProfileCreated } from '../analytics'
 
 const BACKUP_KEYS = [
@@ -343,38 +343,20 @@ export default function BackupCode({ hideTrigger = false }) {
     } finally { setImporting(false) }
   }
 
-  const decodeQrFromImageFile = (file) => {
+  const decodeQrFromImage = (file) => {
     setError('')
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        // Cap dimensions so very large photos don't blow up memory, but keep
-        // enough resolution for jsQR to find the finder patterns.
-        const maxDim = 1600
-        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight))
-        canvas.width = Math.round(img.naturalWidth * scale)
-        canvas.height = Math.round(img.naturalHeight * scale)
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const code = jsQR(imageData.data, imageData.width, imageData.height)
-        if (code?.data) { importSourceRef.current = 'qr_image'; setImportText(code.data); setError('') }
-        else { setError('No QR code found in that image. Try a clearer, more cropped image — or paste the backup code instead.') }
-      } catch {
-        setError('Could not read that image. Try pasting the backup code instead.')
-      } finally { URL.revokeObjectURL(url) }
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); setError('Could not open that image file.') }
-    img.src = url
+    decodeQrFromImageFile(
+      file,
+      (data) => { importSourceRef.current = 'qr_image'; setImportText(data); setError('') },
+      (err) => setError(err),
+    )
   }
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0]; if (!file) { return }
     setError('')
     if (file.type.startsWith('image/')) {
-      decodeQrFromImageFile(file)
+      decodeQrFromImage(file)
     } else {
       const reader = new FileReader()
       reader.onload = () => setImportText(String(reader.result || ''))
