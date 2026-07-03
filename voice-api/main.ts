@@ -512,15 +512,28 @@ function guardianContent(opts: {
       </tr>
     </table>
     ${hasQr ? `
-    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:20px;margin:0 0 20px;text-align:center">
-      <p style="margin:0 0 6px;font-weight:800;color:#4ade80;font-size:15px">📎 Fastest way — scan the attached QR</p>
-      <p style="margin:0;line-height:1.7;color:#c4cdd6;font-size:13px">
-        This email has an image attached called <b style="color:#e2e8f0">${QR_FILENAME}</b>.
-        Open it and <b>scan it with your phone's camera</b> — it opens WalletLens and loads ${owner ? escapeHtml(owner) + "'s" : "the"} full portfolio instantly. No code to type, no account to create.
+    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:22px;margin:0 0 20px;text-align:center">
+      <p style="margin:0 0 8px;font-weight:800;color:#4ade80;font-size:16px">📎 Scan the attached QR to view the portfolio</p>
+      <p style="margin:0;line-height:1.75;color:#c4cdd6;font-size:14px">
+        This email has a QR image attached — <b style="color:#e2e8f0">${QR_FILENAME}</b>.
+        <b>Open it and scan it with your phone's camera</b> and it opens WalletLens showing ${owner ? escapeHtml(owner) + "'s" : "the"} full portfolio. That's it — no code to type, no account, nothing to sign up for.
       </p>
-    </div>` : ""}
+    </div>
     <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
-      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">${hasQr ? "Or open it manually" : "How to access their portfolio"}</p>
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">Can't scan it? Open the attachment instead</p>
+      <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
+        <li>Save the attached image <b style="color:#e2e8f0">${QR_FILENAME}</b> to your device.</li>
+        <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
+        <li>Go to <b>Settings → Backup → Restore</b> and <b>upload or scan that image</b>.</li>
+        <li>The full portfolio appears instantly — no account, no password.</li>
+      </ol>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      The QR was generated from the owner's own device — WalletLens keeps no financial data on its servers. Anyone with this QR can view the portfolio, so keep this email safe.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>` : `
+    <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">How to access their portfolio</p>
       <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
         <li>Find their <b style="color:#e2e8f0">WalletLens backup code</b> (starts with <code style="color:#4ade80">WLZ</code>) or a QR code — check their notes app, password manager, photos, printed documents or messages.</li>
         <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
@@ -529,9 +542,9 @@ function guardianContent(opts: {
       </ol>
     </div>
     <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
-      WalletLens keeps no financial data on its own servers — the portfolio in the QR came from the owner's device. If the attachment doesn't work, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
+      WalletLens keeps no financial data on its own servers — the portfolio lives on the owner's device. If you can't find a backup code, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
       Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
-    </p>
+    </p>`}
   `)
 
   const subject = isTest
