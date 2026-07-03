@@ -7,6 +7,19 @@ const DEVICE_ID_KEY = 'wl_guardian_device_id'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// Turn a server/Resend failure reason into a message that tells the user what
+// to actually fix, instead of the misleading "check the addresses".
+function explainMailReason(reason) {
+  const r = String(reason || '').toLowerCase()
+  if (r.includes('mail_not_configured'))
+    return 'Email isn\'t set up on the server yet (missing RESEND_API_KEY). Add it in the Deno project settings.'
+  if (r.includes('not verified') || r.includes('domain'))
+    return 'The walletlens.live email domain isn\'t verified in Resend yet, so mail can only go to the account owner. Verify the domain in the Resend dashboard, then try again.'
+  if (r.includes('network'))
+    return 'Couldn\'t reach the email service. Check your connection and try again.'
+  return 'Couldn\'t send the test email. Double-check the heir addresses and try again.'
+}
+
 function getOrCreateDeviceId() {
   try {
     let id = localStorage.getItem(DEVICE_ID_KEY)
@@ -154,6 +167,7 @@ function SetupForm({ onSuccess }) {
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle') // idle | saving | error
   const [testStatus, setTestStatus] = useState('idle') // idle | sending | sent | error
+  const [testErr, setTestErr] = useState('')
 
   function validate() {
     const errs = {}
@@ -172,7 +186,7 @@ function SetupForm({ onSuccess }) {
   async function sendTestEmail() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    setErrors({}); setTestStatus('sending')
+    setErrors({}); setTestErr(''); setTestStatus('sending')
     const cleanHeirs = heirs.filter(h => h.email.trim())
     try {
       const data = await apiCall({
@@ -180,9 +194,11 @@ function SetupForm({ onSuccess }) {
         heirs: cleanHeirs, message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
       })
-      setTestStatus(data?.ok ? 'sent' : 'error')
+      if (data?.ok) { setTestStatus('sent') }
+      else { setTestErr(explainMailReason(data?.reason)); setTestStatus('error') }
       track('guardian_test_email', { heirs: cleanHeirs.length })
-    } catch {
+    } catch (e) {
+      setTestErr(explainMailReason(e?.message))
       setTestStatus('error')
     }
   }
@@ -291,7 +307,7 @@ function SetupForm({ onSuccess }) {
         {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
       </button>
       {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
-      {testStatus === 'error' && <p className="pg-error">Couldn't send the test email. Check the addresses and try again.</p>}
+      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check the addresses and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}
