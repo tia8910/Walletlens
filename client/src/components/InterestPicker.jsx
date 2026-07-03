@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { track } from '../analytics'
+import { ASSET_CATEGORIES } from '../data/assets'
 
 // ── First-run "what do you track?" ──────────────────────────────────────────
 // A friendly chip-cloud where a new user taps the asset classes they care
@@ -9,17 +10,20 @@ import { track } from '../analytics'
 const INTERESTS_KEY = 'wl_interests'
 const DONE_KEY = 'wl_interests_done'
 
+// Icons mirror the dashboard / trade "asset category" icons (ASSET_CATEGORIES)
+// so the app feels consistent. Glyph icons (₿, $) carry their category colour.
+const C = ASSET_CATEGORIES
 // id must line up with INTEREST_TO_CAT in the dashboard quick-add ordering.
 const OPTIONS = [
-  { id: 'crypto',      emoji: '🪙', label: 'Crypto' },
+  { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, label: 'Crypto' },
   { id: 'stablecoins', emoji: '💠', label: 'Stablecoins' },
-  { id: 'stocks',      emoji: '📈', label: 'Stocks' },
+  { id: 'stocks',      emoji: C.stock.icon, label: 'Stocks' },
   { id: 'etfs',        emoji: '🧺', label: 'ETFs' },
-  { id: 'gold',        emoji: '🥇', label: 'Gold' },
-  { id: 'silver',      emoji: '🥈', label: 'Silver' },
-  { id: 'cash',        emoji: '💵', label: 'Cash' },
+  { id: 'gold',        emoji: C.gold.icon, label: 'Gold' },
+  { id: 'silver',      emoji: C.silver.icon, label: 'Silver' },
+  { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, label: 'Cash' },
   { id: 'realestate',  emoji: '🏠', label: 'Real estate' },
-  { id: 'bonds',       emoji: '📜', label: 'Bonds' },
+  { id: 'bonds',       emoji: C.bond.icon, label: 'Bonds' },
   { id: 'commodities', emoji: '🛢️', label: 'Commodities' },
 ]
 
@@ -76,7 +80,11 @@ export default function InterestPicker({ onDone }) {
                 aria-pressed={on}
                 onClick={() => toggle(o.id)}
               >
-                <span className="ip-chip-emoji" aria-hidden="true">{o.emoji}</span>
+                <span
+                  className={`ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
+                  style={o.color ? { color: o.color } : undefined}
+                  aria-hidden="true"
+                >{o.emoji}</span>
                 {o.label}
                 {on && (
                   <span className="ip-chip-check" aria-hidden="true">
