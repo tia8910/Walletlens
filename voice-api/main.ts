@@ -123,15 +123,21 @@ async function handleProxy(target: string | null, headers: HeadersInit): Promise
 }
 
 // ── Email sending (Resend) ──────────────────────────────────────────────────
-// All mail goes out from contact@walletlens.live. Requires the RESEND_API_KEY
-// env secret and a verified walletlens.live domain in the Resend dashboard.
+// Transactional / marketing mail goes out from contact@walletlens.live.
+// Requires the RESEND_API_KEY env secret and a verified walletlens.live domain
+// in the Resend dashboard.
 const MAIL_FROM = "WalletLens <contact@walletlens.live>"
+// Portfolio Guardian is an unattended, automated notifier — its mail is sent
+// from a no-reply address so heirs don't reply into a mailbox nobody watches.
+// Replies are still routed to contact@ so anyone who does hit "reply" reaches us.
+const GUARDIAN_FROM = "WalletLens Portfolio Guardian <noreply@walletlens.live>"
 
 // Returns the raw send result so callers that need to explain a failure to the
 // user (e.g. the Guardian test-email) can surface Resend's actual reason
 // instead of a generic error. `reason` is null on success.
 async function sendEmailResult(
   to: string, subject: string, html: string,
+  from: string = MAIL_FROM, replyTo: string = "contact@walletlens.live",
 ): Promise<{ ok: boolean; reason: string | null }> {
   const key = Deno.env.get("RESEND_API_KEY")
   if (!key) return { ok: false, reason: "mail_not_configured" }
@@ -139,7 +145,7 @@ async function sendEmailResult(
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({ from: MAIL_FROM, to, subject, html, reply_to: "contact@walletlens.live" }),
+      body: JSON.stringify({ from, to, subject, html, reply_to: replyTo }),
     })
     if (resp.ok) return { ok: true, reason: null }
     const detail = await resp.text().catch(() => "")
@@ -156,8 +162,79 @@ async function sendEmailResult(
   }
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  return (await sendEmailResult(to, subject, html)).ok
+async function sendEmail(
+  to: string, subject: string, html: string, from: string = MAIL_FROM,
+): Promise<boolean> {
+  return (await sendEmailResult(to, subject, html, from)).ok
+}
+
+// ── WhatsApp sending (Meta WhatsApp Cloud API) ───────────────────────────────
+// Optional second notification channel for Portfolio Guardian. Requires the
+// WHATSAPP_TOKEN and WHATSAPP_PHONE_ID env secrets (a WhatsApp Business number
+// on the Meta Cloud API). Absent config is a graceful no-op — email still goes.
+// Note: outside the 24-hour customer-service window Meta only delivers approved
+// message *templates*; set WHATSAPP_TEMPLATE to a template name to use one,
+// otherwise we send free-form text (delivered when the recipient has messaged
+// the business number recently, e.g. for the test send).
+function normalizePhone(raw: unknown): string | null {
+  const digits = String(raw || "").replace(/[^\d+]/g, "")
+  const e164 = digits.startsWith("+") ? digits : "+" + digits
+  // E.164: leading +, 8–15 digits, first digit non-zero.
+  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null
+}
+
+async function sendWhatsAppResult(
+  to: string, text: string,
+): Promise<{ ok: boolean; reason: string | null }> {
+  const token = Deno.env.get("WHATSAPP_TOKEN")
+  const phoneId = Deno.env.get("WHATSAPP_PHONE_ID")
+  if (!token || !phoneId) return { ok: false, reason: "whatsapp_not_configured" }
+  const phone = normalizePhone(to)
+  if (!phone) return { ok: false, reason: "invalid_phone" }
+  try {
+    const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: phone.replace(/^\+/, ""),
+        type: "text",
+        text: { preview_url: false, body: text.slice(0, 4096) },
+      }),
+    })
+    if (resp.ok) return { ok: true, reason: null }
+    const detail = await resp.text().catch(() => "")
+    console.error("WhatsApp error:", resp.status, detail)
+    let msg = ""
+    try { msg = JSON.parse(detail)?.error?.message || "" } catch { /* non-JSON */ }
+    return { ok: false, reason: msg || `whatsapp_${resp.status}` }
+  } catch (e) {
+    console.error("WhatsApp exception:", e)
+    return { ok: false, reason: "network_error" }
+  }
+}
+
+// Normalise + validate an heir list. Each heir may be reachable by email,
+// WhatsApp, or both — keep any heir that has at least one valid channel.
+// deno-lint-ignore no-explicit-any
+function sanitizeHeirs(heirs: any): { name: string; email?: string; whatsapp?: string }[] {
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return (Array.isArray(heirs) ? heirs : [])
+    .slice(0, 3)
+    // deno-lint-ignore no-explicit-any
+    .map((h: any) => {
+      const email = typeof h?.email === "string" && emailRe.test(h.email.trim())
+        ? h.email.trim().toLowerCase() : undefined
+      const whatsapp = normalizePhone(h?.whatsapp) || undefined
+      if (!email && !whatsapp) return null
+      const cleaned: { name: string; email?: string; whatsapp?: string } = {
+        name: String(h?.name || "").trim().slice(0, 80) || "Heir",
+      }
+      if (email) cleaned.email = email
+      if (whatsapp) cleaned.whatsapp = whatsapp
+      return cleaned
+    })
+    .filter((h): h is { name: string; email?: string; whatsapp?: string } => h !== null)
 }
 
 // Branded HTML shell so every email looks consistent.
@@ -409,9 +486,102 @@ BODY:
   return { system, prompt }
 }
 
+// ── Portfolio Guardian notification content ─────────────────────────────────
+// One place that builds the heir-facing message so the live notification, the
+// test send, and the WhatsApp text all stay in sync.
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
+function guardianContent(opts: {
+  ownerName?: string
+  message?: string
+  valueStr: string
+  assetStr: string
+  lastSeen: string
+  intervalDays?: number
+  isTest?: boolean
+}): { subject: string; html: string; whatsapp: string } {
+  const { message = "", valueStr, assetStr, lastSeen, isTest = false } = opts
+  const owner = (opts.ownerName || "").trim()
+  const testBanner = isTest ? `
+    <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">✅ This is only a test</p>
+      <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">The WalletLens owner sent this to confirm Portfolio Guardian can reach you. Nothing has happened — they are fine. No action is needed. It's a good idea to save this email so you know where to look if it's ever real.</p>
+    </div>` : ""
+
+  const heading = isTest
+    ? "You've been named as someone's heir"
+    : `${owner ? escapeHtml(owner) : "Someone who trusts you"} may need you to act`
+
+  const leadLine = isTest
+    ? `If this were a real alert, it would mean ${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b>` : "the person who named you"} had stopped checking in with WalletLens — and this email would guide you through reaching their portfolio.`
+    : `${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b> named you` : "You were named"} as an heir in <b style="color:#4ade80">WalletLens Portfolio Guardian</b>, a safeguard that reaches out to you if they stop opening WalletLens. They have not checked in since <b>${lastSeen}</b>, so we're letting you know as they asked.`
+
+  const html = emailShell(`
+    ${testBanner}
+    <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${heading}</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">${leadLine}</p>
+    ${message ? `
+    <div style="background:#141b12;border-left:3px solid #4ade80;padding:16px 20px;border-radius:0 10px 10px 0;margin:0 0 24px">
+      <p style="margin:0 0 6px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Their message to you</p>
+      <p style="margin:0;line-height:1.8;color:#e6f2ea;font-style:italic;font-size:15px">"${escapeHtml(message)}"</p>
+    </div>` : ""}
+    <table role="presentation" style="width:100%;border-collapse:collapse;background:#0f141a;border:1px solid #1f2730;border-radius:12px;margin:0 0 24px">
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Portfolio value</td>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:15px;color:#fff;font-weight:700;text-align:right">${valueStr}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Assets held</td>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:14px;color:#e2e8f0;text-align:right">${assetStr}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;font-size:13px;color:#8a93a0">Last seen active</td>
+        <td style="padding:16px 20px;font-size:14px;color:#e2e8f0;text-align:right">${lastSeen}</td>
+      </tr>
+    </table>
+    <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">How to access their portfolio</p>
+      <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
+        <li>Find their <b style="color:#e2e8f0">WalletLens backup code</b> (starts with <code style="color:#4ade80">WLZ</code>) or a QR code — check their notes app, password manager, photos, printed documents or messages.</li>
+        <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
+        <li>Go to <b>Settings → Backup → Restore</b> and paste or scan the code.</li>
+        <li>Their full portfolio appears instantly — no account, no password, nothing to sign up for.</li>
+      </ol>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      WalletLens keeps no financial data on its servers — everything lives on the owner's own device, which is why the backup code is what unlocks it. If you can't find one, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>
+  `)
+
+  const subject = isTest
+    ? "✅ Test: you're set up as a WalletLens heir"
+    : `${owner ? owner + " — " : ""}an important WalletLens Portfolio Guardian alert`
+
+  const waLines = [
+    isTest ? "✅ WalletLens Portfolio Guardian — TEST (no action needed)" : "🛡️ WalletLens Portfolio Guardian",
+    "",
+    isTest
+      ? `${owner ? owner : "Someone"} set you as an heir and is testing that we can reach you. Nothing has happened — they're fine.`
+      : `${owner ? owner : "Someone who trusts you"} named you as an heir and has not opened WalletLens since ${lastSeen}.`,
+    message ? `\nTheir message: "${message}"` : "",
+    "",
+    `Portfolio value: ${valueStr}`,
+    `Assets: ${assetStr}`,
+    "",
+    "To access their portfolio, find their WalletLens backup code (starts with WLZ) or QR code, then open walletlens.live → Settings → Backup → Restore and paste/scan it.",
+    "",
+    "Questions? contact@walletlens.live",
+  ]
+  return { subject, html, whatsapp: waLines.filter(l => l !== undefined).join("\n") }
+}
+
 // ── Portfolio Guardian cron ───────────────────────────────────────────────
-// Scans all guardian records every 6 h and emails heirs when the user's
-// check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
+// Scans all guardian records every 6 h and notifies heirs (email + optional
+// WhatsApp) when the user's check-in deadline has passed. Also callable via
+// POST { mode:"guardian_cron_trigger" }.
 async function runGuardianCron(): Promise<{ scanned: number; notified: number }> {
   const kv = await Deno.openKv()
   const now = Date.now()
@@ -430,41 +600,18 @@ async function runGuardianCron(): Promise<{ scanned: number; notified: number }>
       : "an undisclosed amount"
     const assetStr = ps.assetSymbols.length > 0 ? ps.assetSymbols.join(", ") : "various assets"
     const lastSeen = new Date(rec.lastCheckin as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-    const userMessage = (rec.message as string) || ""
 
-    const html = emailShell(`
-      <h1 style="margin:0 0 16px;font-size:22px;color:#fff">A message from someone you care about</h1>
-      ${userMessage ? `
-      <div style="background:#1a2210;border-left:3px solid #4ade80;padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 22px">
-        <p style="margin:0;line-height:1.7;color:#d1fae5;font-style:italic">"${userMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}"</p>
-      </div>` : ""}
-      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">
-        This is an automated message from <b style="color:#4ade80">WalletLens Portfolio Guardian</b>.
-        A person who set you as their heir has not checked in since <b>${lastSeen}</b>.
-      </p>
-      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">
-        They held a portfolio worth ${valueStr} including: <b style="color:#e2e8f0">${assetStr}</b>.
-      </p>
-      <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:18px;margin:22px 0">
-        <p style="margin:0 0 10px;font-weight:700;color:#4ade80;font-size:14px">HOW TO ACCESS THEIR PORTFOLIO</p>
-        <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
-          <li>Open <a href="https://walletlens.live" style="color:#4ade80">walletlens.live</a> on their phone, computer or tablet.</li>
-          <li>Look for a <b>WLZ backup code</b> or QR code saved in their notes, password manager, photos, or messages.</li>
-          <li>In WalletLens go to <b>Settings &rarr; Backup &rarr; Restore</b> and paste or scan the code.</li>
-          <li>Your full portfolio view will be restored immediately — no account needed.</li>
-        </ol>
-      </div>
-      <p style="margin:0;line-height:1.6;color:#7d8794;font-size:13px">
-        WalletLens stores no financial data on its servers — the portfolio lives on the user's device.
-        If you cannot find their backup code, check their devices for the WalletLens app or browser bookmark.<br><br>
-        Questions? <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>
-      </p>
-    `)
+    const { subject, html, whatsapp } = guardianContent({
+      ownerName: rec.ownerName as string | undefined,
+      message: (rec.message as string) || "",
+      valueStr, assetStr, lastSeen,
+      intervalDays: rec.intervalDays as number,
+    })
 
-    const heirs = rec.heirs as { name: string; email: string }[]
+    const heirs = rec.heirs as { name: string; email?: string; whatsapp?: string }[]
     for (const heir of heirs) {
-      const subject = `Important: a message about ${(rec.deviceId as string).slice(0, 4)}…'s WalletLens portfolio`
-      await sendEmail(heir.email, subject, html)
+      if (heir.email) await sendEmail(heir.email, subject, html, GUARDIAN_FROM)
+      if (heir.whatsapp) await sendWhatsAppResult(heir.whatsapp, whatsapp)
     }
     await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() })
     notified++
@@ -670,8 +817,8 @@ Deno.serve(async (req: Request) => {
   // The backup code never leaves the device.
 
   if (body?.mode === "guardian_setup") {
-    // POST { mode:"guardian_setup", deviceId, heirs, message, intervalDays, portfolioSummary }
-    const { deviceId, heirs, message, intervalDays, portfolioSummary } = body
+    // POST { mode:"guardian_setup", deviceId, ownerName?, heirs, message, intervalDays, portfolioSummary }
+    const { deviceId, ownerName, heirs, message, intervalDays, portfolioSummary } = body
 
     // Validate deviceId — alphanumeric, 8-64 chars
     if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
@@ -681,14 +828,7 @@ Deno.serve(async (req: Request) => {
     if (!Array.isArray(heirs) || heirs.length === 0 || heirs.length > 3) {
       return new Response(JSON.stringify({ error: "invalid_heirs" }), { status: 400, headers })
     }
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const cleanHeirs = heirs
-      .filter((h: { name?: unknown; email?: unknown }) => h && typeof h.email === "string" && emailRe.test(h.email.trim()))
-      .slice(0, 3)
-      .map((h: { name?: unknown; email?: unknown }) => ({
-        name: String(h.name || "").trim().slice(0, 80) || "Heir",
-        email: String(h.email).trim().toLowerCase(),
-      }))
+    const cleanHeirs = sanitizeHeirs(heirs)
     if (cleanHeirs.length === 0) {
       return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
     }
@@ -696,8 +836,9 @@ Deno.serve(async (req: Request) => {
     const validIntervals = [1, 7, 30, 60, 90, 180]
     const interval = validIntervals.includes(Number(intervalDays)) ? Number(intervalDays) : 90
 
-    // Validate message
+    // Validate message + owner name
     const cleanMessage = String(message || "").trim().slice(0, 500)
+    const cleanOwnerName = String(ownerName || "").trim().slice(0, 80)
 
     // Validate portfolio summary (optional but must be safe if provided)
     const summary = portfolioSummary && typeof portfolioSummary === "object"
@@ -713,6 +854,7 @@ Deno.serve(async (req: Request) => {
       const kv = await Deno.openKv()
       const record = {
         deviceId,
+        ownerName: cleanOwnerName,
         heirs: cleanHeirs,
         message: cleanMessage,
         intervalDays: interval,
@@ -733,18 +875,13 @@ Deno.serve(async (req: Request) => {
     // Immediately send a clearly-labeled TEST of the heir notification so the
     // owner can verify Portfolio Guardian works without waiting for the
     // interval. Uses the form data directly (no KV lookup needed).
-    const { heirs, message, portfolioSummary } = body
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const cleanHeirs = (Array.isArray(heirs) ? heirs : [])
-      // deno-lint-ignore no-explicit-any
-      .filter((h: any) => h && typeof h.email === "string" && emailRe.test(String(h.email).trim()))
-      .slice(0, 3)
-      // deno-lint-ignore no-explicit-any
-      .map((h: any) => ({ name: String(h.name || "").trim().slice(0, 80) || "Heir", email: String(h.email).trim().toLowerCase() }))
+    const { ownerName, heirs, message, portfolioSummary } = body
+    const cleanHeirs = sanitizeHeirs(heirs)
     if (cleanHeirs.length === 0) {
       return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
     }
     const cleanMessage = String(message || "").trim().slice(0, 500)
+    const cleanOwnerName = String(ownerName || "").trim().slice(0, 80)
     // deno-lint-ignore no-explicit-any
     const ps: any = (portfolioSummary && typeof portfolioSummary === "object") ? portfolioSummary : {}
     const totalUsd = typeof ps.totalUsd === "number" ? Math.round(Math.abs(ps.totalUsd)) : 0
@@ -753,29 +890,39 @@ Deno.serve(async (req: Request) => {
     const assetSymbols = Array.isArray(ps.assetSymbols) ? ps.assetSymbols.slice(0, 20).map((x: any) => String(x).slice(0, 10)) : []
     const valueStr = totalUsd > 0 ? `approximately ${currency} ${totalUsd.toLocaleString()}` : "an undisclosed amount"
     const assetStr = assetSymbols.length ? assetSymbols.join(", ") : "various assets"
+    const lastSeen = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-    const html = emailShell(`
-      <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:10px;padding:12px 16px;margin:0 0 20px">
-        <p style="margin:0;color:#fde68a;font-weight:700;font-size:14px">✅ THIS IS A TEST</p>
-        <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">The WalletLens owner sent this to check that Portfolio Guardian works. No action is needed — they are fine.</p>
-      </div>
-      <h1 style="margin:0 0 16px;font-size:22px;color:#fff">A message from someone you care about (test)</h1>
-      ${cleanMessage ? `<div style="background:#1a2210;border-left:3px solid #4ade80;padding:14px 18px;border-radius:0 8px 8px 0;margin:0 0 22px"><p style="margin:0;line-height:1.7;color:#d1fae5;font-style:italic">"${cleanMessage.replace(/</g, "&lt;").replace(/>/g, "&gt;")}"</p></div>` : ""}
-      <p style="margin:0 0 14px;line-height:1.7;color:#c4cdd6">If this were real, you would be told that a person who set you as their heir has not checked in — and how to access their portfolio worth ${valueStr} including: <b style="color:#e2e8f0">${assetStr}</b>.</p>
-      <p style="margin:0;line-height:1.6;color:#7d8794;font-size:13px">Questions? <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a></p>
-    `)
-    let sent = 0, failed = 0, lastReason: string | null = null
+    const { subject, html, whatsapp } = guardianContent({
+      ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true,
+    })
+
+    let sent = 0, failed = 0, waSent = 0, waFailed = 0
+    let lastReason: string | null = null, lastWaReason: string | null = null
     for (const heir of cleanHeirs) {
-      const r = await sendEmailResult(heir.email, "[TEST] WalletLens Portfolio Guardian — verification", html)
-      r.ok ? sent++ : (failed++, lastReason = r.reason)
+      if (heir.email) {
+        const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM)
+        r.ok ? sent++ : (failed++, lastReason = r.reason)
+      }
+      if (heir.whatsapp) {
+        const w = await sendWhatsAppResult(heir.whatsapp, whatsapp)
+        w.ok ? waSent++ : (waFailed++, lastWaReason = w.reason)
+      }
       await new Promise((res) => setTimeout(res, 120))
     }
-    // When nothing went out, report the concrete reason (mail not configured,
-    // Resend domain not verified, etc.) rather than a generic failure.
-    if (sent === 0) {
-      return new Response(JSON.stringify({ ok: false, sent, failed, reason: lastReason || "send_failed" }), { status: 200, headers })
+    const anyEmail = cleanHeirs.some((h) => h.email)
+    const anyWhatsapp = cleanHeirs.some((h) => h.whatsapp)
+    // Success if every requested channel delivered at least once. When email was
+    // requested but nothing went out, surface the concrete reason (mail not
+    // configured, domain not verified, WhatsApp not configured, etc.).
+    const emailOk = !anyEmail || sent > 0
+    const waOk = !anyWhatsapp || waSent > 0
+    if (!emailOk || !waOk) {
+      return new Response(JSON.stringify({
+        ok: false, sent, failed, waSent, waFailed,
+        reason: (!emailOk ? lastReason : lastWaReason) || "send_failed",
+      }), { status: 200, headers })
     }
-    return new Response(JSON.stringify({ ok: true, sent, failed, reason: lastReason }), { status: 200, headers })
+    return new Response(JSON.stringify({ ok: true, sent, failed, waSent, waFailed, reason: lastReason || lastWaReason }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {

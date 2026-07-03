@@ -46,6 +46,23 @@ secret and is **never** exposed to the browser.
    - Save, then **redeploy** (Deno redeploys automatically on the next push, or
      hit "Redeploy" in the dashboard).
 
+### Optional env vars (email + WhatsApp)
+These power the newsletter welcome mail, campaign sender and **Portfolio
+Guardian**. All are optional — features that need a missing key degrade
+gracefully (Guardian, for instance, still resets the countdown and sends over
+whatever channel *is* configured).
+   - `RESEND_API_KEY` — [Resend](https://resend.com) API key. Required to send
+     any email. The `walletlens.live` domain must be verified in Resend, and the
+     domain's DNS must authorise **both** `contact@walletlens.live` (welcome /
+     campaigns) and `noreply@walletlens.live` (Portfolio Guardian heir alerts).
+   - `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_ID` — Meta WhatsApp Cloud API
+     credentials. When both are set, Guardian also notifies heirs who provided a
+     WhatsApp number. Note Meta only delivers free-form text inside the 24-hour
+     customer-service window; for reliable out-of-window delivery add an approved
+     message template (see `WHATSAPP_TEMPLATE` in `main.ts`).
+   - `SIGNUP_EXPORT_TOKEN` — shared secret protecting the signup export, campaign
+     send and the manual Guardian cron trigger.
+
 ### Verify
 ```bash
 curl -X POST https://walletlens-voice-parse.deno.dev/ \
