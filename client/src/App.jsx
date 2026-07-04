@@ -579,8 +579,8 @@ export default function App() {
           <div className="wl-topbar-brand">
             <button
               className="wl-logo-btn"
-              onClick={e => { e.currentTarget.classList.add('burst'); setTimeout(() => e.currentTarget.classList.remove('burst'), 220); setQuickStatsOpen(true); track('quick_stats_open') }}
-              aria-label="Quick Stats"
+              onClick={() => navigate('/dashboard')}
+              aria-label="WalletLens home"
             >
               <Logo size={36} animated />
             </button>
@@ -588,6 +588,15 @@ export default function App() {
               <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
               <TopbarCyclingActions />
             </div>
+            <button
+              className="wl-topbar-stats"
+              onClick={() => { setQuickStatsOpen(true); track('quick_stats_open', { source: 'topbar_button' }) }}
+              title="Quick Stats"
+              aria-label="Quick Stats"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Stats</span>
+            </button>
           </div>
           <div className="wl-topbar-right">
             <button
