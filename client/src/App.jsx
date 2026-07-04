@@ -8,6 +8,7 @@ const Compare       = lazy(() => import('./pages/Compare'))
 const PricePage     = lazy(() => import('./pages/PricePage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 import PriceTicker from './components/PriceTicker'
+import UpdateBanner from './components/UpdateBanner'
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
@@ -529,6 +530,7 @@ export default function App() {
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
+        <UpdateBanner />
         <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
@@ -565,6 +567,7 @@ export default function App() {
 
   return (
     <div className="wl-app">
+      <UpdateBanner />
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
 
