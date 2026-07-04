@@ -84,8 +84,10 @@ export default function AddAssetTour({ open, onClose, onNavigate }) {
   useEffect(() => {
     if (!open || step !== 0) return
     const id = setInterval(() => {
-      const el = document.querySelector('[data-tour="ts-category"]')
-      if (el && isOnScreen(el.getBoundingClientRect())) { clearInterval(id); setStep(1) }
+      // `.bs-sheet-open` is present only while the trade sheet is actually open,
+      // so this is an unambiguous "sheet is open" signal (the category element
+      // itself stays in the DOM even when the sheet is closed).
+      if (document.querySelector('.bs-sheet-open [data-tour="ts-category"]')) { clearInterval(id); setStep(1) }
     }, 200)
     return () => clearInterval(id)
   }, [open, step])
