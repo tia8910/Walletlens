@@ -17,6 +17,7 @@ const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
+const HelpGuide = lazy(() => import('./components/HelpGuide'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
@@ -403,6 +404,7 @@ export default function App() {
   // initial mount cost on every page load when the drawer is never opened.
   const [drawerMounted, setDrawerMounted] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [shellReady, setShellReady] = useState(false)
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
@@ -441,6 +443,14 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
   useEffect(() => { if (drawerOpen) setDrawerMounted(true) }, [drawerOpen])
+
+  // Any part of the app can open the Help guide by dispatching `wl:open-help`
+  // (e.g. an on-screen tip's "how it works" link).
+  useEffect(() => {
+    const open = () => setHelpOpen(true)
+    window.addEventListener('wl:open-help', open)
+    return () => window.removeEventListener('wl:open-help', open)
+  }, [])
 
   useEffect(() => {
     const id = typeof requestIdleCallback !== 'undefined'
@@ -572,6 +582,14 @@ export default function App() {
           </div>
           <div className="wl-topbar-right">
             <button
+              className="wl-topbar-x wl-topbar-help"
+              onClick={() => { setHelpOpen(true); track('help_guide_open', { source: 'topbar' }) }}
+              title="How it works"
+              aria-label="How WalletLens works"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9.2a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.4" r="0.7" fill="currentColor" stroke="none"/></svg>
+            </button>
+            <button
               className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
               title="Settings"
@@ -633,6 +651,7 @@ export default function App() {
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
+      {helpOpen && <Suspense fallback={null}><HelpGuide open={helpOpen} onClose={() => setHelpOpen(false)} onNavigate={navigate} /></Suspense>}
     </div>
   )
 }

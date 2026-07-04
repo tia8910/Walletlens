@@ -12602,3 +12602,84 @@ button:not(:disabled):active,
 /* Recharts tooltip surface — solid per mode so it never reads as a black box. */
 :root { --tooltip-bg: #0e1418; }
 [data-wl-light] { --tooltip-bg: #ffffff; }
+
+/* ── Help guide + on-screen tips (How-it-works) ─────────────────────────── */
+.wl-topbar-help svg { display: block; }
+
+/* Small ⓘ tip affordance placed next to labels / section titles */
+.wl-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 0.35em; }
+.wl-tip-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; border: none; cursor: pointer;
+  border-radius: 50%; background: transparent; color: var(--text-sub);
+  transition: color 0.15s, background 0.15s;
+}
+.wl-tip-btn:hover, .wl-tip-btn.open { color: var(--g-ink); background: rgba(var(--g-rgb), 0.14); }
+.wl-tip-btn svg { display: block; }
+.wl-tip-pop {
+  position: absolute; z-index: 60; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(260px, 72vw);
+  padding: 0.55rem 0.7rem; border-radius: 10px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text); font-size: 0.74rem; line-height: 1.45; font-weight: 500;
+  text-align: left; white-space: normal;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(12px);
+  animation: wl-tip-in 0.14s ease both;
+}
+.wl-tip-pop::before {
+  content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent; border-bottom-color: var(--border);
+}
+@keyframes wl-tip-in { from { opacity: 0; transform: translateX(-50%) translateY(-4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* How-it-works guide overlay */
+.wl-help-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  animation: wl-help-fade 0.2s ease both;
+}
+@keyframes wl-help-fade { from { opacity: 0; } to { opacity: 1; } }
+.wl-help-sheet {
+  width: 100%; max-width: 560px; max-height: 92vh; display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 44px rgba(0,0,0,0.45);
+  animation: wl-help-up 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+@media (min-width: 640px) {
+  .wl-help-overlay { align-items: center; }
+  .wl-help-sheet { border-radius: 22px; max-height: 88vh; }
+}
+@keyframes wl-help-up { from { transform: translateY(24px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+.wl-help-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 1.15rem 1.25rem 0.6rem; }
+.wl-help-title { margin: 0; font-size: 1.18rem; font-weight: 800; color: var(--text); }
+.wl-help-sub { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
+.wl-help-x { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.15rem; border-radius: 8px; }
+.wl-help-x:hover { color: var(--text); }
+.wl-help-body { overflow-y: auto; padding: 0.4rem 1.25rem 0.4rem; -webkit-overflow-scrolling: touch; }
+.wl-help-card { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.wl-help-card:last-of-type { border-bottom: none; }
+.wl-help-ico { flex-shrink: 0; font-size: 1.3rem; line-height: 1.4; }
+.wl-help-card-main { flex: 1; min-width: 0; }
+.wl-help-card-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.wl-help-card-top strong { font-size: 0.92rem; font-weight: 800; color: var(--text); }
+.wl-help-card-main p { margin: 0.2rem 0 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); }
+.wl-help-go {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.3rem 0.7rem; border-radius: 999px; border: none; cursor: pointer;
+  font-size: 0.74rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+}
+.wl-help-go svg { display: block; }
+.wl-help-tips { margin: 0.5rem 0 0.3rem; padding: 0.85rem; border-radius: 14px; background: rgba(var(--g-rgb), 0.07); border: 1px solid rgba(var(--g-rgb), 0.16); }
+.wl-help-tips-title { margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--g-ink); }
+.wl-help-tip-row { display: flex; gap: 0.55rem; padding: 0.28rem 0; font-size: 0.8rem; line-height: 1.5; color: var(--text); }
+.wl-help-tip-row > span:first-child { flex-shrink: 0; }
+.wl-help-foot { padding: 0.8rem 1.25rem calc(0.9rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.wl-help-done {
+  width: 100%; padding: 0.8rem; border-radius: 13px; border: none; cursor: pointer;
+  font-size: 0.92rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+}
