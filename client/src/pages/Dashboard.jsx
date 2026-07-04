@@ -2149,7 +2149,12 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
       <button
         className="wl-guide-cta"
         onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}>
-        <span className="wl-guide-cta-hand" aria-hidden="true">👆</span>
+        <span className="wl-guide-cta-ico" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.2l1.7 5.1a3 3 0 0 0 1.9 1.9l5.1 1.7-5.1 1.7a3 3 0 0 0-1.9 1.9L12 19.6l-1.7-5.1a3 3 0 0 0-1.9-1.9L3.3 10.9l5.1-1.7a3 3 0 0 0 1.9-1.9L12 2.2z"/>
+            <path d="M19 3.5l.55 1.65a1 1 0 0 0 .63.63L21.8 6.3l-1.62.52a1 1 0 0 0-.63.63L19 9.1l-.55-1.65a1 1 0 0 0-.63-.63L16.2 6.3l1.62-.52a1 1 0 0 0 .63-.63L19 3.5z" opacity=".85"/>
+          </svg>
+        </span>
         <span className="wl-guide-cta-text">
           <strong>Show me how</strong>
           <span>Step-by-step guided tour</span>

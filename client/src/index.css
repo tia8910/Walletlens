@@ -12854,8 +12854,9 @@ button:not(:disabled):active,
   transform: translateX(-120%); animation: wl-guide-shine 3.4s ease-in-out infinite;
 }
 @keyframes wl-guide-shine { 0% { transform: translateX(-120%); } 55%,100% { transform: translateX(130%); } }
-.wl-guide-cta-hand { font-size: 1.45rem; line-height: 1; transform-origin: 70% 90%; animation: wl-guide-bob 1.2s ease-in-out infinite; }
-@keyframes wl-guide-bob { 0%,100% { transform: translateY(0) rotate(0); } 45% { transform: translateY(-4px) rotate(-10deg); } }
+.wl-guide-cta-ico { display: inline-flex; color: #fff; filter: drop-shadow(0 0 6px rgba(255,255,255,0.5)); animation: wl-guide-twinkle 2.2s ease-in-out infinite; }
+.wl-guide-cta-ico svg { display: block; }
+@keyframes wl-guide-twinkle { 0%,100% { transform: scale(1) rotate(0); opacity: 0.92; } 50% { transform: scale(1.12) rotate(8deg); opacity: 1; } }
 .wl-guide-cta-text { display: flex; flex-direction: column; line-height: 1.2; }
 .wl-guide-cta-text strong { font-size: 1rem; font-weight: 800; letter-spacing: 0.01em; }
 .wl-guide-cta-text span { font-size: 0.72rem; font-weight: 600; opacity: 0.9; }
@@ -12863,9 +12864,11 @@ button:not(:disabled):active,
   font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; padding: 0.18rem 0.4rem;
   border-radius: 999px; background: rgba(255,255,255,0.22); color: #fff; align-self: center;
 }
-.wl-guide-cta-arrow { display: inline-flex; animation: wl-guide-nudge 1.2s ease-in-out infinite; }
+/* Arrow is always visible and steady; it nudges forward slightly while the
+   button is pressed. */
+.wl-guide-cta-arrow { display: inline-flex; transition: transform 0.18s ease; }
 .wl-guide-cta-arrow svg { display: block; }
-@keyframes wl-guide-nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+.wl-guide-cta:active .wl-guide-cta-arrow { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {
-  .wl-guide-cta, .wl-guide-cta::after, .wl-guide-cta-hand, .wl-guide-cta-arrow { animation: none; }
+  .wl-guide-cta, .wl-guide-cta::after, .wl-guide-cta-ico { animation: none; }
 }
