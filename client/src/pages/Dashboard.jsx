@@ -29,6 +29,7 @@ import InstallExtension from '../components/InstallExtension'
 import { BiometricToggle } from '../components/BiometricLock'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
+import Tip from '../components/Tip'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -494,7 +495,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
       {/* Radar-style indicator ring (SVG) */}
       <div className="glass-card ai-radar-card">
-        <h4 className="ai-section-title">{t('portfolioRadar')}</h4>
+        <h4 className="ai-section-title">{t('portfolioRadar')}<Tip text="A snapshot of your portfolio's health across five axes — diversity, momentum, P&L, market-cap spread and asset count. The wider the shape, the healthier the mix." /></h4>
         <AIRadar
           diversity={ai.concentrationScore}
           momentum={ai.momentumScore}
@@ -506,7 +507,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
       {/* ── Fear & Greed Meter ── */}
       <div className="glass-card ai-fg-card">
-        <h4 className="ai-section-title">{t('fearGreed')}</h4>
+        <h4 className="ai-section-title">{t('fearGreed')}<Tip text="How fearful or greedy YOUR portfolio looks right now — built from your momentum, P&L bias, trade sentiment and concentration. High greed can be a signal to take profit; high fear, to be patient." /></h4>
         <FearGreedGauge value={ai.fearGreed} label={ai.fgLabel} color={ai.fgColor} />
         <p className="ai-fg-desc">
           Derived from momentum, P&amp;L bias, trade sentiment &amp; concentration — specific to <em>your</em> portfolio.
@@ -547,7 +548,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
       {/* ── Entry Quality ── */}
       <div className="glass-card ai-entry-card">
-        <h4 className="ai-section-title">{t('entryQuality')}</h4>
+        <h4 className="ai-section-title">{t('entryQuality')}<Tip text="How good your entry was for each asset — your average buy price versus the current price. Green means you're up on your entry; red means underwater." /></h4>
         <p className="ai-entry-sub muted">Avg buy price vs current price per asset</p>
         <div className="ai-entry-list">
           {ai.entryQuality.map(h => (
