@@ -140,7 +140,7 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Cash — pick the currency */}
         <div className="wls-field">
-          <label className="wls-label">💵 Cash balance <span className="wls-opt">optional</span></label>
+          <label className="wls-label">💵 Cash balance</label>
           <div className="wls-input-wrap">
             <span className="wls-prefix">{sym}</span>
             <input
@@ -158,7 +158,7 @@ export default function WelcomeStart({ onDone }) {
 
         {/* USDT */}
         <div className="wls-field">
-          <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance <span className="wls-opt">optional</span></label>
+          <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance</label>
           <div className="wls-input-wrap">
             <span className="wls-prefix"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
             <input
@@ -171,7 +171,7 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Gold */}
         <div className="wls-field">
-          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold <span className="wls-opt">optional</span></label>
+          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold</label>
           <div className="wls-input-wrap">
             <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'}</span>
             <input
@@ -190,7 +190,7 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Bitcoin */}
         <div className="wls-field">
-          <label className="wls-label">₿ Bitcoin <span className="wls-opt">optional</span></label>
+          <label className="wls-label">₿ Bitcoin</label>
           <div className="wls-input-wrap">
             <span className="wls-prefix wls-prefix-btc">₿</span>
             <input
