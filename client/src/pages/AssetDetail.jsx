@@ -429,6 +429,7 @@ export default function AssetDetail() {
         onDone={loadData}
         holdings={holdings ? [{ ...holdings, coin_id: coinId, coin_symbol: coin?.symbol, amount }] : []}
         prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
+        variant="page"
       />
     </div>
   )

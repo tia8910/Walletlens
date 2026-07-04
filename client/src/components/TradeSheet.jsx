@@ -35,6 +35,31 @@ import TradeSignal from './BuySignal'
 
 const IcoClose  = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
 const IcoSearch = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+const IcoBack   = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+
+// Curated top coins for the browsable "markets" list shown at the top of the
+// full-page trade screen (ids match the price/search API). Live price + 24h
+// change are fetched on open so it reads like a real markets list.
+const POPULAR_COINS = [
+  { id: 'bitcoin',      symbol: 'BTC',  name: 'Bitcoin' },
+  { id: 'ethereum',     symbol: 'ETH',  name: 'Ethereum' },
+  { id: 'tether',       symbol: 'USDT', name: 'Tether' },
+  { id: 'binancecoin',  symbol: 'BNB',  name: 'BNB' },
+  { id: 'solana',       symbol: 'SOL',  name: 'Solana' },
+  { id: 'ripple',       symbol: 'XRP',  name: 'XRP' },
+  { id: 'usd-coin',     symbol: 'USDC', name: 'USD Coin' },
+  { id: 'cardano',      symbol: 'ADA',  name: 'Cardano' },
+  { id: 'dogecoin',     symbol: 'DOGE', name: 'Dogecoin' },
+  { id: 'tron',         symbol: 'TRX',  name: 'TRON' },
+  { id: 'chainlink',    symbol: 'LINK', name: 'Chainlink' },
+  { id: 'avalanche-2',  symbol: 'AVAX', name: 'Avalanche' },
+  { id: 'the-open-network', symbol: 'TON', name: 'Toncoin' },
+  { id: 'polkadot',     symbol: 'DOT',  name: 'Polkadot' },
+  { id: 'matic-network', symbol: 'MATIC', name: 'Polygon' },
+  { id: 'litecoin',     symbol: 'LTC',  name: 'Litecoin' },
+  { id: 'shiba-inu',    symbol: 'SHIB', name: 'Shiba Inu' },
+  { id: 'uniswap',      symbol: 'UNI',  name: 'Uniswap' },
+]
 
 const IcoGoldBar = (
   <svg width="20" height="13" viewBox="0 0 32 20" style={{ display:'inline-block', verticalAlign:'middle' }}>
@@ -164,7 +189,8 @@ async function buildSpendLeg(source, costUsd) {
 }
 
 // ── TradeSheet ────────────────────────────────────────────────────────────
-export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker }) {
+export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker, variant = 'sheet' }) {
+  const isPage = variant === 'page'
   const [category, setCategory]         = useState('crypto')
   const [coinSearch, setCoinSearch]     = useState('')
   const [coinResults, setCoinResults]   = useState([])
@@ -228,6 +254,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   const [priceFetchFailed, setPriceFetchFailed] = useState(false)
   const [priceFocused, setPriceFocused] = useState(false)
+  const [popPrices, setPopPrices] = useState({})
+
+  // Fetch live prices for the browsable popular-coins list (full-page only).
+  useEffect(() => {
+    if (!isPage || !open) return
+    let alive = true
+    api.getPrices(POPULAR_COINS.map(c => c.id).join(',')).then(px => {
+      if (alive && px) setPopPrices(px)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [isPage, open])
 
   // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
@@ -503,11 +540,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   return (
     <>
       <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} />
-      <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''}`}>
-        <div className="bs-handle" />
+      <div className={`bs-sheet ${open ? 'bs-sheet-open' : ''} ${isPage ? 'bs-page' : ''}`}>
+        {!isPage && <div className="bs-handle" />}
 
         <div className="bs-header">
           <div className="bs-header-left">
+            {isPage && (
+              <button className="bs-back" onClick={onClose} aria-label="Back">{IcoBack}</button>
+            )}
             <div className="bs-type-dot" style={{ background: accent }} />
             <h3 className="bs-title" style={{ color: accent }}>{isBuy ? 'Buy Asset' : 'Sell Asset'}</h3>
           </div>
@@ -649,6 +689,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     )}
                   </div>
                 ) : isBuy ? (
+                  <>
                   <div className="bs-search-wrap">
                     <span className="bs-search-icon">{IcoSearch}</span>
                     <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
@@ -666,6 +707,36 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                     )}
                   </div>
+                  {/* Browsable "markets" list (full-page only) — tap to pick, like an exchange */}
+                  {isPage && !coinSearch.trim() && coinResults.length === 0 && (
+                    <div className="bs-markets">
+                      <div className="bs-markets-head">
+                        <span>Popular</span><span>Price / 24h</span>
+                      </div>
+                      <div className="bs-markets-list">
+                        {POPULAR_COINS.map(c => {
+                          const p = popPrices[c.id]?.usd ?? popPrices[c.id]?.price
+                          const ch = popPrices[c.id]?.usd_24h_change
+                          const up = Number(ch) >= 0
+                          return (
+                            <button key={c.id} type="button" className="bs-market-row"
+                              onClick={() => { track('trade_market_pick', { coin: c.id }); setSelectedCoin({ id: c.id, symbol: c.symbol, name: c.name }); setCoinSearch(c.name); setCoinResults([]) }}>
+                              <CoinLogo symbol={c.symbol} coinId={c.id} size={30} className="bs-coin-thumb" />
+                              <div className="bs-coin-info">
+                                <strong>{c.symbol}</strong>
+                                <span className="muted">{c.name}</span>
+                              </div>
+                              <div className="bs-market-px">
+                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: p < 1 ? 6 : 2 })}` : '—'}</span>
+                                {ch != null && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  </>
                 ) : (() => {
                   const cryptoHoldings = (holdings || []).filter(h =>
                     !h.coin_id?.startsWith('fiat:') &&

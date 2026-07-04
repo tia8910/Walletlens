@@ -4547,6 +4547,7 @@ export default function Dashboard() {
           prefillCoin={sheetPrefill?.coin}
           prefillCategory={sheetPrefill?.category}
           prefillStockTicker={sheetPrefill?.stockTicker}
+          variant="page"
         />
       </Suspense>
 

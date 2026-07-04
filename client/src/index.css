@@ -5642,6 +5642,58 @@ tr:last-child td { border-bottom: none; }
 }
 [data-wl-light] .bs-sheet::before { background: radial-gradient(120% 100% at 50% 0%, rgba(var(--g-rgb),0.1) 0%, transparent 70%); }
 
+/* ── Full-page trade variant ─────────────────────────────────────────────────
+   Same trade sheet, expanded to a full screen with the asset picker (search +
+   categories + a browsable markets list) at the top and the order form below. */
+.bs-sheet.bs-page {
+  top: 0; bottom: 0; left: 0; right: 0;
+  width: 100%; height: 100dvh; max-height: 100dvh;
+  border-radius: 0; border: none;
+  transform: translateY(100%);
+}
+.bs-sheet.bs-page.bs-sheet-open { transform: translateY(0); }
+.bs-sheet.bs-page::before { border-radius: 0; height: 220px; }
+@media (min-width: 640px) {
+  .bs-sheet.bs-page {
+    left: 50%; right: auto; top: 0; bottom: 0;
+    width: 100%; max-width: 720px; height: 100dvh; max-height: 100dvh;
+    border-radius: 0; transform: translate(-50%, 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 24px 80px rgba(0,0,0,0.5);
+  }
+  .bs-sheet.bs-page.bs-sheet-open { transform: translate(-50%, 0); }
+  .bs-sheet.bs-page::before { border-radius: 0; }
+}
+.bs-sheet.bs-page .bs-header { padding-top: calc(env(safe-area-inset-top, 0px) + 0.9rem); }
+.bs-sheet.bs-page .bs-body { padding-bottom: 1.5rem; }
+.bs-back {
+  width: 40px; height: 40px; flex-shrink: 0; padding: 0;
+  background: none; border: none; cursor: pointer; color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center;
+  opacity: 0.85; margin-left: -6px; transition: opacity .15s, transform .15s;
+}
+.bs-back:hover { opacity: 1; }
+.bs-back:active { transform: scale(0.9); }
+[data-wl-light] .bs-back { color: rgba(0,0,0,0.72); }
+
+/* Browsable markets list (full-page asset picker) */
+.bs-markets { margin-top: 0.55rem; }
+.bs-markets-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-sub); padding: 0 0.3rem 0.45rem;
+}
+.bs-markets-list { display: flex; flex-direction: column; }
+.bs-market-row {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%;
+  padding: 0.55rem 0.4rem; background: none; border: none; border-radius: 12px;
+  cursor: pointer; text-align: left; transition: background .14s;
+}
+.bs-market-row:hover  { background: rgba(var(--g-rgb),0.07); }
+.bs-market-row:active { background: rgba(var(--g-rgb),0.14); }
+.bs-market-px { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.bs-market-price { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+.bs-market-chg { font-size: 0.72rem; font-weight: 700; }
+
 .bs-handle {
   width: 40px; height: 4px;
   background: rgba(255,255,255,0.2);
