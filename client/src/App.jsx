@@ -18,7 +18,7 @@ const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
-const AddAssetGuide = lazy(() => import('./components/AddAssetGuide'))
+const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
@@ -659,7 +659,7 @@ export default function App() {
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
       {helpOpen && <Suspense fallback={null}><HelpGuide open={helpOpen} onClose={() => setHelpOpen(false)} onNavigate={navigate} /></Suspense>}
-      {addGuideOpen && <Suspense fallback={null}><AddAssetGuide open={addGuideOpen} onClose={() => setAddGuideOpen(false)} onNavigate={navigate} /></Suspense>}
+      {addGuideOpen && <Suspense fallback={null}><AddAssetTour open={addGuideOpen} onClose={() => setAddGuideOpen(false)} onNavigate={navigate} /></Suspense>}
     </div>
   )
 }
