@@ -1457,8 +1457,9 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
    elsewhere don't trigger a repaint of this expensive blur. */
 body::before {
   content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
+  /* Bottom-right ambient wash only. The top-left green radial was removed — at
+     20% 10% it sat directly behind the topbar logo and read as a green circle. */
   background:
-    radial-gradient(50% 40% at 20% 10%, rgba(var(--g-rgb),0.08) 0%, transparent 70%),
     radial-gradient(40% 35% at 80% 90%, rgba(var(--gd-rgb),0.06) 0%, transparent 70%);
   filter: blur(60px);
   opacity: 1;

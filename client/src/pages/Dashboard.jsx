@@ -3866,7 +3866,7 @@ export default function Dashboard() {
                       <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => cvN(v)} width={50}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} cursor={BAR_CURSOR} formatter={v => [cv(v), 'P&L']}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} cursor={false} formatter={v => [cv(v), 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
