@@ -12556,9 +12556,9 @@ button:not(:disabled):active,
 
 /* ── Full-page onboarding ───────────────────────────────────────────────────
    The first-run flows (welcome tour, interests picker, balances seed) fill the
-   whole screen instead of a floating centered card — matching the full-page
-   trade screen. Content centers vertically when short and the overlay scrolls
-   when it's taller than the viewport. Desktop keeps a centered content column. */
+   WHOLE screen edge-to-edge — a real page, not a floating centered card. The
+   card stretches to full width/height, content sits at the top, and the primary
+   CTA is pinned to the bottom. No close (X) button — dismissal is via Skip. */
 .wm-overlay, .ip-overlay, .wls-overlay {
   align-items: stretch !important;
   justify-content: center !important;
@@ -12571,24 +12571,25 @@ button:not(:disabled):active,
   max-width: 100% !important;
   min-height: 100dvh !important;
   max-height: none !important;
-  margin: 0 auto !important;
+  margin: 0 !important;
   border-radius: 0 !important;
   border: none !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
 }
-.wm-sheet { box-shadow: none !important; }
+.wm-sheet { box-shadow: none !important; overflow: visible !important; }
+.wm-sheet .wm-header { border-radius: 0 !important; }
 .wm-handle { display: none !important; }
-/* Pin the close X to the top-right instead of centering it with the content. */
-.ip-card > .wlm-close, .wls-card > .wlm-close {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 12px); right: 14px;
-  z-index: 3;
-}
+/* Remove the window close X on the full-page onboarding screens. */
+.ip-card > .wlm-close, .wls-card > .wlm-close, .wm-sheet .wm-close { display: none !important; }
+/* Push the primary CTA (and anything after it) to the bottom of the page. */
+.ip-card > .ip-cta, .wls-card > .wls-cta { margin-top: auto !important; }
+.wm-sheet > .wm-body { flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; }
+.wm-sheet .wm-progress-track { margin-top: auto !important; }
 @media (min-width: 640px) {
   .wm-sheet, .ip-card, .wls-card {
-    max-width: 560px !important;
+    width: 100% !important; max-width: 640px !important; margin: 0 auto !important;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.06) !important;
   }
 }
