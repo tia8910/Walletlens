@@ -4108,7 +4108,9 @@ tr:last-child td { border-bottom: none; }
 /* ═══ Quick Stats Popup ═══ */
 .qs-overlay {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  /* Stronger scrim + blur so the bright-green brand logo doesn't bleed through
+     as a green disc behind the popup (muted grey icons already stay hidden). */
+  background: rgba(0,0,0,0.86); backdrop-filter: blur(10px);
   display: flex; align-items: flex-end; justify-content: flex-end;
   padding: 0 1.2rem 7rem 1.2rem;
   animation: qs-fade-in 0.18s ease;
