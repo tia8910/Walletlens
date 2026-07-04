@@ -12593,3 +12593,7 @@ button:not(:disabled):active,
     box-shadow: 0 0 0 1px rgba(255,255,255,0.06) !important;
   }
 }
+
+/* Recharts tooltip surface — solid per mode so it never reads as a black box. */
+:root { --tooltip-bg: #0e1418; }
+[data-wl-light] { --tooltip-bg: #ffffff; }
