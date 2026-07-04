@@ -350,11 +350,12 @@ export function BiometricToggle() {
         disabled={unavailable || busy}
         style={{
           flexShrink: 0,
-          background: enabled ? 'var(--g)' : 'rgba(255,255,255,0.08)',
-          color: enabled ? '#000' : 'rgba(255,255,255,0.6)',
-          border: 'none', borderRadius: '8px',
-          padding: '0.4rem 0.9rem',
-          fontWeight: 700, fontSize: '0.82rem',
+          background: enabled ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)',
+          color: enabled ? '#fff' : 'var(--text-muted)',
+          border: enabled ? 'none' : '1px solid var(--border)', borderRadius: '10px',
+          boxShadow: enabled ? '0 2px 8px rgba(5,150,105,0.35)' : 'none',
+          padding: '0.45rem 0.95rem',
+          fontWeight: 800, fontSize: '0.82rem',
           cursor: (unavailable || busy) ? 'not-allowed' : 'pointer',
           opacity: unavailable ? 0.5 : 1,
           transition: 'all 0.2s',

@@ -12538,13 +12538,14 @@ button:not(:disabled):active,
 .data-export-btn, .data-btn, .ms-btn-share, .buy-btn, .submit-btn.buy,
 .lz-btn-primary, .tour-tt-cta, .wm-cta, .ip-cta, .wls-cta, .pg-modal-cta,
 .pg-submit, .pg-checkin-btn, .bs-submit.dvx-btn-primary, .bs-mode-tab.active.buy,
-.landing-cta, .lp-cta-primary {
+.dvx-show-more, .landing-cta, .lp-cta-primary {
   color: #fff !important;
 }
 .dvx-btn-primary, .btn-add-target, .dash-v2-cta, .dvx-hero-cta-buy,
 .data-export-btn, .data-btn, .ms-btn-share, .buy-btn, .submit-btn.buy,
 .lz-btn-primary, .tour-tt-cta, .wm-cta, .ip-cta, .wls-cta, .pg-modal-cta,
-.pg-submit, .pg-checkin-btn, .bs-submit.dvx-btn-primary, .bs-mode-tab.active.buy {
+.pg-submit, .pg-checkin-btn, .bs-submit.dvx-btn-primary, .bs-mode-tab.active.buy,
+.dvx-show-more {
   background: linear-gradient(135deg, #047857, #10b981) !important;
   border: none !important;
   box-shadow: 0 4px 14px rgba(5,150,105,0.35) !important;
@@ -12553,7 +12554,7 @@ button:not(:disabled):active,
 .data-export-btn:hover, .data-btn:hover, .ms-btn-share:hover, .buy-btn:hover, .submit-btn.buy:hover,
 .lz-btn-primary:hover, .tour-tt-cta:hover, .wm-cta:hover, .ip-cta:hover, .wls-cta:hover,
 .pg-modal-cta:hover, .pg-submit:hover, .pg-checkin-btn:hover,
-.bs-submit.dvx-btn-primary:hover, .bs-mode-tab.active.buy:hover {
+.bs-submit.dvx-btn-primary:hover, .bs-mode-tab.active.buy:hover, .dvx-show-more:hover {
   filter: brightness(1.06);
   box-shadow: 0 7px 22px rgba(5,150,105,0.5) !important;
 }
