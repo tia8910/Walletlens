@@ -12437,13 +12437,17 @@ button:not(:disabled):active,
 .pg-modal-list b { color: var(--text); }
 [data-wl-light] .pg-modal-list b { color: #0f172a; }
 
-/* ── Primary green buttons: white text (was near-black) — apply to all ──────
+/* ── Primary green buttons: deep-emerald ink on the bright accent fill ──────
+   White text washes out on the vivid green fill; a deep emerald-black reads
+   crisply and looks intentional (the fintech dark-on-green look, matching
+   .lz-btn-primary's #04140f). Light mode keeps white via the [data-wl-light]
+   overrides above, where the accent flips to a deep, saturated colour.
    Solid-green CTAs only; subtle/tinted buttons (e.g. .pg-test-btn) keep their
    accent-ink text. */
 .dvx-btn-primary, .btn-add-target, .dash-v2-cta, .landing-cta, .lp-cta-primary,
-.dvx-hero-cta-buy, .data-export-btn, .ms-btn-share, .blog-cta-btn, .buy-btn,
+.dvx-hero-cta-buy, .data-export-btn, .ms-btn-share, .buy-btn,
 .submit-btn.buy, .data-btn, .bs-mode-tab.active.buy, .lz-btn-primary,
 .tour-tt-cta, .wm-cta, .ip-cta, .wls-cta, .pg-modal-cta,
 .pg-submit, .pg-checkin-btn, .bs-submit.dvx-btn-primary {
-  color: #fff !important;
+  color: #04231a !important;
 }
