@@ -13005,3 +13005,18 @@ button:not(:disabled):active,
 }
 .wl-reb-advice-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: var(--g-ink); margin-bottom: 0.3rem; }
 .wl-reb-advice p { margin: 0.2rem 0; font-size: 0.8rem; line-height: 1.45; color: var(--text); }
+
+/* Quick Stats button beside the logo (Quick Stats no longer opens from the logo) */
+.wl-topbar-stats {
+  display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0;
+  margin-left: 0.5rem; padding: 0.32rem 0.6rem; cursor: pointer;
+  border-radius: 999px; border: 1px solid rgba(var(--g-rgb),0.35);
+  background: rgba(var(--g-rgb),0.12); color: var(--g-ink);
+  font-size: 0.74rem; font-weight: 800; letter-spacing: 0.01em;
+  transition: transform 0.14s ease, background 0.15s ease;
+}
+.wl-topbar-stats svg { display: block; }
+.wl-topbar-stats:hover { background: rgba(var(--g-rgb),0.2); }
+.wl-topbar-stats:active { transform: scale(0.94); }
+[data-wl-light] .wl-topbar-stats { border-color: rgba(var(--g-rgb),0.4); }
+@media (max-width: 380px) { .wl-topbar-stats span { display: none; } .wl-topbar-stats { padding: 0.32rem 0.42rem; } }
