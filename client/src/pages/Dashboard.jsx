@@ -2141,9 +2141,21 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
       <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
         Start your first trade
       </div>
-      <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'2rem', lineHeight:1.65 }}>
+      <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'1.1rem', lineHeight:1.65 }}>
         Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
       </div>
+
+      {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
+      <button
+        onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto 1.5rem',
+          padding: '0.7rem 1.2rem', borderRadius: '999px', cursor: 'pointer',
+          background: 'linear-gradient(135deg, #047857, #10b981)', color: '#fff', border: 'none',
+          fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 4px 14px rgba(5,150,105,0.35)',
+        }}>
+        👆 Show me how — step by step
+      </button>
 
       {/* 4 import action buttons — 2×2 grid */}
       <div style={{
