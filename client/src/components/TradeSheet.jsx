@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS } from '../api'
+import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, XSTOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS } from '../api'
 
 function playTradeSound(isBuy) {
   try {
@@ -85,6 +85,7 @@ const IcoOther = (
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto',  icon: '₿',           color: '#6366f1' },
   { key: 'stock',  label: 'Stocks',  icon: '📈',           color: 'var(--g-ink)' },
+  { key: 'tstock', label: 'Tokenized', icon: '🪙',         color: '#f0b90b' },
   { key: 'gold',   label: 'Gold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver',  icon: IcoSilverBar,   color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat',    icon: '$',            color: '#0ea5e9' },
@@ -119,6 +120,10 @@ function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
   if (cat === 'stock' && stockTicker) {
     const info = POPULAR_TICKERS.find(t => t.ticker === stockTicker.toUpperCase())
     return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: stockTicker.toUpperCase(), name: info?.name || stockTicker.toUpperCase(), category: 'stock', image: '' }
+  }
+  if (cat === 'tstock' && stockTicker) {
+    const info = POPULAR_XSTOCKS.find(t => t.ticker === stockTicker.toUpperCase())
+    return { id: `${XSTOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: `${stockTicker.toUpperCase()}X`, name: `${info?.name || stockTicker.toUpperCase()} (Tokenized)`, category: 'tstock', image: '' }
   }
   if (cat === 'fiat' && fiatCode)
     return { id: `${FIAT_PREFIX}${fiatCode.toLowerCase()}`, symbol: fiatCode.toUpperCase(), name: fiatCode.toUpperCase(), category: 'fiat', image: '' }
@@ -256,6 +261,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [priceFocused, setPriceFocused] = useState(false)
   const [popPrices, setPopPrices] = useState({})
   const [stockPrices, setStockPrices] = useState({})
+  const [xstockPrices, setXstockPrices] = useState({})
 
   // Fetch live prices for the browsable popular-coins list (full-page only).
   useEffect(() => {
@@ -276,6 +282,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     const ids = POPULAR_TICKERS.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
     api.getPrices(ids.join(',')).then(px => {
       if (alive && px) setStockPrices(prev => ({ ...prev, ...px }))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [open, category])
+
+  // Fetch live tokenized-stock prices (from Binance) when the Tokenized tab is open.
+  useEffect(() => {
+    if (!open || category !== 'tstock') return
+    let alive = true
+    const ids = POPULAR_XSTOCKS.map(t => `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    api.getPrices(ids.join(',')).then(px => {
+      if (alive && px) setXstockPrices(prev => ({ ...prev, ...px }))
     }).catch(() => {})
     return () => { alive = false }
   }, [open, category])
@@ -308,6 +325,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (category === 'gold')   return GOLD_ID
     if (category === 'silver') return SILVER_ID
     if (category === 'stock' && stockTicker) return `${STOCK_PREFIX}${stockTicker.toLowerCase()}`
+    if (category === 'tstock' && stockTicker) return `${XSTOCK_PREFIX}${stockTicker.toLowerCase()}`
     if (category === 'fiat' && fiatCode)    return `${FIAT_PREFIX}${fiatCode.toLowerCase()}`
     if (category === 'bond' && otherName)   return `bond:${otherName.toLowerCase()}`
     if (category === 'other' && otherName)  return `other:${otherName.toLowerCase()}`
@@ -880,6 +898,63 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 )
               })()}
 
+              {/* Tokenized stocks (xStocks) — browsable list, live prices from Binance */}
+              {category === 'tstock' && (() => {
+                const query = stockInput.toUpperCase()
+                const filtered = POPULAR_XSTOCKS.filter(t =>
+                  !query || t.ticker.includes(query) || t.name.toUpperCase().includes(query)
+                )
+                const selectedInfo = POPULAR_XSTOCKS.find(t => t.ticker === stockTicker)
+                return (
+                  <div className="bs-stock-wrap">
+                    <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
+                      <span className="bs-search-icon">{IcoSearch}</span>
+                      <input className="bs-input bs-search-input"
+                        placeholder="Search AAPL, Tesla…"
+                        value={stockInput}
+                        onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_XSTOCKS.find(t=>t.ticker===v)) setStockTicker(v); }}
+                      />
+                    </div>
+                    <div className="bs-markets">
+                      <div className="bs-markets-head"><span>Popular · Binance xStocks</span><span>Price / 24h</span></div>
+                      <div className="bs-markets-list">
+                        {filtered.map(t => {
+                          const sid = `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`
+                          const rec = xstockPrices[sid]
+                          const p = rec?.usd ?? rec?.price
+                          const ch = rec?.usd_24h_change
+                          const up = Number(ch) >= 0
+                          const on = stockTicker === t.ticker
+                          return (
+                            <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
+                              title={t.name}
+                              onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
+                              <CoinLogo symbol={t.ticker} coinId={`${STOCK_PREFIX}${t.ticker.toLowerCase()}`} size={30} className="bs-coin-thumb" />
+                              <div className="bs-coin-info">
+                                <strong>{t.ticker}<span className="dvx-cat-badge" style={{ background:'#f0b90b22', color:'#f0b90b', borderColor:'#f0b90b44', marginLeft:'0.4rem' }}>xStock</span></strong>
+                                <span className="muted">{t.name}</span>
+                              </div>
+                              <div className="bs-market-px">
+                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                                {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                              </div>
+                            </button>
+                          )
+                        })}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                      </div>
+                    </div>
+                    {stockTicker && (
+                      <div className="bs-stock-selected">
+                        <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}X</span>
+                        {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
+                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via Binance</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
               {/* Fiat: popular list + custom */}
               {category === 'fiat' && (
                 <div className="bs-stock-wrap">
@@ -1080,7 +1155,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             )}
 
             {/* Trade signal — only for assets we can build one for (price history) */}
-            {asset?.id && ['crypto', 'stock', 'gold', 'silver'].includes(category) && (
+            {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
               <div className="bs-signal-wrap">
                 <button className="bs-signal-toggle" onClick={() => setSignalOpen(v => !v)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>

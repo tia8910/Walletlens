@@ -36,8 +36,8 @@ const ALPHA_VANTAGE_KEY = '' // https://alphavantage.co (25 req/day free)
 
 import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
-  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX,
-  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
+  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, XSTOCK_PREFIX, FIAT_PREFIX,
+  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS, xstockBinanceSymbol,
   assetClass, isCrypto,
 } from './data/assets';
 import {
@@ -49,8 +49,8 @@ import { analyzeTechnicals } from './technicals';
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
-  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX,
-  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS,
+  GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, XSTOCK_PREFIX, FIAT_PREFIX,
+  PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS, xstockBinanceSymbol,
   assetClass, isCrypto,
 };
 // Re-export the pure helper that was already named-exported here
@@ -63,6 +63,18 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // Binance). Tried FIRST everywhere because it's the most reliable; the public
 // proxies below remain as backups if the Deno service is ever unreachable.
 export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
+
+// Binance public market-data mirror (no auth, CORS-enabled, geo-unrestricted).
+const BINANCE_DATA = 'https://data-api.binance.vision';
+// Fetch Binance JSON via the Deno proxy first (dodges regional IP geo-blocks),
+// then a direct request as a fallback. Returns parsed JSON or null.
+async function binanceFetch(path, ms = 8000) {
+  const url = `${BINANCE_DATA}${path}`;
+  for (const u of [DENO_PROXY(url), url]) {
+    try { const r = await fetchWithTimeout(u, ms); if (r && r.ok) return await r.json(); } catch {}
+  }
+  return null;
+}
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
 const CORS_PROXIES = [
@@ -1134,10 +1146,11 @@ export const api = {
     const manual = loadData('manual_prices', {});
 
     const stockIds = coinIds.filter(id => id.startsWith(STOCK_PREFIX));
+    const xstockIds = coinIds.filter(id => id.startsWith(XSTOCK_PREFIX));
     const metalIds = coinIds.filter(id => id === GOLD_ID || id === SILVER_ID || id === COPPER_ID || id === PLATINUM_ID);
     const fiatIds = coinIds.filter(id => id.startsWith(FIAT_PREFIX));
     const cryptoLikeIds = coinIds.filter(id =>
-      !id.startsWith(STOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID && id !== COPPER_ID && id !== PLATINUM_ID &&
+      !id.startsWith(STOCK_PREFIX) && !id.startsWith(XSTOCK_PREFIX) && id !== GOLD_ID && id !== SILVER_ID && id !== COPPER_ID && id !== PLATINUM_ID &&
       !id.startsWith('bond:') && !id.startsWith('other:') && !id.startsWith(FIAT_PREFIX)
     );
     const manualFallbackIds = coinIds.filter(id => id.startsWith('bond:') || id.startsWith('other:'));
@@ -1190,6 +1203,37 @@ export const api = {
             else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
           }
         }));
+      })());
+    }
+
+    // Tokenized stocks (xStocks) — live from Binance (each token is backed 1:1
+    // by the real share, so its price tracks the underlying). Binance's public
+    // market-data API is CORS-enabled, so the browser fetches it directly.
+    if (xstockIds.length > 0) {
+      tasks.push((async () => {
+        const map = {}; // Binance symbol → WalletLens id
+        for (const id of xstockIds) map[xstockBinanceSymbol(id.slice(XSTOCK_PREFIX.length))] = id;
+        const syms = Object.keys(map);
+        const apply = (q) => {
+          const id = map[q?.symbol];
+          const px = parseFloat(q?.lastPrice);
+          if (id && isFinite(px) && px > 0) {
+            result[id] = { usd: px, usd_24h_change: parseFloat(q.priceChangePercent) || 0, source: 'binance', name: q.symbol };
+          }
+        };
+        // Batch in one request; if Binance rejects it (any symbol it doesn't
+        // list makes the whole batch 400), fall back to per-symbol so the valid
+        // ones still resolve.
+        const arr = await binanceFetch(`/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`);
+        if (Array.isArray(arr)) {
+          arr.forEach(apply);
+        } else {
+          await Promise.all(syms.map(async sym => {
+            const q = await binanceFetch(`/api/v3/ticker/24hr?symbol=${sym}`, 7000);
+            if (q) apply(q);
+          }));
+        }
+        for (const id of xstockIds) if (!result[id] && manual[id]) result[id] = { ...manual[id], source: 'manual' };
       })());
     }
 
@@ -1499,6 +1543,20 @@ export const api = {
   //   crypto id   → CoinGecko market_chart
   getChartData: async (id, days = 7) => {
     if (!id) return [];
+    // Tokenized stocks (xStocks) → Binance klines.
+    if (id.startsWith(XSTOCK_PREFIX)) {
+      const sym = xstockBinanceSymbol(id.slice(XSTOCK_PREFIX.length));
+      const interval = days <= 1 ? '1h' : days <= 30 ? '1d' : '1w';
+      const rows = await binanceFetch(`/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${Math.min(500, Math.max(30, days))}`, 8000);
+      if (Array.isArray(rows) && rows.length) {
+        return rows.map(k => ({
+          date: new Date(k[0]).toLocaleDateString(),
+          time: new Date(k[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          price: parseFloat(k[4]),
+        })).filter(p => isFinite(p.price) && p.price > 0);
+      }
+      return [];
+    }
     const stooqSym = stooqSymbolFor(id);
     if (stooqSym) {
       const hist = await fetchStooqHistory(stooqSym, days);

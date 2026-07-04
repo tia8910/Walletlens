@@ -5,6 +5,7 @@ export const SILVER_ID   = 'metal:xag'   // 1 troy oz silver
 export const COPPER_ID   = 'metal:xcu'   // 1 lb copper
 export const PLATINUM_ID = 'metal:xpt'   // 1 troy oz platinum
 export const STOCK_PREFIX = 'stock:'     // followed by lowercase ticker
+export const XSTOCK_PREFIX = 'xstock:'   // tokenized stock — followed by lowercase ticker
 export const FIAT_PREFIX  = 'fiat:'      // followed by lowercase ISO code
 
 export const ASSET_CATEGORIES = {
@@ -15,8 +16,47 @@ export const ASSET_CATEGORIES = {
   copper:   { key: 'copper',   label: 'Copper',    icon: '🟤', color: '#b45309' },
   platinum: { key: 'platinum', label: 'Platinum',  icon: '💎', color: '#cbd5e1' },
   stock:    { key: 'stock',    label: 'Stocks',    icon: '📈', color: 'var(--gd)' },
+  tstock:   { key: 'tstock',   label: 'Tokenized Stocks', icon: '🪙', color: '#f0b90b' },
   bond:     { key: 'bond',     label: 'Bonds',     icon: '🏛️', color: '#0284c7' },
   other:    { key: 'other',    label: 'Other',     icon: '🏠🚗⌚', color: '#a78bfa' },
+}
+
+// Binance tokenized stocks (xStocks) — each backed 1:1 by the real share and
+// tradeable 24/7 on Binance as e.g. AAPLXUSDT. Prices come straight from
+// Binance's public API (CORS-enabled). Add here to grow the browsable list.
+export const POPULAR_XSTOCKS = [
+  { ticker: 'AAPL',  name: 'Apple' },
+  { ticker: 'TSLA',  name: 'Tesla' },
+  { ticker: 'NVDA',  name: 'NVIDIA' },
+  { ticker: 'MSFT',  name: 'Microsoft' },
+  { ticker: 'GOOGL', name: 'Alphabet' },
+  { ticker: 'AMZN',  name: 'Amazon' },
+  { ticker: 'META',  name: 'Meta Platforms' },
+  { ticker: 'COIN',  name: 'Coinbase' },
+  { ticker: 'MSTR',  name: 'MicroStrategy' },
+  { ticker: 'HOOD',  name: 'Robinhood' },
+  { ticker: 'CRCL',  name: 'Circle' },
+  { ticker: 'PLTR',  name: 'Palantir' },
+  { ticker: 'AMD',   name: 'AMD' },
+  { ticker: 'NFLX',  name: 'Netflix' },
+  { ticker: 'AVGO',  name: 'Broadcom' },
+  { ticker: 'ORCL',  name: 'Oracle' },
+  { ticker: 'CRM',   name: 'Salesforce' },
+  { ticker: 'INTC',  name: 'Intel' },
+  { ticker: 'JPM',   name: 'JPMorgan' },
+  { ticker: 'V',     name: 'Visa' },
+  { ticker: 'MA',    name: 'Mastercard' },
+  { ticker: 'WMT',   name: 'Walmart' },
+  { ticker: 'MCD',   name: "McDonald's" },
+  { ticker: 'KO',    name: 'Coca-Cola' },
+  { ticker: 'SPY',   name: 'S&P 500 ETF' },
+  { ticker: 'QQQ',   name: 'Nasdaq 100 ETF' },
+  { ticker: 'GLD',   name: 'Gold ETF' },
+]
+
+// WalletLens id → Binance spot symbol. xstock:aapl → AAPLXUSDT.
+export function xstockBinanceSymbol(ticker) {
+  return `${String(ticker || '').toUpperCase()}XUSDT`
 }
 export const NON_CRYPTO_CATEGORIES = ['fiat', 'gold', 'silver', 'stock', 'bond', 'other']
 
@@ -200,6 +240,9 @@ export function assetClass(id) {
   if (id === SILVER_ID) return 'silver'
   if (id === COPPER_ID) return 'copper'
   if (id === PLATINUM_ID) return 'platinum'
+  // Tokenized stocks are stock exposure for valuation/categorisation; their
+  // Binance pricing is routed separately by the xstock: prefix.
+  if (id.startsWith(XSTOCK_PREFIX)) return 'stock'
   if (id.startsWith(STOCK_PREFIX)) return 'stock'
   if (id.startsWith(FIAT_PREFIX)) return 'fiat'
   if (id.startsWith('bond:')) return 'bond'
