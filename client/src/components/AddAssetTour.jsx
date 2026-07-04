@@ -22,6 +22,14 @@ const STEPS = [
 
 const PAD = 8
 
+// True only when the element is actually rendered within the viewport. The
+// trade sheet stays mounted while closed (transformed fully below the screen),
+// so an existence/size check isn't enough — we must confirm it's on screen.
+function isOnScreen(r) {
+  const vh = window.innerHeight, vw = window.innerWidth
+  return r.width > 0 && r.height > 0 && r.top < vh - 8 && r.bottom > 8 && r.left < vw && r.right > 0
+}
+
 export default function AddAssetTour({ open, onClose, onNavigate }) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState(null)
@@ -55,12 +63,10 @@ export default function AddAssetTour({ open, onClose, onNavigate }) {
     const tick = () => {
       if (cancelled) return
       const el = document.querySelector(sel)
-      if (el) {
-        const r = el.getBoundingClientRect()
-        if (r.width > 0 && r.height > 0) {
-          if (!scrolled) { scrolled = true; try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }) } catch {} }
-          setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
-        }
+      const r = el && el.getBoundingClientRect()
+      if (el && isOnScreen(r)) {
+        if (!scrolled) { scrolled = true; try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }) } catch {} }
+        setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
       } else {
         setRect(null)
       }
@@ -71,11 +77,15 @@ export default function AddAssetTour({ open, onClose, onNavigate }) {
   }, [open, step])
 
   // On the first step, the user may either tap "Next" or tap the real button —
-  // either way, advance to step 2 as soon as the sheet's category grid appears.
+  // either way, advance to step 2 only once the sheet's category grid is
+  // actually VISIBLE. The trade sheet keeps that element in the DOM even while
+  // closed (transformed off-screen), so we must check it's on screen — otherwise
+  // step 1 would skip instantly and its arrow would vanish after a beat.
   useEffect(() => {
     if (!open || step !== 0) return
     const id = setInterval(() => {
-      if (document.querySelector('[data-tour="ts-category"]')) { clearInterval(id); setStep(1) }
+      const el = document.querySelector('[data-tour="ts-category"]')
+      if (el && isOnScreen(el.getBoundingClientRect())) { clearInterval(id); setStep(1) }
     }, 200)
     return () => clearInterval(id)
   }, [open, step])
