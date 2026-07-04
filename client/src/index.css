@@ -6096,14 +6096,10 @@ select.bs-input option { background: var(--bg3); }
    ══════════════════════════════════════════════════════════════════════════ */
 .wl-logo { display: block; flex-shrink: 0; }
 
-/* ── Animated logo: bars grow sequentially, subtle glow pulse ── */
-.wl-logo-animated {
-  animation: logo-glow-pulse 3.2s ease-in-out infinite;
-}
-@keyframes logo-glow-pulse {
-  0%,100% { filter: drop-shadow(0 0 3px rgba(var(--g-rgb),0.3)); }
-  50%      { filter: drop-shadow(0 0 10px rgba(var(--g-rgb),0.55)); }
-}
+/* ── Animated logo: bars grow sequentially (no glow halo — keeps the logo on a
+   transparent background so it never reads as a green disc, e.g. behind the
+   blurred Quick Stats overlay). ── */
+.wl-logo-animated { filter: none; }
 .wl-logo-animated .wl-logo-bar {
   transform-box: fill-box;
   transform-origin: bottom center;
