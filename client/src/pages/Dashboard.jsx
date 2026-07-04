@@ -30,6 +30,7 @@ import { BiometricToggle } from '../components/BiometricLock'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
+import RebalancePanel from '../components/RebalancePanel'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2705,6 +2706,7 @@ export default function Dashboard() {
   }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
+  const [rebalanceOpen, setRebalanceOpen] = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
   // Import-method chooser shown after creating a wallet
@@ -4200,7 +4202,7 @@ export default function Dashboard() {
                       ))}
                     </ul>
                     <button
-                      onClick={() => { track('rebalancing_calculator_open', { source: 'dashboard_allocation' }); navigate('/rebalancing-calculator') }}
+                      onClick={() => { track('rebalance_open', { source: 'dashboard_allocation' }); setRebalanceOpen(true) }}
                       style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', width:'100%', marginTop:'0.85rem', padding:'0.55rem 0.75rem', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.25)', borderRadius:'10px', color:'var(--g)', fontWeight:700, fontSize:'0.78rem', cursor:'pointer', transition:'background 0.15s' }}
                       onMouseOver={e => e.currentTarget.style.background='rgba(var(--g-rgb),0.18)'}
                       onMouseOut={e => e.currentTarget.style.background='rgba(var(--g-rgb),0.1)'}
@@ -4646,6 +4648,9 @@ export default function Dashboard() {
           onDismiss={() => setMilestone(null)}
           onCta={milestone.type === 'first_buy' ? () => { setActiveTab('targets'); track('first_buy_cta_targets') } : undefined}
         />
+      )}
+      {rebalanceOpen && (
+        <RebalancePanel open={rebalanceOpen} onClose={() => setRebalanceOpen(false)} holdings={enriched} cv={cv} />
       )}
 
       {/* First-run flow for a brand-new user: interests → cash/USDT balances.

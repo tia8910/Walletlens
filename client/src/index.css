@@ -12924,3 +12924,62 @@ button:not(:disabled):active,
   .dvx-live-ind { animation: none; }
   .dvx-currency-pill, .dvx-tf-chip { transition: none; }
 }
+
+/* ── Simple in-dashboard rebalance tool ─────────────────────────────────── */
+.wl-reb-overlay {
+  position: fixed; inset: 0; z-index: 1250;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  animation: wl-help-fade 0.2s ease both;
+}
+.wl-reb-sheet {
+  width: 100%; max-width: 540px; max-height: 92vh; display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 44px rgba(0,0,0,0.5);
+  animation: wl-help-up 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+@media (min-width: 640px) { .wl-reb-overlay { align-items: center; } .wl-reb-sheet { border-radius: 22px; max-height: 88vh; } }
+.wl-reb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 1.1rem 1.25rem 0.4rem; }
+.wl-reb-title { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text); }
+.wl-reb-sub { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+.wl-reb-x { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.15rem; border-radius: 8px; }
+.wl-reb-x:hover { color: var(--text); }
+.wl-reb-actions { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem 0.6rem; }
+.wl-reb-quick {
+  padding: 0.4rem 0.8rem; border-radius: 999px; cursor: pointer; font-size: 0.78rem; font-weight: 700;
+  background: rgba(var(--g-rgb),0.12); border: 1px solid rgba(var(--g-rgb),0.3); color: var(--g-ink);
+}
+.wl-reb-quick:active { transform: scale(0.95); }
+.wl-reb-sum { margin-left: auto; font-size: 0.78rem; font-weight: 800; padding: 0.3rem 0.6rem; border-radius: 999px; }
+.wl-reb-sum.ok { color: var(--g-ink); background: rgba(var(--g-rgb),0.12); }
+.wl-reb-sum.off { color: #fbbf24; background: rgba(251,191,36,0.14); }
+.wl-reb-list { overflow-y: auto; padding: 0 1.25rem; -webkit-overflow-scrolling: touch; }
+.wl-reb-row {
+  display: grid; grid-template-columns: 1fr 48px 84px minmax(96px, 1.2fr); align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+}
+.wl-reb-row-head { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-sub); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card-bg); }
+.wl-reb-row-head > span:nth-child(2), .wl-reb-row-head > span:nth-child(3) { text-align: center; }
+.wl-reb-row-head > span:last-child { text-align: right; }
+.wl-reb-sym { font-weight: 800; font-size: 0.9rem; color: var(--text); }
+.wl-reb-now { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.wl-reb-tgt { display: inline-flex; align-items: center; justify-content: center; gap: 0.15rem; }
+.wl-reb-tgt input {
+  width: 52px; text-align: center; padding: 0.35rem 0.3rem; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.wl-reb-tgt input:focus { outline: none; border-color: rgba(var(--g-rgb),0.6); }
+.wl-reb-tgt em { font-style: normal; color: var(--text-sub); font-size: 0.8rem; }
+.wl-reb-act { text-align: right; font-size: 0.84rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.wl-reb-act.buy { color: var(--g-ink); }
+.wl-reb-act.sell { color: #f87171; }
+.wl-reb-act.flat { color: var(--text-sub); font-weight: 600; }
+.wl-reb-empty { padding: 1.5rem 0; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+.wl-reb-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.85rem 1.25rem calc(0.95rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.wl-reb-hint { font-size: 0.75rem; color: #fbbf24; }
+.wl-reb-hint.ok { color: var(--g-ink); }
+.wl-reb-done {
+  padding: 0.65rem 1.4rem; border-radius: 12px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981); box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+}
