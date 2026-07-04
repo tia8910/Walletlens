@@ -45,13 +45,18 @@ export async function onRequestGet({ request }) {
         const iName = headers.indexOf('Name')
         for (let i = 1; i < lines.length; i++) {
           const v = lines[i].split(',')
-          const sym = (v[iSym] || '').replace(/\.us$/i, '').toUpperCase()
           const close = parseFloat(v[iClose])
           const open = parseFloat(v[iOpen])
-          if (sym && isFinite(close) && close > 0) {
-            const change = isFinite(open) && open > 0 ? ((close - open) / open) * 100 : 0
-            result[sym] = { price: close, change_pct: change, name: (iName >= 0 && v[iName]) || sym, source: 'stooq' }
-          }
+          if (!isFinite(close) || close <= 0) continue
+          // Map the row to a requested symbol: prefer the Symbol column when it
+          // matches a requested ticker, otherwise fall back to row order (Stooq
+          // returns rows in the same order as requested). Relying on the Symbol
+          // column alone silently drops everything if its format differs.
+          let sym = iSym >= 0 ? (v[iSym] || '').replace(/\.us$/i, '').toUpperCase() : ''
+          if (!sym || !symbols.includes(sym)) sym = symbols[i - 1]
+          if (!sym) continue
+          const change = isFinite(open) && open > 0 ? ((close - open) / open) * 100 : 0
+          result[sym] = { price: close, change_pct: change, name: (iName >= 0 && v[iName]) || sym, source: 'stooq' }
         }
       }
     }
