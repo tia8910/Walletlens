@@ -1,124 +1,49 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from '../ThemeContext'
+import { api } from '../api'
 import Icon from './Icon'
 
-const PROXIES = [
-  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
-  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-  u => 'https://cors.eu.org/' + u,
-  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-]
 const _signalCache = {}
-const BINANCE_SYM = { 'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT','ripple':'XRPUSDT','binancecoin':'BNBUSDT','cardano':'ADAUSDT','avalanche-2':'AVAXUSDT','matic-network':'MATICUSDT','near':'NEARUSDT','uniswap':'UNIUSDT','aave':'AAVEUSDT','dogecoin':'DOGEUSDT','shiba-inu':'SHIBUSDT','chainlink':'LINKUSDT','polkadot':'DOTUSDT','litecoin':'LTCUSDT','tron':'TRXUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT','aptos':'APTUSDT','sui':'SUIUSDT','arbitrum':'ARBUSDT','optimism':'OPUSDT','pepe':'1000PEPEUSDT','render-token':'RENDERUSDT','fetch-ai':'FETUSDT','lido-dao':'LDOUSDT','curve-dao-token':'CRVUSDT','maker':'MKRUSDT','immutable-x':'IMXUSDT','the-sandbox':'SANDUSDT','decentraland':'MANAUSDT' }
 
-// Kraken OHLC — CORS-enabled exchange with no auth required
-const KRAKEN_SYM = {
-  'bitcoin':'XBTUSD','ethereum':'ETHUSD','solana':'SOLUSD','ripple':'XRPUSD',
-  'cardano':'ADAUSD','avalanche-2':'AVAXUSD','dogecoin':'DOGEUSD','shiba-inu':'SHIBUSD',
-  'polkadot':'DOTUSD','chainlink':'LINKUSD','litecoin':'LTCUSD','tron':'TRXUSD',
-  'cosmos':'ATOMUSD','near':'NEARUSD','aptos':'APTUSD','arbitrum':'ARBUSD',
-  'optimism':'OPUSD','sui':'SUIUSD','uniswap':'UNIUSD','aave':'AAVEUSD',
-  'render-token':'RENDERUSD','fetch-ai':'FETUSD','lido-dao':'LDOUSD',
-  'stellar':'XLMUSD','matic-network':'MATICUSD',
-}
-
-function _ccSym(coinId) {
-  const s = BINANCE_SYM[coinId]
-  return s ? s.replace(/USDT$/, '').replace(/^1000/, '') : null
-}
-
-function _parseCCHistoday(json) {
-  const rows = json?.Data?.Data
-  if (!Array.isArray(rows) || rows.length < 2) throw new Error('empty')
-  const last = rows[rows.length - 1], d1 = rows[rows.length - 2]
-  const d7 = rows[Math.max(0, rows.length - 8)], d30 = rows[0]
-  const price = last.close
-  return {
-    current_price: price,
-    price_change_percentage_24h:              d1.close  > 0 ? ((price - d1.close)  / d1.close)  * 100 : 0,
-    price_change_percentage_7d_in_currency:   d7.close  > 0 ? ((price - d7.close)  / d7.close)  * 100 : 0,
-    price_change_percentage_30d_in_currency:  d30.close > 0 ? ((price - d30.close) / d30.close) * 100 : 0,
-    ath: 0,
-  }
-}
-
-function _parseBinanceKlines(klines) {
-  if (!klines?.length) throw new Error('empty')
-  const price  = parseFloat(klines[klines.length - 1][4]) || 0
-  const prev1d = parseFloat(klines[klines.length - 2]?.[4]) || 0
-  const prev7d = parseFloat(klines[Math.max(0, klines.length - 8)]?.[4]) || 0
-  const prev30 = parseFloat(klines[0]?.[4]) || 0
-  return {
-    current_price: price,
-    price_change_percentage_24h:             prev1d > 0 ? ((price - prev1d) / prev1d) * 100 : 0,
-    price_change_percentage_7d_in_currency:  prev7d > 0 ? ((price - prev7d) / prev7d) * 100 : 0,
-    price_change_percentage_30d_in_currency: prev30 > 0 ? ((price - prev30) / prev30) * 100 : 0,
-    ath: 0,
-  }
-}
-
-function _parseKrakenOHLC(data) {
-  // Kraken result key is their internal pair name — just take the first non-'last' key
-  const key = Object.keys(data?.result || {}).find(k => k !== 'last')
-  const candles = data?.result?.[key]
-  if (!Array.isArray(candles) || candles.length < 2) throw new Error('empty')
-  // Candle format: [timestamp, open, high, low, close, vwap, volume, count]
-  const price  = parseFloat(candles[candles.length - 1][4]) || 0
-  const prev1d = parseFloat(candles[candles.length - 2]?.[4]) || 0
-  const prev7d = parseFloat(candles[Math.max(0, candles.length - 8)]?.[4]) || 0
-  const prev30 = parseFloat(candles[0]?.[4]) || 0
-  return {
-    current_price: price,
-    price_change_percentage_24h:             prev1d > 0 ? ((price - prev1d) / prev1d) * 100 : 0,
-    price_change_percentage_7d_in_currency:  prev7d > 0 ? ((price - prev7d) / prev7d) * 100 : 0,
-    price_change_percentage_30d_in_currency: prev30 > 0 ? ((price - prev30) / prev30) * 100 : 0,
-    ath: 0,
-  }
-}
-
+// Build the entry/exit signal from the app's OWN price-history source
+// (api.getChartData). That covers crypto (CoinGecko/CoinCap), stocks and
+// metals (Stooq) with the same reliable data behind the charts — so the signal
+// now works for stocks, gold & silver too, not just a hard-coded coin list.
 async function fetchSignalData(coinId) {
   const now = Date.now()
   if (_signalCache[coinId] && now - _signalCache[coinId].t < 5 * 60 * 1000) return _signalCache[coinId].d
 
-  const cgUrl  = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinId}&price_change_percentage=24h,7d,30d`
-  const ccSym  = _ccSym(coinId)
-  const binSym = BINANCE_SYM[coinId]
+  let series = []
+  try { series = await api.getChartData(coinId, 30) } catch { series = [] }
+  const prices = (Array.isArray(series) ? series : [])
+    .map(p => Number(p.price)).filter(v => isFinite(v) && v > 0)
+  if (prices.length < 3) { _signalCache[coinId] = { d: null, t: now }; return null }
 
-  // Race ALL sources simultaneously — first valid response wins
-  const attempts = [
-    // CoinGecko via 4 CORS proxies
-    ...PROXIES.map(proxy =>
-      fetch(proxy(cgUrl), { signal: AbortSignal.timeout(6000) })
-        .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-        .then(data => { if (!data[0]) throw new Error('empty'); return data[0] })
-    ),
-  ]
-
-  if (ccSym) attempts.push(
-    fetch(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${ccSym}&tsym=USD&limit=31`, { signal: AbortSignal.timeout(8000) })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-      .then(_parseCCHistoday)
-  )
-
-  if (binSym) attempts.push(
-    fetch(`https://api.binance.com/api/v3/klines?symbol=${binSym}&interval=1d&limit=31`, { signal: AbortSignal.timeout(8000) })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-      .then(_parseBinanceKlines)
-  )
-
-  const krakenSym = KRAKEN_SYM[coinId]
-  if (krakenSym) attempts.push(
-    fetch(`https://api.kraken.com/0/public/OHLC?pair=${krakenSym}&interval=1440`, { signal: AbortSignal.timeout(7000) })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
-      .then(d => { if (d.error?.length) throw new Error(d.error[0]); return d })
-      .then(_parseKrakenOHLC)
-  )
-
+  const n = prices.length
+  const price = prices[n - 1]
+  // Points are ~evenly spaced across the 30-day window — sample ~1d and ~7d back.
+  const at = frac => prices[Math.max(0, Math.min(n - 1, Math.round((1 - frac) * (n - 1))))]
+  const p24 = at(1 / 30), p7 = at(7 / 30), p30 = prices[0]
+  const pct = (a, b) => (b > 0 ? ((a - b) / b) * 100 : 0)
+  const d = {
+    current_price: price,
+    price_change_percentage_24h: pct(price, p24),
+    price_change_percentage_7d_in_currency: pct(price, p7),
+    price_change_percentage_30d_in_currency: pct(price, p30),
+    ath: 0,
+  }
+  // Refine the live figures with the spot-price feed when it has them.
   try {
-    const d = await Promise.any(attempts)
-    _signalCache[coinId] = { d, t: now }
-    return d
-  } catch { return null }
+    const px = await api.getPrices(coinId)
+    const rec = px?.[coinId]
+    const ch = rec?.usd_24h_change
+    if (ch != null && isFinite(ch)) d.price_change_percentage_24h = ch
+    const lp = rec?.usd ?? rec?.price
+    if (lp && isFinite(lp)) d.current_price = lp
+  } catch {}
+
+  _signalCache[coinId] = { d, t: now }
+  return d
 }
 
 // RSI-style momentum label
@@ -189,13 +114,13 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
   }
 
   useEffect(() => {
-    if (!coinId || coinId.startsWith('stock:') || coinId.startsWith('metal:') ||
-        coinId.startsWith('fiat:') || coinId.startsWith('cash:')) return
+    if (!coinId || coinId.startsWith('fiat:') || coinId.startsWith('cash:') ||
+        coinId.startsWith('bond:') || coinId.startsWith('other:')) return
     load(coinId)
   }, [coinId])
 
-  if (!coinId || coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
-      coinId.startsWith('cash:') || coinId.startsWith('bond:')) return null
+  if (!coinId || coinId.startsWith('fiat:') || coinId.startsWith('cash:') ||
+      coinId.startsWith('bond:') || coinId.startsWith('other:')) return null
   if (loading) return (
     <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'var(--surface-1)', fontSize:'0.75rem', color:'var(--text-sub)', marginBottom:'0.75rem' }}>
       ⏳ Analysing entry timing…
