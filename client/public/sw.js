@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v160'
+const SW_VERSION = 'v161'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -84,11 +84,20 @@ function isStaticCdn(url) {
 }
 
 self.addEventListener('install', e => {
+  // Note: we deliberately DON'T call skipWaiting() here. A freshly installed
+  // worker stays in "waiting" so the app can surface an "update available"
+  // banner and let the user apply it on tap (see the SKIP_WAITING message
+  // below). It still activates automatically once all tabs are closed.
   e.waitUntil(
     caches.open(STATIC)
       .then(cache => Promise.all(PRECACHE_URLS.map(url => cache.add(url).catch(() => {}))))
-      .then(() => self.skipWaiting())
   )
+})
+
+// The page posts this when the user taps "Refresh" on the update banner, so the
+// waiting worker takes over immediately (then the page reloads on controllerchange).
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 const API_CACHE_MAX = 120 // max entries before oldest are evicted
