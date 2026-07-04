@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { track } from '../analytics'
 import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
@@ -36,6 +36,14 @@ const OPTIONS = [
 
 export default function InterestPicker({ onDone }) {
   const [selected, setSelected] = useState(() => new Set())
+  const [confirmSkip, setConfirmSkip] = useState(false)
+  const [canSkip, setCanSkip] = useState(false)
+
+  // Delay the Skip link so users see the step before they can bail on it.
+  useEffect(() => {
+    const t = setTimeout(() => setCanSkip(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
 
   function toggle(id) {
     setSelected(prev => {
@@ -63,6 +71,7 @@ export default function InterestPicker({ onDone }) {
     track('interests_skip')
     finish([])
   }
+  function askSkip() { track('interests_skip_prompt'); setConfirmSkip(true) }
 
   const count = selected.size
 
@@ -108,7 +117,31 @@ export default function InterestPicker({ onDone }) {
         <button className="ip-cta" onClick={getStarted}>
           {count > 0 ? `Get started · ${count} selected` : 'Get started'}
         </button>
-        <button className="ip-skip" onClick={skip}>Skip</button>
+        <button
+          className="ip-skip"
+          onClick={askSkip}
+          style={{ opacity: canSkip ? 0.6 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
+        >Skip for now</button>
+
+        {confirmSkip && (
+          <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>
+            <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+              <h4 className="bs-confirm-title">Skip personalizing?</h4>
+              <p className="bs-confirm-text">
+                It takes about <strong>20 seconds</strong> and tailors WalletLens to what you
+                actually hold — quick-add shortcuts, the right asset types, and a dashboard that
+                feels like yours. You can still change everything later.
+              </p>
+              <div className="bs-confirm-actions">
+                <button className="bs-confirm-go" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                  onClick={() => setConfirmSkip(false)}>
+                  Keep setting up
+                </button>
+                <button className="bs-confirm-switch" onClick={skip}>Skip anyway</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
