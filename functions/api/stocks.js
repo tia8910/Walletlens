@@ -15,14 +15,25 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS })
 }
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, waitUntil }) {
   const url = new URL(request.url)
   const raw = (url.searchParams.get('symbols') || url.searchParams.get('symbol') || '').toUpperCase().trim()
   if (!raw) {
     return new Response(JSON.stringify({ error: 'symbols required' }), { status: 400, headers: CORS })
   }
 
-  const symbols = raw.split(',').map(s => s.trim()).filter(Boolean)
+  const symbols = raw.split(',').map(s => s.trim()).filter(Boolean).sort()
+
+  // Edge-cache by normalized symbol set: Cache-Control alone only governs the
+  // browser/client cache, not Cloudflare's edge — without this, every request
+  // (even from two users asking for the same symbols within the same minute)
+  // re-triggers the full Yahoo/Stooq fallback chain. Sorting the symbols before
+  // building the cache key means "AAPL,MSFT" and "MSFT,AAPL" share one entry.
+  const cache = caches.default
+  const cacheKey = new Request(`${url.origin}${url.pathname}?symbols=${symbols.join(',')}`, request)
+  const cached = await cache.match(cacheKey)
+  if (cached) return cached
+
   const result = {}
 
   await Promise.all(symbols.map(async sym => {
@@ -72,7 +83,11 @@ export async function onRequestGet({ request }) {
     } catch {}
   }))
 
-  return new Response(JSON.stringify(result), {
+  const response = new Response(JSON.stringify(result), {
     headers: { ...CORS, 'Cache-Control': 'public, max-age=60' },
   })
+  // Store at the edge for other requests within the 60s window; waitUntil lets
+  // this finish after the response is already sent back to the client.
+  waitUntil(cache.put(cacheKey, response.clone()))
+  return response
 }
