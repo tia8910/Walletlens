@@ -12872,3 +12872,26 @@ button:not(:disabled):active,
 @media (prefers-reduced-motion: reduce) {
   .wl-guide-cta, .wl-guide-cta::after, .wl-guide-cta-ico { animation: none; }
 }
+
+/* ── Premium dashboard micro-interactions ───────────────────────────────── */
+/* Tabular figures so the count-up value doesn't jitter horizontally as digits change. */
+.dvx-hero-value, .dvx-hero-change, .dvx-stat-value, .eval-total-value { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* Progress/allocation bars ease in from the left on first paint. */
+.ai-bar-fill, .ai-entry-bar-fill, .eval-cat-bar, .dvx-target-bar-fill,
+.dvx-cat-summary-bar-fill, .dvx-cat-bar-fill, .dvx-be-bar-fill {
+  transform-origin: left center;
+  animation: wl-bar-grow 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes wl-bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Tactile depth on the summary stat cards (works on hover and touch-press). */
+.dvx-stat-card { transition: transform 0.18s ease, box-shadow 0.22s ease; will-change: transform; }
+.dvx-stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+.dvx-stat-card:active { transform: scale(0.985); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-bar-fill, .ai-entry-bar-fill, .eval-cat-bar, .dvx-target-bar-fill,
+  .dvx-cat-summary-bar-fill, .dvx-cat-bar-fill, .dvx-be-bar-fill { animation: none; }
+  .dvx-stat-card { transition: none; }
+}
