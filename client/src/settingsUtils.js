@@ -26,13 +26,14 @@ export function applySettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
     const root = document.documentElement
-    const theme  = THEMES.find(t => t.id === s.theme)  || THEMES[0]
-    const accent = ACCENTS.find(a => a.id === s.accent) || ACCENTS[0]
     const font   = FONT_SIZES.find(f => f.id === s.fontSize) || FONT_SIZES[1]
-    root.style.setProperty('--bg', theme.bg)
-    root.style.setProperty('--card-bg', theme.card)
-    root.style.setProperty('--accent', accent.color)
-    root.style.setProperty('--accent-dim', accent.color + '22')
+    // NOTE: theme colour, accent and background are owned entirely by
+    // ThemeContext (applyTheme). This legacy helper used to also set --bg,
+    // --card-bg and --accent from a separate accent picker, which fought
+    // ThemeContext and reset the accent to gold / the background to dark on
+    // every settings change (e.g. toggling the price ticker in light mode).
+    // It now only handles what ThemeContext doesn't: font size, compact
+    // spacing and ticker visibility.
     root.style.setProperty('--font-size-base', font.size)
     // The app is sized in rem, so scaling the root font-size scales all text at
     // once — this is what actually makes the Font Size setting take effect.

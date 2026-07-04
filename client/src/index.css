@@ -9747,9 +9747,9 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s;
 }
 .settings-chip.active {
-  background: var(--accent-dim, rgba(var(--g-rgb),0.15));
-  border-color: var(--accent, var(--g));
-  color: var(--accent, var(--g));
+  background: rgba(var(--g-rgb),0.15);
+  border-color: var(--g);
+  color: var(--g);
 }
 .settings-chip-swatch {
   width: 14px;
@@ -9770,7 +9770,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   transition: background 0.2s;
 }
 .settings-toggle.on {
-  background: var(--accent, var(--g));
+  background: var(--g);
 }
 .settings-toggle-thumb {
   position: absolute;

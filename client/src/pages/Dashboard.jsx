@@ -3899,7 +3899,7 @@ export default function Dashboard() {
                     {catBreakdown.length > 1 && (
                       <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
                         {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
-                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'var(--g)' : 'var(--surface-2)', color: holdingsCat === cat ? '#000' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'var(--g)' : 'var(--border)'}`, borderRadius:'20px', padding:'0.18rem 0.55rem', fontSize:'0.69rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)', color: holdingsCat === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'transparent' : 'var(--border)'}`, boxShadow: holdingsCat === cat ? '0 2px 8px rgba(5,150,105,0.35)' : 'none', borderRadius:'20px', padding:'0.2rem 0.7rem', fontSize:'0.69rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
                             {label}
                           </button>
                         ))}
