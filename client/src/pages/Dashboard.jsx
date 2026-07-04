@@ -3696,7 +3696,7 @@ export default function Dashboard() {
             {/* Timeframe selector + performance chart — merged into portfolio overview card */}
             <div style={{ display:'flex', gap:'0.3rem', margin:'0.85rem 0 0.5rem', flexWrap:'wrap' }}>
               {TIMEFRAMES.map(tf => (
-                <button key={tf.id} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
+                <button key={tf.id} className="dvx-tf-chip" onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
                   style={{
                     padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
                     fontSize:'0.75rem', fontWeight:700,
@@ -3707,7 +3707,7 @@ export default function Dashboard() {
                   {tf.label}
                 </button>
               ))}
-              <span style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g-ink)' : 'var(--text-sub)', alignSelf:'center' }}>
+              <span className={perfHasRealData ? 'dvx-live-ind' : ''} style={{ marginLeft:'auto', fontSize:'0.65rem', color: perfHasRealData ? 'var(--g-ink)' : 'var(--text-sub)', alignSelf:'center' }}>
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
@@ -3738,7 +3738,7 @@ export default function Dashboard() {
                     />
                     <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
                       fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
-                      isAnimationActive={false}/>
+                      isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
                   </AreaChart>
                 </ResponsiveContainer>
               )

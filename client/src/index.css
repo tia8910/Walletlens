@@ -12895,3 +12895,36 @@ button:not(:disabled):active,
   .dvx-cat-summary-bar-fill, .dvx-cat-bar-fill, .dvx-be-bar-fill { animation: none; }
   .dvx-stat-card { transition: none; }
 }
+
+/* ── Premium dashboard, pass 2 ──────────────────────────────────────────── */
+/* 1. Richer resting depth on the dashboard cards. */
+.dvx-form-page .glass-card:not(.dvx-hero) {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 10px 26px rgba(0,0,0,0.07);
+}
+[data-wl-light] .dvx-form-page .glass-card:not(.dvx-hero) {
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 12px 30px rgba(16,24,40,0.09);
+  border: 1px solid rgba(16,24,40,0.06);
+}
+
+/* 2. Section entrance — cards settle in on mount with a gentle cascade. */
+.dvx-form-page .glass-card:not(.dvx-hero) { animation: wl-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.dvx-form-page .glass-card:not(.dvx-hero):nth-of-type(2) { animation-delay: 0.05s; }
+.dvx-form-page .glass-card:not(.dvx-hero):nth-of-type(3) { animation-delay: 0.10s; }
+.dvx-form-page .glass-card:not(.dvx-hero):nth-of-type(4) { animation-delay: 0.15s; }
+.dvx-form-page .glass-card:not(.dvx-hero):nth-of-type(n+5) { animation-delay: 0.20s; }
+@keyframes wl-card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* 3. Tactile press on the currency + timeframe chips. */
+.dvx-currency-pill, .dvx-tf-chip { transition: transform 0.14s ease, filter 0.14s ease, background 0.15s ease, color 0.15s ease; }
+.dvx-currency-pill:hover, .dvx-tf-chip:hover { filter: brightness(1.06); }
+.dvx-currency-pill:active, .dvx-tf-chip:active { transform: scale(0.9); }
+
+/* 4. Live indicator softly pulses. */
+.dvx-live-ind { animation: wl-live-pulse 1.8s ease-in-out infinite; }
+@keyframes wl-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dvx-form-page .glass-card:not(.dvx-hero) { animation: none; }
+  .dvx-live-ind { animation: none; }
+  .dvx-currency-pill, .dvx-tf-chip { transition: none; }
+}
