@@ -921,7 +921,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       />
                     </div>
                     <div className="bs-markets">
-                      <div className="bs-markets-head"><span>Popular · Binance xStocks</span><span>Price / 24h</span></div>
+                      <div className="bs-markets-head"><span>Popular · Tokenized xStocks</span><span>Price / 24h</span></div>
                       <div className="bs-markets-list">
                         {filtered.map(t => {
                           const sid = `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`
@@ -953,7 +953,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="bs-stock-selected">
                         <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}X</span>
                         {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via Binance</span>
+                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via CoinGecko</span>
                       </div>
                     )}
                   </div>

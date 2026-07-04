@@ -64,17 +64,6 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // proxies below remain as backups if the Deno service is ever unreachable.
 export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
 
-// Binance public market-data mirror (no auth, CORS-enabled, geo-unrestricted).
-const BINANCE_DATA = 'https://data-api.binance.vision';
-// Fetch Binance JSON via the Deno proxy first (dodges regional IP geo-blocks),
-// then a direct request as a fallback. Returns parsed JSON or null.
-async function binanceFetch(path, ms = 8000) {
-  const url = `${BINANCE_DATA}${path}`;
-  for (const u of [DENO_PROXY(url), url]) {
-    try { const r = await fetchWithTimeout(u, ms); if (r && r.ok) return await r.json(); } catch {}
-  }
-  return null;
-}
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
 const CORS_PROXIES = [
@@ -354,6 +343,8 @@ setTimeout(() => {
     const warm = tickers.every(t => batchStockCache[t]) && Date.now() - batchStockCacheTime < STOCK_CACHE_DURATION;
     if (!warm) fetchBatchStocks(tickers).catch(() => {});
   } catch {}
+  // Warm tokenized-stock (xStock) prices too so the Tokenized tab is instant.
+  fetchXstockMarket().catch(() => {});
 }, 1200);
 
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
@@ -776,13 +767,65 @@ async function fetchFiatRates() {
 // background — instead of staring at "—" until the network round-trip lands.
 const STOCK_CACHE_KEY = 'crypto_tracker_stock_cache_v1';
 const STOCK_CACHE_TIME_KEY = 'crypto_tracker_stock_cache_t_v1';
-const XSTOCK_CACHE_KEY = 'crypto_tracker_xstock_cache_v1';
 let batchStockCache = _loadCache(STOCK_CACHE_KEY);
 let batchStockCacheTime = (() => { try { return Number(localStorage.getItem(STOCK_CACHE_TIME_KEY)) || 0; } catch { return 0; } })();
-let xstockPriceCache = _loadCache(XSTOCK_CACHE_KEY);
 function _persistStockCache() {
   _saveCache(STOCK_CACHE_KEY, batchStockCache);
   try { localStorage.setItem(STOCK_CACHE_TIME_KEY, String(batchStockCacheTime)); } catch {}
+}
+
+// ── Tokenized stocks (xStocks by Backed) via CoinGecko ────────────────────
+// xStocks are ERC-20/SPL tokens each backed 1:1 by a real share, so they price
+// like any CoinGecko token. One markets call for the whole xstocks-ecosystem
+// category returns price, 24h change, logo AND the canonical coin id for every
+// xStock — far more reliable than guessing a Binance trading-pair symbol.
+// Symbols are the underlying ticker + a trailing "X" (AAPLX → AAPL).
+const XSTOCK_MARKET_KEY = 'crypto_tracker_xstock_mkt_v1';
+let xstockMarket = _loadCache(XSTOCK_MARKET_KEY); // { [TICKER]: { usd, usd_24h_change, id, image, name, symbol, source } }
+let xstockMarketTime = (() => { try { return Number(localStorage.getItem(XSTOCK_MARKET_KEY + '_t')) || 0; } catch { return 0; } })();
+
+function _xstockTickerFromSymbol(sym) {
+  const s = String(sym || '').toUpperCase();
+  return s.endsWith('X') ? s.slice(0, -1) : s;
+}
+
+async function fetchXstockMarket() {
+  const now = Date.now();
+  if (Object.keys(xstockMarket).length && now - xstockMarketTime < STOCK_CACHE_DURATION) return xstockMarket;
+  const url = `${COINGECKO_BASE}/coins/markets?vs_currency=usd&category=xstocks-ecosystem&per_page=250&price_change_percentage=24h`;
+  const data = await fetchJSON(url);
+  if (Array.isArray(data) && data.length) {
+    const next = {};
+    for (const c of data) {
+      const ticker = _xstockTickerFromSymbol(c.symbol);
+      const px = Number(c.current_price);
+      if (!ticker || !isFinite(px) || px <= 0) continue;
+      next[ticker] = {
+        usd: px,
+        usd_24h_change: Number(c.price_change_percentage_24h) || 0,
+        id: c.id,
+        image: c.image || '',
+        name: c.name || ticker,
+        symbol: String(c.symbol || '').toUpperCase(),
+        source: 'coingecko',
+      };
+    }
+    if (Object.keys(next).length) {
+      xstockMarket = next;
+      xstockMarketTime = now;
+      _saveCache(XSTOCK_MARKET_KEY, xstockMarket);
+      try { localStorage.setItem(XSTOCK_MARKET_KEY + '_t', String(now)); } catch {}
+    }
+  }
+  return xstockMarket;
+}
+
+// Resolve a WalletLens xstock id (xstock:aapl) → CoinGecko coin id (apple-xstock).
+async function xstockCoinId(id) {
+  const ticker = id.slice(XSTOCK_PREFIX.length).toUpperCase();
+  if (xstockMarket[ticker]?.id) return xstockMarket[ticker].id;
+  const mkt = await fetchXstockMarket();
+  return mkt[ticker]?.id || null;
 }
 
 function parseStooqBatchCsv(text) {
@@ -1189,7 +1232,8 @@ export const api = {
         const t = id.slice(STOCK_PREFIX.length).toUpperCase();
         if (batchStockCache[t]) out[id] = batchStockCache[t];
       } else if (id.startsWith(XSTOCK_PREFIX)) {
-        if (xstockPriceCache[id]) out[id] = xstockPriceCache[id];
+        const t = id.slice(XSTOCK_PREFIX.length).toUpperCase();
+        if (xstockMarket[t]) out[id] = xstockMarket[t];
       } else if (priceCache[id]) {
         out[id] = priceCache[id];
       }
@@ -1269,40 +1313,18 @@ export const api = {
       })());
     }
 
-    // Tokenized stocks (xStocks) — live from Binance (each token is backed 1:1
-    // by the real share, so its price tracks the underlying). Binance's public
-    // market-data API is CORS-enabled, so the browser fetches it directly.
+    // Tokenized stocks (xStocks) — priced from CoinGecko. Each xStock is a token
+    // backed 1:1 by the real share, listed on CoinGecko with its own price, 24h
+    // change and logo. One category fetch covers every xStock. We key by ticker
+    // (AAPLX → AAPL) so xstock:aapl resolves regardless of the coin's slug.
     if (xstockIds.length > 0) {
       tasks.push((async () => {
-        const map = {}; // Binance symbol → WalletLens id
-        for (const id of xstockIds) map[xstockBinanceSymbol(id.slice(XSTOCK_PREFIX.length))] = id;
-        const syms = Object.keys(map);
-        // Seed from the persisted cache first so a returning visitor sees
-        // last-known prices without waiting on Binance.
-        for (const id of xstockIds) if (xstockPriceCache[id]) result[id] = xstockPriceCache[id];
-        let gotFresh = false;
-        const apply = (q) => {
-          const id = map[q?.symbol];
-          const px = parseFloat(q?.lastPrice);
-          if (id && isFinite(px) && px > 0) {
-            const rec = { usd: px, usd_24h_change: parseFloat(q.priceChangePercent) || 0, source: 'binance', name: q.symbol };
-            result[id] = rec; xstockPriceCache[id] = rec; gotFresh = true;
-          }
-        };
-        // Batch in one request; if Binance rejects it (any symbol it doesn't
-        // list makes the whole batch 400), fall back to per-symbol so the valid
-        // ones still resolve.
-        const arr = await binanceFetch(`/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`);
-        if (Array.isArray(arr)) {
-          arr.forEach(apply);
-        } else {
-          await Promise.all(syms.map(async sym => {
-            const q = await binanceFetch(`/api/v3/ticker/24hr?symbol=${sym}`, 7000);
-            if (q) apply(q);
-          }));
+        const mkt = await fetchXstockMarket();
+        for (const id of xstockIds) {
+          const ticker = id.slice(XSTOCK_PREFIX.length).toUpperCase();
+          if (mkt[ticker]) result[id] = mkt[ticker];
+          else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
         }
-        if (gotFresh) _saveCache(XSTOCK_CACHE_KEY, xstockPriceCache);
-        for (const id of xstockIds) if (!result[id] && manual[id]) result[id] = { ...manual[id], source: 'manual' };
       })());
     }
 
@@ -1612,19 +1634,13 @@ export const api = {
   //   crypto id   → CoinGecko market_chart
   getChartData: async (id, days = 7) => {
     if (!id) return [];
-    // Tokenized stocks (xStocks) → Binance klines.
+    // Tokenized stocks (xStocks) are CoinGecko tokens — resolve xstock:aapl to
+    // its coin id (apple-xstock) and fall through to the CoinGecko market_chart
+    // path below, reusing the same caching and fallbacks as any crypto asset.
     if (id.startsWith(XSTOCK_PREFIX)) {
-      const sym = xstockBinanceSymbol(id.slice(XSTOCK_PREFIX.length));
-      const interval = days <= 1 ? '1h' : days <= 30 ? '1d' : '1w';
-      const rows = await binanceFetch(`/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${Math.min(500, Math.max(30, days))}`, 8000);
-      if (Array.isArray(rows) && rows.length) {
-        return rows.map(k => ({
-          date: new Date(k[0]).toLocaleDateString(),
-          time: new Date(k[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          price: parseFloat(k[4]),
-        })).filter(p => isFinite(p.price) && p.price > 0);
-      }
-      return [];
+      const cgId = await xstockCoinId(id);
+      if (!cgId) return [];
+      id = cgId;
     }
     const stooqSym = stooqSymbolFor(id);
     if (stooqSym) {
