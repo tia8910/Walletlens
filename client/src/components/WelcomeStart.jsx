@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
 import { THEMES } from '../ThemeContext'
@@ -33,6 +33,14 @@ export default function WelcomeStart({ onDone }) {
   const [goldUnit, setGoldUnit] = useState('oz') // 'oz' | 'g'
   const [btc, setBtc] = useState('')
   const [busy, setBusy] = useState(false)
+  const [confirmSkip, setConfirmSkip] = useState(false)
+  const [canSkip, setCanSkip] = useState(false)
+
+  // Delay the "add later" link so users see the step before they can bail.
+  useEffect(() => {
+    const t = setTimeout(() => setCanSkip(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
 
   const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
   const n = v => Math.max(0, parseFloat(v) || 0)
@@ -48,6 +56,7 @@ export default function WelcomeStart({ onDone }) {
     track('welcome_start_skip')
     finish()
   }
+  function askSkip() { track('welcome_start_skip_prompt'); setConfirmSkip(true) }
 
   async function start() {
     if (!hasAny) { skip(); return }
@@ -123,7 +132,7 @@ export default function WelcomeStart({ onDone }) {
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         </div>
 
-        <h2 className="wls-title">Welcome to WalletLens 👋</h2>
+        <h2 className="wls-title">Now build your dashboard 🚀</h2>
         <p className="wls-sub">
           Let's bring your dashboard to life. Add whatever you're holding and you'll see your net worth
           instantly — all optional, and you can add stocks and more in a moment.
@@ -195,11 +204,34 @@ export default function WelcomeStart({ onDone }) {
         <button className="wls-cta" onClick={start} disabled={busy}>
           {busy ? 'Setting up…' : hasAny ? 'See my dashboard →' : 'Continue →'}
         </button>
-        <button className="wls-skip" onClick={skip} disabled={busy}>I'll add these later</button>
+        <button
+          className="wls-skip" onClick={askSkip} disabled={busy}
+          style={{ opacity: canSkip ? 0.6 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
+        >I'll add these later</button>
 
         <p className="wls-privacy">
           🔒 100% private — everything stays on your device. No account needed.
         </p>
+
+        {confirmSkip && (
+          <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>
+            <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+              <h4 className="bs-confirm-title">Start with an empty dashboard?</h4>
+              <p className="bs-confirm-text">
+                Adding even <strong>one balance</strong> lets you see your net worth and live P&L
+                right away instead of a blank $0. It's optional and stays on your device — you can
+                add or remove anything later.
+              </p>
+              <div className="bs-confirm-actions">
+                <button className="bs-confirm-go" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                  onClick={() => setConfirmSkip(false)}>
+                  Add a balance
+                </button>
+                <button className="bs-confirm-switch" onClick={skip} disabled={busy}>Skip anyway</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
