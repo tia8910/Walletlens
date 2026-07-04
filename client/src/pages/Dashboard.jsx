@@ -2644,6 +2644,12 @@ export default function Dashboard() {
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
   const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
+  // The "How to add assets" guide ends by opening the Buy sheet for real.
+  useEffect(() => {
+    const openBuy = () => openSheet('buy', 'add_asset_guide')
+    window.addEventListener('wl:open-buy', openBuy)
+    return () => window.removeEventListener('wl:open-buy', openBuy)
+  }, [openSheet])
   const [isMobile, setIsMobile]           = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)')

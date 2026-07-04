@@ -72,6 +72,18 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
         </div>
 
         <div className="wl-help-body">
+          <button
+            className="wl-help-primary"
+            onClick={() => { onClose(); window.dispatchEvent(new Event('wl:add-asset-guide')) }}
+          >
+            <span className="wl-help-primary-ico" aria-hidden="true">➕</span>
+            <span className="wl-help-primary-txt">
+              <strong>How to add your assets</strong>
+              <span>A quick step-by-step walkthrough</span>
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+
           {SECTIONS.map(s => (
             <div key={s.title} className="wl-help-card">
               <span className="wl-help-ico" aria-hidden="true">{s.icon}</span>
