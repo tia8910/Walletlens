@@ -12437,6 +12437,33 @@ button:not(:disabled):active,
 .pg-modal-list b { color: var(--text); }
 [data-wl-light] .pg-modal-list b { color: #0f172a; }
 
+/* ── Unified modal close X ──────────────────────────────────────────────────
+   Every modal / popup close button uses the SAME bare, bold, rotating X as the
+   trade window (.bs-close): no circle or box chrome — just a clean mark with a
+   generous hit area. Overrides each modal's older circle/pill background. */
+.news-modal-close, .qs-close, .ms-close, .wlc-close, .share-close {
+  background: none !important; border: none !important; border-radius: 0 !important;
+  width: 40px; height: 40px; padding: 0; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-muted); opacity: 0.85; cursor: pointer;
+  font-size: 0; line-height: 0; box-shadow: none !important;
+  transition: color 0.18s, opacity 0.18s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.news-modal-close svg, .qs-close svg, .ms-close svg, .wlc-close svg, .share-close svg {
+  width: 22px; height: 22px; flex-shrink: 0;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.news-modal-close:hover, .qs-close:hover, .ms-close:hover, .wlc-close:hover, .share-close:hover {
+  color: var(--text) !important; opacity: 1; background: none !important;
+}
+.news-modal-close:hover svg, .qs-close:hover svg, .ms-close:hover svg,
+.wlc-close:hover svg, .share-close:hover svg { transform: rotate(90deg); }
+.news-modal-close:active, .qs-close:active, .ms-close:active, .wlc-close:active,
+.share-close:active { transform: scale(0.88); }
+[data-wl-light] .news-modal-close, [data-wl-light] .qs-close, [data-wl-light] .ms-close,
+[data-wl-light] .wlc-close, [data-wl-light] .share-close { color: rgba(0,0,0,0.6); }
+
 /* ── Primary green buttons: deep-emerald ink on the bright accent fill ──────
    White text washes out on the vivid green fill; a deep emerald-black reads
    crisply and looks intentional (the fintech dark-on-green look, matching

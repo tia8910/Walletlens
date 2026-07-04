@@ -290,7 +290,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
   if (!stats) return (
     <div className="share-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="share-modal">
-        <div className="share-modal-header"><span>Weekly Report</span><button className="share-close" onClick={onClose}>✕</button></div>
+        <div className="share-modal-header"><span>Weekly Report</span><button className="share-close" onClick={onClose} aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button></div>
         <div style={{ padding:'2rem', textAlign:'center' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem' }}>📅</div>
           <p style={{ color:'var(--text)', fontSize:'0.9rem' }}>
@@ -306,7 +306,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
       <div className="share-modal">
         <div className="share-modal-header">
           <span>📅 Weekly Report — {stats.weekLabel}</span>
-          <button className="share-close" onClick={onClose}>✕</button>
+          <button className="share-close" onClick={onClose} aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
         </div>
         <canvas ref={canvasRef} className="share-canvas" />
         <div className="share-actions">

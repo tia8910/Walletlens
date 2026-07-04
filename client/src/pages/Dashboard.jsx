@@ -3621,7 +3621,7 @@ export default function Dashboard() {
                         </svg>
                         <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>Customize Dashboard</h3>
                       </div>
-                      <button onClick={() => setShowCardConfig(false)} style={{ background:'rgba(255,255,255,0.07)', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'6px', lineHeight:1, borderRadius:'8px', display:'flex', alignItems:'center' }}>{Ico.close}</button>
+                      <button onClick={() => setShowCardConfig(false)} aria-label="Close" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:0, width:36, height:36, lineHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
                     </div>
                     <p style={{ fontSize:'0.73rem', color:'var(--text-muted)', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
 
@@ -4450,10 +4450,12 @@ export default function Dashboard() {
             borderRadius:'20px', padding:'1.4rem 1.25rem', position:'relative',
           }}>
             <button onClick={() => setImportChooser(false)} aria-label="Close" style={{
-              position:'absolute', top:12, right:12, width:30, height:30, borderRadius:'50%',
-              border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-1)', color:'var(--text-muted)',
-              cursor:'pointer', fontSize:'1.1rem', lineHeight:1,
-            }}>×</button>
+              position:'absolute', top:10, right:10, width:40, height:40,
+              border:'none', background:'none', color:'var(--text-muted)',
+              cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+            </button>
 
             {importMode === 'menu' ? (
               <>
