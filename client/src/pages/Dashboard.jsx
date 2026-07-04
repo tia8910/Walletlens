@@ -709,11 +709,16 @@ const fmtAmt = n => { const v = parseFloat(n); if (!isFinite(v)) return '0'; if 
 const pct   = n => { const v = Number(n); if (!isFinite(v)) return '0.00%'; return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` }
 const PALETTE = ['var(--g)','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#22d3ee','#f87171','#64748b','var(--gd)','#a78bfa']
 
+// Theme-aware tooltip — follows the card surface + text colour so it reads
+// correctly in both light and dark mode (was a hardcoded near-black box that
+// clashed with the light theme). --tooltip-bg is solid per-mode (see index.css).
 const TOOLTIP_STYLE = {
-  background: 'rgba(12,18,22,0.97)', border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 10, fontSize: '0.74rem', color: 'rgba(255,255,255,0.88)',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+  background: 'var(--tooltip-bg, var(--card-bg))', border: '1px solid var(--border)',
+  borderRadius: 10, fontSize: '0.74rem', color: 'var(--text)',
+  boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
 }
+// Subtle themed hover highlight instead of Recharts' default grey rectangle.
+const BAR_CURSOR = { fill: 'rgba(var(--g-rgb),0.10)', radius: 6 }
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
@@ -3813,7 +3818,7 @@ export default function Dashboard() {
                       <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => cvN(v)} width={50}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [cv(v), 'P&L']}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} cursor={BAR_CURSOR} formatter={v => [cv(v), 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
