@@ -720,8 +720,11 @@ const TOOLTIP_STYLE = {
   borderRadius: 10, fontSize: '0.74rem', color: 'var(--text)',
   boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
 }
-// Subtle themed hover highlight instead of Recharts' default grey rectangle.
-const BAR_CURSOR = { fill: 'rgba(var(--g-rgb),0.10)', radius: 6 }
+// Subtle emerald hover highlight instead of Recharts' default grey rectangle.
+// Uses a literal rgba (not var() inside rgba()) so it resolves as an SVG fill
+// attribute and never falls back to the light-grey default that washes out
+// bars in dark mode.
+const BAR_CURSOR = { fill: 'rgba(16,185,129,0.16)', radius: 6 }
 const CHART_HDR_STYLE  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }
 const TEXT_RIGHT_STYLE = { textAlign: 'right', flexShrink: 0 }
 
