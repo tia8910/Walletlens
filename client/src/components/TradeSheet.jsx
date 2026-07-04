@@ -280,6 +280,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!open || category !== 'stock') return
     let alive = true
     const ids = POPULAR_TICKERS.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    // Paint last-known prices instantly from the persisted cache, then refresh.
+    const cached = api.getCachedPrices(ids.join(','))
+    if (Object.keys(cached).length) setStockPrices(prev => ({ ...cached, ...prev }))
     api.getPrices(ids.join(',')).then(px => {
       if (alive && px) setStockPrices(prev => ({ ...prev, ...px }))
     }).catch(() => {})
@@ -291,6 +294,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!open || category !== 'tstock') return
     let alive = true
     const ids = POPULAR_XSTOCKS.map(t => `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    const cached = api.getCachedPrices(ids.join(','))
+    if (Object.keys(cached).length) setXstockPrices(prev => ({ ...cached, ...prev }))
     api.getPrices(ids.join(',')).then(px => {
       if (alive && px) setXstockPrices(prev => ({ ...prev, ...px }))
     }).catch(() => {})
