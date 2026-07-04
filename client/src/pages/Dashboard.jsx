@@ -2147,14 +2147,17 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 
       {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
       <button
-        onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto 1.5rem',
-          padding: '0.7rem 1.2rem', borderRadius: '999px', cursor: 'pointer',
-          background: 'linear-gradient(135deg, #047857, #10b981)', color: '#fff', border: 'none',
-          fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 4px 14px rgba(5,150,105,0.35)',
-        }}>
-        👆 Show me how — step by step
+        className="wl-guide-cta"
+        onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}>
+        <span className="wl-guide-cta-hand" aria-hidden="true">👆</span>
+        <span className="wl-guide-cta-text">
+          <strong>Show me how</strong>
+          <span>Step-by-step guided tour</span>
+        </span>
+        <span className="wl-guide-cta-badge" aria-hidden="true">GUIDED</span>
+        <span className="wl-guide-cta-arrow" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
       </button>
 
       {/* 4 import action buttons — 2×2 grid */}
