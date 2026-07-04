@@ -12553,3 +12553,42 @@ button:not(:disabled):active,
   filter: brightness(1.06);
   box-shadow: 0 7px 22px rgba(5,150,105,0.5) !important;
 }
+
+/* ── Full-page onboarding ───────────────────────────────────────────────────
+   The first-run flows (welcome tour, interests picker, balances seed) fill the
+   whole screen instead of a floating centered card — matching the full-page
+   trade screen. Content centers vertically when short and the overlay scrolls
+   when it's taller than the viewport. Desktop keeps a centered content column. */
+.wm-overlay, .ip-overlay, .wls-overlay {
+  align-items: stretch !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.wm-sheet, .ip-card, .wls-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+.wm-sheet { box-shadow: none !important; }
+.wm-handle { display: none !important; }
+/* Pin the close X to the top-right instead of centering it with the content. */
+.ip-card > .wlm-close, .wls-card > .wlm-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px); right: 14px;
+  z-index: 3;
+}
+@media (min-width: 640px) {
+  .wm-sheet, .ip-card, .wls-card {
+    max-width: 560px !important;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06) !important;
+  }
+}
