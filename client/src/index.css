@@ -12985,3 +12985,23 @@ button:not(:disabled):active,
   padding: 0.65rem 1.4rem; border-radius: 12px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 800; color: #fff;
   background: linear-gradient(135deg, #047857, #10b981); box-shadow: 0 4px 14px rgba(5,150,105,0.35);
 }
+
+/* Rebalance: style/risk profile chips + advice */
+.wl-reb-profiles { display: flex; gap: 0.5rem; padding: 0.3rem 1.25rem 0.5rem; }
+.wl-reb-profile {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.05rem;
+  padding: 0.5rem 0.4rem; border-radius: 12px; cursor: pointer; text-align: center;
+  background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text);
+  transition: transform 0.14s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.wl-reb-profile:active { transform: scale(0.97); }
+.wl-reb-profile strong { font-size: 0.86rem; font-weight: 800; }
+.wl-reb-profile em { font-style: normal; font-size: 0.64rem; color: var(--text-muted); }
+.wl-reb-profile.active { background: rgba(var(--g-rgb),0.14); border-color: rgba(var(--g-rgb),0.6); }
+.wl-reb-profile.active strong { color: var(--g-ink); }
+.wl-reb-advice {
+  margin: 0 1.25rem 0.4rem; padding: 0.7rem 0.85rem; border-radius: 12px;
+  background: rgba(var(--g-rgb),0.08); border: 1px solid rgba(var(--g-rgb),0.18);
+}
+.wl-reb-advice-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: var(--g-ink); margin-bottom: 0.3rem; }
+.wl-reb-advice p { margin: 0.2rem 0; font-size: 0.8rem; line-height: 1.45; color: var(--text); }

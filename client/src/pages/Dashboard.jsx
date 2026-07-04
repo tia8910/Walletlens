@@ -132,6 +132,21 @@ function categorizeAsset(h) {
 }
 
 
+// Risk/market-cap bucket for the rebalance recommender: safe money (cash,
+// stablecoins, metals), blue-chips (large-cap crypto + stocks), then mid and
+// speculative small/micro caps.
+function rebalBucket(h) {
+  const cat = categorizeAsset(h)
+  if (cat === 'cash') return 'cash'
+  if (cat === 'metals') return 'metal'
+  if (cat === 'stocks') return 'large'
+  if (isStablecoin(h.coin_id, h.coin_symbol)) return 'stable'
+  const tier = classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id
+  if (tier === 'mega' || tier === 'large') return 'large'
+  if (tier === 'mid') return 'mid'
+  return 'small'
+}
+
 // Returns { label, color } category badge for a holding
 function getAssetCategoryBadge(h) {
   const id = h.coin_id || ''
@@ -4653,7 +4668,17 @@ export default function Dashboard() {
         />
       )}
       {rebalanceOpen && (
-        <RebalancePanel open={rebalanceOpen} onClose={() => setRebalanceOpen(false)} holdings={enriched} cv={cv} />
+        <RebalancePanel
+          open={rebalanceOpen}
+          onClose={() => setRebalanceOpen(false)}
+          holdings={enriched.map(h => ({
+            id: h.coin_id || h.coin_symbol,
+            sym: (h.coin_symbol || h.coin_id || '').toUpperCase(),
+            value: h.value || 0,
+            bucket: rebalBucket(h),
+          }))}
+          cv={cv}
+        />
       )}
 
       {/* First-run flow for a brand-new user: interests → cash/USDT balances.
