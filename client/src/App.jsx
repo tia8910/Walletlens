@@ -18,6 +18,7 @@ const PWAInstallPrompt = lazy(() => import('./components/PWAInstallPrompt'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
+const AddAssetGuide = lazy(() => import('./components/AddAssetGuide'))
 import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
@@ -405,6 +406,7 @@ export default function App() {
   const [drawerMounted, setDrawerMounted] = useState(false)
   const [quickStatsOpen, setQuickStatsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [addGuideOpen, setAddGuideOpen] = useState(false)
   const [shellReady, setShellReady] = useState(false)
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
@@ -447,9 +449,14 @@ export default function App() {
   // Any part of the app can open the Help guide by dispatching `wl:open-help`
   // (e.g. an on-screen tip's "how it works" link).
   useEffect(() => {
-    const open = () => setHelpOpen(true)
-    window.addEventListener('wl:open-help', open)
-    return () => window.removeEventListener('wl:open-help', open)
+    const openHelp = () => setHelpOpen(true)
+    const openAdd = () => setAddGuideOpen(true)
+    window.addEventListener('wl:open-help', openHelp)
+    window.addEventListener('wl:add-asset-guide', openAdd)
+    return () => {
+      window.removeEventListener('wl:open-help', openHelp)
+      window.removeEventListener('wl:add-asset-guide', openAdd)
+    }
   }, [])
 
   useEffect(() => {
@@ -652,6 +659,7 @@ export default function App() {
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
       {helpOpen && <Suspense fallback={null}><HelpGuide open={helpOpen} onClose={() => setHelpOpen(false)} onNavigate={navigate} /></Suspense>}
+      {addGuideOpen && <Suspense fallback={null}><AddAssetGuide open={addGuideOpen} onClose={() => setAddGuideOpen(false)} onNavigate={navigate} /></Suspense>}
     </div>
   )
 }

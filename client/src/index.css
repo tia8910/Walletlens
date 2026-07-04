@@ -12683,3 +12683,71 @@ button:not(:disabled):active,
   background: linear-gradient(135deg, #047857, #10b981);
   box-shadow: 0 4px 14px rgba(5,150,105,0.35);
 }
+
+/* ── Help guide: primary "How to add assets" launcher ───────────────────── */
+.wl-help-primary {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%;
+  margin: 0.5rem 0 0.4rem; padding: 0.8rem 0.9rem; cursor: pointer;
+  border-radius: 14px; border: 1px solid rgba(var(--g-rgb), 0.35);
+  background: rgba(var(--g-rgb), 0.12); color: var(--text); text-align: left;
+}
+.wl-help-primary:hover { background: rgba(var(--g-rgb), 0.18); }
+.wl-help-primary-ico { font-size: 1.25rem; flex-shrink: 0; }
+.wl-help-primary-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wl-help-primary-txt strong { font-size: 0.9rem; font-weight: 800; }
+.wl-help-primary-txt span { font-size: 0.76rem; color: var(--text-muted); }
+.wl-help-primary > svg { flex-shrink: 0; color: var(--g-ink); }
+
+/* ── Add-asset step-by-step guide ───────────────────────────────────────── */
+.wl-aag-overlay {
+  position: fixed; inset: 0; z-index: 1250;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.58); backdrop-filter: blur(4px);
+  animation: wl-help-fade 0.2s ease both;
+}
+.wl-aag-sheet {
+  width: 100%; max-width: 480px; display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -12px 44px rgba(0,0,0,0.5);
+  animation: wl-help-up 0.28s cubic-bezier(0.22,1,0.36,1) both;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 640px) {
+  .wl-aag-overlay { align-items: center; }
+  .wl-aag-sheet { border-radius: 22px; }
+}
+.wl-aag-head { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.1rem 0.2rem; }
+.wl-aag-step-count { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--g-ink); }
+.wl-aag-x { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.15rem; border-radius: 8px; }
+.wl-aag-x:hover { color: var(--text); }
+.wl-aag-body { padding: 0.6rem 1.4rem 0.4rem; text-align: center; }
+.wl-aag-badge {
+  position: relative; width: 66px; height: 66px; margin: 0.4rem auto 0.9rem;
+  border-radius: 20px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(var(--g-rgb),0.9), rgba(var(--g-rgb),0.55));
+  box-shadow: 0 8px 22px rgba(var(--g-rgb),0.35);
+}
+.wl-aag-badge-ico { font-size: 2rem; line-height: 1; }
+.wl-aag-badge-num {
+  position: absolute; top: -8px; right: -8px; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--card-bg); border: 2px solid rgba(var(--g-rgb),0.9);
+  font-size: 0.78rem; font-weight: 800; color: var(--g-ink);
+}
+.wl-aag-title { margin: 0 0 0.35rem; font-size: 1.18rem; font-weight: 800; color: var(--text); }
+.wl-aag-desc { margin: 0 auto; max-width: 22rem; font-size: 0.9rem; line-height: 1.55; color: var(--text-muted); min-height: 3.2em; }
+.wl-aag-dots { display: flex; justify-content: center; gap: 0.4rem; padding: 0.9rem 0 0.3rem; }
+.wl-aag-dot { width: 8px; height: 8px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: rgba(var(--g-rgb),0.22); transition: all 0.2s; }
+.wl-aag-dot.done { background: rgba(var(--g-rgb),0.5); }
+.wl-aag-dot.active { width: 22px; border-radius: 5px; background: var(--g-ink); }
+.wl-aag-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.7rem 1.1rem 1rem; }
+.wl-aag-back { background: none; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); padding: 0.6rem 0.4rem; }
+.wl-aag-back:hover { color: var(--text); }
+.wl-aag-next {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.7rem 1.2rem; border-radius: 12px; border: none; cursor: pointer;
+  font-size: 0.9rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+}
+.wl-aag-next svg { display: block; }
