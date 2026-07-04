@@ -5775,7 +5775,7 @@ tr:last-child td { border-bottom: none; }
 }
 .bs-mode-tab:hover { color: var(--text-muted); }
 .bs-mode-tab.active { transform: translateY(-0.5px); }
-.bs-mode-tab.active.buy  { background: linear-gradient(135deg, var(--g), var(--gd)); color: #000; box-shadow: 0 4px 14px rgba(var(--g-rgb),0.35); }
+.bs-mode-tab.active.buy  { background: linear-gradient(135deg, #047857, #10b981); color: #fff; box-shadow: 0 4px 14px rgba(5,150,105,0.35); }
 .bs-mode-tab.active.sell { background: linear-gradient(135deg, #fb7185, #ef4444); color: #fff; box-shadow: 0 4px 14px rgba(248,113,113,0.35); }
 [data-wl-light] .bs-mode-tabs { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
 
@@ -12532,8 +12532,11 @@ button:not(:disabled):active,
    accent-ink text. */
 .dvx-btn-primary, .btn-add-target, .dash-v2-cta, .landing-cta, .lp-cta-primary,
 .dvx-hero-cta-buy, .data-export-btn, .ms-btn-share, .buy-btn,
-.submit-btn.buy, .data-btn, .bs-mode-tab.active.buy, .lz-btn-primary,
+.submit-btn.buy, .data-btn, .lz-btn-primary,
 .tour-tt-cta, .wm-cta, .ip-cta, .wls-cta, .pg-modal-cta,
-.pg-submit, .pg-checkin-btn, .bs-submit.dvx-btn-primary {
+.pg-submit, .pg-checkin-btn {
   color: #04231a !important;
 }
+/* The trade Buy tab + Confirm button follow the "Add a trade" CTA skin
+   (deep-emerald gradient, white bold text) instead of the dark-ink treatment. */
+.bs-mode-tab.active.buy, .bs-submit.dvx-btn-primary { color: #fff !important; }
