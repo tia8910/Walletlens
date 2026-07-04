@@ -268,12 +268,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   }, [isPage, open])
 
   // Fetch live prices for the stock markets list when the Stocks tab is open.
+  // Fetch the whole popular list (one batched request server-side) so every
+  // sector filter shows prices, not just the first page.
   useEffect(() => {
     if (!open || category !== 'stock') return
     let alive = true
-    const ids = POPULAR_TICKERS.slice(0, 40).map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    const ids = POPULAR_TICKERS.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
     api.getPrices(ids.join(',')).then(px => {
-      if (alive && px) setStockPrices(px)
+      if (alive && px) setStockPrices(prev => ({ ...prev, ...px }))
     }).catch(() => {})
     return () => { alive = false }
   }, [open, category])
