@@ -255,6 +255,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [priceFetchFailed, setPriceFetchFailed] = useState(false)
   const [priceFocused, setPriceFocused] = useState(false)
   const [popPrices, setPopPrices] = useState({})
+  const [stockPrices, setStockPrices] = useState({})
 
   // Fetch live prices for the browsable popular-coins list (full-page only).
   useEffect(() => {
@@ -265,6 +266,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     }).catch(() => {})
     return () => { alive = false }
   }, [isPage, open])
+
+  // Fetch live prices for the stock markets list when the Stocks tab is open.
+  useEffect(() => {
+    if (!open || category !== 'stock') return
+    let alive = true
+    const ids = POPULAR_TICKERS.slice(0, 40).map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    api.getPrices(ids.join(',')).then(px => {
+      if (alive && px) setStockPrices(px)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [open, category])
 
   // Auto-fill price when coin / non-crypto asset selected
   useEffect(() => {
@@ -825,17 +837,35 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                         onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
                       />
                     </div>
-                    {/* Ticker grid */}
-                    <div className="bs-ticker-grid">
-                      {filtered.slice(0, 30).map(t => (
-                        <button key={t.ticker}
-                          className={`bs-ticker-btn ${stockTicker === t.ticker ? 'active' : ''}`}
-                          title={t.name}
-                          onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
-                          <span className="bs-ticker-sym">{t.ticker}</span>
-                          <span className="bs-ticker-name">{t.name.length > 12 ? t.name.slice(0,11)+'…' : t.name}</span>
-                        </button>
-                      ))}
+                    {/* Markets-style ticker list (same look as the crypto list) */}
+                    <div className="bs-markets">
+                      <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>Price / 24h</span></div>
+                      <div className="bs-markets-list">
+                        {filtered.slice(0, 40).map(t => {
+                          const sid = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
+                          const rec = stockPrices[sid]
+                          const p = rec?.usd ?? rec?.price
+                          const ch = rec?.usd_24h_change
+                          const up = Number(ch) >= 0
+                          const on = stockTicker === t.ticker
+                          return (
+                            <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
+                              title={t.name}
+                              onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
+                              <CoinLogo symbol={t.ticker} coinId={sid} size={30} className="bs-coin-thumb" />
+                              <div className="bs-coin-info">
+                                <strong>{t.ticker}</strong>
+                                <span className="muted">{t.name}</span>
+                              </div>
+                              <div className="bs-market-px">
+                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                                {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                              </div>
+                            </button>
+                          )
+                        })}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                      </div>
                     </div>
                     {stockTicker && (
                       <div className="bs-stock-selected">
@@ -1047,8 +1077,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
             )}
 
-            {/* Trade signal — collapsible on mobile */}
-            {asset?.id && (
+            {/* Trade signal — only for assets we can build one for (price history) */}
+            {asset?.id && ['crypto', 'stock', 'gold', 'silver'].includes(category) && (
               <div className="bs-signal-wrap">
                 <button className="bs-signal-toggle" onClick={() => setSignalOpen(v => !v)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
