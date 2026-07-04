@@ -344,6 +344,18 @@ setTimeout(() => {
   _tryBinance();
 }, 800);
 
+// Pre-warm popular US-stock prices in the background so the Stocks tab shows
+// prices immediately on first open instead of after a live network round-trip.
+// Skips the fetch entirely when the persisted cache is already warm.
+setTimeout(() => {
+  try {
+    const tickers = (POPULAR_TICKERS || []).map(t => t.ticker.toUpperCase()).filter(Boolean);
+    if (!tickers.length) return;
+    const warm = tickers.every(t => batchStockCache[t]) && Date.now() - batchStockCacheTime < STOCK_CACHE_DURATION;
+    if (!warm) fetchBatchStocks(tickers).catch(() => {});
+  } catch {}
+}, 1200);
+
 // CoinGecko id → Binance ticker mapping for the highest-volume coins
 // where the slug doesn't match the exchange ticker. Anything not listed
 // falls back to deriving the ticker from the recorded coin_symbol on
@@ -759,8 +771,19 @@ async function fetchFiatRates() {
 // ─── Batch stock quotes ───────────────────────────────────────────────────
 // Fetches multiple tickers at once from Yahoo Finance v7 (supports CORS on
 // most networks). Falls back to individual fetchStockLive calls for misses.
-let batchStockCache = {};
-let batchStockCacheTime = 0;
+// Persisted to localStorage so a returning visitor sees last-known prices
+// instantly (rendered on first paint) while a fresh fetch runs in the
+// background — instead of staring at "—" until the network round-trip lands.
+const STOCK_CACHE_KEY = 'crypto_tracker_stock_cache_v1';
+const STOCK_CACHE_TIME_KEY = 'crypto_tracker_stock_cache_t_v1';
+const XSTOCK_CACHE_KEY = 'crypto_tracker_xstock_cache_v1';
+let batchStockCache = _loadCache(STOCK_CACHE_KEY);
+let batchStockCacheTime = (() => { try { return Number(localStorage.getItem(STOCK_CACHE_TIME_KEY)) || 0; } catch { return 0; } })();
+let xstockPriceCache = _loadCache(XSTOCK_CACHE_KEY);
+function _persistStockCache() {
+  _saveCache(STOCK_CACHE_KEY, batchStockCache);
+  try { localStorage.setItem(STOCK_CACHE_TIME_KEY, String(batchStockCacheTime)); } catch {}
+}
 
 function parseStooqBatchCsv(text) {
   // Stooq multi-ticker CSV: first line = headers, subsequent lines = one ticker each
@@ -892,7 +915,7 @@ async function fetchOneTicker(sym) {
   return null;
 }
 
-async function fetchBatchStocks(tickers) {
+async function _refreshBatchStocks(tickers) {
   const now = Date.now();
   const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
   if (missing.length === 0) return batchStockCache;
@@ -915,8 +938,31 @@ async function fetchBatchStocks(tickers) {
   }
 
   // Mark fresh only if we actually have data; a fully-failed poll must retry.
-  if (Object.keys(batchStockCache).length > 0) batchStockCacheTime = now;
+  if (Object.keys(batchStockCache).length > 0) { batchStockCacheTime = now; _persistStockCache(); }
   return batchStockCache;
+}
+
+// De-duped background refresh so many callers opening the sheet don't each
+// fire their own network fan-out.
+let _stockRefreshInFlight = null;
+function _refreshBatchStocksInBackground(tickers) {
+  if (_stockRefreshInFlight) return _stockRefreshInFlight;
+  _stockRefreshInFlight = _refreshBatchStocks(tickers).finally(() => { _stockRefreshInFlight = null; });
+  return _stockRefreshInFlight;
+}
+
+async function fetchBatchStocks(tickers) {
+  const now = Date.now();
+  const haveAll = tickers.every(t => batchStockCache[t]);
+  // Stale-while-revalidate: if every requested ticker already has a cached
+  // price, return it instantly (so prices paint immediately) and only kick a
+  // background refresh when it's gone stale. We block on the network only when
+  // some ticker has never been fetched — there's nothing to show otherwise.
+  if (haveAll) {
+    if (now - batchStockCacheTime > STOCK_CACHE_DURATION) _refreshBatchStocksInBackground(tickers);
+    return batchStockCache;
+  }
+  return _refreshBatchStocks(tickers);
 }
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
 function stooqSymbolFor(id) {
@@ -1133,6 +1179,23 @@ export const api = {
   //   metal:xau/xag → gold-api.com (live spot metal price, with CoinGecko fallback)
   //   <crypto id> → CoinGecko simple/price
   //   everything else → manual price cache (localStorage)
+  // Synchronous read of whatever prices are already cached (localStorage-backed
+  // for stocks/xstocks/crypto). Lets the UI paint last-known prices on first
+  // render, before the async getPrices() network fan-out resolves.
+  getCachedPrices: (ids) => {
+    const out = {};
+    for (const id of String(ids || '').split(',').filter(Boolean)) {
+      if (id.startsWith(STOCK_PREFIX)) {
+        const t = id.slice(STOCK_PREFIX.length).toUpperCase();
+        if (batchStockCache[t]) out[id] = batchStockCache[t];
+      } else if (id.startsWith(XSTOCK_PREFIX)) {
+        if (xstockPriceCache[id]) out[id] = xstockPriceCache[id];
+      } else if (priceCache[id]) {
+        out[id] = priceCache[id];
+      }
+    }
+    return out;
+  },
   getPrices: (() => {
     // In-flight cache: if the same id-set is already being fetched, return the
     // same promise instead of firing a second identical fan-out.
@@ -1214,11 +1277,16 @@ export const api = {
         const map = {}; // Binance symbol → WalletLens id
         for (const id of xstockIds) map[xstockBinanceSymbol(id.slice(XSTOCK_PREFIX.length))] = id;
         const syms = Object.keys(map);
+        // Seed from the persisted cache first so a returning visitor sees
+        // last-known prices without waiting on Binance.
+        for (const id of xstockIds) if (xstockPriceCache[id]) result[id] = xstockPriceCache[id];
+        let gotFresh = false;
         const apply = (q) => {
           const id = map[q?.symbol];
           const px = parseFloat(q?.lastPrice);
           if (id && isFinite(px) && px > 0) {
-            result[id] = { usd: px, usd_24h_change: parseFloat(q.priceChangePercent) || 0, source: 'binance', name: q.symbol };
+            const rec = { usd: px, usd_24h_change: parseFloat(q.priceChangePercent) || 0, source: 'binance', name: q.symbol };
+            result[id] = rec; xstockPriceCache[id] = rec; gotFresh = true;
           }
         };
         // Batch in one request; if Binance rejects it (any symbol it doesn't
@@ -1233,6 +1301,7 @@ export const api = {
             if (q) apply(q);
           }));
         }
+        if (gotFresh) _saveCache(XSTOCK_CACHE_KEY, xstockPriceCache);
         for (const id of xstockIds) if (!result[id] && manual[id]) result[id] = { ...manual[id], source: 'manual' };
       })());
     }
