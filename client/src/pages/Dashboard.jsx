@@ -122,7 +122,7 @@ function categorizeAsset(h) {
   const id = (h.coin_id || '').toLowerCase()
   const sym = (h.coin_symbol || '').toLowerCase()
   if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
-  if (id.startsWith('stock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
+  if (id.startsWith('stock:') || id.startsWith('xstock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
   if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
   // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
   if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
@@ -133,6 +133,7 @@ function categorizeAsset(h) {
 // Returns { label, color } category badge for a holding
 function getAssetCategoryBadge(h) {
   const id = h.coin_id || ''
+  if (id.startsWith('xstock:')) return { label: 'xStock', color: '#f0b90b' }
   if (id.startsWith('stock:')) {
     const sector = getStockSector(id) || 'Stock'
     return { label: sector, color: STOCK_SECTOR_COLORS[sector] || '#6366f1' }
