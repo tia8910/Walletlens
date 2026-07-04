@@ -711,6 +711,10 @@ input, select, textarea {
 [data-wl-light] .settings-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); color: var(--text); }
 [data-wl-light] .settings-chip:hover { background: rgba(0,0,0,0.08); }
 [data-wl-light] .settings-chip.active { background: rgba(var(--g-rgb),0.12); border-color: var(--g); }
+/* Off-state toggle track was rgba(255,255,255,0.1) — invisible (white on white)
+   in light mode. Give it a visible grey so OFF toggles show up. */
+[data-wl-light] .settings-toggle { background: rgba(0,0,0,0.18); }
+[data-wl-light] .settings-toggle .settings-toggle-thumb { box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 
 /* ── Settings fixes (light-mode legibility + mobile layout + new toggles) ── */
 /* Section titles were hardcoded white → invisible on the light background. */
