@@ -353,8 +353,6 @@ export default function WelcomeModal() {
           >
             {s.isSecurityStep && bioEnabled ? 'Continue →' : s.cta}
           </button>
-
-          {!s.final && <button className="wm-skip" onClick={skip}>Skip tour</button>}
         </div>
       </div>
     </div>
