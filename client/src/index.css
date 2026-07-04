@@ -12751,3 +12751,59 @@ button:not(:disabled):active,
   box-shadow: 0 4px 14px rgba(5,150,105,0.35);
 }
 .wl-aag-next svg { display: block; }
+
+/* ── Add-asset interactive tour (coach-mark with animated arrow) ─────────── */
+.wl-tour { position: fixed; inset: 0; z-index: 1300; pointer-events: none; }
+.wl-tour > * { pointer-events: auto; }
+/* Spotlight ring: paint-only (pointer-events:none) so the real control stays
+   tappable; the big box-shadow dims everything around it. */
+.wl-tour-spot {
+  position: fixed; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.9), 0 0 0 9999px rgba(0,0,0,0.60);
+  animation: wl-tour-ring 1.6s ease-in-out infinite; transition: top 0.15s, left 0.15s, width 0.15s, height 0.15s;
+}
+@keyframes wl-tour-ring {
+  0%,100% { box-shadow: 0 0 0 4px rgba(16,185,129,0.9), 0 0 0 9999px rgba(0,0,0,0.60); }
+  50% { box-shadow: 0 0 0 7px rgba(16,185,129,0.55), 0 0 0 9999px rgba(0,0,0,0.60); }
+}
+.wl-tour-arrow {
+  position: fixed; transform: translateX(-50%); color: #10b981; pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(5,150,105,0.6));
+}
+.wl-tour-arrow svg { display: block; }
+.wl-tour-arrow.up { animation: wl-tour-bob-up 1s ease-in-out infinite; }
+.wl-tour-arrow.down { animation: wl-tour-bob-down 1s ease-in-out infinite; }
+@keyframes wl-tour-bob-up { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-7px); } }
+@keyframes wl-tour-bob-down { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(7px); } }
+.wl-tour-card {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 2rem); max-width: 380px; padding: 1rem 1.1rem 0.9rem;
+  border-radius: 16px; background: var(--card-bg); border: 1px solid var(--border);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5); backdrop-filter: blur(12px);
+  animation: wl-tour-card-in 0.25s ease both;
+}
+@keyframes wl-tour-card-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.wl-tour-card-top { display: flex; align-items: center; justify-content: space-between; }
+.wl-tour-step { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--g-ink); }
+.wl-tour-skip { background: none; border: none; cursor: pointer; font-size: 0.76rem; font-weight: 700; color: var(--text-muted); padding: 0.2rem 0.3rem; }
+.wl-tour-skip:hover { color: var(--text); }
+.wl-tour-title { margin: 0.35rem 0 0.2rem; font-size: 1.05rem; font-weight: 800; color: var(--text); }
+.wl-tour-text { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--text-muted); }
+.wl-tour-dots { display: flex; gap: 0.35rem; margin: 0.75rem 0 0.2rem; }
+.wl-tour-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(var(--g-rgb),0.25); transition: all 0.2s; }
+.wl-tour-dot.done { background: rgba(var(--g-rgb),0.55); }
+.wl-tour-dot.active { width: 20px; border-radius: 4px; background: var(--g-ink); }
+.wl-tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.6rem; }
+.wl-tour-back { background: none; border: none; cursor: pointer; font-size: 0.86rem; font-weight: 700; color: var(--text-muted); padding: 0.5rem 0.3rem; }
+.wl-tour-back:hover { color: var(--text); }
+.wl-tour-next {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.1rem; border-radius: 11px; border: none; cursor: pointer;
+  font-size: 0.88rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+}
+.wl-tour-next svg { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .wl-tour-spot, .wl-tour-arrow.up, .wl-tour-arrow.down { animation: none; }
+}

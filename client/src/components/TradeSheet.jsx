@@ -691,7 +691,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {!prefillCoin && (
               <div className="bs-field">
                 <label className="bs-label">Asset Category</label>
-                <div className="bs-cat-grid">
+                <div className="bs-cat-grid" data-tour="ts-category">
                   {CATEGORIES.map(c => (
                     <button
                       key={c.key}
@@ -707,7 +707,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             )}
 
             {/* ── Asset selector by category ── */}
-            <div className="bs-field">
+            <div className="bs-field" data-tour="ts-asset">
               <label className="bs-label">Asset</label>
 
               {/* Crypto: search (buy) or holdings list (sell) */}
@@ -1070,12 +1070,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 {amtMode === 'usd' ? (
                   <div style={{ position:'relative' }}>
                     <span style={{ position:'absolute', left:'0.75rem', top:'50%', transform:'translateY(-50%)', color:'var(--text-sub)', fontWeight:700, fontSize:'0.9rem', pointerEvents:'none' }}>$</span>
-                    <input className="bs-input bs-input-value" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
+                    <input data-tour="ts-amount" className="bs-input bs-input-value" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
                       style={{ paddingLeft:'1.5rem' }}
                       value={usdInput} onChange={e => handleUsdInput(e.target.value)} />
                   </div>
                 ) : (
-                  <input className="bs-input bs-input-value" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
+                  <input data-tour="ts-amount" className="bs-input bs-input-value" type="text" inputMode="decimal" placeholder="0.00" min="0" step="any"
                     value={amount} onChange={e => { setAmount(e.target.value); setSpendPct(null); setSellPct(null) }} />
                 )}
                 {amtMode === 'usd' && amount && parseFloat(amount) > 0 && (
@@ -1181,7 +1181,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           {/* Footer — outside scrollable bs-body so the button is always tappable */}
           <div className="bs-footer">
             {msg && <p style={{ color:'#f87171', fontSize:'0.8rem', margin:'0 0 0.5rem' }}>{msg}</p>}
-            <button className={`bs-submit ${isBuy ? 'dvx-btn-primary' : 'dvx-btn-sell'}`}
+            <button data-tour="ts-confirm" className={`bs-submit ${isBuy ? 'dvx-btn-primary' : 'dvx-btn-sell'}`}
               onClick={() => { playTradeSound(isBuy); submit() }}
               disabled={busy || !asset || !amount || !price || (isBuy ? !buyWith : !sellFor) || (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) || (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim())}>
               {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}

@@ -2150,7 +2150,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
         marginBottom: '1.25rem',
       }}>
-        <button onClick={onAddTrade} style={{
+        <button data-tour="add-asset" onClick={onAddTrade} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
           background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
