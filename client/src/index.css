@@ -12027,7 +12027,10 @@ button:not(:disabled):active,
 /* ── Dashboard holding action buttons ── */
 .dvx-holding { flex-wrap: wrap; }
 /* "Actions" toggle chip — keeps each row calm until the user opts in. */
-.dvx-ha-toggle { margin-left: auto; margin-top: .1rem; height: 26px; padding: 0 .55rem; display: inline-flex; align-items: center; gap: .28rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: var(--text-muted); font-size: .72rem; font-weight: 600; cursor: pointer; transition: background .14s, border-color .14s, color .14s, transform .1s; white-space: nowrap; }
+/* Toggle sits on its own line (right-aligned) so it never squeezes the asset
+   name/badges on the first row. */
+.dvx-ha-togglebar { flex: 0 0 100%; display: flex; justify-content: flex-end; margin-top: .3rem; }
+.dvx-ha-toggle { flex-shrink: 0; height: 26px; padding: 0 .55rem; display: inline-flex; align-items: center; gap: .28rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: var(--text-muted); font-size: .72rem; font-weight: 600; cursor: pointer; transition: background .14s, border-color .14s, color .14s, transform .1s; white-space: nowrap; }
 .dvx-ha-toggle:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: var(--text); }
 .dvx-ha-toggle:active { transform: scale(.94); }
 .dvx-ha-toggle.open { background: rgba(var(--g-rgb),.12); border-color: rgba(var(--g-rgb),.35); color: var(--g-ink); }
