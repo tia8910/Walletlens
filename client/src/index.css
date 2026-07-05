@@ -1469,8 +1469,10 @@ body::before {
    triggering repaints when nearby elements change opacity or transform. */
 body::after {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  /* Kept small and high so the green top glow sits above the header and never
+     pools behind the top-left logo (was reading as a green circle). */
   background:
-    radial-gradient(900px 400px at 50% -5%, rgba(var(--g-rgb),0.07), transparent 70%);
+    radial-gradient(700px 180px at 50% -12%, rgba(var(--g-rgb),0.05), transparent 70%);
   will-change: opacity;
 }
 @keyframes mesh-float {
