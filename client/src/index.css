@@ -13124,9 +13124,9 @@ button:not(:disabled):active,
 
 /* Colored gain/loss pill on each holding. */
 .dvx-holding-pnl-pill {
-  display: inline-flex; align-items: center; gap: 0.2rem; margin-top: 0.22rem;
-  padding: 0.1rem 0.42rem; border-radius: 999px; font-size: 0.66rem; font-weight: 800;
-  font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 0.18rem; margin-top: 0.2rem;
+  padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.63rem; font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: 0; white-space: nowrap;
 }
 .dvx-holding-pnl-pill.pos { color: var(--g-ink); background: rgba(var(--g-rgb),0.14); }
 .dvx-holding-pnl-pill.neg { color: #f87171; background: rgba(248,113,113,0.14); }
@@ -13182,8 +13182,11 @@ button:not(:disabled):active,
    price · avg · units line has room to sit on one line. */
 .dvx-holding-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
 .dvx-holding-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
-.dvx-holding-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.35rem; }
-.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; }
+/* Symbol + category badge stay on one line for every asset (unified alignment);
+   the ticker truncates before the badge ever wraps. */
+.dvx-holding-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 0.4rem; }
+.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dvx-holding-meta .dvx-cat-badge, .dvx-holding-meta .dvx-stable-badge { flex-shrink: 0; }
 .dvx-holding-valblock { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
 .dvx-holding-val { font-size: 0.98rem; letter-spacing: -0.01em; }
 /* Full-width detail line (break-even variant). */
