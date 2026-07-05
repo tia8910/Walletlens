@@ -4134,8 +4134,8 @@ export default function Dashboard() {
                                 const isSelected = selectedAssets.has(h.coin_id)
                                 const isDimmed   = selectedAssets.size > 0 && !isSelected
                                 return (
-                                  <li key={h.coin_id} className="dvx-holding holo-card-v2"
-                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s' }}
+                                  <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
+                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <input
                                       type="checkbox"
@@ -4207,15 +4207,13 @@ export default function Dashboard() {
                                     {!isDemo && (() => {
                                       const actionsOpen = expandedActions.has(h.coin_id)
                                       return (<>
-                                      <div className="dvx-ha-togglebar">
-                                        <button
-                                          className={`dvx-ha-toggle${actionsOpen ? ' open' : ''}`}
-                                          aria-expanded={actionsOpen}
-                                          onClick={e => { e.stopPropagation(); setExpandedActions(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}>
-                                          Actions
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                                        </button>
-                                      </div>
+                                      <button
+                                        className={`dvx-ha-toggle${actionsOpen ? ' open' : ''}`}
+                                        aria-label="Asset actions" title="Actions"
+                                        aria-expanded={actionsOpen}
+                                        onClick={e => { e.stopPropagation(); setExpandedActions(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                                      </button>
                                       <div className={`dvx-holding-actions${actionsOpen ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
