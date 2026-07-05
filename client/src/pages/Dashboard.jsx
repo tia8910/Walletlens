@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
+import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -2725,25 +2725,6 @@ export default function Dashboard() {
     }
     return location.state?.tab || 'overview'
   })
-  // Sliding tab indicator + sticky-shadow state for the premium tab nav.
-  const tabsRef = useRef(null)
-  const tabRefs = useRef({})
-  const [tabIndic, setTabIndic] = useState({ left: 0, width: 0 })
-  const [tabsStuck, setTabsStuck] = useState(false)
-  useLayoutEffect(() => {
-    const el = tabRefs.current[activeTab]
-    if (!el) return
-    setTabIndic({ left: el.offsetLeft, width: el.offsetWidth })
-    try { el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }) } catch {}
-  }, [activeTab])
-  useEffect(() => {
-    const recalc = () => { const el = tabRefs.current[activeTab]; if (el) setTabIndic({ left: el.offsetLeft, width: el.offsetWidth }) }
-    const onScroll = () => setTabsStuck(window.scrollY > 96)
-    window.addEventListener('resize', recalc)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => { window.removeEventListener('resize', recalc); window.removeEventListener('scroll', onScroll) }
-  }, [activeTab])
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
@@ -3384,12 +3365,12 @@ export default function Dashboard() {
   }, [enriched, prices])
 
   const tabs = [
-    { id: 'overview',   label: t('overview'), icon: Ico.overview },
-    { id: 'watchlist',  label: 'Watchlist',   icon: Ico.watchlist },
-    { id: 'tools',      label: 'Analysis',    icon: Ico.ai },
-    { id: 'alerts',     label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
-    { id: 'targets',    label: t('targets'),  icon: Ico.target },
-    { id: 'manage',     label: 'Backup',      icon: Ico.wallet },
+    { id: 'overview',   label: 'Dashboard',   icon: Ico.overview,  color: '#10b981' },
+    { id: 'watchlist',  label: 'Watchlist',   icon: Ico.watchlist, color: '#38bdf8' },
+    { id: 'tools',      label: 'Analysis',    icon: Ico.ai,        color: '#a78bfa' },
+    { id: 'alerts',     label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, color: '#fbbf24' },
+    { id: 'targets',    label: t('targets'),  icon: Ico.target,    color: '#fb7185' },
+    { id: 'manage',     label: 'Backup',      icon: Ico.wallet,    color: '#2dd4bf' },
   ]
 
   // Map legacy tab names from location.state to new names
@@ -3405,14 +3386,14 @@ export default function Dashboard() {
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
-      {/* Tab nav */}
-      <div className={`dvx-tabs${tabsStuck ? ' dvx-tabs-stuck' : ''}`} ref={tabsRef}>
-        <span className="dvx-tab-indicator" style={{ width: tabIndic.width, transform: `translateX(${tabIndic.left}px)`, opacity: tabIndic.width ? 1 : 0 }} aria-hidden="true" />
+      {/* Tab nav — labeled tile grid */}
+      <div className="dvx-tabgrid">
         {tabs.map(tab => (
-          <button key={tab.id} ref={el => { tabRefs.current[tab.id] = el }} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
+          <button key={tab.id} className={`dvx-tabtile ${activeTab === tab.id ? 'active' : ''}`}
+            style={{ '--tile-col': tab.color }}
             onClick={() => startTabTransition(() => setActiveTab(tab.id))}>
-            <span className="dvx-tab-icon">{tab.icon}</span>
-            <span className="dvx-tab-label">{tab.label}</span>
+            <span className="dvx-tabtile-icon">{tab.icon}</span>
+            <span className="dvx-tabtile-label">{tab.label}</span>
           </button>
         ))}
       </div>
