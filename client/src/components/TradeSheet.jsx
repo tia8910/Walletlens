@@ -1031,9 +1031,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       : 'QTY'}
                   </label>
                   {(category === 'gold' || category === 'silver') ? (
-                    <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid rgba(var(--g-rgb),0.22)', flexShrink:0 }}>
+                    <div className="bs-seg">
                       {['oz', 'g'].map(u => (
-                        <button key={u} type="button" onClick={() => {
+                        <button key={u} type="button" className={`bs-seg-btn${metalUnit === u ? ' active' : ''}`} onClick={() => {
                           if (u === metalUnit) return
                           const TROY_OZ = 31.1034768
                           const px = parseFloat(price)
@@ -1045,25 +1045,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                             if (px > 0) setPrice(String(parseFloat((px * TROY_OZ).toFixed(2))))
                           }
                           setMetalUnit(u)
-                        }} style={{
-                          padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
-                          background: metalUnit === u ? 'var(--g)' : 'transparent',
-                          color: metalUnit === u ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
                         }}>{u}</button>
                       ))}
                     </div>
                   ) : (
-                    <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid rgba(var(--g-rgb),0.22)', flexShrink:0 }}>
-                      <button type="button" onClick={() => switchAmtMode('qty')} style={{
-                        padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
-                        background: amtMode === 'qty' ? 'var(--g)' : 'transparent',
-                        color: amtMode === 'qty' ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
-                      }}>QTY</button>
-                      <button type="button" onClick={() => switchAmtMode('usd')} style={{
-                        padding:'0.15rem 0.55rem', fontSize:'0.68rem', fontWeight:800, border:'none', cursor:'pointer',
-                        background: amtMode === 'usd' ? 'var(--g)' : 'transparent',
-                        color: amtMode === 'usd' ? '#000' : 'var(--text-muted)', transition:'background 0.15s',
-                      }}>$</button>
+                    <div className="bs-seg">
+                      <button type="button" className={`bs-seg-btn${amtMode === 'qty' ? ' active' : ''}`} onClick={() => switchAmtMode('qty')}>QTY</button>
+                      <button type="button" className={`bs-seg-btn${amtMode === 'usd' ? ' active' : ''}`} onClick={() => switchAmtMode('usd')}>$</button>
                     </div>
                   )}
                 </div>

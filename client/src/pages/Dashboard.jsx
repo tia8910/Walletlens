@@ -3370,7 +3370,7 @@ export default function Dashboard() {
     { id: 'tools',      label: 'Analysis',    icon: Ico.ai },
     { id: 'alerts',     label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
     { id: 'targets',    label: t('targets'),  icon: Ico.target },
-    { id: 'manage',     label: 'Manage',      icon: Ico.wallet },
+    { id: 'manage',     label: 'Backup',      icon: Ico.wallet },
   ]
 
   // Map legacy tab names from location.state to new names
@@ -4145,15 +4145,25 @@ export default function Dashboard() {
                                       style={{ flexShrink:0, width:'16px', height:'16px', marginRight:'0.5rem', cursor:'pointer', accentColor:'var(--g)' }}
                                     />
                                     <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
-                                    <div className="dvx-holding-meta">
-                                      <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', flexWrap:'wrap' }}>
-                                        <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                                        {isStable && <span className="dvx-stable-badge">STABLE</span>}
-                                        {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
-                                        {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}>⚠ dup</span>}
+                                    <div className="dvx-holding-body">
+                                      <div className="dvx-holding-line1">
+                                        <div className="dvx-holding-meta">
+                                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                          {isStable && <span className="dvx-stable-badge">STABLE</span>}
+                                          {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
+                                          {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}>⚠ dup</span>}
+                                        </div>
+                                        <div className="dvx-holding-valblock">
+                                          <div className="dvx-holding-val">{cv(displayValue)}</div>
+                                          {!showBreakEven && hasPnl && (
+                                            <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
+                                              {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                       {showBreakEven ? (
-                                        <span className="muted" style={{ fontSize:'0.72rem' }}>
+                                        <span className="muted dvx-holding-detail" style={{ fontSize:'0.72rem' }}>
                                           Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:700 }}>
                                             {cv(breakEvenPrice)}
                                           </span>
@@ -4162,14 +4172,14 @@ export default function Dashboard() {
                                           </span>}
                                         </span>
                                       ) : (
-                                        <span className="muted">
+                                        <span className="muted dvx-holding-detail">
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
                                             return <span className="dvx-live-price" style={{ fontWeight:700, color: priceColor }}>{cv(h.price)}</span>
                                           })() : `inv ${cv(h.total_invested)}`}
                                           {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg ${cv(breakEvenPrice)}`}
-                                          {' · '}{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}
+                                          {' · '}<strong className="dvx-holding-units">{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</strong>
                                         </span>
                                       )}
                                       {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
@@ -4182,14 +4192,6 @@ export default function Dashboard() {
                                             <div className="dvx-be-bar-marker" />
                                           </div>
                                         </div>
-                                      )}
-                                    </div>
-                                    <div style={TEXT_RIGHT_STYLE}>
-                                      <div className="dvx-holding-val">{cv(displayValue)}</div>
-                                      {!showBreakEven && hasPnl && (
-                                        <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
-                                          {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
-                                        </span>
                                       )}
                                     </div>
                                     {!isDemo && (() => {
