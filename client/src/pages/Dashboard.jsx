@@ -3866,7 +3866,7 @@ export default function Dashboard() {
                       <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => cvN(v)} width={50}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} cursor={false} formatter={v => [cv(v), 'P&L']}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} cursor={false} formatter={v => [cv(v), 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]}>
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
@@ -4207,7 +4207,7 @@ export default function Dashboard() {
                           innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
                           {catAllocData.map((d, i) => <Cell key={i} fill={CATEGORY_COLOR[d.cat] || PALETTE[i % PALETTE.length]}/>)}
                         </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, n) => [cv(v), n]}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={(v, n) => [cv(v), n]}/>
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="dvx-legend">
@@ -4267,7 +4267,7 @@ export default function Dashboard() {
                         <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="2 6"/>
                         <YAxis tick={{ fill:'rgba(255,255,255,0.3)', fontSize:9 }} axisLine={false} tickLine={false}
                           tickFormatter={v => cvN(v)} width={42}/>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={v => [cv(v), 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
+                        <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={v => [cv(v), 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
                         <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
                       </AreaChart>
                     </ResponsiveContainer>
