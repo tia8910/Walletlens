@@ -9927,12 +9927,13 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 
 .sa-card { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.65rem; border-radius: 14px; }
 .sa-card-dim { opacity: 0.45; }
-.sa-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-.sa-card-coin { display: flex; align-items: center; gap: 0.6rem; flex: 1; }
-.sa-card-symbol { font-weight: 800; font-size: 0.9rem; color: #fff; display: block; }
-.sa-card-name   { font-size: 0.7rem; color: rgba(255,255,255,0.75); display: block; }
-.sa-card-price  { font-size: 0.78rem; font-weight: 700; color: var(--g-ink); font-weight: 700; margin-left: auto; }
-.sa-card-meta   { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.sa-card-top { display: flex; align-items: center; gap: 0.5rem 0.75rem; flex-wrap: wrap; }
+.sa-card-coin { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 auto; min-width: 0; }
+.sa-card-coin > div { min-width: 0; }
+.sa-card-symbol { font-weight: 800; font-size: 0.9rem; color: #fff; display: block; white-space: nowrap; }
+.sa-card-name   { font-size: 0.7rem; color: rgba(255,255,255,0.75); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sa-card-price  { font-size: 0.82rem; font-weight: 700; color: var(--g-ink); margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+.sa-card-meta   { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; margin-left: auto; }
 .sa-signal-count { font-size: 0.68rem; font-weight: 800; background: rgba(var(--g-rgb),0.15); color: var(--g-ink); font-weight: 700; border-radius: 20px; padding: 0.15rem 0.5rem; }
 .sa-ago  { font-size: 0.68rem; color: rgba(255,255,255,0.7); }
 .sa-dismiss { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7); font-size: 0.8rem; padding: 0.1rem 0.2rem; border-radius: 4px; }
