@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
+
+const TradeSheet = lazy(() => import('../components/TradeSheet'))
 
 // ─── Receive-leg resolver for sell proceeds ───
 // Given the USD proceeds of a sell and a target asset (BTC/USDT/USDC/USD/EUR/custom),
@@ -195,7 +197,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const location = useLocation()
   const [transactions, setTransactions] = useState([])
   const [wallets, setWallets] = useState([])
+  const [holdings, setHoldings] = useState([])
   const [showForm, setShowForm] = useState(false)
+  // Premium trade sheet (same one used on the dashboard) for the + Add button.
+  const [tradeOpen, setTradeOpen] = useState(false)
+  const [tradeType, setTradeType] = useState('buy')
+  const [tradePrefill, setTradePrefill] = useState(null)
   const [filterWallet, setFilterWallet] = useState('')
   const [coinSearch, setCoinSearch] = useState('')
   const [coinResults, setCoinResults] = useState([])
@@ -223,26 +230,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
   useEffect(() => {
     if (location.state?.openAdd) {
-      setShowForm(true)
-      if (location.state?.type) setForm(f => ({ ...f, type: location.state.type }))
-      if (location.state?.prefillCoin) {
-        const { prefillCoin, prefillSymbol, prefillName, prefillImage } = location.state
-        setForm(f => ({ ...f, coin_id: prefillCoin, coin_symbol: prefillSymbol || '', coin_image: prefillImage || '' }))
-        setCoinSearch(`${prefillName || prefillSymbol || prefillCoin} (${(prefillSymbol || '').toUpperCase()})`)
-        Promise.all([
-          api.getPrices(prefillCoin),
-          api.getCoinDetail(prefillCoin),
-          api.getHoldingsForCoin(prefillCoin),
-        ]).then(([priceData, detail, holdings]) => {
-          const price = priceData[prefillCoin]?.usd
-          if (price) setForm(f => ({ ...f, price_per_unit: String(price) }))
-          if (detail) setCoinAnalysis(generateAnalysis(detail, location.state?.type || 'buy'))
-          if (holdings) setSellHoldings(holdings)
-        })
-      }
-      if (location.state?.holdings) {
-        setSellHoldings({ amount: location.state.holdings, coin_symbol: location.state.prefillSymbol || '' })
-      }
+      setTradeType(location.state?.type || 'buy')
+      setTradePrefill(location.state?.prefillCoin
+        ? { coin: location.state.prefillCoin, category: location.state.prefillCategory }
+        : null)
+      setTradeOpen(true)
       window.history.replaceState({}, '')
     }
   }, [location.state])
@@ -250,12 +242,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   async function loadData() {
     // Ensure at least one wallet exists
     await api.ensureWallet()
-    const [t, w] = await Promise.all([
+    const [t, w, p] = await Promise.all([
       api.getTransactions(filterWallet || undefined),
       api.getWallets(),
+      api.getPortfolio().catch(() => []),
     ])
     setTransactions(t)
     setWallets(w)
+    setHoldings(Array.isArray(p) ? p : [])
     if (w.length > 0 && !form.wallet_id) setForm(f => ({ ...f, wallet_id: w[0].id }))
   }
 
@@ -573,17 +567,15 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     <div className="page">
       <div className="page-header">
         <h2>Transactions</h2>
-        <button onClick={() => setShowForm(!showForm)} aria-label={showForm ? 'Close form' : 'Add transaction'} style={{
-          background: showForm ? 'rgba(248,113,113,0.12)' : 'rgba(var(--g-rgb),0.15)',
-          color: showForm ? '#f87171' : 'var(--g-ink)',
-          border: `1px solid ${showForm ? 'rgba(248,113,113,0.3)' : 'rgba(var(--g-rgb),0.3)'}`,
+        <button onClick={() => { setTradeType('buy'); setTradePrefill(null); setTradeOpen(true); track('trade_sheet_open', { type: 'buy', source: 'transactions' }) }} aria-label="Add trade" style={{
+          background: 'rgba(var(--g-rgb),0.15)',
+          color: 'var(--g-ink)',
+          border: '1px solid rgba(var(--g-rgb),0.3)',
           borderRadius: '10px', padding: '0.4rem 0.85rem',
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.35rem',
         }}>
-          {showForm
-            ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</>
-            : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</>}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add
         </button>
       </div>
 
@@ -1094,6 +1086,20 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           })}
         </div>
       )}
+
+      <Suspense fallback={null}>
+        <TradeSheet
+          open={tradeOpen}
+          type={tradeType}
+          onClose={() => setTradeOpen(false)}
+          wallets={wallets}
+          holdings={holdings}
+          onDone={() => loadData()}
+          prefillCoin={tradePrefill?.coin}
+          prefillCategory={tradePrefill?.category}
+          variant="page"
+        />
+      </Suspense>
     </div>
   )
 }
