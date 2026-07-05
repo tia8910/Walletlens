@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
+import { lazy, Suspense, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -2725,6 +2725,25 @@ export default function Dashboard() {
     }
     return location.state?.tab || 'overview'
   })
+  // Sliding tab indicator + sticky-shadow state for the premium tab nav.
+  const tabsRef = useRef(null)
+  const tabRefs = useRef({})
+  const [tabIndic, setTabIndic] = useState({ left: 0, width: 0 })
+  const [tabsStuck, setTabsStuck] = useState(false)
+  useLayoutEffect(() => {
+    const el = tabRefs.current[activeTab]
+    if (!el) return
+    setTabIndic({ left: el.offsetLeft, width: el.offsetWidth })
+    try { el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }) } catch {}
+  }, [activeTab])
+  useEffect(() => {
+    const recalc = () => { const el = tabRefs.current[activeTab]; if (el) setTabIndic({ left: el.offsetLeft, width: el.offsetWidth }) }
+    const onScroll = () => setTabsStuck(window.scrollY > 96)
+    window.addEventListener('resize', recalc)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => { window.removeEventListener('resize', recalc); window.removeEventListener('scroll', onScroll) }
+  }, [activeTab])
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
@@ -3386,13 +3405,14 @@ export default function Dashboard() {
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
-      {/* Tab nav — 5 tabs */}
-      <div className="dvx-tabs">
+      {/* Tab nav */}
+      <div className={`dvx-tabs${tabsStuck ? ' dvx-tabs-stuck' : ''}`} ref={tabsRef}>
+        <span className="dvx-tab-indicator" style={{ width: tabIndic.width, transform: `translateX(${tabIndic.left}px)`, opacity: tabIndic.width ? 1 : 0 }} aria-hidden="true" />
         {tabs.map(tab => (
-          <button key={tab.id} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
+          <button key={tab.id} ref={el => { tabRefs.current[tab.id] = el }} className={`dvx-tab ${activeTab === tab.id ? 'dvx-tab-active' : ''}`}
             onClick={() => startTabTransition(() => setActiveTab(tab.id))}>
             <span className="dvx-tab-icon">{tab.icon}</span>
-            <span>{tab.label}</span>
+            <span className="dvx-tab-label">{tab.label}</span>
           </button>
         ))}
       </div>
