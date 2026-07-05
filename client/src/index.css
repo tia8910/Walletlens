@@ -4570,8 +4570,12 @@ tr:last-child td { border-bottom: none; }
   60%  { transform: scale(1.2) rotate(5deg); }
   100% { transform: scale(1) rotate(0); }
 }
-/* Very narrow screens: icon-only tabs to stay tidy. */
-@media (max-width: 380px) { .dvx-tab-label { display: none; } .dvx-tab { padding: 0.55rem 0.75rem; } }
+/* Expanding-pill layout: inactive tabs collapse to icon-only so all fit on one
+   row without crowding; the active tab expands to icon + label inside the pill. */
+.dvx-tab:not(.dvx-tab-active) { padding-left: 0.62rem; padding-right: 0.62rem; }
+.dvx-tab:not(.dvx-tab-active) .dvx-tab-label { display: none; }
+.dvx-tab .dvx-tab-icon { width: 17px; height: 17px; }
+.dvx-tab .dvx-tab-icon svg { width: 17px; height: 17px; }
 @media (prefers-reduced-motion: reduce) {
   .dvx-tab, .dvx-tab::before, .dvx-tab .dvx-tab-icon, .dvx-tab-indicator {
     animation: none !important; transition: color 0.15s ease, opacity 0.15s ease;
