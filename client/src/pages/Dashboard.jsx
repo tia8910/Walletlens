@@ -1418,10 +1418,64 @@ function DataPanel({ onRefresh, onImported }) {
   )
 }
 
-// ── Summary stat card ─────────────────────────────────────────────────────
-const StatCard = memo(function StatCard({ label, value, sub, color }) {
+// ── Count-up: eases a number from its previous value to the new one ─────────
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+function useCountUp(target, duration = 900) {
+  const [val, setVal] = useState(target)
+  const prev = useRef(target)
+  useEffect(() => {
+    const to = Number(target) || 0
+    const from = Number(prev.current) || 0
+    if (from === to || prefersReducedMotion()) { prev.current = to; setVal(to); return }
+    let raf, start
+    const step = (ts) => {
+      if (!start) start = ts
+      const p = Math.min(1, (ts - start) / duration)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setVal(from + (to - from) * eased)
+      if (p < 1) raf = requestAnimationFrame(step)
+      else prev.current = to
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration])
+  return val
+}
+
+// Money value that counts up to its target. `format` already returns the
+// absolute magnitude (no sign), so we prefix the sign from the target.
+const AnimatedMoney = memo(function AnimatedMoney({ value, format, signed }) {
+  const n = useCountUp(Number(value) || 0)
+  const sign = signed ? (Number(value) >= 0 ? '+' : '-') : ''
+  return <>{sign}{format(n)}</>
+})
+
+// Tiny SVG sparkline built from a [{ v }] series — sits faintly behind a card.
+const Sparkline = memo(function Sparkline({ data, up, width = 120, height = 40 }) {
+  const pts = (data || []).map(d => Number(d.v) || 0)
+  if (pts.length < 2) return null
+  const min = Math.min(...pts), max = Math.max(...pts), span = max - min || 1
+  const stepX = width / (pts.length - 1)
+  const coords = pts.map((v, i) => [i * stepX, height - ((v - min) / span) * height])
+  const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
+  const area = `${line} L${width} ${height} L0 ${height} Z`
+  const col = up ? 'var(--g)' : '#f87171'
   return (
-    <div className="dvx-stat-card glass-card">
+    <svg className="dvx-stat-spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={area} fill={col} fillOpacity="0.10" stroke="none" />
+      <path d={line} fill="none" stroke={col} strokeWidth="1.6" strokeOpacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+})
+
+// ── Summary stat card ─────────────────────────────────────────────────────
+const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark }) {
+  return (
+    <div className={`dvx-stat-card glass-card${tone ? ` dvx-stat-card--${tone}` : ''}`}>
+      {spark}
       <span className="dvx-stat-label">{label}</span>
       <span className="dvx-stat-value" style={color ? { color } : {}}>{value}</span>
       {sub && <span className="dvx-stat-sub">{sub}</span>}
@@ -2679,6 +2733,7 @@ export default function Dashboard() {
   const [holdingsSortDir, setHoldingsSortDir] = useState('desc')
   const [holdingsBadge,   setHoldingsBadge]   = useState('all')
   const [selectedAssets,  setSelectedAssets]  = useState(() => new Set())
+  const [expandedActions, setExpandedActions] = useState(() => new Set())
   const [sheetOpen, setSheetOpen]         = useState(false)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
@@ -3147,7 +3202,7 @@ export default function Dashboard() {
       const cat = categorizeAsset(h)
       const val = h.value > 0 ? h.value : h.total_invested
       totals[cat] = (totals[cat] || 0) + val
-      ;(assetsByCat[cat] = assetsByCat[cat] || []).push({ symbol: h.coin_symbol?.toUpperCase() || '?', value: val })
+      ;(assetsByCat[cat] = assetsByCat[cat] || []).push({ symbol: h.coin_symbol?.toUpperCase() || '?', value: val, coin_id: h.coin_id, image: h.coin_image })
       if (cat !== 'cash') {
         investeds[cat] = (investeds[cat] || 0) + h.total_invested
         pnls[cat] = (pnls[cat] || 0) + (h.pnl || 0)
@@ -3774,9 +3829,11 @@ export default function Dashboard() {
           {/* Stats row */}
           {enriched.length > 0 && (
             <div className="dvx-stats-row">
-              <StatCard label={t('invested')}    value={hidden ? '••••' : cv(totalInvested)} />
-              <StatCard label={t('pnl')}         value={hidden ? '••••' : `${totalPnL >= 0 ? '+' : '-'}${cv(totalPnL)}`}
+              <StatCard label={t('invested')}    value={hidden ? '••••' : <AnimatedMoney value={totalInvested} format={cv} />} />
+              <StatCard label={t('pnl')}         value={hidden ? '••••' : <AnimatedMoney value={totalPnL} format={cv} signed />}
                 color={totalPnL >= 0 ? 'var(--g)' : '#f87171'}
+                tone={totalPnL >= 0 ? 'pos' : 'neg'}
+                spark={!hidden && perfSeries.length > 1 ? <Sparkline data={perfSeries} up={totalPnL >= 0} /> : null}
                 sub={hidden ? undefined : (totalPnLPct !== 0 ? pct(totalPnLPct) : undefined)} />
             </div>
           )}
@@ -3834,6 +3891,7 @@ export default function Dashboard() {
                           const aPct = value > 0 ? (a.value / value) * 100 : 0
                           return (
                             <div key={a.symbol} className="dvx-cat-asset-row">
+                              <CoinLogo image={a.image} symbol={a.symbol} coinId={a.coin_id} size={16} className="dvx-cat-asset-logo" />
                               <span className="dvx-cat-asset-sym">{a.symbol}</span>
                               <div className="dvx-cat-asset-bar">
                                 <div className="dvx-cat-asset-fill" style={{ width: `${Math.min(aPct, 100)}%` }} />
@@ -3862,14 +3920,26 @@ export default function Dashboard() {
                   <h3 style={{ margin:'0 0 0.75rem' }}>Profit / Loss by Asset</h3>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
-                      <CartesianGrid stroke="rgba(var(--g-rgb),0.07)" vertical={false}/>
+                      <defs>
+                        <linearGradient id="dvxPnlPos" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#34d399" stopOpacity="0.98"/>
+                          <stop offset="100%" stopColor="#0f9d76" stopOpacity="0.85"/>
+                        </linearGradient>
+                        <linearGradient id="dvxPnlNeg" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f98080" stopOpacity="0.95"/>
+                          <stop offset="100%" stopColor="#dc4646" stopOpacity="0.85"/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="rgba(148,163,184,0.10)" vertical={false}/>
                       <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
                       <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
                         tickFormatter={v => cvN(v)} width={50}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} cursor={false} formatter={v => [cv(v), 'P&L']}/>
-                      <Bar dataKey="pnl" radius={[6,6,0,0]}>
+                      <ReferenceLine y={0} stroke="rgba(148,163,184,0.35)" strokeWidth={1}/>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color:'var(--text)', fontWeight:700 }} cursor={false}
+                        formatter={v => [<span style={{ color: v >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>{cv(v)}</span>, 'P&L']}/>
+                      <Bar dataKey="pnl" radius={[6,6,0,0]} isAnimationActive animationDuration={800} animationEasing="ease-out">
                         {pnlData.map((d, i) => (
-                          <Cell key={i} fill={d.pnl >= 0 ? 'var(--g)' : '#f87171'} fillOpacity={0.85}/>
+                          <Cell key={i} fill={d.pnl >= 0 ? 'url(#dvxPnlPos)' : 'url(#dvxPnlNeg)'}/>
                         ))}
                       </Bar>
                     </BarChart>
@@ -4129,13 +4199,22 @@ export default function Dashboard() {
                                     <div style={TEXT_RIGHT_STYLE}>
                                       <div className="dvx-holding-val">{cv(displayValue)}</div>
                                       {!showBreakEven && hasPnl && (
-                                        <div style={{ fontSize:'0.68rem', color: h.pnl >= 0 ? 'var(--g-ink)' : '#f87171', marginTop:'0.1rem' }}>
-                                          {h.pnl >= 0 ? '+' : '-'}{cv(h.pnl)} ({pct(h.pnlPct)})
-                                        </div>
+                                        <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
+                                          {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
+                                        </span>
                                       )}
                                     </div>
-                                    {!isDemo && (
-                                      <div className="dvx-holding-actions" onClick={e => e.stopPropagation()}>
+                                    {!isDemo && (() => {
+                                      const actionsOpen = expandedActions.has(h.coin_id)
+                                      return (<>
+                                      <button
+                                        className={`dvx-ha-toggle${actionsOpen ? ' open' : ''}`}
+                                        aria-expanded={actionsOpen}
+                                        onClick={e => { e.stopPropagation(); setExpandedActions(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}>
+                                        Actions
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                      </button>
+                                      <div className={`dvx-holding-actions${actionsOpen ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'targets' } })}>
@@ -4165,7 +4244,8 @@ export default function Dashboard() {
                                           </button>
                                         )}
                                       </div>
-                                    )}
+                                      </>)
+                                    })()}
                                   </li>
                                 )
                               })
