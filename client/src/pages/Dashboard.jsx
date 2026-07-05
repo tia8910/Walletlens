@@ -4172,15 +4172,17 @@ export default function Dashboard() {
                                           </span>}
                                         </span>
                                       ) : (
-                                        <span className="muted dvx-holding-detail">
+                                        <div className="dvx-holding-stats">
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
-                                            return <span className="dvx-live-price" style={{ fontWeight:700, color: priceColor }}>{cv(h.price)}</span>
-                                          })() : `inv ${cv(h.total_invested)}`}
-                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && ` · avg ${cv(breakEvenPrice)}`}
-                                          {' · '}<strong className="dvx-holding-units">{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</strong>
-                                        </span>
+                                            return <span className="dvx-hstat"><em>Price</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
+                                          })() : <span className="dvx-hstat"><em>Invested</em><b>{cv(h.total_invested)}</b></span>}
+                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && (
+                                            <span className="dvx-hstat"><em>Avg</em><b>{cv(breakEvenPrice)}</b></span>
+                                          )}
+                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</b></span>
+                                        </div>
                                       )}
                                       {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
                                         <div className="dvx-be-bar-wrap">
