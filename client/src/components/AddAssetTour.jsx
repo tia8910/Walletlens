@@ -13,7 +13,7 @@ import { track } from '../analytics'
  */
 
 const STEPS = [
-  { sel: '[data-tour="add-asset"]',   title: 'Open the add sheet', text: 'Tap “+ Add trade” to open the add sheet.', opensSheet: true },
+  { sel: '[data-tour="add-asset"]',   title: 'Open the add sheet', text: 'Tap “+ Start adding assets” to open the add sheet.', opensSheet: true },
   { sel: '[data-tour="ts-category"]', title: 'Pick what you own',  text: 'Choose a category — Crypto, Stocks, Tokenized, Gold, Cash or Fiat.' },
   { sel: '[data-tour="ts-asset"]',    title: 'Find your asset',    text: 'Search by name or ticker and tap your asset. The live price fills in for you.' },
   { sel: '[data-tour="ts-amount"]',   title: 'Enter your amount',  text: 'Type how much you hold — coins, shares or ounces.' },

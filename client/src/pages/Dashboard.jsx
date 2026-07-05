@@ -2250,7 +2250,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           color: 'var(--g-ink)', fontWeight: 700, fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Add trade
+          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Start adding assets
         </button>
         <button onClick={() => onImportAction('backup')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
@@ -4474,7 +4474,7 @@ export default function Dashboard() {
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Add trade
+              <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Start adding assets
             </button>
             <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="folder" size={15} /> Import backup
