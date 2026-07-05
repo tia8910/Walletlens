@@ -708,7 +708,7 @@ export default function Landing() {
           <Link to="/fear-and-greed-index/" onClick={() => track('landing_footer_nav', { to: 'fear-and-greed-index' })}>Fear &amp; Greed Index</Link>
           <Link to="/about/" onClick={() => track('landing_footer_nav', { to: 'about' })}>{t('about')}</Link>
           <Link to="/faq/" onClick={() => track('landing_footer_nav', { to: 'faq' })}>FAQ</Link>
-          <Link to="/lenz/" onClick={() => track('landing_footer_nav', { to: 'lenz' })}>$LENZ</Link>
+          {/* $LENZ link hidden until Google Play approval. Restore once approved. */}
           <Link to="/blog/" onClick={() => track('landing_footer_nav', { to: 'blog' })}>{t('blog')}</Link>
           <Link to="/privacy/" onClick={() => track('landing_footer_nav', { to: 'privacy' })}>{t('privacy')}</Link>
           <Link to="/terms/" onClick={() => track('landing_footer_nav', { to: 'terms' })}>{t('terms')}</Link>
