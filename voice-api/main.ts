@@ -497,10 +497,22 @@ function guardianContent(opts: {
     ? `If this were a real alert, it would mean ${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b>` : "the person who named you"} had stopped checking in with WalletLens — and this email would guide you through reaching their portfolio.`
     : `${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b> named you` : "You were named"} as an heir in <b style="color:#4ade80">WalletLens Portfolio Guardian</b>, a safeguard that reaches out to you if they stop opening WalletLens. They have not checked in since <b>${lastSeen}</b>, so we're letting you know as they asked.`
 
+  // Real alerts only: a missed check-in often just means a lost phone, travel
+  // or illness — the heir's first move should be human contact, not the backup.
+  const reachOutFirst = isTest ? "" : `
+    <div style="background:#2a1215;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fecaca;font-size:13.5px;line-height:1.7">
+        <b>First, try to reach ${owner ? escapeHtml(owner) : "them"} directly.</b> A missed check-in can
+        simply mean a lost phone, travel or illness. Call or visit them before anything else — this
+        email will still be here if you need it.
+      </p>
+    </div>`
+
   const html = emailShell(`
     ${testBanner}
     <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${heading}</h1>
     <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">${leadLine}</p>
+    ${reachOutFirst}
     ${message ? `
     <div style="background:#141b12;border-left:3px solid #4ade80;padding:16px 20px;border-radius:0 10px 10px 0;margin:0 0 24px">
       <p style="margin:0 0 6px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Their message to you</p>
@@ -520,6 +532,14 @@ function guardianContent(opts: {
         <td style="padding:16px 20px;font-size:14px;color:#e2e8f0;text-align:right">${lastSeen}</td>
       </tr>
     </table>
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 18px;margin:0 0 24px">
+      <p style="margin:0;color:#9ca3af;font-size:12.5px;line-height:1.7">
+        🔒 <b style="color:#d1d5db">Protect yourself:</b> WalletLens will <b>never</b> ask you for
+        passwords, seed phrases, bank details or any payment. The backup only lets you <i>view</i> the
+        portfolio — actual funds always stay at their exchange or wallet. If anyone emails or calls
+        asking for a fee to "unlock" or "release" the funds, it is a scam.
+      </p>
+    </div>
     ${hasQr ? `
     <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:22px;margin:0 0 20px;text-align:center">
       <p style="margin:0 0 8px;font-weight:800;color:#4ade80;font-size:16px">📎 Scan the attached QR to view the portfolio</p>
