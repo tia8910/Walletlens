@@ -128,15 +128,30 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   rr(ctx, 1, 1, W - 2, H - 2, 24)
   ctx.stroke()
 
-  // ── WalletLens logo (concentric circles) ────────────────────────────────
+  // ── WalletLens logo (magnifying glass — matches the brand mark) ──────────
   const lx = 70, ly = 52
-  ctx.strokeStyle = accent; ctx.lineWidth = 5
-  ctx.beginPath(); ctx.arc(lx, ly, 28, 0, Math.PI * 2); ctx.stroke()
-  ctx.lineWidth = 3.5; ctx.globalAlpha = 0.55
-  ctx.beginPath(); ctx.arc(lx, ly, 16, 0, Math.PI * 2); ctx.stroke()
-  ctx.globalAlpha = 1
-  ctx.fillStyle = accent
-  ctx.beginPath(); ctx.arc(lx, ly, 9, 0, Math.PI * 2); ctx.fill()
+  ctx.save()
+  ctx.translate(41.65, 25.75)
+  ctx.scale(1.05, 1.05)
+  const logoGrad = ctx.createLinearGradient(5, 5, 52, 52)
+  logoGrad.addColorStop(0, '#4ade80')
+  logoGrad.addColorStop(0.5, '#16a34a')
+  logoGrad.addColorStop(1, '#14532d')
+  // main ring
+  ctx.strokeStyle = logoGrad; ctx.lineWidth = 5.5
+  ctx.beginPath(); ctx.arc(27, 25, 19, 0, Math.PI * 2); ctx.stroke()
+  // focus dot (upper-right)
+  ctx.fillStyle = '#4ade80'
+  ctx.beginPath(); ctx.arc(40.5, 11.5, 3.8, 0, Math.PI * 2); ctx.fill()
+  // ascending bars
+  ctx.fillStyle = logoGrad
+  rr(ctx, 14.5, 26.5, 5, 7.5, 1.2); ctx.fill()
+  rr(ctx, 21.5, 21, 5, 13, 1.2); ctx.fill()
+  rr(ctx, 28.5, 15.5, 5, 18.5, 1.2); ctx.fill()
+  // handle (lower-left)
+  ctx.strokeStyle = logoGrad; ctx.lineWidth = 5.5; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(13.5, 39); ctx.lineTo(4, 55); ctx.stroke()
+  ctx.restore()
 
   // ── WalletLens wordmark ──────────────────────────────────────────────────
   ctx.fillStyle = '#ffffff'
