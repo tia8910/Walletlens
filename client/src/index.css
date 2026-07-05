@@ -214,6 +214,7 @@ input, select, textarea {
 /* ── Gold ── */
 :root[data-theme="gold"] {
   --g: #f5c542;
+  --g-rgb: 245, 197, 66;
   --gd: #d4a017;
   --gl: rgba(245, 197, 66, 0.12);
   --ink3: rgba(245, 197, 66, 0.55);
@@ -245,6 +246,7 @@ input, select, textarea {
 /* ── Silver ── */
 :root[data-theme="silver"] {
   --g: #c0c8d8;
+  --g-rgb: 192, 200, 216;
   --gd: #8a96aa;
   --gl: rgba(192, 200, 216, 0.12);
   --ink3: rgba(192, 200, 216, 0.55);
@@ -276,6 +278,7 @@ input, select, textarea {
 /* ── Bitcoin (Orange) ── */
 :root[data-theme="bitcoin"] {
   --g: #f7931a;
+  --g-rgb: 247, 147, 26;
   --gd: #c97012;
   --gl: rgba(247, 147, 26, 0.12);
   --ink3: rgba(247, 147, 26, 0.55);
@@ -307,6 +310,7 @@ input, select, textarea {
 /* ── Ethereum (Blue) ── */
 :root[data-theme="ethereum"] {
   --g: #627eea;
+  --g-rgb: 98, 126, 234;
   --gd: #3a57d4;
   --gl: rgba(98, 126, 234, 0.12);
   --ink3: rgba(98, 126, 234, 0.55);
@@ -12932,9 +12936,23 @@ button:not(:disabled):active,
 @keyframes wl-card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
 /* 3. Tactile press on the currency + timeframe chips. */
-.dvx-currency-pill, .dvx-tf-chip { transition: transform 0.14s ease, filter 0.14s ease, background 0.15s ease, color 0.15s ease; }
+.dvx-currency-pill, .dvx-tf-chip { transition: transform 0.14s ease, filter 0.14s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease; }
 .dvx-currency-pill:hover, .dvx-tf-chip:hover { filter: brightness(1.06); }
 .dvx-currency-pill:active, .dvx-tf-chip:active { transform: scale(0.9); }
+
+/* Premium, theme-aware timeframe chips — active is an accent gradient pill
+   (matches the QTY toggle / mode tabs), not a flat perf-tinted block. */
+.dvx-tf-chip {
+  padding: 0.28rem 0.72rem; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
+  font-family: inherit; font-size: 0.75rem; font-weight: 700;
+  background: var(--surface-2); color: var(--text-muted);
+}
+.dvx-tf-chip:hover { color: var(--text); }
+.dvx-tf-chip.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 42%, transparent);
+}
 
 /* 4. Live indicator softly pulses. */
 .dvx-live-ind { animation: wl-live-pulse 1.8s ease-in-out infinite; }
@@ -13100,12 +13118,19 @@ button:not(:disabled):active,
 .dvx-holdings { gap: 0.55rem; }
 .dvx-holding {
   position: relative;
+  /* Top-align so the coin logo always sits next to the symbol (consistent
+     across every asset), instead of floating to the middle of tall rows. */
+  align-items: flex-start;
   gap: 0.7rem; padding: 0.8rem 0.9rem 0.8rem 1rem;
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
   border: 1px solid rgba(255,255,255,0.07);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
 }
+/* Nudge the checkbox, logo and actions button to line up with the symbol row. */
+.dvx-holding > input[type="checkbox"] { margin-top: 0.55rem; }
+.dvx-holding .dvx-holding-icon { margin-top: 0.1rem; }
+.dvx-holding .dvx-ha-toggle { margin-top: 0.1rem; }
 /* Sector-coloured accent rail down the leading edge. */
 .dvx-holding::before {
   content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;

@@ -3719,7 +3719,7 @@ export default function Dashboard() {
               {showCardConfig && createPortal(
                 <>
                   <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, backdropFilter:'blur(2px)' }} onClick={() => setShowCardConfig(false)} />
-                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#13131f', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'20px', padding:'1.5rem', zIndex:1001, width:'min(400px,94vw)', maxHeight:'85vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.6)' }}>
+                  <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:'20px', padding:'1.5rem', zIndex:1001, width:'min(400px,94vw)', maxHeight:'85vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.4)' }}>
                     {/* Header */}
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.4rem' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
@@ -3738,11 +3738,11 @@ export default function Dashboard() {
                       {CARD_CONFIG.map(c => {
                         const on = !!cardVis[c.id]
                         return (
-                          <label key={c.id} onClick={() => toggleCard(c.id)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', padding:'0.6rem 0.75rem', borderRadius:'10px', background: on ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)', border:`1.5px solid ${on ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.07)'}`, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
-                            <span style={{ fontSize:'0.78rem', fontWeight:500, color: on ? '#e2e8f0' : '#555', transition:'color 0.15s' }}>{c.label}</span>
+                          <label key={c.id} onClick={() => toggleCard(c.id)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', padding:'0.6rem 0.75rem', borderRadius:'10px', background: on ? 'rgba(var(--g-rgb),0.12)' : 'var(--surface-2)', border:`1.5px solid ${on ? 'rgba(var(--g-rgb),0.4)' : 'var(--border)'}`, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                            <span style={{ fontSize:'0.78rem', fontWeight:600, color: on ? 'var(--text)' : 'var(--text-muted)', transition:'color 0.15s' }}>{c.label}</span>
                             {/* Toggle pill */}
-                            <div style={{ width:34, height:18, borderRadius:9, background: on ? 'var(--g, #22c55e)' : 'rgba(255,255,255,0.12)', flexShrink:0, position:'relative', transition:'background 0.2s' }}>
-                              <div style={{ position:'absolute', top:2, left: on ? 18 : 2, width:14, height:14, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.4)' }}/>
+                            <div style={{ width:34, height:18, borderRadius:9, background: on ? 'var(--g)' : 'rgba(128,134,148,0.4)', flexShrink:0, position:'relative', transition:'background 0.2s', boxShadow: on ? '0 0 8px rgba(var(--g-rgb),0.4)' : 'none' }}>
+                              <div style={{ position:'absolute', top:2, left: on ? 18 : 2, width:14, height:14, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.35)' }}/>
                             </div>
                           </label>
                         )
@@ -3750,11 +3750,11 @@ export default function Dashboard() {
                     </div>
 
                     {/* Footer */}
-                    <div style={{ marginTop:'1.1rem', display:'flex', gap:'0.5rem' }}>
-                      <button onClick={() => { const all = Object.fromEntries(CARD_CONFIG.map(c => [c.id, false])); setCardVis(all); try { localStorage.setItem('wl_card_vis', JSON.stringify(all)) } catch {} }} style={{ flex:1, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'8px', color:'#f87171', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
+                    <div style={{ marginTop:'1.1rem', display:'flex', gap:'0.6rem' }}>
+                      <button onClick={() => { const all = Object.fromEntries(CARD_CONFIG.map(c => [c.id, false])); setCardVis(all); try { localStorage.setItem('wl_card_vis', JSON.stringify(all)) } catch {} }} style={{ flex:1, background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.32)', borderRadius:'10px', color:'#ef4444', padding:'0.6rem', fontSize:'0.8rem', cursor:'pointer', fontWeight:700 }}>
                         Hide all
                       </button>
-                      <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ flex:1, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'8px', color:'var(--g-ink)', padding:'0.45rem', fontSize:'0.75rem', cursor:'pointer', fontWeight:500 }}>
+                      <button onClick={() => { setCardVis(DEFAULT_VIS); try { localStorage.setItem('wl_card_vis', JSON.stringify(DEFAULT_VIS)) } catch {} }} style={{ flex:1, background:'linear-gradient(135deg, var(--accent2), var(--accent))', border:'none', borderRadius:'10px', color:'#fff', padding:'0.6rem', fontSize:'0.8rem', cursor:'pointer', fontWeight:700, boxShadow:'0 3px 12px rgba(var(--g-rgb),0.32)' }}>
                         Show all
                       </button>
                     </div>
@@ -3771,14 +3771,7 @@ export default function Dashboard() {
             {/* Timeframe selector + performance chart — merged into portfolio overview card */}
             <div style={{ display:'flex', gap:'0.3rem', margin:'0.85rem 0 0.5rem', flexWrap:'wrap' }}>
               {TIMEFRAMES.map(tf => (
-                <button key={tf.id} className="dvx-tf-chip" onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}
-                  style={{
-                    padding:'0.25rem 0.65rem', borderRadius:20, border:'none', cursor:'pointer',
-                    fontSize:'0.75rem', fontWeight:700,
-                    background: perfTf === tf.id ? (perfChange.pct >= 0 ? 'var(--g)' : '#f87171') : 'var(--surface-2)',
-                    color: perfTf === tf.id ? '#000' : 'var(--text-muted)',
-                    transition:'all 0.15s',
-                  }}>
+                <button key={tf.id} className={`dvx-tf-chip${perfTf === tf.id ? ' active' : ''}`} onClick={() => { setPerfTf(tf.id); track('perf_timeframe_switch', { timeframe: tf.id }) }}>
                   {tf.label}
                 </button>
               ))}
