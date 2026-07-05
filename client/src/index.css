@@ -12027,15 +12027,12 @@ button:not(:disabled):active,
 /* ── Dashboard holding action buttons ── */
 .dvx-holding { flex-wrap: wrap; }
 /* "Actions" toggle chip — keeps each row calm until the user opts in. */
-/* Toggle sits on its own line (right-aligned) so it never squeezes the asset
-   name/badges on the first row. */
-.dvx-ha-togglebar { flex: 0 0 100%; display: flex; justify-content: flex-end; margin-top: .3rem; }
-.dvx-ha-toggle { flex-shrink: 0; height: 26px; padding: 0 .55rem; display: inline-flex; align-items: center; gap: .28rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: var(--text-muted); font-size: .72rem; font-weight: 600; cursor: pointer; transition: background .14s, border-color .14s, color .14s, transform .1s; white-space: nowrap; }
+/* Compact icon-only actions button, vertically centred at the row's right edge
+   — no label to squeeze the asset name, no extra line of dead space. */
+.dvx-ha-toggle { flex-shrink: 0; width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--text-muted); cursor: pointer; transition: background .14s, border-color .14s, color .14s, transform .1s; }
 .dvx-ha-toggle:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: var(--text); }
-.dvx-ha-toggle:active { transform: scale(.94); }
-.dvx-ha-toggle.open { background: rgba(var(--g-rgb),.12); border-color: rgba(var(--g-rgb),.35); color: var(--g-ink); }
-.dvx-ha-toggle svg { transition: transform .18s ease; }
-.dvx-ha-toggle.open svg { transform: rotate(180deg); }
+.dvx-ha-toggle:active { transform: scale(.9); }
+.dvx-ha-toggle.open { background: color-mix(in srgb, var(--row-col, var(--g)) 16%, transparent); border-color: color-mix(in srgb, var(--row-col, var(--g)) 40%, transparent); color: var(--text); }
 [data-wl-light] .dvx-ha-toggle { border-color: rgba(0,0,0,.1); background: rgba(0,0,0,.03); }
 [data-wl-light] .dvx-ha-toggle:hover { background: rgba(0,0,0,.06); }
 /* Collapsed by default; expands only when the toggle is open. */
@@ -13098,6 +13095,61 @@ button:not(:disabled):active,
 @media (prefers-reduced-motion: reduce) {
   .dvx-holding-actions { animation: none; }
 }
+
+/* ── Premium holdings rows ───────────────────────────────────────────────── */
+.dvx-holdings { gap: 0.55rem; }
+.dvx-holding {
+  position: relative;
+  gap: 0.7rem; padding: 0.8rem 0.9rem 0.8rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+}
+/* Sector-coloured accent rail down the leading edge. */
+.dvx-holding::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--row-col, var(--g)); opacity: 0.45;
+  transition: opacity 0.16s, top 0.16s, bottom 0.16s;
+}
+.dvx-holding:hover::before { opacity: 0.85; top: 6px; bottom: 6px; }
+.dvx-holding:hover {
+  border-color: color-mix(in srgb, var(--row-col, var(--g)) 28%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+              0 10px 26px color-mix(in srgb, var(--row-col, var(--g)) 12%, transparent);
+}
+/* Selected (multi-select) — accent ring + faint tint. */
+.dvx-holding.selected {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--row-col, var(--g)) 12%, rgba(255,255,255,0.03)),
+    color-mix(in srgb, var(--row-col, var(--g)) 5%, transparent));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--row-col, var(--g)) 55%, transparent);
+}
+.dvx-holding.selected::before { opacity: 1; top: 6px; bottom: 6px; }
+
+/* Coin logo gets a subtle ring + lift. */
+.dvx-holding-icon {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.05), 0 2px 6px rgba(0,0,0,0.28);
+}
+
+/* Tighter, cleaner type hierarchy. */
+.dvx-holding-meta strong { font-size: 0.92rem; letter-spacing: -0.01em; }
+.dvx-holding-meta .muted { font-size: 0.73rem; opacity: 0.92; }
+.dvx-holding-val { font-size: 0.98rem; letter-spacing: -0.01em; }
+
+[data-wl-light] .dvx-holding {
+  background: linear-gradient(180deg, #ffffff, rgba(16,24,40,0.02));
+  border-color: rgba(16,24,40,0.09);
+  box-shadow: 0 1px 2px rgba(16,24,40,0.05), 0 8px 20px rgba(16,24,40,0.04);
+}
+[data-wl-light] .dvx-holding:hover {
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--row-col, var(--g)) 14%, rgba(16,24,40,0.06));
+}
+[data-wl-light] .dvx-holding-icon { box-shadow: 0 0 0 2px rgba(16,24,40,0.05), 0 2px 6px rgba(16,24,40,0.12); }
+
+/* Group header: a sector-tinted divider + clearer stats alignment. */
+.dvx-cat-group-hdr { padding: 0.75rem 0 0.4rem; gap: 0.5rem; }
+.dvx-cat-group-stats { margin-left: auto; }
 
 /* ── Trade sheet: premium dynamic effects ───────────────────────────────── */
 
