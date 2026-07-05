@@ -13335,3 +13335,64 @@ button:not(:disabled):active,
   .bs-cat-btn::after, .bs-leg-chip::after,
   .bs-cat-btn.active::before, .bs-leg-chip.active::before { display: none; }
 }
+
+/* ── Tab navigation: labeled colour-tile grid (Option B) ────────────────── */
+.dvx-tabgrid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+  margin-top: 1rem;
+}
+.dvx-tabtile {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.85rem 0.4rem; border-radius: 16px; cursor: pointer; font-family: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-muted); font-size: 0.8rem; font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), background 0.18s, border-color 0.18s, box-shadow 0.18s, color 0.18s;
+}
+.dvx-tabtile-icon {
+  width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--tile-col);
+  background: color-mix(in srgb, var(--tile-col) 15%, transparent);
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.18s, color 0.18s;
+}
+.dvx-tabtile-icon svg { width: 19px; height: 19px; }
+/* Keep icon + label above the hover sheen */
+.dvx-tabtile-icon, .dvx-tabtile-label { position: relative; z-index: 1; }
+/* Hover: lift + tile-colour accent */
+.dvx-tabtile:hover {
+  transform: translateY(-3px); color: var(--text);
+  border-color: color-mix(in srgb, var(--tile-col) 45%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 20px color-mix(in srgb, var(--tile-col) 15%, transparent);
+}
+.dvx-tabtile:hover .dvx-tabtile-icon { transform: scale(1.1) translateY(-1px); }
+.dvx-tabtile:active { transform: scale(0.96); }
+/* Light-sweep sheen on hover */
+.dvx-tabtile::after {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.16) 50%, transparent 65%);
+  transform: translateX(-130%); transition: transform 0.6s ease;
+}
+.dvx-tabtile:hover::after { transform: translateX(130%); }
+/* Active: filled with the tile colour + glow + pop; icon + label go white */
+.dvx-tabtile.active {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tile-col) 78%, #000), var(--tile-col));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--tile-col) 42%, transparent), inset 0 1px 0 rgba(255,255,255,0.25);
+  animation: dvx-tile-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.dvx-tabtile.active .dvx-tabtile-icon {
+  color: #fff; background: rgba(255,255,255,0.22);
+  animation: dvx-icon-bounce 0.42s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes dvx-tile-pop { 0% { transform: scale(0.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+[data-wl-light] .dvx-tabtile {
+  background: linear-gradient(180deg, #ffffff, rgba(16,24,40,0.02));
+  border-color: rgba(16,24,40,0.1); box-shadow: 0 1px 2px rgba(16,24,40,0.05);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dvx-tabtile, .dvx-tabtile-icon, .dvx-tabtile::after { animation: none !important; transition: color 0.15s, background 0.15s; }
+  .dvx-tabtile:hover { transform: none; }
+}
