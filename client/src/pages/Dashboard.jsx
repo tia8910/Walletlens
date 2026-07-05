@@ -3842,7 +3842,7 @@ export default function Dashboard() {
           {catBreakdown.length > 0 && (
             <div className="dvx-cat-summary-row">
               {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
-                <div key={cat} className="dvx-cat-summary-card glass-card">
+                <div key={cat} className="dvx-cat-summary-card glass-card" style={{ '--bar-col': CATEGORY_COLOR[cat] || 'var(--g)' }}>
                   <CatLabel cat={cat} className="dvx-cat-summary-label" />
                   <div className="dvx-cat-summary-value">{hidden ? '••••' : cv(value)}</div>
                   <div className="dvx-cat-summary-pct">{pct.toFixed(1)}%</div>
@@ -3866,7 +3866,7 @@ export default function Dashboard() {
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
               <div className="dvx-cat-list">
                 {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested, assets }) => (
-                  <div key={cat} className="dvx-cat-row">
+                  <div key={cat} className="dvx-cat-row" style={{ '--bar-col': CATEGORY_COLOR[cat] || 'var(--g)' }}>
                     <div className="dvx-cat-info">
                       <CatLabel cat={cat} className="dvx-cat-label" />
                       <span className="dvx-cat-pct">{pct.toFixed(1)}%</span>

@@ -13047,15 +13047,30 @@ button:not(:disabled):active,
 /* keep label/value above the sparkline */
 .dvx-stat-label, .dvx-stat-value, .dvx-stat-sub { position: relative; z-index: 1; }
 
-/* Portfolio breakdown: gradient bars with a glowing leading edge. */
-.dvx-cat-bar-fill, .dvx-cat-summary-bar-fill, .dvx-cat-asset-fill {
-  background: linear-gradient(90deg, rgba(var(--g-rgb),0.55), var(--g)) !important;
-  box-shadow: 0 0 8px rgba(var(--g-rgb),0.45);
+/* Portfolio breakdown: each sector's bar carries its own colour (--bar-col),
+   as a gradient with a glowing leading edge. */
+.dvx-cat-bar-fill, .dvx-cat-summary-bar-fill {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--bar-col, var(--g)) 45%, transparent),
+    var(--bar-col, var(--g))) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--bar-col, var(--g)) 45%, transparent);
 }
-/* Row hover highlight so the figure you're reading lights up. */
+.dvx-cat-asset-fill { background: var(--bar-col, var(--g)) !important; }
+/* Row hover highlight, tinted to the sector colour. */
 .dvx-cat-row { border-radius: 12px; padding: 0.5rem 0.55rem; margin: 0 -0.55rem; transition: background 0.15s ease; }
-.dvx-cat-row:hover { background: rgba(var(--g-rgb),0.05); }
-[data-wl-light] .dvx-cat-row:hover { background: rgba(var(--g-rgb),0.07); }
+.dvx-cat-row:hover { background: color-mix(in srgb, var(--bar-col, var(--g)) 8%, transparent); }
+[data-wl-light] .dvx-cat-row:hover { background: color-mix(in srgb, var(--bar-col, var(--g)) 11%, transparent); }
+
+/* Summary cards: a sector-coloured top accent + matching icon chip. */
+.dvx-cat-summary-card { position: relative; overflow: hidden; }
+.dvx-cat-summary-card::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: var(--bar-col, var(--g)); opacity: 0.9;
+}
+.dvx-cat-summary-card:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-col, var(--g)) 30%, transparent),
+              0 10px 26px color-mix(in srgb, var(--bar-col, var(--g)) 14%, transparent);
+}
 
 /* Coin logos in the breakdown asset rows. */
 .dvx-cat-asset-logo { flex-shrink: 0; border-radius: 50%; }
