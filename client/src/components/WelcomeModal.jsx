@@ -141,17 +141,20 @@ export default function WelcomeModal() {
     return () => clearTimeout(t)
   }, [])
 
+  // Fade out the ambient pad when the welcome flow closes or unmounts.
+  useEffect(() => () => sfx.stopAmbient(), [])
+
   function finish() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
-    sfx.play('complete'); sfx.haptic([12, 40, 18])
+    sfx.stopAmbient(); sfx.haptic([12, 40, 18])
     track('welcome_modal_finished', { steps_seen: step + 1 })
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
   function next() {
     if (step >= STEPS.length - 1) { finish(); return }
-    sfx.play(step === 0 ? 'welcome' : 'step'); sfx.haptic(9)
+    sfx.startAmbient(); sfx.haptic(9)
     setAnimKey(k => k + 1)
     setStep(s => s + 1)
     track('welcome_modal_step', { step: step + 1 })
@@ -160,6 +163,7 @@ export default function WelcomeModal() {
   function skip() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
+    sfx.stopAmbient()
     track('welcome_modal_skipped', { at_step: step })
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
@@ -235,7 +239,7 @@ export default function WelcomeModal() {
                 {['dark', 'light'].map(m => (
                   <button
                     key={m}
-                    onClick={() => { sfx.play('select'); sfx.haptic(6); setMode(m) }}
+                    onClick={() => { sfx.startAmbient(); sfx.haptic(6); setMode(m) }}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
                       padding: '0.7rem 0.5rem',
@@ -254,7 +258,7 @@ export default function WelcomeModal() {
                 {THEMES.map(th => (
                   <button
                     key={th.id}
-                    onClick={() => { sfx.play('select'); sfx.haptic(6); setTheme(th.id) }}
+                    onClick={() => { sfx.startAmbient(); sfx.haptic(6); setTheme(th.id) }}
                     aria-label={th.name}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
