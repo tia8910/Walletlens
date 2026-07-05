@@ -3367,7 +3367,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'overview',   label: 'Dashboard',   icon: Ico.overview,  color: '#10b981' },
     { id: 'watchlist',  label: 'Watchlist',   icon: Ico.watchlist, color: '#38bdf8' },
-    { id: 'tools',      label: 'Analysis',    icon: Ico.ai,        color: '#a78bfa' },
+    { id: 'tools',      label: 'Analysis',    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 14.5l3.5-4 3 2.5L21 7"/><circle cx="21" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>, color: '#a78bfa' },
     { id: 'alerts',     label: 'Alerts',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, color: '#fbbf24' },
     { id: 'targets',    label: t('targets'),  icon: Ico.target,    color: '#fb7185' },
     { id: 'manage',     label: 'Backup',      icon: Ico.wallet,    color: '#2dd4bf' },
