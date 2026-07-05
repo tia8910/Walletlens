@@ -88,15 +88,26 @@ function drawReport(canvas, stats, enriched) {
   // Top accent bar
   ctx.fillStyle = '#00c853'; ctx.fillRect(0, 0, W, 6)
 
-  // Logo
+  // Logo (magnifying glass — matches the brand mark)
   const lx = 80, ly = 80
-  ctx.strokeStyle = '#00c853'; ctx.lineWidth = 5
-  ctx.beginPath(); ctx.arc(lx, ly, 28, 0, Math.PI*2); ctx.stroke()
-  ctx.lineWidth = 3.5; ctx.globalAlpha = 0.55
-  ctx.beginPath(); ctx.arc(lx, ly, 16, 0, Math.PI*2); ctx.stroke()
-  ctx.globalAlpha = 1
-  ctx.fillStyle = '#00c853'
-  ctx.beginPath(); ctx.arc(lx, ly, 9, 0, Math.PI*2); ctx.fill()
+  ctx.save()
+  ctx.translate(40.85, 43.75)
+  ctx.scale(1.45, 1.45)
+  const logoGrad = ctx.createLinearGradient(5, 5, 52, 52)
+  logoGrad.addColorStop(0, '#4ade80')
+  logoGrad.addColorStop(0.5, '#16a34a')
+  logoGrad.addColorStop(1, '#14532d')
+  ctx.strokeStyle = logoGrad; ctx.lineWidth = 5.5
+  ctx.beginPath(); ctx.arc(27, 25, 19, 0, Math.PI*2); ctx.stroke()
+  ctx.fillStyle = '#4ade80'
+  ctx.beginPath(); ctx.arc(40.5, 11.5, 3.8, 0, Math.PI*2); ctx.fill()
+  ctx.fillStyle = logoGrad
+  rr(ctx, 14.5, 26.5, 5, 7.5, 1.2); ctx.fill()
+  rr(ctx, 21.5, 21, 5, 13, 1.2); ctx.fill()
+  rr(ctx, 28.5, 15.5, 5, 18.5, 1.2); ctx.fill()
+  ctx.strokeStyle = logoGrad; ctx.lineWidth = 5.5; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(13.5, 39); ctx.lineTo(4, 55); ctx.stroke()
+  ctx.restore()
 
   ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px system-ui, sans-serif'
   ctx.textAlign = 'left'; ctx.fillText('WalletLens', lx + 44, ly + 10)
