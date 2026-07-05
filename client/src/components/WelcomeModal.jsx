@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { track } from '../analytics'
+import sfx from '../sfx'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
@@ -143,12 +144,14 @@ export default function WelcomeModal() {
   function finish() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
+    sfx.play('complete'); sfx.haptic([12, 40, 18])
     track('welcome_modal_finished', { steps_seen: step + 1 })
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
   function next() {
     if (step >= STEPS.length - 1) { finish(); return }
+    sfx.play(step === 0 ? 'welcome' : 'step'); sfx.haptic(9)
     setAnimKey(k => k + 1)
     setStep(s => s + 1)
     track('welcome_modal_step', { step: step + 1 })
@@ -232,7 +235,7 @@ export default function WelcomeModal() {
                 {['dark', 'light'].map(m => (
                   <button
                     key={m}
-                    onClick={() => setMode(m)}
+                    onClick={() => { sfx.play('select'); sfx.haptic(6); setMode(m) }}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
                       padding: '0.7rem 0.5rem',
@@ -251,7 +254,7 @@ export default function WelcomeModal() {
                 {THEMES.map(th => (
                   <button
                     key={th.id}
-                    onClick={() => setTheme(th.id)}
+                    onClick={() => { sfx.play('select'); sfx.haptic(6); setTheme(th.id) }}
                     aria-label={th.name}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',

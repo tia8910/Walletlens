@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { track } from '../analytics'
+import sfx from '../sfx'
 import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 
@@ -46,6 +47,7 @@ export default function InterestPicker({ onDone }) {
   }, [])
 
   function toggle(id) {
+    sfx.play('select'); sfx.haptic(6)
     setSelected(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -62,6 +64,7 @@ export default function InterestPicker({ onDone }) {
   }
 
   function getStarted() {
+    sfx.play('step'); sfx.haptic(9)
     const list = OPTIONS.filter(o => selected.has(o.id)).map(o => o.id)
     track('interests_selected', { count: list.length, interests: list.join(',') })
     finish(list)
