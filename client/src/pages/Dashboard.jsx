@@ -7,7 +7,7 @@ import {
 } from 'recharts'
 import { api } from '../api'
 import { isStablecoin } from '../stablecoins'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, TOKEN_UNLOCKS, assetClass } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -4151,18 +4151,6 @@ export default function Dashboard() {
                                         {isStable && <span className="dvx-stable-badge">STABLE</span>}
                                         {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                         {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}>⚠ dup</span>}
-                                        {(() => {
-                                          const u = TOKEN_UNLOCKS.find(u => u.coin_id === h.coin_id)
-                                          if (!u) return null
-                                          const col = u.severity === 'critical' ? '#f87171' : u.severity === 'high' ? '#f59e0b' : '#60a5fa'
-                                          const daysUntil = u.nextUnlock ? Math.round((new Date(u.nextUnlock) - Date.now()) / 86400000) : null
-                                          const dateStr = u.nextUnlock ? new Date(u.nextUnlock).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'2-digit' }) : null
-                                          return (
-                                            <span className="dvx-cat-badge dvx-unlock-badge" style={{ background: col + '18', color: col, borderColor: col + '44' }} title={u.note}>
-                                              <Icon name="unlock" size={11} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} />{u.unlockPct}%/mo{dateStr ? ` · ${daysUntil !== null && daysUntil <= 0 ? 'now!' : dateStr}` : ''}
-                                            </span>
-                                          )
-                                        })()}
                                       </div>
                                       {showBreakEven ? (
                                         <span className="muted" style={{ fontSize:'0.72rem' }}>
