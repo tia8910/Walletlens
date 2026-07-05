@@ -47,7 +47,7 @@ export default function InterestPicker({ onDone }) {
   }, [])
 
   function toggle(id) {
-    sfx.play('select'); sfx.haptic(6)
+    sfx.haptic(6)
     setSelected(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -64,7 +64,7 @@ export default function InterestPicker({ onDone }) {
   }
 
   function getStarted() {
-    sfx.play('step'); sfx.haptic(9)
+    sfx.haptic(9)
     const list = OPTIONS.filter(o => selected.has(o.id)).map(o => o.id)
     track('interests_selected', { count: list.length, interests: list.join(',') })
     finish(list)

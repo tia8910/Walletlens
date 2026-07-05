@@ -1,13 +1,13 @@
-// ── Premium UI sound effects (Web Audio) ──────────────────────────────────
-// Synthesized on the fly — no audio files, no network, works offline.
-// Mobile browsers start the AudioContext SUSPENDED and only allow it to run
-// after a user gesture, so we unlock (resume + prime with a silent buffer) on
-// the very first touch/click anywhere in the app, then keep it warm.
+// ── Ambient background sound (Web Audio) ──────────────────────────────────
+// A soft, evolving synthesized pad — no audio files, no network, works
+// offline. Plays quietly in the background during onboarding rather than
+// firing a sound on every click. Mobile browsers start the AudioContext
+// suspended, so we unlock on the first gesture, then fade the pad in.
 
 let ctx = null
 let master = null
 let enabled = true
-let unlocked = false
+let bg = null
 
 try { const v = localStorage.getItem('wl_sfx_enabled'); enabled = v === null ? true : v === '1' } catch {}
 
@@ -21,70 +21,79 @@ function ensure() {
     master.gain.value = 0.9
     master.connect(ctx.destination)
   }
+  if (ctx.state === 'suspended') { ctx.resume().catch(() => {}) }
   return ctx
 }
 
-function unlock() {
-  const c = ensure()
-  if (!c) return
-  if (c.state === 'suspended') { c.resume().catch(() => {}) }
-  if (!unlocked) {
-    // Prime the output with a 1-sample silent buffer — the classic trick that
-    // fully unlocks Web Audio on iOS/Android after the first gesture.
-    try {
-      const b = c.createBuffer(1, 1, 22050)
-      const s = c.createBufferSource()
-      s.buffer = b; s.connect(c.destination); s.start(0)
-    } catch {}
-    unlocked = true
-  }
-}
-
-// Attach the first-gesture unlock as soon as this module loads.
+// Re-arm the pad once the context is actually running (first gesture on mobile).
 if (typeof window !== 'undefined') {
-  const first = () => { unlock() }
-  const evs = ['pointerdown', 'touchend', 'mousedown', 'keydown']
-  const handler = () => { unlock(); if (ctx && ctx.state === 'running') evs.forEach(e => window.removeEventListener(e, handler)) }
-  evs.forEach(e => window.addEventListener(e, handler, { passive: true }))
-  void first
+  const onGesture = () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}) }
+  ;['pointerdown', 'touchend', 'mousedown', 'keydown'].forEach(e => window.addEventListener(e, onGesture, { passive: true }))
 }
 
-function tone({ freq, type = 'sine', dur = 0.14, gain = 0.2, attack = 0.006, when = 0, glideTo }) {
-  const c = ensure(); if (!c || !master) return
-  if (c.state === 'suspended') c.resume().catch(() => {})
-  const t = c.currentTime + when
-  const osc = c.createOscillator()
-  const g = c.createGain()
-  osc.type = type
-  osc.frequency.setValueAtTime(freq, t)
-  if (glideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, glideTo), t + dur)
-  g.gain.setValueAtTime(0.0001, t)
-  g.gain.exponentialRampToValueAtTime(gain, t + attack)
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-  osc.connect(g); g.connect(master)
-  osc.start(t); osc.stop(t + dur + 0.04)
+function startAmbient() {
+  if (!enabled) return
+  const c = ensure(); if (!c || !master || bg) return
+  const now = c.currentTime
+
+  const out = c.createGain()
+  out.gain.setValueAtTime(0.0001, now)
+  out.gain.exponentialRampToValueAtTime(0.22, now + 3.5) // slow fade-in
+
+  // Gentle low-pass that "breathes" via a slow LFO — gives the pad movement.
+  const filter = c.createBiquadFilter()
+  filter.type = 'lowpass'; filter.frequency.value = 650; filter.Q.value = 0.7
+  const lfo = c.createOscillator(); const lfoGain = c.createGain()
+  lfo.frequency.value = 0.05; lfoGain.gain.value = 320
+  lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start()
+
+  filter.connect(out); out.connect(master)
+
+  // Soft, warm chord (A minor add9 voicing) with a little detune + per-voice
+  // amplitude shimmer so it never sounds static.
+  const freqs = [110, 164.81, 220, 261.63, 329.63]
+  const voices = freqs.map((f, i) => {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = i < 2 ? 'sine' : 'triangle'
+    o.frequency.value = f * (i % 2 ? 1.003 : 0.997)
+    g.gain.value = 0.16
+    const alfo = c.createOscillator(); const ag = c.createGain()
+    alfo.frequency.value = 0.04 + i * 0.013; ag.gain.value = 0.06
+    alfo.connect(ag); ag.connect(g.gain); alfo.start()
+    o.connect(g); g.connect(filter); o.start()
+    return { o, alfo }
+  })
+
+  bg = { out, filter, lfo, voices }
 }
 
-const SOUNDS = {
-  select:   () => tone({ freq: 560, type: 'sine', dur: 0.09, gain: 0.16, glideTo: 780 }),
-  step:     () => { tone({ freq: 494, dur: 0.11, gain: 0.18 }); tone({ freq: 659.25, dur: 0.14, gain: 0.18, when: 0.06 }) },
-  welcome:  () => { tone({ freq: 392, dur: 0.16, gain: 0.18 }); tone({ freq: 523.25, dur: 0.2, gain: 0.18, when: 0.1 }) },
-  complete: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.18, gain: 0.2, when: i * 0.085 })) },
-  coin:     () => { [659.25, 783.99, 987.77, 1318.51].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.15, gain: 0.19, when: i * 0.055 })) },
+function stopAmbient() {
+  const c = ctx; if (!c || !bg) return
+  const now = c.currentTime
+  const b = bg; bg = null
+  try {
+    b.out.gain.cancelScheduledValues(now)
+    b.out.gain.setValueAtTime(Math.max(0.0001, b.out.gain.value || 0.22), now)
+    b.out.gain.exponentialRampToValueAtTime(0.0001, now + 1.6)
+  } catch {}
+  setTimeout(() => {
+    try {
+      b.voices.forEach(v => { try { v.o.stop() } catch {} ; try { v.alfo.stop() } catch {} })
+      b.lfo.stop(); b.out.disconnect(); b.filter.disconnect()
+    } catch {}
+  }, 1800)
 }
 
 const sfx = {
-  play(name) {
-    if (!enabled) return
-    unlock()
-    try { (SOUNDS[name] || SOUNDS.select)() } catch {}
-  },
+  startAmbient,
+  stopAmbient,
+  isPlaying() { return !!bg },
   haptic(pattern) { try { if (enabled && navigator.vibrate) navigator.vibrate(pattern) } catch {} },
   isEnabled() { return enabled },
   setEnabled(v) {
     enabled = !!v
     try { localStorage.setItem('wl_sfx_enabled', enabled ? '1' : '0') } catch {}
-    if (enabled) { unlock(); this.play('select') }
+    if (!enabled) stopAmbient()
   },
 }
 
