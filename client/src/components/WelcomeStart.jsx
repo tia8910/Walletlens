@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import sfx from '../sfx'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 import { track, trackProfileCreated } from '../analytics'
@@ -113,6 +114,7 @@ export default function WelcomeStart({ onDone }) {
       }
       track('welcome_start_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0, currency })
       trackProfileCreated({ method: 'welcome_balances', assetCount: count, source: 'welcome_start' })
+      sfx.play('coin'); sfx.haptic([10, 30, 12])
       finish()
     } catch {
       finish()
