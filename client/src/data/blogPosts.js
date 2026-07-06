@@ -37,6 +37,101 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'track-real-estate-alongside-crypto-and-stocks',
+    title: 'How to Track Real Estate Alongside Crypto and Stocks',
+    date: 'July 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to include property in your net-worth picture and track real estate alongside crypto and stocks in one unified portfolio view.',
+    content: `
+Most people think of a portfolio tracker as something for stocks and crypto. But for millions of investors, their single largest asset is not on any exchange — it is the property they own. Whether that is a primary home, a rental unit, or a vacation property, leaving real estate out of your net-worth picture means you are flying with incomplete instruments.
+
+Combining illiquid assets like property with liquid ones like Bitcoin or S&P 500 ETFs takes a little thought, but it is entirely doable. Here is how to do it properly, what numbers actually matter, and how to fold everything into a single view without resorting to a sprawling spreadsheet.
+
+## Why Real Estate Belongs in Your Net-Worth View
+
+A lot of investors mentally separate "investment accounts" from "the house." That separation is understandable — you cannot sell a bedroom to pay a margin call — but it distorts your picture of total wealth in several important ways.
+
+**Allocation blind spots.** If your home is worth $450,000 and your stock and crypto portfolio is worth $150,000, real estate is already 75% of your net worth. Any conversation about portfolio diversification that ignores that fact is largely theoretical.
+
+**Leverage effects.** Real estate is typically purchased with a mortgage. The equity you actually own — market value minus outstanding debt — can swing dramatically as property prices move or as you pay down principal. Tracking only the gross value overstates your position.
+
+**Opportunity cost.** Understanding how your property's annual appreciation compares to the rest of your portfolio helps you make better decisions about whether to overpay the mortgage, invest surplus cash elsewhere, or eventually sell.
+
+**Total net worth.** Banks, financial advisors, and you yourself need an honest number. That number includes property.
+
+## What Numbers You Actually Need
+
+Real estate tracking does not require the same daily granularity as crypto. You do not need a live price feed. What you need is:
+
+- **Current estimated market value** — a number you update periodically, perhaps quarterly, using a recent sale comparison, an online valuation tool, or a formal appraisal.
+- **Outstanding mortgage balance** — available from your lender's monthly statement or online portal.
+- **Net equity** — market value minus mortgage balance. This is the figure that belongs in your net-worth calculation.
+- **Purchase price (cost basis)** — useful for tracking your unrealized gain on the asset over time.
+- **Rental income (if applicable)** — cash flow context if you hold investment property.
+
+You do not need to mark your house to market every day. Updating the estimated value once a quarter is usually sufficient.
+
+## The Challenge: One View for All Asset Classes
+
+The real difficulty is not tracking real estate in isolation — a notepad could do that. The challenge is seeing it **alongside** your crypto, stocks, ETFs, precious metals, and cash, all in one allocation chart that reflects your actual financial picture.
+
+A spreadsheet can technically do this, but it requires manual maintenance, has no live price feeds, and quickly becomes unwieldy when you are also tracking dozens of crypto positions with changing prices.
+
+This is exactly the gap that [walletlens.live](https://walletlens.live) is built to fill. WalletLens lets you add real estate as an asset class alongside crypto (10,000+ assets with live prices), stocks, ETFs, gold, silver, and cash. Everything rolls up into a single net-worth total, broken down by category in an allocation donut chart. You can see at a glance that your property represents 60% of your net worth, your stock ETFs represent 20%, and your crypto represents 15% — without building a custom formula.
+
+Crucially, WalletLens is 100% local-first. No account, no login, no data ever leaves your browser. For an asset as sensitive as your home address and its value, that privacy guarantee matters.
+
+## How to Add Real Estate to Your Portfolio Tracker
+
+The process is straightforward:
+
+1. **Get a current market estimate.** Use a property valuation tool, a local real estate agent's comparable-sale analysis, or your municipality's latest assessed value as a starting point. Note this is an estimate, not a guaranteed sale price.
+2. **Find your outstanding mortgage balance.** Log into your lender's portal or check your most recent statement.
+3. **Calculate net equity.** Subtract the mortgage balance from the estimated market value. This is the figure you will enter as the asset value.
+4. **Add it in WalletLens.** Select the Real Estate category, enter the property, and input the net equity as the current value along with your original purchase equity (or purchase price) as the cost basis.
+5. **Review your allocation donut.** Watch your total net-worth picture update to reflect the full picture including property.
+
+If you own multiple properties — a primary residence, a rental, and perhaps a vacation home — add each one separately so you can see their individual contributions to your net worth.
+
+## How Often Should You Update Property Values?
+
+| Update frequency | Suitable for |
+|---|---|
+| Quarterly | Most homeowners; property markets move slowly |
+| Monthly | Active real estate investors; rapidly appreciating markets |
+| After major events | Renovations, neighborhood sales, interest-rate changes |
+| Annually (minimum) | Anyone who just wants a rough total net-worth snapshot |
+
+The key is consistency. Pick a cadence and stick to it so your trend data is meaningful.
+
+## Comparing Property Performance to the Rest of Your Portfolio
+
+Once real estate is in your tracker alongside everything else, some useful comparisons become possible.
+
+**Unrealized gain.** If you bought your home for $320,000 and its current net equity is $210,000 (after a $150,000 remaining mortgage on a property now worth $360,000), your unrealized gain on equity is meaningful — but so is the fact that leverage amplified both the risk and the return.
+
+**Annual appreciation rate.** Divide your net equity gain by your original down payment (not the full purchase price) for a return-on-equity figure. This is the number most comparable to returns on your other investments.
+
+**Drag vs. alpha.** In some years, a diversified crypto and stock portfolio may significantly outperform property appreciation. In others — especially in supply-constrained housing markets — property may be the strongest performer in your net-worth picture. Seeing both in one view, with WalletLens's category breakdown, makes this comparison concrete rather than theoretical.
+
+## Common Mistakes to Avoid
+
+- **Using gross value instead of net equity.** Listing your home at $500,000 when you owe $380,000 overstates your wealth by $380,000. Always subtract the mortgage.
+- **Forgetting transaction costs.** When estimating what you would actually realize from a sale, agent commissions, taxes, and closing costs typically reduce your proceeds by 6–10%. Keep this in mind for sell-planning purposes.
+- **Ignoring property debt in your total liabilities.** Net worth is assets minus liabilities. Your mortgage is a liability. A complete tracker accounts for both sides.
+- **Treating assessed value as market value.** Municipal tax assessments often lag real market prices significantly. Use comparable sales data when possible.
+
+*Note: This article is educational and does not constitute financial, tax, or legal advice. Tax treatment of property gains varies by country and individual circumstance — consult a qualified professional for guidance specific to your situation.*
+
+## Conclusion
+
+Real estate is often the elephant in the room of personal finance tracking — too big to ignore, yet frequently left out of portfolio tools designed primarily for liquid assets. By entering your property's net equity alongside your crypto, stocks, ETFs, and precious metals, you get the honest, complete net-worth picture that good financial decisions require.
+
+You do not need a different tool for each asset class. A unified tracker that handles all of them — with live prices for liquid assets and manual entry for illiquid ones — gives you a far clearer view than any combination of separate apps. If you want to see every dollar of your net worth in one place without creating an account or uploading sensitive data anywhere, WalletLens is built precisely for that.
+    `
+  },
+
+  {
     slug: 'how-to-stress-test-your-investment-portfolio',
     title: 'How to Stress-Test Your Investment Portfolio Before a Crash',
     date: 'June 2026',
