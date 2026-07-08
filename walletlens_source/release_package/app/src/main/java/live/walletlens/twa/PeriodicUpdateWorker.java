@@ -133,12 +133,12 @@ public class PeriodicUpdateWorker extends Worker {
         NumberFormat currencyFmt = NumberFormat.getCurrencyInstance(Locale.US);
         NumberFormat pctFmt = NumberFormat.getPercentInstance(Locale.US);
         pctFmt.setMaximumFractionDigits(1);
-        pctFmt.setPositivePrefix("+");
 
         String btcStr = currencyFmt.format(btcPrice);
         String ethStr = currencyFmt.format(ethPrice);
-        String btcChangeStr = pctFmt.format(btcChange / 100.0);
-        String ethChangeStr = pctFmt.format(ethChange / 100.0);
+        // Manually add + sign for positive percentages (compatible with Java 8)
+        String btcChangeStr = formatPercent(pctFmt, btcChange);
+        String ethChangeStr = formatPercent(pctFmt, ethChange);
 
         String title = "Market Update";
         String body = String.format(Locale.US,
@@ -208,4 +208,14 @@ public class PeriodicUpdateWorker extends Worker {
         conn.disconnect();
         return result.toString();
     }
+
+    /** Format percentage with a leading + for positive values (Java 8 compatible). */
+    private static String formatPercent(NumberFormat fmt, double change) {
+        String formatted = fmt.format(change / 100.0);
+        if (change > 0) {
+            return "+" + formatted;
+        }
+        return formatted;
+    }
+
 }

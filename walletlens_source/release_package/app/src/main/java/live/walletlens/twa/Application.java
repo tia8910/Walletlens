@@ -1,7 +1,7 @@
 package live.walletlens.twa;
 
 import android.app.Activity;
-import android.app.Application;
+
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import android.util.Log;
@@ -12,7 +12,7 @@ import android.util.Log;
  * Initialises native analytics tracking, notification channels, and
  * schedules periodic background checks for local privacy-first notifications.
  */
-public class Application extends android.app.Application {
+public class WalletLensApp extends android.app.Application {
 
     private static final String TAG = "WalletLensApp";
 
