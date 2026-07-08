@@ -6,8 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -130,17 +128,8 @@ public final class NotificationHelper {
 
         int accentColor = 0xFF071A0C; // WalletLens brand dark green
 
-        // Use the app launcher icon as the large icon (full color)
-        // The small icon remains the white vector for the status bar
-        int largeIcon = context.getResources()
-                .getIdentifier("ic_launcher", "mipmap", context.getPackageName());
-
         Notification notification = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(smallIcon)
-                .setLargeIcon(largeIcon != 0
-                        ? android.graphics.BitmapFactory.decodeResource(
-                                context.getResources(), largeIcon)
-                        : null)
                 .setColor(accentColor)
                 .setContentTitle(title)
                 .setContentText(body)
