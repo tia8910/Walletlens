@@ -11061,7 +11061,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 }
 .wlc-input:focus { border-color: rgba(16,185,129,0.5); }
 .wlc-send {
-  flex-shrink: 0; width: 40px; height: 40px;
+  flex-shrink: 0; width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #047857, #10b981);
   color: #fff; border: none; border-radius: 12px; cursor: pointer;
