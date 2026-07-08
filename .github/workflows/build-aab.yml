@@ -1,0 +1,93 @@
+name: Build Signed AAB & APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 1.3.0)'
+        required: true
+        default: '1.3.0'
+        type: string
+      version_code:
+        description: 'Version code (integer)'
+        required: true
+        default: '4'
+        type: number
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Decode keystore from GitHub secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > walletlens_source/release_package/local.properties
+
+      - name: Update version in build.gradle
+        working-directory: walletlens_source/release_package
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.event.inputs.version_code }}/" app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${{ github.event.inputs.version_name }}\"/" app/build.gradle
+          echo "Updated to versionCode=${{ github.event.inputs.version_code }}, versionName=${{ github.event.inputs.version_name }}"
+
+      - name: Grant execute permission for gradlew
+        working-directory: walletlens_source/release_package
+        run: chmod +x gradlew
+
+      - name: Build signed release AAB
+        working-directory: walletlens_source/release_package
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/signingKey.keystore \
+            -Pandroid.injected.signing.store.password=49ZMeqfsQMXH \
+            -Pandroid.injected.signing.key.alias=my-key-alias \
+            -Pandroid.injected.signing.key.password=49ZMeqfsQMXH
+
+      - name: Build signed release APK
+        working-directory: walletlens_source/release_package
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/signingKey.keystore \
+            -Pandroid.injected.signing.store.password=49ZMeqfsQMXH \
+            -Pandroid.injected.signing.key.alias=my-key-alias \
+            -Pandroid.injected.signing.key.password=49ZMeqfsQMXH
+
+      - name: Upload signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalletLens-v${{ github.event.inputs.version_name }}-signed.aab
+          path: walletlens_source/release_package/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalletLens-v${{ github.event.inputs.version_name }}-signed.apk
+          path: walletlens_source/release_package/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload ProGuard mapping (for crash debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalletLens-v${{ github.event.inputs.version_name }}-mapping.txt
+          path: walletlens_source/release_package/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: ignore

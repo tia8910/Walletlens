@@ -17,3 +17,17 @@ walletlens-extension-*.zip
 #  social agent runtime output (not committed)
 promo/lenz-drafts/
 promo/x-post.json
+
+*.apk
+*.aab
+*.idsig
+*.zip
+android-release/
+walletlens_source/release_package/.gradle/
+walletlens_source/release_package/build/
+walletlens_source/release_package/app/build/
+walletlens_source/release_package/local.properties
+walletlens_source/release_package/signingKey.keystore
+walletlens_source/signing.keystore
+walletlens_source/*.aab
+walletlens_source/*.apk
