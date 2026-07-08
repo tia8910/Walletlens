@@ -15,87 +15,69 @@ import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Schedules background notification checks for WalletLens.
+ * Schedules background price checks for WalletLens.
  *
- * <p>Notifications are <b>event-driven, not timer-driven</b>:
- * <ul>
- *   <li><b>🔄 Portfolio changes</b> – detected by the web app when open,
- *       shown as native notifications via TWA delegation</li>
- *   <li><b>📡 FCM push</b> – instant server-sent alerts via Firebase
- *       Cloud Messaging (arrive even when app is closed)</li>
- *   <li><b>⏰ Once-daily market pulse</b> – a single daily check for
- *       significant BTC/ETH moves (only if >2% change, otherwise silent)</li>
- * </ul>
+ * <p>Runs every 3 hours but only fires a notification if BTC or ETH
+ * moved more than 1% since the last check. Otherwise stays completely
+ * silent — no spam, no daily reminders.
  *
- * <p>The once-daily check exists only as a privacy-first fallback for
- * users who haven't set up server-side push. All data stays on-device.
+ * <p>WorkManager survives app close and device reboot.
  */
 public final class NotificationScheduler {
 
     private static final String TAG = "WalletLensScheduler";
+    private static final String PERIODIC_WORK = "walletlens_price_check";
+    private static final String BOOT_WORK = "walletlens_boot_check";
 
-    private static final String DAILY_WORK_NAME  = "walletlens_daily_pulse";
-    private static final String BOOT_WORK_NAME   = "walletlens_boot_check";
+    /** Check prices every 3 hours for timely alerts. */
+    private static final long INTERVAL_HOURS = 3;
 
-    /**
-     * Start background work. Safe to call multiple times.
-     */
     public static void schedule(@NonNull Context context) {
-        scheduleDailyPulse(context);
+        schedulePeriodic(context);
         scheduleBootCheck(context);
     }
 
-    /**
-     * A single daily check for significant market moves.
-     * Runs every 24 hours but only shows a notification if
-     * BTC/ETH moved >2%. Otherwise it stays completely silent.
-     */
-    private static void scheduleDailyPulse(@NonNull Context context) {
+    private static void schedulePeriodic(@NonNull Context context) {
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                 PeriodicUpdateWorker.class,
-                24, TimeUnit.HOURS)
+                INTERVAL_HOURS,
+                TimeUnit.HOURS)
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.HOURS)
-                .addTag(DAILY_WORK_NAME)
+                .setInitialDelay(30, TimeUnit.MINUTES)
+                .addTag(PERIODIC_WORK)
                 .build();
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                DAILY_WORK_NAME,
+                PERIODIC_WORK,
                 ExistingPeriodicWorkPolicy.KEEP,
                 request);
 
-        Log.d(TAG, "Daily market pulse scheduled (24h interval, only fires on >2% move)");
+        Log.d(TAG, "Price checks every " + INTERVAL_HOURS + " hours (silent unless >1% move)");
     }
 
-    /**
-     * A one-time check shortly after install so the user sees
-     * their first notification quickly.
-     */
+    /** One-time check 10 min after install. */
     private static void scheduleBootCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
                 .setInitialDelay(10, TimeUnit.MINUTES)
-                .addTag(BOOT_WORK_NAME)
+                .addTag(BOOT_WORK)
                 .build();
 
         WorkManager.getInstance(context).enqueueUniqueWork(
-                BOOT_WORK_NAME,
+                BOOT_WORK,
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Boot notification scheduled in 10 minutes");
+        Log.d(TAG, "Boot price check in 10 minutes");
     }
 
-    /**
-     * Cancel all background notification work.
-     */
     public static void cancel(@NonNull Context context) {
-        WorkManager.getInstance(context).cancelUniqueWork(DAILY_WORK_NAME);
-        WorkManager.getInstance(context).cancelUniqueWork(BOOT_WORK_NAME);
-        Log.d(TAG, "All background notification work cancelled");
+        WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK);
+        WorkManager.getInstance(context).cancelUniqueWork(BOOT_WORK);
+        Log.d(TAG, "All price checks cancelled");
     }
 }
