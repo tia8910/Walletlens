@@ -268,3 +268,78 @@ export function initNotifications(currentPortfolioValue) {
     setPortfolioBaseline(currentPortfolioValue)
   }
 }
+
+// ── Web-to-native asset communication ────────────────────────────────
+// Sends the user's portfolio assets to the Android DelegationService
+// so the background worker can fetch prices for their specific holdings.
+
+const ASSET_SYNC_KEY = 'wl_assets_synced'
+
+/**
+ * Collect all unique asset IDs from the user's portfolio and send
+ * them to the native Android app via the TWA's extraCallback API.
+ *
+ * The Android side stores these and uses them in PeriodicUpdateWorker
+ * to monitor prices for the user's specific holdings.
+ *
+ * Asset ID format:
+ *   - Crypto: CoinGecko IDs (bitcoin, ethereum, solana, ...)
+ *   - Stocks: Yahoo Finance tickers (SPY, AAPL, GOOGL, ...)
+ *   - Metals: 'xau' for gold, 'xag' for silver
+ */
+export function syncPortfolioAssets(assetIds) {
+  if (!Array.isArray(assetIds) || assetIds.length === 0) return
+
+  // Try the TWA native bridge (available when running as TWA)
+  try {
+    if (typeof twa !== 'undefined' && twa.extraCallback) {
+      twa.extraCallback('updateAssets', { assets: JSON.stringify(assetIds) })
+      console.log(`[PortfolioNotify] Sent ${assetIds.length} assets to native app`)
+      try { localStorage.setItem(ASSET_SYNC_KEY, String(Date.now())) } catch {}
+      return
+    }
+  } catch (e) {
+    // TWA bridge not available — running as regular PWA in browser
+  }
+
+  // Fallback: store in localStorage for the service worker to relay
+  try {
+    localStorage.setItem('wl_native_assets', JSON.stringify(assetIds))
+    console.log(`[PortfolioNotify] Stored ${assetIds.length} assets for service worker`)
+  } catch {}
+}
+
+/**
+ * Extract asset IDs from portfolio holdings. Call this when the
+ * user's portfolio loads or changes.
+ *
+ * @param {Array} holdings - Array of { id, symbol, type, amount, value, ... }
+ * @returns {string[]} Array of unique asset IDs
+ */
+export function extractAssetIds(holdings) {
+  if (!Array.isArray(holdings)) return []
+
+  const ids = new Set()
+
+  for (const h of holdings) {
+    if (!h.id && !h.symbol) continue
+
+    const type = (h.type || 'crypto').toLowerCase()
+
+    if (type === 'crypto' || type === 'coin') {
+      // Use CoinGecko ID if available, otherwise symbol
+      ids.add((h.id || h.symbol || '').toLowerCase())
+    } else if (type === 'stock' || type === 'etf') {
+      ids.add((h.symbol || h.id || '').toUpperCase())
+    } else if (type === 'metal' || type === 'commodity') {
+      const sym = (h.symbol || '').toLowerCase()
+      if (sym.includes('gold') || sym === 'xau') ids.add('xau')
+      else if (sym.includes('silver') || sym === 'xag') ids.add('xag')
+    } else {
+      // Fallback: try the symbol
+      ids.add((h.symbol || h.id || '').toLowerCase())
+    }
+  }
+
+  return Array.from(ids)
+}
