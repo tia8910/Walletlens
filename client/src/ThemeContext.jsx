@@ -142,7 +142,7 @@ const ThemeContext = createContext({ theme: 'emerald', mode: 'light', setTheme: 
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
-  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'dark')
+  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'light')
 
   // Refs hold the current state values so the stable callbacks below can read
   // them without closing over a stale value — avoids recreating setTheme/setMode
