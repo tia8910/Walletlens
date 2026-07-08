@@ -236,43 +236,6 @@ public class PeriodicUpdateWorker extends Worker {
         }
     }
 
-    // ── User's custom assets from web app ─────────────────────────────
-
-    private int checkUserAssets(String[] assets, JSONObject saved,
-                                 JSONObject newPrices, StringBuilder movers) {
-        int count = 0;
-        for (String asset : assets) {
-            String key = asset.trim().toLowerCase(Locale.US);
-            if (key.isEmpty()) continue;
-
-            // Determine asset type by ID format
-            if (key.equals("xau") || key.equals("xag") || key.equals("gold") || key.equals("silver")) {
-                // Metals already checked above
-                continue;
-            } else if (key.matches("^[a-z]{2,30}$")) {
-                // Likely a CoinGecko crypto ID — will be checked in crypto check
-                continue;
-            } else {
-                // Stock ticker — check via Yahoo Finance
-                try {
-                    String url = "https://query1.finance.yahoo.com/v8/finance/chart/"
-                               + key.toUpperCase(Locale.US) + "?interval=1d&range=5d";
-                    String json = httpGet(url);
-                    JSONObject data = new JSONObject(json);
-                    JSONObject result = data.getJSONObject("chart")
-                            .getJSONArray("result").getJSONObject(0);
-                    JSONObject meta = result.getJSONObject("meta");
-                    double price = meta.getDouble("regularMarketPrice");
-                    newPrices.put(key, price);
-
-                    if (checkMove(key, price, saved, movers)) count++;
-                } catch (Exception e) {
-                    Log.d(TAG, "Skipping " + key + " — price lookup failed");
-                }
-            }
-        }
-        return count;
-    }
 
     // ── Price comparison helper ───────────────────────────────────────
 
