@@ -16,11 +16,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Background worker — runs every 30 min.
@@ -65,7 +61,6 @@ public class PeriodicUpdateWorker extends Worker {
     private static final String PREFS_NAME = "walletlens_notify";
     private static final String KEY_PRICES  = "saved_prices";  // JSON: {"bitcoin":65000, "spy":450, ...}
     private static final String KEY_FEATURE = "feature_index";
-    private static final String KEY_TIP_DAY = "last_tip_day";
 
     // ── 32 Features ────────────────────────────────────────────────────
     private static final String[][] FEATURES = {
@@ -258,9 +253,9 @@ public class PeriodicUpdateWorker extends Worker {
     // ── Feature tip ───────────────────────────────────────────────────
 
     private void showDailyFeatureTip(SharedPreferences prefs) {
-        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
-        String lastDay = prefs.getString(KEY_TIP_DAY, "");
-        if (lastDay.equals(today)) return;
+        long lastTip = prefs.getLong(KEY_TIP_TS, 0);
+        long now = System.currentTimeMillis();
+        if (now - lastTip < TIP_INTERVAL_HOURS * 60 * 60 * 1000L) return;
 
         int idx = prefs.getInt(KEY_FEATURE, 0);
         if (idx >= FEATURES.length) idx = 0;
@@ -269,7 +264,7 @@ public class PeriodicUpdateWorker extends Worker {
         NotificationHelper h = new NotificationHelper(getApplicationContext());
         h.showNotification("💡 " + tip[0], tip[1], "https://walletlens.live" + tip[2], null);
 
-        prefs.edit().putInt(KEY_FEATURE, idx + 1).putString(KEY_TIP_DAY, today).apply();
+        prefs.edit().putInt(KEY_FEATURE, idx + 1).putLong(KEY_TIP_TS, now).apply();
         Log.d(TAG, "Tip #" + (idx + 1) + "/" + FEATURES.length + ": " + tip[0]);
     }
 
