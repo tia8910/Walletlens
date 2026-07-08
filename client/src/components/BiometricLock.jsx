@@ -405,6 +405,66 @@ export function BiometricLockScreen({ onUnlock }) {
 }
 
 // Inline CSS for the lock screen (scoped to .bl-* classes)
+// ── Biometric Toggle (used in Dashboard settings) ────────────────────────
+export function BiometricToggle() {
+  const { enabled, supported, available, enable, disable } = useBiometricLock()
+  const [busy, setBusy] = useState(false)
+
+  async function onToggle() {
+    if (busy) return
+    setBusy(true)
+    try {
+      if (enabled) disable()
+      else await enable()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const unavailable = !supported && !available
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: '0.75rem',
+      padding: '0.85rem 1rem',
+      background: 'rgba(var(--g-rgb),0.05)',
+      border: '1px solid rgba(var(--g-rgb),0.15)',
+      borderRadius: '12px',
+    }}>
+      <div>
+        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
+          🔒 App Lock — Fingerprint / Face
+        </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+          {unavailable
+            ? 'Not available on this device or browser'
+            : enabled
+              ? 'Requires your fingerprint each time you open the app'
+              : 'Require your fingerprint to open WalletLens'}
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={unavailable || busy}
+        style={{
+          flexShrink: 0,
+          background: enabled ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)',
+          color: enabled ? '#fff' : 'var(--text-muted)',
+          border: enabled ? 'none' : '1px solid var(--border)', borderRadius: '10px',
+          boxShadow: enabled ? '0 2px 8px rgba(5,150,105,0.35)' : 'none',
+          padding: '0.45rem 0.95rem',
+          fontWeight: 800, fontSize: '0.82rem',
+          cursor: (unavailable || busy) ? 'not-allowed' : 'pointer',
+          opacity: unavailable ? 0.5 : 1,
+          transition: 'all 0.2s',
+        }}>
+        {busy ? '...' : enabled ? 'Enabled ✓' : 'Enable'}
+      </button>
+    </div>
+  )
+}
+
 function BiometricLockStyles() {
   return (
     <style>{`
