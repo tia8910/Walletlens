@@ -1,11 +1,15 @@
 package live.walletlens.twa;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -15,72 +19,42 @@ import androidx.core.content.ContextCompat;
 /**
  * WalletLens TWA LauncherActivity.
  *
- * <p>For Android 13+, this activity requests {@code POST_NOTIFICATIONS}
- * permission BEFORE opening the Trusted Web Activity, ensuring the system
- * dialog is clearly visible to the user. On older Android versions, or
- * once permission is granted, the TWA loads immediately.
+ * <p>Shows a test notification on first 3 launches so you can verify
+ * the app's notification channel works immediately.
  */
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
 
     private static final String TAG = "WalletLensLauncher";
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
+    private static final int TEST_NOTIF_MAX_LAUNCHES = 3;
 
-    /** Saved state for use after permission dialog is dismissed. */
-    private Bundle pendingSavedInstanceState;
-    /** Whether we're waiting for the user to respond to the permission dialog. */
-    private boolean permissionRequestPending = false;
+    private boolean permissionAskedThisSession = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // ── Android 13+ permission gate ───────────────────────────────
-        // Request POST_NOTIFICATIONS BEFORE super.onCreate() so the
-        // system permission dialog appears on a blank activity, not
-        // behind the Chrome Custom Tab. Without this, the dialog often
-        // goes unnoticed by the user.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                Log.d(TAG, "POST_NOTIFICATIONS not granted – requesting before TWA loads");
-
-                // Save the state bundle so we can resume TWA setup after
-                pendingSavedInstanceState = savedInstanceState;
-                permissionRequestPending = true;
-
-                // Request the permission. On API 33+, this shows a system
-                // dialog. The activity's onRequestPermissionsResult() or
-                // onResume() will be called next.
-                requestPermissions(
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_CODE_POST_NOTIFICATIONS);
-
-                // Do NOT call super.onCreate() yet – the TWA (Chrome Custom
-                // Tab) will be opened after the user responds to the dialog.
-                return;
-            }
-        }
-
-        // Permission already granted or Android < 13 – proceed normally.
-        initTwa(savedInstanceState);
-    }
-
-    /**
-     * Initialise the TWA: call the parent's onCreate and do WalletLens setup.
-     */
-    private void initTwa(Bundle savedInstanceState) {
-        // Must call super to set up the Trusted Web Activity
         super.onCreate(savedInstanceState);
 
-        // Setting an orientation crashes the app due to the transparent
-        // background on Android 8.0 Oreo and below. We only set the
-        // orientation on Oreo and above. This only affects the splash
-        // screen – Chrome will still respect the orientation.
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        }
+
+        // Request notification permission on Android 13+
+        // Using a delayed handler so the dialog appears AFTER the TWA
+        // splash screen, making it clearly visible to the user.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    requestPermissions(
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            REQUEST_CODE_POST_NOTIFICATIONS);
+                    permissionAskedThisSession = true;
+                }, 800);
+            }
         }
 
         Log.d(TAG, "WalletLens TWA initialised");
@@ -90,25 +64,46 @@ public class LauncherActivity
     protected void onResume() {
         super.onResume();
 
-        // If we were waiting for the permission dialog and the user
-        // dismissed it (e.g. back button) without making a choice,
-        // onRequestPermissionsResult may not be called.  We handle
-        // that fallback here.
-        if (permissionRequestPending) {
-            permissionRequestPending = false;
-            Log.d(TAG, "Permission dialog dismissed without explicit choice – proceeding");
-            initTwa(pendingSavedInstanceState);
-            pendingSavedInstanceState = null;
-            return;
-        }
-
-        // Track the launch / deep-link URL for usage analytics (only
-        // after the TWA is fully set up).
+        // Track the launch URL
         Uri launchUri = getLaunchingUrl();
         if (launchUri != null) {
             String url = launchUri.toString();
             Log.d(TAG, "Launch URL: " + url);
             AnalyticsHelper.getInstance().trackAppLaunchUrl(url);
+        }
+
+        // Fire a test notification so you can verify immediately
+        fireTestNotificationIfNeeded();
+    }
+
+    /**
+     * Shows a test notification on the first few launches so you can
+     * verify the app's notification channel works correctly without
+     * waiting for the daily background worker.
+     */
+    private void fireTestNotificationIfNeeded() {
+        SharedPreferences prefs = getSharedPreferences("launch_count", Context.MODE_PRIVATE);
+        int launches = prefs.getInt("launches", 0);
+
+        if (launches < TEST_NOTIF_MAX_LAUNCHES) {
+            prefs.edit().putInt("launches", launches + 1).apply();
+
+            // Ensure notification channels exist
+            new NotificationHelper(this).createChannels();
+
+            String[] testMessages = {
+                    "✅ Notifications work! WalletLens will send you market alerts and feature tips here.",
+                    "👋 Welcome back! You'll receive price alerts and portfolio updates through this channel.",
+                    "🔔 Notifications are active! Check back daily for market insights and feature tips."
+            };
+
+            String title = "🚀 WalletLens Notifications Active";
+            String body = testMessages[Math.min(launches, testMessages.length - 1)];
+
+            NotificationHelper helper = new NotificationHelper(this);
+            helper.showAlertNotification(title, body, "https://walletlens.live/dashboard");
+
+            Log.d(TAG, "Test notification fired (launch #" + (launches + 1) + "/" + TEST_NOTIF_MAX_LAUNCHES + ")");
         }
     }
 
@@ -116,15 +111,16 @@ public class LauncherActivity
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        // Must call super for the TWA library to handle its own permissions
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS && permissionRequestPending) {
-            permissionRequestPending = false;
+        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS && permissionAskedThisSession) {
+            permissionAskedThisSession = false;
 
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "POST_NOTIFICATIONS permission granted by user");
+                // Fire the test notification immediately after grant
+                fireTestNotificationIfNeeded();
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission denied by user");
                 Toast.makeText(this,
@@ -133,10 +129,6 @@ public class LauncherActivity
                         "Settings > Apps > WalletLens > Notifications.",
                         Toast.LENGTH_LONG).show();
             }
-
-            // Proceed with TWA setup now that the user has responded
-            initTwa(pendingSavedInstanceState);
-            pendingSavedInstanceState = null;
         }
     }
 
