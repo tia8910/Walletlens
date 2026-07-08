@@ -17,16 +17,19 @@ import java.util.concurrent.TimeUnit;
 /**
  * Schedules all background notification work for WalletLens.
  *
- * <p>Uses Android WorkManager. All workers are privacy-first:
- * no user data ever leaves the device.
+ * <p>Uses Android WorkManager which survives app close and device restarts.
+ * All workers are privacy-first: no user data leaves the device.
  *
  * <h3>Schedules:</h3>
  * <ul>
- *   <li><b>Smart periodic worker</b> – runs every 6 hours, picks a
- *       notification type via smart rotation (market updates, Fear & Greed,
- *       daily reminders, weekly recaps, feature tips, re-engagement).</li>
- *   <li><b>Initial one-shot</b> – fires 15 min after install so the user
+ *   <li><b>Smart periodic worker</b> – every 4 hours. Rotates between market
+ *       updates, Fear & Greed, daily reminders, weekly recaps, feature tips,
+ *       and re-engagement messages. Requires network for market data but
+ *       NOT for reminders.</li>
+ *   <li><b>Initial one-shot</b> – fires 5 minutes after install so the user
  *       gets their first notification quickly.</li>
+ *   <li><b>Boot reschedule</b> – workers auto-reschedule after device reboot
+ *       via WorkManager's built-in BOOT_COMPLETED support.</li>
  * </ul>
  */
 public final class NotificationScheduler {
@@ -36,8 +39,11 @@ public final class NotificationScheduler {
     private static final String PERIODIC_WORK_NAME = "walletlens_smart_notify";
     private static final String ONE_SHOT_WORK_NAME = "walletlens_initial_check";
 
-    /** How often the smart worker runs (hours). Lower = more responsive. */
-    private static final long INTERVAL_HOURS = 6;
+    /**
+     * How often the smart worker runs. Every 4 hours balances
+     * responsiveness with battery life.
+     */
+    private static final long INTERVAL_HOURS = 4;
 
     /**
      * Start all background notification work. Safe to call multiple times —
@@ -51,9 +57,11 @@ public final class NotificationScheduler {
     // ── Periodic smart worker ──────────────────────────────────────────
 
     private static void schedulePeriodic(@NonNull Context context) {
+        // Network constraint only for data-fetching notifications.
+        // Reminder-type notifications (daily, tips, re-engage) work offline.
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true)
+                // Don't require battery not low - notifications are lightweight
                 .build();
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
@@ -61,7 +69,7 @@ public final class NotificationScheduler {
                 INTERVAL_HOURS,
                 TimeUnit.HOURS)
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.HOURS)
+                .setInitialDelay(1, TimeUnit.HOURS) // allow first-run setup
                 .addTag(PERIODIC_WORK_NAME)
                 .build();
 
@@ -75,10 +83,14 @@ public final class NotificationScheduler {
 
     // ── One-time initial notification ──────────────────────────────────
 
+    /**
+     * Fire a notification 5 minutes after install so the user immediately
+     * sees that WalletLens has background notifications working.
+     */
     private static void scheduleInitialCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
-                .setInitialDelay(15, TimeUnit.MINUTES)
+                .setInitialDelay(5, TimeUnit.MINUTES)
                 .addTag(ONE_SHOT_WORK_NAME)
                 .build();
 
@@ -87,7 +99,7 @@ public final class NotificationScheduler {
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Initial notification scheduled in 15 minutes");
+        Log.d(TAG, "Initial notification scheduled in 5 minutes");
     }
 
     // ── Cancel ─────────────────────────────────────────────────────────
