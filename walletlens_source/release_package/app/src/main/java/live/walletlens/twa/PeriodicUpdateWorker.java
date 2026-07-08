@@ -28,7 +28,7 @@ import java.util.Map;
  * <ol>
  *   <li><b>📊 Price alerts</b> — monitors crypto (top 26), gold, silver,
  *       S&P 500 via free APIs. Also checks ANY assets the web app has
- *       sent via {@link DelegationService#onExtraCallback}.</li>
+ *       sent via the web app's Notification API.</li>
  *   <li><b>💡 Feature tip</b> — one per day through all 32 features</li>
  * </ol>
  *
@@ -137,11 +137,6 @@ public class PeriodicUpdateWorker extends Worker {
             moveCount += checkStockPrice("SPY", "SPY", SPY_URL, saved, newPrices, movers);
 
             // 5. Check user's custom assets from web app
-            String[] userAssets = DelegationService.getPortfolioAssets(getApplicationContext());
-            if (userAssets != null && userAssets.length > 0) {
-                moveCount += checkUserAssets(userAssets, saved, newPrices, movers);
-            }
-
             // Save all new prices
             prefs.edit().putString(KEY_PRICES, newPrices.toString()).apply();
 
