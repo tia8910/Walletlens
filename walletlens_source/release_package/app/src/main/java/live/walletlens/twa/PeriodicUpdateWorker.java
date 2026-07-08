@@ -54,8 +54,11 @@ public class PeriodicUpdateWorker extends Worker {
     private static final String SILVER_URL = "https://api.metals.live/v1/spot/silver";
 
     // Yahoo Finance for SPY (S&P 500 ETF) and other stocks
+    private static final String[] STOCK_TICKERS = {"SPY", "QQQ", "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"};
     private static final String SPY_URL =
             "https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=5d";
+    private static final String STOCK_URL_TEMPLATE =
+            "https://query1.finance.yahoo.com/v8/finance/chart/%s?interval=1d&range=5d";
 
     // ── Preferences ────────────────────────────────────────────────────
     private static final String PREFS_NAME = "walletlens_notify";
@@ -64,7 +67,7 @@ public class PeriodicUpdateWorker extends Worker {
 
     // ── 32 Features ────────────────────────────────────────────────────
     /** Minimum hours between feature tips. */
-    private static final long TIP_INTERVAL_HOURS = 2;
+    private static final long TIP_INTERVAL_HOURS = 1; // Show tips every 1 hour
     private static final String KEY_TIP_TS  = "last_tip_timestamp";
     private static final String[][] FEATURES = {
         {"🎙️ Voice Import", "Add holdings by speaking — tap the mic", "/add-holdings-by-voice"},
@@ -132,7 +135,11 @@ public class PeriodicUpdateWorker extends Worker {
             moveCount += checkMetalPrice("Silver", "xag", SILVER_URL, saved, newPrices, movers);
 
             // 4. Check S&P 500 (SPY)
-            moveCount += checkStockPrice("SPY", "SPY", SPY_URL, saved, newPrices, movers);
+            // Check multiple stocks
+            for (String ticker : STOCK_TICKERS) {
+                String stockUrl = String.format(java.util.Locale.US, STOCK_URL_TEMPLATE, ticker);
+                moveCount += checkStockPrice(ticker, ticker, stockUrl, saved, newPrices, movers);
+            }
 
             // 5. Check user's custom assets from web app
             // Save all new prices

@@ -121,7 +121,7 @@ public final class NotificationHelper {
 
         // Use the app launcher icon as the small icon (also works as default).
         int smallIcon = context.getResources()
-                .getIdentifier("ic_notification_icon", "drawable", context.getPackageName());
+                .getIdentifier("ic_notification_chart", "drawable", context.getPackageName());
         if (smallIcon == 0) {
             smallIcon = android.R.drawable.ic_dialog_info;
         }

@@ -34,9 +34,15 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-      - name: Decode keystore from GitHub secret
+      - name: Ensure keystore exists (fallback to checked-in copy)
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
+            echo "Decoded keystore from secret"
+          else
+            echo "Using checked-in keystore"
+          fi
+          ls -la walletlens_source/release_package/signingKey.keystore
 
       - name: Create local.properties
         run: |
@@ -91,3 +97,11 @@ jobs:
           name: WalletLens-v${{ github.event.inputs.version_name }}-mapping.txt
           path: walletlens_source/release_package/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: ignore
+
+      - name: Generate keystore Base64 for GitHub secret
+        run: |
+          if [ -f "walletlens_source/release_package/signingKey.keystore" ]; then
+            echo "To add as GitHub secret, run:"
+            echo "  base64 -w0 walletlens_source/release_package/signingKey.keystore | pbcopy"
+            echo "Then add as KEYSTORE_BASE64 secret in GitHub repo settings."
+          fi

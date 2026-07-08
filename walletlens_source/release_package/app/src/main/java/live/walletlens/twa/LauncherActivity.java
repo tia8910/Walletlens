@@ -28,7 +28,7 @@ public class LauncherActivity
 
     private static final String TAG = "WalletLensLauncher";
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
-    private static final int TEST_NOTIF_MAX_LAUNCHES = 3;
+    private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
 
     private boolean permissionAskedThisSession = false;
 
@@ -197,16 +197,28 @@ public class LauncherActivity
             new NotificationHelper(this).createChannels();
 
             String[] testMessages = {
-                    "✅ Notifications work! WalletLens will send you market alerts and feature tips here.",
-                    "👋 Welcome back! You'll receive price alerts and portfolio updates through this channel.",
-                    "🔔 Notifications are active! Check back daily for market insights and feature tips."
+                    "📊 Track · Analyze · Grow — WalletLens notifications are active! You'll receive price alerts for crypto, stocks, gold, and silver right here.",
+                    "👋 Welcome back! Price alerts, portfolio updates, and market insights delivered through this channel.",
+                    "🔔 Notifications active! Stay informed with real-time market moves and smart feature tips."
             };
 
-            String title = "🚀 Track · Analyze · Grow";
+            String title = "📈 WalletLens Active";
             String body = testMessages[Math.min(launches, testMessages.length - 1)];
 
             NotificationHelper helper = new NotificationHelper(this);
             helper.showAlertNotification(title, body, "https://walletlens.live/dashboard");
+
+            // Force notification to show immediately by sending a second one if this is first launch
+            if (launches == 0) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    NotificationHelper h2 = new NotificationHelper(this);
+                    h2.showAlertNotification(
+                        "📈 Price Alerts Ready",
+                        "Your portfolio is being monitored. You'll be notified when your assets move more than 1%.",
+                        "https://walletlens.live/dashboard"
+                    );
+                }, 2000);
+            }
 
             Log.d(TAG, "Test notification fired (launch #" + (launches + 1) + "/" + TEST_NOTIF_MAX_LAUNCHES + ")");
         }
