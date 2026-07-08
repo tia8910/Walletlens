@@ -63,6 +63,9 @@ public class PeriodicUpdateWorker extends Worker {
     private static final String KEY_FEATURE = "feature_index";
 
     // ── 32 Features ────────────────────────────────────────────────────
+    /** Minimum hours between feature tips. */
+    private static final long TIP_INTERVAL_HOURS = 2;
+    private static final String KEY_TIP_TS  = "last_tip_timestamp";
     private static final String[][] FEATURES = {
         {"🎙️ Voice Import", "Add holdings by speaking — tap the mic", "/add-holdings-by-voice"},
         {"📸 Screenshot Import", "Screenshot any exchange — reads automatically", "/import-portfolio-from-screenshot"},
