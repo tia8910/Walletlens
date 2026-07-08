@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -20,35 +21,39 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Background worker — runs every 30 min, does TWO things:
+ * Background worker — runs every 30 min.
  *
  * <ol>
- *   <li><b>📊 Price alert</b> — fetches BTC/ETH prices, notifies if >1% move since last check</li>
- *   <li><b>💡 Feature tip</b> — shows ONE feature per day (rotates through all 32 features)</li>
+ *   <li><b>📊 Price alerts</b> — monitors BTC, ETH + top 20 coins.
+ *       Notifies if ANY asset moved >1% since last check.</li>
+ *   <li><b>💡 Feature tip</b> — shows ONE feature per day</li>
  * </ol>
- *
- * <p>No spam, no daily reminders. Privacy-first: only public CoinGecko API.
- * WorkManager survives app close and reboot.
  */
 public class PeriodicUpdateWorker extends Worker {
 
     private static final String TAG = "WalletLensWorker";
 
-    private static final String COINGECKO_URL =
+    // Top 20 coins by market cap (covers ~95%+ of user holdings)
+    private static final String COINS =
+            "bitcoin,ethereum,ripple,solana,cardano,avalanche,dogecoin,"
+            + "polkadot,chainlink,shiba-inu,tron,litecoin,uniswap,"
+            + "stellar,cosmos,monero,filecoin,aptos,arbitrum,sui,near,"
+            + "optimism,hedera,algorand,flow,vechain";
+
+    private static final String PRICE_URL =
             "https://api.coingecko.com/api/v3/simple/price"
-                    + "?ids=bitcoin,ethereum"
-                    + "&vs_currencies=usd"
-                    + "&include_24hr_change=true";
+            + "?ids=" + COINS
+            + "&vs_currencies=usd"
+            + "&include_24hr_change=true";
 
     private static final String PREFS_NAME = "walletlens_notify";
-    private static final String KEY_LAST_BTC    = "last_btc";
-    private static final String KEY_LAST_ETH    = "last_eth";
-    private static final String KEY_FEATURE_IDX = "feature_index";
-    private static final String KEY_LAST_TIP_DAY = "last_tip_day";
+    private static final String KEY_PRICES   = "saved_prices";
+    private static final String KEY_FEATURE  = "feature_index";
+    private static final String KEY_TIP_DAY  = "last_tip_day";
 
     private static final double MOVE_THRESHOLD_PCT = 1.0;
 
-    // ── Every WalletLens feature, one per day ──────────────────────────
+    // ── 32 WalletLens features ─────────────────────────────────────────
     private static final String[][] FEATURES = {
         {"🎙️ Voice Import", "Add holdings by speaking — tap the mic and say \"I bought 0.5 BTC at 65K\"", "/add-holdings-by-voice"},
         {"📸 Screenshot Import", "Screenshot any exchange or wallet — reads balances automatically", "/import-portfolio-from-screenshot"},
@@ -97,10 +102,10 @@ public class PeriodicUpdateWorker extends Worker {
             SharedPreferences prefs = getApplicationContext()
                     .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-            // 1. Check prices — always runs, notifies on >1% move
-            checkPrices(prefs);
+            // 1. Check ALL tracked coins for price moves
+            checkAllPrices(prefs);
 
-            // 2. Feature tip — once per day
+            // 2. Feature tip (once per day)
             showDailyFeatureTip(prefs);
 
         } catch (Exception e) {
@@ -110,62 +115,78 @@ public class PeriodicUpdateWorker extends Worker {
         return Result.success();
     }
 
-    // ── 1. Price alert ─────────────────────────────────────────────────
+    // ── 1. Multi-coin price alert ──────────────────────────────────────
 
-    private void checkPrices(SharedPreferences prefs) throws Exception {
-        String json = httpGet(COINGECKO_URL);
+    private void checkAllPrices(SharedPreferences prefs) throws Exception {
+        String json = httpGet(PRICE_URL);
         JSONObject data = new JSONObject(json);
 
-        double btcPrice = data.getJSONObject("bitcoin").getDouble("usd");
-        double ethPrice = data.getJSONObject("ethereum").getDouble("usd");
-        double btcChange24h = data.getJSONObject("bitcoin").optDouble("usd_24h_change", 0);
-        double ethChange24h = data.getJSONObject("ethereum").optDouble("usd_24h_change", 0);
+        // Load saved prices: {"bitcoin": 65000.0, "ethereum": 3400.0, ...}
+        String savedJson = prefs.getString(KEY_PRICES, "{}");
+        JSONObject saved = new JSONObject(savedJson);
 
-        float lastBtc = prefs.getFloat(KEY_LAST_BTC, 0f);
-        float lastEth = prefs.getFloat(KEY_LAST_ETH, 0f);
-
-        prefs.edit()
-                .putFloat(KEY_LAST_BTC, (float) btcPrice)
-                .putFloat(KEY_LAST_ETH, (float) ethPrice)
-                .apply();
-
-        // First run — save only
-        if (lastBtc == 0f || lastEth == 0f) {
-            Log.d(TAG, "First run — prices saved");
-            return;
-        }
-
-        double btcMove = Math.abs(btcPrice - lastBtc) / lastBtc * 100;
-        double ethMove = Math.abs(ethPrice - lastEth) / lastEth * 100;
-
-        if (btcMove < MOVE_THRESHOLD_PCT && ethMove < MOVE_THRESHOLD_PCT) {
-            Log.d(TAG, String.format(Locale.US, "Stable — BTC: %.2f%% ETH: %.2f%%", btcMove, ethMove));
-            return;
-        }
-
+        JSONObject newPrices = new JSONObject();
+        StringBuilder movers = new StringBuilder();
+        int moveCount = 0;
         NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.US);
 
-        String title = "📊 Price Alert";
-        String body = String.format(Locale.US,
-                "BTC: %s (%.1f%% · 24h: %.1f%%)\nETH: %s (%.1f%% · 24h: %.1f%%)",
-                cf.format(btcPrice), btcMove, btcChange24h,
-                cf.format(ethPrice), ethMove, ethChange24h);
+        // Iterate over all coins returned from API
+        for (String coinId : COINS.split(",")) {
+            coinId = coinId.trim();
+            if (!data.has(coinId)) continue;
 
-        NotificationHelper h = new NotificationHelper(getApplicationContext());
-        h.showAlertNotification(title, body, "https://walletlens.live/market-index");
+            JSONObject coinData = data.getJSONObject(coinId);
+            double price = coinData.getDouble("usd");
+            double change24h = coinData.optDouble("usd_24h_change", 0);
+
+            newPrices.put(coinId, price);
+
+            // Check if we have a previous price
+            if (saved.has(coinId)) {
+                double oldPrice = saved.getDouble(coinId);
+                double move = Math.abs(price - oldPrice) / oldPrice * 100;
+
+                if (move >= MOVE_THRESHOLD_PCT) {
+                    String symbol = coinId.substring(0, Math.min(coinId.length(), 8)).toUpperCase(Locale.US);
+                    if (moveCount > 0) movers.append("\n");
+                    movers.append(String.format(Locale.US, "%s: %s (%.1f%%)",
+                            symbol, cf.format(price), move));
+                    moveCount++;
+                }
+            }
+        }
+
+        // Save new prices
+        prefs.edit().putString(KEY_PRICES, newPrices.toString()).apply();
+
+        // First run — no notification
+        if (saved.length() == 0) {
+            Log.d(TAG, "First run — prices saved for " + newPrices.length() + " coins");
+            return;
+        }
+
+        // Notify if any coin moved
+        if (moveCount > 0) {
+            String title = "📊 Price Alert — " + moveCount + " coin" + (moveCount > 1 ? "s" : "") + " moved";
+            String body = movers.toString();
+
+            NotificationHelper h = new NotificationHelper(getApplicationContext());
+            h.showAlertNotification(title, body, "https://walletlens.live/market-index");
+
+            Log.d(TAG, "Alert: " + moveCount + " coin(s) moved >" + MOVE_THRESHOLD_PCT + "%");
+        } else {
+            Log.d(TAG, "All " + newPrices.length() + " coins stable");
+        }
     }
 
-    // ── 2. Feature tip (once per day) ──────────────────────────────────
+    // ── 2. Feature tip ─────────────────────────────────────────────────
 
     private void showDailyFeatureTip(SharedPreferences prefs) {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
-        String lastTipDay = prefs.getString(KEY_LAST_TIP_DAY, "");
+        String lastTipDay = prefs.getString(KEY_TIP_DAY, "");
+        if (lastTipDay.equals(today)) return;
 
-        if (lastTipDay.equals(today)) {
-            return; // Already shown today
-        }
-
-        int idx = prefs.getInt(KEY_FEATURE_IDX, 0);
+        int idx = prefs.getInt(KEY_FEATURE, 0);
         if (idx >= FEATURES.length) idx = 0;
 
         String[] tip = FEATURES[idx];
@@ -175,8 +196,8 @@ public class PeriodicUpdateWorker extends Worker {
         h.showNotification("💡 " + tip[0], tip[1], url, null);
 
         prefs.edit()
-                .putInt(KEY_FEATURE_IDX, idx + 1)
-                .putString(KEY_LAST_TIP_DAY, today)
+                .putInt(KEY_FEATURE, idx + 1)
+                .putString(KEY_TIP_DAY, today)
                 .apply();
 
         Log.d(TAG, "Tip #" + (idx + 1) + "/" + FEATURES.length + ": " + tip[0]);
@@ -188,8 +209,8 @@ public class PeriodicUpdateWorker extends Worker {
         URI uri = new URI(urlString);
         HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
         conn.setRequestMethod("GET");
-        conn.setConnectTimeout(10_000);
-        conn.setReadTimeout(10_000);
+        conn.setConnectTimeout(15_000);
+        conn.setReadTimeout(15_000);
         conn.setRequestProperty("Accept", "application/json");
 
         int status = conn.getResponseCode();
