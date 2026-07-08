@@ -17,11 +17,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * Schedules background price checks for WalletLens.
  *
- * <p>Runs every 3 hours but only fires a notification if BTC or ETH
- * moved more than 1% since the last check. Otherwise stays completely
- * silent — no spam, no daily reminders.
+ * <p>Checks every 30 minutes but only fires a notification if BTC or ETH
+ * moved more than 1% since the last check. Otherwise completely silent.
  *
- * <p>WorkManager survives app close and device reboot.
+ * <p>WorkManager survives app close and device reboot. On Android 12+,
+ * the system may batch these checks to save battery, but prices will
+ * still be checked frequently enough for timely alerts.
  */
 public final class NotificationScheduler {
 
@@ -29,8 +30,8 @@ public final class NotificationScheduler {
     private static final String PERIODIC_WORK = "walletlens_price_check";
     private static final String BOOT_WORK = "walletlens_boot_check";
 
-    /** Check prices every 3 hours for timely alerts. */
-    private static final long INTERVAL_HOURS = 3;
+    /** Check prices every 30 minutes. */
+    private static final long INTERVAL_MINUTES = 30;
 
     public static void schedule(@NonNull Context context) {
         schedulePeriodic(context);
@@ -44,10 +45,10 @@ public final class NotificationScheduler {
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                 PeriodicUpdateWorker.class,
-                INTERVAL_HOURS,
-                TimeUnit.HOURS)
+                INTERVAL_MINUTES,
+                TimeUnit.MINUTES)
                 .setConstraints(constraints)
-                .setInitialDelay(30, TimeUnit.MINUTES)
+                .setInitialDelay(5, TimeUnit.MINUTES)
                 .addTag(PERIODIC_WORK)
                 .build();
 
@@ -56,14 +57,14 @@ public final class NotificationScheduler {
                 ExistingPeriodicWorkPolicy.KEEP,
                 request);
 
-        Log.d(TAG, "Price checks every " + INTERVAL_HOURS + " hours (silent unless >1% move)");
+        Log.d(TAG, "Price checks every " + INTERVAL_MINUTES + " min (silent unless >1% move)");
     }
 
-    /** One-time check 10 min after install. */
+    /** One-time check 5 min after install. */
     private static void scheduleBootCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
-                .setInitialDelay(10, TimeUnit.MINUTES)
+                .setInitialDelay(5, TimeUnit.MINUTES)
                 .addTag(BOOT_WORK)
                 .build();
 
@@ -72,7 +73,7 @@ public final class NotificationScheduler {
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Boot price check in 10 minutes");
+        Log.d(TAG, "Boot price check in 5 minutes");
     }
 
     public static void cancel(@NonNull Context context) {
