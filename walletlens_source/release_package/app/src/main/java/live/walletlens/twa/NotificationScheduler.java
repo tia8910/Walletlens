@@ -15,101 +15,87 @@ import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Schedules all background notification work for WalletLens.
+ * Schedules background notification checks for WalletLens.
  *
- * <p>Uses Android WorkManager which survives app close and device restarts.
- * All workers are privacy-first: no user data leaves the device.
- *
- * <h3>Schedules:</h3>
+ * <p>Notifications are <b>event-driven, not timer-driven</b>:
  * <ul>
- *   <li><b>Smart periodic worker</b> – every 4 hours. Rotates between market
- *       updates, Fear & Greed, daily reminders, weekly recaps, feature tips,
- *       and re-engagement messages. Requires network for market data but
- *       NOT for reminders.</li>
- *   <li><b>Initial one-shot</b> – fires 5 minutes after install so the user
- *       gets their first notification quickly.</li>
- *   <li><b>Boot reschedule</b> – workers auto-reschedule after device reboot
- *       via WorkManager's built-in BOOT_COMPLETED support.</li>
+ *   <li><b>🔄 Portfolio changes</b> – detected by the web app when open,
+ *       shown as native notifications via TWA delegation</li>
+ *   <li><b>📡 FCM push</b> – instant server-sent alerts via Firebase
+ *       Cloud Messaging (arrive even when app is closed)</li>
+ *   <li><b>⏰ Once-daily market pulse</b> – a single daily check for
+ *       significant BTC/ETH moves (only if >2% change, otherwise silent)</li>
  * </ul>
+ *
+ * <p>The once-daily check exists only as a privacy-first fallback for
+ * users who haven't set up server-side push. All data stays on-device.
  */
 public final class NotificationScheduler {
 
     private static final String TAG = "WalletLensScheduler";
 
-    private static final String PERIODIC_WORK_NAME = "walletlens_smart_notify";
-    private static final String ONE_SHOT_WORK_NAME = "walletlens_initial_check";
+    private static final String DAILY_WORK_NAME  = "walletlens_daily_pulse";
+    private static final String BOOT_WORK_NAME   = "walletlens_boot_check";
 
     /**
-     * How often the smart worker runs. Every 4 hours balances
-     * responsiveness with battery life.
-     */
-    private static final long INTERVAL_HOURS = 4;
-
-    /**
-     * Start all background notification work. Safe to call multiple times —
-     * existing schedules are kept.
+     * Start background work. Safe to call multiple times.
      */
     public static void schedule(@NonNull Context context) {
-        schedulePeriodic(context);
-        scheduleInitialCheck(context);
+        scheduleDailyPulse(context);
+        scheduleBootCheck(context);
     }
 
-    // ── Periodic smart worker ──────────────────────────────────────────
-
-    private static void schedulePeriodic(@NonNull Context context) {
-        // Network constraint only for data-fetching notifications.
-        // Reminder-type notifications (daily, tips, re-engage) work offline.
+    /**
+     * A single daily check for significant market moves.
+     * Runs every 24 hours but only shows a notification if
+     * BTC/ETH moved >2%. Otherwise it stays completely silent.
+     */
+    private static void scheduleDailyPulse(@NonNull Context context) {
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                // Don't require battery not low - notifications are lightweight
                 .build();
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                 PeriodicUpdateWorker.class,
-                INTERVAL_HOURS,
-                TimeUnit.HOURS)
+                24, TimeUnit.HOURS)
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.HOURS) // allow first-run setup
-                .addTag(PERIODIC_WORK_NAME)
+                .setInitialDelay(1, TimeUnit.HOURS)
+                .addTag(DAILY_WORK_NAME)
                 .build();
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC_WORK_NAME,
+                DAILY_WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
                 request);
 
-        Log.d(TAG, "Smart notifications scheduled every " + INTERVAL_HOURS + " hours");
+        Log.d(TAG, "Daily market pulse scheduled (24h interval, only fires on >2% move)");
     }
 
-    // ── One-time initial notification ──────────────────────────────────
-
     /**
-     * Fire a notification 5 minutes after install so the user immediately
-     * sees that WalletLens has background notifications working.
+     * A one-time check shortly after install so the user sees
+     * their first notification quickly.
      */
-    private static void scheduleInitialCheck(@NonNull Context context) {
+    private static void scheduleBootCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
-                .setInitialDelay(5, TimeUnit.MINUTES)
-                .addTag(ONE_SHOT_WORK_NAME)
+                .setInitialDelay(10, TimeUnit.MINUTES)
+                .addTag(BOOT_WORK_NAME)
                 .build();
 
         WorkManager.getInstance(context).enqueueUniqueWork(
-                ONE_SHOT_WORK_NAME,
+                BOOT_WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Initial notification scheduled in 5 minutes");
+        Log.d(TAG, "Boot notification scheduled in 10 minutes");
     }
-
-    // ── Cancel ─────────────────────────────────────────────────────────
 
     /**
      * Cancel all background notification work.
      */
     public static void cancel(@NonNull Context context) {
-        WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK_NAME);
-        WorkManager.getInstance(context).cancelUniqueWork(ONE_SHOT_WORK_NAME);
-        Log.d(TAG, "All notification work cancelled");
+        WorkManager.getInstance(context).cancelUniqueWork(DAILY_WORK_NAME);
+        WorkManager.getInstance(context).cancelUniqueWork(BOOT_WORK_NAME);
+        Log.d(TAG, "All background notification work cancelled");
     }
 }
