@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { track } from '../analytics'
 
-const ENABLED_KEY  = 'wl_biometric_enabled'
+const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
 const SESSION_KEY  = 'wl_biometric_unlocked'
 const CRED_KEY     = 'wl_biometric_cred'   // base64url of the registered credential id
 const HIDDEN_AT    = 'wl_biometric_hidden_at'  // timestamp the app was last backgrounded
@@ -15,6 +15,34 @@ const RELOCK_GRACE_MS = 60 * 1000
 // biometric sheet briefly backgrounds the page (visibilitychange → hidden),
 // which would otherwise re-lock us mid-authentication and loop forever.
 let authInProgress = false
+
+// ── Android TWA detection ─────────────────────────────────────────────────
+//
+// Checks whether the web app is running inside the Android TWA (Trusted Web
+// Activity) by looking for the Chromium Custom Tab user-agent token and the
+// Android package name. When inside the TWA we can use native intent URLs
+// (walletlens://biometric-auth) to trigger the platform BiometricPrompt
+// instead of WebAuthn, giving a true native app feel.
+const isAndroidTWA = (() => {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  const isAndroid = /android/i.test(ua)
+  const isWebView = /wv\)/.test(ua) || /; wv/.test(ua)
+  return isAndroid && isWebView
+})()
+
+/**
+ * Launch the native BiometricActivity via a custom scheme intent URL.
+ * The TWA's AndroidManifest routes walletlens://biometric-auth URIs to
+ * our BiometricActivity which shows the system BiometricPrompt dialog.
+ */
+function sendNativeIntent(action, redirectUrl) {
+  const base = 'walletlens://biometric-auth?action=' + encodeURIComponent(action)
+  const url = redirectUrl
+    ? base + '&redirect=' + encodeURIComponent(redirectUrl)
+    : base
+  window.location.href = url
+}
 
 // ── base64url <-> ArrayBuffer helpers (for storing/restoring the credential id)
 function bufToB64url(buf) {
@@ -47,10 +75,14 @@ export function useBiometricLock() {
   // whenever the API is available and let navigator.credentials.create() be
   // the real source of truth — pre-hiding the option on the async check left
   // capable devices stuck on "not available on this device".
-  const [available] = useState(() => supportsWebAuthn())
+  const [available] = useState(() => isAndroidTWA || supportsWebAuthn())
   const [supported, setSupported] = useState(false)
 
   useEffect(() => {
+    if (isAndroidTWA) {
+      setSupported(true)
+      return
+    }
     if (!supportsWebAuthn()) return
     window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
       .then(avail => setSupported(avail))
@@ -83,13 +115,60 @@ export function useBiometricLock() {
       if (away >= RELOCK_GRACE_MS) {
         sessionStorage.removeItem(SESSION_KEY)
         setLocked(true)
+
+        // In Android TWA, also send native intent to trigger BiometricPrompt
+        if (isAndroidTWA) {
+          sendNativeIntent('unlock')
+        }
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
+  // ── Listen for biometric_auth URL parameter (native auth result) ──────
+  //
+  // After the native BiometricActivity authenticates, it redirects back to
+  // the web app with ?biometric_auth=success|cancel in the URL. We pick
+  // this up, set the session token, and clear the URL parameter.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('biometric_auth')
+    if (!result) return
+
+    // Clean the URL parameter so it doesn't stick around on refresh
+    const cleanUrl = window.location.pathname + window.location.hash
+    window.history.replaceState({}, '', cleanUrl)
+
+    if (result === 'success') {
+      sessionStorage.setItem(SESSION_KEY, '1')
+      setLocked(false)
+      track('biometric_unlock_success')
+    } else {
+      track('biometric_unlock_cancel')
+      // User cancelled — show the lock screen so they can retry
+      setLocked(true)
+    }
+  }, [])
+
+  // ── Enable (native TWA path vs WebAuthn) ──────────────────────────────
+  //
+  // On Android TWA we send a native intent to store the enabled flag in
+  // SharedPreferences, then fall through to the localStorage flow. On
+  // non-Android devices we use WebAuthn as before.
   async function enable() {
+    // Native TWA path: store enabled flag locally AND tell the native app
+    if (isAndroidTWA) {
+      localStorage.setItem(ENABLED_KEY, '1')
+      sessionStorage.setItem(SESSION_KEY, '1')
+      setEnabled(true)
+      setLocked(false)
+      track('biometric_enabled')
+      // Fire-and-forget: tell the native app to persist the flag
+      sendNativeIntent('enable')
+      return true
+    }
+
     // Gate on the API being present, not on the (sometimes false-negative)
     // platform-authenticator probe. If the device genuinely can't, the
     // create() call below throws and we return false cleanly.
@@ -134,7 +213,18 @@ export function useBiometricLock() {
     }
   }
 
+  // ── Unlock (native TWA path vs WebAuthn) ──────────────────────────────
+  //
+  // On Android TWA, send a native intent to open the system BiometricPrompt
+  // dialog. The result comes back via the biometric_auth URL parameter
+  // listener above.
   async function unlock() {
+    if (isAndroidTWA) {
+      sendNativeIntent('unlock')
+      // Don't await — the page will reload after auth
+      return
+    }
+
     authInProgress = true
     try {
       // Target the exact credential we registered (works even if the platform
@@ -164,7 +254,13 @@ export function useBiometricLock() {
     }
   }
 
+  // ── Disable ───────────────────────────────────────────────────────────
   function disable() {
+    // Native TWA path: tell the native app to clear the SharedPrefs flag
+    if (isAndroidTWA) {
+      sendNativeIntent('disable')
+    }
+    // Also clear local state regardless of platform
     localStorage.removeItem(ENABLED_KEY)
     localStorage.removeItem(CRED_KEY)
     sessionStorage.removeItem(SESSION_KEY)
@@ -217,7 +313,7 @@ export function BiometricLockScreen({ onUnlock }) {
     // If the lock was enabled before a usable credential was stored on this
     // device (older build / cross-context), there is nothing to authenticate
     // against — skip the futile prompt and offer recovery straight away.
-    if (!localStorage.getItem(CRED_KEY)) {
+    if (!isAndroidTWA && !localStorage.getItem(CRED_KEY)) {
       setRecover(true)
       setError('No passkey is registered on this device. Disable the lock to continue, then re-enable it from Data → Security.')
       return
@@ -280,108 +376,47 @@ export function BiometricLockScreen({ onUnlock }) {
           </div>
         </div>
 
-        {/* Primary unlock button */}
-        <button className="bl-cta" onClick={attempt} disabled={trying}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          {trying ? 'Verifying…' : 'Unlock'}
-        </button>
-
-        {/* Error + recovery */}
+        {/* Error / recovery */}
         {error && (
           <div className="bl-error">
             <div className="bl-error-text">{error}</div>
             {recover && (
               <button className="bl-recover" onClick={recoverEntry}>
-                Disable lock &amp; enter app
+                Disable lock &amp; continue
               </button>
             )}
           </div>
+        )}
+
+        {/* Fallback CTA when biometric prompt doesn't auto-show (some Android TWA versions) */}
+        {!trying && !error && (
+          <button className="bl-cta" onClick={attempt}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a5 5 0 0 0-5 5v3h10V7a5 5 0 0 0-5-5z"/>
+              <path d="M19 10v3a7 7 0 0 1-14 0v-3"/>
+            </svg>
+            Tap to authenticate
+          </button>
         )}
       </div>
     </div>
   )
 }
 
-// Settings toggle — embed in the Data/Security panel.
-export function BiometricToggle() {
-  const { enabled, supported, enable, disable } = useBiometricLock()
-  const [busy, setBusy] = useState(false)
-
-  async function onToggle() {
-    if (busy) return
-    setBusy(true)
-    try {
-      if (enabled) disable()
-      else await enable()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const unavailable = !supported
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: '0.75rem',
-      padding: '0.85rem 1rem',
-      background: 'rgba(var(--g-rgb),0.05)',
-      border: '1px solid rgba(var(--g-rgb),0.15)',
-      borderRadius: '12px',
-    }}>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
-          🔒 App Lock — Fingerprint / Face
-        </div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-          {unavailable
-            ? 'Not available on this device or browser'
-            : enabled
-              ? 'Requires your fingerprint each time you open the app'
-              : 'Require your fingerprint to open WalletLens'}
-        </div>
-      </div>
-      <button
-        onClick={onToggle}
-        disabled={unavailable || busy}
-        style={{
-          flexShrink: 0,
-          background: enabled ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)',
-          color: enabled ? '#fff' : 'var(--text-muted)',
-          border: enabled ? 'none' : '1px solid var(--border)', borderRadius: '10px',
-          boxShadow: enabled ? '0 2px 8px rgba(5,150,105,0.35)' : 'none',
-          padding: '0.45rem 0.95rem',
-          fontWeight: 800, fontSize: '0.82rem',
-          cursor: (unavailable || busy) ? 'not-allowed' : 'pointer',
-          opacity: unavailable ? 0.5 : 1,
-          transition: 'all 0.2s',
-        }}>
-        {busy ? '…' : enabled ? 'Enabled ✓' : 'Enable'}
-      </button>
-    </div>
-  )
-}
-
-// Premium lock-screen styles — injected once when the lock screen mounts.
+// Inline CSS for the lock screen (scoped to .bl-* classes)
 function BiometricLockStyles() {
   return (
     <style>{`
       .bl-screen{
-        position:fixed; inset:0; z-index:99999;
-        background:
-          radial-gradient(120% 80% at 50% -10%, #0a2418 0%, #051710 38%, #020a06 100%);
+        position:fixed; inset:0; z-index:2147483000;
         display:flex; align-items:center; justify-content:center;
-        padding:1.5rem; overflow:hidden;
-        animation:bl-fade .45s ease both;
+        background:#020d08; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        -webkit-font-smoothing:antialiased;
+        overflow:hidden;
       }
-      @keyframes bl-fade{ from{opacity:0} to{opacity:1} }
       .bl-glow{
-        position:absolute; top:-25%; left:50%; transform:translateX(-50%);
-        width:130%; height:70%;
+        position:absolute; inset:0; pointer-events:none;
         background:radial-gradient(circle at 50% 50%, rgba(0,200,83,0.22), rgba(0,200,83,0) 60%);
         filter:blur(20px); pointer-events:none;
       }

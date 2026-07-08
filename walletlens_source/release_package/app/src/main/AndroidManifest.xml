@@ -25,8 +25,7 @@
     
         <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
-
-    
+        <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
     
 
@@ -207,6 +206,32 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Native biometric authentication activity.
+             Launched from the web app via walletlens://biometric-auth URIs
+             or from LauncherActivity on cold start. -->
+        <activity
+            android:name=".BiometricActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="biometric-auth" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="biometric" />
+            </intent-filter>
+        </activity>
 
     </application>
 </manifest>
