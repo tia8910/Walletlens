@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Notification small icon for WalletLens.
-  Must be a white shape on transparent background for Android's status bar.
-  This is a simple "W" letter icon that works at small sizes.
+  Notification small icon for WalletLens status bar.
+  Simple rising bar chart - white on transparent (Android monochrome requirement).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- WalletLens "W" icon - two overlapping lens/pie shapes forming a W -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M4,4 L7,4 L9,12 L12,8 L15,12 L17,4 L20,4 L16,20 L12,14 L8,20 Z" />
+    <!-- Baseline -->
+    <path android:fillColor="#FFFFFF" android:pathData="M4,20 L20,20" />
+    <!-- Three bars rising from left to right -->
+    <path android:fillColor="#FFFFFF" android:pathData="M6,20 L6,13 L8,13 L8,20 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M11,20 L11,9 L13,9 L13,20 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M16,20 L16,5 L18,5 L18,20 Z" />
 </vector>
