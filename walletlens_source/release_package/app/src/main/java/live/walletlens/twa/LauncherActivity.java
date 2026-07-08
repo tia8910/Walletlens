@@ -97,7 +97,7 @@ public class LauncherActivity
                     "🔔 Notifications are active! Check back daily for market insights and feature tips."
             };
 
-            String title = "🚀 WalletLens Notifications Active";
+            String title = "🚀 Track · Analyze · Grow";
             String body = testMessages[Math.min(launches, testMessages.length - 1)];
 
             NotificationHelper helper = new NotificationHelper(this);
