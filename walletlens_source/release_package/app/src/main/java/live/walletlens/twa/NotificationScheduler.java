@@ -15,39 +15,45 @@ import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Schedules the periodic background work for local notifications.
+ * Schedules all background notification work for WalletLens.
  *
- * <p>Uses Android WorkManager to run {@link PeriodicUpdateWorker} periodically.
- * The worker only runs when the device has network access and is idle enough,
- * respecting Doze mode and battery optimization.
+ * <p>Uses Android WorkManager. All workers are privacy-first:
+ * no user data ever leaves the device.
+ *
+ * <h3>Schedules:</h3>
+ * <ul>
+ *   <li><b>Smart periodic worker</b> – runs every 6 hours, picks a
+ *       notification type via smart rotation (market updates, Fear & Greed,
+ *       daily reminders, weekly recaps, feature tips, re-engagement).</li>
+ *   <li><b>Initial one-shot</b> – fires 15 min after install so the user
+ *       gets their first notification quickly.</li>
+ * </ul>
  */
 public final class NotificationScheduler {
 
     private static final String TAG = "WalletLensScheduler";
-    private static final String PERIODIC_WORK_NAME = "walletlens_periodic_updates";
-    private static final String ONE_SHOT_WORK_NAME  = "walletlens_initial_check";
+
+    private static final String PERIODIC_WORK_NAME = "walletlens_smart_notify";
+    private static final String ONE_SHOT_WORK_NAME = "walletlens_initial_check";
+
+    /** How often the smart worker runs (hours). Lower = more responsive. */
+    private static final long INTERVAL_HOURS = 6;
 
     /**
-     * How often to check for price updates and feature announcements.
-     * Every 8 hours is a good balance for market updates without draining battery.
-     */
-    private static final long INTERVAL_HOURS = 8;
-
-    /**
-     * Start the periodic background work and an initial one-time check.
-     * Safe to call multiple times.
+     * Start all background notification work. Safe to call multiple times —
+     * existing schedules are kept.
      */
     public static void schedule(@NonNull Context context) {
         schedulePeriodic(context);
         scheduleInitialCheck(context);
     }
 
-    // ── Periodic work ────────────────────────────────────────────────────
+    // ── Periodic smart worker ──────────────────────────────────────────
 
     private static void schedulePeriodic(@NonNull Context context) {
         Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)   // need internet
-                .setRequiresBatteryNotLow(true)                  // don't drain low battery
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
                 .build();
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
@@ -55,25 +61,20 @@ public final class NotificationScheduler {
                 INTERVAL_HOURS,
                 TimeUnit.HOURS)
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.HOURS) // first run after 1 hour to let user settle
+                .setInitialDelay(1, TimeUnit.HOURS)
                 .addTag(PERIODIC_WORK_NAME)
                 .build();
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 PERIODIC_WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,  // don't duplicate if already scheduled
+                ExistingPeriodicWorkPolicy.KEEP,
                 request);
 
-        Log.d(TAG, "Periodic updates scheduled every " + INTERVAL_HOURS + " hours");
+        Log.d(TAG, "Smart notifications scheduled every " + INTERVAL_HOURS + " hours");
     }
 
-    // ── One-time initial check ───────────────────────────────────────────
+    // ── One-time initial notification ──────────────────────────────────
 
-    /**
-     * Enqueue a one-shot work that runs ~15 minutes after first install.
-     * This gives the user a quick price snapshot so they don't have to wait
-     * the full 8-hour cycle.
-     */
     private static void scheduleInitialCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
@@ -86,17 +87,17 @@ public final class NotificationScheduler {
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Initial one-shot check scheduled in 15 minutes");
+        Log.d(TAG, "Initial notification scheduled in 15 minutes");
     }
 
-    // ── Cancel ──────────────────────────────────────────────────────────
+    // ── Cancel ─────────────────────────────────────────────────────────
 
     /**
-     * Cancel all background work (periodic + one-shot).
+     * Cancel all background notification work.
      */
     public static void cancel(@NonNull Context context) {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK_NAME);
         WorkManager.getInstance(context).cancelUniqueWork(ONE_SHOT_WORK_NAME);
-        Log.d(TAG, "All background work cancelled");
+        Log.d(TAG, "All notification work cancelled");
     }
 }
