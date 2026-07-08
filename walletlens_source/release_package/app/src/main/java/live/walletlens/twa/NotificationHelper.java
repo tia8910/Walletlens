@@ -128,13 +128,17 @@ public final class NotificationHelper {
             smallIcon = android.R.drawable.ic_dialog_info;
         }
 
+        int accentColor = 0xFF071A0C; // WalletLens brand dark green
+
         Notification notification = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(smallIcon)
+                .setColor(accentColor)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setPriority(channelId.equals(CHANNEL_ALERTS_ID)
                         ? NotificationCompat.PRIORITY_HIGH
                         : NotificationCompat.PRIORITY_DEFAULT)
