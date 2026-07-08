@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -38,7 +39,7 @@ import java.util.concurrent.Executor;
  * unlocked for the current "session". On failure the user can retry
  * or cancel (which returns them to the lock screen).
  */
-public class BiometricActivity extends android.app.Activity {
+public class BiometricActivity extends AppCompatActivity {
 
     private static final String TAG = "WalletLensBiometric";
 
