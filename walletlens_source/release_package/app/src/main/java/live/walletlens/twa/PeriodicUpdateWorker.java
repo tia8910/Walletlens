@@ -157,9 +157,20 @@ public class PeriodicUpdateWorker extends Worker {
             // Save all new prices
             prefs.edit().putString(KEY_PRICES, newPrices.toString()).apply();
 
-            // First run check
+            // First run check — show a guaranteed "monitoring active" notification
+            // so the user knows background monitoring is working
             if (saved.length() == 0) {
                 Log.d(TAG, "First run — prices saved for " + newPrices.length() + " assets");
+                NotificationHelper h = new NotificationHelper(getApplicationContext());
+                String assetCount = String.valueOf(newPrices.length());
+                h.showAlertNotification(
+                    "\uD83D\uDD0D WalletLens Monitoring Active",
+                    "Tracking " + assetCount + " assets (crypto, stocks, gold, silver). You will be alerted on price moves >1%.",
+                    "https://walletlens.live/market-index"
+                );
+                prefs.edit().putLong("last_notification_ts", System.currentTimeMillis()).apply();
+                // Still show the first feature tip
+                showDailyFeatureTip(prefs);
                 return Result.success();
             }
 

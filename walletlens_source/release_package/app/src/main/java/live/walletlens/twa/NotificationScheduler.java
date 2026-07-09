@@ -39,16 +39,17 @@ public final class NotificationScheduler {
     }
 
     private static void schedulePeriodic(@NonNull Context context) {
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
+        // No network constraint - worker handles HTTP errors gracefully.
+        // Removing this ensures WorkManager can run the check even during
+        // brief connectivity gaps (device sleep, tunnel transitions).
+        Constraints constraints = new Constraints.Builder().build();
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                 PeriodicUpdateWorker.class,
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES)
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.MINUTES)
+                .setInitialDelay(15, TimeUnit.SECONDS)
                 .addTag(PERIODIC_WORK)
                 .build();
 
@@ -64,7 +65,7 @@ public final class NotificationScheduler {
     private static void scheduleBootCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
-                .setInitialDelay(1, TimeUnit.MINUTES)
+                .setInitialDelay(0, TimeUnit.SECONDS)
                 .addTag(BOOT_WORK)
                 .build();
 

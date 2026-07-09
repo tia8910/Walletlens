@@ -55,12 +55,11 @@ public class LauncherActivity
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    requestPermissions(
-                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                            REQUEST_CODE_POST_NOTIFICATIONS);
-                    permissionAskedThisSession = true;
-                }, 800);
+                // Request immediately - no delay so user sees the prompt right away
+                requestPermissions(
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_CODE_POST_NOTIFICATIONS);
+                permissionAskedThisSession = true;
             }
         }
 
@@ -237,12 +236,24 @@ public class LauncherActivity
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "POST_NOTIFICATIONS permission granted by user");
                 fireTestNotificationIfNeeded();
+                // Also trigger the background worker immediately so notifications
+                // start flowing right away
+                android.content.Intent workerIntent = new android.content.Intent(this, com.google.androidbrowserhelper.trusted.LauncherActivity.class);
+                workerIntent.setAction("android.intent.action.MAIN");
+                workerIntent.addCategory("android.intent.category.LAUNCHER");
+                androidx.work.OneTimeWorkRequest workRequest =
+                    new androidx.work.OneTimeWorkRequest.Builder(PeriodicUpdateWorker.class)
+                        .setInitialDelay(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .build();
+                androidx.work.WorkManager.getInstance(this).enqueue(workRequest);
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission denied by user");
+                // If denied, show the system rationale again next time
                 Toast.makeText(this,
-                        "Notification permission is needed for price alerts " +
-                        "and market updates.\nYou can enable it later in " +
-                        "Settings > Apps > WalletLens > Notifications.",
+                        "\u26A0\uFE0F Notification permission required\n" +
+                        "WalletLens needs notification access to send price alerts " +
+                        "and market updates. Go to Settings > Apps > WalletLens > " +
+                        "Notifications to enable.",
                         Toast.LENGTH_LONG).show();
             }
         }
