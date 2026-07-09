@@ -84,22 +84,20 @@ public final class NotificationScheduler {
      * Schedule an alarm to fire immediately (for first-use welcome).
      */
     public static void scheduleImmediate(@NonNull Context context) {
-        AlarmManager alarmManager =
-                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
-        if (alarmManager == null) return;
-
-        long triggerAtMs = System.currentTimeMillis() + 5_000; // 5 seconds
+        // Use setAlarmClock (always available, no special permission needed)
+        // with a trigger 5 seconds from now for the first notification.
+        long triggerAtMs = System.currentTimeMillis() + 5_000;
 
         PendingIntent pi = buildAlarmIntent(context);
         if (pi == null) return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
-        } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
-        }
+        AlarmManager alarmManager =
+                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        AlarmManager.AlarmClockInfo alarmClock =
+                new AlarmManager.AlarmClockInfo(triggerAtMs, null);
+        alarmManager.setAlarmClock(alarmClock, pi);
 
         Log.d(TAG, "Immediate alarm scheduled in 5 seconds");
     }
