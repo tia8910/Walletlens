@@ -1,157 +1,80 @@
 package live.walletlens.twa;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
+import java.util.concurrent.TimeUnit;
 
 /**
- * Schedules background notifications using {@link AlarmManager#setAlarmClock}.
+ * Schedules the PeriodicUpdateWorker for push notifications.
  *
- * <p>This is the most reliable way to deliver notifications when the app is
- * closed on modern Android. Unlike WorkManager (which can be deferred by
- * hours), {@code setAlarmClock()} shows a small clock icon in the status bar
- * and the system almost never defers it.
- *
- * <p>Notifications fire every 30 minutes, cycling through:
- * <ul>
- *   <li>📊 Live price updates (BTC, ETH, SOL, XRP, ADA + gold)</li>
- *   <li>💡 Feature tips (32+ app features)</li>
- *   <li>💪 Investment hacks (20 wealth-building strategies)</li>
- *   <li>🔔 Portfolio reminders</li>
- * </ul>
- *
- * <p>Privacy-first: all data is fetched from public free APIs (CoinGecko,
- * metals.live). No user data is sent anywhere.
+ * Uses WorkManager with relaxed constraints so the worker runs even
+ * with spotty connectivity. Falls back to local notifications if
+ * FCM self-push isn't configured.
  */
 public final class NotificationScheduler {
 
     private static final String TAG = "WalletLensScheduler";
+    private static final String PERIODIC_WORK = "walletlens_price_check";
+    private static final String BOOT_WORK = "walletlens_boot_check";
+    private static final long INTERVAL_MINUTES = 30;
 
-    /** Interval between alarms — 30 minutes */
-    private static final long INTERVAL_MS = 30 * 60 * 1000L;
-
-    /** Preference tracking whether the alarm has been initialised */
-    private static final String PREFS_NAME = "walletlens_alarm";
-    private static final String KEY_ALARM_SET = "alarm_set";
-    private static final String KEY_FIRST_WELCOME = "first_welcome_shown";
-
-    /** Intent action for our alarm */
-    private static final String ACTION_ALARM =
-            "live.walletlens.twa.action.NOTIFICATION_ALARM";
-
-    /**
-     * Schedule the first alarm immediately, then every 30 minutes.
-     * Safe to call multiple times — only the first call schedules.
-     */
     public static void schedule(@NonNull Context context) {
-        scheduleNextAlarm(context);
+        schedulePeriodic(context);
+        scheduleImmediate(context);
     }
 
-    /**
-     * Schedule the next alarm to fire after INTERVAL_MS.
-     * Uses {@link AlarmManager#setAlarmClock} for maximum reliability.
-     */
-    public static void scheduleNextAlarm(@NonNull Context context) {
-        AlarmManager alarmManager =
-                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    private static void schedulePeriodic(@NonNull Context context) {
+        // No network constraint — worker handles errors gracefully
+        // and shows local notifications as fallback
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                .build();
 
-        if (alarmManager == null) {
-            Log.e(TAG, "AlarmManager not available");
-            return;
-        }
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+                PeriodicUpdateWorker.class,
+                INTERVAL_MINUTES,
+                TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .setInitialDelay(30, TimeUnit.SECONDS)
+                .addTag(PERIODIC_WORK)
+                .build();
 
-        long triggerAtMs = System.currentTimeMillis() + INTERVAL_MS;
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                PERIODIC_WORK,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request);
 
-        PendingIntent pi = buildAlarmIntent(context);
-        if (pi == null) return;
-
-        // setAlarmClock is the most reliable alarm method — shows a clock
-        // icon in the status bar and is almost never deferred by the system.
-        AlarmManager.AlarmClockInfo alarmClock =
-                new AlarmManager.AlarmClockInfo(triggerAtMs, null);
-        alarmManager.setAlarmClock(alarmClock, pi);
-
-        Log.d(TAG, "Next alarm scheduled in " + (INTERVAL_MS / 60_000) + " min");
+        Log.d(TAG, "Periodic work every " + INTERVAL_MINUTES + " min");
     }
 
-    /**
-     * Schedule an alarm to fire immediately (for first-use welcome).
-     */
-    public static void scheduleImmediate(@NonNull Context context) {
-        // Use setAlarmClock (always available, no special permission needed)
-        // with a trigger 5 seconds from now for the first notification.
-        long triggerAtMs = System.currentTimeMillis() + 5_000;
+    /** Run the worker immediately (on first install or permission grant). */
+    private static void scheduleImmediate(@NonNull Context context) {
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
+                PeriodicUpdateWorker.class)
+                .setInitialDelay(5, TimeUnit.SECONDS)
+                .addTag(BOOT_WORK)
+                .build();
 
-        PendingIntent pi = buildAlarmIntent(context);
-        if (pi == null) return;
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                BOOT_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request);
 
-        AlarmManager alarmManager =
-                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return;
-
-        AlarmManager.AlarmClockInfo alarmClock =
-                new AlarmManager.AlarmClockInfo(triggerAtMs, null);
-        alarmManager.setAlarmClock(alarmClock, pi);
-
-        Log.d(TAG, "Immediate alarm scheduled in 5 seconds");
+        Log.d(TAG, "Immediate work scheduled in 5 seconds");
     }
 
-    /** Show the welcome notification immediately on first install. */
-    public static void showWelcomeNotification(@NonNull Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        if (prefs.getBoolean(KEY_FIRST_WELCOME, false)) return;
-        prefs.edit().putBoolean(KEY_FIRST_WELCOME, true).apply();
-
-        NotificationHelper helper = new NotificationHelper(context);
-        helper.createChannels();
-
-        // Show the welcome notification directly from the app context
-        // This doesn't need the alarm receiver — fires immediately.
-        helper.showAlertNotification(
-            "\uD83D\uDD0D WalletLens Active",
-            "Smart notifications are ON! You'll get price updates, feature tips, and investment insights every 30 min.",
-            "https://walletlens.live/dashboard"
-        );
-
-        Log.d(TAG, "Welcome notification shown");
-    }
-
-    /**
-     * Cancel all pending alarms.
-     */
     public static void cancel(@NonNull Context context) {
-        AlarmManager alarmManager =
-                (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
-        if (alarmManager == null) return;
-
-        PendingIntent pi = buildAlarmIntent(context);
-        if (pi != null) {
-            alarmManager.cancel(pi);
-            pi.cancel();
-        }
-
-        Log.d(TAG, "All alarms cancelled");
-    }
-
-    /**
-     * Build the PendingIntent for our alarm receiver.
-     */
-    private static PendingIntent buildAlarmIntent(@NonNull Context context) {
-        Intent intent = new Intent(context, NotificationAlarmReceiver.class);
-        intent.setAction(ACTION_ALARM);
-
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;
-        }
-
-        return PendingIntent.getBroadcast(context, 0, intent, flags);
+        WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK);
+        WorkManager.getInstance(context).cancelUniqueWork(BOOT_WORK);
     }
 }

@@ -2,6 +2,7 @@ package live.walletlens.twa;
 
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -10,44 +11,44 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 /**
- * Firebase Cloud Messaging service for instant push notifications.
+ * Firebase Cloud Messaging service — receives push notifications.
  *
- * <p>When a push message arrives from the server (e.g. walletlens.live
- * backend or a future notification server), this service receives it and
- * displays a native Android notification via {@link NotificationHelper}.
+ * When a push arrives from FCM (sent by the app's own PeriodicUpdateWorker
+ * via the FCM HTTP API), this service displays it as a native notification.
  *
- * <p>The app also uses local background checks ({@link PeriodicUpdateWorker})
- * for privacy-first notifications that don't require any server. FCM is
- * used as an additional channel for time-sensitive alerts.
+ * Also stores the device FCM token so the worker can send self-push messages.
  */
 public class WalletLensMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "WalletLensFCM";
+    private static final String PREFS_NAME = "walletlens_fcm";
+    private static final String KEY_TOKEN = "device_token";
 
     @Override
     public void onNewToken(@NonNull String token) {
-        Log.d(TAG, "New FCM token: " + token);
-        // In a production setup, send this token to your notification server
-        // so it knows how to reach this device. For privacy-first operation,
-        // we only log it here — the user can choose to register it later.
+        Log.d(TAG, "New FCM token: " + token.substring(0, Math.min(20, token.length())) + "...");
+        // Save token so PeriodicUpdateWorker can use it for self-push
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putString(KEY_TOKEN, token)
+            .apply();
     }
 
     @Override
     public void onMessageReceived(@NonNull RemoteMessage message) {
-        Log.d(TAG, "FCM message received from: " + message.getFrom());
+        Log.d(TAG, "FCM push received");
 
         // Extract notification payload
-        RemoteMessage.Notification notification = message.getNotification();
         String title = null;
         String body = null;
         String targetUrl = null;
 
-        if (notification != null) {
-            title = notification.getTitle();
-            body = notification.getBody();
+        if (message.getNotification() != null) {
+            title = message.getNotification().getTitle();
+            body = message.getNotification().getBody();
         }
 
-        // Data payload takes precedence (allows rich notifications)
+        // Data payload takes precedence
         if (message.getData() != null) {
             if (title == null) title = message.getData().get("title");
             if (body == null) body = message.getData().get("body");
@@ -58,10 +59,15 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
         if (title == null) title = "WalletLens";
         if (body == null) body = "You have a new update.";
 
-        // Show the notification
         NotificationHelper helper = new NotificationHelper(this);
         helper.showAlertNotification(title, body, targetUrl);
 
-        Log.d(TAG, "FCM notification displayed: " + title);
+        Log.d(TAG, "FCM notification: " + title);
+    }
+
+    /** Returns the stored FCM token, or null if not yet received. */
+    public static String getToken(android.content.Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_TOKEN, null);
     }
 }
