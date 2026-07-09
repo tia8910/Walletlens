@@ -5,14 +5,24 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import android.util.Log;
 
 /**
  * WalletLens TWA Application.
  *
- * Initialises native analytics tracking, notification channels, and
- * schedules periodic background checks for local privacy-first notifications.
+ * Initialises native analytics tracking, notification channels and
+ * schedules smart background notifications via AlarmManager.
+ *
+ * <p>Notifications fire every 30 minutes with:
+ * <ul>
+ *   <li>📊 Live price updates (BTC, ETH, SOL, gold, stocks)</li>
+ *   <li>💡 Feature tips (32+ app features)</li>
+ *   <li>💪 Investment hacks (wealth-building strategies)</li>
+ *   <li>🔔 Portfolio reminders</li>
+ * </ul>
  */
 public class WalletLensApp extends android.app.Application {
 
@@ -32,18 +42,26 @@ public class WalletLensApp extends android.app.Application {
         AnalyticsHelper.init(this);
 
         // Create notification channels for local notifications (Android 8+).
-        new NotificationHelper(this).createChannels();
+        NotificationHelper helper = new NotificationHelper(this);
+        helper.createChannels();
 
-        // Schedule periodic background checks for market updates and announcements.
-        // The app fetches public data from free APIs — no backend, no user data sent.
+        // Show welcome notification immediately on first install
+        NotificationScheduler.showWelcomeNotification(this);
+
+        // Schedule the alarm-based notification system
+        // Uses AlarmManager.setAlarmClock() which is NOT deferred by the system
         NotificationScheduler.schedule(this);
+
+        // Fire an immediate notification (5 second delay) so the user
+        // sees something right away on first install
+        NotificationScheduler.scheduleImmediate(this);
 
         // Register screen-off receiver for auto-lock
         ScreenOffReceiver screenOffReceiver = new ScreenOffReceiver();
         registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
 
         // Schedule widget data refresh (first update after 1 min)
-        android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(() -> {
             try {
                 android.appwidget.AppWidgetManager appWidgetManager =
@@ -59,7 +77,7 @@ public class WalletLensApp extends android.app.Application {
             }
         }, 60_000);
 
-        Log.d(TAG, "WalletLens initialised: analytics + local notifications active");
+        Log.d(TAG, "WalletLens initialised: AlarmManager notifications every 30 min");
 
         // Register a lifecycle callback to track app foreground/background
         // transitions and automatic screen views.
@@ -69,10 +87,8 @@ public class WalletLensApp extends android.app.Application {
             public void onActivityResumed(@NonNull Activity activity) {
                 resumedActivityCount++;
                 if (resumedActivityCount == 1) {
-                    // App just came to the foreground – start a session.
                     AnalyticsHelper.getInstance().startSession();
                 }
-                // Track every resumed activity as a screen view.
                 AnalyticsHelper.getInstance().trackScreenView(activity);
             }
 
@@ -80,35 +96,20 @@ public class WalletLensApp extends android.app.Application {
             public void onActivityPaused(@NonNull Activity activity) {
                 resumedActivityCount--;
                 if (resumedActivityCount == 0) {
-                    // App is now in the background – end the session.
                     AnalyticsHelper.getInstance().endSession();
                 }
             }
 
             @Override
-            public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {
-                // no-op
-            }
-
+            public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {}
             @Override
-            public void onActivityStarted(@NonNull Activity activity) {
-                // no-op
-            }
-
+            public void onActivityStarted(@NonNull Activity activity) {}
             @Override
-            public void onActivityStopped(@NonNull Activity activity) {
-                // no-op
-            }
-
+            public void onActivityStopped(@NonNull Activity activity) {}
             @Override
-            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
-                // no-op
-            }
-
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
             @Override
-            public void onActivityDestroyed(@NonNull Activity activity) {
-                // no-op
-            }
+            public void onActivityDestroyed(@NonNull Activity activity) {}
         });
     }
 }

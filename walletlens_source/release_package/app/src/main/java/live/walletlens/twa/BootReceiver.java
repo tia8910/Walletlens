@@ -6,8 +6,10 @@ import android.content.Intent;
 import android.util.Log;
 
 /**
- * Re-schedules background price checks and notifications after device reboot.
- * WorkManager tasks may be cleared on reboot on some devices.
+ * Re-schedules alarm-based notifications after device reboot.
+ *
+ * <p>AlarmManager alarms are cleared on reboot. This receiver ensures
+ * the notification schedule is restored immediately.
  */
 public class BootReceiver extends BroadcastReceiver {
 
@@ -16,12 +18,19 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Log.d(TAG, "Device rebooted — re-scheduling notification workers");
+            Log.d(TAG, "Device rebooted — re-scheduling alarm notifications");
+
+            // Re-create notification channels
+            new NotificationHelper(context).createChannels();
+
+            // Schedule next alarm (fires after standard interval)
             NotificationScheduler.schedule(context);
-            NotificationHelper h = new NotificationHelper(context);
-            h.showAlertNotification(
+
+            // Show a notification informing the user
+            NotificationHelper helper = new NotificationHelper(context);
+            helper.showAlertNotification(
                 "\uD83D\uDD04 WalletLens Restored",
-                "Price alerts and notifications have been re-scheduled after reboot.",
+                "Smart notifications re-scheduled after reboot. You'll receive price alerts, tips and investment insights.",
                 "https://walletlens.live/dashboard"
             );
         }

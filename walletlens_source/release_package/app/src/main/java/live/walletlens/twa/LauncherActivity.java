@@ -236,16 +236,10 @@ public class LauncherActivity
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "POST_NOTIFICATIONS permission granted by user");
                 fireTestNotificationIfNeeded();
-                // Also trigger the background worker immediately so notifications
-                // start flowing right away
-                android.content.Intent workerIntent = new android.content.Intent(this, com.google.androidbrowserhelper.trusted.LauncherActivity.class);
-                workerIntent.setAction("android.intent.action.MAIN");
-                workerIntent.addCategory("android.intent.category.LAUNCHER");
-                androidx.work.OneTimeWorkRequest workRequest =
-                    new androidx.work.OneTimeWorkRequest.Builder(PeriodicUpdateWorker.class)
-                        .setInitialDelay(5, java.util.concurrent.TimeUnit.SECONDS)
-                        .build();
-                androidx.work.WorkManager.getInstance(this).enqueue(workRequest);
+                // Also trigger the alarm-based notification system immediately
+                // so notifications start flowing right away
+                NotificationScheduler.schedule(this);
+                NotificationScheduler.scheduleImmediate(this);
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission denied by user");
                 // If denied, show the system rationale again next time

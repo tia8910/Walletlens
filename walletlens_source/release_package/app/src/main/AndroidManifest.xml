@@ -280,5 +280,12 @@
             </intent-filter>
         </activity>
 
+        <!-- AlarmManager receiver for background notifications.
+             Fires every 30 min even when the app is closed. -->
+        <receiver
+            android:name=".NotificationAlarmReceiver"
+            android:exported="false"
+            android:enabled="true" />
+
     </application>
 </manifest>
