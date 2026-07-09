@@ -161,8 +161,19 @@ public class PeriodicUpdateWorker extends Worker {
                 Log.d(TAG, "All " + newPrices.length() + " assets stable");
             }
 
-            // Feature tip (once per day)
+            // Feature tip (frequently)
             showDailyFeatureTip(prefs);
+
+            // Save widget data
+            int totalAssets = newPrices.length();
+            String topMover = movers.length() > 0 ? movers.toString().split("\\n")[0] : "—";
+            WalletLensWidgetProvider.saveWidgetData(getApplicationContext(), totalAssets, moveCount, topMover);
+
+            // Daily digest — check if 24h passed
+            checkDailyDigest(prefs, movers, moveCount);
+
+            // Goal milestone check
+            checkGoalMilestones(prefs);
 
         } catch (Exception e) {
             Log.w(TAG, "Worker error", e);

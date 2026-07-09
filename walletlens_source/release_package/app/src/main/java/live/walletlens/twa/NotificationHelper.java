@@ -34,6 +34,10 @@ public final class NotificationHelper {
     public static final String CHANNEL_ALERTS_ID     = "walletlens_alerts";
     public static final String CHANNEL_ALERTS_NAME   = "Price Alerts";
 
+    /** Daily digest summary notification. */
+    public static final String CHANNEL_DIGEST_ID     = "walletlens_digest";
+    public static final String CHANNEL_DIGEST_NAME   = "Daily Digest";
+
     // ── Intent extras ─────────────────────────────────────────────────────
 
     /** Extra on the notification intent: the deep-link URL to open. */
@@ -60,6 +64,8 @@ public final class NotificationHelper {
                 NotificationManager.IMPORTANCE_DEFAULT);
         createChannel(CHANNEL_ALERTS_ID, CHANNEL_ALERTS_NAME,
                 NotificationManager.IMPORTANCE_HIGH);
+        createChannel(CHANNEL_DIGEST_ID, CHANNEL_DIGEST_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT);
 
         Log.d(TAG, "Notification channels created");
     }
@@ -99,6 +105,13 @@ public final class NotificationHelper {
                                        @NonNull String body,
                                        @Nullable String targetUrl) {
         showNotification(CHANNEL_ALERTS_ID, 1002, title, body, targetUrl, null);
+    }
+
+    /**
+     * Show a daily digest notification on the digest channel.
+     */
+    public void showDailyDigest(@NonNull String summaryBody) {
+        showNotification(CHANNEL_DIGEST_ID, 1003, "📊 Daily Market Summary", summaryBody, "https://walletlens.live/market-index", null);
     }
 
     /**

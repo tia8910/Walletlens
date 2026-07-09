@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WalletLens home screen widget – net worth snapshot -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_bg">
+
+    <!-- Header: brand + icon -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="WalletLens"
+            android:textColor="#10b981"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_last_update"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Just now"
+            android:textColor="#888888"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333333"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Stats row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_tracked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 assets tracked"
+                android:textColor="#ffffff"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/widget_movers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 moved"
+                android:textColor="#aaaaaa"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_top_mover"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Top: —"
+            android:textColor="#10b981"
+            android:textSize="11sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

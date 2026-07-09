@@ -1,6 +1,8 @@
 package live.walletlens.twa;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.IntentFilter;
 
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -35,6 +37,27 @@ public class WalletLensApp extends android.app.Application {
         // Schedule periodic background checks for market updates and announcements.
         // The app fetches public data from free APIs — no backend, no user data sent.
         NotificationScheduler.schedule(this);
+
+        // Register screen-off receiver for auto-lock
+        ScreenOffReceiver screenOffReceiver = new ScreenOffReceiver();
+        registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
+
+        // Schedule widget data refresh (first update after 1 min)
+        android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        handler.postDelayed(() -> {
+            try {
+                android.appwidget.AppWidgetManager appWidgetManager =
+                        android.appwidget.AppWidgetManager.getInstance(this);
+                android.content.ComponentName thisWidget =
+                        new android.content.ComponentName(this, WalletLensWidgetProvider.class);
+                int[] ids = appWidgetManager.getAppWidgetIds(thisWidget);
+                if (ids != null && ids.length > 0) {
+                    WalletLensWidgetProvider.updateAppWidget(this, appWidgetManager, ids[0]);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Widget initial update failed", e);
+            }
+        }, 60_000);
 
         Log.d(TAG, "WalletLens initialised: analytics + local notifications active");
 

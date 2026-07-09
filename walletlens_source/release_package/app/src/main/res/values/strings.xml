@@ -39,4 +39,5 @@
     }]
     
   </string>  
+  <string name="widget_description">WalletLens portfolio snapshot</string>
 </resources>

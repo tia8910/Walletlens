@@ -236,5 +236,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Home screen widget – net worth snapshot -->
+        <receiver
+            android:name=".WalletLensWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_networth_info" />
+        </receiver>
+
     </application>
 </manifest>
