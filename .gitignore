@@ -31,3 +31,4 @@ walletlens_source/release_package/signingKey.keystore
 walletlens_source/signing.keystore
 walletlens_source/*.aab
 walletlens_source/*.apk
+keystore_base64.txt
