@@ -20,12 +20,12 @@ import androidx.core.content.ContextCompat;
 /**
  * WalletLens TWA LauncherActivity.
  *
- * Handles cold-start biometric lock, notification permission requests,
- * and test notifications for first launches.
+ * Notification permission is ALWAYS requested FIRST.
+ * BiometricActivity is ONLY started AFTER the user either:
+ *   - Grants notification permission, or
+ *   - Denies it (we show rationale and STILL open the app without biometric redirect)
  *
- * <p>Notification permission is requested IMMEDIATELY on startup.
- * If biometric is needed, we defer it until AFTER permission is handled
- * so the permission dialog is never skipped.
+ * This guarantees the permission dialog is NEVER hidden by biometric.
  */
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
@@ -36,7 +36,7 @@ public class LauncherActivity
 
     private boolean permissionAskedThisSession = false;
     private String savedLaunchUrl = null;
-    private boolean biometricPending = false;
+    private boolean permissionResolved = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,86 +48,72 @@ public class LauncherActivity
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         }
 
-        // ── SAVE launch URL early (before any redirects) ────────────────
+        // ── Save launch URL early ────────────────────────────────────────
         Uri launchUri = getLaunchingUrl();
         if (launchUri != null) {
             savedLaunchUrl = launchUri.toString();
             Log.d(TAG, "Saved launch URL: " + savedLaunchUrl);
         }
 
-        // ── Handle intent actions from the web app ─────────────────────
+        // ── Handle intent actions from web app ──────────────────────────
         handleWebAppIntent(getIntent());
 
-        // ── NOTIFICATION PERMISSION — REQUEST FIRST ────────────────────
+        // ── REQUEST NOTIFICATION PERMISSION FIRST (before ANY other work) ─
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                // Request IMMEDIATELY — before any biometric check
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
                 requestPermissions(
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         REQUEST_CODE_POST_NOTIFICATIONS);
                 permissionAskedThisSession = true;
+                // permissionResolved stays false until onRequestPermissionsResult
+            } else {
+                permissionResolved = true;
             }
+        } else {
+            permissionResolved = true;
         }
 
-        // ── CHECK BIOMETRIC — but defer if permission still needed ──────
-        checkBiometricAfterPermission();
-
-        Log.d(TAG, "WalletLens TWA initialised");
-    }
-
-    /** Check biometric, but only after notification permission is resolved. */
-    private void checkBiometricAfterPermission() {
-        boolean needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED;
-
-        if (needsPermission) {
-            // Permission not granted yet — wait for onRequestPermissionsResult
-            // and check biometric there (in onResume or after result)
-            biometricPending = true;
-            Log.d(TAG, "Biometric check deferred until permission resolved");
-        } else {
-            // Permission already granted or not needed — safe to check biometric now
+        // ── On Android <13, or if permission already granted, check biometric ─
+        if (permissionResolved) {
             handleColdStartBiometric();
         }
+        // Otherwise: biometric is deferred. We handle it in
+        // onRequestPermissionsResult() after the user responds.
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        // Track the launch URL
         if (savedLaunchUrl != null) {
-            Log.d(TAG, "Launch URL: " + savedLaunchUrl);
             AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
         }
 
-        // If biometric was pending, check it now (permission is resolved)
-        if (biometricPending) {
-            biometricPending = false;
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                    || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                        == PackageManager.PERMISSION_GRANTED) {
-                handleColdStartBiometric();
-            }
+        // If permission was asked but user hasn't replied yet, DO NOTHING.
+        // onRequestPermissionsResult will handle everything.
+        if (!permissionResolved && permissionAskedThisSession) {
+            Log.d(TAG, "Permission still pending - waiting for user response");
+            return;
         }
 
-        // Fire test notification
-        fireTestNotificationIfNeeded();
-
-        // Trigger background worker
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    == PackageManager.PERMISSION_GRANTED) {
-                NotificationScheduler.schedule(this);
-                NotificationScheduler.scheduleImmediate(this);
-            }
+        // Fire test notification if permission is granted
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            fireTestNotificationIfNeeded();
+            NotificationScheduler.schedule(this);
+            NotificationScheduler.scheduleImmediate(this);
         }
     }
 
-    // ── Intent handling from web app ─────────────────────────────────────
+    private void handleIntentActions() {
+        handleWebAppIntent(getIntent());
+    }
+
+    // ── Intent handling ─────────────────────────────────────────────────
 
     private void handleWebAppIntent(Intent intent) {
         if (intent == null || intent.getData() == null) return;
@@ -137,8 +123,6 @@ public class LauncherActivity
         String host = data.getHost();
 
         if (!"walletlens".equalsIgnoreCase(scheme)) return;
-
-        Log.d(TAG, "Handling web app intent: " + data.toString());
 
         switch (host != null ? host : "") {
             case "biometric":
@@ -153,7 +137,6 @@ public class LauncherActivity
     private void handleBiometricIntent(Uri data) {
         String action = data.getQueryParameter("action");
         if (action == null) action = "unlock";
-
         switch (action) {
             case "enable":
                 BiometricActivity.setEnabled(this, true);
@@ -166,33 +149,27 @@ public class LauncherActivity
             case "unlock":
             default:
                 if (!BiometricActivity.isEnabled(this)) return;
-                Intent bioIntent = new Intent(this, BiometricActivity.class);
-                bioIntent.putExtra(BiometricActivity.EXTRA_REDIRECT_URL,
+                Intent i = new Intent(this, BiometricActivity.class);
+                i.putExtra(BiometricActivity.EXTRA_REDIRECT_URL,
                         savedLaunchUrl != null ? savedLaunchUrl : "https://walletlens.live/dashboard");
-                bioIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(bioIntent);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(i);
                 break;
         }
     }
 
-    // ── Cold-start biometric check ───────────────────────────────────────
+    // ── Cold-start biometric ─────────────────────────────────────────────
 
-    /**
-     * If biometric lock is enabled and session expired, redirect to BiometricActivity.
-     * This replaces the TWA content with a native biometric prompt.
-     */
     private void handleColdStartBiometric() {
         if (!BiometricActivity.isEnabled(this)) return;
         if (BiometricActivity.isSessionValid(this)) return;
 
-        Log.d(TAG, "Cold-start biometric required – redirecting to BiometricActivity");
-
-        String redirectUrl = savedLaunchUrl != null ? savedLaunchUrl : "https://walletlens.live/dashboard";
-
-        Intent bioIntent = new Intent(this, BiometricActivity.class);
-        bioIntent.putExtra(BiometricActivity.EXTRA_REDIRECT_URL, redirectUrl);
-        bioIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(bioIntent);
+        Log.d(TAG, "Cold-start biometric required");
+        Intent i = new Intent(this, BiometricActivity.class);
+        i.putExtra(BiometricActivity.EXTRA_REDIRECT_URL,
+                savedLaunchUrl != null ? savedLaunchUrl : "https://walletlens.live/dashboard");
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(i);
         finish();
     }
 
@@ -201,38 +178,31 @@ public class LauncherActivity
     private void fireTestNotificationIfNeeded() {
         SharedPreferences prefs = getSharedPreferences("launch_count", Context.MODE_PRIVATE);
         int launches = prefs.getInt("launches", 0);
+        if (launches >= TEST_NOTIF_MAX_LAUNCHES) return;
 
-        if (launches < TEST_NOTIF_MAX_LAUNCHES) {
-            prefs.edit().putInt("launches", launches + 1).apply();
+        prefs.edit().putInt("launches", launches + 1).apply();
+        new NotificationHelper(this).createChannels();
 
-            new NotificationHelper(this).createChannels();
+        String[] msgs = {
+            "WalletLens notifications active! Price alerts, tips and insights coming.",
+            "Welcome back! Market updates delivered through this channel.",
+            "Notifications active! Stay informed with real-time market moves."
+        };
+        String body = msgs[Math.min(launches, msgs.length - 1)];
+        NotificationHelper h = new NotificationHelper(this);
+        h.showAlertNotification("📈 WalletLens Active", body, "https://walletlens.live/dashboard");
 
-            String[] testMessages = {
-                    "📊 Track · Analyze · Grow — WalletLens notifications are active! You'll receive price alerts for crypto, stocks, gold, and silver right here.",
-                    "👋 Welcome back! Price alerts, portfolio updates, and market insights delivered through this channel.",
-                    "🔔 Notifications active! Stay informed with real-time market moves and smart feature tips."
-            };
-
-            String title = "📈 WalletLens Active";
-            String body = testMessages[Math.min(launches, testMessages.length - 1)];
-
-            NotificationHelper helper = new NotificationHelper(this);
-            helper.showAlertNotification(title, body, "https://walletlens.live/dashboard");
-
-            if (launches == 0) {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    NotificationHelper h2 = new NotificationHelper(this);
-                    h2.showAlertNotification(
-                        "📈 Price Alerts Ready",
-                        "Your portfolio is being monitored. You'll be notified when your assets move more than 1%.",
-                        "https://walletlens.live/dashboard"
-                    );
-                }, 2000);
-            }
-
-            Log.d(TAG, "Test notification fired (launch #" + (launches + 1) + "/" + TEST_NOTIF_MAX_LAUNCHES + ")");
+        if (launches == 0) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                NotificationHelper h2 = new NotificationHelper(this);
+                h2.showAlertNotification("📈 Price Alerts Ready",
+                    "Your portfolio is being monitored.",
+                    "https://walletlens.live/dashboard");
+            }, 2000);
         }
     }
+
+    // ── Permission result ────────────────────────────────────────────────
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -240,24 +210,27 @@ public class LauncherActivity
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS && permissionAskedThisSession) {
-            permissionAskedThisSession = false;
+        if (requestCode != REQUEST_CODE_POST_NOTIFICATIONS) return;
 
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "POST_NOTIFICATIONS permission granted by user");
-                fireTestNotificationIfNeeded();
-                NotificationScheduler.schedule(this);
-                NotificationScheduler.scheduleImmediate(this);
-            } else {
-                Log.w(TAG, "POST_NOTIFICATIONS permission denied by user");
-                Toast.makeText(this,
-                        "⚠️ Notification permission required\n" +
-                        "WalletLens needs notification access to send price alerts " +
-                        "and market updates. Go to Settings > Apps > WalletLens > " +
-                        "Notifications to enable.",
-                        Toast.LENGTH_LONG).show();
-            }
+        permissionResolved = true;
+        boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+        if (granted) {
+            Log.d(TAG, "Permission GRANTED - firing notifications + checking biometric");
+            fireTestNotificationIfNeeded();
+            NotificationScheduler.schedule(this);
+            NotificationScheduler.scheduleImmediate(this);
+            // Now safe to check biometric (permission is resolved)
+            handleColdStartBiometric();
+        } else {
+            Log.w(TAG, "Permission DENIED");
+            Toast.makeText(this,
+                    "⚠️ Notification permission required for alerts.\n" +
+                    "Enable in: Settings > Apps > WalletLens > Notifications",
+                    Toast.LENGTH_LONG).show();
+            // Permission denied - still open the app (no biometric redirect)
+            // User can enable later in Settings
         }
     }
 
