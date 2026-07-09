@@ -3,6 +3,8 @@ package live.walletlens.twa;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -67,7 +69,7 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
 
     /** Returns the stored FCM token, or null if not yet received. */
     public static String getToken(android.content.Context context) {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return context.getSharedPreferences(PREFS_NAME, context.MODE_PRIVATE)
             .getString(KEY_TOKEN, null);
     }
 }

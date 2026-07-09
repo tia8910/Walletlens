@@ -58,7 +58,7 @@ public final class NotificationScheduler {
     }
 
     /** Run the worker immediately (on first install or permission grant). */
-    private static void scheduleImmediate(@NonNull Context context) {
+    public static void scheduleImmediate(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
                 .setInitialDelay(5, TimeUnit.SECONDS)
