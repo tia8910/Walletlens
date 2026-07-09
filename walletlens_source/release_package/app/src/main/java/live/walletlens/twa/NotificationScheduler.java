@@ -18,19 +18,33 @@ import java.util.concurrent.TimeUnit;
  * Schedules the PeriodicUpdateWorker for push notifications.
  *
  * Uses WorkManager with relaxed constraints so the worker runs even
- * with spotty connectivity. Falls back to local notifications if
- * FCM self-push isn't configured.
+ * without network. Falls back to local notifications if FCM isn't configured.
  */
 public final class NotificationScheduler {
 
     private static final String TAG = "WalletLensScheduler";
     private static final String PERIODIC_WORK = "walletlens_price_check";
-    private static final String BOOT_WORK = "walletlens_boot_check";
+    private static final String IMMEDIATE_WORK = "walletlens_immediate_check";
     private static final long INTERVAL_MINUTES = 30;
 
     public static void schedule(@NonNull Context context) {
         schedulePeriodic(context);
-        scheduleImmediate(context);
+    }
+
+    /** Run the worker immediately (on first install or permission grant). */
+    public static void scheduleImmediate(@NonNull Context context) {
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
+                PeriodicUpdateWorker.class)
+                .setInitialDelay(5, TimeUnit.SECONDS)
+                .addTag(IMMEDIATE_WORK)
+                .build();
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                IMMEDIATE_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request);
+
+        Log.d(TAG, "Immediate work scheduled in 5 seconds");
     }
 
     private static void schedulePeriodic(@NonNull Context context) {
@@ -57,24 +71,8 @@ public final class NotificationScheduler {
         Log.d(TAG, "Periodic work every " + INTERVAL_MINUTES + " min");
     }
 
-    /** Run the worker immediately (on first install or permission grant). */
-    public static void scheduleImmediate(@NonNull Context context) {
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
-                PeriodicUpdateWorker.class)
-                .setInitialDelay(5, TimeUnit.SECONDS)
-                .addTag(BOOT_WORK)
-                .build();
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-                BOOT_WORK,
-                ExistingWorkPolicy.REPLACE,
-                request);
-
-        Log.d(TAG, "Immediate work scheduled in 5 seconds");
-    }
-
     public static void cancel(@NonNull Context context) {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK);
-        WorkManager.getInstance(context).cancelUniqueWork(BOOT_WORK);
+        WorkManager.getInstance(context).cancelUniqueWork(IMMEDIATE_WORK);
     }
 }

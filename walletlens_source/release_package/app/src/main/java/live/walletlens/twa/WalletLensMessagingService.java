@@ -1,13 +1,14 @@
 package live.walletlens.twa;
 
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -30,7 +31,7 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
     public void onNewToken(@NonNull String token) {
         Log.d(TAG, "New FCM token: " + token.substring(0, Math.min(20, token.length())) + "...");
         // Save token so PeriodicUpdateWorker can use it for self-push
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_TOKEN, token)
             .apply();
@@ -68,8 +69,8 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
     }
 
     /** Returns the stored FCM token, or null if not yet received. */
-    public static String getToken(android.content.Context context) {
-        return context.getSharedPreferences(PREFS_NAME, context.MODE_PRIVATE)
+    public static String getToken(Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_TOKEN, null);
     }
 }

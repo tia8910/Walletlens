@@ -20,8 +20,12 @@ import androidx.core.content.ContextCompat;
 /**
  * WalletLens TWA LauncherActivity.
  *
- * <p>Handles cold-start biometric lock, notification permission requests,
+ * Handles cold-start biometric lock, notification permission requests,
  * and test notifications for first launches.
+ *
+ * <p>Notification permission is requested IMMEDIATELY on startup (before biometric)
+ * so it's never skipped. If biometric is needed, we save the launch URL and
+ * re-request permission on return.
  */
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
@@ -31,6 +35,7 @@ public class LauncherActivity
     private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
 
     private boolean permissionAskedThisSession = false;
+    private String savedLaunchUrl = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,26 +47,34 @@ public class LauncherActivity
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         }
 
+        // ── SAVE launch URL early (before any redirects) ────────────────
+        Uri launchUri = getLaunchingUrl();
+        if (launchUri != null) {
+            savedLaunchUrl = launchUri.toString();
+            Log.d(TAG, "Saved launch URL: " + savedLaunchUrl);
+        }
+
         // ── Handle intent actions from the web app ─────────────────────
         handleWebAppIntent(getIntent());
 
-        // ── Handle biometric lock (cold start) ─────────────────────────
-        // MUST be called AFTER handleWebAppIntent so that newly-enabled
-        // biometric takes effect on this same launch cycle.
-        handleColdStartBiometric();
-
-        // ── Notification permission (Android 13+) ──────────────────────
+        // ── NOTIFICATION PERMISSION — REQUEST FIRST, BEFORE BIOMETRIC ───
+        // This must happen BEFORE handleColdStartBiometric() because
+        // that can finish() this activity and we'll miss the prompt.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                // Request immediately - no delay so user sees the prompt right away
                 requestPermissions(
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         REQUEST_CODE_POST_NOTIFICATIONS);
                 permissionAskedThisSession = true;
             }
         }
+
+        // ── Handle biometric lock (cold start) ─────────────────────────
+        // If biometric is needed, this finishes() the activity and
+        // starts BiometricActivity. We'll re-check permission in onResume.
+        handleColdStartBiometric();
 
         Log.d(TAG, "WalletLens TWA initialised");
     }
@@ -71,15 +84,39 @@ public class LauncherActivity
         super.onResume();
 
         // Track the launch URL
-        Uri launchUri = getLaunchingUrl();
-        if (launchUri != null) {
-            String url = launchUri.toString();
-            Log.d(TAG, "Launch URL: " + url);
-            AnalyticsHelper.getInstance().trackAppLaunchUrl(url);
+        if (savedLaunchUrl != null) {
+            Log.d(TAG, "Launch URL: " + savedLaunchUrl);
+            AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
+        }
+
+        // If we returned from biometric, re-request notification permission
+        // if it wasn't granted before
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                if (!permissionAskedThisSession) {
+                    requestPermissions(
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            REQUEST_CODE_POST_NOTIFICATIONS);
+                    permissionAskedThisSession = true;
+                }
+            }
         }
 
         // Fire a test notification so you can verify immediately
         fireTestNotificationIfNeeded();
+
+        // Trigger background worker immediately on permission grant
+        // (only fires if permission was just granted)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED) {
+                NotificationScheduler.schedule(this);
+                NotificationScheduler.scheduleImmediate(this);
+            }
+        }
     }
 
     // ── Intent handling from web app ─────────────────────────────────────
@@ -137,12 +174,14 @@ public class LauncherActivity
 
             case "unlock":
             default:
-                // Start BiometricActivity to show the native prompt
-                Intent bioIntent = new Intent(this, BiometricActivity.class);
-                String redirect = data.getQueryParameter("redirect");
-                if (redirect != null) {
-                    bioIntent.putExtra(BiometricActivity.EXTRA_REDIRECT_URL, redirect);
+                if (!BiometricActivity.isEnabled(this)) {
+                    Log.w(TAG, "Biometric unlock requested but not enabled");
+                    return;
                 }
+                Intent bioIntent = new Intent(this, BiometricActivity.class);
+                bioIntent.putExtra(BiometricActivity.EXTRA_REDIRECT_URL,
+                        savedLaunchUrl != null ? savedLaunchUrl : "https://walletlens.live/dashboard");
+                bioIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(bioIntent);
                 break;
         }
@@ -164,11 +203,7 @@ public class LauncherActivity
         Log.d(TAG, "Cold-start biometric required – redirecting to BiometricActivity");
 
         // Build a redirect URL back to this activity with the original launch URL
-        String redirectUrl = "https://walletlens.live/dashboard";
-        Uri launchUri = getLaunchingUrl();
-        if (launchUri != null) {
-            redirectUrl = launchUri.toString();
-        }
+        String redirectUrl = savedLaunchUrl != null ? savedLaunchUrl : "https://walletlens.live/dashboard";
 
         Intent bioIntent = new Intent(this, BiometricActivity.class);
         bioIntent.putExtra(BiometricActivity.EXTRA_REDIRECT_URL, redirectUrl);
@@ -209,7 +244,7 @@ public class LauncherActivity
 
             // Force notification to show immediately by sending a second one if this is first launch
             if (launches == 0) {
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     NotificationHelper h2 = new NotificationHelper(this);
                     h2.showAlertNotification(
                         "📈 Price Alerts Ready",
@@ -236,15 +271,14 @@ public class LauncherActivity
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "POST_NOTIFICATIONS permission granted by user");
                 fireTestNotificationIfNeeded();
-                // Also trigger the alarm-based notification system immediately
-                // so notifications start flowing right away
+                // Also trigger the background worker immediately
                 NotificationScheduler.schedule(this);
                 NotificationScheduler.scheduleImmediate(this);
             } else {
                 Log.w(TAG, "POST_NOTIFICATIONS permission denied by user");
                 // If denied, show the system rationale again next time
                 Toast.makeText(this,
-                        "\u26A0\uFE0F Notification permission required\n" +
+                        "⚠️ Notification permission required\n" +
                         "WalletLens needs notification access to send price alerts " +
                         "and market updates. Go to Settings > Apps > WalletLens > " +
                         "Notifications to enable.",
