@@ -32,3 +32,4 @@ walletlens_source/signing.keystore
 walletlens_source/*.aab
 walletlens_source/*.apk
 keystore_base64.txt
+walletlens_source/release_package/app/google-services.json

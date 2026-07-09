@@ -65,6 +65,28 @@ public class BiometricActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // ── Handle enable/disable actions from web app intents ──────────
+        // The TWA sends walletlens://biometric-auth?action=enable|disable|unlock
+        // For enable/disable we just set/clear the SharedPreference and redirect
+        // back without showing the biometric prompt.
+        Intent intent = getIntent();
+        if (intent != null && intent.getData() != null) {
+            String action = intent.getData().getQueryParameter("action");
+            if ("enable".equals(action)) {
+                setEnabled(this, true);
+                Log.d(TAG, "Biometric lock enabled via intent");
+                Toast.makeText(this, "🔒 Biometric lock enabled", Toast.LENGTH_SHORT).show();
+                redirectBack(true);
+                return;
+            } else if ("disable".equals(action)) {
+                setEnabled(this, false);
+                Log.d(TAG, "Biometric lock disabled via intent");
+                Toast.makeText(this, "🔓 Biometric lock disabled", Toast.LENGTH_SHORT).show();
+                redirectBack(true);
+                return;
+            }
+        }
+
         // Check if biometric hardware is available
         BiometricManager biometricManager = BiometricManager.from(this);
         int canAuth = biometricManager.canAuthenticate(
