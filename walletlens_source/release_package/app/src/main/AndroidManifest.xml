@@ -20,10 +20,11 @@
      application, the package attribute will need to reflect the correct path in order to use
      the abbreviated format. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="live.walletlens.twa">
 
         <!-- Required for apps targeting Android 13+ that reference Advertising ID. -->
-        <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+        <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:remove="android:maxSdkVersion"/>
 
     
         <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
