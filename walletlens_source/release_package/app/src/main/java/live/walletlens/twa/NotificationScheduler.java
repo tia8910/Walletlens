@@ -48,7 +48,7 @@ public final class NotificationScheduler {
                 INTERVAL_MINUTES,
                 TimeUnit.MINUTES)
                 .setConstraints(constraints)
-                .setInitialDelay(5, TimeUnit.MINUTES)
+                .setInitialDelay(1, TimeUnit.MINUTES)
                 .addTag(PERIODIC_WORK)
                 .build();
 
@@ -64,7 +64,7 @@ public final class NotificationScheduler {
     private static void scheduleBootCheck(@NonNull Context context) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(
                 PeriodicUpdateWorker.class)
-                .setInitialDelay(5, TimeUnit.MINUTES)
+                .setInitialDelay(1, TimeUnit.MINUTES)
                 .addTag(BOOT_WORK)
                 .build();
 
@@ -73,7 +73,7 @@ public final class NotificationScheduler {
                 ExistingWorkPolicy.REPLACE,
                 request);
 
-        Log.d(TAG, "Boot price check in 5 minutes");
+        Log.d(TAG, "Boot price check in 1 minute");
     }
 
     public static void cancel(@NonNull Context context) {
