@@ -67,6 +67,18 @@ public class PeriodicUpdateWorker extends Worker {
 
     // ── 32 Features ────────────────────────────────────────────────────
     /** Minimum hours between feature tips. */
+    // Daily Digest
+    private static final long DIGEST_INTERVAL_HOURS = 24;
+    private static final String KEY_DIGEST_TS = "last_digest_ts";
+    private static final String KEY_DIGEST_MOVERS = "digest_movers";
+    private static final String KEY_DIGEST_COUNT = "digest_count";
+    private static final String PREFS_WIDGET = "walletlens_widget";
+
+    // Goal Milestones
+    private static final String PREFS_GOALS = "walletlens_goals";
+    private static final String KEY_MILESTONE_NOTIFIED = "milestone_notified";
+    private static final double[] MILESTONES = {1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000};
+
     private static final long TIP_INTERVAL_HOURS = 1; // Show tips every 1 hour
     private static final String KEY_TIP_TS  = "last_tip_timestamp";
     private static final String[][] FEATURES = {
