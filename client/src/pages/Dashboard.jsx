@@ -2248,7 +2248,9 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         </span>
       </button>
 
-      {/* 4 import action buttons — 2×2 grid */}
+      {/* Two primary CTAs — the detailed import methods (Excel, Voice,
+          Screenshot, Backup) live in the cards below, so we don't repeat them
+          here. */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
         marginBottom: '1.25rem',
@@ -2257,37 +2259,19 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
           background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontWeight: 700, fontSize: '0.82rem',
+          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
           <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Start adding assets
         </button>
-        <button onClick={() => onImportAction('backup')} style={{
+        <button onClick={() => onImportAction('screenshot')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
           background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
           color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
-          <Icon name="folder" size={15} /> Import backup
-        </button>
-        <button onClick={() => onImportAction('voice')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
-          <Icon name="mic" size={15} /> Voice import
-        </button>
-        <button onClick={() => onImportAction('excel')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
-          <Icon name="bar-chart" size={15} /> Import Excel
+          <Icon name="camera" size={15} /> Import from screenshot
         </button>
       </div>
 
