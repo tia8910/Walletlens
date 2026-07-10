@@ -615,7 +615,7 @@ input, select, textarea {
 /* ── Ticker ── */
 [data-wl-light] .tick-name { color: var(--text); }
 [data-wl-light] .ticker-strip { background: var(--bg3); border-color: rgba(0,0,0,0.06); }
-[data-wl-light] .wl-topbar .ticker-strip { border-bottom-color: rgba(0,0,0,0.08); }
+[data-wl-light] /* PriceTicker is now outside topbar — use default strip styles */
 
 /* ── Misc white text patterns ── */
 [data-wl-light] .tips-title { color: var(--text); }

@@ -544,7 +544,6 @@ export default function App() {
       <div className="wl-mood-aura" aria-hidden="true" />
 
       <header className="wl-topbar">
-        <PriceTicker />
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
@@ -592,6 +591,8 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      <PriceTicker />
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
