@@ -119,6 +119,16 @@ function classifyMcTier(coinId, marketCap, coinSymbol) {
   return MC_TIERS[4]
 }
 
+// The crypto Sector Rotation Heatmap is only meaningful when the user actually
+// has crypto exposure — show it only when they hold or watch any crypto asset.
+function hasCryptoExposure(enriched) {
+  if (enriched.some(h => assetClass(h.coin_id) === 'crypto')) return true
+  try {
+    const wl = JSON.parse(localStorage.getItem('wl_watchlist') || '[]')
+    return Array.isArray(wl) && wl.some(w => assetClass(w.coin_id) === 'crypto')
+  } catch { return false }
+}
+
 // ── Asset category classifier ─────────────────────────────────────────────
 function categorizeAsset(h) {
   const id = (h.coin_id || '').toLowerCase()
@@ -2238,48 +2248,39 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         </span>
       </button>
 
-      {/* 4 import action buttons — 2×2 grid */}
+      {/* Primary import boxes — every method lives here (the duplicate cards
+          that used to sit below have been removed). */}
+      {(() => {
+        const boxStyle = {
+          display: 'flex', alignItems: 'center', gap: '0.45rem',
+          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
+          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
+          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
+          transition: 'background 0.15s',
+        }
+        return (
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
         marginBottom: '1.25rem',
       }}>
-        <button data-tour="add-asset" onClick={onAddTrade} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
+        <button data-tour="add-asset" onClick={onAddTrade} style={boxStyle}>
           <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Start adding assets
         </button>
-        <button onClick={() => onImportAction('backup')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(96,165,250,0.1)', border: '1.5px solid rgba(96,165,250,0.3)',
-          color: '#60a5fa', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
-          <Icon name="folder" size={15} /> Import backup
+        <button onClick={() => onImportAction('screenshot')} style={boxStyle}>
+          <Icon name="camera" size={15} /> Import from screenshot
         </button>
-        <button onClick={() => onImportAction('voice')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
-          <Icon name="mic" size={15} /> Voice import
-        </button>
-        <button onClick={() => onImportAction('excel')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(167,139,250,0.1)', border: '1.5px solid rgba(167,139,250,0.3)',
-          color: '#a78bfa', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }}>
+        <button onClick={() => onImportAction('excel')} style={boxStyle}>
           <Icon name="bar-chart" size={15} /> Import Excel
         </button>
+        <button onClick={() => onImportAction('voice')} style={boxStyle}>
+          <Icon name="mic" size={15} /> Voice import
+        </button>
+        <button onClick={() => onImportAction('backup')} style={boxStyle}>
+          <Icon name="folder" size={15} /> Import backup
+        </button>
       </div>
+        )
+      })()}
 
       {/* Import buttons (Excel / Voice) */}
       {importsSlot}
@@ -3466,100 +3467,6 @@ export default function Dashboard() {
 {(() => {
             const importsBlock = (
               <>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem', marginTop:'0.5rem' }}>
-                  {[
-                    {
-                      key: 'excel',
-                      label: 'Excel / CSV',
-                      sub: 'Import a spreadsheet',
-                      active: showExcelImport,
-                      onClick: () => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) },
-                      title: 'Import from an Excel or CSV file',
-                      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>,
-                    },
-                    {
-                      key: 'voice',
-                      label: 'Voice',
-                      sub: 'Speak your trades',
-                      active: showVoiceImport,
-                      onClick: () => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) },
-                      title: 'Speak your trade',
-                      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V20H8a1 1 0 0 0 0 2h8a1 1 0 0 0 0-2h-3v-2.08A7 7 0 0 0 19 11z"/></svg>,
-                    },
-                    {
-                      key: 'screenshot',
-                      label: 'Screenshot',
-                      sub: 'AI reads your screen',
-                      active: showScreenshot,
-                      onClick: () => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) },
-                      title: 'Import holdings from a screenshot — AI reads it',
-                      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-                    },
-                    {
-                      key: 'backup',
-                      label: 'Backup',
-                      sub: 'Save & restore',
-                      active: showBackupCode,
-                      onClick: () => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) },
-                      title: 'Export or import your portfolio as a backup code',
-                      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/><path d="M9 12l-2 2 2 2"/><path d="M15 12l2 2-2 2"/></svg>,
-                    },
-                  ].map(({ key, label, sub, active, onClick, title, icon }) => (
-                    <button
-                      key={key}
-                      onClick={onClick}
-                      title={title}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = `rgba(0,230,118,${active ? '0.55' : '0.32'})` }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = '' }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.7rem',
-                        padding: '0.8rem 0.9rem',
-                        background: active ? 'rgba(0,230,118,0.09)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid rgba(0,230,118,${active ? '0.38' : '0.12'})`,
-                        borderRadius: '12px',
-                        cursor: 'pointer', color: 'var(--text)',
-                        transition: 'transform 0.15s ease, border-color 0.15s ease, background 0.15s ease',
-                        textAlign: 'left',
-                        boxShadow: active ? 'inset 0 0 0 1px rgba(0,230,118,0.12)' : 'none',
-                      }}
-                    >
-                      <span style={{
-                        flexShrink: 0,
-                        width: '36px', height: '36px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,230,118,0.10)',
-                        borderRadius: '9px',
-                        color: 'var(--g-ink)',
-                      }}>
-                        {icon}
-                      </span>
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: '0.12rem', minWidth: 0 }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.84rem', lineHeight: 1.2, color: 'var(--text)' }}>{label}</span>
-                        <span style={{ fontSize: '0.69rem', color: 'var(--text2)', lineHeight: 1.3 }}>{sub}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {/* Binance referral — contextual: user is in import section */}
-                <a
-                  href="https://www.binance.com/register?ref=WALLETLENS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track('binance_referral_click', { source: 'data_tab' })}
-                  style={{
-                    display:'flex', alignItems:'center', gap:'0.75rem',
-                    padding:'0.75rem 0.9rem', marginTop:'0.5rem',
-                    background:'rgba(240,185,11,0.08)', border:'1.5px solid rgba(240,185,11,0.28)',
-                    borderRadius:'12px', textDecoration:'none',
-                  }}
-                >
-                  <span style={{ fontSize:'1.4rem', flexShrink:0 }}>🟡</span>
-                  <div style={{ minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:'0.84rem', color:'var(--text)', lineHeight:1.2 }}>Don't have Binance yet?</div>
-                    <div style={{ fontSize:'0.69rem', color:'var(--text2)', marginTop:'0.1rem' }}>15% trade rebates + $100 new user bonus</div>
-                  </div>
-                  <span style={{ marginLeft:'auto', color:'#f0b90b', fontWeight:800, fontSize:'0.8rem', flexShrink:0 }}>Sign Up →</span>
-                </a>
                 {showExcelImport && (
                   <div className="dvx-excel-import-panel glass-card">
                     <SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} />
@@ -4447,7 +4354,7 @@ export default function Dashboard() {
           {/* Correlation, heatmap — below-fold, loaded lazily */}
           <Suspense fallback={null}>
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-            {cardVis.sector_heatmap && <SectorHeatmap />}
+            {cardVis.sector_heatmap && hasCryptoExposure(enriched) && <SectorHeatmap />}
           </Suspense>
         </>
       )}
@@ -4485,13 +4392,13 @@ export default function Dashboard() {
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
               <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Start adding assets
             </button>
-            <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="folder" size={15} /> Import backup
             </button>
-            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="mic" size={15} /> Voice import
             </button>
-            <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(167,139,250,0.1)', border:'1.5px solid rgba(167,139,250,0.3)', color:'#a78bfa', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="bar-chart" size={15} /> Import Excel
             </button>
           </div>
@@ -4614,26 +4521,6 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {/* Binance referral — shown when user may not have an exchange yet */}
-                <a
-                  href="https://www.binance.com/register?ref=WALLETLENS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track('binance_referral_click', { source: 'import_chooser' })}
-                  style={{
-                    display:'flex', alignItems:'center', gap:'0.75rem',
-                    padding:'0.75rem 0.9rem', marginTop:'0.5rem',
-                    background:'rgba(240,185,11,0.08)', border:'1.5px solid rgba(240,185,11,0.28)',
-                    borderRadius:'14px', textDecoration:'none',
-                  }}
-                >
-                  <span style={{ fontSize:'1.5rem', flexShrink:0 }}>🟡</span>
-                  <div style={{ minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', lineHeight:1.2 }}>Don't have Binance yet?</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>15% trade rebates + $100 new user bonus</div>
-                  </div>
-                  <span style={{ marginLeft:'auto', color:'#f0b90b', fontWeight:800, fontSize:'0.82rem', flexShrink:0 }}>Sign Up →</span>
-                </a>
               </>
             ) : (
               <>
