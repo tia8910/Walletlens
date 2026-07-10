@@ -544,7 +544,7 @@ export default function App() {
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
 
-      <header className="wl-topbar">
+      {!isStandalone && <header className="wl-topbar">
         <PriceTicker />
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
@@ -592,11 +592,11 @@ export default function App() {
             </button>
           </div>
         </div>
-      </header>
+      </header>}
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
-      <main className="wl-content">
+      <main className={`wl-content${isStandalone ? ' twa-mode' : ''}`}>
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>

@@ -4952,6 +4952,12 @@ tr:last-child td { border-bottom: none; }
   padding-bottom: 4.5rem; /* bottom nav */
 }
 
+
+/* TWA app mode: no topbar, so reduce top padding */
+.wl-content.twa-mode {
+  padding-top: 0.5rem !important;
+}
+
 /* Bottom nav — premium 6-tab bar */
 .wl-bottom-nav {
   position: fixed;
