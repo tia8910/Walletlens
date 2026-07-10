@@ -810,11 +810,6 @@ input, select, textarea {
 [data-wl-light] .wl-drawer-brand-action { color: rgba(0,0,0,0.7); }
 [data-wl-light] .wl-drawer-brand-action.active { color: var(--g-ink); font-weight: 700; }
 [data-wl-light] .wl-drawer-brand-sep { color: rgba(0,0,0,0.7); }
-[data-wl-light] .wl-nav-item.active {
-  color: #fff;
-  font-weight: 700;
-  text-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.25);
-}
 
 /* ── Glass card inside light ── */
 [data-wl-light] .glass-card h3, [data-wl-light] .glass-card h2 { color: var(--text); }
@@ -5027,8 +5022,9 @@ tr:last-child td { border-bottom: none; }
   box-shadow: 0 0 8px rgba(var(--g-rgb),0.5);
 }
 .wl-nav-item.active {
-  color: var(--g-ink);
+  color: #fff;
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.25);
 }
 .wl-nav-item.active .wl-nav-icon {
   background: rgba(255,255,255,0.1);
