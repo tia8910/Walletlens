@@ -4911,6 +4911,7 @@ tr:last-child td { border-bottom: none; }
 .wl-topbar-brand-name {
   color: var(--text); font-size: 1.1rem; font-weight: 900;
   letter-spacing: -0.02em; font-family: var(--brand-font); line-height: 1;
+  white-space: nowrap;
 }
 .wl-topbar-brand-actions {
   display: flex; align-items: center; gap: 0.22rem;
