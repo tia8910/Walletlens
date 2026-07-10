@@ -3420,14 +3420,40 @@ export default function Dashboard() {
     return id
   }
 
+  // Quick import options (Excel / Voice / Screenshot / Backup). Shown under the
+  // Buy/Sell strip on the web, and in place of the tile grid inside the native
+  // app (where the tile grid is redundant with the native bottom nav).
+  const importOptions = (
+    <div style={{ display:'flex', gap:'0.5rem', margin:'0 0 0.5rem', flexWrap:'wrap' }}>
+      {[
+        { key:'excel',      label:'Excel',      icon:'bar-chart', on:showExcelImport, fn:() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
+        { key:'voice',      label:'Voice',      icon:'mic',       on:showVoiceImport, fn:() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
+        { key:'screenshot', label:'Screenshot', icon:'camera',    on:showScreenshot,  fn:() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) } },
+        { key:'backup',     label:'Backup',     icon:'folder',    on:showBackupCode,  fn:() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) } },
+      ].map(o => (
+        <button key={o.key} onClick={o.fn} style={{
+          flex:1, minWidth:'70px', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
+          padding:'0.5rem 0.4rem', borderRadius:'12px', cursor:'pointer', fontSize:'0.75rem', fontWeight:700,
+          background: o.on ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.08)',
+          border: `1px solid rgba(var(--g-rgb),${o.on ? '0.5' : '0.22'})`, color:'var(--g-ink)',
+          transition:'background 0.15s',
+        }}>
+          <Icon name={o.icon} size={14} /> {o.label}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="dvx">
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
-      {/* Tab nav — labeled tile grid. Hidden inside the native app, which has
-          its own bottom navigation, so the two don't duplicate each other. */}
-      {!IS_NATIVE_APP && (
+      {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
+          grid is redundant with the native bottom nav, so we replace it with the
+          quick import options (for populated dashboards; the empty profile shows
+          its own import boxes). */}
+      {!IS_NATIVE_APP ? (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
           <button key={tab.id} className={`dvx-tabtile ${activeTab === tab.id ? 'active' : ''}`}
@@ -3438,7 +3464,7 @@ export default function Dashboard() {
           </button>
         ))}
       </div>
-      )}
+      ) : (activeTab === 'overview' && enriched.length > 0 && importOptions)}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -3485,29 +3511,11 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Import options — populated dashboards only. The empty profile has
-              its own import boxes (EmptyPortfolio), so gating on enriched
-              avoids showing these twice. */}
-          {enriched.length > 0 && (
-            <div style={{ display:'flex', gap:'0.5rem', margin:'0 0 0.5rem', flexWrap:'wrap' }}>
-              {[
-                { key:'excel',      label:'Excel',      icon:'bar-chart', on:showExcelImport, fn:() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-                { key:'voice',      label:'Voice',      icon:'mic',       on:showVoiceImport, fn:() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-                { key:'screenshot', label:'Screenshot', icon:'camera',    on:showScreenshot,  fn:() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) } },
-                { key:'backup',     label:'Backup',     icon:'folder',    on:showBackupCode,  fn:() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) } },
-              ].map(o => (
-                <button key={o.key} onClick={o.fn} style={{
-                  flex:1, minWidth:'70px', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
-                  padding:'0.5rem 0.4rem', borderRadius:'12px', cursor:'pointer', fontSize:'0.75rem', fontWeight:700,
-                  background: o.on ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.08)',
-                  border: `1px solid rgba(var(--g-rgb),${o.on ? '0.5' : '0.22'})`, color:'var(--g-ink)',
-                  transition:'background 0.15s',
-                }}>
-                  <Icon name={o.icon} size={14} /> {o.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Import options under Buy/Sell — web only. In the native app these
+              live at the top (in place of the tile grid), so we don't repeat
+              them here. Populated dashboards only; the empty profile has its own
+              import boxes. */}
+          {!IS_NATIVE_APP && enriched.length > 0 && importOptions}
 
           {/* Feature discovery nudge — only shown once, until dismissed */}
           {!isDemo && enriched.length > 0 && (
