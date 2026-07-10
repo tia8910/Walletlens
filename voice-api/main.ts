@@ -583,13 +583,115 @@ function guardianContent(opts: {
   return { subject, html }
 }
 
+// This endpoint's own public origin — used to build the one-click "I'm still
+// here" reset link that goes in the owner-warning email.
+const SELF_ORIGIN = "https://walletlens-voice-parse.tia8910.deno.net"
+
+// Grace period between warning the owner and notifying heirs. A missed
+// check-in usually just means a lost phone, travel or illness — the owner is
+// given this long to respond to the warning email before heirs are contacted.
+const GUARDIAN_GRACE_DAYS = 14
+const GUARDIAN_GRACE_MS = GUARDIAN_GRACE_DAYS * 24 * 60 * 60 * 1000
+
+// Owner-facing warning email. Sent when the deadline first passes, BEFORE any
+// heir is contacted, so a lost phone / no backup can't trigger a false alarm:
+// the owner gets this at their own address with a one-click reset link that
+// works from any device (no phone, no backup code needed).
+function guardianOwnerWarning(opts: {
+  ownerName?: string
+  lastSeen: string
+  graceDays: number
+  resetUrl: string
+  intervalDays?: number
+}): { subject: string; html: string } {
+  const { ownerName = "", lastSeen, graceDays, resetUrl, intervalDays } = opts
+  const name = ownerName.trim()
+  const html = emailShell(`
+    <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">⚠️ Action needed — your heirs have NOT been contacted yet</p>
+    </div>
+    <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${name ? escapeHtml(name) + ", are" : "Are"} you still there?</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">
+      You haven't opened <b style="color:#4ade80">WalletLens</b> since <b>${lastSeen}</b>${intervalDays ? `, which is longer than your ${intervalDays}-day Portfolio Guardian interval` : ""}. Before we notify your heirs, we're checking with you first.
+    </p>
+    <div style="text-align:center;margin:0 0 22px">
+      <a href="${resetUrl}" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px">✅ I'm still here — reset the countdown</a>
+      <p style="margin:12px 0 0;color:#8a93a0;font-size:13px">Works from any phone or computer — no app, backup code or password needed.</p>
+    </div>
+    <div style="background:#2a1215;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fecaca;font-size:13.5px;line-height:1.7">
+        If you do <b>nothing</b>, your heirs will be automatically notified in <b>${graceDays} days</b> with your message and a QR of your portfolio. Simply opening WalletLens on your own device also resets this.
+      </p>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      Didn't set this up, or want to stop Portfolio Guardian entirely? Open WalletLens → Portfolio Guardian → Cancel, or just click the reset button above to buy more time.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>
+  `)
+  const subject = `${name ? name + " — " : ""}⚠️ Open WalletLens or your heirs will be notified in ${graceDays} days`
+  return { subject, html }
+}
+
+// Self-contained landing page for the reset link in the owner-warning email.
+// The button POSTs guardian_reset to this same origin (so no CORS), then shows
+// a success/failure state inline. Kept dependency-free so it renders in any browser.
+function guardianResetPage(deviceId: string): string {
+  const invalid = !deviceId
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>WalletLens Portfolio Guardian</title>
+<style>
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .card{max-width:480px;width:100%;background:#11161d;border:1px solid #1f2730;border-radius:16px;padding:32px;text-align:center}
+  .brand{font-size:20px;font-weight:800;color:#4ade80;margin-bottom:8px}
+  h1{font-size:22px;margin:8px 0 12px}
+  p{line-height:1.6;color:#c4cdd6;margin:0 0 20px}
+  button{background:#4ade80;color:#04210f;font-weight:800;font-size:16px;border:0;border-radius:12px;padding:14px 26px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .ok{color:#4ade80;font-weight:700}
+  .err{color:#fca5a5;font-weight:700}
+  .muted{color:#7d8794;font-size:13px}
+</style></head><body>
+<div class="card">
+  <div class="brand">WalletLens</div>
+  <div id="view">
+    ${invalid
+      ? `<h1>Link expired or invalid</h1><p>This reset link is missing its device code. Open WalletLens on your own device to check in, or contact <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.</p>`
+      : `<h1>Reset your Guardian countdown?</h1>
+         <p>Confirm you're still here and Portfolio Guardian will restart the countdown. Your heirs will <b>not</b> be contacted.</p>
+         <button id="btn" onclick="reset()">✅ Yes, I'm still here</button>
+         <p class="muted" style="margin-top:16px">This is safe — it only resets your own timer.</p>`}
+  </div>
+</div>
+<script>
+async function reset(){
+  var b=document.getElementById('btn'); b.disabled=true; b.textContent='Resetting…';
+  try{
+    var r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'guardian_reset',deviceId:${JSON.stringify(deviceId)}})});
+    var j=await r.json().catch(function(){return {}});
+    if(r.ok&&j.ok){document.getElementById('view').innerHTML='<h1 class="ok">✓ You\\'re checked in</h1><p>Your Portfolio Guardian countdown has been reset. Nothing was sent to your heirs. You can close this page.</p>';}
+    else{throw new Error(j.reason||j.error||'failed');}
+  }catch(e){
+    document.getElementById('view').innerHTML='<h1 class="err">Couldn\\'t reset</h1><p>'+(String(e.message)==='not_found'?'This Guardian is no longer active.':'Something went wrong. Please open WalletLens on your device to check in, or email contact@walletlens.live.')+'</p>';
+  }
+}
+</script>
+</body></html>`
+}
+
 // ── Portfolio Guardian cron ───────────────────────────────────────────────
-// Scans all guardian records every 6 h and emails heirs when the user's
-// check-in deadline has passed. Also callable via POST { mode:"guardian_cron_trigger" }.
-async function runGuardianCron(): Promise<{ scanned: number; notified: number }> {
+// Two-phase dead-man's switch, scanned every 6 h:
+//   1. When the deadline first passes, email the OWNER a warning with a reset
+//      link and start a grace period (heirs are NOT contacted yet).
+//   2. Only if the owner still doesn't respond within GUARDIAN_GRACE_DAYS are
+//      the heirs notified.
+// Legacy records with no ownerEmail keep the old behavior (notify at deadline).
+// Also callable via POST { mode:"guardian_cron_trigger" }.
+async function runGuardianCron(): Promise<{ scanned: number; warned: number; notified: number }> {
   const kv = await Deno.openKv()
   const now = Date.now()
-  let scanned = 0, notified = 0
+  let scanned = 0, warned = 0, notified = 0
   for await (const entry of kv.list<Record<string, unknown>>({ prefix: ["guardian"] })) {
     scanned++
     const rec = entry.value
@@ -597,6 +699,32 @@ async function runGuardianCron(): Promise<{ scanned: number; notified: number }>
     const lastCheckin = new Date(rec.lastCheckin as string).getTime()
     const intervalMs = (rec.intervalDays as number) * 24 * 60 * 60 * 1000
     if (now - lastCheckin < intervalMs) continue
+
+    // ── Phase 1/2: warn the owner first, then wait out the grace period ──
+    const ownerEmail = String(rec.ownerEmail || "").trim()
+    if (ownerEmail) {
+      // A warnedAt only counts if it belongs to the current miss cycle (i.e. is
+      // newer than the last check-in); a stale one from before a check-in is ignored.
+      const warnedAtRaw = rec.warnedAt as string | undefined
+      const warnedAt = warnedAtRaw ? new Date(warnedAtRaw).getTime() : 0
+      const warnedThisCycle = warnedAt > lastCheckin
+      if (!warnedThisCycle) {
+        const resetUrl = `${SELF_ORIGIN}/guardian-reset?d=${encodeURIComponent(rec.deviceId as string)}`
+        const { subject, html } = guardianOwnerWarning({
+          ownerName: rec.ownerName as string | undefined,
+          lastSeen: new Date(rec.lastCheckin as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+          graceDays: GUARDIAN_GRACE_DAYS,
+          resetUrl,
+          intervalDays: rec.intervalDays as number,
+        })
+        await sendEmail(ownerEmail, subject, html, GUARDIAN_FROM)
+        await kv.set(entry.key, { ...rec, warnedAt: new Date().toISOString() })
+        warned++
+        continue
+      }
+      // Warned already — hold until the grace period elapses.
+      if (now - warnedAt < GUARDIAN_GRACE_MS) continue
+    }
 
     const ps = rec.portfolioSummary as { totalUsd: number; assetSymbols: string[]; currency: string }
     const valueStr = ps.totalUsd > 0
@@ -623,8 +751,8 @@ async function runGuardianCron(): Promise<{ scanned: number; notified: number }>
     await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() })
     notified++
   }
-  console.log(`Guardian cron: scanned ${scanned}, notified ${notified}`)
-  return { scanned, notified }
+  console.log(`Guardian cron: scanned ${scanned}, warned ${warned}, notified ${notified}`)
+  return { scanned, warned, notified }
 }
 
 Deno.cron("guardian-sweep", "0 */6 * * *", async () => {
@@ -671,6 +799,18 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers })
       }
       return await handleProxy(reqUrl.searchParams.get("url"), headers)
+    }
+    // Owner "I'm still here" reset landing page (linked from the warning email).
+    // This GET only RENDERS a confirmation page — it never mutates state, so email
+    // link-scanners / prefetchers can't silently reset the switch. The visible
+    // button issues the actual POST { mode:"guardian_reset" }.
+    if (reqUrl.pathname === "/guardian-reset") {
+      const d = reqUrl.searchParams.get("d") || ""
+      const safeD = /^[a-zA-Z0-9_-]{8,64}$/.test(d) ? d : ""
+      return new Response(guardianResetPage(safeD), {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      })
     }
     return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers })
   }
@@ -807,6 +947,7 @@ Deno.serve(async (req: Request) => {
   //
   // GuardianRecord {
   //   deviceId: string          (anonymous — chosen by client)
+  //   ownerEmail: string        (required — warned first before any heir)
   //   heirs: [{name, email}]    (up to 3)
   //   message: string           (personal message from user, max 500 chars)
   //   intervalDays: number      (30 | 60 | 90 | 180)
@@ -816,6 +957,7 @@ Deno.serve(async (req: Request) => {
   //     currency: string        (display currency code)
   //   }
   //   lastCheckin: string       (ISO timestamp)
+  //   warnedAt?: string         (ISO timestamp the owner-warning email was sent)
   //   notifiedAt?: string       (ISO timestamp of heir notification, if sent)
   //   active: boolean
   // }
@@ -824,12 +966,18 @@ Deno.serve(async (req: Request) => {
   // The backup code never leaves the device.
 
   if (body?.mode === "guardian_setup") {
-    // POST { mode:"guardian_setup", deviceId, ownerName?, heirs, message, intervalDays, portfolioSummary }
-    const { deviceId, ownerName, heirs, message, intervalDays, portfolioSummary } = body
+    // POST { mode:"guardian_setup", deviceId, ownerName?, ownerEmail, heirs, message, intervalDays, portfolioSummary }
+    const { deviceId, ownerName, ownerEmail, heirs, message, intervalDays, portfolioSummary } = body
 
     // Validate deviceId — alphanumeric, 8-64 chars
     if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
       return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    // Owner email is required — it's the recovery channel the switch warns first,
+    // so a lost phone / missing backup can never falsely notify heirs.
+    const cleanOwnerEmail = String(ownerEmail || "").trim().toLowerCase()
+    if (!cleanOwnerEmail || cleanOwnerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanOwnerEmail)) {
+      return new Response(JSON.stringify({ error: "invalid_owner_email" }), { status: 400, headers })
     }
     // Validate heirs array (1–3 items)
     if (!Array.isArray(heirs) || heirs.length === 0 || heirs.length > 3) {
@@ -862,12 +1010,14 @@ Deno.serve(async (req: Request) => {
       const record = {
         deviceId,
         ownerName: cleanOwnerName,
+        ownerEmail: cleanOwnerEmail,
         heirs: cleanHeirs,
         message: cleanMessage,
         intervalDays: interval,
         portfolioSummary: summary,
         qrPng: sanitizeQrPng(body.qrPng),
         lastCheckin: new Date().toISOString(),
+        warnedAt: null,
         notifiedAt: null,
         active: true,
       }
@@ -933,7 +1083,7 @@ Deno.serve(async (req: Request) => {
       if (!entry.value || !entry.value.active) {
         return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers })
       }
-      const updated = { ...entry.value, lastCheckin: new Date().toISOString(), notifiedAt: null }
+      const updated = { ...entry.value, lastCheckin: new Date().toISOString(), warnedAt: null, notifiedAt: null }
       // Optionally refresh the portfolio summary
       if (portfolioSummary && typeof portfolioSummary === "object") {
         updated.portfolioSummary = {
@@ -952,6 +1102,30 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true, lastCheckin: updated.lastCheckin }), { status: 200, headers })
     } catch (e) {
       console.error("Guardian checkin error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  if (body?.mode === "guardian_reset") {
+    // POST { mode:"guardian_reset", deviceId }
+    // Fired by the "I'm still here" button on the emailed warning page. Resets
+    // the deadline from any device — no phone or backup code needed — and clears
+    // the warning/notified state so a fresh cycle can warn again next time.
+    const { deviceId } = body
+    if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const entry = await kv.get<Record<string, unknown>>(["guardian", deviceId])
+      if (!entry.value || !entry.value.active) {
+        return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers })
+      }
+      const nowIso = new Date().toISOString()
+      await kv.set(["guardian", deviceId], { ...entry.value, lastCheckin: nowIso, warnedAt: null, notifiedAt: null })
+      return new Response(JSON.stringify({ ok: true, lastCheckin: nowIso }), { status: 200, headers })
+    } catch (e) {
+      console.error("Guardian reset error:", e)
       return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
     }
   }
