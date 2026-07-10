@@ -12370,11 +12370,13 @@ button:not(:disabled):active,
 .wlw-item-sym  {
   font-size: 0.95rem; font-weight: 800; color: var(--text);
   display: flex; align-items: center; gap: 0.45rem;
+  white-space: nowrap; min-width: 0;
 }
 .wlw-item-cls {
   font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.45rem;
   border-radius: 20px; background: var(--surface-2); border: 1px solid var(--border);
   color: var(--text-muted);
+  white-space: nowrap; flex-shrink: 0;
 }
 .wlw-item-name { font-size: 0.75rem; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
