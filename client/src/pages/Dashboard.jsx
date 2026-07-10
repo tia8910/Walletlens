@@ -136,6 +136,8 @@ const IS_NATIVE_APP = (() => {
     if (sp.get('native') === '1' || sp.get('app') === '1') { try { localStorage.setItem('wl_native', '1') } catch {} }
     if (localStorage.getItem('wl_native') === '1') return true
     if (window.median || window.gonative || window.Capacitor || window.ReactNativeWebView || window.WalletLensNative) return true
+    // Android TWA / Custom-Tab shells report an android-app:// referrer.
+    if (/^android-app:\/\//.test(document.referrer || '')) return true
     const ua = navigator.userAgent || ''
     return /Android/.test(ua) && /;\s*wv[;)]/.test(ua)
   } catch { return false }
