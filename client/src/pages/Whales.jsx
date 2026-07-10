@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -66,27 +66,29 @@ export default function Whales() {
     '7d': 'price_change_percentage_7d_in_currency',
   }[moverWindow]
 
-  const gainers = [...snapshot]
+  // Derived mover lists — memoized so unrelated re-renders (tab switches, etc.)
+  // don't re-filter/sort the full ~250-row snapshot every time.
+  const gainers = useMemo(() => [...snapshot]
     .filter(c => c[pctKey] != null)
     .sort((a, b) => b[pctKey] - a[pctKey])
-    .slice(0, 8)
+    .slice(0, 8), [snapshot, pctKey])
 
-  const losers = [...snapshot]
+  const losers = useMemo(() => [...snapshot]
     .filter(c => c[pctKey] != null)
     .sort((a, b) => a[pctKey] - b[pctKey])
-    .slice(0, 8)
+    .slice(0, 8), [snapshot, pctKey])
 
   // Volume anomalies: highest volume / market cap ratio (turnover)
-  const volumeAnomalies = [...snapshot]
+  const volumeAnomalies = useMemo(() => [...snapshot]
     .filter(c => c.market_cap > 100_000_000 && c.total_volume > 0)
     .map(c => ({ ...c, _turnover: c.total_volume / c.market_cap }))
     .sort((a, b) => b._turnover - a._turnover)
-    .slice(0, 8)
+    .slice(0, 8), [snapshot])
 
   // Whale magnets: highest absolute 24h dollar volume
-  const volumeLeaders = [...snapshot]
+  const volumeLeaders = useMemo(() => [...snapshot]
     .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0))
-    .slice(0, 8)
+    .slice(0, 8), [snapshot])
 
   return (
     <div className="page">
