@@ -3540,26 +3540,6 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {/* Binance referral — contextual: user is in import section */}
-                <a
-                  href="https://www.binance.com/register?ref=WALLETLENS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track('binance_referral_click', { source: 'data_tab' })}
-                  style={{
-                    display:'flex', alignItems:'center', gap:'0.75rem',
-                    padding:'0.75rem 0.9rem', marginTop:'0.5rem',
-                    background:'rgba(240,185,11,0.08)', border:'1.5px solid rgba(240,185,11,0.28)',
-                    borderRadius:'12px', textDecoration:'none',
-                  }}
-                >
-                  <span style={{ fontSize:'1.4rem', flexShrink:0 }}>🟡</span>
-                  <div style={{ minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:'0.84rem', color:'var(--text)', lineHeight:1.2 }}>Don't have Binance yet?</div>
-                    <div style={{ fontSize:'0.69rem', color:'var(--text2)', marginTop:'0.1rem' }}>15% trade rebates + $100 new user bonus</div>
-                  </div>
-                  <span style={{ marginLeft:'auto', color:'#f0b90b', fontWeight:800, fontSize:'0.8rem', flexShrink:0 }}>Sign Up →</span>
-                </a>
                 {showExcelImport && (
                   <div className="dvx-excel-import-panel glass-card">
                     <SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} />
@@ -4614,26 +4594,6 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {/* Binance referral — shown when user may not have an exchange yet */}
-                <a
-                  href="https://www.binance.com/register?ref=WALLETLENS"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track('binance_referral_click', { source: 'import_chooser' })}
-                  style={{
-                    display:'flex', alignItems:'center', gap:'0.75rem',
-                    padding:'0.75rem 0.9rem', marginTop:'0.5rem',
-                    background:'rgba(240,185,11,0.08)', border:'1.5px solid rgba(240,185,11,0.28)',
-                    borderRadius:'14px', textDecoration:'none',
-                  }}
-                >
-                  <span style={{ fontSize:'1.5rem', flexShrink:0 }}>🟡</span>
-                  <div style={{ minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', lineHeight:1.2 }}>Don't have Binance yet?</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>15% trade rebates + $100 new user bonus</div>
-                  </div>
-                  <span style={{ marginLeft:'auto', color:'#f0b90b', fontWeight:800, fontSize:'0.82rem', flexShrink:0 }}>Sign Up →</span>
-                </a>
               </>
             ) : (
               <>
