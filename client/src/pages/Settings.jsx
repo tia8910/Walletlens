@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
-import { requestPortfolioNotifPermission } from '../portfolioNotify'
-import PushToggle from '../components/PushToggle'
 import InstallExtension from '../components/InstallExtension'
-import PortfolioGuardian from '../components/PortfolioGuardian'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -29,21 +26,9 @@ export { applySettings } from '../settingsUtils'
 
 export default function Settings() {
   const navigate = useNavigate()
-  const location = useLocation()
   const [settings, setSettings] = useState(loadSettings)
   const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
   useEffect(() => { track('settings_view') }, [])
-
-  // Deep-link support: menu items can navigate here with { scrollTo: 'guardian' }
-  // to jump straight to a specific settings section.
-  useEffect(() => {
-    const target = location.state?.scrollTo
-    if (!target) return
-    const el = document.getElementById(target)
-    if (el) {
-      requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-    }
-  }, [location.state])
 
   function update(key, val) {
     const next = { ...settings, [key]: val }
@@ -54,22 +39,6 @@ export default function Settings() {
   }
 
   const fontSize = settings.fontSize || 'md'
-  const notifPrice     = settings.notifPrice     ?? true
-  const notifNews      = settings.notifNews      ?? true
-  const notifWhale     = settings.notifWhale     ?? false
-  const notifWeekly    = settings.notifWeekly    ?? true
-  const notifPortfolio = settings.notifPortfolio ?? false
-
-  async function handleNotifToggle(key, val) {
-    if (val) {
-      const granted = await requestPortfolioNotifPermission().catch(() => false)
-      if (!granted) {
-        alert('Enable browser notifications for WalletLens first, then try again.')
-        return
-      }
-    }
-    update(key, val)
-  }
   const compactMode = settings.compactMode ?? false
   const hideValues  = settings.hideValues  ?? false
   const showTicker  = !(settings.hideTicker ?? false)
@@ -81,7 +50,10 @@ export default function Settings() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>
-        <h2 style={{ margin:0, fontSize:'1.2rem' }}>⚙️ Settings</h2>
+        <h2 style={{ margin:0, fontSize:'1.2rem', display:'inline-flex', alignItems:'center', gap:'0.45rem' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </h2>
       </div>
 
       {/* ── Browser extension ── */}
@@ -196,59 +168,15 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* ── Notifications ── */}
-      <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />Notifications</h3>
-
-        <PushToggle />
-        <div className="settings-divider"/>
-
-        {[
-          { key:'notifPortfolio', label:'Portfolio Moves',  hint:'Alert when your wallet is up or down ±5%', val: notifPortfolio, needsPerm: true },
-          { key:'notifPrice',     label:'Price Alerts',     hint:'When your target prices are hit',           val: notifPrice },
-          { key:'notifNews',      label:'News Highlights',  hint:'Breaking crypto news for your coins',       val: notifNews },
-          { key:'notifWhale',     label:'Whale Alerts',     hint:'Large transactions on coins you hold',      val: notifWhale },
-          { key:'notifWeekly',    label:'Weekly Report',    hint:'Sunday summary of your portfolio',          val: notifWeekly },
-        ].map((item, i) => (
-          <div key={item.key}>
-            {i > 0 && <div className="settings-divider"/>}
-            <div className="settings-row settings-row-toggle">
-              <div className="settings-label">
-                <span>{item.label}</span>
-                <span className="settings-hint">{item.hint}</span>
-              </div>
-              <button className={`settings-toggle ${item.val ? 'on' : ''}`}
-                onClick={() => item.needsPerm ? handleNotifToggle(item.key, !item.val) : update(item.key, !item.val)}>
-                <span className="settings-toggle-thumb"/>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* ── Security ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />Security</h3>
         <BiometricToggle />
       </div>
 
-      {/* ── Portfolio Guardian ── */}
-      <div id="guardian" className="settings-section glass-card" style={{ scrollMarginTop: '110px' }}>
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          Portfolio Guardian
-        </h3>
-        <p className="settings-hint" style={{ marginBottom: '0.85rem' }}>
-          Dead Man's Switch — notifies your heirs if you stop opening WalletLens.
-        </p>
-        <PortfolioGuardian />
-      </div>
-
       {/* ── About ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title">ℹ️ About</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>About</h3>
         <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem', fontSize:'0.85rem', color:'var(--text-muted)' }}>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
             <span>Version</span><span style={{ color:'var(--text)' }}>1.0.0</span>
