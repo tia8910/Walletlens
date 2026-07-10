@@ -9900,7 +9900,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .sa-header-icon { font-size: 1.6rem; }
 .sa-title  { font-size: 1rem; font-weight: 800; margin: 0; color: #fff; }
 .sa-subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin: 0.1rem 0 0; }
-.sa-badge  { background: var(--g); color: #000; font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
+.sa-badge  { background: rgba(var(--g-rgb),0.15); color: var(--g-ink); border: 1px solid rgba(var(--g-rgb),0.3); font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
 .sa-header-actions { display: flex; gap: 0.5rem; }
 
 .sa-check-btn {
@@ -13556,11 +13556,14 @@ img, svg, iframe, video, embed {
   height: auto;
 }
 
-/* The responsive media reset above (max-width/height:auto) collapses the
-   fixed-size topbar action icons to 0 width inside the flex row. Pin their
-   dimensions back so the help + settings icons always render. */
+/* The responsive media reset above (max-width/height:auto) collapses some
+   fixed-size action icons to 0 width inside their flex row. Pin their
+   dimensions back so these icons always render. */
 .wl-topbar-help svg, .wl-topbar-gear svg {
   width: 18px; height: 18px; max-width: none; flex-shrink: 0;
+}
+.sa-cfg-btn svg {
+  width: 16px; height: 16px; max-width: none; flex-shrink: 0;
 }
 
 /* ── Force bottom-nav safe area to include iPhone notch/home indicator ── */
