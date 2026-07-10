@@ -1105,7 +1105,8 @@ input, select, textarea {
 [data-wl-light] .news-filter-pill  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
 [data-wl-light] .news-card-time    { color: var(--text-sub); }
-[data-wl-light] .news-modal-close  { color: var(--text-sub); }
+/* News modal is always dark-surfaced — keep its close X light in light mode. */
+[data-wl-light] .news-modal-close  { color: rgba(255,255,255,0.8); }
 [data-wl-light] .news-modal-share-btn { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.92); }
 [data-wl-light] .news-modal-share-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); color: #fff; }
 
@@ -8388,6 +8389,24 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 /* Settings gear: pin the icon size so it can't collapse to 0 width in the flex row */
 .wl-topbar-gear svg { width: 18px; height: 18px; flex-shrink: 0; }
 
+/* Help ("How it works") + Settings gear: give them a clear, always-visible pill
+   so they never wash out against the topbar in either light or dark mode. */
+.wl-topbar-help, .wl-topbar-gear {
+  color: var(--g-ink);
+  background: rgba(var(--g-rgb), 0.1);
+  border: 1px solid rgba(var(--g-rgb), 0.32);
+}
+.wl-topbar-help:hover, .wl-topbar-gear:hover {
+  color: var(--g-ink); background: rgba(var(--g-rgb), 0.2);
+}
+[data-wl-light] .wl-topbar-help, [data-wl-light] .wl-topbar-gear {
+  color: var(--g-ink); background: rgba(var(--g-rgb), 0.12);
+  border-color: rgba(var(--g-rgb), 0.4);
+}
+[data-wl-light] .wl-topbar-help:hover, [data-wl-light] .wl-topbar-gear:hover {
+  color: var(--g-ink); background: rgba(var(--g-rgb), 0.2);
+}
+
 /* Mood + theme controls: accent-tinted bordered pills so they stand out from
    the plain social icons and read clearly as interactive controls. */
 .wl-topbar-ctrl {
@@ -12578,8 +12597,12 @@ button:not(:disabled):active,
 .wlc-close:hover svg, .share-close:hover svg { transform: rotate(90deg); }
 .news-modal-close:active, .qs-close:active, .ms-close:active, .wlc-close:active,
 .share-close:active { transform: scale(0.88); }
-[data-wl-light] .news-modal-close, [data-wl-light] .qs-close, [data-wl-light] .ms-close,
+[data-wl-light] .qs-close, [data-wl-light] .ms-close,
 [data-wl-light] .wlc-close, [data-wl-light] .share-close { color: rgba(0,0,0,0.6); }
+/* The news modal surface is always dark (#0e0e18) regardless of theme, so its
+   close button must stay light in light mode too — otherwise it's invisible. */
+.news-modal-close, [data-wl-light] .news-modal-close { color: rgba(255,255,255,0.8); }
+.news-modal-close:hover, [data-wl-light] .news-modal-close:hover { color: #fff !important; }
 
 /* ── Unified primary button skin (app-wide) ────────────────────────────────
    Every primary / CTA button shares ONE look — the "Add a trade" CTA: a deep-
@@ -13538,16 +13561,17 @@ img, svg, iframe, video, embed {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem) !important;
 }
 
-/* ── Fix chat send button icon to fill its container properly ── */
+/* ── Send button icon: sized to fill the button cleanly and stay centred ── */
 .wlc-send svg {
-  width: 32px;
-  height: 32px;
-  stroke-width: 2.2;
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
 }
 /* On very small screens, keep the send button proportional */
 @media (max-width: 400px) {
-  .wlc-send { width: 42px; height: 42px; }
-  .wlc-send svg { width: 28px; height: 28px; }
+  .wlc-send { width: 44px; height: 44px; }
+  .wlc-send svg { width: 22px; height: 22px; }
 }
 
 /* ── Ensure form inputs don't overflow on mobile ── */
