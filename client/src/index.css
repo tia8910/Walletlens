@@ -4915,7 +4915,11 @@ tr:last-child td { border-bottom: none; }
 [data-wl-light] .wl-topbar-brand-action { color: rgba(0,0,0,0.7); }
 [data-wl-light] .wl-topbar-brand-action.active { color: var(--g-ink); font-weight: 700; }
 [data-wl-light] .wl-topbar-brand-sep { color: rgba(0,0,0,0.7); }
-.wl-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.wl-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+/* Let the brand shrink so the right-side controls always keep their space and
+   never overlap the Stats pill on narrow screens. */
+.wl-topbar-brand { min-width: 0; }
+.wl-topbar-brand-text { min-width: 0; }
 .wl-live-badge {
   display: flex;
   align-items: center;
