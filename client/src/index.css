@@ -582,7 +582,7 @@ input, select, textarea {
   background: rgba(255,255,255,0.88);
 }
 [data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
-[data-wl-light] .wl-nav-item.active { color: var(--g); }
+[data-wl-light] .wl-nav-item.active { color: #1a1a1a; text-shadow: none; }
 [data-wl-light] .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb),0.1); }
 [data-wl-light] .wl-nav-item .wl-nav-indicator { background: var(--g); box-shadow: 0 0 6px rgba(var(--g-rgb),0.35); }
 
@@ -807,8 +807,9 @@ input, select, textarea {
 [data-wl-light] .wl-drawer-brand-action.active { color: var(--g-ink); font-weight: 700; }
 [data-wl-light] .wl-drawer-brand-sep { color: rgba(0,0,0,0.7); }
 [data-wl-light] .wl-nav-item.active {
-  color: var(--g);
+  color: #fff;
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.25);
 }
 
 /* ── Glass card inside light ── */
@@ -5012,11 +5013,12 @@ tr:last-child td { border-bottom: none; }
   font-weight: 700;
 }
 .wl-nav-item.active .wl-nav-icon {
-  background: rgba(var(--g-rgb),0.12);
-  color: var(--g);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
 }
 .wl-nav-item.active .wl-nav-label {
-  color: var(--g);
+  color: #fff;
 }
 .wl-nav-item:hover { color: rgba(255,255,255,0.85); }
 
