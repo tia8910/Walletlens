@@ -4962,6 +4962,9 @@ tr:last-child td { border-bottom: none; }
   padding-top: 0.5rem !important;
 }
 
+.twa-mode .news-ticker { margin-top: 0.75rem; }
+.twa-mode .dvx > .news-ticker:first-child { margin-top: 1rem; }
+
 /* Bottom nav — premium 6-tab bar */
 .wl-bottom-nav {
   position: fixed;
