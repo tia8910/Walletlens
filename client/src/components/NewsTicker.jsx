@@ -67,14 +67,38 @@ function parseRssXml(xmlText, feed) {
   } catch { return [] }
 }
 
+// rss2json returns already-parsed JSON with CORS headers — the most reliable
+// in-browser path, especially for non-crypto feeds (MarketWatch, CNBC, …).
+function parseRss2json(json, feed) {
+  if (!json || json.status !== 'ok' || !Array.isArray(json.items)) return []
+  return json.items.slice(0, 15).map(it => ({
+    title:       (it.title || '').trim(),
+    link:        it.link || '',
+    pubDate:     it.pubDate || '',
+    description: (it.description || '').replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim(),
+    source:      feed.name,
+    sourceColor: feed.color,
+  })).filter(a => a.title && a.link)
+}
+
 async function fetchFeed(feed) {
+  // 1. rss2json (clean JSON, CORS-enabled)
   try {
-    const res = await fetchWithTimeout('https://corsproxy.io/?' + encodeURIComponent(feed.url), 10000)
+    const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?count=15&rss_url=' + encodeURIComponent(feed.url), 10000)
+    if (res.ok) {
+      const items = parseRss2json(await res.json(), feed)
+      if (items.length) return items
+    }
+  } catch { /* try proxies */ }
+  // 2. corsproxy.io (raw XML)
+  try {
+    const res = await fetchWithTimeout('https://corsproxy.io/?url=' + encodeURIComponent(feed.url), 10000)
     if (res.ok) {
       const items = parseRssXml(await res.text(), feed)
       if (items.length) return items
     }
   } catch { /* try fallback */ }
+  // 3. allorigins (raw XML wrapped in JSON)
   const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 12000)
   if (!res.ok) throw new Error('failed')
   const json = await res.json()
@@ -85,6 +109,7 @@ export default function NewsTicker() {
   const [items, setItems]     = useState([])
   const [paused, setPaused]   = useState(false)
   const [category, setCategory] = useState('crypto')
+  const [loading, setLoading] = useState(true)
   const trackRef              = useRef(null)
   const animRef               = useRef(null)
 
@@ -129,7 +154,8 @@ export default function NewsTicker() {
     }
 
     setItems([])
-    load()
+    setLoading(true)
+    load().finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [category])
 
@@ -171,7 +197,11 @@ export default function NewsTicker() {
           </div>
           <div className="news-modal-list">
             {!items.length && (
-              <div className="news-modal-empty">Loading {catLabel.toLowerCase()} news…</div>
+              <div className="news-modal-empty">
+                {loading
+                  ? `Loading ${catLabel.toLowerCase()} news…`
+                  : `No ${catLabel.toLowerCase()} news available right now. Try again shortly.`}
+              </div>
             )}
             {items.map((item, i) => (
               <div key={i} className="news-modal-card">
