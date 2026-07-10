@@ -12322,8 +12322,10 @@ button:not(:disabled):active,
 .wlw-bell-set    { color: var(--g-ink); border-color: rgba(var(--g-rgb), 0.35); }
 .wlw-bell-count  {
   font-size: 0.65rem; font-weight: 800;
-  background: var(--g); color: #000;
-  border-radius: 50%; width: 14px; height: 14px;
+  /* Soft-accent count chip — matches the app-wide count-badge style. */
+  background: rgba(var(--g-rgb),0.18); color: var(--g-ink);
+  border: 1px solid rgba(var(--g-rgb),0.35);
+  border-radius: 50%; width: 15px; height: 15px;
   display: flex; align-items: center; justify-content: center;
 }
 
