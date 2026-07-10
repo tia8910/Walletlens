@@ -543,8 +543,8 @@ export default function App() {
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
 
-      {!isStandalone && <header className="wl-topbar">
-        <PriceTicker />
+      <header className="wl-topbar">
+        {!isStandalone && <PriceTicker />}
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
@@ -557,12 +557,12 @@ export default function App() {
             >
               <Logo size={36} animated />
             </button>
-            <div className="wl-topbar-brand-text">
+            {!isStandalone && <div className="wl-topbar-brand-text">
               <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
               <TopbarCyclingActions />
-            </div>
+            </div>}
           </div>
-          <div className="wl-topbar-right">
+          {!isStandalone && <div className="wl-topbar-right">
             <button
               className="wl-topbar-x wl-topbar-help"
               onClick={() => { setHelpOpen(true); track('help_guide_open', { source: 'topbar' }) }}
@@ -589,9 +589,9 @@ export default function App() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               <span>Stats</span>
             </button>
-          </div>
+          </div>}
         </div>
-      </header>}
+      </header>
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
