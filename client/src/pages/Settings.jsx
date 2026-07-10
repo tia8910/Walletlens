@@ -41,7 +41,6 @@ export default function Settings() {
   const fontSize = settings.fontSize || 'md'
   const compactMode = settings.compactMode ?? false
   const hideValues  = settings.hideValues  ?? false
-  const showTicker  = !(settings.hideTicker ?? false)
 
   return (
     <div className="page settings-page">
@@ -151,18 +150,6 @@ export default function Settings() {
             <span className="settings-hint">Blur portfolio amounts by default</span>
           </div>
           <button className={`settings-toggle ${hideValues ? 'on' : ''}`} onClick={() => update('hideValues', !hideValues)}>
-            <span className="settings-toggle-thumb"/>
-          </button>
-        </div>
-
-        <div className="settings-divider"/>
-
-        <div className="settings-row settings-row-toggle">
-          <div className="settings-label">
-            <span>Price Ticker</span>
-            <span className="settings-hint">Scrolling live prices at the top</span>
-          </div>
-          <button className={`settings-toggle ${showTicker ? 'on' : ''}`} onClick={() => update('hideTicker', showTicker)}>
             <span className="settings-toggle-thumb"/>
           </button>
         </div>
