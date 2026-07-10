@@ -1,4 +1,4 @@
-name: Update Crypto News
+name: Update News
 
 on:
   schedule:
@@ -17,17 +17,32 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch crypto news from RSS feeds
+      - name: Fetch news from RSS feeds
         run: |
           python3 << 'EOF'
           import urllib.request, xml.etree.ElementTree as ET, json, time, html, re
 
-          FEEDS = [
-            {"name": "CoinTelegraph",    "url": "https://cointelegraph.com/rss",                    "color": "#f7931a"},
-            {"name": "CoinDesk",         "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",  "color": "#1a9fff"},
-            {"name": "Decrypt",          "url": "https://decrypt.co/feed",                          "color": "#6b21a8"},
-            {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/feed",                  "color": "#ff9900"},
-          ]
+          # Each category is pre-built into its own cached JSON so the client can
+          # render instantly instead of doing slow in-browser CORS-proxy fetches.
+          FEED_GROUPS = {
+            'news': [  # crypto (kept as news.json for back-compat)
+              {"name": "CoinTelegraph",    "url": "https://cointelegraph.com/rss",                    "color": "#f7931a"},
+              {"name": "CoinDesk",         "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",  "color": "#1a9fff"},
+              {"name": "Decrypt",          "url": "https://decrypt.co/feed",                          "color": "#6b21a8"},
+              {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/feed",                  "color": "#ff9900"},
+            ],
+            'stocks': [
+              {"name": "MarketWatch",   "url": "https://feeds.marketwatch.com/marketwatch/topstories/", "color": "#00a99d"},
+              {"name": "CNBC Markets",  "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html",  "color": "#005594"},
+              {"name": "Investing",     "url": "https://www.investing.com/rss/news_25.rss",             "color": "#d4af37"},
+              {"name": "Yahoo Finance", "url": "https://finance.yahoo.com/news/rssindex",               "color": "#6001d2"},
+            ],
+            'economy': [
+              {"name": "MarketWatch",  "url": "https://feeds.marketwatch.com/marketwatch/economy-politics/", "color": "#00a99d"},
+              {"name": "CNBC Economy", "url": "https://www.cnbc.com/id/20910258/device/rss/rss.html",        "color": "#005594"},
+              {"name": "Investing",    "url": "https://www.investing.com/rss/news_14.rss",                   "color": "#d4af37"},
+            ],
+          }
 
           def strip_tags(text):
             if not text:
@@ -52,69 +67,72 @@ jobs:
             if m: return m.group(1)
             return ''
 
-          articles = []
-          seen_titles = set()
-
-          for feed in FEEDS:
-            try:
-              req = urllib.request.Request(
-                feed['url'],
-                headers={'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)'}
-              )
-              with urllib.request.urlopen(req, timeout=15) as r:
-                data = r.read()
-              root = ET.fromstring(data)
-              channel = root.find('channel')
-              items = (channel or root).findall('item')
-              count = 0
-              for item in items[:30]:
-                title = strip_tags(item.findtext('title') or '')
-                link  = item.findtext('link') or ''
-                desc  = strip_tags(item.findtext('description') or '')
-                pub   = item.findtext('pubDate') or ''
-                img   = find_image(item)
-                key   = title[:60]
-                if not title or key in seen_titles:
-                  continue
-                seen_titles.add(key)
-                articles.append({
-                  'title':       title,
-                  'link':        link,
-                  'description': desc[:300],
-                  'pubDate':     pub,
-                  'thumbnail':   img,
-                  'source':      feed['name'],
-                  'sourceColor': feed['color'],
-                })
-                count += 1
-              print(f"  {feed['name']}: {count} articles")
-            except Exception as e:
-              print(f"  {feed['name']} failed: {e}")
-
           def parse_date(pub):
             import email.utils
             try:
               return email.utils.parsedate_to_datetime(pub).timestamp()
             except:
               return 0
-          articles.sort(key=lambda a: parse_date(a['pubDate']), reverse=True)
 
-          output = {
-            'updated':  time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-            'count':    len(articles),
-            'articles': articles[:120],
-          }
+          def build(feeds):
+            articles = []
+            seen_titles = set()
+            for feed in feeds:
+              try:
+                req = urllib.request.Request(
+                  feed['url'],
+                  headers={'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)'}
+                )
+                with urllib.request.urlopen(req, timeout=15) as r:
+                  data = r.read()
+                root = ET.fromstring(data)
+                channel = root.find('channel')
+                items = (channel or root).findall('item')
+                count = 0
+                for item in items[:30]:
+                  title = strip_tags(item.findtext('title') or '')
+                  link  = item.findtext('link') or ''
+                  desc  = strip_tags(item.findtext('description') or '')
+                  pub   = item.findtext('pubDate') or ''
+                  img   = find_image(item)
+                  key   = title[:60]
+                  if not title or key in seen_titles:
+                    continue
+                  seen_titles.add(key)
+                  articles.append({
+                    'title':       title,
+                    'link':        link,
+                    'description': desc[:300],
+                    'pubDate':     pub,
+                    'thumbnail':   img,
+                    'source':      feed['name'],
+                    'sourceColor': feed['color'],
+                  })
+                  count += 1
+                print(f"  {feed['name']}: {count} articles")
+              except Exception as e:
+                print(f"  {feed['name']} failed: {e}")
+            articles.sort(key=lambda a: parse_date(a['pubDate']), reverse=True)
+            return articles
 
-          with open('client/public/news.json', 'w') as f:
-            json.dump(output, f)
-
-          print(f"Total: {len(articles)} articles saved to client/public/news.json")
+          for out_name, feeds in FEED_GROUPS.items():
+            print(f"== {out_name} ==")
+            articles = build(feeds)
+            output = {
+              'updated':  time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+              'count':    len(articles),
+              'articles': articles[:120],
+            }
+            path = f'client/public/{out_name}.json'
+            with open(path, 'w') as f:
+              json.dump(output, f)
+            print(f"Total: {len(articles)} articles saved to {path}")
           EOF
 
       - name: Commit updated news
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add client/public/news.json
-          git diff --staged --quiet || git commit -m "chore: update crypto news [skip ci]"
+          git add client/public/news.json client/public/stocks.json client/public/economy.json
+          git diff --staged --quiet || git commit -m "chore: update news [skip ci]"
           git push
