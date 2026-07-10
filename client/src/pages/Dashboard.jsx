@@ -961,14 +961,27 @@ function EvalScoreRing({ score }) {
   const r = 54, circ = 2 * Math.PI * r
   const dash = circ * score / 100
   const color = score >= 80 ? 'var(--g)' : score >= 55 ? '#fbbf24' : '#f87171'
+  // Lighter companion stop for a subtle gradient sweep along the arc.
+  const color2 = score >= 80 ? '#34d399' : score >= 55 ? '#f59e0b' : '#fb7185'
   const label = score >= 80 ? 'Strong' : score >= 55 ? 'Needs Work' : 'At Risk'
   return (
     <div className="eval-ring-wrap">
       <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10"/>
-        <circle cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="10"
+        <defs>
+          <linearGradient id="evalRingGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={color2}/>
+            <stop offset="100%" stopColor={color}/>
+          </linearGradient>
+          <filter id="evalRingGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3.2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle cx="70" cy="70" r={r} fill="none" className="eval-ring-track" strokeWidth="10"/>
+        <circle cx="70" cy="70" r={r} fill="none" stroke="url(#evalRingGrad)" strokeWidth="10"
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          transform="rotate(-90 70 70)" style={{ transition: 'stroke-dasharray 1.2s ease' }}/>
+          transform="rotate(-90 70 70)" filter="url(#evalRingGlow)"
+          style={{ transition: 'stroke-dasharray 1.2s ease' }}/>
       </svg>
       <div className="eval-ring-inner">
         <div className="eval-ring-score" style={{ color }}>{score}</div>
@@ -1029,7 +1042,7 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
               <div className="eval-cat-info">
                 <div className="eval-cat-label">{cat.label}</div>
                 <div className="eval-cat-bar-wrap">
-                  <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: cat.color }} />
+                  <div className="eval-cat-bar" style={{ width: `${cat.score}%` }} />
                 </div>
               </div>
               <div className="eval-cat-right">
