@@ -13558,15 +13558,16 @@ img, svg, iframe, video, embed {
 
 /* ── Send button icon: sized to fill the button cleanly and stay centred ── */
 .wlc-send svg {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
+  max-width: none;
   display: block;
   flex-shrink: 0;
 }
 /* On very small screens, keep the send button proportional */
 @media (max-width: 400px) {
   .wlc-send { width: 44px; height: 44px; }
-  .wlc-send svg { width: 22px; height: 22px; }
+  .wlc-send svg { width: 28px; height: 28px; }
 }
 
 /* ── Ensure form inputs don't overflow on mobile ── */
