@@ -587,10 +587,14 @@ input, select, textarea {
 [data-wl-light] .wl-nav-item .wl-nav-indicator { background: var(--g); box-shadow: 0 0 6px rgba(var(--g-rgb),0.35); }
 
 /* ── Drawer ── */
-[data-wl-light] .wl-drawer { background: var(--bg); border-right-color: rgba(0,0,0,0.08); }
-[data-wl-light] .wl-drawer-head { border-bottom-color: rgba(0,0,0,0.7); }
-[data-wl-light] .wl-drawer-close { color: var(--text-muted); border-color: rgba(0,0,0,0.7); }
-[data-wl-light] .wl-drawer-close:hover { color: var(--text); border-color: rgba(0,0,0,0.7); }
+[data-wl-light] .wl-drawer {
+  background:
+    radial-gradient(130% 55% at 0% 0%, rgba(var(--g-rgb),0.16), transparent 58%),
+    linear-gradient(180deg, rgba(var(--g-rgb),0.10), var(--bg) 30%);
+  border-right-color: rgba(var(--g-rgb),0.22);
+  box-shadow: 4px 0 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+[data-wl-light] .wl-drawer-head { border-bottom-color: rgba(var(--g-rgb),0.22); }
 [data-wl-light] .wl-drawer-label { color: var(--text-sub); }
 [data-wl-light] .wl-drawer-item { color: var(--text); }
 [data-wl-light] .wl-drawer-item:hover,
@@ -5075,8 +5079,13 @@ tr:last-child td { border-bottom: none; }
   top: 0; left: 0; bottom: 0;
   z-index: 300;
   width: min(320px, 85vw);
-  background: rgba(6,14,10,0.97);
-  border-right: 1px solid rgba(var(--g-rgb),0.25);
+  /* Premium, theme-aware surface: a soft accent glow sweeping down from the top
+     over a deep base. Adapts to the selected theme via --g-rgb. */
+  background:
+    radial-gradient(130% 60% at 0% 0%, rgba(var(--g-rgb),0.20), transparent 62%),
+    linear-gradient(180deg, rgba(var(--g-rgb),0.10), rgba(8,16,12,0.98) 32%);
+  border-right: 1px solid rgba(var(--g-rgb),0.30);
+  box-shadow: 4px 0 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(var(--g-rgb),0.12);
   backdrop-filter: blur(40px);
   display: flex;
   flex-direction: column;
