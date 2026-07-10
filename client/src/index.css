@@ -8389,24 +8389,6 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 /* Settings gear: pin the icon size so it can't collapse to 0 width in the flex row */
 .wl-topbar-gear svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-/* Help ("How it works") + Settings gear: give them a clear, always-visible pill
-   so they never wash out against the topbar in either light or dark mode. */
-.wl-topbar-help, .wl-topbar-gear {
-  color: var(--g-ink);
-  background: rgba(var(--g-rgb), 0.1);
-  border: 1px solid rgba(var(--g-rgb), 0.32);
-}
-.wl-topbar-help:hover, .wl-topbar-gear:hover {
-  color: var(--g-ink); background: rgba(var(--g-rgb), 0.2);
-}
-[data-wl-light] .wl-topbar-help, [data-wl-light] .wl-topbar-gear {
-  color: var(--g-ink); background: rgba(var(--g-rgb), 0.12);
-  border-color: rgba(var(--g-rgb), 0.4);
-}
-[data-wl-light] .wl-topbar-help:hover, [data-wl-light] .wl-topbar-gear:hover {
-  color: var(--g-ink); background: rgba(var(--g-rgb), 0.2);
-}
-
 /* Mood + theme controls: accent-tinted bordered pills so they stand out from
    the plain social icons and read clearly as interactive controls. */
 .wl-topbar-ctrl {
