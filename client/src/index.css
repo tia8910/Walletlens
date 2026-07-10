@@ -11853,9 +11853,9 @@ button:not(:disabled):active,
 .pg-cancel-btn:hover { background: rgba(248,113,113,0.13); border-color: rgba(248,113,113,0.4); }
 .pg-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Utility links */
-.pg-reconfigure-link,
+/* Back stays a subtle underlined link */
 .pg-back-link {
+  align-self: flex-start;
   background: none;
   border: none;
   cursor: pointer;
@@ -11867,8 +11867,34 @@ button:not(:disabled):active,
   text-align: left;
   transition: color .15s;
 }
-.pg-reconfigure-link:hover,
 .pg-back-link:hover { color: var(--text-sub); }
+
+/* "Edit heirs or settings" is a proper secondary button — the old underlined
+   link stretched full-width in the flex column and (on stale CSS) fell through
+   to the base green button skin with unreadable dark text. */
+.pg-reconfigure-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(var(--g-rgb), 0.10);
+  border: 1px solid rgba(var(--g-rgb), 0.30);
+  color: var(--g-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  border-radius: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.pg-reconfigure-link:hover {
+  background: rgba(var(--g-rgb), 0.16);
+  border-color: rgba(var(--g-rgb), 0.45);
+  color: var(--g-ink);
+  transform: translateY(-1px);
+}
 
 /* Standalone activate button (not-yet-activated state) */
 .pg-activate-btn {
@@ -12716,6 +12742,10 @@ button:not(:disabled):active,
    close button must stay light in light mode too — otherwise it's invisible. */
 .news-modal-close, [data-wl-light] .news-modal-close { color: rgba(255,255,255,0.8); }
 .news-modal-close:hover, [data-wl-light] .news-modal-close:hover { color: #fff !important; }
+/* The AI Decision Engine panel header is always dark (#091410) too, so its
+   close X must stay light in light mode — otherwise it's invisible. */
+.ade-panel .qs-close, [data-wl-light] .ade-panel .qs-close { color: rgba(255,255,255,0.8); }
+.ade-panel .qs-close:hover, [data-wl-light] .ade-panel .qs-close:hover { color: #fff !important; }
 
 /* ── Unified primary button skin (app-wide) ────────────────────────────────
    Every primary / CTA button shares ONE look — the "Add a trade" CTA: a deep-
