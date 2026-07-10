@@ -2255,8 +2255,8 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         <button onClick={() => onImportAction('backup')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(96,165,250,0.1)', border: '1.5px solid rgba(96,165,250,0.3)',
-          color: '#60a5fa', fontWeight: 700, fontSize: '0.82rem',
+          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
+          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
           <Icon name="folder" size={15} /> Import backup
@@ -2264,7 +2264,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         <button onClick={() => onImportAction('voice')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.3)',
+          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
           color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
@@ -2273,8 +2273,8 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         <button onClick={() => onImportAction('excel')} style={{
           display: 'flex', alignItems: 'center', gap: '0.45rem',
           padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(167,139,250,0.1)', border: '1.5px solid rgba(167,139,250,0.3)',
-          color: '#a78bfa', fontWeight: 700, fontSize: '0.82rem',
+          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
+          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
           transition: 'background 0.15s',
         }}>
           <Icon name="bar-chart" size={15} /> Import Excel
@@ -4465,13 +4465,13 @@ export default function Dashboard() {
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
               <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Start adding assets
             </button>
-            <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(96,165,250,0.1)', border:'1.5px solid rgba(96,165,250,0.3)', color:'#60a5fa', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="folder" size={15} /> Import backup
             </button>
-            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(16,185,129,0.1)', border:'1.5px solid rgba(16,185,129,0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="mic" size={15} /> Voice import
             </button>
-            <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(167,139,250,0.1)', border:'1.5px solid rgba(167,139,250,0.3)', color:'#a78bfa', fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <Icon name="bar-chart" size={15} /> Import Excel
             </button>
           </div>
