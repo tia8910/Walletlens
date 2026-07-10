@@ -9347,6 +9347,28 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 }
 .news-modal-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
 
+/* Category tabs (Crypto / Stocks / Economy) inside the news modal. The modal
+   surface is always dark, so these read light-on-dark in both app themes. */
+.news-modal-tabs {
+  display: flex; gap: 0.4rem; flex-shrink: 0;
+  padding: 0.65rem 1.25rem 0.15rem;
+}
+.news-modal-tab {
+  flex: 1; padding: 0.4rem 0.6rem; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7); font-size: 0.78rem; font-weight: 700;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.news-modal-tab:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.news-modal-tab.active {
+  background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.5);
+  color: #fff;
+}
+.news-modal-empty {
+  padding: 2rem 1rem; text-align: center;
+  color: rgba(255,255,255,0.55); font-size: 0.85rem;
+}
+
 .news-modal-list {
   overflow-y: auto;
   padding: 0.75rem 1rem 1.5rem;
