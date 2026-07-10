@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
+import BottomNav from './components/BottomNav'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
@@ -246,20 +247,20 @@ const Drawer = memo(function Drawer({ open, onClose }) {
           <div className="wl-drawer-label">Pages</div>
           <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/coach')} onClick={() => go('/coach')}>
-            <IconCoach /><span>Coach</span>
+            <IconCoach /><span style={{ color: '#00c853' }}>Coach</span>
           </button>
           <button className={active('/academy')} onClick={() => go('/academy')}>
-            <IconAcademy /><span>Academy</span>
+            <IconAcademy /><span style={{ color: '#fbbf24' }}>Academy</span>
           </button>
           <button className={active('/alpha')} onClick={() => go('/alpha')}>
-            <IconAlpha /><span>Alpha</span>
+            <IconAlpha /><span style={{ color: '#a78bfa' }}>Alpha</span>
           </button>
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
-            <IconTechnicals /><span>Analysis</span>
+            <IconTechnicals /><span style={{ color: '#60a5fa' }}>Analysis</span>
           </button>
           <button className={active('/vision')} onClick={() => { localStorage.setItem('wl_vision_visited', '1'); go('/vision') }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            <span>Goals<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— Vision planner</span></span>
+            <span style={{ color: '#10b981' }}>Goals<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— Vision planner</span></span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
@@ -330,14 +331,42 @@ const Drawer = memo(function Drawer({ open, onClose }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span>Settings</span>
           </button>
-          <button className="wl-drawer-item" onClick={() => go('/settings', { scrollTo: 'guardian' })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Portfolio Guardian</span>
-          </button>
+        </div>
+
+        {/* Binance referral */}
+        <div className="wl-drawer-section" style={{ paddingBottom: 0 }}>
+          <a
+            href="https://www.binance.com/register?ref=WALLETLENS"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('binance_referral_click', { source: 'drawer' })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.65rem',
+              padding: '0.7rem 0.85rem',
+              background: 'rgba(240,185,11,0.09)', border: '1.5px solid rgba(240,185,11,0.28)',
+              borderRadius: '12px', textDecoration: 'none',
+              transition: 'background 0.15s',
+            }}
+          >
+            <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🟡</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text)', lineHeight: 1.2 }}>Don't have Binance?</div>
+              <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>15% trade rebates + $100 new user bonus</div>
+            </div>
+            <span style={{ marginLeft: 'auto', color: '#f0b90b', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0 }}>Open →</span>
+          </a>
         </div>
 
         <div className="wl-drawer-footer">
           <span className="wl-live-dot" /> {t('live')} · walletlens.live
+          <a className="wl-drawer-tg" href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
+            Telegram Community
+          </a>
+          <a className="wl-drawer-tg" href="https://x.com/wallet_lens" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Follow @wallet_lens
+          </a>
         </div>
       </aside>
     </>
@@ -385,6 +414,7 @@ export default function App() {
   }, [location.pathname])
   const { locked, unlock } = useBiometricLock()
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  const [isStandalone, setIsStandalone] = useState(false)
 
   const _guardianChecked = useRef(false)
   useEffect(() => {
@@ -585,6 +615,15 @@ export default function App() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
             <PWATopbarButton />
+            <a className="wl-topbar-x" href="https://x.com/wallet_lens" target="_blank" rel="noopener noreferrer" title="Follow @wallet_lens on X">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a className="wl-topbar-x" href="https://t.me/walletlenss" target="_blank" rel="noopener noreferrer" title="Telegram community">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.888.942z"/></svg>
+            </a>
+            <a className="wl-topbar-x" href="https://youtube.com/@walletlens" target="_blank" rel="noopener noreferrer" title="YouTube channel">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
             <div className="wl-live-badge"><span className="wl-live-dot"/>{t('live')}</div>
           </div>
         </div>
@@ -623,6 +662,8 @@ export default function App() {
       </main>
 
       <AppFooter />
+
+      {!isLanding && isStandalone && shellReady && <BottomNav />}
 
       {shellReady && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}

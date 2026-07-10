@@ -578,8 +578,13 @@ input, select, textarea {
 /* ── Bottom nav ── */
 [data-wl-light] .wl-bottom-nav {
   border-top-color: rgba(0,0,0,0.08);
-  box-shadow: 0 -2px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.88);
 }
+[data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
+[data-wl-light] .wl-nav-item.active { color: var(--g-ink); }
+[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb),0.1); }
+[data-wl-light] .wl-nav-item .wl-nav-indicator { background: var(--g); box-shadow: 0 0 6px rgba(var(--g-rgb),0.35); }
 
 /* ── Drawer ── */
 [data-wl-light] .wl-drawer { background: var(--bg); border-right-color: rgba(0,0,0,0.08); }
@@ -1105,8 +1110,7 @@ input, select, textarea {
 [data-wl-light] .news-filter-pill  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
 [data-wl-light] .news-card-time    { color: var(--text-sub); }
-/* News modal is always dark-surfaced — keep its close X light in light mode. */
-[data-wl-light] .news-modal-close  { color: rgba(255,255,255,0.8); }
+[data-wl-light] .news-modal-close  { color: var(--text-sub); }
 [data-wl-light] .news-modal-share-btn { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.92); }
 [data-wl-light] .news-modal-share-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); color: #fff; }
 
@@ -4938,35 +4942,79 @@ tr:last-child td { border-bottom: none; }
   padding-bottom: 4.5rem; /* bottom nav */
 }
 
-/* Bottom nav */
+/* Bottom nav — premium 6-tab bar */
 .wl-bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 200;
   display: flex;
+  justify-content: space-around;
   background: var(--card-bg);
-  backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(var(--g-rgb),0.12);
-  padding: 0.5rem 0 env(safe-area-inset-bottom, 0.5rem);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.4), 0 -1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-top: 1px solid rgba(var(--g-rgb),0.15);
+  padding: 0.4rem 0 env(safe-area-inset-bottom, 0.4rem);
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.5), 0 -1px 0 rgba(255,255,255,0.05);
 }
 .wl-nav-item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.18rem;
-  padding: 0.6rem 0.25rem;
-  color: rgba(255,255,255,0.7);
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.1rem 0.35rem;
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  transition: color 0.18s;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: color 0.2s, transform 0.15s;
+  position: relative;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 0;
 }
-.wl-nav-item.active,
-.wl-nav-item[class*="active"] { color: var(--g-ink); font-weight: 700; }
-.wl-nav-item:hover { color: var(--text); }
+.wl-nav-item:active { transform: scale(0.92); }
+.wl-nav-item .wl-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.wl-nav-item .wl-nav-label {
+  font-size: 0.58rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.wl-nav-item .wl-nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2.5px;
+  background: var(--g);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 8px rgba(var(--g-rgb),0.5);
+}
+.wl-nav-item.active {
+  color: var(--g-ink);
+  font-weight: 700;
+}
+.wl-nav-item.active .wl-nav-icon {
+  background: rgba(var(--g-rgb),0.12);
+  color: var(--g-ink);
+}
+.wl-nav-item.active .wl-nav-label {
+  color: var(--g-ink);
+}
+.wl-nav-item:hover { color: rgba(255,255,255,0.85); }
 
 /* Page fallback */
 .wl-page-fallback {
@@ -8568,8 +8616,9 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 @media (max-width: 360px) {
   .wl-topbar-inner { padding: 0.5rem 0.65rem; gap: 0.5rem; }
   .wl-topbar-brand strong { font-size: 0.88rem; }
-  .wl-nav-item { font-size: 0.55rem; padding: 0.45rem 0.1rem; }
-  .wl-nav-item svg { width: 20px; height: 20px; }
+  .wl-nav-item { font-size: 0.52rem; padding: 0.4rem 0.05rem 0.3rem; }
+  .wl-nav-item .wl-nav-icon { width: 22px; height: 22px; }
+  .wl-nav-item .wl-nav-label { font-size: 0.52rem; }
   .alpha-breakdown-row { grid-template-columns: 72px 1fr 38px; font-size: 0.72rem; gap: 0.4rem; }
   .coach-tab { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
   .glass-card { padding: 0.85rem !important; }
@@ -9347,28 +9396,6 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 }
 .news-modal-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
 
-/* Category tabs (Crypto / Stocks / Economy) inside the news modal. The modal
-   surface is always dark, so these read light-on-dark in both app themes. */
-.news-modal-tabs {
-  display: flex; gap: 0.4rem; flex-shrink: 0;
-  padding: 0.65rem 1.25rem 0.15rem;
-}
-.news-modal-tab {
-  flex: 1; padding: 0.4rem 0.6rem; border-radius: 999px; cursor: pointer;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.7); font-size: 0.78rem; font-weight: 700;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.news-modal-tab:hover { color: #fff; background: rgba(255,255,255,0.1); }
-.news-modal-tab.active {
-  background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.5);
-  color: #fff;
-}
-.news-modal-empty {
-  padding: 2rem 1rem; text-align: center;
-  color: rgba(255,255,255,0.55); font-size: 0.85rem;
-}
-
 .news-modal-list {
   overflow-y: auto;
   padding: 0.75rem 1rem 1.5rem;
@@ -9904,7 +9931,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .sa-header-icon { font-size: 1.6rem; }
 .sa-title  { font-size: 1rem; font-weight: 800; margin: 0; color: #fff; }
 .sa-subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin: 0.1rem 0 0; }
-.sa-badge  { background: rgba(var(--g-rgb),0.15); color: var(--g-ink); border: 1px solid rgba(var(--g-rgb),0.3); font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
+.sa-badge  { background: var(--g); color: #000; font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
 .sa-header-actions { display: flex; gap: 0.5rem; }
 
 .sa-check-btn {
@@ -12322,10 +12349,8 @@ button:not(:disabled):active,
 .wlw-bell-set    { color: var(--g-ink); border-color: rgba(var(--g-rgb), 0.35); }
 .wlw-bell-count  {
   font-size: 0.65rem; font-weight: 800;
-  /* Soft-accent count chip — matches the app-wide count-badge style. */
-  background: rgba(var(--g-rgb),0.18); color: var(--g-ink);
-  border: 1px solid rgba(var(--g-rgb),0.35);
-  border-radius: 50%; width: 15px; height: 15px;
+  background: var(--g); color: #000;
+  border-radius: 50%; width: 14px; height: 14px;
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -12603,12 +12628,8 @@ button:not(:disabled):active,
 .wlc-close:hover svg, .share-close:hover svg { transform: rotate(90deg); }
 .news-modal-close:active, .qs-close:active, .ms-close:active, .wlc-close:active,
 .share-close:active { transform: scale(0.88); }
-[data-wl-light] .qs-close, [data-wl-light] .ms-close,
+[data-wl-light] .news-modal-close, [data-wl-light] .qs-close, [data-wl-light] .ms-close,
 [data-wl-light] .wlc-close, [data-wl-light] .share-close { color: rgba(0,0,0,0.6); }
-/* The news modal surface is always dark (#0e0e18) regardless of theme, so its
-   close button must stay light in light mode too — otherwise it's invisible. */
-.news-modal-close, [data-wl-light] .news-modal-close { color: rgba(255,255,255,0.8); }
-.news-modal-close:hover, [data-wl-light] .news-modal-close:hover { color: #fff !important; }
 
 /* ── Unified primary button skin (app-wide) ────────────────────────────────
    Every primary / CTA button shares ONE look — the "Add a trade" CTA: a deep-
@@ -13455,7 +13476,9 @@ button:not(:disabled):active,
   .wl-content { padding-top: 88px; }
 
   /* Bottom nav — tighter spacing */
-  .wl-nav-item { padding: 0.4rem 0.15rem; font-size: 0.55rem; }
+  .wl-nav-item { padding: 0.4rem 0.1rem 0.3rem; font-size: 0.52rem; }
+  .wl-nav-item .wl-nav-icon { width: 22px; height: 22px; }
+  .wl-nav-item .wl-nav-label { font-size: 0.52rem; }
 
   /* Dashboard content — reduced gutters */
   .dvx { padding-left: 0.6rem; padding-right: 0.6rem; }
@@ -13562,35 +13585,20 @@ img, svg, iframe, video, embed {
   height: auto;
 }
 
-/* The responsive media reset above (max-width/height:auto) collapses some
-   fixed-size action icons to 0 width inside their flex row. Pin their
-   dimensions back so these icons always render. */
-.wl-topbar-help svg, .wl-topbar-gear svg {
-  width: 18px; height: 18px; max-width: none; flex-shrink: 0;
-}
-.sa-cfg-btn svg {
-  width: 16px; height: 16px; max-width: none; flex-shrink: 0;
-}
-.wl-tip-btn svg {
-  width: 13px; height: 13px; max-width: none; flex-shrink: 0;
-}
-
 /* ── Force bottom-nav safe area to include iPhone notch/home indicator ── */
 .wl-bottom-nav {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem) !important;
 }
 
-/* ── Send button icon: sized to fill the button cleanly and stay centred ── */
+/* ── Fix chat send button icon to fill its container properly ── */
 .wlc-send svg {
-  width: 30px;
-  height: 30px;
-  max-width: none;
-  display: block;
-  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  stroke-width: 2.2;
 }
 /* On very small screens, keep the send button proportional */
 @media (max-width: 400px) {
-  .wlc-send { width: 44px; height: 44px; }
+  .wlc-send { width: 42px; height: 42px; }
   .wlc-send svg { width: 28px; height: 28px; }
 }
 
