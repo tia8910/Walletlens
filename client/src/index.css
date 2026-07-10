@@ -13547,6 +13547,9 @@ img, svg, iframe, video, embed {
 .sa-cfg-btn svg {
   width: 16px; height: 16px; max-width: none; flex-shrink: 0;
 }
+.wl-tip-btn svg {
+  width: 13px; height: 13px; max-width: none; flex-shrink: 0;
+}
 
 /* ── Force bottom-nav safe area to include iPhone notch/home indicator ── */
 .wl-bottom-nav {
