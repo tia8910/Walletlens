@@ -241,7 +241,6 @@ const Drawer = memo(function Drawer({ open, onClose }) {
               <DrawerCyclingActions />
             </div>
           </div>
-          <button className="wl-drawer-close" onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="wl-drawer-section">
