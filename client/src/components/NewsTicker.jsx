@@ -84,7 +84,7 @@ function parseRss2json(json, feed) {
 async function fetchFeed(feed) {
   // 1. rss2json (clean JSON, CORS-enabled)
   try {
-    const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?count=15&rss_url=' + encodeURIComponent(feed.url), 10000)
+    const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?count=15&rss_url=' + encodeURIComponent(feed.url), 6000)
     if (res.ok) {
       const items = parseRss2json(await res.json(), feed)
       if (items.length) return items
@@ -92,14 +92,14 @@ async function fetchFeed(feed) {
   } catch { /* try proxies */ }
   // 2. corsproxy.io (raw XML)
   try {
-    const res = await fetchWithTimeout('https://corsproxy.io/?url=' + encodeURIComponent(feed.url), 10000)
+    const res = await fetchWithTimeout('https://corsproxy.io/?url=' + encodeURIComponent(feed.url), 6000)
     if (res.ok) {
       const items = parseRssXml(await res.text(), feed)
       if (items.length) return items
     }
   } catch { /* try fallback */ }
   // 3. allorigins (raw XML wrapped in JSON)
-  const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 12000)
+  const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 7000)
   if (!res.ok) throw new Error('failed')
   const json = await res.json()
   return parseRssXml(json.contents || '', feed)
@@ -132,25 +132,24 @@ export default function NewsTicker() {
         } catch { /* fall through */ }
       }
 
-      // Live RSS for the selected category
+      // Live RSS for the selected category. Render each source as soon as it
+      // resolves (instead of waiting for the slowest one), so news appears fast
+      // and a single slow/failed feed can't stall the whole list.
       const feeds = FEED_GROUPS[category] || FEED_GROUPS.crypto
-      const results = await Promise.allSettled(feeds.map(fetchFeed))
-      if (cancelled) return
-      const all = []
-      for (const r of results) {
-        if (r.status === 'fulfilled') all.push(...r.value)
-      }
-      // Deduplicate + sort newest-first
       const seen = new Set()
-      const deduped = all
-        .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-        .filter(a => {
+      const collected = []
+      const merge = (items) => {
+        if (cancelled || !items?.length) return
+        for (const a of items) {
           const k = a.title?.slice(0, 50)
-          if (!k || seen.has(k)) return false
-          seen.add(k)
-          return true
-        })
-      if (!cancelled) setItems(deduped)
+          if (!k || seen.has(k)) continue
+          seen.add(k); collected.push(a)
+        }
+        collected.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+        setItems([...collected])
+        setLoading(false) // clear the spinner as soon as any news arrives
+      }
+      await Promise.all(feeds.map(f => fetchFeed(f).then(merge).catch(() => {})))
     }
 
     setItems([])
