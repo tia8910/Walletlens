@@ -218,11 +218,12 @@ function cleanHeirList(heirs) {
     .filter(h => h.email && emailRe.test(h.email))
 }
 
-function SetupForm({ onSuccess }) {
-  const [ownerName, setOwnerName] = useState('')
-  const [heirs, setHeirs] = useState([{ name: '', email: '' }])
-  const [message, setMessage] = useState('')
-  const [intervalDays, setIntervalDays] = useState(90)
+function SetupForm({ onSuccess, initial }) {
+  const [ownerName, setOwnerName] = useState(initial?.ownerName || '')
+  const [ownerEmail, setOwnerEmail] = useState(initial?.ownerEmail || '')
+  const [heirs, setHeirs] = useState(initial?.heirs?.length ? initial.heirs.map(h => ({ name: h.name || '', email: h.email || '' })) : [{ name: '', email: '' }])
+  const [message, setMessage] = useState(initial?.message || '')
+  const [intervalDays, setIntervalDays] = useState(initial?.intervalDays || 90)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle') // idle | saving | error
   const [testStatus, setTestStatus] = useState('idle') // idle | sending | sent | error
@@ -230,6 +231,9 @@ function SetupForm({ onSuccess }) {
 
   function validate() {
     const errs = {}
+    if (!emailRe.test(ownerEmail.trim())) {
+      errs.ownerEmail = 'Enter your email — Guardian warns you here before ever contacting your heirs.'
+    }
     const touched = heirs.filter(h => h.email.trim())
     if (touched.length === 0) {
       errs.heirs = 'Add at least one heir email.'
@@ -277,6 +281,7 @@ function SetupForm({ onSuccess }) {
       const data = await apiCall({
         mode: 'guardian_setup', deviceId,
         ownerName: ownerName.trim(),
+        ownerEmail: ownerEmail.trim().toLowerCase(),
         heirs: cleanHeirs, message: message.trim(),
         intervalDays, portfolioSummary,
         qrPng: await buildGuardianQr(),
@@ -284,6 +289,7 @@ function SetupForm({ onSuccess }) {
       const record = {
         active: true, deviceId,
         ownerName: ownerName.trim(),
+        ownerEmail: ownerEmail.trim().toLowerCase(),
         heirs: cleanHeirs, message: message.trim(),
         intervalDays: data.interval || intervalDays,
         lastCheckin: new Date().toISOString(),
@@ -293,7 +299,10 @@ function SetupForm({ onSuccess }) {
       onSuccess(record)
     } catch (err) {
       setStatus('error')
-      setErrors({ submit: 'Could not save — check your connection and try again.' })
+      const msg = String(err?.message || '')
+      setErrors(msg.includes('owner_email')
+        ? { ownerEmail: 'That email looks invalid — please double-check it.' }
+        : { submit: 'Could not save — check your connection and try again.' })
     }
   }
 
@@ -312,6 +321,9 @@ function SetupForm({ onSuccess }) {
       <p className="pg-intro">
         Portfolio Guardian emails your chosen heirs your personal message and a scannable QR of your portfolio if you stop opening WalletLens for your chosen interval. Simply opening the app resets the countdown automatically.
         Wallet keys and passwords are never included — the QR holds only your holdings snapshot (assets, amounts and cost basis), so heirs can view your portfolio in WalletLens.
+      </p>
+      <p className="pg-intro" style={{ marginTop: '-0.4rem' }}>
+        <b>Lost your phone?</b> No problem — before any heir is ever contacted, we first email <b>you</b> a warning with a one-click "I'm still here" link that works from any device. Your heirs are only notified if you don't respond for 14 days after that.
       </p>
 
       {portfolio.assetSymbols.length > 0 && (
@@ -332,6 +344,17 @@ function SetupForm({ onSuccess }) {
           value={ownerName}
           maxLength={80}
           onChange={e => setOwnerName(e.target.value)}
+        />
+      </Field>
+
+      <Field label="Your email" hint="Required — we warn you here first if you go quiet, so your heirs are never contacted by mistake" error={errors.ownerEmail}>
+        <input
+          type="email"
+          className="pg-input"
+          placeholder="you@example.com"
+          value={ownerEmail}
+          maxLength={254}
+          onChange={e => { setOwnerEmail(e.target.value); if (errors.ownerEmail) setErrors(er => ({ ...er, ownerEmail: undefined })) }}
         />
       </Field>
 
@@ -394,7 +417,7 @@ function SetupForm({ onSuccess }) {
 
 // ── Active Status Card ────────────────────────────────────────────────────────
 
-function StatusCard({ config, onCheckin, onCancel }) {
+function StatusCard({ config, onCheckin, onCancel, onEdit }) {
   const daysLeft = daysUntilDeadline(config.lastCheckin, config.intervalDays)
   const isWarning = daysLeft <= 7
   const isUrgent  = daysLeft <= 2
@@ -460,6 +483,13 @@ function StatusCard({ config, onCheckin, onCancel }) {
         </div>
       </div>
 
+      {!config.ownerEmail && (
+        <div className="pg-deadline-banner warning">
+          Add your email so Guardian warns <b>you</b> first if you go quiet — otherwise your heirs are contacted the moment the deadline passes.{' '}
+          <button type="button" className="pg-checkin-link" style={{ display: 'inline', padding: 0 }} onClick={onEdit}>Add it now</button>
+        </div>
+      )}
+
       {(isWarning || isUrgent) && (
         <div className={`pg-deadline-banner ${isUrgent ? 'urgent' : 'warning'}`}>
           {isUrgent
@@ -492,6 +522,7 @@ function StatusCard({ config, onCheckin, onCancel }) {
       <div className="pg-status-meta">
         <span>Interval: {config.intervalDays} days</span>
         {config.message && <span>· Personal message set</span>}
+        {config.ownerEmail && <span>· Warns you at {config.ownerEmail} first</span>}
       </div>
 
       <div className="pg-actions">
@@ -577,7 +608,7 @@ export default function PortfolioGuardian() {
   if (config?.active && !showSetup) {
     content = (
       <div className="pg-wrapper">
-        <StatusCard config={config} onCheckin={handleCheckin} onCancel={handleCancel} />
+        <StatusCard config={config} onCheckin={handleCheckin} onCancel={handleCancel} onEdit={() => setShowSetup(true)} />
         <button className="pg-reconfigure-link" onClick={() => setShowSetup(true)}>
           Edit heirs or settings
         </button>
@@ -591,7 +622,7 @@ export default function PortfolioGuardian() {
             ← Back to status
           </button>
         )}
-        <SetupForm onSuccess={handleSuccess} />
+        <SetupForm onSuccess={handleSuccess} initial={config} />
       </div>
     )
   } else {

@@ -15,6 +15,11 @@ const BACKUP_KEYS = [
   'crypto_tracker_next_ex_id',
   'wl_settings',
   'wl_card_vis',
+  // Portfolio Guardian identity — including these means restoring a backup on a
+  // new device recovers the SAME Guardian registration, so a lost phone doesn't
+  // leave the dead-man's switch stranded (it can be reset/cancelled again).
+  'wl_guardian',
+  'wl_guardian_device_id',
 ]
 
 // ── Compression helpers (WL2 format) ──────────────────────────────────────
@@ -84,15 +89,18 @@ async function generateBackupCode() {
   const eId = localStorage.getItem('crypto_tracker_next_ex_id')
   if (wId || tId || eId) payload.ids = { w: wId || '1', t: tId || '1', e: eId || '1' }
 
-  // Optional blobs (coin targets, notes, manual prices, settings, card vis, exchanges)
+  // Optional blobs (coin targets, notes, manual prices, settings, card vis,
+  // exchanges, Portfolio Guardian config + device id)
   const OPT = {
     ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
     mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
     cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
+    gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
   }
   for (const [alias, key] of Object.entries(OPT)) {
     const raw = localStorage.getItem(key)
-    if (raw) { try { payload[alias] = JSON.parse(raw) } catch {} }
+    // Most blobs are JSON; wl_guardian_device_id is a plain string — keep it raw.
+    if (raw != null) { try { payload[alias] = JSON.parse(raw) } catch { payload[alias] = raw } }
   }
 
   const json = JSON.stringify(payload)
@@ -133,10 +141,16 @@ async function applyBackupCode(raw) {
       ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
       mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
       cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
+      gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
     }
     let restored = 2
     for (const [alias, key] of Object.entries(OPT)) {
-      if (parsed[alias] != null) { localStorage.setItem(key, JSON.stringify(parsed[alias])); restored++ }
+      if (parsed[alias] != null) {
+        const v = parsed[alias]
+        // Preserve raw strings (device id) verbatim; JSON-encode object blobs.
+        localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v))
+        restored++
+      }
     }
     return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
   }
