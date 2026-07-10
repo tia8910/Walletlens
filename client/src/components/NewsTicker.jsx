@@ -81,28 +81,34 @@ function parseRss2json(json, feed) {
   })).filter(a => a.title && a.link)
 }
 
-async function fetchFeed(feed) {
-  // 1. rss2json (clean JSON, CORS-enabled)
-  try {
-    const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?count=15&rss_url=' + encodeURIComponent(feed.url), 6000)
-    if (res.ok) {
-      const items = parseRss2json(await res.json(), feed)
-      if (items.length) return items
-    }
-  } catch { /* try proxies */ }
-  // 2. corsproxy.io (raw XML)
-  try {
-    const res = await fetchWithTimeout('https://corsproxy.io/?url=' + encodeURIComponent(feed.url), 6000)
-    if (res.ok) {
-      const items = parseRssXml(await res.text(), feed)
-      if (items.length) return items
-    }
-  } catch { /* try fallback */ }
-  // 3. allorigins (raw XML wrapped in JSON)
-  const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 7000)
-  if (!res.ok) throw new Error('failed')
+// Each proxy is tried as an independent promise and the first that yields
+// usable items wins (Promise.any) — so one slow/dead proxy can't gate the
+// feed the way the old sequential fallback chain did.
+async function viaRss2json(feed) {
+  const res = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?count=15&rss_url=' + encodeURIComponent(feed.url), 7000)
+  if (!res.ok) throw new Error('rss2json')
+  const items = parseRss2json(await res.json(), feed)
+  if (!items.length) throw new Error('rss2json empty')
+  return items
+}
+async function viaCorsproxy(feed) {
+  const res = await fetchWithTimeout('https://corsproxy.io/?url=' + encodeURIComponent(feed.url), 7000)
+  if (!res.ok) throw new Error('corsproxy')
+  const items = parseRssXml(await res.text(), feed)
+  if (!items.length) throw new Error('corsproxy empty')
+  return items
+}
+async function viaAllorigins(feed) {
+  const res = await fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url), 8000)
+  if (!res.ok) throw new Error('allorigins')
   const json = await res.json()
-  return parseRssXml(json.contents || '', feed)
+  const items = parseRssXml(json.contents || '', feed)
+  if (!items.length) throw new Error('allorigins empty')
+  return items
+}
+
+async function fetchFeed(feed) {
+  return Promise.any([viaRss2json(feed), viaCorsproxy(feed), viaAllorigins(feed)])
 }
 
 export default function NewsTicker() {
@@ -117,11 +123,15 @@ export default function NewsTicker() {
     let cancelled = false
 
     async function load() {
-      // Crypto has a cached /news.json (fastest, no CORS). Other categories
-      // pull live RSS via the CORS proxy.
-      if (category === 'crypto') {
+      // Every category is pre-built into a cached JSON by the update-news
+      // workflow (crypto → /news.json, stocks → /stocks.json, economy →
+      // /economy.json). Loading that is instant and CORS-free; only if it's
+      // missing/empty do we fall back to slow in-browser RSS proxying.
+      const CACHE_FILE = { crypto: '/news.json', stocks: '/stocks.json', economy: '/economy.json' }
+      const cacheUrl = CACHE_FILE[category]
+      if (cacheUrl) {
         try {
-          const res = await fetchWithTimeout('/news.json?t=' + Math.floor(Date.now() / 3600000), 5000)
+          const res = await fetchWithTimeout(cacheUrl + '?t=' + Math.floor(Date.now() / 3600000), 5000)
           if (res.ok) {
             const data = await res.json()
             if (data.articles?.length && !cancelled) {
@@ -129,7 +139,7 @@ export default function NewsTicker() {
               return
             }
           }
-        } catch { /* fall through */ }
+        } catch { /* fall through to live RSS */ }
       }
 
       // Live RSS for the selected category. Render each source as soon as it
