@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { BiometricToggle } from '../components/BiometricLock'
@@ -29,9 +29,21 @@ export { applySettings } from '../settingsUtils'
 
 export default function Settings() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [settings, setSettings] = useState(loadSettings)
   const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
   useEffect(() => { track('settings_view') }, [])
+
+  // Deep-link support: menu items can navigate here with { scrollTo: 'guardian' }
+  // to jump straight to a specific settings section.
+  useEffect(() => {
+    const target = location.state?.scrollTo
+    if (!target) return
+    const el = document.getElementById(target)
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+  }, [location.state])
 
   function update(key, val) {
     const next = { ...settings, [key]: val }
@@ -221,7 +233,7 @@ export default function Settings() {
       </div>
 
       {/* ── Portfolio Guardian ── */}
-      <div className="settings-section glass-card">
+      <div id="guardian" className="settings-section glass-card" style={{ scrollMarginTop: '110px' }}>
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>

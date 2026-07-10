@@ -2367,11 +2367,14 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
   // Pegged assets (fiat cash + stablecoins) have no sell target — exclude both.
   const targetable = enriched.filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol))
 
-  async function saveTarget(coinId, priceVal, qtyVal) {
+  async function saveTarget(coinId, priceVal, qtyVal, currentPrice = 0) {
     const p = parseFloat(priceVal)
     const q = parseFloat(qtyVal)
     if (!p || p <= 0) return
     if (!q || q <= 0) return
+    // A price target is a "sell higher" goal — reject anything at or below the
+    // current market price so users can't set an already-met / downside target.
+    if (currentPrice > 0 && p <= currentPrice) return
     await api.addCoinTarget(coinId, { price: p, quantity: q })
     track('goal_set', { coin_id: coinId, target_price: p, qty: q })
     setAdding(prev => { const n = { ...prev }; delete n[coinId]; return n })
@@ -2499,6 +2502,9 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
             ? available * (Number(addState.pct ?? 100)) / 100
             : Math.max(0, Math.min(parseFloat(addState.qty) || 0, available))
           const remainingAfter = Math.max(0, available - addQty)
+          // A target only makes sense above the current price — flag when it isn't.
+          const addPriceNum = parseFloat(addState.price)
+          const priceTooLow = addPriceNum > 0 && currentPrice > 0 && addPriceNum <= currentPrice
 
           return (
             <div key={h.coin_id} className="glass-card dvx-target-card">
@@ -2540,8 +2546,13 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                         type="number" placeholder="e.g. 75000" min="0" step="any"
                         value={addState.price || ''}
                         onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
-                        style={{ width:'100%', background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
+                        style={{ width:'100%', background:'var(--surface-2)', border:`1px solid ${priceTooLow ? 'rgba(239,68,68,0.6)' : 'rgba(var(--g-rgb),0.3)'}`, borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
                       />
+                      {priceTooLow && (
+                        <div style={{ fontSize:'0.72rem', color:'#ef4444', marginTop:'0.35rem' }}>
+                          Target must be higher than the current price ({`$${fmt(currentPrice)}`}).
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -2590,8 +2601,8 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   </div>
                   <button
                     className="dvx-btn dvx-btn-primary dvx-tgt-save"
-                    disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0}
-                    onClick={() => saveTarget(h.coin_id, addState.price, addQty)}>
+                    disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0 || priceTooLow}
+                    onClick={() => saveTarget(h.coin_id, addState.price, addQty, currentPrice)}>
                     Save Target
                   </button>
                 </div>

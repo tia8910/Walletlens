@@ -302,7 +302,7 @@ export default function AssistantChat() {
               disabled={loading}
             />
             <button className="wlc-send" type="submit" disabled={loading || !input.trim()} aria-label="Send">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.02L3.1 11 13 12l-9.9 1 -1.09 6.38a1 1 0 0 0 1.39 1.02z"/></svg>
             </button>
           </form>
         </div>
