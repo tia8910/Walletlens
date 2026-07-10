@@ -43,6 +43,17 @@ export default function Settings() {
   const hideValues  = settings.hideValues  ?? false
   const showTicker  = !(settings.hideTicker ?? false)
 
+  // "Mobile app mode" is stored separately (wl_native) because it's read at app
+  // load to decide the layout. Toggling it reloads so the change applies.
+  const [appMode, setAppMode] = useState(() => { try { return localStorage.getItem('wl_native') === '1' } catch { return false } })
+  function toggleAppMode() {
+    const next = !appMode
+    setAppMode(next)
+    try { next ? localStorage.setItem('wl_native', '1') : localStorage.removeItem('wl_native') } catch {}
+    track('app_mode_toggle', { on: next })
+    setTimeout(() => window.location.reload(), 200)
+  }
+
   return (
     <div className="page settings-page">
       <div className="settings-header">
@@ -163,6 +174,18 @@ export default function Settings() {
             <span className="settings-hint">Scrolling live prices at the top</span>
           </div>
           <button className={`settings-toggle ${showTicker ? 'on' : ''}`} onClick={() => update('hideTicker', showTicker)}>
+            <span className="settings-toggle-thumb"/>
+          </button>
+        </div>
+
+        <div className="settings-divider"/>
+
+        <div className="settings-row settings-row-toggle">
+          <div className="settings-label">
+            <span>Mobile app mode</span>
+            <span className="settings-hint">Hide the top navigation grid — use the app's bottom nav</span>
+          </div>
+          <button className={`settings-toggle ${appMode ? 'on' : ''}`} onClick={toggleAppMode}>
             <span className="settings-toggle-thumb"/>
           </button>
         </div>
