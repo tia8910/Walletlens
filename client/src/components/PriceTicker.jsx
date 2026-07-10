@@ -66,9 +66,16 @@ function PriceTicker() {
   // Duplicate the list so the marquee loops seamlessly.
   // NOTE: must run before any early return — hooks cannot be called
   // conditionally (React: "Rendered more hooks than during the previous render").
-  const doubled = useMemo(() => [...items, ...items], [items])
-
-  if (items.length === 0) return null
+    // Fallback: always show the ticker even if the API hasn't loaded yet
+  const displayItems = items.length > 0 ? items : [
+    { name: 'BTC', price: 0, change: 0 },
+    { name: 'ETH', price: 0, change: 0 },
+    { name: 'SOL', price: 0, change: 0 },
+    { name: 'XRP', price: 0, change: 0 },
+    { name: 'ADA', price: 0, change: 0 },
+    { name: 'DOGE', price: 0, change: 0 },
+  ]
+  const doubled = useMemo(() => [...displayItems, ...displayItems], [displayItems])
 
   return (
     <div className="ticker-strip" aria-hidden="true">
