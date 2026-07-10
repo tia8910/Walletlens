@@ -486,7 +486,7 @@ function guardianContent(opts: {
   const testBanner = isTest ? `
     <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
       <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">✅ This is only a test</p>
-      <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">The WalletLens owner sent this to confirm Portfolio Guardian can reach you. Nothing has happened — they are fine. No action is needed. It's a good idea to save this email so you know where to look if it's ever real.</p>
+      <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">This is a preview of exactly what your heirs will receive if Portfolio Guardian is ever triggered. Nothing has happened and no heirs were emailed — this test was sent only to you.</p>
     </div>` : ""
 
   const heading = isTest
@@ -1030,13 +1030,13 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body?.mode === "guardian_test") {
-    // Immediately send a clearly-labeled TEST of the heir notification so the
-    // owner can verify Portfolio Guardian works without waiting for the
-    // interval. Uses the form data directly (no KV lookup needed).
-    const { ownerName, heirs, message, portfolioSummary } = body
-    const cleanHeirs = sanitizeHeirs(heirs)
-    if (cleanHeirs.length === 0) {
-      return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers })
+    // Immediately send a clearly-labeled TEST preview to the OWNER'S OWN email
+    // so they can see exactly what their heirs would receive — without emailing
+    // the heirs. Uses the form data directly (no KV lookup needed).
+    const { ownerName, ownerEmail, message, portfolioSummary } = body
+    const cleanOwnerEmail = String(ownerEmail || "").trim().toLowerCase()
+    if (!cleanOwnerEmail || cleanOwnerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanOwnerEmail)) {
+      return new Response(JSON.stringify({ error: "invalid_owner_email" }), { status: 400, headers })
     }
     const cleanMessage = String(message || "").trim().slice(0, 500)
     const cleanOwnerName = String(ownerName || "").trim().slice(0, 80)
@@ -1057,18 +1057,12 @@ Deno.serve(async (req: Request) => {
       ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true, hasQr: !!qrPng,
     })
 
-    let sent = 0, failed = 0, lastReason: string | null = null
-    for (const heir of cleanHeirs) {
-      const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM, "contact@walletlens.live", attachments)
-      r.ok ? sent++ : (failed++, lastReason = r.reason)
-      await new Promise((res) => setTimeout(res, 120))
+    // Send the preview to the owner only.
+    const r = await sendEmailResult(cleanOwnerEmail, subject, html, GUARDIAN_FROM, "contact@walletlens.live", attachments)
+    if (!r.ok) {
+      return new Response(JSON.stringify({ ok: false, sent: 0, failed: 1, reason: r.reason || "send_failed" }), { status: 200, headers })
     }
-    // When nothing went out, report the concrete reason (mail not configured,
-    // Resend domain not verified, etc.) rather than a generic failure.
-    if (sent === 0) {
-      return new Response(JSON.stringify({ ok: false, sent, failed, reason: lastReason || "send_failed" }), { status: 200, headers })
-    }
-    return new Response(JSON.stringify({ ok: true, sent, failed, reason: lastReason }), { status: 200, headers })
+    return new Response(JSON.stringify({ ok: true, sent: 1, failed: 0 }), { status: 200, headers })
   }
 
   if (body?.mode === "guardian_checkin") {

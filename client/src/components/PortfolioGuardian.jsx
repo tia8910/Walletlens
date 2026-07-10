@@ -20,7 +20,7 @@ function explainMailReason(reason) {
     return 'The walletlens.live email domain isn\'t verified in Resend yet, so mail can only go to the account owner. Verify the domain in the Resend dashboard, then try again.'
   if (r.includes('network'))
     return 'Couldn\'t reach the email service. Check your connection and try again.'
-  return 'Couldn\'t send the test email. Double-check the heir addresses and try again.'
+  return 'Couldn\'t send the test email. Double-check your email address and try again.'
 }
 
 function getOrCreateDeviceId() {
@@ -248,21 +248,24 @@ function SetupForm({ onSuccess, initial }) {
   }
 
   async function sendTestEmail() {
-    const errs = validate()
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    // The test previews the heir email to the OWNER only, so it just needs a
+    // valid owner email — heirs aren't required to preview it.
+    if (!emailRe.test(ownerEmail.trim())) {
+      setErrors(e => ({ ...e, ownerEmail: 'Enter your email to send yourself a preview.' })); return
+    }
     setErrors({}); setTestErr(''); setTestStatus('sending')
-    const cleanHeirs = cleanHeirList(heirs)
     try {
       const data = await apiCall({
         mode: 'guardian_test',
         ownerName: ownerName.trim(),
-        heirs: cleanHeirs, message: message.trim(),
+        ownerEmail: ownerEmail.trim().toLowerCase(),
+        message: message.trim(),
         portfolioSummary: getPortfolioSnapshot(),
         qrPng: await buildGuardianQr(),
       })
       if (data?.ok) { setTestStatus('sent') }
       else { setTestErr(explainMailReason(data?.reason)); setTestStatus('error') }
-      track('guardian_test_email', { heirs: cleanHeirs.length })
+      track('guardian_test_email', { to: 'owner' })
     } catch (e) {
       setTestErr(explainMailReason(e?.message))
       setTestStatus('error')
@@ -403,10 +406,10 @@ function SetupForm({ onSuccess, initial }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to my heirs now'}
+        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to myself'}
       </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent — ask your heirs to check their inbox (and spam) to confirm it arrived.</p>}
-      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check the addresses and try again.'}</p>}
+      {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent to you — check your inbox (and spam) to preview exactly what your heirs would receive.</p>}
+      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check your email address and try again.'}</p>}
 
       <button type="submit" className="pg-submit" disabled={status === 'saving'}>
         {status === 'saving' ? 'Saving…' : 'Activate Portfolio Guardian'}
