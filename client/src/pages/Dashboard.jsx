@@ -119,6 +119,22 @@ function classifyMcTier(coinId, marketCap, coinSymbol) {
   return MC_TIERS[4]
 }
 
+// Whether we're running inside the native mobile app shell (which provides its
+// own bottom navigation). The wrapper flags itself with ?native=1 (persisted),
+// or we infer it from a standalone Android WebView. Used to hide the in-page
+// 6-tile tab grid so it isn't duplicated by the native nav.
+const IS_NATIVE_APP = (() => {
+  try {
+    const sp = new URLSearchParams(window.location.search)
+    if (sp.get('native') === '1' || sp.get('app') === '1') { try { localStorage.setItem('wl_native', '1') } catch {} }
+    if (localStorage.getItem('wl_native') === '1') return true
+    const ua = navigator.userAgent || ''
+    const isAndroidWebView = /Android/.test(ua) && /;\s*wv\)/.test(ua)
+    const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone
+    return !!(isAndroidWebView && standalone)
+  } catch { return false }
+})()
+
 // The crypto Sector Rotation Heatmap is only meaningful when the user actually
 // has crypto exposure — show it only when they hold or watch any crypto asset.
 function hasCryptoExposure(enriched) {
@@ -3398,7 +3414,9 @@ export default function Dashboard() {
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
-      {/* Tab nav — labeled tile grid */}
+      {/* Tab nav — labeled tile grid. Hidden inside the native app, which has
+          its own bottom navigation, so the two don't duplicate each other. */}
+      {!IS_NATIVE_APP && (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
           <button key={tab.id} className={`dvx-tabtile ${activeTab === tab.id ? 'active' : ''}`}
@@ -3409,6 +3427,7 @@ export default function Dashboard() {
           </button>
         ))}
       </div>
+      )}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -3452,6 +3471,30 @@ export default function Dashboard() {
               }}>
                 History
               </button>
+            </div>
+          )}
+
+          {/* Import options — populated dashboards only. The empty profile has
+              its own import boxes (EmptyPortfolio), so gating on enriched
+              avoids showing these twice. */}
+          {enriched.length > 0 && (
+            <div style={{ display:'flex', gap:'0.5rem', margin:'0 0 0.5rem', flexWrap:'wrap' }}>
+              {[
+                { key:'excel',      label:'Excel',      icon:'bar-chart', on:showExcelImport, fn:() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
+                { key:'voice',      label:'Voice',      icon:'mic',       on:showVoiceImport, fn:() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
+                { key:'screenshot', label:'Screenshot', icon:'camera',    on:showScreenshot,  fn:() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) } },
+                { key:'backup',     label:'Backup',     icon:'folder',    on:showBackupCode,  fn:() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) } },
+              ].map(o => (
+                <button key={o.key} onClick={o.fn} style={{
+                  flex:1, minWidth:'70px', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
+                  padding:'0.5rem 0.4rem', borderRadius:'12px', cursor:'pointer', fontSize:'0.75rem', fontWeight:700,
+                  background: o.on ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.08)',
+                  border: `1px solid rgba(var(--g-rgb),${o.on ? '0.5' : '0.22'})`, color:'var(--g-ink)',
+                  transition:'background 0.15s',
+                }}>
+                  <Icon name={o.icon} size={14} /> {o.label}
+                </button>
+              ))}
             </div>
           )}
 
