@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { api } from '../api'
+import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
@@ -2782,6 +2783,11 @@ export default function Dashboard() {
 
   // ── Timed nudge toast (fires after 15 min if no trade logged) ──────────
   const [nudgeVisible, setNudgeVisible] = useState(false)
+  // Flick the nudge toast sideways to dismiss it (in-app notifications should
+  // be swipe-dismissable, not just tap-the-×).
+  const { swipeHandlers: nudgeSwipe, swipeStyle: nudgeSwipeStyle } = useSwipeDismiss(
+    () => setNudgeVisible(false), { axis: 'x', centered: true }
+  )
   useEffect(() => {
     if (sheetOpen || transactions.length > 0) { setNudgeVisible(false); return }
     const t = setTimeout(() => {
@@ -4613,16 +4619,16 @@ export default function Dashboard() {
 
       </div>{/* end tab-content transition wrapper */}
 
-      {/* ── Nudge toast — appears after 20s idle ── */}
+      {/* ── Nudge toast — appears after 20s idle · swipe sideways to dismiss ── */}
       {nudgeVisible && !sheetOpen && (
-        <div style={{
-          position: 'fixed', bottom: '148px', left: '50%', transform: 'translateX(-50%)',
+        <div {...nudgeSwipe} style={{
+          position: 'fixed', bottom: '148px', left: '50%',
           zIndex: 9001, display: 'flex', alignItems: 'center', gap: '0.75rem',
           background: 'var(--bg4)', border: '1px solid var(--border)',
           borderRadius: '50px', padding: '0.6rem 1rem 0.6rem 0.75rem',
           boxShadow: 'var(--shadow)',
-          animation: 'slideUpFade 0.3s ease',
-          whiteSpace: 'nowrap',
+          whiteSpace: 'nowrap', cursor: 'grab',
+          ...nudgeSwipeStyle,
         }}>
           <Icon name="bar-chart" size={15} style={{ color: 'var(--text-muted)' }} />
           <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Log your latest trade</span>
