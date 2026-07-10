@@ -121,18 +121,23 @@ function classifyMcTier(coinId, marketCap, coinSymbol) {
 }
 
 // Whether we're running inside the native mobile app shell (which provides its
-// own bottom navigation). The wrapper flags itself with ?native=1 (persisted),
-// or we infer it from a standalone Android WebView. Used to hide the in-page
-// 6-tile tab grid so it isn't duplicated by the native nav.
+// own bottom navigation). Used to hide the in-page 6-tile tab grid so it isn't
+// duplicated by the native nav. Detection, most reliable first:
+//   1. an explicit ?native=1 flag (persisted to localStorage), or wl_native=1;
+//   2. a known WebView-wrapper bridge object (Median, GoNative, Capacitor,
+//      React Native, or a custom WalletLensNative);
+//   3. an Android WebView user-agent ("; wv").
+// We deliberately do NOT treat a plain standalone/installed PWA as the native
+// app — an installed PWA has no native nav and should keep the tile grid. The
+// hamburger drawer always covers navigation, so the grid is safe to hide.
 const IS_NATIVE_APP = (() => {
   try {
     const sp = new URLSearchParams(window.location.search)
     if (sp.get('native') === '1' || sp.get('app') === '1') { try { localStorage.setItem('wl_native', '1') } catch {} }
     if (localStorage.getItem('wl_native') === '1') return true
+    if (window.median || window.gonative || window.Capacitor || window.ReactNativeWebView || window.WalletLensNative) return true
     const ua = navigator.userAgent || ''
-    const isAndroidWebView = /Android/.test(ua) && /;\s*wv\)/.test(ua)
-    const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone
-    return !!(isAndroidWebView && standalone)
+    return /Android/.test(ua) && /;\s*wv[;)]/.test(ua)
   } catch { return false }
 })()
 
