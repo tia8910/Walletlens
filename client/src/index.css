@@ -1110,7 +1110,8 @@ input, select, textarea {
 [data-wl-light] .news-filter-pill  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
 [data-wl-light] .news-refresh-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
 [data-wl-light] .news-card-time    { color: var(--text-sub); }
-[data-wl-light] .news-modal-close  { color: var(--text-sub); }
+/* News modal is always dark-surfaced — keep its close X light in light mode. */
+[data-wl-light] .news-modal-close  { color: rgba(255,255,255,0.8); }
 [data-wl-light] .news-modal-share-btn { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.92); }
 [data-wl-light] .news-modal-share-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); color: #fff; }
 
@@ -9396,6 +9397,28 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 }
 .news-modal-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
 
+/* Category tabs (Crypto / Stocks / Economy) inside the news modal. The modal
+   surface is always dark, so these read light-on-dark in both app themes. */
+.news-modal-tabs {
+  display: flex; gap: 0.4rem; flex-shrink: 0;
+  padding: 0.65rem 1.25rem 0.15rem;
+}
+.news-modal-tab {
+  flex: 1; padding: 0.4rem 0.6rem; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7); font-size: 0.78rem; font-weight: 700;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.news-modal-tab:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.news-modal-tab.active {
+  background: rgba(var(--g-rgb),0.18); border-color: rgba(var(--g-rgb),0.5);
+  color: #fff;
+}
+.news-modal-empty {
+  padding: 2rem 1rem; text-align: center;
+  color: rgba(255,255,255,0.55); font-size: 0.85rem;
+}
+
 .news-modal-list {
   overflow-y: auto;
   padding: 0.75rem 1rem 1.5rem;
@@ -9931,7 +9954,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .sa-header-icon { font-size: 1.6rem; }
 .sa-title  { font-size: 1rem; font-weight: 800; margin: 0; color: #fff; }
 .sa-subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin: 0.1rem 0 0; }
-.sa-badge  { background: var(--g); color: #000; font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
+.sa-badge  { background: rgba(var(--g-rgb),0.15); color: var(--g-ink); border: 1px solid rgba(var(--g-rgb),0.3); font-size: 0.7rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.5rem; min-width: 20px; text-align: center; }
 .sa-header-actions { display: flex; gap: 0.5rem; }
 
 .sa-check-btn {
@@ -12349,8 +12372,10 @@ button:not(:disabled):active,
 .wlw-bell-set    { color: var(--g-ink); border-color: rgba(var(--g-rgb), 0.35); }
 .wlw-bell-count  {
   font-size: 0.65rem; font-weight: 800;
-  background: var(--g); color: #000;
-  border-radius: 50%; width: 14px; height: 14px;
+  /* Soft-accent count chip — matches the app-wide count-badge style. */
+  background: rgba(var(--g-rgb),0.18); color: var(--g-ink);
+  border: 1px solid rgba(var(--g-rgb),0.35);
+  border-radius: 50%; width: 15px; height: 15px;
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -12628,8 +12653,12 @@ button:not(:disabled):active,
 .wlc-close:hover svg, .share-close:hover svg { transform: rotate(90deg); }
 .news-modal-close:active, .qs-close:active, .ms-close:active, .wlc-close:active,
 .share-close:active { transform: scale(0.88); }
-[data-wl-light] .news-modal-close, [data-wl-light] .qs-close, [data-wl-light] .ms-close,
+[data-wl-light] .qs-close, [data-wl-light] .ms-close,
 [data-wl-light] .wlc-close, [data-wl-light] .share-close { color: rgba(0,0,0,0.6); }
+/* The news modal surface is always dark (#0e0e18) regardless of theme, so its
+   close button must stay light in light mode too — otherwise it's invisible. */
+.news-modal-close, [data-wl-light] .news-modal-close { color: rgba(255,255,255,0.8); }
+.news-modal-close:hover, [data-wl-light] .news-modal-close:hover { color: #fff !important; }
 
 /* ── Unified primary button skin (app-wide) ────────────────────────────────
    Every primary / CTA button shares ONE look — the "Add a trade" CTA: a deep-
@@ -13585,20 +13614,35 @@ img, svg, iframe, video, embed {
   height: auto;
 }
 
+/* The responsive media reset above (max-width/height:auto) collapses some
+   fixed-size action icons to 0 width inside their flex row. Pin their
+   dimensions back so these icons always render. */
+.wl-topbar-help svg, .wl-topbar-gear svg {
+  width: 18px; height: 18px; max-width: none; flex-shrink: 0;
+}
+.sa-cfg-btn svg {
+  width: 16px; height: 16px; max-width: none; flex-shrink: 0;
+}
+.wl-tip-btn svg {
+  width: 13px; height: 13px; max-width: none; flex-shrink: 0;
+}
+
 /* ── Force bottom-nav safe area to include iPhone notch/home indicator ── */
 .wl-bottom-nav {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem) !important;
 }
 
-/* ── Fix chat send button icon to fill its container properly ── */
+/* ── Send button icon: sized to fill the button cleanly and stay centred ── */
 .wlc-send svg {
-  width: 32px;
-  height: 32px;
-  stroke-width: 2.2;
+  width: 30px;
+  height: 30px;
+  max-width: none;
+  display: block;
+  flex-shrink: 0;
 }
 /* On very small screens, keep the send button proportional */
 @media (max-width: 400px) {
-  .wlc-send { width: 42px; height: 42px; }
+  .wlc-send { width: 44px; height: 44px; }
   .wlc-send svg { width: 28px; height: 28px; }
 }
 
