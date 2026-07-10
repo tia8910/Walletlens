@@ -119,6 +119,16 @@ function classifyMcTier(coinId, marketCap, coinSymbol) {
   return MC_TIERS[4]
 }
 
+// The crypto Sector Rotation Heatmap is only meaningful when the user actually
+// has crypto exposure — show it only when they hold or watch any crypto asset.
+function hasCryptoExposure(enriched) {
+  if (enriched.some(h => assetClass(h.coin_id) === 'crypto')) return true
+  try {
+    const wl = JSON.parse(localStorage.getItem('wl_watchlist') || '[]')
+    return Array.isArray(wl) && wl.some(w => assetClass(w.coin_id) === 'crypto')
+  } catch { return false }
+}
+
 // ── Asset category classifier ─────────────────────────────────────────────
 function categorizeAsset(h) {
   const id = (h.coin_id || '').toLowerCase()
@@ -4427,7 +4437,7 @@ export default function Dashboard() {
           {/* Correlation, heatmap — below-fold, loaded lazily */}
           <Suspense fallback={null}>
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-            {cardVis.sector_heatmap && <SectorHeatmap />}
+            {cardVis.sector_heatmap && hasCryptoExposure(enriched) && <SectorHeatmap />}
           </Suspense>
         </>
       )}
