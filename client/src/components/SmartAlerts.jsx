@@ -350,7 +350,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           return merged
         })
         const top = newOnes[0]
-        const title = `⚡ ${top.coinSymbol} — ${top.signalCount}-Signal Alert`
+        const title = `${top.coinSymbol} — ${top.signalCount}-Signal Alert`
         const body  = top.signals.map(s => s.desc).join(' · ')
         fireNotif(title, body)
         playAlarm()
@@ -410,7 +410,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {/* ── Toast ── */}
       {toast && (
         <div className="sa-toast">
-          <span className="sa-toast-icon">⚡</span>
+          <span className="sa-toast-icon"><Icon name="zap" size={16} /></span>
           <div>
             <div className="sa-toast-title">{toast.title}</div>
             <div className="sa-toast-body">{toast.body}</div>
@@ -424,7 +424,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {/* ── Header ── */}
       <div className="sa-header">
         <div className="sa-header-left">
-          <span className="sa-header-icon">⚡</span>
+          <span className="sa-header-icon"><Icon name="zap" size={16} /></span>
           <div>
             <h3 className="sa-title">Smart Alerts 2.0</h3>
             <p className="sa-subtitle">{marketMode ? 'Watching BTC · ETH · SOL · XRP · BNB · DOGE' : 'Fires when whale + price + news + volume align'}</p>
@@ -525,7 +525,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {/* ── Active alerts ── */}
       {active.length === 0 && dismissed.length === 0 && (
         <div className="sa-empty">
-          <div className="sa-empty-icon">⚡</div>
+          <div className="sa-empty-icon"><Icon name="zap" size={26} /></div>
           <p>No correlated signals yet.</p>
           <p className="sa-empty-sub">Smart Alerts fires when whale activity, price momentum, volume anomaly, or breaking news align for a coin you hold.</p>
           {marketMode && <p className="sa-empty-sub" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>Watching BTC, ETH, SOL, XRP, BNB, DOGE market-wide.</p>}
@@ -535,7 +535,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {active.length > 0 && (
         <div className="sa-section">
           <div className="sa-section-hd">
-            <span>⚡ Active Alerts</span>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:'0.35em' }}><Icon name="zap" size={14} /> Active Alerts</span>
             <button className="sa-clear-btn" onClick={dismissAll}>Dismiss all</button>
           </div>
           {active.map(a => <AlertCard key={a.id} alert={a} onDismiss={dismiss} onDelete={deleteAlert} />)}
@@ -573,7 +573,7 @@ function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
           <span className="sa-signal-count">{a.signalCount} signals</span>
           <span className="sa-ago">{ago}</span>
           {!dim && <button className="sa-dismiss" onClick={() => onDismiss(a.id)} title="Dismiss">✕</button>}
-          <button className="sa-dismiss sa-delete" onClick={() => onDelete(a.id)} title="Delete">🗑</button>
+          <button className="sa-dismiss sa-delete" onClick={() => onDelete(a.id)} title="Delete"><Icon name="trash" size={14} /></button>
         </div>
       </div>
       <div className="sa-signals">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api'
 import { POPULAR_TICKERS, PRESET_ASSETS, assetClass } from '../data/assets'
 import CoinLogo from './CoinLogo'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
 
@@ -140,7 +141,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
         updated[i] = { ...a, triggered: true, triggeredAt: new Date().toISOString(), triggeredPrice: p }
         changed = true
         if (canNotify) {
-          const dir = a.condition === 'above' ? '🚀' : '🔻'
+          const dir = a.condition === 'above' ? '↑' : '↓'
           try {
             new Notification(`${dir} ${a.coin_symbol} watchlist alert`, {
               body: `${a.coin_symbol} hit your target of ${fmtPrice(a.targetPrice)} — now ${fmtPrice(p)}`,
@@ -257,7 +258,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
       {/* Notification permission banner */}
       {notifPerm !== 'granted' && items.length > 0 && (
         <div className="wlw-notif-banner glass-card">
-          <span className="wlw-notif-icon">🔔</span>
+          <span className="wlw-notif-icon"><Icon name="bell" size={16} /></span>
           <div>
             <strong>Enable notifications</strong> — get alerted the moment a price target is hit.
           </div>
@@ -320,7 +321,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
       {/* Empty state */}
       {items.length === 0 && !showSearch && (
         <div className="glass-card wlw-empty">
-          <div className="wlw-empty-icon">👁</div>
+          <div className="wlw-empty-icon"><Icon name="eye" size={30} /></div>
           <p className="wlw-empty-title">Nothing in your watchlist yet</p>
           <p className="muted wlw-empty-sub">
             Track any crypto, stock, ETF, or precious metal without holding it.
