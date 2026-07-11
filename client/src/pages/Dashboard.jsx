@@ -4638,7 +4638,7 @@ export default function Dashboard() {
           wallets={wallets}
           onDone={() => {
             const wasFirstTrade = transactions.length === 0
-            loadAllRef.current?.()
+            loadAll()
             window.dispatchEvent(new Event('wl:portfolio-updated'))
             // First trade ever → jump to Overview + fire "set a target" nudge
             if (wasFirstTrade) {
