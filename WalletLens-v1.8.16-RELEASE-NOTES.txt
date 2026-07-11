@@ -1,0 +1,14 @@
+WalletLens v1.8.16 — Release Notes
+====================================
+
+CHANGES:
+- Top bar fully restored — logo, brand name, cycling text, all buttons visible
+- Bottom nav active tab persists until user selects another
+- Portfolio Guardian daily reminder notification added
+- All onboarding crash-proofed
+
+FILES:
+- WalletLens-v1.8.16.aab → Upload to Google Play Console
+- WalletLens-v1.8.16.apk → Test on device
+
+VERSION: 1.8.16 (versionCode 27)

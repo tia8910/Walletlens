@@ -562,7 +562,7 @@ export default function App() {
             </button>
             <div className="wl-topbar-brand-text">
               <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
-              {!isStandalone && <TopbarCyclingActions />}
+              <TopbarCyclingActions />
             </div>
           </div>
           <div className="wl-topbar-right">
