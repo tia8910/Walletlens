@@ -18,6 +18,7 @@ import BottomNav from './components/BottomNav'
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
+const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
 import { useLanguage } from './LanguageContext'
@@ -378,6 +379,9 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [addGuideOpen, setAddGuideOpen] = useState(false)
   const [shellReady, setShellReady] = useState(false)
+  const [onboardDone, setOnboardDone] = useState(() => {
+    try { return localStorage.getItem('wl_welcomed_v2') === '1' } catch { return false }
+  })
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const isLanding = useMemo(() => {
@@ -631,7 +635,8 @@ export default function App() {
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 
-      {shellReady && <Suspense fallback={null}><WelcomeModal /></Suspense>}
+      {shellReady && isStandalone && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
+      {shellReady && !isStandalone && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
 
       {quickStatsOpen && <Suspense fallback={null}><QuickStatsPopup onClose={() => setQuickStatsOpen(false)} /></Suspense>}
