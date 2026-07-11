@@ -151,7 +151,7 @@ export default function NativeOnboarding({ onDone }) {
   const progress = ((step + 1) / total) * 100
 
   const goNext = useCallback(() => {
-    if (step < total - 1) { setAnimDir(1); setStep(x => x + 1) }
+    if (step < total - 1) { setAnimDir(1); setStep(x => x + 1); sfx.playWhoosh() }
   }, [step, total])
 
   const goPrev = useCallback(() => {
@@ -383,9 +383,9 @@ export default function NativeOnboarding({ onDone }) {
           boxShadow: s.id === 'welcome' ? '0 4px 20px rgba(0,200,83,0.45)' : undefined,
         }}
         onClick={() => {
-          if (s.isPortfolio) { handlePortfolio(); return }
+          sfx.playChime(); if (s.isPortfolio) { handlePortfolio(); return }
           if (s.isSecurity && !bioEnabled && bioAvailable) { enableBiometric(); return }
-          if (s.final) { finish(); return }
+          if (s.final) { sfx.playTriumph(); finish(); return }
           goNext()
         }}
         disabled={busy}
