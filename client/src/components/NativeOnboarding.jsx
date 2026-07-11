@@ -166,15 +166,25 @@ export default function NativeOnboarding({ onDone }) {
 
         {s.isTheme && (
           <div className="no-theme-grid">
-            {THEMES.map(th => (
-              <button key={th.id} className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
+            {THEMES.map(th => {
+              const isLight = mode === 'light'
+              const isActive = theme === th.id
+              return (
+              <button key={th.id} className={`no-theme-btn${isActive ? ' active' : ''}`}
+                style={isActive ? {
+                  borderColor: isLight ? '#fff' : th.swatch,
+                  boxShadow: isLight ? '0 0 16px rgba(255,255,255,0.35)' : `0 0 16px ${th.swatch}55`,
+                } : undefined}
                 onClick={() => { try { setTheme(th.id) } catch {}; try { track('theme_changed', { theme: th.id }) } catch {} }}>
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+                  boxShadow: isActive ? (isLight ? '0 0 10px rgba(255,255,255,0.5)' : `0 0 10px ${th.swatch}88`) : 'none',
+                  border: isActive ? `2px solid ${isLight ? '#fff' : th.swatch}` : '2px solid transparent',
                 }}>{getThemeIcon(th)}</span>
-                <span className="no-theme-label">{th.name}</span>
+                <span className="no-theme-label" style={isActive ? { color: isLight ? '#fff' : th.swatch } : undefined}>{th.name}</span>
               </button>
-            ))}
+              )
+            })}
           </div>
         )}
 
