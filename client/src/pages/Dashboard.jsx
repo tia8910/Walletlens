@@ -2777,6 +2777,19 @@ export default function Dashboard() {
   })
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
+
+  // The 6-tile "boxes" navigation is a desktop convenience — on mobile the app
+  // uses the bottom nav, so we only render the grid on wide (desktop) viewports.
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const onChange = e => setIsDesktop(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const showTabGrid = !IS_NATIVE_APP && isDesktop
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
   const [holdingsCat,     setHoldingsCat]     = useState('all')
   const [holdingsSort,    setHoldingsSort]    = useState('value')
@@ -3481,7 +3494,7 @@ export default function Dashboard() {
           grid is redundant with the native bottom nav, so we replace it with the
           quick import options (for populated dashboards; the empty profile shows
           its own import boxes). */}
-      {!IS_NATIVE_APP ? (
+      {showTabGrid ? (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
           <button key={tab.id} className={`dvx-tabtile ${activeTab === tab.id ? 'active' : ''}`}
@@ -3539,11 +3552,11 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Import options under Buy/Sell — web only. In the native app these
-              live at the top (in place of the tile grid), so we don't repeat
-              them here. Populated dashboards only; the empty profile has its own
-              import boxes. */}
-          {!IS_NATIVE_APP && enriched.length > 0 && importOptions}
+          {/* Import options under Buy/Sell — only when the desktop tile grid is
+              shown up top. On mobile web and in the native app the import
+              options already replace the grid at the top, so we don't repeat
+              them here. Populated dashboards only. */}
+          {showTabGrid && enriched.length > 0 && importOptions}
 
           {/* Feature discovery nudge — only shown once, until dismissed */}
           {!isDemo && enriched.length > 0 && (
