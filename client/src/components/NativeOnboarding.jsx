@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
 import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
 import Logo from './Logo'
@@ -6,6 +6,7 @@ import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
 import sfx from '../sfx'
+const WelcomeStart = lazy(() => import("./WelcomeStart"))
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 const STARTED_KEY = 'wl_started'
@@ -126,22 +127,10 @@ export default function NativeOnboarding({ onDone }) {
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
-  // Portfolio state
-  const [currency, setCurrency] = useState(() => {
-    const cur = readCurrency()
-    return POPULAR_FIAT.some(f => f.code === cur) ? cur : 'USD'
-  })
-  const [cash, setCash] = useState('')
-  const [btc, setBtc] = useState('')
-  const [gold, setGold] = useState('')
-  const [goldUnit, setGoldUnit] = useState('oz')
-  const [usdt, setUsdt] = useState('')
-  const [busy, setBusy] = useState(false)
 
   const s = SLIDES[step]
   const total = SLIDES.length
   const progress = ((step + 1) / total) * 100
-  const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
 
   const goNext = useCallback(() => {
     if (step < total - 1) { setStep(x => x + 1); sfx.playWhoosh() }
@@ -198,46 +187,6 @@ export default function NativeOnboarding({ onDone }) {
     setTimeout(() => window.dispatchEvent(new Event('wl:portfolio-updated')), 500)
     onDone?.()
   }
-
-  async function handlePortfolio() {
-    const n = v => Math.max(0, parseFloat(v) || 0)
-    const cashN = n(cash), usdtN = n(usdt), goldN = n(gold), btcN = n(btc)
-    if (cashN === 0 && usdtN === 0 && goldN === 0 && btcN === 0) { goNext(); return }
-    setBusy(true)
-    try {
-      const wallet = await api.ensureWallet()
-      const date = new Date().toISOString().split('T')[0]
-      const ids = []
-      const fiatId = `fiat:${currency.toLowerCase()}`
-      if (cashN > 0) ids.push(fiatId)
-      if (usdtN > 0) ids.push('tether')
-      if (goldN > 0) ids.push(GOLD_ID)
-      if (btcN > 0) ids.push('bitcoin')
-      let prices = {}
-      try { prices = ids.length ? await api.getPrices(ids.join(',')) : {} } catch {}
-      const px = (id, fb) => (prices[id]?.usd ?? prices[id]?.price ?? fb)
-
-      if (cashN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'fiat', coin_id: fiatId, coin_symbol: currency, coin_name: `${currency} Cash`, amount: cashN, price_per_unit: px(fiatId, 1), date })
-      if (usdtN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'tether', coin_symbol: 'USDT', coin_name: 'Tether', amount: usdtN, price_per_unit: px('tether', 1), date })
-      if (goldN > 0) {
-        const goldOz = goldUnit === 'g' ? goldN / 31.1034768 : goldN
-        await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'gold', coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold (1 oz)', amount: goldOz, price_per_unit: px(GOLD_ID, 0), date })
-      }
-      if (btcN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin', amount: btcN, price_per_unit: px('bitcoin', 0), date })
-
-      track('native_onboarding_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0 })
-      trackProfileCreated({ cash: cashN, usdt: usdtN, gold_oz: goldN, btc: btcN, currency })
-      try { localStorage.setItem(STARTED_KEY, '1') } catch {}
-      sfx.playChime()
-      sfx.haptic([10, 30, 12])
-      window.dispatchEvent(new Event('wl:portfolio-updated'))
-      goNext()
-    } catch (err) {
-      console.error('Portfolio seed failed:', err)
-      goNext()
-    } finally { setBusy(false) }
-  }
-
   function getThemeIcon(th) {
     if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
     if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
@@ -283,57 +232,11 @@ export default function NativeOnboarding({ onDone }) {
             ))}
           </div>
         )}
-
         {s.isPortfolio && (
-          <div className="wls-fields" style={{ width: '100%', maxWidth: 340 }}>
-            <div className="wls-field">
-              <label className="wls-label">💵 Cash balance</label>
-              <div className="wls-input-wrap">
-                <span className="wls-prefix">{sym}</span>
-                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-                  value={cash} onChange={e => setCash(e.target.value)} autoFocus />
-                <select className="wls-cur-select" value={currency} onChange={e => setCurrency(e.target.value)}>
-                  {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="wls-field">
-              <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance</label>
-              <div className="wls-input-wrap">
-                <span className="wls-prefix"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
-                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-                  value={usdt} onChange={e => setUsdt(e.target.value)} />
-                <span className="wls-suffix">USDT</span>
-              </div>
-            </div>
-
-            <div className="wls-field">
-              <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold</label>
-              <div className="wls-input-wrap">
-                <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'}</span>
-                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-                  value={gold} onChange={e => setGold(e.target.value)} />
-                <select className="wls-unit-select" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
-                  <option value="oz">oz</option>
-                  <option value="g">gram</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="wls-field">
-              <label className="wls-label">₿ Bitcoin</label>
-              <div className="wls-input-wrap">
-                <span className="wls-prefix wls-prefix-btc">₿</span>
-                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-                  value={btc} onChange={e => setBtc(e.target.value)} />
-                <span className="wls-suffix">BTC</span>
-              </div>
-            </div>
-
-            <p className="wls-privacy" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', textAlign: 'center', marginTop: '0.6rem' }}>
-              🔒 100% private — stays on your device
-            </p>
+          <div style={{ width: "100%", maxWidth: 380 }}>
+            <Suspense fallback={null}>
+              <WelcomeStart onDone={goNext} />
+            </Suspense>
           </div>
         )}
 
@@ -373,14 +276,13 @@ export default function NativeOnboarding({ onDone }) {
         }}
         onClick={() => {
           sfx.playChime()
-          if (s.isPortfolio) { handlePortfolio(); return }
           if (s.isSecurity && !bioEnabled && bioAvailable) { enableBiometric(); return }
           if (s.final) { sfx.playTriumph(); finish(); return }
           goNext()
         }}
-        disabled={busy}
+        disabled={false}
       >
-        {busy ? 'Setting up…' : s.isSecurity && bioEnabled ? 'Continue →' : s.cta}
+        {s.isSecurity && bioEnabled ? "Continue →" : s.cta}
       </button>
     </div>
   )
