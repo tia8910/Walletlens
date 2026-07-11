@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import sfx from '../sfx'
 import Logo from './Logo'
@@ -280,7 +281,7 @@ export default function WelcomeModal() {
                     }}>
                       {th.logo
                         ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                        : th.icon}
+                        : (th.icon && th.icon.length <= 2 ? th.icon : <Icon name={th.icon} size={16} style={{ color: '#064e3b' }} />)}
                     </span>
                     <span style={{ fontSize: '0.67rem', fontWeight: 700, color: theme === th.id ? th.swatch : 'rgba(255,255,255,0.65)', lineHeight: 1 }}>{th.name}</span>
                   </button>
