@@ -131,6 +131,7 @@ const MAIL_FROM = "WalletLens <contact@walletlens.live>"
 // from a no-reply address so heirs don't reply into a mailbox nobody watches.
 // Replies are still routed to contact@ so anyone who does hit "reply" reaches us.
 const GUARDIAN_FROM = "WalletLens Portfolio Guardian <noreply@walletlens.live>"
+const BACKUP_FROM = "WalletLens Backup <noreply@walletlens.live>"
 
 // Returns the raw send result so callers that need to explain a failure to the
 // user (e.g. the Guardian test-email) can surface Resend's actual reason
@@ -471,6 +472,41 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
 
+// ── "Email me my backup" content ────────────────────────────────────────────
+// Sends the user their own WalletLens backup code (and a scannable QR when it
+// fits one) so they can restore on any device. Delivered once; nothing is
+// stored server-side.
+const BACKUP_QR_FILENAME = "walletlens-backup.png"
+function backupEmailContent(opts: { code: string; hasQr: boolean }): { subject: string; html: string } {
+  const { code, hasQr } = opts
+  const html = emailShell(`
+    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#fff">Your WalletLens backup</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">
+      Here's your private backup. To restore on any device, open
+      <a href="https://walletlens.live/dashboard" style="color:#4ade80;text-decoration:none">WalletLens</a>
+      → <b style="color:#e2e8f0">Settings → Backup → Restore</b>, then paste the code below${hasQr ? " (or scan the attached QR)" : ""}.
+    </p>
+    ${hasQr ? `
+    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:18px;margin:0 0 20px">
+      <p style="margin:0;line-height:1.7;color:#c4cdd6;font-size:14px">
+        <b style="color:#4ade80">Fastest:</b> open the attached image <b style="color:#e2e8f0">${BACKUP_QR_FILENAME}</b> on another device and scan it from
+        <b>Settings → Backup → Restore → Scan</b>.
+      </p>
+    </div>` : ""}
+    <p style="margin:0 0 8px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Backup code</p>
+    <div style="background:#0f141a;border:1px solid #1f2730;border-radius:12px;padding:16px 18px;margin:0 0 22px">
+      <code style="display:block;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;color:#e2e8f0">${escapeHtml(code)}</code>
+    </div>
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 18px;margin:0 0 8px">
+      <p style="margin:0;color:#9ca3af;font-size:12.5px;line-height:1.7">
+        🔒 <b style="color:#d1d5db">Keep this email private.</b> Anyone with this code or QR can restore your portfolio.
+        WalletLens stores no financial data on its servers — this backup was delivered once and not retained.
+      </p>
+    </div>
+  `)
+  return { subject: "Your WalletLens backup code", html }
+}
+
 function guardianContent(opts: {
   ownerName?: string
   message?: string
@@ -780,7 +816,7 @@ function rateLimited(ip: string, bucket: string, max: number, windowMs = 60_000)
   return b.n > max
 }
 const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap"])
-const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test"])
+const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email"])
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
@@ -935,6 +971,30 @@ Deno.serve(async (req: Request) => {
       console.error("Campaign error:", e)
       return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
     }
+  }
+
+  // ── Email me my backup ───────────────────────────────────────────────────
+  // POST { mode:"backup_email", email, code, qrPng? } — sends the user their
+  // own backup code (and QR if it fit one) from noreply@walletlens.live. The
+  // code is delivered once and never stored.
+  if (body?.mode === "backup_email") {
+    const email = String(body.email || "").trim().toLowerCase()
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers })
+    }
+    const code = String(body.code || "")
+    // Backup codes are normally a few KB; cap generously to reject junk.
+    if (!code || code.length > 400_000) {
+      return new Response(JSON.stringify({ error: "invalid_code" }), { status: 400, headers })
+    }
+    const qrPng = sanitizeQrPng(body.qrPng)
+    const attachments = qrPng ? [{ filename: BACKUP_QR_FILENAME, content: qrPng }] : undefined
+    const { subject, html } = backupEmailContent({ code, hasQr: !!qrPng })
+    const r = await sendEmailResult(email, subject, html, BACKUP_FROM, "contact@walletlens.live", attachments)
+    if (!r.ok) {
+      return new Response(JSON.stringify({ ok: false, reason: r.reason || "send_failed" }), { status: 200, headers })
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
   }
 
   // ── Portfolio Guardian — Dead Man's Switch ───────────────────────────────
