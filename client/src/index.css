@@ -772,7 +772,7 @@ input, select, textarea {
   text-transform: uppercase;
   box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2),
               0 0 0 1px rgba(255,255,255,0.08);
-  position: relative; overflow: hidden;
+  overflow: hidden;
 }
 .no-cta::before {
   content: ''; position: absolute; inset: 0;
@@ -783,37 +783,8 @@ input, select, textarea {
 .no-cta:disabled { opacity: 0.5; pointer-events: none; }
 
 
-/* Force white labels in native onboarding */
+/* Only change label color in native onboarding — keep everything else as-is */
 .no-container .wls-label { color: rgba(255,255,255,0.85) !important; }
-.no-container .wls-input { color: #fff !important; }
-.no-container .wls-prefix { color: rgba(255,255,255,0.6) !important; }
-.no-container .wls-suffix { color: rgba(255,255,255,0.4) !important; }
-.no-container .wls-cur-select { color: rgba(255,255,255,0.8) !important; background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.16) !important; }
-.no-container .wls-unit-select { color: rgba(255,255,255,0.8) !important; background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.16) !important; }
-.no-container .wls-input-wrap { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.12) !important; }
-.no-container .wls-input::placeholder { color: rgba(255,255,255,0.2) !important; }
-.no-container .wls-prefix-btc { color: #f7931a !important; }
-
-/* Premium native onboarding CTA */
-.no-container .no-cta {
-  position: absolute; bottom: 20px; left: 1.5rem; right: 1.5rem;
-  padding: 1rem 1.5rem; border-radius: 16px; border: none;
-  color: #fff; font-weight: 800; font-size: 1rem; letter-spacing: 0.04em;
-  cursor: pointer; z-index: 2; transition: all 0.2s ease;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #059669 0%, #10b981 40%, #34d399 100%) !important;
-  box-shadow: 0 6px 28px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.25),
-              0 0 0 1px rgba(16,185,129,0.3);
-  position: relative; overflow: hidden;
-}
-.no-container .no-cta::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.02) 50%, transparent 100%);
-  border-radius: 16px; pointer-events: none;
-}
-.no-container .no-cta:active { transform: scale(0.97); box-shadow: 0 3px 14px rgba(16,185,129,0.3); }
-.no-container .no-cta:disabled { opacity: 0.5; pointer-events: none; }
-.no-container .no-cta:hover { box-shadow: 0 8px 32px rgba(16,185,129,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
 
 .wl-bottom-nav {
   border-top-color: rgba(0,0,0,0.08);

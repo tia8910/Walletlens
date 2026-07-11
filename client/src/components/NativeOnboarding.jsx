@@ -192,6 +192,10 @@ export default function NativeOnboarding({ onDone }) {
 
   function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
+    // Dispatch event so Dashboard reloads data
+    window.dispatchEvent(new Event('wl:portfolio-updated'))
+    // Fallback: small delay then dispatch again in case Dashboard wasn't ready
+    setTimeout(() => window.dispatchEvent(new Event('wl:portfolio-updated')), 500)
     onDone?.()
   }
 
