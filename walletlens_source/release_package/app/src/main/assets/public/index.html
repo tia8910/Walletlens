@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>WalletLens — Private Net Worth &amp; Investment Manager</title>
+    <meta name="description" content="A privacy-first net worth tracker &amp; investment management tool. Track and manage crypto, stocks, gold &amp; cash in one place — AI analysis, no account, 100%…" />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="WalletLens — Private Net Worth &amp; Investment Manager" />
+    <meta property="og:description" content="A privacy-first net worth tracker &amp; investment management tool. Track and manage crypto, stocks, gold &amp; cash in one place — AI analysis, no account, 100%…" />
+    <meta property="og:url" content="https://walletlens.live/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="WalletLens — Private Net Worth &amp; Investment Manager" />
+    <meta name="twitter:description" content="A privacy-first net worth tracker &amp; investment management tool. Track and manage crypto, stocks, gold &amp; cash in one place — AI analysis, no account, 100%…" />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-DATvkOTZ.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-CBfLS6hs.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-DlquQ2qp.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-B9RebM7R.css">
+   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is WalletLens free?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is 100% free with no paid tier, no premium paywall, and no subscription. You can track unlimited assets, use all AI features, and export backups without ever paying."}},{"@type":"Question","name":"Do I need an account to use WalletLens?","acceptedAnswer":{"@type":"Answer","text":"No. WalletLens requires no sign-up, no email, and no password. Open the app and start tracking immediately. There is no account to hack, leak, or lock you out."}},{"@type":"Question","name":"Where is my portfolio data stored?","acceptedAnswer":{"@type":"Answer","text":"Entirely in your browser's localStorage on your device. WalletLens has no account system and no database of user portfolios. Your holdings are never stored on a server; optional AI features process a transient snapshot and retain nothing."}},{"@type":"Question","name":"What assets can I track with WalletLens?","acceptedAnswer":{"@type":"Answer","text":"Crypto (10,000+ coins including Bitcoin, Ethereum, Solana), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), gold, silver, platinum, fiat currencies, cash, bonds, and custom assets — all in one live dashboard."}},{"@type":"Question","name":"What is the best free net worth tracker?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is a top choice for a free net worth tracker: it covers every asset class (crypto, stocks, gold, cash), needs no account, keeps data private on your device, and includes AI analysis — all at no cost."}},{"@type":"Question","name":"Where can I see all my investments in one place?","acceptedAnswer":{"@type":"Answer","text":"WalletLens combines crypto, US stocks and ETFs, gold and silver, cash, bonds and FX into a single live dashboard with one net-worth total, an allocation breakdown and profit/loss — without linking a bank account and without any subscription."}},{"@type":"Question","name":"How can I check if my portfolio is too risky or not diversified?","acceptedAnswer":{"@type":"Answer","text":"WalletLens runs an on-device AI analysis that gives your portfolio a health score, a diversification grade, a concentration/risk scan and a correlation matrix, so you can see where you are over-exposed — all computed locally, with no account."}},{"@type":"Question","name":"What is a good free alternative to CoinStats, Kubera, or Empower?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is a free, no-account alternative that tracks every asset class (not just crypto), keeps your data on your device, and includes AI analysis — with no paid tier, no bank login, and no exchange API connection required."}},{"@type":"Question","name":"Can I import my portfolio from a screenshot?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens can read a screenshot of any exchange, broker, or wallet app and automatically extract each asset, amount and price into your portfolio — no manual typing, no CSV, no account required."}},{"@type":"Question","name":"Does WalletLens support voice import?","acceptedAnswer":{"@type":"Answer","text":"Yes. Say your holdings naturally (\"I have half a Bitcoin and 20 Apple shares\") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic."}},{"@type":"Question","name":"Can I track crypto and stocks in the same portfolio?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens tracks Bitcoin, Ethereum, Solana, and 10,000+ crypto coins alongside US stocks (Apple, Tesla, Nvidia), ETFs, gold, silver, bonds, cash and FX — all in one free dashboard with a single net-worth total."}},{"@type":"Question","name":"Is there a free portfolio tracker with no sign up?","acceptedAnswer":{"@type":"Answer","text":"Yes — WalletLens is a free portfolio tracker that requires no sign-up, no email, and no account. Open it and start tracking immediately. All your data stays in your browser."}},{"@type":"Question","name":"What is the best free alternative to Kubera?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is the best free alternative to Kubera. It tracks the same asset classes (crypto, stocks, gold, fiat), keeps data on your device, requires no account, and is completely free — versus Kubera at $199–$249/year."}},{"@type":"Question","name":"What is the best free alternative to CoinStats?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is a free, no-account alternative to CoinStats. It covers crypto, stocks, gold and FX, stores data locally, and has AI analysis — all without a subscription or sign-up."}},{"@type":"Question","name":"How do I track my investment ROI for free?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is a free investment ROI tracker: enter your purchase price and quantity for any asset (crypto, stock, gold, etc.) and it shows your profit/loss in dollars and percentage, with AI insights — no account needed."}},{"@type":"Question","name":"Is there a portfolio tracker that does not link to my bank account?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is a private portfolio tracker that never links to a bank account, exchange API, or wallet. You enter holdings manually (or via screenshot/voice import) and all data stays on your device."}},{"@type":"Question","name":"What is the best free portfolio tracker in 2026?","acceptedAnswer":{"@type":"Answer","text":"WalletLens is one of the best free portfolio trackers in 2026: it covers every major asset class, requires no account, provides AI analysis, and is 100% free with no paid tier — comparing favorably to Kubera, CoinStats, Delta, and Empower."}},{"@type":"Question","name":"Can I analyze portfolio risk for free?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens includes a free AI portfolio risk analyzer that scans every holding for concentration risk, volatility grade and health score. It also shows a correlation matrix and diversification grade — all on your device, no account required."}}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<h1>WalletLens — Private Net Worth Tracker &amp; Investment Management Tool</h1>
+<p>WalletLens is a <strong>privacy-first net worth tracker</strong> and <strong>investment management tool</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track <em>and manage</em> all your investments in one place with no account, no subscription, and your data kept on your device. A free, private alternative to Kubera, CoinStats, and Personal Capital.</p>
+<h2>Why WalletLens is the best free portfolio tracker</h2>
+<ul>
+<li><strong>No account required</strong> — open the app and start tracking instantly. No sign-up, no email, no password.</li>
+<li><strong>Track crypto and stocks together</strong> — Bitcoin, Ethereum, and 10,000+ coins alongside Apple, Tesla, Nvidia, ETFs, gold, silver, and cash in one net-worth total.</li>
+<li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
+<li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage and is never stored on any server.</li>
+<li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
+<li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot/">photograph any exchange, broker or wallet screen</a>; AI reads it into your portfolio.</li>
+<li><strong>Voice import (English &amp; Arabic)</strong> — <a href="/add-holdings-by-voice/">speak your trades hands-free</a>, AI logs them instantly.</li>
+<li><strong>Excel / CSV import &amp; export</strong> — <a href="/export-portfolio-to-excel/">download your portfolio as a CSV</a> for Excel, Google Sheets, or your accountant; import a spreadsheet to bulk-add holdings.</li>
+<li><strong>Crypto tax report export</strong> — <a href="/crypto-portfolio-tax-report/">export your full transaction history</a> as a CSV for Koinly, CoinTracker, TurboTax, or your tax professional.</li>
+</ul>
+<h2>What you can do with WalletLens</h2>
+<ul>
+<li><strong>Track your whole net worth</strong> across every asset class in a single dashboard with live prices.</li>
+<li><strong>Investment performance tracker</strong> — see your P&amp;L, ROI, and cost basis in dollars and percentage, broken down by asset and category.</li>
+<li><strong>AI portfolio analysis</strong> — health score, personalised Fear &amp; Greed gauge, stress tests, entry quality, and a rebalance planner, all computed on your device.</li>
+<li><strong>Multi-target sell plans</strong> — set crypto price targets and the percentage of each holding to sell, with live progress bars.</li>
+<li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
+<li><strong>Private by design</strong> — portfolio tracker with no bank account link required; no exchange API keys needed.</li>
+</ul>
+<h2>Free portfolio tracker vs paid alternatives</h2>
+<p>WalletLens is a free alternative to every paid portfolio tracker:</p>
+<ul>
+<li><strong>Free alternative to Kubera</strong> — Kubera costs $199–$249/yr. WalletLens is free forever, covers the same asset classes, and keeps data on your device.</li>
+<li><strong>Free alternative to CoinStats</strong> — WalletLens is free with no account; CoinStats requires sign-up and a paid plan for full features.</li>
+<li><strong>Free alternative to Personal Capital / Empower</strong> — WalletLens requires no bank login and no account; Empower upsells wealth-management services.</li>
+<li><strong>Free alternative to CoinTracker / Delta</strong> — WalletLens tracks stocks, gold and FX too, not just crypto, and stores everything locally.</li>
+</ul>
+<h2>Track popular cryptocurrencies free</h2>
+<ul>
+<li><a href="/track/bitcoin/">Track Bitcoin (BTC)</a></li>
+<li><a href="/track/ethereum/">Track Ethereum (ETH)</a></li>
+<li><a href="/track/solana/">Track Solana (SOL)</a></li>
+<li><a href="/track/xrp/">Track XRP (XRP)</a></li>
+<li><a href="/track/cardano/">Track Cardano (ADA)</a></li>
+<li><a href="/track/dogecoin/">Track Dogecoin (DOGE)</a></li>
+<li><a href="/track/bnb/">Track BNB (BNB)</a></li>
+<li><a href="/track/polkadot/">Track Polkadot (DOT)</a></li>
+<li><a href="/track/chainlink/">Track Chainlink (LINK)</a></li>
+<li><a href="/track/litecoin/">Track Litecoin (LTC)</a></li>
+<li><a href="/track/avalanche/">Track Avalanche (AVAX)</a></li>
+<li><a href="/track/polygon/">Track Polygon (POL)</a></li>
+<li><a href="/track/tron/">Track TRON (TRX)</a></li>
+<li><a href="/track/shiba-inu/">Track Shiba Inu (SHIB)</a></li>
+<li><a href="/track/uniswap/">Track Uniswap (UNI)</a></li>
+<li><a href="/track/cosmos/">Track Cosmos (ATOM)</a></li>
+<li><a href="/track/stellar/">Track Stellar (XLM)</a></li>
+<li><a href="/track/monero/">Track Monero (XMR)</a></li>
+<li><a href="/track/bitcoin-cash/">Track Bitcoin Cash (BCH)</a></li>
+<li><a href="/track/aave/">Track Aave (AAVE)</a></li>
+<li><a href="/track/algorand/">Track Algorand (ALGO)</a></li>
+<li><a href="/track/near/">Track NEAR Protocol (NEAR)</a></li>
+<li><a href="/track/tezos/">Track Tezos (XTZ)</a></li>
+<li><a href="/track/ethereum-classic/">Track Ethereum Classic (ETC)</a></li>
+</ul>
+<h2>Track US stocks &amp; ETFs free</h2>
+<ul>
+<li><a href="/track/apple-stock/">Track Apple (AAPL)</a></li>
+<li><a href="/track/microsoft-stock/">Track Microsoft (MSFT)</a></li>
+<li><a href="/track/nvidia-stock/">Track NVIDIA (NVDA)</a></li>
+<li><a href="/track/tesla-stock/">Track Tesla (TSLA)</a></li>
+<li><a href="/track/amazon-stock/">Track Amazon (AMZN)</a></li>
+<li><a href="/track/google-stock/">Track Alphabet (Google) (GOOGL)</a></li>
+<li><a href="/track/meta-stock/">Track Meta Platforms (META)</a></li>
+<li><a href="/track/sp500-etf/">Track S&amp;P 500 ETF (SPY) (SPY)</a></li>
+<li><a href="/track/nasdaq-etf/">Track Nasdaq-100 ETF (QQQ) (QQQ)</a></li>
+<li><a href="/track/voo-etf/">Track Vanguard S&amp;P 500 ETF (VOO) (VOO)</a></li>
+</ul>
+<h2>Track precious metals free</h2>
+<ul>
+<li><a href="/track/gold/">Track Gold (XAU)</a></li>
+<li><a href="/track/silver/">Track Silver (XAG)</a></li>
+<li><a href="/track/platinum/">Track Platinum (XPT)</a></li>
+</ul>
+<h2>Free profit &amp; ROI calculators</h2>
+<ul>
+<li><a href="/calculator/bitcoin-profit-calculator/">Bitcoin profit calculator</a></li>
+<li><a href="/calculator/ethereum-profit-calculator/">Ethereum profit calculator</a></li>
+<li><a href="/calculator/solana-profit-calculator/">Solana profit calculator</a></li>
+<li><a href="/calculator/xrp-profit-calculator/">XRP profit calculator</a></li>
+<li><a href="/calculator/dogecoin-profit-calculator/">Dogecoin profit calculator</a></li>
+<li><a href="/calculator/bnb-profit-calculator/">BNB profit calculator</a></li>
+<li><a href="/calculator/avalanche-profit-calculator/">Avalanche profit calculator</a></li>
+<li><a href="/calculator/cardano-profit-calculator/">Cardano profit calculator</a></li>
+<li><a href="/calculator/apple-stock-profit-calculator/">Apple Stock stock profit calculator</a></li>
+<li><a href="/calculator/nvidia-stock-profit-calculator/">NVIDIA Stock stock profit calculator</a></li>
+<li><a href="/calculator/tesla-stock-profit-calculator/">Tesla Stock stock profit calculator</a></li>
+<li><a href="/calculator/gold-profit-calculator/">Gold profit calculator</a></li>
+<li><a href="/calculator/silver-profit-calculator/">Silver profit calculator</a></li>
+<li><a href="/calculator/crypto-profit-calculator/">Crypto profit calculator (any coin)</a></li>
+<li><a href="/calculator/investment-profit-calculator/">Investment profit calculator (any asset)</a></li>
+<li><a href="/rebalancing-calculator/">Portfolio rebalancing calculator</a></li>
+</ul>
+<h2>Live prices</h2>
+<ul>
+<li><a href="/price/bitcoin-price/">Bitcoin price today (BTC)</a></li>
+<li><a href="/price/ethereum-price/">Ethereum price today (ETH)</a></li>
+<li><a href="/price/solana-price/">Solana price today (SOL)</a></li>
+<li><a href="/price/xrp-price/">XRP price today (XRP)</a></li>
+<li><a href="/price/cardano-price/">Cardano price today (ADA)</a></li>
+<li><a href="/price/dogecoin-price/">Dogecoin price today (DOGE)</a></li>
+<li><a href="/price/bnb-price/">BNB price today (BNB)</a></li>
+<li><a href="/price/avalanche-price/">Avalanche price today (AVAX)</a></li>
+<li><a href="/price/polkadot-price/">Polkadot price today (DOT)</a></li>
+<li><a href="/price/chainlink-price/">Chainlink price today (LINK)</a></li>
+<li><a href="/price/litecoin-price/">Litecoin price today (LTC)</a></li>
+<li><a href="/price/polygon-price/">Polygon price today (POL)</a></li>
+<li><a href="/price/shiba-inu-price/">Shiba Inu price today (SHIB)</a></li>
+<li><a href="/price/tron-price/">TRON price today (TRX)</a></li>
+<li><a href="/price/uniswap-price/">Uniswap price today (UNI)</a></li>
+<li><a href="/price/gold-price/">Gold price today (XAU)</a></li>
+<li><a href="/price/silver-price/">Silver price today (XAG)</a></li>
+<li><a href="/price/platinum-price/">Platinum price today (XPT)</a></li>
+<li><a href="/price/apple-stock-price/">Apple price today (AAPL)</a></li>
+<li><a href="/price/nvidia-stock-price/">NVIDIA price today (NVDA)</a></li>
+<li><a href="/price/tesla-stock-price/">Tesla price today (TSLA)</a></li>
+<li><a href="/price/microsoft-stock-price/">Microsoft price today (MSFT)</a></li>
+<li><a href="/price/amazon-stock-price/">Amazon price today (AMZN)</a></li>
+</ul>
+<h2>Compare WalletLens</h2>
+<ul>
+<li><a href="/vs/walletlens-vs-kubera/">WalletLens vs Kubera</a></li>
+<li><a href="/vs/walletlens-vs-coinstats/">WalletLens vs CoinStats</a></li>
+<li><a href="/vs/walletlens-vs-empower/">WalletLens vs Empower (Personal Capital)</a></li>
+<li><a href="/vs/walletlens-vs-delta/">WalletLens vs Delta</a></li>
+<li><a href="/vs/walletlens-vs-coinmarketcap-portfolio/">WalletLens vs CoinMarketCap Portfolio</a></li>
+<li><a href="/vs/walletlens-vs-blockfolio/">WalletLens vs Blockfolio / FTX App</a></li>
+<li><a href="/vs/walletlens-vs-spreadsheet/">WalletLens vs a Spreadsheet</a></li>
+<li><a href="/vs/walletlens-vs-personal-capital/">WalletLens vs Personal Capital</a></li>
+</ul>
+<h2>Investing &amp; crypto glossary</h2>
+<ul>
+<li><a href="/learn/cost-basis/">What is Cost Basis?</a></li>
+<li><a href="/learn/roi/">What is ROI (Return on Investment)?</a></li>
+<li><a href="/learn/pnl/">What is P&amp;L (Profit and Loss)?</a></li>
+<li><a href="/learn/break-even-price/">What is Break-Even Price?</a></li>
+<li><a href="/learn/market-cap/">What is Market Capitalization?</a></li>
+<li><a href="/learn/fully-diluted-valuation/">What is Fully Diluted Valuation (FDV)?</a></li>
+<li><a href="/learn/dollar-cost-averaging/">What is Dollar-Cost Averaging (DCA)?</a></li>
+<li><a href="/learn/rsi/">What is RSI (Relative Strength Index)?</a></li>
+<li><a href="/learn/macd/">What is MACD?</a></li>
+<li><a href="/learn/moving-average/">What is Moving Average?</a></li>
+<li><a href="/learn/fear-and-greed-index/">What is Fear and Greed Index?</a></li>
+<li><a href="/learn/stablecoin/">What is Stablecoin?</a></li>
+<li><a href="/learn/market-order/">What is Market Order?</a></li>
+<li><a href="/learn/limit-order/">What is Limit Order?</a></li>
+<li><a href="/learn/bull-market/">What is Bull Market?</a></li>
+<li><a href="/learn/bear-market/">What is Bear Market?</a></li>
+<li><a href="/learn/volatility/">What is Volatility?</a></li>
+<li><a href="/learn/liquidity/">What is Liquidity?</a></li>
+<li><a href="/learn/portfolio-rebalancing/">What is Portfolio Rebalancing?</a></li>
+<li><a href="/learn/asset-allocation/">What is Asset Allocation?</a></li>
+<li><a href="/learn/diversification/">What is Diversification?</a></li>
+<li><a href="/learn/net-worth/">What is Net Worth?</a></li>
+<li><a href="/learn/unrealized-gain/">What is Unrealized Gain?</a></li>
+<li><a href="/learn/realized-gain/">What is Realized Gain?</a></li>
+<li><a href="/learn/capital-gains-tax/">What is Capital Gains Tax?</a></li>
+<li><a href="/learn/hodl/">What is HODL?</a></li>
+<li><a href="/learn/fiat/">What is Fiat Currency?</a></li>
+<li><a href="/learn/defi/">What is DeFi (Decentralized Finance)?</a></li>
+<li><a href="/learn/staking/">What is Staking?</a></li>
+<li><a href="/learn/yield/">What is Yield?</a></li>
+<li><a href="/learn/blockchain/">What is Blockchain?</a></li>
+<li><a href="/learn/wallet/">What is Crypto Wallet?</a></li>
+<li><a href="/learn/private-key/">What is Private Key?</a></li>
+<li><a href="/learn/gas-fee/">What is Gas Fee?</a></li>
+<li><a href="/learn/etf/">What is ETF (Exchange-Traded Fund)?</a></li>
+<li><a href="/learn/index-fund/">What is Index Fund?</a></li>
+<li><a href="/learn/dividend/">What is Dividend?</a></li>
+<li><a href="/learn/compound-interest/">What is Compound Interest?</a></li>
+<li><a href="/learn/inflation-hedge/">What is Inflation Hedge?</a></li>
+<li><a href="/learn/risk-tolerance/">What is Risk Tolerance?</a></li>
+</ul>
+<h2>Guides &amp; articles</h2>
+<ul>
+<li><a href="/blog/track-real-estate-alongside-crypto-and-stocks/">How to Track Real Estate Alongside Crypto and Stocks</a> — Learn how to include property in your net-worth picture and track real estate alongside crypto and stocks in one unified portfolio view.</li>
+<li><a href="/blog/how-to-stress-test-your-investment-portfolio/">How to Stress-Test Your Investment Portfolio Before a Crash</a> — Learn how to stress-test your portfolio against market crashes before they happen, so you can protect gains and sleep at night.</li>
+<li><a href="/blog/how-to-import-crypto-portfolio-by-voice/">How to Import Your Crypto Portfolio by Voice — No Typing Required</a> — WalletLens lets you log trades just by speaking. This guide shows you how voice import works, what phrases it understands, and why it is the fastest way to keep a portfolio up to date.</li>
+<li><a href="/blog/how-to-import-portfolio-from-screenshot/">How to Import a Portfolio From a Screenshot in Seconds</a> — WalletLens can read a screenshot of any exchange, broker or wallet app and turn it into a tracked portfolio automatically. This guide explains how it works and which apps are supported.</li>
+<li><a href="/blog/how-to-export-crypto-portfolio-to-excel/">How to Export Your Crypto Portfolio to Excel (Free, No Account)</a> — WalletLens lets you download your full portfolio — holdings, cost basis, P&amp;L, allocation — as a CSV file compatible with Excel and Google Sheets. Free, instant, no sign-up.</li>
+<li><a href="/blog/crypto-tax-report-free-no-account/">How to Generate a Crypto Tax Report for Free (No Account Needed)</a> — You need accurate transaction records to file a crypto tax return. WalletLens exports a complete transaction history CSV — free, no account — that you can hand to your accountant or import into Koinly or CoinTracker.</li>
+<li><a href="/blog/how-to-track-crypto-portfolio-free/">How to Track Your Crypto Portfolio for Free in 2026</a> — A complete guide to tracking Bitcoin, Ethereum, and altcoin holdings without paying for a subscription or giving up your private keys.</li>
+<li><a href="/blog/what-is-a-bitcoin-whale-transaction/">What Is a Bitcoin Whale Transaction? (And Why It Matters)</a> — Large Bitcoin transactions — often called &quot;whale moves&quot; — can signal shifts in market sentiment. Here's how to spot them and what they might mean for price.</li>
+<li><a href="/blog/fear-and-greed-index-crypto-explained/">The Fear &amp; Greed Index for Crypto: What It Is and How to Use It</a> — The Fear &amp; Greed Index is one of the most watched sentiment indicators in crypto. Learn what drives it, how to read it, and how WalletLens calculates a personalised version for your own portfolio.</li>
+<li><a href="/blog/portfolio-diversification-crypto-stocks-gold/">How to Diversify Your Portfolio Across Crypto, Stocks, and Gold</a> — Diversification across asset classes reduces risk without necessarily reducing returns. Here's a practical framework for balancing crypto, equities, and hard assets.</li>
+<li><a href="/blog/how-to-set-crypto-profit-targets/">How to Set Crypto Profit Targets (And Actually Stick to Them)</a> — Most crypto investors buy well but sell poorly — either too early or, more often, too late. A systematic profit-taking plan removes emotion from the decision.</li>
+<li><a href="/blog/dollar-cost-averaging-crypto-guide/">Dollar-Cost Averaging in Crypto: A Complete Beginner’s Guide</a> — Dollar-cost averaging removes the impossible task of timing the market by spreading your buys over time. Here is how DCA works, when it beats lump-sum investing, and how to track it accurately.</li>
+<li><a href="/blog/crypto-cost-basis-and-pnl-explained/">How to Calculate Your Crypto Cost Basis and Profit/Loss</a> — Your cost basis determines your real profit, your break-even price, and your tax bill. Here is how average cost works, how it differs from FIFO, and how to track it without a spreadsheet.</li>
+<li><a href="/blog/stablecoins-explained-usdt-usdc/">Stablecoins Explained: USDT, USDC, and Why They Are Dry Powder</a> — Stablecoins are the backbone of crypto trading, but they behave nothing like Bitcoin. Here is what backs them, the risks to watch, and why your tracker should treat them as cash rather than profit.</li>
+<li><a href="/blog/gold-vs-bitcoin-store-of-value/">Gold vs Bitcoin: Comparing Two Stores of Value</a> — Bitcoin is often called &quot;digital gold,&quot; but the two assets differ in supply, volatility, and history. Here is an even-handed comparison to help you decide how each fits a diversified portfolio.</li>
+<li><a href="/blog/crypto-market-cycles-and-bitcoin-halving/">Understanding Crypto Market Cycles and the Bitcoin Halving</a> — Crypto moves in dramatic boom-and-bust cycles that rhyme with the Bitcoin halving. Knowing the four phases of a cycle can keep you from buying euphoria and selling despair.</li>
+<li><a href="/blog/position-sizing-risk-management-crypto/">Position Sizing and Risk Management for Volatile Assets</a> — Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out your portfolio.</li>
+<li><a href="/blog/what-is-net-worth-and-how-to-calculate-yours/">What Is Net Worth and How to Calculate Yours</a> — Net worth is the single most important number in your financial life. Here is what it means, how to calculate it accurately, and why most people get it wrong.</li>
+<li><a href="/blog/how-to-grow-your-net-worth/">How to Grow Your Net Worth: A Practical Framework</a> — Growing net worth is not about earning more — it is about the gap between what you build and what you owe. Here is a practical framework that works across income levels.</li>
+<li><a href="/blog/how-to-track-net-worth-across-all-assets/">How to Track Your Net Worth Across Crypto, Stocks, Gold, and Cash</a> — Your financial picture is scattered across wallets, brokerages, bank accounts, and metal holdings. Here is how to bring it all into one live net worth view without spreadsheets or subscriptions.</li>
+<li><a href="/blog/is-it-safe-to-connect-exchange-api-to-portfolio-tracker/">Is It Safe to Connect Your Exchange API to a Portfolio Tracker?</a> — Thinking about linking your exchange API to a portfolio tracker? Learn the real risks, what to check, and safer alternatives before you connect.</li>
+<li><a href="/blog/how-to-rebalance-crypto-stock-portfolio/">How to Rebalance a Crypto and Stock Portfolio (Step by Step)</a> — Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026.</li>
+<li><a href="/blog/best-free-crypto-portfolio-tracker-no-account/">Best Free Crypto Portfolio Trackers With No Account (2026)</a> — A practical comparison of free crypto portfolio trackers you can use without creating an account — the privacy trade-offs, what to look for, and how the no-signup options actually differ.</li>
+<li><a href="/blog/track-crypto-and-stocks-in-one-app/">How to Track Crypto and Stocks Together in One Portfolio</a> — Most people hold crypto, stocks, and some cash or gold — but track each in a separate app and never see the whole picture. Here is how to view your true net worth across every asset class in one place.</li>
+<li><a href="/blog/crypto-tax-basics-for-beginners/">Crypto Tax Basics: What Beginners Need to Know</a> — A plain-English introduction to how crypto is taxed in most countries — taxable events, cost basis, holding periods, and why good record-keeping matters long before tax season.</li>
+<li><a href="/blog/rsi-macd-explained-for-crypto/">RSI and MACD Explained: Reading Two Core Crypto Indicators</a> — A beginner-friendly guide to the two most-cited technical indicators — RSI and MACD — what they measure, how to read them, and the traps that catch new traders.</li>
+<li><a href="/blog/what-is-the-magic-indicator-walletlens/">What Is the Magic Indicator? Five Signals in One Direction</a> — How WalletLens condenses technical analysis, on-chain flow, volume, whale activity, and fundamentals into a single direction and confidence score per crypto holding.</li>
+<li><a href="/blog/best-free-net-worth-tracker/">The Best Free Net Worth Tracker for 2026</a> — How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account options compare.</li>
+<li><a href="/blog/how-to-calculate-your-net-worth/">How to Calculate Your Net Worth (Step by Step)</a> — A clear, step-by-step method for calculating your net worth — what counts as an asset, what counts as a liability, and how to track the number over time.</li>
+<li><a href="/blog/net-worth-tracker-vs-spreadsheet/">Net Worth Tracker vs Spreadsheet: Which Should You Use?</a> — Spreadsheets are free and flexible, but they go stale. Here is an honest comparison of tracking your net worth in a spreadsheet versus a dedicated tracker.</li>
+<li><a href="/blog/free-alternatives-to-empower-kubera-personal-capital/">Free Alternatives to Empower, Kubera &amp; Personal Capital</a> — Empower (Personal Capital) and Kubera are popular net worth trackers, but they come with accounts, account-linking, or subscription fees. Here are the free, private alternatives and how to choose.</li>
+<li><a href="/blog/crypto-profit-calculator-guide/">How to Calculate Crypto Profit and ROI (The Simple Formula)</a> — Learn the exact formulas for crypto profit, ROI, and break-even — plus how cost basis and DCA affect your real returns.</li>
+<li><a href="/blog/bitcoin-portfolio-tracker-free/">Bitcoin Portfolio Tracker — Track BTC Free, No Sign-Up</a> — How to track your Bitcoin holdings for free without connecting a wallet or exchange — see live P&amp;L alongside your entire net worth.</li>
+<li><a href="/blog/track-apple-stock-free/">How to Track Apple (AAPL) Stock for Free in Your Portfolio</a> — Track your Apple stock position for free alongside crypto, gold, and other assets — no brokerage login required.</li>
+<li><a href="/blog/gold-silver-portfolio-tracker/">Gold and Silver Portfolio Tracker — Track Precious Metals for Free</a> — Track your gold and silver holdings for free alongside crypto and stocks — see your precious metals P&amp;L with live prices.</li>
+<li><a href="/blog/portfolio-allocation-guide/">What Percentage of Your Portfolio Should Be Crypto?</a> — How much crypto to hold in your investment portfolio — frameworks from conservative to aggressive, and how risk tolerance shapes the answer.</li>
+<li><a href="/blog/best-free-investment-tracker-2026/">The Best Free Investment Tracker for Stocks, Crypto, and Gold (2026)</a> — What to look for in a free investment portfolio tracker and why most popular options still have significant trade-offs.</li>
+<li><a href="/blog/track-etf-portfolio-free/">How to Track Your ETF Portfolio for Free (S&amp;P 500, QQQ, VOO)</a> — How to track S&amp;P 500 ETFs like SPY, QQQ, and VOO alongside crypto and other assets for a complete net-worth view.</li>
+<li><a href="/blog/financial-privacy-investing/">How to Track Investments Without Giving Up Your Privacy</a> — Why linking your brokerage and bank to a tracker creates real risks — and how a local-first approach gives you the same visibility without the exposure.</li>
+<li><a href="/blog/5-signs-rebalance-portfolio/">5 Signs Your Investment Portfolio Needs Rebalancing</a> — How to tell when your portfolio has drifted too far from your targets — and what to do about it without timing the market.</li>
+<li><a href="/blog/build-first-investment-portfolio/">How to Build Your First Investment Portfolio and Track It Free</a> — A beginner-friendly guide to building a diversified first portfolio with index funds, crypto, and a gold allocation — and how to track it all for free.</li>
+<li><a href="/blog/crypto-portfolio-no-exchange/">How to Track Crypto Without Relying on Exchange Apps</a> — Why exchange apps are poor portfolio trackers — and how to get a complete crypto portfolio view without connecting your accounts.</li>
+<li><a href="/blog/precious-metals-vs-crypto/">Precious Metals vs Crypto: Which to Hold (and How to Track Both)</a> — Gold, silver, Bitcoin, and Ethereum compared as store-of-value assets — different risk profiles, different roles, and why many investors hold both.</li>
+<li><a href="/blog/track-nvidia-and-tech-stocks/">How to Track NVIDIA, Apple, and Tech Stocks Alongside Crypto</a> — Why a mixed tech-stock and crypto portfolio needs a single tracker — and how to set one up for free in under five minutes.</li>
+<li><a href="/blog/what-is-roi-investing/">What Is ROI in Investing? How to Calculate It</a> — ROI explained — the formula, what it means for different asset types, its limitations, and how to calculate it instantly.</li>
+<li><a href="/blog/portfolio-tracker-no-bank-login/">Best Portfolio Tracker That Doesn't Require a Bank Login</a> — Why some investors avoid bank-linked portfolio trackers — and which free alternatives give you the same visibility without the security and privacy trade-offs.</li>
+<li><a href="/blog/how-to-track-unrealized-gains-and-losses/">How to Track Unrealized Gains and Losses in Your Portfolio</a> — Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold.</li>
+<li><a href="/blog/portfolio-vision-planning/">Portfolio Vision Planning: Set Goals for Every Dollar</a> — Learn how to split your net worth into purpose-driven buckets — emergency fund, long-term holds, and withdrawal plans — and track live progress toward each goal.</li>
+<li><a href="/blog/crypto-withdrawal-strategy/">Crypto Withdrawal Strategy: How to Plan a Sustainable Drawdown</a> — A step-by-step guide to planning when and how to withdraw from your crypto portfolio — without running out too soon or leaving too much on the table.</li>
+<li><a href="/blog/net-worth-goal-buckets/">How to Split Your Net Worth Into Goals (and Actually Stick to Them)</a> — Stop treating your portfolio as one big number. This guide shows how to divide your net worth into goal-based buckets that give every dollar a purpose and keep you disciplined.</li>
+<li><a href="/blog/how-to-track-investment-portfolio-multiple-currencies/">How to Track Your Investment Portfolio in Multiple Currencies</a> — Holding assets in USD, EUR, GBP, or crypto? Learn how to track your full portfolio net worth across multiple currencies accurately and for free.</li>
+<li><a href="/blog/how-to-read-portfolio-allocation-chart/">How to Read a Portfolio Allocation Chart (And Act on It)</a> — Learn how to read a portfolio allocation chart, understand what your asset mix is telling you, and use it to make smarter rebalancing decisions.</li>
+</ul>
+<p><a href="/dashboard/">Open the WalletLens dashboard</a> · <a href="/free-net-worth-tracker/">Free net worth tracker comparison</a> · <a href="/blog/">Read the blog</a> · <a href="/about/">About</a></p>
+</div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>How to Track Unrealized Gains and Losses in Your Portfolio</title>
+    <meta name="description" content="Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold." />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/blog/how-to-track-unrealized-gains-and-losses/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="How to Track Unrealized Gains and Losses in Your Portfolio" />
+    <meta property="og:description" content="Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold." />
+    <meta property="og:url" content="https://walletlens.live/blog/how-to-track-unrealized-gains-and-losses/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="How to Track Unrealized Gains and Losses in Your Portfolio" />
+    <meta name="twitter:description" content="Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold." />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-DATvkOTZ.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-CBfLS6hs.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-DlquQ2qp.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-B9RebM7R.css">
+   <meta property="article:published_time" content="2026-06-01" />
+  <meta property="article:modified_time" content="2026-06-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"How to Track Unrealized Gains and Losses in Your Portfolio","description":"Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold.","image":"https://walletlens.live/og-image.png","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/blog/how-to-track-unrealized-gains-and-losses/","url":"https://walletlens.live/blog/how-to-track-unrealized-gains-and-losses/","speakable":{"@type":"SpeakableSpecification","cssSelector":["h1","article > p:nth-of-type(1)"]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://walletlens.live/blog/"},{"@type":"ListItem","position":3,"name":"How to Track Unrealized Gains and Losses in Your Portfolio","item":"https://walletlens.live/blog/how-to-track-unrealized-gains-and-losses/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>June 2026 · 7 min read</em></p>
+  <h1>How to Track Unrealized Gains and Losses in Your Portfolio</h1>
+  <p>Learn what unrealized gains and losses mean, how to calculate them, and the best free tools to track them across crypto, stocks, and gold.</p>
+  <p>Most investors check their portfolio balance daily but rarely stop to ask a more precise question: how much of what they see is real profit, and how much is just paper gain? That distinction — between unrealized and realized gains or losses — is one of the most important concepts in personal investing, yet it often goes unexplained.</p>
+<p>Understanding your unrealized P&amp;L (profit and loss) gives you a clearer picture of where you actually stand. It informs decisions about when to take profits, how to rebalance, and whether your cost basis is healthy enough to ride out a downturn. This guide explains the mechanics from scratch, shows you how to calculate it manually, and walks through how modern free tools can automate the whole process.</p>
+<h2>What Are Unrealized Gains and Losses?</h2>
+<p>An <strong>unrealized gain</strong> is the increase in value of an asset you still hold. You bought 1 ETH at $2,000 and it is now worth $3,500 — that $1,500 gain is unrealized because you have not sold. The moment you sell, it becomes a <strong>realized gain</strong>, and that is when tax obligations typically arise in most jurisdictions.</p>
+<p>An <strong>unrealized loss</strong> works the same way in reverse. If that ETH dropped to $1,400, you would have an unrealized loss of $600. Until you sell, the loss is only on paper — but it still affects your net worth, your allocation percentages, and your emotional decision-making.</p>
+<p>The key point: <strong>unrealized figures tell you where you are; realized figures determine what you owe.</strong> Both matter, but for portfolio management purposes you spend most of your time working with unrealized numbers.</p>
+<h2>The Formula for Calculating Unrealized P&amp;L</h2>
+<p>The math is straightforward once you know your cost basis.</p>
+<p><strong>Unrealized P&amp;L = (Current Price − Average Cost Basis) × Quantity Held</strong></p>
+<p>For example:</p>
+<ul><li>You bought 0.5 BTC at $58,000 and another 0.5 BTC at $62,000</li><li>Your <strong>average cost basis</strong> = ($58,000 + $62,000) / 2 = $60,000</li><li>Current BTC price = $67,000</li><li>Unrealized gain = ($67,000 − $60,000) × 1 BTC = <strong>$7,000</strong></li></ul>
+<p>To express it as a percentage return:</p>
+<p><strong>Unrealized P&amp;L % = ((Current Price − Average Cost Basis) / Average Cost Basis) × 100</strong></p>
+<p>Using the same example: ($67,000 − $60,000) / $60,000 × 100 = <strong>+11.67%</strong></p>
+<p>These calculations become more complex when you have made multiple purchases at different prices — which is almost always the case for active investors.</p>
+<h2>Why Tracking This Manually Gets Difficult Fast</h2>
+<p>Most investors do not buy one asset once. They dollar-cost average into Bitcoin over months, add ETH dips, hold a mix of ETFs, and accumulate gold positions over years. Each purchase has its own price and date. Tracking average cost basis across 15 or 20 positions in a spreadsheet is genuinely tedious, and a single missed entry throws every subsequent calculation off.</p>
+<p>There are also a few common traps:</p>
+<ul><li><strong>Forgetting fees.</strong> If you paid a $12 trading fee on a $500 purchase, your real cost basis per unit is slightly higher than the raw price.</li><li><strong>Mixing FIFO and average cost.</strong> Different accounting methods produce different cost bases. Consistency matters, especially if you ever calculate taxes.</li><li><strong>Stale prices.</strong> A spreadsheet you update once a week is not showing you your actual unrealized P&amp;L — it is showing you a snapshot from days ago.</li></ul>
+<p>For assets like crypto, where prices move 5–10% in hours, stale data is not just inconvenient — it can lead to genuinely bad decisions.</p>
+<h2>How a Local-First Portfolio Tracker Solves This</h2>
+<p>This is where dedicated tools earn their place. <a href="https://walletlens.live">WalletLens</a> is a free, browser-based portfolio tracker that calculates your average cost basis and unrealized P&amp;L automatically across every asset class — crypto, stocks, ETFs, precious metals, real estate, and cash — all in one net-worth view.</p>
+<p>What makes it particularly useful for this specific problem is the combination of live prices and your own trade data. You enter your buys and sells (manually, by voice, via screenshot, or through CSV import), and WalletLens continuously recalculates your average cost basis and unrealized P&amp;L against real-time market prices. You always see a current number, not a stale one.</p>
+<p>Crucially, everything runs locally in your browser. No account, no login, no data sent to any server. Your cost basis figures — which reveal a lot about your financial life — never leave your device.</p>
+<h2>Reading Your Unrealized P&amp;L Across Asset Classes</h2>
+<p>One underappreciated use of unrealized P&amp;L tracking is comparing performance across very different asset types. A simple table helps illustrate the kind of view a good tracker gives you:</p>
+<table class="blog-table"><thead><tr><th>Asset</th><th>Avg Cost Basis</th><th>Current Price</th><th>Quantity</th><th>Unrealized P&amp;L</th></tr></thead><tbody><tr><td>BTC</td><td>$60,000</td><td>$67,000</td><td>1 BTC</td><td>+$7,000 (+11.7%)</td></tr><tr><td>AAPL</td><td>$172</td><td>$195</td><td>20 shares</td><td>+$460 (+13.4%)</td></tr><tr><td>Gold (oz)</td><td>$2,050</td><td>$2,380</td><td>5 oz</td><td>+$1,650 (+16.1%)</td></tr><tr><td>ETH</td><td>$3,200</td><td>$2,700</td><td>2 ETH</td><td>−$1,000 (−15.6%)</td></tr></tbody></table>
+<p>This kind of consolidated view reveals something a single-asset app can never show: your overall unrealized gain or loss across your entire financial picture. In this example, the ETH position is underwater, but the portfolio as a whole is comfortably positive — context that matters enormously when deciding whether to hold, add, or exit.</p>
+<h2>Using Unrealized P&amp;L to Make Smarter Decisions</h2>
+<p>Tracking unrealized P&amp;L is not just an accounting exercise. It actively informs strategy in several ways.</p>
+<p><strong>Setting profit targets.</strong> Knowing your cost basis lets you define meaningful sell targets. &quot;I want to take profits when I'm up 50%&quot; is a real, calculable goal when you know your entry price — not just a vague aspiration. WalletLens includes a Sell Targets feature that lets you set up to five price targets per asset with progress bars showing how close you are to each threshold.</p>
+<p><strong>Stress testing.</strong> If BTC dropped 30% from here, what would your unrealized loss be? Answering that question before the dip helps you decide whether your position size is one you can emotionally and financially sustain.</p>
+<p><strong>Tax-loss harvesting awareness.</strong> In many jurisdictions, you can realise a loss strategically to offset gains elsewhere. You can only identify candidates for this if you know which positions are currently at a loss. *(Note: tax rules vary significantly by country and individual circumstance — consult a qualified tax professional before making decisions based on this strategy.)*</p>
+<p><strong>Rebalancing triggers.</strong> If one asset has gained so much that it now represents 60% of your portfolio when you intended 30%, your unrealized gain is also a rebalancing signal. The growth is real; the allocation drift is real; and acting on it thoughtfully is easier when the numbers are in front of you.</p>
+<h2>The Difference Between Paper Gains and Locked-In Value</h2>
+<p>One psychological pattern worth naming: many investors treat unrealized gains as if they are already in the bank. They see $40,000 in unrealized profit and feel wealthy — then watch the market correct and feel as if they &quot;lost&quot; money they never actually had. Tracking unrealized P&amp;L rigorously helps break this habit. The number is real and informative, but it is also conditional. Markets move.</p>
+<p>The discipline of monitoring your unrealized figures regularly — rather than just your total portfolio value — builds a more honest relationship with your investments. You see not just what things are worth now, but what you paid, how much of the current value is gain, and how exposed you are to a reversal.</p>
+<h2>Conclusion</h2>
+<p>Unrealized gains and losses are the heartbeat of an active portfolio. They tell you whether your decisions are working, where your risk is concentrated, and when it might be time to act. The formula is simple, but the execution — tracking multiple assets across multiple purchases with live prices — demands a tool built for the job.</p>
+<p>Whether you prefer a spreadsheet for occasional check-ins or a real-time tracker that does the maths automatically, the habit of monitoring your cost basis and unrealized P&amp;L is one of the most practical things any investor can build in 2026. The numbers do not make decisions for you, but they make sure the decisions you do make are grounded in reality.</p>
+  <p><a href="/dashboard/">Start tracking your portfolio for free with WalletLens →</a></p>
+  <nav aria-label="Related articles">
+    <h2>Keep reading</h2>
+    <ul>
+      <li><a href="/blog/best-free-net-worth-tracker/">The Best Free Net Worth Tracker for 2026</a> — How to track your complete net worth — crypto, stocks, gold, and cash — in one free app, what to look for in a net worth tracker, and how the no-account options compare.</li>
+      <li><a href="/blog/gold-silver-portfolio-tracker/">Gold and Silver Portfolio Tracker — Track Precious Metals for Free</a> — Track your gold and silver holdings for free alongside crypto and stocks — see your precious metals P&amp;L with live prices.</li>
+      <li><a href="/blog/best-free-investment-tracker-2026/">The Best Free Investment Tracker for Stocks, Crypto, and Gold (2026)</a> — What to look for in a free investment portfolio tracker and why most popular options still have significant trade-offs.</li>
+    </ul>
+  </nav>
+  <p><a href="/blog/">← All articles</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>

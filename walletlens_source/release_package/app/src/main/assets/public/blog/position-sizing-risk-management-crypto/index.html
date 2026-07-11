@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>Position Sizing and Risk Management for Volatile Assets</title>
+    <meta name="description" content="Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out…" />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/blog/position-sizing-risk-management-crypto/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="Position Sizing and Risk Management for Volatile Assets" />
+    <meta property="og:description" content="Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out…" />
+    <meta property="og:url" content="https://walletlens.live/blog/position-sizing-risk-management-crypto/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="Position Sizing and Risk Management for Volatile Assets" />
+    <meta name="twitter:description" content="Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out…" />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-DATvkOTZ.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-CBfLS6hs.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-DlquQ2qp.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-B9RebM7R.css">
+   <meta property="article:published_time" content="2026-05-01" />
+  <meta property="article:modified_time" content="2026-05-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Position Sizing and Risk Management for Volatile Assets","description":"Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out your portfolio.","image":"https://walletlens.live/og-image.png","datePublished":"2026-05-01","dateModified":"2026-05-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/blog/position-sizing-risk-management-crypto/","url":"https://walletlens.live/blog/position-sizing-risk-management-crypto/","speakable":{"@type":"SpeakableSpecification","cssSelector":["h1","article > p:nth-of-type(1)"]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://walletlens.live/blog/"},{"@type":"ListItem","position":3,"name":"Position Sizing and Risk Management for Volatile Assets","item":"https://walletlens.live/blog/position-sizing-risk-management-crypto/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>May 2026 · 6 min read</em></p>
+  <h1>Position Sizing and Risk Management for Volatile Assets</h1>
+  <p>Survival is the prerequisite for returns. Learn how position sizing, concentration limits, and a simple risk framework keep a single bad bet from wiping out your portfolio.</p>
+  <p>The fastest way to fail as an investor is not picking the wrong asset — it is sizing the right idea so large that one bad outcome ends your game. In volatile markets like crypto, where 80% drawdowns are routine, risk management is not optional. It is the difference between a temporary setback and a permanent loss.</p>
+<h2>Why Position Sizing Matters More Than Picks</h2>
+<p>Imagine two investors. Both find a coin that eventually goes to zero. The first put 5% of their portfolio in it; they lose 5% and move on. The second put 60% in it; they are devastated and may never recover.</p>
+<p>Same pick, completely different outcomes — because of size. Position sizing determines how much any single decision can hurt you. Get it right and you can be wrong often and still thrive. Get it wrong and being right most of the time will not save you.</p>
+<h2>The Core Principle: Survive First</h2>
+<p>Professional traders obsess over a simple idea: never risk so much on one position that a loss takes you out of the game. A common rule is to risk only a small, fixed percentage of your portfolio on any single high-risk bet.</p>
+<p>The math is unforgiving on the way down. A 50% loss requires a 100% gain just to break even. A 90% loss requires a 900% gain. Avoiding catastrophic losses matters far more than chasing the last bit of upside.</p>
+<table class="blog-table"><thead><tr><th>Loss</th><th>Gain Needed to Recover</th></tr></thead><tbody><tr><td>10%</td><td>11%</td></tr><tr><td>25%</td><td>33%</td></tr><tr><td>50%</td><td>100%</td></tr><tr><td>75%</td><td>300%</td></tr><tr><td>90%</td><td>900%</td></tr></tbody></table>
+<h2>A Practical Position-Sizing Framework</h2>
+<p><strong>Tier your assets by risk.</strong> Not every holding deserves the same size. A simple structure:</p>
+<ul><li><strong>Core (large-cap, high conviction):</strong> Bitcoin, Ethereum. These can be your largest positions.</li><li><strong>Satellite (established alts):</strong> smaller, individually capped positions in projects you understand.</li><li><strong>Speculative (small/microcap):</strong> tiny positions only, sized so total loss is survivable.</li></ul>
+<p><strong>Cap any single speculative position.</strong> Many investors limit any one high-risk coin to 1–5% of the portfolio. If it 10x's, great; if it goes to zero, it is a flesh wound, not a fatal blow.</p>
+<p><strong>Cap total speculative exposure.</strong> Beyond individual limits, cap the entire speculative bucket — say, no more than 15–20% of the portfolio across all microcaps combined.</p>
+<h2>Concentration: The Silent Killer</h2>
+<p>The single biggest risk most retail portfolios carry is concentration — too much in one asset. It usually happens by accident: a winner grows until it dominates everything. A coin you sized at 10% can become 50% of your portfolio after a strong run, quietly doubling your exposure to its next crash.</p>
+<p>A useful gut-check: if any single asset is more than half your portfolio, you are making one concentrated bet, not running a portfolio. WalletLens surfaces this directly — its portfolio health analysis flags excessive concentration and shows your allocation by asset and category, so you can see when a winner has grown into a risk.</p>
+<h2>Rebalancing to Control Risk</h2>
+<p>Rebalancing is how you enforce your risk limits over time. As assets move, your allocation drifts from your plan. Rebalancing means periodically trimming what has grown too large and topping up what has shrunk, returning to your target weights.</p>
+<p>This does two things: it mechanically forces you to sell high and buy low, and it keeps any single position from silently ballooning into a concentration risk. Running it quarterly, or after any major market move, is a sensible cadence. The WalletLens rebalance planner calculates exactly how much to buy or sell of each asset to return to your target balance.</p>
+<h2>Plan Your Exits Before You Need Them</h2>
+<p>Risk management is not only about entry size — it is about having a plan to get out. Decide in advance:</p>
+<p><strong>Where you take profit.</strong> Set price targets and the percentage of the position to sell at each, so euphoria does not leave you holding through the top and all the way back down.</p>
+<p><strong>What would change your mind.</strong> For each position, know what evidence would make you exit at a loss. Pre-deciding removes the paralysis of doing it in the moment.</p>
+<p>A multi-target sell plan, with each tier and the projected proceeds laid out ahead of time, turns exits from an emotional scramble into a checklist.</p>
+<h2>Emotional Risk Management</h2>
+<p>The best framework fails if you abandon it under stress. A few habits help:</p>
+<ul><li><strong>Position so you can sleep.</strong> If a holding's swings keep you up at night, it is too big regardless of what a spreadsheet says.</li><li><strong>Use a sentiment check.</strong> Before a panic sell or a FOMO buy, look at an objective gauge like Fear &amp; Greed to force a moment of reflection.</li><li><strong>Write down your plan.</strong> A plan on paper is harder to abandon than one in your head.</li></ul>
+<h2>Conclusion</h2>
+<p>You cannot control whether any individual bet works out. You can control how much it can hurt you. Size positions so no single loss is fatal, cap concentration, rebalance to enforce your limits, and plan exits before you need them. Do that consistently and you give yourself the one thing that compounds returns over a lifetime: survival.</p>
+<p>Track your position sizes and portfolio allocation free at <a href="https://walletlens.live">walletlens.live</a> — no account needed.</p>
+  <p><a href="/dashboard/">Start tracking your portfolio for free with WalletLens →</a></p>
+  <nav aria-label="Related articles">
+    <h2>Keep reading</h2>
+    <ul>
+      <li><a href="/blog/portfolio-diversification-crypto-stocks-gold/">How to Diversify Your Portfolio Across Crypto, Stocks, and Gold</a> — Diversification across asset classes reduces risk without necessarily reducing returns. Here's a practical framework for balancing crypto, equities, and hard assets.</li>
+      <li><a href="/blog/how-to-rebalance-crypto-stock-portfolio/">How to Rebalance a Crypto and Stock Portfolio (Step by Step)</a> — Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026.</li>
+      <li><a href="/blog/crypto-profit-calculator-guide/">How to Calculate Crypto Profit and ROI (The Simple Formula)</a> — Learn the exact formulas for crypto profit, ROI, and break-even — plus how cost basis and DCA affect your real returns.</li>
+    </ul>
+  </nav>
+  <p><a href="/blog/">← All articles</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>

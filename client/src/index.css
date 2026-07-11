@@ -811,9 +811,10 @@ input, select, textarea {
   background: rgba(255,255,255,0.88);
 }
 [data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
-[data-wl-light] .wl-nav-item.active { color: #1a1a1a; text-shadow: none; }
-[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb),0.1); }
-[data-wl-light] .wl-nav-item .wl-nav-indicator { background: var(--g); box-shadow: 0 0 6px rgba(var(--g-rgb),0.35); }
+[data-wl-light] .wl-nav-item.active { color: var(--g); text-shadow: none; font-weight: 700; }
+[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb),0.15); color: var(--g); filter: drop-shadow(0 0 4px rgba(var(--g-rgb),0.35)); }
+[data-wl-light] .wl-nav-item.active .wl-nav-label { color: var(--g); }
+[data-wl-light] .wl-nav-item .wl-nav-indicator { background: var(--g); box-shadow: 0 0 8px rgba(var(--g-rgb),0.5); height: 3px; }
 
 /* ── Drawer ── */
 [data-wl-light] .wl-drawer {

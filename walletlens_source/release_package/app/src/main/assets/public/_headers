@@ -1,0 +1,79 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(self), payment=(), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Permitted-Cross-Domain-Policies: none
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co; frame-src 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests
+  Cache-Control: no-cache
+  Timing-Allow-Origin: *
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: no-cache, must-revalidate
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: no-cache, must-revalidate
+
+/stock-prices.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/news.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/rss.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/*.svg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/*.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/*.ico
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/*.jpeg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/market.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/llms.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/llms-full.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/robots.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/humans.txt
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/ads.txt
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable

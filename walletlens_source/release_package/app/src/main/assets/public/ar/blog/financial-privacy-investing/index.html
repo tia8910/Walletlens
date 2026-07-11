@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك</title>
+    <meta name="description" content="لماذا تهمّ الخصوصية المالية، وما المخاطر التي تواجهها حين تشارك بيانات استثمارك، وكيف تستثمر وتتتبّع ثروتك مع الحفاظ على سيطرتك على بياناتك." />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/ar/blog/financial-privacy-investing/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك" />
+    <meta property="og:description" content="لماذا تهمّ الخصوصية المالية، وما المخاطر التي تواجهها حين تشارك بيانات استثمارك، وكيف تستثمر وتتتبّع ثروتك مع الحفاظ على سيطرتك على بياناتك." />
+    <meta property="og:url" content="https://walletlens.live/ar/blog/financial-privacy-investing/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك" />
+    <meta name="twitter:description" content="لماذا تهمّ الخصوصية المالية، وما المخاطر التي تواجهها حين تشارك بيانات استثمارك، وكيف تستثمر وتتتبّع ثروتك مع الحفاظ على سيطرتك على بياناتك." />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-DATvkOTZ.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-CBfLS6hs.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-DlquQ2qp.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-B9RebM7R.css">
+   <meta property="article:published_time" content="2026-06-01" />
+  <meta property="article:modified_time" content="2026-06-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <link rel="alternate" hreflang="en" href="https://walletlens.live/blog/financial-privacy-investing/" />
+  <link rel="alternate" hreflang="ar" href="https://walletlens.live/ar/blog/financial-privacy-investing/" />
+  <link rel="alternate" hreflang="x-default" href="https://walletlens.live/blog/financial-privacy-investing/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","inLanguage":"ar","headline":"الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك","description":"لماذا تهمّ الخصوصية المالية، وما المخاطر التي تواجهها حين تشارك بيانات استثمارك، وكيف تستثمر وتتتبّع ثروتك مع الحفاظ على سيطرتك على بياناتك.","image":"https://walletlens.live/og-image.png","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/ar/blog/financial-privacy-investing/","url":"https://walletlens.live/ar/blog/financial-privacy-investing/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WalletLens","item":"https://walletlens.live/ar/free-net-worth-tracker/"},{"@type":"ListItem","position":2,"name":"الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك","item":"https://walletlens.live/ar/blog/financial-privacy-investing/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="rtl" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>يونيو 2026 · قراءة 6 دقائق</em></p>
+  <h1>الخصوصية المالية في الاستثمار: حماية بياناتك وثروتك</h1>
+  <p>لماذا تهمّ الخصوصية المالية، وما المخاطر التي تواجهها حين تشارك بيانات استثمارك، وكيف تستثمر وتتتبّع ثروتك مع الحفاظ على سيطرتك على بياناتك.</p>
+  <p>الخصوصية المالية ليست للمشبوهين أو هواة المؤامرة. إنها قضية عملية يواجهها كل مستثمر: من يعرف ما تملك، وكيف استُخدمت تلك المعلومات، وما الذي يحدث إن سُرِّبت؟</p>
+<h2>لماذا الخصوصية المالية مهمة</h2>
+<p><strong>الأمان الشخصي:</strong> المعلومات التفصيلية عن ثروتك تجعلك هدفاً — للتصيّد الاحتيالي الموجّه، وعمليات الاحتيال المتطوّرة، وفي الحالات الأكثر حدة، للأذى الجسدي. &quot;هجمات المليون دولار&quot; على حاملي العملات الرقمية مثال حقيقي.</p>
+<p><strong>السيطرة على معلوماتك:</strong> شركات التحليل والتسويق تدفع ثمناً جيداً لمعرفة من يملك BTC أو يستثمر في أصول معيّنة. بياناتك المالية تُستخدم لتحديد احتمالية شرائك لمنتجات، أو الاقتراض، أو الاستجابة لإعلانات بعينها.</p>
+<p><strong>الحماية من قرارات مبنية على معلوماتك:</strong> في بعض السياقات، يمكن لوضعك المالي التأثير على تأمينك أو قروضك أو فرص عملك بطرق لا ترغب فيها.</p>
+<p><strong>الخصوصية كمبدأ:</strong> كثيرون يؤمنون ببساطة بأن حياتهم المالية شأن شخصي، تماماً مثل صحتهم أو علاقاتهم.</p>
+<h2>أين تتسرّب بيانات الاستثمار</h2>
+<p><strong>تطبيقات ربط الحسابات:</strong> خدمات مثل Plaid وغيرها تربط حساباتك البنكية والاستثمارية بتطبيقات الميزانية وتتبّع الثروة. مريحة، لكنها تُنشئ طرفاً ثالثاً يملك صورة شاملة عن أموالك.</p>
+<p><strong>أدوات تتبّع المحافظ التي تطلب تسجيل الدخول:</strong> إن سجّلت الدخول، خزّنت الشركة بياناتك على خوادمها. إن اخترقت، أو غيّرت سياساتها، أو بيعت، تذهب بياناتك معها.</p>
+<p><strong>مفاتيح API للبورصات:</strong> ربط متتبّع بمفتاح API يعطيه صلاحية قراءة (أو أحياناً تداول) على حسابك. إن اختُرق المتتبّع، يتعرّض حسابك للخطر.</p>
+<p><strong>اتصالات الشبكة بدون تشفير:</strong> إرسال بيانات حيازاتك لخادم بدون تشفير مناسب — أو لخادم في دولة بقوانين بيانات ضعيفة — خطر.</p>
+<p><strong>شبكات التواصل الاجتماعي:</strong> مشاركة حيازاتك أو أرباحك (مثل تغريد &quot;اشتريت BTC&quot;) يُنشئ سجلاً علنياً.</p>
+<h2>مبادئ الخصوصية العملية للمستثمر</h2>
+<p><strong>1. أعرف ما تشاركه وأين</strong></p>
+<p>قبل استخدام أي أداة مالية:</p>
+<ul><li>هل يحتاج حساباً؟</li><li>أين تُخزَّن البيانات (على جهازك أم على خوادمهم)؟</li><li>هل يطلب ربط حساباتك أو يكتفي بالإدخال اليدوي؟</li><li>ما سياسة الخصوصية بالتحديد؟</li></ul>
+<p><strong>2. فصل الأدوار</strong></p>
+<ul><li>تداول واحتفاظ بالأصول: بورصة أو محفظة</li><li>تتبّع وتحليل: أداة مستقلة، مفضّلاً أن تكون محلية</li><li>تقارير ضريبية: مدير حسابات موثوق أو برنامج ضريبي</li></ul>
+<p>هذا الفصل يمنع أي طرف من امتلاك صورة كاملة عنك.</p>
+<p><strong>3. فضّل الإدخال اليدوي على ربط الحسابات</strong></p>
+<p>نعم، يعني ذلك تسجيل كل عملية بنفسك. لكنه يعني أيضاً أنك تتحكّم فيما يُشارَك ومع من.</p>
+<p><strong>4. احذر من الإفصاح الاجتماعي</strong></p>
+<p>مشاركة مقتنياتك أو أرباحك علناً يجعلك هدفاً. المجتمعات الاستثمارية الخاصة أقل خطراً من المنصّات العامة.</p>
+<p><strong>5. انتبه لعنوان IP وبصمة المتصفّح</strong></p>
+<p>بعض الأدوات تجمع عنوان IP وبيانات جهازك حتى دون حساب. استخدام VPN يخفف هذا.</p>
+<h2>الخصوصية في استخدام أدوات التتبّع</h2>
+<p>هنا يأتي الفرق بين نموذجين:</p>
+<p><strong>نموذج السحابة (معظم الأدوات الشائعة):</strong></p>
+<ul><li>بياناتك على خوادم الشركة</li><li>إن حدث اختراق، تُكشف بياناتك</li><li>إن أفلست الشركة أو غيّرت سياساتها، تفقد بياناتك أو تنتقل لغيرها</li><li>الميزة: مزامنة تلقائية بين الأجهزة</li></ul>
+<p><strong>نموذج المحلّي أولاً (WalletLens وغيره):</strong></p>
+<ul><li>كل شيء في متصفّحك فقط</li><li>لا خادم يحمل بياناتك المالية</li><li>إن أوقفت استخدام الأداة، لا يبقى شيء على الإنترنت</li><li>النسخ الاحتياطي بيدك: رمز مضغوط تحفظه أنت</li></ul>
+<p><a href="https://walletlens.live">WalletLens</a> مبنيّ على هذا النموذج: لا حساب، لا تسجيل، لا بيانات حيازاتك تغادر جهازك. الأسعار الحية تُجلَب من APIs عامة فقط — لا إرسال لبيانات ما تملك.</p>
+<h2>خصوصية العملات الرقمية تحديداً</h2>
+<p>العملات الرقمية طبقة خاصة من اعتبارات الخصوصية:</p>
+<p><strong>البلوكتشين علني:</strong> كل عملية BTC وETH مرئية على البلوكتشين. ربط عنوان محفظتك بهويتك (مثلاً عبر بورصة مُعرِّفة للمستخدم) يكشف تاريخك كله.</p>
+<p><strong>عناوين جديدة لكل عملية:</strong> أفضل ممارسة لمحافظ الحفظ الذاتي: استخدم عنواناً جديداً لكل استلام.</p>
+<p><strong>انتبه لعمليات السحب من البورصات:</strong> سحب من بورصة لعنوان محفظتك الثابت يربط هويتك الموثّقة في البورصة بكل عملية مستقبلية من ذلك العنوان.</p>
+<p><strong>العملات المستقرة وتجميد الأصول:</strong> USDT وUSDC يمكن تجميدها بأمر قانوني. لا خصوصية كاملة في العملات المستقرة المركزية.</p>
+<h2>الخلاصة</h2>
+<p>الخصوصية المالية ليست مطلقة — بل هي إدارة مخاطر. ابدأ بمعرفة من يملك بياناتك المالية الآن، وقيّم هل هذا مقبول لك. فضّل أدوات المحلّي أولاً لتتبّع الثروة، وفصل أدوار التداول عن التحليل، وكن واعياً بما تشاركه على الشبكات الاجتماعية. تتبّع محفظتك بخصوصية تامة على <a href="https://walletlens.live">walletlens.live</a> — كل البيانات تبقى على جهازك.</p>
+  <p><a href="/dashboard/">ابدأ تتبّع محفظتك مجاناً مع WalletLens ←</a></p>
+  <p><a href="/ar/free-net-worth-tracker/">متتبّع الثروة المجاني</a> · <a href="/blog/financial-privacy-investing/">English</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>

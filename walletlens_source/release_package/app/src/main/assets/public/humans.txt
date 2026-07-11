@@ -1,0 +1,10 @@
+/* TEAM */
+   WalletLens — a free, privacy-first net worth & all-asset portfolio tracker.
+   Site: https://walletlens.live
+   Contact: contact@walletlens.live
+
+/* SITE */
+   Standards: HTML5, CSS3, JavaScript (React)
+   Architecture: Progressive Web App (PWA), client-side only — no backend database for user data
+   Privacy: All portfolio data is stored locally in the browser. Nothing leaves the device.
+   Languages: English, Arabic (RTL)
