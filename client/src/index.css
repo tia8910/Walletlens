@@ -14230,6 +14230,19 @@ input, select, textarea, .dvx-input {
   font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.65);
 }
 
+
+/* Light mode: white selector instead of theme color */
+[data-wl-light] .no-theme-btn.active {
+  box-shadow: 0 0 16px rgba(255,255,255,0.35) !important;
+  border-color: #fff !important;
+}
+[data-wl-light] .no-theme-btn.active .no-theme-swatch {
+  box-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
+}
+[data-wl-light] .no-theme-btn.active .no-theme-label {
+  color: #fff !important;
+}
+
 /* Portfolio inputs */
 .no-portfolio {
   width: 100%; max-width: 340px;
