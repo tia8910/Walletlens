@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
@@ -132,13 +133,12 @@ export default function NativeOnboarding({ onDone }) {
   }
 
   function getThemeIcon(th) {
-    // Same as web: use logo SVG for themes that have one
+    // Logo SVG for themes that have one (gold/silver bars, coin logos)…
     if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+    // …a short currency glyph (₿, Ξ, ◎) rendered as-is…
     if (th.icon && th.icon.length <= 2) return th.icon
-    // Fallback to emoji mapping
-    const map = { sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡', sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎', fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡' }
-    if (th.icon && map[th.icon]) return map[th.icon]
-    return '🎨'
+    // …otherwise a premium line icon (e.g. emerald → sparkles), dark on the light swatch.
+    return <Icon name={th.icon} size={18} style={{ color: '#064e3b' }} />
   }
 
   return (
