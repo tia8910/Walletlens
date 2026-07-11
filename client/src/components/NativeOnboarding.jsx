@@ -280,49 +280,55 @@ export default function NativeOnboarding({ onDone }) {
         )}
 
         {s.isPortfolio && (
-          <div className="no-portfolio-form">
-            <div className="no-portfolio-header">
-              <span className="no-portfolio-icon">💵</span>
-              <span className="no-portfolio-title">Cash Balance</span>
-            </div>
-            <div className="no-portfolio-row">
-              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={cash} onChange={e => setCash(e.target.value)} autoFocus />
-              <select className="no-portfolio-currency" value={currency} onChange={e => setCurrency(e.target.value)}>
-                {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-              </select>
-            </div>
-
-            <div className="no-portfolio-header">
-              <span className="no-portfolio-icon">₿</span>
-              <span className="no-portfolio-title">Bitcoin</span>
-            </div>
-            <div className="no-portfolio-row">
-              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={btc} onChange={e => setBtc(e.target.value)} />
-              <span className="no-portfolio-unit">BTC</span>
+          <div className="wls-fields" style={{ width: '100%', maxWidth: 340 }}>
+            <div className="wls-field">
+              <label className="wls-label">💵 Cash balance</label>
+              <div className="wls-input-wrap">
+                <span className="wls-prefix">{sym}</span>
+                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                  value={cash} onChange={e => setCash(e.target.value)} autoFocus />
+                <select className="wls-cur-select" value={currency} onChange={e => setCurrency(e.target.value)}>
+                  {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
+                </select>
+              </div>
             </div>
 
-            <div className="no-portfolio-header">
-              <span className="no-portfolio-icon">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 18, height: 18 }} /> : '🥇'}</span>
-              <span className="no-portfolio-title">Gold</span>
-            </div>
-            <div className="no-portfolio-row">
-              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={gold} onChange={e => setGold(e.target.value)} />
-              <select className="no-portfolio-currency" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
-                <option value="oz">oz</option>
-                <option value="g">gram</option>
-              </select>
+            <div className="wls-field">
+              <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance</label>
+              <div className="wls-input-wrap">
+                <span className="wls-prefix"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
+                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                  value={usdt} onChange={e => setUsdt(e.target.value)} />
+                <span className="wls-suffix">USDT</span>
+              </div>
             </div>
 
-            <div className="no-portfolio-header">
-              <span className="no-portfolio-icon"><img src={USDT_LOGO} alt="" style={{ width: 18, height: 18 }} /></span>
-              <span className="no-portfolio-title">USDT</span>
-            </div>
-            <div className="no-portfolio-row">
-              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={usdt} onChange={e => setUsdt(e.target.value)} />
-              <span className="no-portfolio-unit">USDT</span>
+            <div className="wls-field">
+              <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold</label>
+              <div className="wls-input-wrap">
+                <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'}</span>
+                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                  value={gold} onChange={e => setGold(e.target.value)} />
+                <select className="wls-unit-select" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
+                  <option value="oz">oz</option>
+                  <option value="g">gram</option>
+                </select>
+              </div>
             </div>
 
-            <p className="no-privacy-note">🔒 100% private — stays on your device</p>
+            <div className="wls-field">
+              <label className="wls-label">₿ Bitcoin</label>
+              <div className="wls-input-wrap">
+                <span className="wls-prefix wls-prefix-btc">₿</span>
+                <input className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                  value={btc} onChange={e => setBtc(e.target.value)} />
+                <span className="wls-suffix">BTC</span>
+              </div>
+            </div>
+
+            <p className="wls-privacy" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', textAlign: 'center', marginTop: '0.6rem' }}>
+              🔒 100% private — stays on your device
+            </p>
           </div>
         )}
 
