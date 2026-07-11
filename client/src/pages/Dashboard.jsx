@@ -2791,7 +2791,9 @@ export default function Dashboard() {
   useEffect(() => {
     const openBuy = () => openSheet('buy', 'add_asset_guide')
     window.addEventListener('wl:open-buy', openBuy)
-    return () => window.removeEventListener('wl:open-buy', openBuy)
+    const onPortfolioUpdated = () => { lastLoadAll = Date.now(); loadAll() }
+    window.addEventListener('wl:portfolio-updated', onPortfolioUpdated)
+    return () => { window.removeEventListener('wl:open-buy', openBuy); window.removeEventListener('wl:portfolio-updated', onPortfolioUpdated) }
   }, [openSheet])
   const [isMobile, setIsMobile]           = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
   useEffect(() => {

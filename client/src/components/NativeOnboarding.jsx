@@ -226,6 +226,7 @@ export default function NativeOnboarding({ onDone }) {
       try { localStorage.setItem(STARTED_KEY, '1') } catch {}
       sfx.playChime()
       sfx.haptic([10, 30, 12])
+      window.dispatchEvent(new Event('wl:portfolio-updated'))
       goNext()
     } catch (err) {
       console.error('Portfolio seed failed:', err)
