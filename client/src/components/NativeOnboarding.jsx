@@ -6,12 +6,6 @@ import sfx from '../sfx'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
-const THEME_ICONS = {
-  sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
-  sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎',
-  fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡',
-}
-
 const SLIDES = [
   {
     id: 'welcome',
@@ -44,6 +38,13 @@ const SLIDES = [
     desc: 'Your dashboard awaits.', final: true,
   },
 ]
+
+const LOGO_SVGS = {
+  gold: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23f5c542' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23f5c542'/%3E%3C/svg%3E",
+  silver: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23c0c8d8' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23c0c8d8'/%3E%3C/svg%3E",
+  ethereum: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L12 9.5L18 12L12 2Z' fill='%23627eea'/%3E%3Cpath d='M12 9.5L12 17L18 12L12 9.5Z' fill='%23627eea' opacity='0.6'/%3E%3C/svg%3E",
+  solana: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9L10 5H17L13 9H6Z' fill='%239945ff'/%3E%3Cpath d='M6 15L10 11H17L13 15H6Z' fill='%239945ff'/%3E%3C/svg%3E",
+}
 
 export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
@@ -130,8 +131,12 @@ export default function NativeOnboarding({ onDone }) {
   }
 
   function getThemeIcon(th) {
-    if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
+    // Same as web: use logo SVG for themes that have one
+    if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
     if (th.icon && th.icon.length <= 2) return th.icon
+    // Fallback to emoji mapping
+    const map = { sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡', sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎', fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡' }
+    if (th.icon && map[th.icon]) return map[th.icon]
     return '🎨'
   }
 
@@ -195,17 +200,16 @@ export default function NativeOnboarding({ onDone }) {
         <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
       </div>
 
-      {/* Arrow-shaped dot slider */}
+      {/* Circle dots */}
       <div className="no-dots">
         {SLIDES.map((_, i) => (
-          <button key={i} className={`no-dot no-arrow-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
-            style={i === step ? { background: s.accent, boxShadow: `0 0 8px ${s.accent}88` } : i < step ? { background: s.accent } : {}}
+          <button key={i} className={`no-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
             onClick={() => goTo(i)}
             aria-label={`Slide ${i + 1}`} />
         ))}
       </div>
 
-      {/* Final slide: pulsing circle to launch */}
+      {/* Final slide: pulsing circle */}
       {s.final && (
         <div className="no-launch-area">
           <button className="no-launch-circle" onClick={() => { sfx.playTriumph(); finish() }}

@@ -778,25 +778,18 @@ input, select, textarea {
   position: absolute; bottom: 140px; left: 0; right: 0;
   display: flex; justify-content: center; gap: 12px; z-index: 2;
 }
-.no-arrow-dot {
-  width: 14px; height: 14px;
-  border-right: 2.5px solid rgba(255,255,255,0.2);
-  border-bottom: 2.5px solid rgba(255,255,255,0.2);
-  transform: rotate(-45deg);
-  border-radius: 0; padding: 8px; cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
-  background: none; flex-shrink: 0;
+.no-dots {
+  position: absolute; bottom: 140px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px; z-index: 2;
 }
-.no-arrow-dot.active {
-  border-color: currentColor;
-  filter: drop-shadow(0 0 6px currentColor);
-  transform: rotate(-45deg) scale(1.25);
+.no-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none; padding: 8px; cursor: pointer;
+  transition: all 0.3s ease;
 }
-.no-arrow-dot.done {
-  border-color: currentColor;
-  opacity: 0.5;
-  transform: rotate(-45deg) scale(0.85);
-}
+.no-dot.active { width: 24px; border-radius: 4px; background: rgba(255,255,255,0.7); }
+.no-dot.done { background: rgba(255,255,255,0.3); }
 /* ── Premium Glass-Morphism CTA Button ── */
 @keyframes no-btn-shimmer {
   0% { transform: translateX(-100%); }
@@ -14327,24 +14320,17 @@ input, select, textarea, .dvx-input {
   position: absolute; bottom: 140px; left: 0; right: 0;
   display: flex; justify-content: center; gap: 12px; z-index: 2;
 }
-.no-arrow-dot {
-  width: 14px; height: 14px;
-  border-right: 2.5px solid rgba(255,255,255,0.2);
-  border-bottom: 2.5px solid rgba(255,255,255,0.2);
-  transform: rotate(-45deg);
-  border-radius: 0; padding: 8px; cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
-  background: none; flex-shrink: 0;
+.no-dots {
+  position: absolute; bottom: 140px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px; z-index: 2;
 }
-.no-arrow-dot.active {
-  border-color: currentColor;
-  filter: drop-shadow(0 0 6px currentColor);
-  transform: rotate(-45deg) scale(1.25);
+.no-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none; padding: 8px; cursor: pointer;
+  transition: all 0.3s ease;
 }
-.no-arrow-dot.done {
-  border-color: currentColor;
-  opacity: 0.5;
-  transform: rotate(-45deg) scale(0.85);
-}
+.no-dot.active { width: 24px; border-radius: 4px; background: rgba(255,255,255,0.7); }
+.no-dot.done { background: rgba(255,255,255,0.3); }
 
 /* CTA button (second definition - overrides first) */
