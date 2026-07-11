@@ -22,27 +22,27 @@ const HELLO = {
 // greeting quietly changes day to day while staying stable within a day.
 const LINES = {
   bigup: {
-    emoji: '🚀',
+    emoji: 'rocket',
     en: ["your portfolio's flying today.", 'huge green day — enjoy it.'],
     ar: ['محفظتك تطير اليوم.', 'يوم أخضر كبير — استمتع به.'],
   },
   up: {
-    emoji: '🌱',
+    emoji: 'sprout',
     en: ['green on the board — nice.', 'up today. small wins add up.'],
     ar: ['أخضر اليوم — جميل.', 'ارتفاع اليوم. المكاسب الصغيرة تتراكم.'],
   },
   calm: {
-    emoji: '🌤️',
+    emoji: 'sun',
     en: ['markets are quiet — a good day to plan.', 'steady today. zoom out and breathe.'],
     ar: ['السوق هادئ — يوم مناسب للتخطيط.', 'ثبات اليوم. تنفّس وفكّر على المدى البعيد.'],
   },
   down: {
-    emoji: '🫧',
+    emoji: 'droplet',
     en: ['a little red today — it happens.', "down a touch. you've seen worse."],
     ar: ['بعض الأحمر اليوم — هذا وارد.', 'انخفاض بسيط. مررت بما هو أصعب.'],
   },
   bigdown: {
-    emoji: '🌊',
+    emoji: 'waves',
     en: ["rough day — zoom out, you're in this for the long game.", 'red everywhere. breathe; this passes.'],
     ar: ['يوم صعب — انظر بعيداً، أنت مستثمر طويل الأمد.', 'أحمر في كل مكان. تنفّس؛ سيمرّ.'],
   },

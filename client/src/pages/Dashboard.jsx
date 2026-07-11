@@ -423,14 +423,14 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
   if (pricesLoading && !ai) return (
     <div className="ai-empty glass-card">
-      <div className="ai-empty-icon">⏳</div>
+      <div className="ai-empty-icon"><Icon name="hourglass" size={28} /></div>
       <p>{t('loadingAI')}</p>
     </div>
   )
 
   if (!ai) return (
     <div className="ai-empty glass-card">
-      <div className="ai-empty-icon">✦</div>
+      <div className="ai-empty-icon"><Icon name="sparkles" size={28} /></div>
       <p>{t('addHoldingsAI')}</p>
     </div>
   )
@@ -529,7 +529,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
 
       {/* AI Insights */}
       <div className="glass-card ai-insights-card">
-        <h4 className="ai-section-title">✦ {t('aiInsights')}</h4>
+        <h4 className="ai-section-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aiInsights')}</h4>
         <div className="ai-insights-list">
           {ai.insights.map((ins, i) => (
             <div key={i} className={`ai-insight ai-insight-${ins.type}`}>
@@ -1406,7 +1406,7 @@ function DataPanel({ onRefresh, onImported }) {
         <div style={{ textAlign:'center', margin:'0.5rem 0' }}>
           {qrParts.length > 1 && (
             <p style={{ fontSize:'0.78rem', color: 'var(--g-ink)', fontWeight: 700, margin:'0 0 0.5rem', fontWeight:700 }}>
-              📲 {qrParts.length}-part QR — scan each in order on the other device
+              <Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{qrParts.length}-part QR — scan each in order on the other device
             </p>
           )}
           <div style={{ display:'flex', flexDirection:'column', gap:'0.9rem', alignItems:'center' }}>
@@ -1711,7 +1711,7 @@ const FEATURE_SLIDES = [
   { tag:'STOCKS & ETFs', icon:'trend-up', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
   { tag:'METALS',        icon:'diamond', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
   { tag:'CASH',          icon:'banknote', color:'var(--g-ink)', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
-  { tag:'AI ADVISOR',    icon:'✦',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
+  { tag:'AI ADVISOR',    icon:'sparkles',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
   { tag:'RISK SCANNER',  icon:'warning', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
   { tag:'RISK BUDGET',   icon:'sliders', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
   { tag:'SET TARGETS',   icon:'target', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
@@ -1869,16 +1869,16 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   if (!visible) return null
   function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
   const items = [
-    { emoji: '🎯', label: 'Price Targets', action: () => { onGoToTargets(); dismiss() } },
-    { emoji: '🗺️', label: 'Goals', action: () => { onGoToVision(); dismiss() } },
-    { emoji: '📅', label: 'Weekly Report', action: () => { onWeeklyReport(); dismiss() } },
+    { emoji: 'target', label: 'Price Targets', action: () => { onGoToTargets(); dismiss() } },
+    { emoji: 'map', label: 'Goals', action: () => { onGoToVision(); dismiss() } },
+    { emoji: 'calendar', label: 'Weekly Report', action: () => { onWeeklyReport(); dismiss() } },
   ]
   return (
     <div className="fn-strip">
-      <span className="fn-strip-label">💡 Try</span>
+      <span className="fn-strip-label"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Try</span>
       {items.map((item, i) => (
         <button key={i} className="fn-strip-btn" onClick={() => { track('feature_nudge_click', { feature: item.label }); item.action() }}>
-          {item.emoji} {item.label}
+          <Icon name={item.emoji} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{item.label}
         </button>
       ))}
       <button className="fn-strip-close" onClick={dismiss} aria-label="Dismiss">×</button>
@@ -1892,7 +1892,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
     { key:'wallet', icon:'banknote', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
     { key:'trade',  icon:'mic', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
     { key:'track',  icon:'bar-chart', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
-    { key:'ai',     icon:'✦',  label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
+    { key:'ai',     icon:'sparkles',  label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
   ]
   const total = steps.length
   const doneCount = steps.filter(s => s.done).length
@@ -2008,7 +2008,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
       {/* Footer */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'1.1rem', paddingTop:'0.85rem', borderTop:'1px solid rgba(var(--g-rgb),0.1)' }}>
         <span style={{ fontSize:'0.68rem', color:'var(--text-sub)', display:'inline-flex', alignItems:'center', gap:'0.3rem' }}>
-          🔒 Your data stays on your device
+          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Your data stays on your device
         </span>
         <button onClick={onDismiss} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.74rem', fontWeight:700, color:'var(--text-muted)' }}>
           {allDone ? 'Dismiss' : 'Skip tour'}
@@ -3611,7 +3611,7 @@ export default function Dashboard() {
               const soul = getSoulGreeting({ dayChangePct, lang })
               return (
                 <p className="dvx-soul" data-tone={soul.tone}>
-                  <span className="dvx-soul-emoji" aria-hidden="true">{soul.emoji}</span>
+                  <span className="dvx-soul-emoji" aria-hidden="true"><Icon name={soul.emoji} size={16} /></span>
                   <span className="dvx-soul-hello">{soul.hello}</span> — {soul.line}
                 </p>
               )
@@ -3949,7 +3949,7 @@ export default function Dashboard() {
                       onClick={() => setShowBreakEven(v => !v)}
                       title="Toggle break-even view"
                     >
-                      ⚖ Break-Even
+                      <Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Break-Even
                     </button>
                     <button
                       className="dvx-export-btn"
@@ -4140,7 +4140,7 @@ export default function Dashboard() {
                                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                           {isStable && <span className="dvx-stable-badge">STABLE</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
-                                          {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}>⚠ dup</span>}
+                                          {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
                                         </div>
                                         <div className="dvx-holding-valblock">
                                           <div className="dvx-holding-val">{cv(displayValue)}</div>
@@ -4199,29 +4199,29 @@ export default function Dashboard() {
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'targets' } })}>
-                                            🎯 Set Target
+                                            <Icon name="target" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Set Target
                                           </button>
                                         )}
                                         <button className="dvx-ha-btn"
                                           onClick={() => navigate('/vision', { state: { linkAsset: h.coin_id } })}>
-                                          🗺️ Set Vision
+                                          <Icon name="map" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Set Vision
                                         </button>
                                         {isCryptoOnly && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/technicals')}>
-                                            📐 Technicals
+                                            <Icon name="ruler" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Technicals
                                           </button>
                                         )}
                                         {isCryptoOnly && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } })}>
-                                            ✦ Magic Score
+                                            <Icon name="sparkles" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Magic Score
                                           </button>
                                         )}
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } })}>
-                                            🔍 Risk Scan
+                                            <Icon name="search" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Risk Scan
                                           </button>
                                         )}
                                       </div>
@@ -4342,7 +4342,7 @@ export default function Dashboard() {
               {/* Stale price warning */}
               {staleAssets.length > 0 && (
                 <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
-                  <span style={{ fontSize:'1rem', flexShrink:0 }}>⚠️</span>
+                  <span style={{ flexShrink:0, display:'inline-flex' }}><Icon name="warning" size={15} /></span>
                   <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
                     <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
                     {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
@@ -4632,7 +4632,7 @@ export default function Dashboard() {
               setTimeout(() => {
                 const seen = new Set(JSON.parse(localStorage.getItem('wl_milestones_seen') || '[]'))
                 if (!seen.has('first_buy')) {
-                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: '🎯', title: 'First trade logged!', sub: 'Set a price target so you know exactly when to take profit or cut losses.', ctaLabel: '🎯 Set a Price Target' })
+                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: 'target', title: 'First trade logged!', sub: 'Set a price target so you know exactly when to take profit or cut losses.', ctaLabel: 'Set a Price Target' })
                 }
               }, 1400)
             }
