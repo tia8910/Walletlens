@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
-import sfx from '../sfx'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
@@ -16,6 +15,14 @@ function readCurrency() {
 }
 
 const USDT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%2326a17b'/%3E%3Crect x='9' y='11' width='22' height='4.2' rx='1' fill='white'/%3E%3Crect x='17.4' y='11' width='5.2' height='20' rx='1.2' fill='white'/%3E%3Crect x='12.5' y='16.4' width='15' height='3.4' rx='1' fill='white'/%3E%3C/svg%3E"
+const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
+
+// Map theme icon strings to emojis for display
+const THEME_ICONS = {
+  sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
+  sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎',
+  fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡',
+}
 
 const SLIDES = [
   {
@@ -93,15 +100,18 @@ function Particles({ step }) {
     left: 5 + ((i * 91 + step * 23) % 85),
     delay: ((i * 0.4 + step * 0.15) % 3).toFixed(2),
     dur: (3 + ((i * 0.6 + step * 0.2) % 2)).toFixed(2),
-    size: 14 + ((i * 3) % 12),
+    size: 16 + ((i * 3) % 14),
   })), [step, emojis])
 
   return (
-    <div className="no-particles" aria-hidden="true">
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
       {items.map((p, i) => (
-        <span key={i} className="no-particle" style={{
-          left: `${p.left}%`, animationDelay: `${p.delay}s`,
-          animationDuration: `${p.dur}s`, fontSize: `${p.size}px`,
+        <span key={i} style={{
+          position: 'absolute', bottom: '-30px',
+          left: `${p.left}%`,
+          fontSize: `${p.size}px`,
+          opacity: 0,
+          animation: `no-float ${p.dur}s ${p.delay}s linear infinite`,
         }}>{p.emoji}</span>
       ))}
     </div>
@@ -110,14 +120,11 @@ function Particles({ step }) {
 
 export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
-  const [touchX, setTouchX] = useState(0)
-  const [swiping, setSwiping] = useState(false)
   const [animDir, setAnimDir] = useState(1)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, setTheme } = useTheme()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
-  const containerRef = useRef(null)
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
@@ -129,6 +136,7 @@ export default function NativeOnboarding({ onDone }) {
   const [cash, setCash] = useState('')
   const [btc, setBtc] = useState('')
   const [gold, setGold] = useState('')
+  const [goldUnit, setGoldUnit] = useState('oz')
   const [usdt, setUsdt] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -137,63 +145,48 @@ export default function NativeOnboarding({ onDone }) {
   const progress = ((step + 1) / total) * 100
 
   const goNext = useCallback(() => {
-    if (step < total - 1) {
-      setAnimDir(1)
-      setStep(s => s + 1)
-    }
+    if (step < total - 1) { setAnimDir(1); setStep(x => x + 1) }
   }, [step, total])
 
   const goPrev = useCallback(() => {
-    if (step > 0) {
-      setAnimDir(-1)
-      setStep(s => s - 1)
-    }
+    if (step > 0) { setAnimDir(-1); setStep(x => x - 1) }
   }, [step])
 
   // Touch swipe
   const onTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
-    setSwiping(true)
   }, [])
 
-  const onTouchMove = useCallback((e) => {
-    if (!swiping) return
-    const dx = e.touches[0].clientX - touchStartX.current
-    const dy = e.touches[0].clientY - touchStartY.current
+  const onTouchEnd = useCallback((e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dy) > Math.abs(dx)) return
-    setTouchX(dx)
-  }, [swiping])
-
-  const onTouchEnd = useCallback(() => {
-    setSwiping(false)
-    if (touchX < -60 && step < total - 1) goNext()
-    else if (touchX > 60 && step > 0) goPrev()
-    setTouchX(0)
-  }, [touchX, step, total, goNext, goPrev])
+    if (dx < -60) goNext()
+    else if (dx > 60) goPrev()
+  }, [goNext, goPrev])
 
   // Keyboard
   useEffect(() => {
-    const handler = (e) => {
+    const h = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') goNext()
       else if (e.key === 'ArrowLeft') goPrev()
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
   }, [goNext, goPrev])
 
   async function enableBiometric() {
     if (bioBusy) return
-    setBioBusy(true)
-    setBioError('')
+    setBioBusy(true); setBioError('')
     try {
       const ok = await enableBio()
       if (ok) { track('biometric_enabled_onboarding'); goNext() }
-      else setBioError('Couldn\'t set up fingerprint. Make sure it\'s enrolled in device settings.')
+      else setBioError("Couldn't set up fingerprint. Make sure it's enrolled in device settings.")
     } finally { setBioBusy(false) }
   }
 
-  async function finish() {
+  function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
     onDone?.()
   }
@@ -216,7 +209,10 @@ export default function NativeOnboarding({ onDone }) {
       const px = (id, fb) => (prices[id]?.usd ?? prices[id]?.price ?? fb)
       if (cashN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'fiat', coin_id: `fiat:${currency.toLowerCase()}`, coin_symbol: currency, coin_name: `${currency} Cash`, amount: cashN, price_per_unit: px(`fiat:${currency.toLowerCase()}`, 1), date })
       if (usdtN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'tether', coin_symbol: 'USDT', coin_name: 'Tether', amount: usdtN, price_per_unit: px('tether', 1), date })
-      if (goldN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'gold', coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold', amount: goldN, price_per_unit: px(GOLD_ID, 0), date })
+      if (goldN > 0) {
+        const goldOz = goldUnit === 'g' ? goldN / 31.1034768 : goldN
+        await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'gold', coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold (1 oz)', amount: goldOz, price_per_unit: px(GOLD_ID, 0), date })
+      }
       if (btcN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin', amount: btcN, price_per_unit: px('bitcoin', 0), date })
       track('native_onboarding_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0 })
       trackProfileCreated({ cash: cashN, usdt: usdtN, gold_oz: goldN, btc: btcN, currency })
@@ -228,19 +224,23 @@ export default function NativeOnboarding({ onDone }) {
 
   const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
 
+  function getThemeIcon(th) {
+    if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+    if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
+    if (th.icon && th.icon.length <= 2) return th.icon
+    return '🎨'
+  }
+
   return (
     <div
-      ref={containerRef}
       className="no-container"
       style={{ background: s.gradient }}
       onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
       <Particles step={step} />
 
-      {/* Slide content */}
-      <div className={`no-slide`} key={step}>
+      <div className="no-slide" key={step}>
         {/* Icon */}
         <div className="no-icon-wrap" style={{ '--accent': s.accent, '--glow': s.glow }}>
           {s.icon === 'logo' ? (
@@ -263,7 +263,7 @@ export default function NativeOnboarding({ onDone }) {
         {/* Description */}
         <p className="no-desc">{s.desc}</p>
 
-        {/* Features (welcome slide) */}
+        {/* Features */}
         {s.features && (
           <div className="no-features">
             {s.features.map((f, i) => (
@@ -279,29 +279,29 @@ export default function NativeOnboarding({ onDone }) {
               <button
                 key={th.id}
                 className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
-                style={{ '--swatch': th.swatch, borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
+                style={{ borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
                 onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
               >
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
                 }}>
-                  {th.logo ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : th.icon}
+                  {getThemeIcon(th)}
                 </span>
-                <span className="no-theme-label">{th.name}</span>
+                <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
               </button>
             ))}
           </div>
         )}
 
-        {/* Portfolio inputs */}
+        {/* Portfolio inputs — matching web WelcomeStart style */}
         {s.isPortfolio && (
           <div className="no-portfolio">
             <div className="no-field">
-              <label className="no-label">💵 Cash</label>
+              <label className="no-label">💵 Cash balance</label>
               <div className="no-input-wrap">
                 <span className="no-prefix">{sym}</span>
-                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={cash} onChange={e => setCash(e.target.value)} />
+                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={cash} onChange={e => setCash(e.target.value)} autoFocus />
                 <select className="no-select" value={currency} onChange={e => setCurrency(e.target.value)}>
                   {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
                 </select>
@@ -316,15 +316,18 @@ export default function NativeOnboarding({ onDone }) {
               </div>
             </div>
             <div className="no-field">
-              <label className="no-label">🥇 Gold</label>
+              <label className="no-label">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4 }} /> : '🥇'} Gold</label>
               <div className="no-input-wrap">
-                <span className="no-prefix">🥇</span>
+                <span className="no-prefix">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 14, height: 14 }} /> : '🥇'}</span>
                 <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={gold} onChange={e => setGold(e.target.value)} />
-                <span className="no-suffix">oz</span>
+                <select className="no-select" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
+                  <option value="oz">oz</option>
+                  <option value="g">gram</option>
+                </select>
               </div>
             </div>
             <div className="no-field">
-              <label className="no-label"><img src={USDT_LOGO} alt="" style={{ width: 14, height: 14, verticalAlign: 'middle' }} /> USDT</label>
+              <label className="no-label"><img src={USDT_LOGO} alt="" style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4 }} /> USDT</label>
               <div className="no-input-wrap">
                 <span className="no-prefix"><img src={USDT_LOGO} alt="" style={{ width: 14, height: 14 }} /></span>
                 <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={usdt} onChange={e => setUsdt(e.target.value)} />
@@ -370,9 +373,7 @@ export default function NativeOnboarding({ onDone }) {
       <button
         className="no-cta"
         style={{
-          background: s.id === 'welcome'
-            ? 'linear-gradient(135deg, #00c853 0%, #00a040 100%)'
-            : s.accent,
+          background: s.id === 'welcome' ? 'linear-gradient(135deg, #00c853 0%, #00a040 100%)' : s.accent,
           boxShadow: s.id === 'welcome' ? '0 4px 20px rgba(0,200,83,0.45)' : undefined,
         }}
         onClick={() => {
