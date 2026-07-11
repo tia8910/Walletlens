@@ -515,6 +515,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       }
 
       setSuccess(true)
+      // Force dashboard to refresh holdings immediately
+      window.dispatchEvent(new Event('wl:portfolio-updated'))
 
       // Detailed GA4 transaction events
       const valueUsd = Math.round(amt * ppu)

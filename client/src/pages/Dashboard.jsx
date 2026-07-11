@@ -2756,6 +2756,7 @@ export default function Dashboard() {
   const [isTabPending, startTabTransition] = useTransition()
   const [portfolio, setPortfolio]         = useState([])
   const portfolioRef = useRef([])
+  const loadAllRef = useRef(null)
   const [prices, setPrices]               = useState({})
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
@@ -2791,7 +2792,7 @@ export default function Dashboard() {
   useEffect(() => {
     const openBuy = () => openSheet('buy', 'add_asset_guide')
     window.addEventListener('wl:open-buy', openBuy)
-    const onPortfolioUpdated = () => { lastLoadAll = Date.now(); loadAll() }
+    const onPortfolioUpdated = () => { lastLoadAll = Date.now(); loadAllRef.current?.() }
     window.addEventListener('wl:portfolio-updated', onPortfolioUpdated)
     return () => { window.removeEventListener('wl:open-buy', openBuy); window.removeEventListener('wl:portfolio-updated', onPortfolioUpdated) }
   }, [openSheet])
@@ -2996,6 +2997,7 @@ export default function Dashboard() {
   }, [activeTab])
 
   async function loadAll() {
+    loadAllRef.current = loadAll
     const sel = selectedWalletRef.current
     const [p, txs, ws, ct] = await Promise.all([
       api.getPortfolio(sel && sel !== 'all' ? sel : undefined),
@@ -3083,9 +3085,18 @@ export default function Dashboard() {
     if (!document.hidden) startPolling()
     document.addEventListener('visibilitychange', handleVisibility)
 
+    // Backup: if any other component writes to localStorage, refresh data
+    const onStorage = (e) => {
+      if (e.key && e.key.startsWith('wl_') || e.key === 'transactions' || e.key === 'wallets' || e.key === 'coin_targets') {
+        if (Date.now() - lastLoadAll > 2000) { lastLoadAll = Date.now(); loadAll() }
+      }
+    }
+    window.addEventListener('storage', onStorage)
+
     return () => {
       stopPolling()
       document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('storage', onStorage)
     }
   }, [])
 
@@ -4627,7 +4638,8 @@ export default function Dashboard() {
           wallets={wallets}
           onDone={() => {
             const wasFirstTrade = transactions.length === 0
-            loadAll()
+            loadAllRef.current?.()
+            window.dispatchEvent(new Event('wl:portfolio-updated'))
             // First trade ever → jump to Overview + fire "set a target" nudge
             if (wasFirstTrade) {
               setTimeout(() => setActiveTab('overview'), 200)
