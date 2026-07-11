@@ -600,7 +600,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     style={active ? { borderColor: c.color, color: c.color, background: `${c.color}15` } : undefined}
                     onClick={() => handleCategoryChange(key)}
                   >
-                    <span className="category-tab-icon">{c.icon}</span>
+                    <span className="category-tab-icon"><Icon name={c.icon} size={15} /></span>
                     <span>{c.label}</span>
                   </button>
                 )

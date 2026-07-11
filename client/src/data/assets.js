@@ -9,16 +9,16 @@ export const XSTOCK_PREFIX = 'xstock:'   // tokenized stock — followed by lowe
 export const FIAT_PREFIX  = 'fiat:'      // followed by lowercase ISO code
 
 export const ASSET_CATEGORIES = {
-  crypto:   { key: 'crypto',   label: 'Crypto',    icon: '₿',  color: '#6366f1' },
-  fiat:     { key: 'fiat',     label: 'Fiat',      icon: '$',  color: '#0ea5e9' },
-  gold:     { key: 'gold',     label: 'Gold',      icon: '🥇', color: '#f59e0b' },
-  silver:   { key: 'silver',   label: 'Silver',    icon: '🥈', color: '#94a3b8' },
-  copper:   { key: 'copper',   label: 'Copper',    icon: '🟤', color: '#b45309' },
-  platinum: { key: 'platinum', label: 'Platinum',  icon: '💎', color: '#cbd5e1' },
-  stock:    { key: 'stock',    label: 'Stocks',    icon: '📈', color: 'var(--gd)' },
-  tstock:   { key: 'tstock',   label: 'Tokenized Stocks', icon: '🪙', color: '#f0b90b' },
-  bond:     { key: 'bond',     label: 'Bonds',     icon: '🏛️', color: '#0284c7' },
-  other:    { key: 'other',    label: 'Other',     icon: '🏠🚗⌚', color: '#a78bfa' },
+  crypto:   { key: 'crypto',   label: 'Crypto',    icon: 'coins',  color: '#6366f1' },
+  fiat:     { key: 'fiat',     label: 'Fiat',      icon: 'banknote',  color: '#0ea5e9' },
+  gold:     { key: 'gold',     label: 'Gold',      icon: 'award', color: '#f59e0b' },
+  silver:   { key: 'silver',   label: 'Silver',    icon: 'award', color: '#94a3b8' },
+  copper:   { key: 'copper',   label: 'Copper',    icon: 'coins', color: '#b45309' },
+  platinum: { key: 'platinum', label: 'Platinum',  icon: 'diamond', color: '#cbd5e1' },
+  stock:    { key: 'stock',    label: 'Stocks',    icon: 'trend-up', color: 'var(--gd)' },
+  tstock:   { key: 'tstock',   label: 'Tokenized Stocks', icon: 'coins', color: '#f0b90b' },
+  bond:     { key: 'bond',     label: 'Bonds',     icon: 'building', color: '#0284c7' },
+  other:    { key: 'other',    label: 'Other',     icon: 'package', color: '#a78bfa' },
 }
 
 // Binance tokenized stocks (xStocks) — each backed 1:1 by the real share and

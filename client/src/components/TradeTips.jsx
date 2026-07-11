@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 
 const CATEGORIES = [
@@ -11,53 +12,53 @@ const CATEGORIES = [
 ]
 
 const QUOTES = [
-  { id: 'q1',  cat: 'Quotes', type: 'quote', emoji: '💡', author: 'Warren Buffett',     title: 'Be fearful when others are greedy, and greedy when others are fearful.' },
-  { id: 'q2',  cat: 'Quotes', type: 'quote', emoji: '📈', author: 'Peter Lynch',        title: 'The person that turns over the most rocks wins the game.' },
-  { id: 'q3',  cat: 'Quotes', type: 'quote', emoji: '🧠', author: 'Charlie Munger',     title: 'Invert, always invert. Many hard problems are best solved when they are addressed backwards.' },
-  { id: 'q4',  cat: 'Quotes', type: 'quote', emoji: '⏳', author: 'Warren Buffett',     title: 'The stock market is a device for transferring money from the impatient to the patient.' },
-  { id: 'q5',  cat: 'Quotes', type: 'quote', emoji: '🌊', author: 'Jesse Livermore',    title: 'Markets are never wrong — opinions often are.' },
-  { id: 'q6',  cat: 'Quotes', type: 'quote', emoji: '🔭', author: 'Peter Lynch',        title: 'Know what you own, and know why you own it.' },
-  { id: 'q7',  cat: 'Quotes', type: 'quote', emoji: '🛡️', author: 'Benjamin Graham',    title: 'The intelligent investor is a realist who sells to optimists and buys from pessimists.' },
-  { id: 'q8',  cat: 'Quotes', type: 'quote', emoji: '💎', author: 'Philip Fisher',      title: 'The stock market is filled with individuals who know the price of everything, but the value of nothing.' },
-  { id: 'q9',  cat: 'Quotes', type: 'quote', emoji: '🎯', author: 'Paul Tudor Jones',   title: 'The secret to being successful from a trading perspective is to have an indefatigable and an undying and unquenchable thirst for information and knowledge.' },
-  { id: 'q10', cat: 'Quotes', type: 'quote', emoji: '🧘', author: 'George Soros',       title: 'It\'s not whether you\'re right or wrong that\'s important, but how much money you make when you\'re right and how much you lose when you\'re wrong.' },
-  { id: 'q11', cat: 'Quotes', type: 'quote', emoji: '🌱', author: 'John Templeton',     title: 'The four most dangerous words in investing are: "This time it\'s different."' },
-  { id: 'q12', cat: 'Quotes', type: 'quote', emoji: '🔑', author: 'Ray Dalio',          title: 'The biggest mistake investors make is to believe that what happened in the recent past is likely to persist.' },
-  { id: 'q13', cat: 'Quotes', type: 'quote', emoji: '🚀', author: 'Cathie Wood',        title: 'Innovation solves problems. Invest in the future, not the past.' },
-  { id: 'q14', cat: 'Quotes', type: 'quote', emoji: '🌍', author: 'Mark Cuban',         title: 'It doesn\'t matter how many times you fail. It matters how many times you get up.' },
-  { id: 'q15', cat: 'Quotes', type: 'quote', emoji: '⚡', author: 'Naval Ravikant',     title: 'Play long-term games with long-term people. All returns in life — wealth, relationships, knowledge — come from compound interest.' },
-  { id: 'q16', cat: 'Quotes', type: 'quote', emoji: '🔄', author: 'Howard Marks',       title: 'You can\'t predict. You can prepare.' },
-  { id: 'q17', cat: 'Quotes', type: 'quote', emoji: '🏆', author: 'Michael Saylor',     title: 'Bitcoin is a swarm of cyber hornets serving the goddess of wisdom, feeding on the fire of truth.' },
-  { id: 'q18', cat: 'Quotes', type: 'quote', emoji: '💰', author: 'Satoshi Nakamoto',   title: 'If you don\'t believe it or don\'t get it, I don\'t have time to try to convince you, sorry.' },
-  { id: 'q19', cat: 'Quotes', type: 'quote', emoji: '📚', author: 'Benjamin Graham',    title: 'In the short run, the market is a voting machine. In the long run, it is a weighing machine.' },
-  { id: 'q20', cat: 'Quotes', type: 'quote', emoji: '✨', author: 'Warren Buffett',     title: 'Someone\'s sitting in the shade today because someone planted a tree a long time ago.' },
+  { id: 'q1',  cat: 'Quotes', type: 'quote', emoji: 'lightbulb', author: 'Warren Buffett',     title: 'Be fearful when others are greedy, and greedy when others are fearful.' },
+  { id: 'q2',  cat: 'Quotes', type: 'quote', emoji: 'trend-up', author: 'Peter Lynch',        title: 'The person that turns over the most rocks wins the game.' },
+  { id: 'q3',  cat: 'Quotes', type: 'quote', emoji: 'brain', author: 'Charlie Munger',     title: 'Invert, always invert. Many hard problems are best solved when they are addressed backwards.' },
+  { id: 'q4',  cat: 'Quotes', type: 'quote', emoji: 'hourglass', author: 'Warren Buffett',     title: 'The stock market is a device for transferring money from the impatient to the patient.' },
+  { id: 'q5',  cat: 'Quotes', type: 'quote', emoji: 'waves', author: 'Jesse Livermore',    title: 'Markets are never wrong — opinions often are.' },
+  { id: 'q6',  cat: 'Quotes', type: 'quote', emoji: 'compass', author: 'Peter Lynch',        title: 'Know what you own, and know why you own it.' },
+  { id: 'q7',  cat: 'Quotes', type: 'quote', emoji: 'shield', author: 'Benjamin Graham',    title: 'The intelligent investor is a realist who sells to optimists and buys from pessimists.' },
+  { id: 'q8',  cat: 'Quotes', type: 'quote', emoji: 'diamond', author: 'Philip Fisher',      title: 'The stock market is filled with individuals who know the price of everything, but the value of nothing.' },
+  { id: 'q9',  cat: 'Quotes', type: 'quote', emoji: 'target', author: 'Paul Tudor Jones',   title: 'The secret to being successful from a trading perspective is to have an indefatigable and an undying and unquenchable thirst for information and knowledge.' },
+  { id: 'q10', cat: 'Quotes', type: 'quote', emoji: 'droplet', author: 'George Soros',       title: 'It\'s not whether you\'re right or wrong that\'s important, but how much money you make when you\'re right and how much you lose when you\'re wrong.' },
+  { id: 'q11', cat: 'Quotes', type: 'quote', emoji: 'sprout', author: 'John Templeton',     title: 'The four most dangerous words in investing are: "This time it\'s different."' },
+  { id: 'q12', cat: 'Quotes', type: 'quote', emoji: 'key', author: 'Ray Dalio',          title: 'The biggest mistake investors make is to believe that what happened in the recent past is likely to persist.' },
+  { id: 'q13', cat: 'Quotes', type: 'quote', emoji: 'rocket', author: 'Cathie Wood',        title: 'Innovation solves problems. Invest in the future, not the past.' },
+  { id: 'q14', cat: 'Quotes', type: 'quote', emoji: 'globe', author: 'Mark Cuban',         title: 'It doesn\'t matter how many times you fail. It matters how many times you get up.' },
+  { id: 'q15', cat: 'Quotes', type: 'quote', emoji: 'zap', author: 'Naval Ravikant',     title: 'Play long-term games with long-term people. All returns in life — wealth, relationships, knowledge — come from compound interest.' },
+  { id: 'q16', cat: 'Quotes', type: 'quote', emoji: 'refresh', author: 'Howard Marks',       title: 'You can\'t predict. You can prepare.' },
+  { id: 'q17', cat: 'Quotes', type: 'quote', emoji: 'trophy', author: 'Michael Saylor',     title: 'Bitcoin is a swarm of cyber hornets serving the goddess of wisdom, feeding on the fire of truth.' },
+  { id: 'q18', cat: 'Quotes', type: 'quote', emoji: 'banknote', author: 'Satoshi Nakamoto',   title: 'If you don\'t believe it or don\'t get it, I don\'t have time to try to convince you, sorry.' },
+  { id: 'q19', cat: 'Quotes', type: 'quote', emoji: 'book', author: 'Benjamin Graham',    title: 'In the short run, the market is a voting machine. In the long run, it is a weighing machine.' },
+  { id: 'q20', cat: 'Quotes', type: 'quote', emoji: 'sparkles', author: 'Warren Buffett',     title: 'Someone\'s sitting in the shade today because someone planted a tree a long time ago.' },
 ]
 
 const TIPS = [
   // Risk
-  { id: 1, cat: 'Risk', type: 'do',   emoji: '🛡️', title: 'Use stop-losses', body: 'Set a stop-loss before you enter any trade. Know your exit before your entry.' },
-  { id: 2, cat: 'Risk', type: 'dont', emoji: '🎰', title: "Don't bet the house", body: 'Never risk more than 1–2% of your portfolio on a single trade. Survival is the edge.' },
-  { id: 3, cat: 'Risk', type: 'do',   emoji: '⚖️', title: 'Size positions wisely', body: 'Your position size should reflect conviction AND volatility — not just excitement.' },
-  { id: 4, cat: 'Risk', type: 'dont', emoji: '📉', title: "Don't average down blindly", body: 'Adding to a losing trade without a plan just makes a small problem bigger.' },
-  { id: 5, cat: 'Risk', type: 'do',   emoji: '🔒', title: 'Protect your gains', body: 'Trail your stop-loss as a trade moves in your favour. Lock in profits incrementally.' },
+  { id: 1, cat: 'Risk', type: 'do',   emoji: 'shield', title: 'Use stop-losses', body: 'Set a stop-loss before you enter any trade. Know your exit before your entry.' },
+  { id: 2, cat: 'Risk', type: 'dont', emoji: 'warning', title: "Don't bet the house", body: 'Never risk more than 1–2% of your portfolio on a single trade. Survival is the edge.' },
+  { id: 3, cat: 'Risk', type: 'do',   emoji: 'scale', title: 'Size positions wisely', body: 'Your position size should reflect conviction AND volatility — not just excitement.' },
+  { id: 4, cat: 'Risk', type: 'dont', emoji: 'trend-down', title: "Don't average down blindly", body: 'Adding to a losing trade without a plan just makes a small problem bigger.' },
+  { id: 5, cat: 'Risk', type: 'do',   emoji: 'lock', title: 'Protect your gains', body: 'Trail your stop-loss as a trade moves in your favour. Lock in profits incrementally.' },
   // Psychology
-  { id: 6,  cat: 'Psychology', type: 'dont', emoji: '😱', title: 'Never trade on FOMO',        body: "If you're chasing a candle that already moved 30%, you're too late. Wait for the next setup." },
-  { id: 7,  cat: 'Psychology', type: 'do',   emoji: '📓', title: 'Keep a trading journal',     body: 'Write down your reasoning before every trade. Patterns in your losses will become obvious.' },
-  { id: 8,  cat: 'Psychology', type: 'dont', emoji: '🤬', title: 'Avoid revenge trading',      body: 'After a loss, step away. Trying to "win it back" immediately compounds the damage.' },
-  { id: 9,  cat: 'Psychology', type: 'do',   emoji: '🧘', title: 'Stick to your plan',         body: 'A mediocre strategy executed consistently beats a brilliant strategy executed emotionally.' },
-  { id: 10, cat: 'Psychology', type: 'dont', emoji: '📺', title: "Don't trade on Twitter hype", body: "By the time it's trending, insiders have already exited. Hype is exit liquidity." },
+  { id: 6,  cat: 'Psychology', type: 'dont', emoji: 'frown', title: 'Never trade on FOMO',        body: "If you're chasing a candle that already moved 30%, you're too late. Wait for the next setup." },
+  { id: 7,  cat: 'Psychology', type: 'do',   emoji: 'notes', title: 'Keep a trading journal',     body: 'Write down your reasoning before every trade. Patterns in your losses will become obvious.' },
+  { id: 8,  cat: 'Psychology', type: 'dont', emoji: 'frown', title: 'Avoid revenge trading',      body: 'After a loss, step away. Trying to "win it back" immediately compounds the damage.' },
+  { id: 9,  cat: 'Psychology', type: 'do',   emoji: 'droplet', title: 'Stick to your plan',         body: 'A mediocre strategy executed consistently beats a brilliant strategy executed emotionally.' },
+  { id: 10, cat: 'Psychology', type: 'dont', emoji: 'monitor', title: "Don't trade on Twitter hype", body: "By the time it's trending, insiders have already exited. Hype is exit liquidity." },
   // Strategy
-  { id: 11, cat: 'Strategy', type: 'do',   emoji: '🗺️', title: 'Define entry & exit upfront', body: 'Know your take-profit AND your stop-loss before you click buy. No improvising mid-trade.' },
-  { id: 12, cat: 'Strategy', type: 'dont', emoji: '🔮', title: "Don't try to call tops/bottoms", body: 'Markets can stay irrational longer than you can stay solvent. Trade price action, not predictions.' },
-  { id: 13, cat: 'Strategy', type: 'do',   emoji: '📊', title: 'Backtest your ideas',          body: 'Before you risk real money, stress-test your strategy on historical data. Reality is humbling.' },
-  { id: 14, cat: 'Strategy', type: 'dont', emoji: '🔄', title: "Don't over-trade",             body: 'More trades = more fees + more emotional decisions. Quality setups beat quantity every time.' },
-  { id: 15, cat: 'Strategy', type: 'do',   emoji: '💧', title: 'Trade liquid markets',         body: 'Illiquid assets have wide spreads and can trap you in a position. Liquidity is your escape hatch.' },
+  { id: 11, cat: 'Strategy', type: 'do',   emoji: 'map', title: 'Define entry & exit upfront', body: 'Know your take-profit AND your stop-loss before you click buy. No improvising mid-trade.' },
+  { id: 12, cat: 'Strategy', type: 'dont', emoji: 'sparkles', title: "Don't try to call tops/bottoms", body: 'Markets can stay irrational longer than you can stay solvent. Trade price action, not predictions.' },
+  { id: 13, cat: 'Strategy', type: 'do',   emoji: 'bar-chart', title: 'Backtest your ideas',          body: 'Before you risk real money, stress-test your strategy on historical data. Reality is humbling.' },
+  { id: 14, cat: 'Strategy', type: 'dont', emoji: 'refresh', title: "Don't over-trade",             body: 'More trades = more fees + more emotional decisions. Quality setups beat quantity every time.' },
+  { id: 15, cat: 'Strategy', type: 'do',   emoji: 'droplet', title: 'Trade liquid markets',         body: 'Illiquid assets have wide spreads and can trap you in a position. Liquidity is your escape hatch.' },
   // HODL
-  { id: 16, cat: 'HODL', type: 'do',   emoji: '⏳', title: 'Think in years, not days',    body: 'The best returns in crypto & stocks have gone to patient holders, not daily traders.' },
-  { id: 17, cat: 'HODL', type: 'dont', emoji: '👀', title: "Don't check prices hourly",   body: 'Frequent price-checking triggers emotional decisions. Set alerts and close the tab.' },
-  { id: 18, cat: 'HODL', type: 'do',   emoji: '🌱', title: 'DCA on dips',                 body: 'Dollar-cost averaging into conviction assets during downturns builds positions at lower average cost.' },
-  { id: 19, cat: 'HODL', type: 'dont', emoji: '💬', title: "Don't sell on bad headlines", body: "Markets have survived every \"it's over\" headline. Zoom out before reacting to news." },
-  { id: 20, cat: 'HODL', type: 'do',   emoji: '🎯', title: 'Set price targets in advance', body: "Decide your exit price when you're calm and greedy — not when you're scared and losing." },
+  { id: 16, cat: 'HODL', type: 'do',   emoji: 'hourglass', title: 'Think in years, not days',    body: 'The best returns in crypto & stocks have gone to patient holders, not daily traders.' },
+  { id: 17, cat: 'HODL', type: 'dont', emoji: 'eye', title: "Don't check prices hourly",   body: 'Frequent price-checking triggers emotional decisions. Set alerts and close the tab.' },
+  { id: 18, cat: 'HODL', type: 'do',   emoji: 'sprout', title: 'DCA on dips',                 body: 'Dollar-cost averaging into conviction assets during downturns builds positions at lower average cost.' },
+  { id: 19, cat: 'HODL', type: 'dont', emoji: 'message', title: "Don't sell on bad headlines", body: "Markets have survived every \"it's over\" headline. Zoom out before reacting to news." },
+  { id: 20, cat: 'HODL', type: 'do',   emoji: 'target', title: 'Set price targets in advance', body: "Decide your exit price when you're calm and greedy — not when you're scared and losing." },
 ]
 
 function wrapText(ctx, text, x, y, maxW, lineH) {
@@ -126,11 +127,10 @@ function buildShareCanvas(tip) {
     ctx.fill()
     ctx.fillStyle = '#fff'
     ctx.font = '800 36px system-ui, sans-serif'
-    ctx.fillText(isdo ? '✅  DO THIS' : '❌  AVOID THIS', 108, 127)
+    ctx.fillText(isdo ? 'DO THIS' : 'AVOID THIS', 108, 127)
 
     // Emoji
     ctx.font = '120px serif'
-    ctx.fillText(tip.emoji, 80, 310)
 
     // Title
     ctx.fillStyle = '#ffffff'
@@ -227,7 +227,7 @@ export default function TradeTips() {
     const file = new File([blob], 'walletlens-tip.png', { type: 'image/png' })
     const shareText = tip.type === 'quote'
       ? `"${tip.title}" — ${tip.author} | WalletLens`
-      : `${tip.type === 'do' ? '✅ DO:' : '❌ AVOID:'} ${tip.title} — ${tip.body} | WalletLens`
+      : `${tip.type === 'do' ? 'DO:' : 'AVOID:'} ${tip.title} — ${tip.body} | WalletLens`
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({ files: [file], title: tip.title, text: shareText })
     } else {
@@ -258,8 +258,8 @@ export default function TradeTips() {
       <div className="tips-header">
         <div className="tips-label-row">
           {isQuote
-            ? <span className="tips-badge tips-badge-quote">💬 QUOTE</span>
-            : <span className={`tips-badge ${isdo ? 'tips-badge-do' : 'tips-badge-dont'}`}>{isdo ? '✅ DO' : '❌ AVOID'}</span>
+            ? <span className="tips-badge tips-badge-quote"><Icon name="message" size={12} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />QUOTE</span>
+            : <span className={`tips-badge ${isdo ? 'tips-badge-do' : 'tips-badge-dont'}`}>{isdo ? <><Icon name="check" size={12} style={{ verticalAlign:'-2px', marginRight:'0.25em' }} />DO</> : <><Icon name="x" size={12} style={{ verticalAlign:'-2px', marginRight:'0.25em' }} />AVOID</>}</span>
           }
           <span className="tips-cat-pill">{tip.cat}</span>
           <span className="tips-counter">{(idx % filtered.length) + 1} / {filtered.length}</span>
@@ -291,7 +291,7 @@ export default function TradeTips() {
         </div>
       ) : (
         <div className={`tips-card tips-anim-${anim}`}>
-          <span className="tips-emoji" aria-hidden="true">{tip.emoji}</span>
+          <span className="tips-emoji" aria-hidden="true"><Icon name={tip.emoji} size={22} /></span>
           <div className="tips-text">
             <strong className="tips-title">{tip.title}</strong>
             <p className="tips-body">{tip.body}</p>
