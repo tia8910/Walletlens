@@ -16,15 +16,39 @@ const REFRESH_MS = 3 * 60 * 1000 // 3 min
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n))
 const ch24 = c => c.price_change_percentage_24h ?? c.price_change_percentage_24h_in_currency ?? 0
 
+const num = (d = 2) => n => n.toLocaleString(undefined, { maximumFractionDigits: d })
+const usd = (d = 2) => n => `$${n.toLocaleString(undefined, { maximumFractionDigits: d })}`
+
 const INDICES = [
-  { sym: '^spx',  label: 'S&P 500',  fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
-  { sym: '^ndq',  label: 'Nasdaq',   fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
-  { sym: '^dji',  label: 'Dow Jones', fmt: n => n.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+  { sym: '^spx',  label: 'S&P 500',      fmt: num(2) },
+  { sym: '^ndq',  label: 'Nasdaq',       fmt: num(2) },
+  { sym: '^dji',  label: 'Dow Jones',    fmt: num(0) },
+  { sym: '^rut',  label: 'Russell 2000', fmt: num(2) },
+  { sym: '^vix',  label: 'VIX',          fmt: num(2) },
+  { sym: '^ukx',  label: 'FTSE 100',     fmt: num(2) },
+  { sym: '^dax',  label: 'DAX',          fmt: num(2) },
+  { sym: '^nkx',  label: 'Nikkei 225',   fmt: num(0) },
 ]
 const METALS = [
-  { sym: 'xauusd', label: 'Gold (oz)',   fmt: n => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` },
-  { sym: 'xagusd', label: 'Silver (oz)', fmt: n => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` },
+  { sym: 'xauusd', label: 'Gold (oz)',      fmt: usd(2) },
+  { sym: 'xagusd', label: 'Silver (oz)',    fmt: usd(2) },
+  { sym: 'xptusd', label: 'Platinum (oz)',  fmt: usd(2) },
+  { sym: 'xpdusd', label: 'Palladium (oz)', fmt: usd(2) },
 ]
+const FOREX = [
+  { sym: 'eurusd', label: 'EUR / USD', fmt: num(4) },
+  { sym: 'gbpusd', label: 'GBP / USD', fmt: num(4) },
+  { sym: 'usdjpy', label: 'USD / JPY', fmt: num(2) },
+  { sym: 'usdcad', label: 'USD / CAD', fmt: num(4) },
+  { sym: 'audusd', label: 'AUD / USD', fmt: num(4) },
+]
+const COMMODITIES = [
+  { sym: 'cl.f', label: 'WTI Crude',   fmt: usd(2) },
+  { sym: 'bz.f', label: 'Brent Crude', fmt: usd(2) },
+  { sym: 'ng.f', label: 'Nat Gas',     fmt: n => `$${n.toFixed(3)}` },
+  { sym: 'hg.f', label: 'Copper',      fmt: n => `$${n.toFixed(3)}` },
+]
+const ALL_STOOQ = [...INDICES, ...METALS, ...FOREX, ...COMMODITIES]
 
 // Fetch live quotes from Stooq for US indices + metals (direct, CORS proxies as fallback)
 const STOOQ_PROXIES = [
@@ -141,7 +165,7 @@ export default function MarketIndex() {
 
   async function load() {
     try {
-      const allSyms = [...INDICES, ...METALS].map(x => x.sym)
+      const allSyms = ALL_STOOQ.map(x => x.sym)
       const [snap, trend, mkts] = await Promise.all([
         api.getWhaleMarketSnapshot().catch(() => []),
         api.getTrendingCoins().catch(() => []),
@@ -219,8 +243,8 @@ export default function MarketIndex() {
           <div className="mki-eyebrow"><Icon name="bar-chart" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />WALLETLENS MARKET INDEX</div>
           <h1 className="mki-h1">All markets, one page.</h1>
           <p className="mki-lede">
-            Crypto sentiment score (0–100), live US indices, and precious metals prices — updated continuously.
-            Free to read, free to cite.
+            Crypto sentiment score (0–100) plus live equity indices, precious metals, forex and commodities —
+            all markets on one page, updated continuously. Free to read, free to cite.
           </p>
         </header>
 
@@ -273,48 +297,18 @@ export default function MarketIndex() {
               <Stat label="24h losers" value={`${idx.losers}`} accent="#f87171" />
             </section>
 
-            {/* US Indices */}
-            {markets && INDICES.some(x => markets[x.sym]) && (
-              <section className="mki-ext-section glass-card">
-                <div className="mki-section-title"><Icon name="building" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />US Indices</div>
-                <div className="mki-ext-grid">
-                  {INDICES.map(({ sym, label, fmt }) => {
-                    const d = markets[sym]
-                    if (!d) return null
-                    const chg = d.change
-                    const chgColor = chg == null ? 'var(--text-muted)' : chg >= 0 ? '#10b981' : '#f87171'
-                    return (
-                      <div key={sym} className="mki-ext-cell">
-                        <div className="mki-ext-label">{label}</div>
-                        <div className="mki-ext-val">{fmt(d.close)}</div>
-                        {chg != null && <div className="mki-ext-chg" style={{ color: chgColor }}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</div>}
-                      </div>
-                    )
-                  })}
+            {/* Global markets — equities, metals, forex, commodities */}
+            {markets && ALL_STOOQ.some(x => markets[x.sym]) && (
+              <>
+                <div className="mki-markets-head">
+                  <Icon name="globe" size={16} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Global markets
+                  <span className="mki-markets-sub">live · alongside crypto</span>
                 </div>
-              </section>
-            )}
-
-            {/* Precious Metals */}
-            {markets && METALS.some(x => markets[x.sym]) && (
-              <section className="mki-ext-section glass-card">
-                <div className="mki-section-title"><Icon name="award" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Precious Metals</div>
-                <div className="mki-ext-grid">
-                  {METALS.map(({ sym, label, fmt }) => {
-                    const d = markets[sym]
-                    if (!d) return null
-                    const chg = d.change
-                    const chgColor = chg == null ? 'var(--text-muted)' : chg >= 0 ? '#10b981' : '#f87171'
-                    return (
-                      <div key={sym} className="mki-ext-cell">
-                        <div className="mki-ext-label">{label}</div>
-                        <div className="mki-ext-val">{fmt(d.close)}</div>
-                        {chg != null && <div className="mki-ext-chg" style={{ color: chgColor }}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</div>}
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
+                <MarketBoard icon="building" title="Equity Indices"  items={INDICES}     markets={markets} />
+                <MarketBoard icon="award"    title="Precious Metals" items={METALS}      markets={markets} />
+                <MarketBoard icon="exchange" title="Forex"           items={FOREX}       markets={markets} />
+                <MarketBoard icon="droplet"  title="Commodities"     items={COMMODITIES} markets={markets} />
+              </>
             )}
 
             {/* Movers */}
@@ -358,6 +352,35 @@ export default function MarketIndex() {
         )}
       </div>
     </div>
+  )
+}
+
+// Reusable "global markets" board — one asset class per card, premium cells
+// with a coloured ▲/▼ move. Only symbols the data source returned are shown.
+function MarketBoard({ icon, title, items, markets }) {
+  const rows = items.filter(x => markets?.[x.sym])
+  if (!rows.length) return null
+  return (
+    <section className="mki-ext-section glass-card">
+      <div className="mki-section-title"><Icon name={icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{title}</div>
+      <div className="mki-ext-grid">
+        {rows.map(({ sym, label, fmt }) => {
+          const d = markets[sym]
+          const chg = d.change
+          const up = chg != null && chg >= 0
+          const chgColor = chg == null ? 'var(--text-muted)' : up ? '#10b981' : '#f87171'
+          return (
+            <div key={sym} className="mki-ext-cell">
+              <div className="mki-ext-label">{label}</div>
+              <div className="mki-ext-val">{fmt(d.close)}</div>
+              {chg != null && (
+                <div className="mki-ext-chg" style={{ color: chgColor }}>{up ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
