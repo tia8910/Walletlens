@@ -168,13 +168,13 @@ export default function NativeOnboarding({ onDone }) {
           <div className="no-theme-grid">
             {THEMES.map(th => (
               <button key={th.id} className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
-                style={{ borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
+                style={{ borderColor: theme === th.id ? '#fff' : 'rgba(255,255,255,0.1)' }}
                 onClick={() => { try { setTheme(th.id) } catch {}; try { track('theme_changed', { theme: th.id }) } catch {} }}>
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
-                  boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
+                  boxShadow: theme === th.id ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
                 }}>{getThemeIcon(th)}</span>
-                <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
+                <span className="no-theme-label" style={{ color: theme === th.id ? '#fff' : undefined }}>{th.name}</span>
               </button>
             ))}
           </div>
