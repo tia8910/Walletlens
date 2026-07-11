@@ -393,6 +393,7 @@ export default function App() {
   const [isStandalone, setIsStandalone] = useState(false)
 
   const _guardianChecked = useRef(false)
+  const _backupChecked = useRef(false)
   useEffect(() => {
     requestAnimationFrame(() => { applySettings(); initMood() })
     const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
@@ -417,6 +418,18 @@ export default function App() {
         import('./components/PortfolioGuardian').then(m => m.silentCheckin()).catch(() => {})
       }, 3000)
     }
+  }, [locked])
+
+  // Weekly email-backup subscription: if the user subscribed, resend their
+  // backup automatically once ~7 days have passed since the last email. The
+  // portfolio lives only on the device, so the app (not a server) does the send.
+  useEffect(() => {
+    if (locked) return
+    if (_backupChecked.current) return
+    _backupChecked.current = true
+    setTimeout(() => {
+      import('./backupSubscription').then(m => m.maybeSendWeeklyBackup()).catch(() => {})
+    }, 5000)
   }, [locked])
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
