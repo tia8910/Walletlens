@@ -86,46 +86,54 @@ export default function InterestPicker({ onDone }) {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
-        <h2 className="ip-title">What do you want to track?</h2>
-        <p className="ip-sub">Pick the assets you care about and we'll tailor WalletLens to you. You can change this anytime.</p>
+        <div className="ip-body">
+          <div className="ip-eyebrow">
+            <Icon name="sparkles" size={13} /> Personalize
+          </div>
+          <h2 className="ip-title">What do you want to track?</h2>
+          <p className="ip-sub">Pick the assets you care about and we'll tailor WalletLens to you. You can change this anytime.</p>
 
-        <div className="ip-chips">
-          {OPTIONS.map(o => {
-            const on = selected.has(o.id)
-            return (
-              <button
-                key={o.id}
-                type="button"
-                className={`ip-chip${on ? ' ip-chip-on' : ''}`}
-                aria-pressed={on}
-                onClick={() => toggle(o.id)}
-              >
-                {o.img
-                  ? <img className="ip-chip-img" src={o.img} alt="" aria-hidden="true" />
-                  : <span
-                      className={`ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
-                      style={o.color ? { color: o.color } : undefined}
-                      aria-hidden="true"
-                    ><Icon name={o.emoji} size={20} /></span>}
-                {o.label}
-                {on && (
-                  <span className="ip-chip-check" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
-                )}
-              </button>
-            )
-          })}
+          <div className="ip-chips">
+            {OPTIONS.map(o => {
+              const on = selected.has(o.id)
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={`ip-chip${on ? ' ip-chip-on' : ''}`}
+                  aria-pressed={on}
+                  onClick={() => toggle(o.id)}
+                >
+                  {o.img
+                    ? <span className="ip-chip-ico"><img className="ip-chip-img" src={o.img} alt="" aria-hidden="true" /></span>
+                    : <span
+                        className={`ip-chip-ico ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
+                        style={o.color ? { color: o.color } : undefined}
+                        aria-hidden="true"
+                      ><Icon name={o.emoji} size={17} /></span>}
+                  {o.label}
+                  {on && (
+                    <span className="ip-chip-check" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
-        <button className="ip-cta" onClick={getStarted}>
-          {count > 0 ? `Get started · ${count} selected` : 'Get started'}
-        </button>
-        <button
-          className="ip-skip"
-          onClick={askSkip}
-          style={{ opacity: canSkip ? 0.6 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
-        >Skip for now</button>
+        <div className="ip-footer">
+          <button className="ip-cta" onClick={getStarted}>
+            <span>{count > 0 ? `Get started · ${count} selected` : 'Get started'}</span>
+            <Icon name="arrow-right" size={17} />
+          </button>
+          <button
+            className="ip-skip"
+            onClick={askSkip}
+            style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
+          >Skip for now</button>
+        </div>
 
         {confirmSkip && (
           <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>

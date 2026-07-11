@@ -12834,12 +12834,12 @@ button:not(:disabled):active,
 /* ── Interest chips ── */
 .ip-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 22px; }
 .ip-chip {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.5rem 0.85rem; border-radius: 50px;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.95rem 0.4rem 0.4rem; border-radius: 50px;
   background: rgba(255,255,255,0.05);
   border: 1.5px solid rgba(255,255,255,0.1);
-  color: var(--text); font-weight: 600; font-size: 0.86rem; font-family: inherit;
-  cursor: pointer; transition: background .15s, border-color .15s, transform .1s;
+  color: var(--text); font-weight: 600; font-size: 0.88rem; font-family: inherit;
+  cursor: pointer; transition: background .15s, border-color .15s, transform .12s, box-shadow .15s;
 }
 .ip-chip:active { transform: scale(0.96); }
 .ip-chip-emoji { font-size: 1rem; line-height: 1; }
@@ -12879,13 +12879,48 @@ button:not(:disabled):active,
 .ip-cta:hover, .wls-cta:hover, .pg-modal-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.2); }
 .ip-cta:active, .wls-cta:active, .pg-modal-cta:active { transform: scale(0.97) translateY(0); }
 .ip-cta:disabled, .wls-cta:disabled, .pg-modal-cta:disabled { opacity: 0.55; cursor: default; transform: none; }
-  color: #04210f; font-weight: 800; font-size: 0.95rem; font-family: inherit;
 .ip-skip, .wls-skip {
   display: block; width: 100%; margin-top: 10px;
   background: none; border: none; color: var(--text-muted);
-  font-size: 0.85rem; font-family: inherit; cursor: pointer; padding: 6px;
+  font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: pointer; padding: 8px;
+  border-radius: 12px; transition: color .15s, background .15s;
 }
-.ip-skip:hover, .wls-skip:hover { color: var(--text); text-decoration: underline; }
+.ip-skip:hover, .wls-skip:hover { color: var(--text); background: rgba(148,163,184,0.12); }
+
+/* ── Interest picker: premium layout & chips ── */
+/* Soft brand aura at the top of the card. */
+.ip-card {
+  background:
+    radial-gradient(130% 42% at 50% 0%, rgba(var(--g-rgb),0.16), transparent 58%),
+    linear-gradient(180deg, rgba(23,30,38,0.99), rgba(15,20,27,0.99));
+}
+[data-wl-light] .ip-card {
+  background:
+    radial-gradient(130% 42% at 50% 0%, rgba(var(--g-rgb),0.10), transparent 58%),
+    #ffffff;
+}
+.ip-eyebrow {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--g-ink); background: rgba(var(--g-rgb),0.12);
+  border: 1px solid rgba(var(--g-rgb),0.28);
+  padding: 0.28rem 0.6rem; border-radius: 50px; margin-bottom: 14px;
+}
+.ip-body { display: flex; flex-direction: column; }
+.ip-footer { display: flex; flex-direction: column; }
+/* Circular icon tile inside each chip — consistent premium look. */
+.ip-chip-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(255,255,255,0.07); flex-shrink: 0;
+}
+[data-wl-light] .ip-chip-ico { background: rgba(15,23,42,0.06); }
+.ip-chip-on .ip-chip-ico { background: rgba(var(--g-rgb),0.2); }
+.ip-chip:hover { transform: translateY(-1px); border-color: rgba(var(--g-rgb),0.42); }
+.ip-chip-on { box-shadow: 0 6px 18px rgba(var(--g-rgb),0.22); }
+.ip-cta { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.ip-cta svg { transition: transform .25s cubic-bezier(0.34,1.56,0.64,1); }
+.ip-cta:hover svg { transform: translateX(4px); }
 
 /* ── WelcomeStart balance fields ── */
 .wls-badge {
@@ -13053,6 +13088,9 @@ button:not(:disabled):active,
 .ip-card > .wlm-close, .wls-card > .wlm-close, .wm-sheet .wm-close { display: none !important; }
 /* Push the primary CTA (and anything after it) to the bottom of the page. */
 .ip-card > .ip-cta, .wls-card > .wls-cta { margin-top: auto !important; }
+/* Interest picker: vertically centre the content, pin the actions to the bottom. */
+.ip-card > .ip-body { flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; justify-content: center !important; }
+.ip-card > .ip-footer { margin-top: auto !important; padding-top: 16px !important; }
 .wm-sheet > .wm-body { flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; }
 .wm-sheet .wm-progress-track { margin-top: auto !important; }
 @media (min-width: 640px) {
