@@ -14218,13 +14218,24 @@ input, select, textarea, .dvx-input {
 }
 .no-theme-btn.active {
   transform: scale(1.05);
+  border-color: var(--swatch, rgba(255,255,255,0.3));
   box-shadow: 0 0 16px var(--swatch, rgba(255,255,255,0.2));
+}
+.no-theme-btn.active .no-theme-swatch {
+  box-shadow: 0 0 10px var(--swatch, rgba(255,255,255,0.3));
+}
+.no-theme-btn.active .no-theme-label {
+  color: var(--swatch, rgba(255,255,255,0.8));
 }
 .no-theme-swatch {
   width: 38px; height: 38px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem; overflow: hidden;
   transition: box-shadow 0.2s;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.no-theme-btn.active .no-theme-swatch {
+  border-color: rgba(255,255,255,0.4);
 }
 .no-theme-label {
   font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.65);
@@ -14233,14 +14244,21 @@ input, select, textarea, .dvx-input {
 
 /* Light mode: white selector instead of theme color */
 [data-wl-light] .no-theme-btn.active {
-  box-shadow: 0 0 16px rgba(255,255,255,0.35) !important;
   border-color: #fff !important;
+  box-shadow: 0 0 16px rgba(255,255,255,0.35) !important;
 }
 [data-wl-light] .no-theme-btn.active .no-theme-swatch {
+  border-color: #fff !important;
   box-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
 }
 [data-wl-light] .no-theme-btn.active .no-theme-label {
   color: #fff !important;
+}
+[data-wl-light] .no-theme-swatch {
+  border-color: rgba(0,0,0,0.12) !important;
+}
+[data-wl-light] .no-theme-btn.active .no-theme-swatch {
+  border-color: #fff !important;
 }
 
 /* Portfolio inputs */

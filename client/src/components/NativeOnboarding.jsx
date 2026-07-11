@@ -51,7 +51,7 @@ export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, mode } = useTheme()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -168,13 +168,11 @@ export default function NativeOnboarding({ onDone }) {
           <div className="no-theme-grid">
             {THEMES.map(th => (
               <button key={th.id} className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
-                style={{ borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
                 onClick={() => { try { setTheme(th.id) } catch {}; try { track('theme_changed', { theme: th.id }) } catch {} }}>
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
-                  boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
                 }}>{getThemeIcon(th)}</span>
-                <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
+                <span className="no-theme-label">{th.name}</span>
               </button>
             ))}
           </div>
