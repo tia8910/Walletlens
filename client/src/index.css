@@ -811,10 +811,10 @@ input, select, textarea {
   background: rgba(255,255,255,0.88);
 }
 [data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
-[data-wl-light] .wl-nav-item.active { color: #111; font-weight: 700; text-shadow: none; }
-[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: #111; color: #fff; filter: drop-shadow(0 0 4px rgba(0,0,0,0.25)); border-radius: 8px; }
-[data-wl-light] .wl-nav-item.active .wl-nav-label { color: #111; }
-[data-wl-light] .wl-nav-item .wl-nav-indicator { background: #111; box-shadow: 0 0 6px rgba(0,0,0,0.3); height: 3px; }
+[data-wl-light] .wl-nav-item.active { color: #fff; font-weight: 700; text-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.25); }
+[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: rgba(0,0,0,0.85); color: #fff; filter: drop-shadow(0 0 6px rgba(255,255,255,0.4)); border-radius: 8px; }
+[data-wl-light] .wl-nav-item.active .wl-nav-label { color: #fff; }
+[data-wl-light] .wl-nav-item .wl-nav-indicator { background: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); height: 3px; }
 
 /* ── Drawer ── */
 [data-wl-light] .wl-drawer {
