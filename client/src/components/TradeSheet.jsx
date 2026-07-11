@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
+
+// Category/payment icons come in three shapes: a line-icon name string
+// (e.g. 'trend-up'), a typographic currency glyph (₿, $, €, ₮, ⊘), or a
+// ready-made SVG element (gold/silver bars). Render each correctly instead
+// of forcing everything through <Icon>, which blanks out glyphs/elements.
+function CatIcon({ icon, size = 15 }) {
+  if (typeof icon !== 'string') return icon
+  return /^[a-z][a-z-]*$/.test(icon) ? <Icon name={icon} size={size} /> : <span>{icon}</span>
+}
 import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, XSTOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS } from '../api'
 
 function playTradeSound(isBuy) {
@@ -629,7 +638,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
                       style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><Icon name={o.icon} size={15} /></span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
                       <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
                     </button>
                   ))}
@@ -700,7 +709,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
                       onClick={() => { track('trade_category_select', { category: c.key, trade_type: type }); setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
                     >
-                      <span><Icon name={c.icon} size={15} /></span> {c.label}
+                      <span><CatIcon icon={c.icon} size={15} /></span> {c.label}
                     </button>
                   ))}
                 </div>
@@ -1118,7 +1127,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={sellFor === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => setSellFor(o.key)}
                     >
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><Icon name={o.icon} size={15} /></span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
                       <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.label}</span>
                     </button>
                   ))}
