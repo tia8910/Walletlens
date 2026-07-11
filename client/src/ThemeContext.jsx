@@ -6,12 +6,15 @@ const SILVER_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
 const ETH_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23161b33'/%3E%3Cpath d='M20 5L20 16.1 29 20.2Z' fill='%23627eea' opacity='0.75'/%3E%3Cpath d='M20 5L11 20.2 20 16.1Z' fill='%238fa4f3'/%3E%3Cpath d='M20 17.9L11 22 20 27.3 29 22Z' fill='%23627eea'/%3E%3Cpath d='M20 29.2L11 23.9 20 36 29 23.9Z' fill='%238fa4f3' opacity='0.9'/%3E%3C/svg%3E`
 const SOLANA_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231a0a2e'/%3E%3Cpath d='M6,31L28,31L34,25L12,25Z' fill='%239945ff'/%3E%3Cpath d='M6,23L28,23L34,17L12,17Z' fill='%239945ff'/%3E%3Cpath d='M6,15L28,15L34,9L12,9Z' fill='%239945ff'/%3E%3C/svg%3E`
+// Bitcoin ₿ drawn as a vector path (not a font glyph) so it always renders on
+// the orange tile, matching the ETH/Solana logo treatment.
+const BTC_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23f7931a'/%3E%3Cpath fill='%23ffffff' d='M28.2 18c.3-2.3-1.4-3.5-3.8-4.3l.8-3.1-1.9-.5-.8 3c-.5-.1-1-.2-1.5-.4l.8-3-1.9-.5-.8 3.1c-.4-.1-.8-.2-1.2-.3l-2.6-.7-.5 2.1s1.4.3 1.4.4c.8.2.9.7.9 1.1l-1 3.9c.1 0 .1 0 .2.1h-.2l-1.3 5.4c-.1.3-.4.6-.9.5 0 0-1.4-.4-1.4-.4l-1 2.3 2.5.6c.5.1.9.2 1.3.4l-.8 3.2 1.9.5.8-3.1c.5.1 1 .3 1.5.4l-.8 3.1 1.9.5.8-3.2c3.3.6 5.7.4 6.8-2.6.9-2.4 0-3.8-1.7-4.7 1.2-.3 2.2-1.1 2.5-2.8zm-4.4 6.2c-.6 2.4-4.7 1.1-6 .8l1-4.1c1.3.3 5.6 1 5 3.3zm.6-6.2c-.6 2.2-4 1.1-5.1.8l.9-3.7c1.1.3 4.9.8 4.2 2.9z'/%3E%3C/svg%3E`
 
 export const THEMES = [
   { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: 'sparkles' },
   { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG },
   { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: 'award', logo: SILVER_BAR_SVG },
-  { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿'  },
+  { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿', logo: BTC_SVG },
   { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG },
   { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎',  logo: SOLANA_SVG },
 ]
