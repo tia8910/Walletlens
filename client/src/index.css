@@ -12856,7 +12856,7 @@ button:not(:disabled):active,
 .ip-chip-check {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; border-radius: 50%;
-  background: var(--g, #4ade80); color: #04210f;
+  background: var(--g, #4ade80); color: #fff;
 }
 
 /* ── Primary CTAs ── */
