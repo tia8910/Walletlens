@@ -87,18 +87,18 @@ function verdict(totalScore, mode, isLight) {
   const redBold   = isLight ? '#b91c1c' : '#ef4444'
 
   if (mode === 'sell') {
-    if (totalScore >= 3)  return { text: 'Great Exit',        color: greenBold, bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
-    if (totalScore >= 1)  return { text: 'Decent Exit',       color: greenSoft, bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
-    if (totalScore === 0) return { text: 'Neutral',           color: neutral,   bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
-    if (totalScore >= -1) return { text: 'Selling Low',       color: orange,    bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
-    return                       { text: 'Wait for Recovery', color: redSoft,   bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
+    if (totalScore >= 3)  return { text: 'Great Exit',        color: greenBold, bg: 'rgba(34,197,94,0.1)' }
+    if (totalScore >= 1)  return { text: 'Decent Exit',       color: greenSoft, bg: 'rgba(134,239,172,0.08)' }
+    if (totalScore === 0) return { text: 'Neutral',           color: neutral,   bg: 'rgba(148,163,184,0.08)' }
+    if (totalScore >= -1) return { text: 'Selling Low',       color: orange,    bg: 'rgba(251,146,60,0.1)' }
+    return                       { text: 'Wait for Recovery', color: redSoft,   bg: 'rgba(248,113,113,0.1)' }
   }
-  if (totalScore >= 3)  return { text: 'Strong Entry',   color: greenBold, bg: 'rgba(34,197,94,0.1)',    emoji: '🟢' }
-  if (totalScore >= 1)  return { text: 'Decent Entry',   color: greenSoft, bg: 'rgba(134,239,172,0.08)', emoji: '🟢' }
-  if (totalScore === 0) return { text: 'Neutral',        color: neutral,   bg: 'rgba(148,163,184,0.08)', emoji: '🟡' }
-  if (totalScore >= -1) return { text: 'Be Cautious',    color: orange,    bg: 'rgba(251,146,60,0.1)',   emoji: '🟡' }
-  if (totalScore >= -2) return { text: 'FOMO Risk',      color: redSoft,   bg: 'rgba(248,113,113,0.1)',  emoji: '🔴' }
-  return                       { text: 'Don\'t Buy Now', color: redBold,   bg: 'rgba(239,68,68,0.12)',   emoji: '🔴' }
+  if (totalScore >= 3)  return { text: 'Strong Entry',   color: greenBold, bg: 'rgba(34,197,94,0.1)' }
+  if (totalScore >= 1)  return { text: 'Decent Entry',   color: greenSoft, bg: 'rgba(134,239,172,0.08)' }
+  if (totalScore === 0) return { text: 'Neutral',        color: neutral,   bg: 'rgba(148,163,184,0.08)' }
+  if (totalScore >= -1) return { text: 'Be Cautious',    color: orange,    bg: 'rgba(251,146,60,0.1)' }
+  if (totalScore >= -2) return { text: 'FOMO Risk',      color: redSoft,   bg: 'rgba(248,113,113,0.1)' }
+  return                       { text: 'Don\'t Buy Now', color: redBold,   bg: 'rgba(239,68,68,0.12)' }
 }
 
 export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'buy' }) {
@@ -123,12 +123,12 @@ export default function BuySignal({ coinId, currentPrice, userAvgCost, mode = 'b
       coinId.startsWith('bond:') || coinId.startsWith('other:')) return null
   if (loading) return (
     <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'var(--surface-1)', fontSize:'0.75rem', color:'var(--text-sub)', marginBottom:'0.75rem' }}>
-      ⏳ Analysing entry timing…
+      <Icon name="hourglass" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Analysing entry timing…
     </div>
   )
   if (failed) return (
     <div style={{ padding:'0.6rem 0.8rem', borderRadius:10, background:'var(--surface-1)', fontSize:'0.75rem', color:'var(--text-sub)', marginBottom:'0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-      <span>⏱️ {mode === 'sell' ? 'Sell' : 'Buy'} signal unavailable</span>
+      <span><Icon name="clock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{mode === 'sell' ? 'Sell' : 'Buy'} signal unavailable</span>
       <button onClick={() => load(coinId)} style={{ fontSize:'0.7rem', background:'var(--surface-2)', border:'none', color:'var(--text-muted)', borderRadius:6, padding:'0.2rem 0.5rem', cursor:'pointer' }}>Retry</button>
     </div>
   )

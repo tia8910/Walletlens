@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackProfileCreated } from '../analytics'
+import Icon from './Icon'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -85,7 +86,7 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
         style={{ display: 'none' }}
         onChange={e => { handle(e.target.files); e.target.value = '' }}
       />
-      <span className="si-dropzone-icon">{compact ? '➕' : '📸'}</span>
+      <span className="si-dropzone-icon"><Icon name={compact ? 'plus' : 'camera'} size={compact ? 18 : 24} /></span>
       <span className="si-dropzone-label">
         {compact ? 'Add more screenshots' : 'Drop screenshots here or tap to select'}
       </span>
@@ -119,7 +120,7 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
         accept=".xlsx,.xls,.csv"
         style={{ display: 'none' }}
         onChange={e => handle(e.target.files[0])} />
-      <span className="si-dropzone-icon">{icon}</span>
+      <span className="si-dropzone-icon"><Icon name={icon} size={24} /></span>
       <span className="si-dropzone-label">{label}</span>
       <span className="si-dropzone-hint">XLSX, XLS, CSV</span>
     </div>
@@ -384,12 +385,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
             className={`si-tab${mode === 'screenshot' ? ' si-tab-active' : ''}`}
             onClick={() => { setMode('screenshot'); clearMsg() }}
             disabled={busy}
-          >📸 Screenshot</button>
+          ><Icon name="camera" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Screenshot</button>
           <button
             className={`si-tab${mode === 'excel' ? ' si-tab-active' : ''}`}
             onClick={() => { setMode('excel'); clearMsg() }}
             disabled={busy}
-          >📊 Excel / CSV</button>
+          ><Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Excel / CSV</button>
         </div>
       )}
 
@@ -398,7 +399,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         <MultiDragZone busy={busy} onFiles={handleScreenshots} />
       )}
       {mode === 'excel' && !rows.length && (
-        <DragZone accept="spreadsheet" icon="📊"
+        <DragZone accept="spreadsheet" icon="bar-chart"
           label={busy ? 'Parsing file…' : 'Drop your Excel or CSV file here'}
           onFile={handleSpreadsheet} disabled={busy} />
       )}

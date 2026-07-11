@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
+import Icon from './Icon'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -120,7 +121,7 @@ export default function PriceAlerts({ enriched, prices }) {
       if (hit) {
         updated[i] = { ...a, triggered: true, triggeredAt: new Date().toISOString(), triggeredPrice: cur }
         changed = true
-        const dir = a.condition === 'above' ? '🚀 Hit target ↑' : '🔻 Hit target ↓'
+        const dir = a.condition === 'above' ? 'Hit target ↑' : 'Hit target ↓'
         const body = `${a.coin_symbol} is now $${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })} — target was $${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
         fireNotification(`${dir} ${a.coin_symbol}`, body)
         playAlarm()
@@ -183,7 +184,7 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Notification permission banner */}
       {notifPerm !== 'granted' && (
         <div className="pal-notif-banner glass-card">
-          <div className="pal-notif-icon">🔔</div>
+          <div className="pal-notif-icon"><Icon name="bell" size={18} /></div>
           <div>
             <strong>Enable notifications</strong>
             <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.82rem' }}>
@@ -330,7 +331,7 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Empty state */}
       {alerts.length === 0 && !showForm && (
         <div className="glass-card pal-empty">
-          <div className="pal-empty-icon">🔔</div>
+          <div className="pal-empty-icon"><Icon name="bell" size={28} /></div>
           <p className="pal-empty-title">No alerts yet</p>
           <p className="muted pal-empty-sub">Set a price target on any of your holdings and get notified the moment it's hit.</p>
           <button className="dvx-btn dvx-btn-primary" onClick={() => setShowForm(true)}>Create First Alert</button>
