@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 import { api } from '../api'
 import sfx from '../sfx'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
@@ -134,7 +135,7 @@ export default function WelcomeStart({ onDone }) {
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         </div>
 
-        <h2 className="wls-title">Now build your dashboard 🚀</h2>
+        <h2 className="wls-title">Now build your dashboard</h2>
         <p className="wls-sub">
           Let's bring your dashboard to life. Add whatever you're holding and you'll see your net worth
           instantly — all optional, and you can add stocks and more in a moment.
@@ -142,7 +143,7 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Cash — pick the currency */}
         <div className="wls-field">
-          <label className="wls-label">💵 Cash balance</label>
+          <label className="wls-label"><Icon name="banknote" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Cash balance</label>
           <div className="wls-input-wrap">
             <span className="wls-prefix">{sym}</span>
             <input
@@ -173,9 +174,9 @@ export default function WelcomeStart({ onDone }) {
 
         {/* Gold */}
         <div className="wls-field">
-          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'} Gold</label>
+          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />} Gold</label>
           <div className="wls-input-wrap">
-            <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : '🥇'}</span>
+            <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />}</span>
             <input
               className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
               value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
@@ -212,7 +213,7 @@ export default function WelcomeStart({ onDone }) {
         >I'll add these later</button>
 
         <p className="wls-privacy">
-          🔒 100% private — everything stays on your device. No account needed.
+          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />100% private — everything stays on your device. No account needed.
         </p>
 
         {confirmSkip && (

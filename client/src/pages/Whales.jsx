@@ -107,7 +107,7 @@ export default function Whales() {
 
       <div className="whale-tabs">
         {[
-          { k: 'smart', l: '⚡ Smart Alerts' },
+          { k: 'smart', l: 'Smart Alerts' },
           { k: 'movers', l: 'Top Movers' },
           { k: 'volume', l: 'Volume Anomalies' },
           { k: 'trending', l: 'Trending' },

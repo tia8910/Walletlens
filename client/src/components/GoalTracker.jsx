@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 
 const LS_KEY = 'wl_goals'
 
@@ -47,13 +48,13 @@ function calcGoal(goal, currentValue) {
     ? ((goal.targetAmount / currentValue) ** (1 / Math.max(monthsLeft / 12, 0.01)) - 1) * 100
     : Infinity
   if (pct >= 100 || neededGrowthPct <= 15) {
-    probLabel = '🟢 Likely'
+    probLabel = 'Likely'
     probColor = '#22c55e'
   } else if (neededGrowthPct <= 40) {
-    probLabel = '🟡 Possible'
+    probLabel = 'Possible'
     probColor = '#f59e0b'
   } else {
-    probLabel = '🔴 Stretch'
+    probLabel = 'Stretch'
     probColor = '#f87171'
   }
 
@@ -112,7 +113,7 @@ export default function GoalTracker({ currentValue }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: goals.length > 0 || showForm ? '0.9rem' : 0 }}>
         <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>
-          🎯 Portfolio Goals
+          <Icon name="target" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Portfolio Goals
         </span>
         {!showForm && (
           <button

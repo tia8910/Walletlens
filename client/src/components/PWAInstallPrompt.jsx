@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme } from '../ThemeContext'
 
@@ -107,7 +108,7 @@ export default function PWAInstallPrompt() {
       zIndex: 9999,
       animation: 'slideUpFade 0.35s ease',
     }}>
-      <div style={{ fontSize: '2rem', flexShrink: 0 }}>📲</div>
+      <div style={{ flexShrink: 0, display:'flex' }}><Icon name="phone" size={30} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', color: titleColor, marginBottom: '0.2rem' }}>
           Add WalletLens to Home Screen

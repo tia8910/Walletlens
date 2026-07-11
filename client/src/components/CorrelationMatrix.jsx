@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import Icon from './Icon'
 import { isStablecoin } from '../stablecoins'
 
 const PROXIES = [
@@ -287,7 +288,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                 const symB = (matrix.holdings.find(h => h.coin_id === worst.b)?.coin_symbol || worst.b).toUpperCase()
                 return (
                   <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', borderRadius: 10, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.74rem', color: '#fca5a5', lineHeight: 1.5 }}>
-                    ⚠️ <strong>{symA} & {symB}</strong> move together ({worst.r.toFixed(2)}) — holding both adds concentration risk without diversification.
+                    <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} /><strong>{symA} & {symB}</strong> move together ({worst.r.toFixed(2)}) — holding both adds concentration risk without diversification.
                   </div>
                 )
               })()}

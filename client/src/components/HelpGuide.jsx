@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 
 /**
@@ -11,35 +12,35 @@ import { track } from '../analytics'
 
 const SECTIONS = [
   {
-    icon: '🏠', title: 'Dashboard', path: '/dashboard',
+    icon: 'home', title: 'Dashboard', path: '/dashboard',
     desc: 'Your home base. Total net worth, every holding, AI analysis, risk scores and alerts — all in one glance.',
   },
   {
-    icon: '📈', title: 'Trades', path: '/transactions',
+    icon: 'trend-up', title: 'Trades', path: '/transactions',
     desc: 'Log your buys & sells. WalletLens auto-tracks profit/loss, average cost and overall performance for you.',
   },
   {
-    icon: '🧪', title: 'Tools & AI Analysis', path: '/dashboard',
+    icon: 'sparkles', title: 'Tools & AI Analysis', path: '/dashboard',
     desc: 'Risk Scanner flags scams & rug-pulls, the AI Advisor grades your portfolio A–F, and the Sell-Plan builder maps how to hit your target.',
   },
   {
-    icon: '⚡', title: 'Alpha', path: '/alpha',
+    icon: 'zap', title: 'Alpha', path: '/alpha',
     desc: 'AI Alpha score, hidden gems and smart-money signals — tuned to the coins you actually hold.',
   },
   {
-    icon: '🐋', title: 'Whales', path: '/whales',
+    icon: 'whale', title: 'Whales', path: '/whales',
     desc: 'Follow the biggest wallets. See what smart money is buying before the crowd reacts.',
   },
   {
-    icon: '🎓', title: 'Coach & Academy', path: '/coach',
+    icon: 'graduation', title: 'Coach & Academy', path: '/coach',
     desc: 'Personalised guidance plus bite-size lessons to sharpen your investing IQ.',
   },
 ]
 
 const TIPS = [
-  { icon: '➕', text: 'Add holdings fast: use the + button, or import by screenshot or voice — no manual typing needed.' },
-  { icon: '🔎', text: 'Tap the ⓘ icon next to any metric to see what it means and how to read it.' },
-  { icon: '🔒', text: 'Everything stays on your device. No account, no server — your data never leaves your phone.' },
+  { icon: 'plus', text: 'Add holdings fast: use the + button, or import by screenshot or voice — no manual typing needed.' },
+  { icon: 'search', text: 'Tap the ⓘ icon next to any metric to see what it means and how to read it.' },
+  { icon: 'lock', text: 'Everything stays on your device. No account, no server — your data never leaves your phone.' },
 ]
 
 export default function HelpGuide({ open, onClose, onNavigate }) {
@@ -76,7 +77,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
             className="wl-help-primary"
             onClick={() => { onClose(); window.dispatchEvent(new Event('wl:add-asset-guide')) }}
           >
-            <span className="wl-help-primary-ico" aria-hidden="true">➕</span>
+            <span className="wl-help-primary-ico" aria-hidden="true"><Icon name="plus" size={16} /></span>
             <span className="wl-help-primary-txt">
               <strong>How to add your assets</strong>
               <span>A quick step-by-step walkthrough</span>
@@ -86,7 +87,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
 
           {SECTIONS.map(s => (
             <div key={s.title} className="wl-help-card">
-              <span className="wl-help-ico" aria-hidden="true">{s.icon}</span>
+              <span className="wl-help-ico" aria-hidden="true"><Icon name={s.icon} size={18} /></span>
               <div className="wl-help-card-main">
                 <div className="wl-help-card-top">
                   <strong>{s.title}</strong>
@@ -104,7 +105,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
             <h3 className="wl-help-tips-title">Get the most out of it</h3>
             {TIPS.map((tip, i) => (
               <div key={i} className="wl-help-tip-row">
-                <span aria-hidden="true">{tip.icon}</span>
+                <span aria-hidden="true"><Icon name={tip.icon} size={16} /></span>
                 <span>{tip.text}</span>
               </div>
             ))}

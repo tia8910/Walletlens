@@ -128,7 +128,7 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
 }
 
 // ── Thumbnail strip ──────────────────────────────────────────────────────────
-// Shows each screenshot with a status badge: ⏳ queued, spinning reading,
+// Shows each screenshot with a status badge: queued, spinning reading,
 // ✓ N found, ✗ error. Lets the user see exactly which screenshots were read
 // and how many holdings each one contributed.
 function ThumbStrip({ previews }) {
@@ -140,7 +140,7 @@ function ThumbStrip({ previews }) {
           <img src={p.src} alt={`screenshot ${i + 1}`} />
           <span className="si-thumb-badge">
             {p.status === 'reading'  && <span className="si-thumb-spin" />}
-            {p.status === 'queued'   && '⏳'}
+            {p.status === 'queued'   && <Icon name="hourglass" size={13} />}
             {p.status === 'done'     && `✓ ${p.count}`}
             {p.status === 'error'    && '✗'}
           </span>

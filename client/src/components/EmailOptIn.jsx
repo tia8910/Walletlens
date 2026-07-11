@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
@@ -29,7 +30,7 @@ export default function EmailOptIn({ source = 'landing', compact = false }) {
       const data = await resp.json().catch(() => ({}))
       if (resp.ok && data.ok) {
         setStatus('ok')
-        setMsg(data.duplicate ? "You're already on the list — thanks!" : "You're in! Watch your inbox. 🎉")
+        setMsg(data.duplicate ? "You're already on the list — thanks!" : "You're in! Watch your inbox.")
         track('email_signup_success', { source, duplicate: data.duplicate ? 'yes' : 'no' })
       } else {
         setStatus('error')

@@ -1,4 +1,5 @@
 import { track, trackReferral } from '../analytics'
+import Icon from './Icon'
 
 const CRYPTO_EXCHANGES = [
   {
@@ -101,7 +102,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
   if (compact) {
     return (
       <div className="ep-strip-wrap">
-        <span className="ep-strip-label">🎁 Sign up &amp; earn rewards</span>
+        <span className="ep-strip-label"><Icon name="gift" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Sign up &amp; earn rewards</span>
         <div className="ep-strip-row">
           {exchanges.map(ex => {
             const col = visibleColor(ex.color)
@@ -160,7 +161,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 {ex.fee}
               </span>
-              <span className="ep-card-bonus">🎁 {ex.bonus}</span>
+              <span className="ep-card-bonus"><Icon name="gift" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{ex.bonus}</span>
             </div>
           </a>
         ))}
@@ -196,7 +197,7 @@ export default function ExchangePartners({ compact = false, source = 'unknown', 
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 {ex.fee}
               </span>
-              <span className="ep-card-bonus">🎁 {ex.bonus}</span>
+              <span className="ep-card-bonus"><Icon name="gift" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{ex.bonus}</span>
             </div>
           </a>
         ))}

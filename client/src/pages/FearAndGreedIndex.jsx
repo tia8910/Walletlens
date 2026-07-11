@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -16,11 +17,11 @@ function computeScore(coins) {
 }
 
 function zone(score) {
-  if (score >= 75) return { label: 'Extreme Greed', color: '#f59e0b', emoji: '🤑' }
-  if (score >= 51) return { label: 'Greed',         color: '#10b981', emoji: '😏' }
-  if (score === 50) return { label: 'Neutral',        color: '#94a3b8', emoji: '😐' }
-  if (score >= 25) return { label: 'Fear',            color: '#fb923c', emoji: '😰' }
-  return               { label: 'Extreme Fear',    color: '#f87171', emoji: '😱' }
+  if (score >= 75) return { label: 'Extreme Greed', color: '#f59e0b', emoji: 'smile' }
+  if (score >= 51) return { label: 'Greed',         color: '#10b981', emoji: 'smile' }
+  if (score === 50) return { label: 'Neutral',        color: '#94a3b8', emoji: 'meh' }
+  if (score >= 25) return { label: 'Fear',            color: '#fb923c', emoji: 'frown' }
+  return               { label: 'Extreme Fear',    color: '#f87171', emoji: 'frown' }
 }
 
 const ZONES = [
@@ -102,7 +103,7 @@ export default function FearAndGreedIndex() {
           {!loading && score != null && (
             <>
               <div className="fgi-score-num" style={{ color: z.color }}>{score}</div>
-              <div className="fgi-score-label" style={{ color: z.color }}>{z.emoji} {z.label}</div>
+              <div className="fgi-score-label" style={{ color: z.color }}><Icon name={z.emoji} size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{z.label}</div>
               <div className="fgi-score-sub">out of 100 · <Link to="/market-index">Full market index →</Link></div>
             </>
           )}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -181,7 +182,7 @@ export default function MarketIndex() {
   }
   function shareX() {
     if (!idx) return
-    const text = `📊 WalletLens Market Index: ${idx.score}/100 — ${b.label}.\nLive crypto market sentiment, updated continuously:`
+    const text = `WalletLens Market Index: ${idx.score}/100 — ${b.label}.\nLive crypto market sentiment, updated continuously:`
     track('market_index_share', { network: 'x' })
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.live/market-index')}`, '_blank', 'noopener')
   }
@@ -215,7 +216,7 @@ export default function MarketIndex() {
 
         {/* Header */}
         <header className="mki-head">
-          <div className="mki-eyebrow">📊 WALLETLENS MARKET INDEX</div>
+          <div className="mki-eyebrow"><Icon name="bar-chart" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />WALLETLENS MARKET INDEX</div>
           <h1 className="mki-h1">All markets, one page.</h1>
           <p className="mki-lede">
             Crypto sentiment score (0–100), live US indices, and precious metals prices — updated continuously.
@@ -253,7 +254,7 @@ export default function MarketIndex() {
 
             {/* Cite / share */}
             <section className="mki-cite glass-card">
-              <div className="mki-cite-label">📎 Cite this index</div>
+              <div className="mki-cite-label"><Icon name="clipboard" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Cite this index</div>
               <div className="mki-cite-text">{citation}</div>
               <div className="mki-cite-actions">
                 <button className="mki-btn mki-btn-primary" onClick={copyCitation}>
@@ -275,7 +276,7 @@ export default function MarketIndex() {
             {/* US Indices */}
             {markets && INDICES.some(x => markets[x.sym]) && (
               <section className="mki-ext-section glass-card">
-                <div className="mki-section-title">🏛 US Indices</div>
+                <div className="mki-section-title"><Icon name="building" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />US Indices</div>
                 <div className="mki-ext-grid">
                   {INDICES.map(({ sym, label, fmt }) => {
                     const d = markets[sym]
@@ -297,7 +298,7 @@ export default function MarketIndex() {
             {/* Precious Metals */}
             {markets && METALS.some(x => markets[x.sym]) && (
               <section className="mki-ext-section glass-card">
-                <div className="mki-section-title">🥇 Precious Metals</div>
+                <div className="mki-section-title"><Icon name="award" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Precious Metals</div>
                 <div className="mki-ext-grid">
                   {METALS.map(({ sym, label, fmt }) => {
                     const d = markets[sym]
@@ -325,7 +326,7 @@ export default function MarketIndex() {
             {/* Trending */}
             {trending.length > 0 && (
               <section className="mki-trending glass-card">
-                <div className="mki-section-title">🔥 Most searched right now</div>
+                <div className="mki-section-title"><Icon name="flame" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Most searched right now</div>
                 <div className="mki-trend-row">
                   {trending.map(t => (
                     <span key={t.id} className="mki-trend-chip">

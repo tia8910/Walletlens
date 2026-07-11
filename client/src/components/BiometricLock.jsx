@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
@@ -434,7 +435,7 @@ export function BiometricToggle() {
     }}>
       <div>
         <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
-          🔒 App Lock — Fingerprint / Face
+          <Icon name="lock" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />App Lock — Fingerprint / Face
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
           {unavailable

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
 import CoinLogo from './CoinLogo'
@@ -199,7 +200,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
               <div className="ade-panel-title">
                 <span className="ade-title-icon">◈</span> AI Decision Engine
                 {result?.source === 'ai' && (
-                  <span className="ade-ai-badge">✦ Claude AI</span>
+                  <span className="ade-ai-badge"><Icon name="sparkles" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude AI</span>
                 )}
               </div>
               <button className="qs-close" onClick={close} aria-label="Close">
@@ -237,7 +238,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                   <div className="ade-verdict-summary">{result.summary}</div>
                   {result.tip && (
                     <div className="ade-tip">
-                      <span className="ade-tip-icon">💡</span>
+                      <span className="ade-tip-icon"><Icon name="lightbulb" size={14} /></span>
                       <span>{result.tip}</span>
                     </div>
                   )}

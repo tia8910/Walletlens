@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 import { api } from '../api'
 
 function fmt(n) {
@@ -111,14 +112,14 @@ export default function QuickStatsPopup({ onClose }) {
               <div className="qs-movers">
                 {data.best && (
                   <div className="qs-mover best">
-                    <span className="qs-mover-label">🏆 Best today</span>
+                    <span className="qs-mover-label"><Icon name="trophy" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Best today</span>
                     <span className="qs-mover-coin">{data.best.coin_symbol?.toUpperCase()}</span>
                     <span className="qs-mover-pct pos">{fmtPct(data.best.change24hPct)}</span>
                   </div>
                 )}
                 {data.worst && data.worst.coin_id !== data.best?.coin_id && (
                   <div className="qs-mover worst">
-                    <span className="qs-mover-label">📉 Worst today</span>
+                    <span className="qs-mover-label"><Icon name="trend-down" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Worst today</span>
                     <span className="qs-mover-coin">{data.worst.coin_symbol?.toUpperCase()}</span>
                     <span className="qs-mover-pct neg">{fmtPct(data.worst.change24hPct)}</span>
                   </div>

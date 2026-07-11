@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
 import { api } from '../api'
@@ -406,7 +407,7 @@ function SetupForm({ onSuccess, initial }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : '✉️ Send a test email to myself'}
+        {testStatus === 'sending' ? 'Sending test…' : <><Icon name="mail" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Send a test email to myself</>}
       </button>
       {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent to you — check your inbox (and spam) to preview exactly what your heirs would receive.</p>}
       {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check your email address and try again.'}</p>}
@@ -562,7 +563,7 @@ function ActivatedModal({ intervalDays, onClose }) {
         <div className="pg-modal-icon">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
-        <h3 className="pg-modal-title">Portfolio Guardian is on 🛡️</h3>
+        <h3 className="pg-modal-title">Portfolio Guardian is on <Icon name="shield" size={16} style={{ verticalAlign:'-2px', marginLeft:'0.25em' }} /></h3>
         <p className="pg-modal-text">Here's how it protects your loved ones:</p>
         <ul className="pg-modal-list">
           <li><b>Just keep using WalletLens.</b> Every time you open the app, your countdown resets automatically — nothing to remember.</li>
