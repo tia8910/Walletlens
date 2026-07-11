@@ -4,6 +4,7 @@ import { api } from '../api'
 import { BUCKET_TYPES, BUCKET_COLORS, loadBuckets, saveBuckets, newBucket } from '../data/visionStorage'
 import { getVisionAdvice } from '../visionAdviceAi'
 import { isStablecoin } from '../stablecoins'
+import Icon from '../components/Icon'
 import { track } from '../analytics'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -50,20 +51,20 @@ function holdingValue(prices, h) {
 }
 
 const CATEGORIES = {
-  crypto:      { label: 'Crypto',       icon: '₿',  color: '#f7931a' },
-  stablecoins: { label: 'Stablecoins',  icon: '🏦', color: '#64748b' },
-  stocks:      { label: 'Stocks',       icon: '📊', color: '#0ea5e9' },
-  metals:      { label: 'Metals',       icon: '🥇', color: '#f59e0b' },
-  cash:        { label: 'Cash',         icon: '💵', color: '#10b981' },
-  real_estate: { label: 'Real Estate',  icon: '🏠', color: '#8b5cf6' },
+  crypto:      { label: 'Crypto',       icon: 'coins',  color: '#f7931a' },
+  stablecoins: { label: 'Stablecoins',  icon: 'bank', color: '#64748b' },
+  stocks:      { label: 'Stocks',       icon: 'bar-chart', color: '#0ea5e9' },
+  metals:      { label: 'Metals',       icon: 'award', color: '#f59e0b' },
+  cash:        { label: 'Cash',         icon: 'banknote', color: '#10b981' },
+  real_estate: { label: 'Real Estate',  icon: 'home', color: '#8b5cf6' },
 }
 
 const GOAL_TEMPLATES = [
-  { icon: '🛡️', label: 'Emergency Fund', type: 'emergency', targetPct: 10, categories: ['cash', 'stablecoins'], notes: '3–6 months expenses in liquid assets' },
-  { icon: '🔒', label: 'Retirement Hold', type: 'hold', categories: ['crypto', 'stocks'], notes: 'Long-term growth — do not sell early' },
-  { icon: '🏠', label: 'Down Payment', type: 'invest', targetAmount: 50000, targetMonths: 36, categories: ['stablecoins', 'cash'] },
-  { icon: '📈', label: 'Growth Fund', type: 'invest', targetPct: 30, categories: ['crypto', 'stocks', 'metals'] },
-  { icon: '💸', label: 'Income Plan', type: 'withdrawal', categories: ['stablecoins', 'cash'], notes: 'Drawdown for living expenses' },
+  { icon: 'shield', label: 'Emergency Fund', type: 'emergency', targetPct: 10, categories: ['cash', 'stablecoins'], notes: '3–6 months expenses in liquid assets' },
+  { icon: 'lock', label: 'Retirement Hold', type: 'hold', categories: ['crypto', 'stocks'], notes: 'Long-term growth — do not sell early' },
+  { icon: 'home', label: 'Down Payment', type: 'invest', targetAmount: 50000, targetMonths: 36, categories: ['stablecoins', 'cash'] },
+  { icon: 'trend-up', label: 'Growth Fund', type: 'invest', targetPct: 30, categories: ['crypto', 'stocks', 'metals'] },
+  { icon: 'banknote', label: 'Income Plan', type: 'withdrawal', categories: ['stablecoins', 'cash'], notes: 'Drawdown for living expenses' },
 ]
 
 // ── Donut chart (pure SVG) ────────────────────────────────────────────
@@ -313,7 +314,7 @@ function CategoryBreakdown({ holdings, prices }) {
             <div key={s.key} className="vp-cat-row">
               <span className="vp-cat-dot" style={{ background: s.color }} />
               <span className="vp-cat-name">
-                {CATEGORIES[s.key]?.icon} {CATEGORIES[s.key]?.label || s.key}
+                <Icon name={CATEGORIES[s.key]?.icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{CATEGORIES[s.key]?.label || s.key}
               </span>
               <span className="vp-cat-val">{fmt(s.value)}</span>
               <span className="vp-cat-pct">{pct(s.value, total)}%</span>
@@ -372,7 +373,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
     <div className={`vp-card${bucket.completed ? ' vp-card--done' : ''}`} style={{ borderLeft: `3px solid ${bucket.color}` }}>
       <div className="vp-card-head">
         <span className="vp-drag-handle" title="Drag to reorder">⠿</span>
-        <span className="vp-type-icon">{type.icon}</span>
+        <span className="vp-type-icon"><Icon name={type.icon} size={16} /></span>
         <div className="vp-card-title">
           <strong>{bucket.name || type.label}</strong>
           <span className="vp-type-label">{type.label}</span>
@@ -420,7 +421,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
         <div className="vp-cat-badges">
           {catBreakdown.map(c => (
             <span key={c.key} className="vp-cat-badge" style={{ borderColor: c.color, color: c.color }}>
-              {c.icon} {c.label} {c.pct}%
+              <Icon name={c.icon} size={12} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{c.label} {c.pct}%
             </span>
           ))}
         </div>
@@ -428,7 +429,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
         <div className="vp-cat-badges">
           {plannedCats.map(k => (
             <span key={k} className="vp-cat-badge vp-cat-badge-planned" style={{ borderColor: CATEGORIES[k]?.color, color: CATEGORIES[k]?.color }}>
-              {CATEGORIES[k]?.icon} {CATEGORIES[k]?.label || k}
+              <Icon name={CATEGORIES[k]?.icon} size={12} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{CATEGORIES[k]?.label || k}
             </span>
           ))}
         </div>
@@ -568,7 +569,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                         notes: f.notes || tpl.notes || '',
                       }))
                     }}>
-                    {tpl.icon} {tpl.label}
+                    <Icon name={tpl.icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{tpl.label}
                   </button>
                 ))}
               </div>
@@ -584,7 +585,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
             <span>Type</span>
             <select value={form.type} onChange={e => set('type', e.target.value)} className="vp-input">
               {Object.entries(BUCKET_TYPES).map(([k, v]) => (
-                <option key={k} value={k}>{v.icon} {v.label} — {v.desc}</option>
+                <option key={k} value={k}>{v.label} — {v.desc}</option>
               ))}
             </select>
           </label>
@@ -671,7 +672,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                   style={{ '--cat-color': v.color }}
                   onClick={() => togglePlanCategory(k)}
                 >
-                  {v.icon} {v.label}
+                  <Icon name={v.icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{v.label}
                 </button>
               ))}
             </div>
@@ -701,7 +702,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                 const suggestableIds = suggestedCats.flatMap(cat => (holdingsByCategory[cat] || []).map(h => h.coin_id)).filter(Boolean)
                 return form.linkedAssets.length === 0 && suggestableIds.length > 0 ? (
                   <div className="vp-autolink-tip">
-                    <span>💡 Auto-link {suggestedCats.map(c => CATEGORIES[c]?.label).filter(Boolean).join(' & ')} assets?</span>
+                    <span><Icon name="lightbulb" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Auto-link {suggestedCats.map(c => CATEGORIES[c]?.label).filter(Boolean).join(' & ')} assets?</span>
                     <button type="button" className="vp-autolink-btn"
                       onClick={() => set('linkedAssets', suggestableIds)}>
                       Link {suggestableIds.length} asset{suggestableIds.length !== 1 ? 's' : ''}
@@ -722,7 +723,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                         onClick={() => toggleCategory(cat)}
                         title={`Toggle all ${CATEGORIES[cat]?.label || cat} assets`}
                       >
-                        {CATEGORIES[cat]?.icon} {CATEGORIES[cat]?.label || cat}
+                        <Icon name={CATEGORIES[cat]?.icon} size={12} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{CATEGORIES[cat]?.label || cat}
                         {state === 'partial' && <span className="vp-cat-btn-dot">•</span>}
                       </button>
                     )
@@ -735,7 +736,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
                   <div key={cat}>
                     {availableCategories.length > 1 && (
                       <div className="vp-asset-group-label" style={{ color: CATEGORIES[cat]?.color }}>
-                        {CATEGORIES[cat]?.icon} {CATEGORIES[cat]?.label || cat}
+                        <Icon name={CATEGORIES[cat]?.icon} size={12} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{CATEGORIES[cat]?.label || cat}
                       </div>
                     )}
                     {holdingsByCategory[cat].map(h => {
@@ -966,7 +967,7 @@ export default function Vision() {
           Back
         </button>
         <div className="vp-header-text">
-          <h1>🗺️ Goals</h1>
+          <h1 style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="map" size={22} />Goals</h1>
           <p>Plan every dollar — buckets, goals, and withdrawal runway in one view.</p>
         </div>
         <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
@@ -1029,7 +1030,7 @@ export default function Vision() {
           {/* ── Chart + buckets ── */}
           {buckets.length === 0 ? (
             <div className="vp-empty">
-              <div className="vp-empty-icon">🗂️</div>
+              <div className="vp-empty-icon"><Icon name="folder" size={30} /></div>
               <h2>No buckets yet</h2>
               <p>Create your first bucket to start planning your portfolio vision.</p>
               {holdings.length > 0 && (
@@ -1102,7 +1103,7 @@ export default function Vision() {
           {buckets.length > 0 && (
             <div className="vp-ai">
               <div className="vp-ai-head">
-                <h3 className="vp-ai-title">✨ AI Plan Advisor</h3>
+                <h3 className="vp-ai-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />AI Plan Advisor</h3>
                 <button className="vp-ai-btn" onClick={requestAdvice} disabled={adviceLoading}>
                   {adviceLoading ? 'Analyzing…' : advice ? 'Refresh advice' : 'Get AI advice'}
                 </button>

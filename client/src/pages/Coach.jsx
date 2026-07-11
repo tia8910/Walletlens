@@ -40,7 +40,7 @@ function assetMix(enriched, totalValue) {
 const EVAL_CATEGORIES = [
   // ── Universal ──
   {
-    id: 'asset_mix', label: 'Asset-Class Balance', icon: '🧩', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'asset_mix', label: 'Asset-Class Balance', icon: 'grid', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue, mix) => {
       const classes = Object.entries(mix).filter(([, v]) => v >= 0.03)
       const n = classes.length
@@ -55,7 +55,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'diversification', label: 'Diversification', icon: '⚖️', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'diversification', label: 'Diversification', icon: 'scale', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => h.value / totalValue)
@@ -67,7 +67,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'cash_reserve', label: 'Cash & Dry Powder', icon: '🏦', color: '#60a5fa',
+    id: 'cash_reserve', label: 'Cash & Dry Powder', icon: 'bank', color: '#60a5fa',
     check: (enriched, totalValue, mix) => {
       const pct = mix.cash * 100
       if (pct === 0) return { pass: false, score: 30, tip: 'No cash or stablecoin reserve. Holding 5–15% in cash/stablecoins gives you dry powder to buy dips without selling at a loss.' }
@@ -77,7 +77,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'pnl_health', label: 'P&L Health', icon: '💚', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'pnl_health', label: 'P&L Health', icon: 'pulse', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
       const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested || h.invested || 1, 1)) * (h.value / totalValue), 0) * 100
@@ -103,7 +103,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'large_cap', label: 'Large-Cap Crypto', icon: '🐋', color: '#3b82f6',
+    id: 'large_cap', label: 'Large-Cap Crypto', icon: 'whale', color: '#3b82f6',
     applies: (mix) => mix.crypto >= 0.1,
     check: (enriched, totalValue, mix) => {
       const cryptoVal = mix.crypto * totalValue
@@ -118,7 +118,7 @@ const EVAL_CATEGORIES = [
 
   // ── Stock sleeve (only when stocks are a meaningful part) ──
   {
-    id: 'stock_sectors', label: 'Stock Sector Spread', icon: '📊', color: '#818cf8',
+    id: 'stock_sectors', label: 'Stock Sector Spread', icon: 'bar-chart', color: '#818cf8',
     applies: (mix) => mix.stock >= 0.1,
     check: (enriched) => {
       const stocks = enriched.filter(h => assetClass(h.coin_id) === 'stock')
@@ -131,7 +131,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'equity_quality', label: 'Equity vs Crypto Balance', icon: '🏛️', color: '#38bdf8',
+    id: 'equity_quality', label: 'Equity vs Crypto Balance', icon: 'building', color: '#38bdf8',
     applies: (mix) => mix.stock >= 0.1 && mix.crypto >= 0.1,
     check: (enriched, totalValue, mix) => {
       const ratio = mix.stock / (mix.stock + mix.crypto)
@@ -219,9 +219,9 @@ export default function Coach() {
   const hasPrices = enriched.some(h => h.value > 0)
 
   const SECTIONS = [
-    { id: 'engine',  label: 'Decision Engine', icon: '⚡' },
-    { id: 'eval',    label: 'Wallet Score',    icon: '🔍' },
-    { id: 'actions', label: 'AI Analysis',     icon: '🤖' },
+    { id: 'engine',  label: 'Decision Engine', icon: 'zap' },
+    { id: 'eval',    label: 'Wallet Score',    icon: 'search' },
+    { id: 'actions', label: 'AI Analysis',     icon: 'cpu' },
     { id: 'alpha',   label: 'Alpha',           icon: 'α' },
   ]
 
@@ -266,7 +266,7 @@ export default function Coach() {
             className={`coach-tab${activeSection === s.id ? ' coach-tab-active' : ''}`}
             onClick={() => { setActiveSection(s.id); track('coach_section', { section: s.id }) }}
           >
-            <span>{s.icon}</span> {s.label}
+            <span style={{ display:'inline-flex', alignItems:'center' }}><Icon name={s.icon} size={14} /></span> {s.label}
           </button>
         ))}
       </div>
@@ -274,7 +274,7 @@ export default function Coach() {
       {/* ── Empty state ── */}
       {loaded && enriched.length === 0 && (
         <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem', margin:'1rem 1rem' }}>
-          <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🧠</div>
+          <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="brain" size={40} /></div>
           <h3 style={{ marginBottom:'0.5rem' }}>Nothing to Coach Yet</h3>
           <p className="muted" style={{ marginBottom:'1.25rem' }}>Add your first trade so the AI can analyse your portfolio and give personalised advice.</p>
           <button className="coach-cta-btn" onClick={() => navigate('/transactions')}>
@@ -317,9 +317,9 @@ export default function Coach() {
                   <h2 className="coach-eval-title">Wallet Evaluation</h2>
                   <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.82rem' }}>Portfolio health vs best practices</p>
                   {eval_.missing.length > 0 ? (
-                    <div className="eval-missing-count">⚠️ {eval_.missing.length} gap{eval_.missing.length > 1 ? 's' : ''} found — tap each to fix</div>
+                    <div className="eval-missing-count"><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{eval_.missing.length} gap{eval_.missing.length > 1 ? 's' : ''} found — tap each to fix</div>
                   ) : (
-                    <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>✅ All checks passed — excellent wallet health!</div>
+                    <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}><Icon name="shield-check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />All checks passed — excellent wallet health!</div>
                   )}
                 </div>
                 <ScoreRing score={eval_.overall} />
@@ -334,7 +334,7 @@ export default function Coach() {
                     style={{ '--eval-color': cat.color }}
                   >
                     <div className="eval-cat-header">
-                      <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon}</span>
+                      <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}><Icon name={cat.icon} size={16} /></span>
                       <div className="eval-cat-info">
                         <div className="eval-cat-label">{cat.label}</div>
                         <div className="eval-cat-bar-wrap">
@@ -347,7 +347,7 @@ export default function Coach() {
                       </div>
                     </div>
                     {evalExpanded === cat.id && (
-                      <div className="eval-cat-tip"><span style={{ marginRight:'0.5rem' }}>{cat.pass ? '💡' : '🔧'}</span>{cat.tip}</div>
+                      <div className="eval-cat-tip"><Icon name={cat.pass ? 'lightbulb' : 'sliders'} size={14} style={{ marginRight:'0.4rem', verticalAlign:'-2px' }} />{cat.tip}</div>
                     )}
                   </div>
                 ))}
