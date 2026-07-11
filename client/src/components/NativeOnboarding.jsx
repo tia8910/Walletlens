@@ -6,6 +6,12 @@ import sfx from '../sfx'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
+const THEME_ICONS = {
+  sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
+  sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎',
+  fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡',
+}
+
 const SLIDES = [
   {
     id: 'welcome',
@@ -38,28 +44,6 @@ const SLIDES = [
     desc: 'Your dashboard awaits.', final: true,
   },
 ]
-
-function Particles({ step }) {
-  const items = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
-    char: ['◆', '●', '○', '△', '◇', '▽'][(i + step) % 6],
-    left: 5 + ((i * 91 + step * 23) % 85),
-    delay: ((i * 0.5 + step * 0.2) % 3).toFixed(2),
-    dur: (3 + ((i * 0.6 + step * 0.2) % 2)).toFixed(2),
-    size: 8 + ((i * 3) % 8),
-  })), [step])
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
-      {items.map((p, i) => (
-        <span key={i} style={{
-          position: 'absolute', bottom: '-30px', left: `${p.left}%`,
-          fontSize: `${p.size}px`, opacity: 0,
-          animation: `no-float ${p.dur}s ${p.delay}s linear infinite`,
-        }}>{p.char}</span>
-      ))}
-    </div>
-  )
-}
 
 export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
@@ -145,10 +129,15 @@ export default function NativeOnboarding({ onDone }) {
     onDone?.()
   }
 
+  function getThemeIcon(th) {
+    if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
+    if (th.icon && th.icon.length <= 2) return th.icon
+    return '🎨'
+  }
+
   return (
     <div className="no-container" style={{ background: s.gradient }}
       onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      <Particles step={step} />
 
       <div className="no-slide" key={step}
         style={swiping ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' } : {}}>
@@ -178,7 +167,7 @@ export default function NativeOnboarding({ onDone }) {
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
-                }} />
+                }}>{getThemeIcon(th)}</span>
                 <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
               </button>
             ))}
@@ -206,17 +195,17 @@ export default function NativeOnboarding({ onDone }) {
         <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
       </div>
 
-      {/* Interactive dot slider — tappable, no text */}
+      {/* Arrow-shaped dot slider */}
       <div className="no-dots">
         {SLIDES.map((_, i) => (
-          <button key={i} className={`no-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
+          <button key={i} className={`no-dot no-arrow-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
             style={i === step ? { background: s.accent, boxShadow: `0 0 8px ${s.accent}88` } : i < step ? { background: s.accent } : {}}
             onClick={() => goTo(i)}
             aria-label={`Slide ${i + 1}`} />
         ))}
       </div>
 
-      {/* Final slide: pulsing circle to launch — no icon */}
+      {/* Final slide: pulsing circle to launch */}
       {s.final && (
         <div className="no-launch-area">
           <button className="no-launch-circle" onClick={() => { sfx.playTriumph(); finish() }}
