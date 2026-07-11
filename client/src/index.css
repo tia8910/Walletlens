@@ -12552,11 +12552,31 @@ button:not(:disabled):active,
 .mki-stat-value { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
 
 .mki-ext-section { padding: 1rem 1.25rem; margin-bottom: 1rem; }
-.mki-ext-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
-.mki-ext-cell { display: flex; flex-direction: column; gap: 0.15rem; }
-.mki-ext-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
-.mki-ext-val { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
-.mki-ext-chg { font-size: 0.78rem; font-weight: 700; }
+.mki-ext-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 0.6rem; }
+.mki-ext-cell {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  padding: 0.6rem 0.75rem; border-radius: 12px;
+  background: rgba(255,255,255,0.035); border: 1px solid var(--border);
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.mki-ext-cell:hover { transform: translateY(-2px); border-color: rgba(var(--g-rgb),0.32); box-shadow: 0 8px 22px rgba(0,0,0,0.22); }
+[data-wl-light] .mki-ext-cell { background: var(--surface-1); }
+[data-wl-light] .mki-ext-cell:hover { box-shadow: 0 8px 22px rgba(15,23,42,0.08); }
+.mki-ext-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.mki-ext-val { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mki-ext-chg { font-size: 0.76rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* "Global markets" board heading */
+.mki-markets-head {
+  display: flex; align-items: center; flex-wrap: wrap;
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--text); margin: 1.4rem 0 0.85rem;
+}
+.mki-markets-sub {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--g-ink); background: rgba(var(--g-rgb),0.12); border: 1px solid rgba(var(--g-rgb),0.28);
+  padding: 0.2rem 0.5rem; border-radius: 50px; margin-left: 0.7rem;
+}
 
 .mki-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
 .mki-mover { padding: 1rem; }
