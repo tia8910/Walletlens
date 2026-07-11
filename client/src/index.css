@@ -6010,6 +6010,17 @@ tr:last-child td { border-bottom: none; }
   transform: translateY(100%);
 }
 .bs-sheet.bs-page.bs-sheet-open { transform: translateY(0); }
+/* While the full-page sheet is closed, translateY(100%) alone can leave a sliver
+   of its header ("Buy Asset") peeking up from the bottom on mobile: the element's
+   100dvh height and the browser's dynamic viewport disagree while the address bar
+   shows/hides during scroll. Hide it outright when closed — delayed so the
+   slide-out animation still plays — and make it non-interactive so it never
+   intercepts scrolls or taps on the page behind it. */
+.bs-sheet.bs-page:not(.bs-sheet-open) {
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.42s cubic-bezier(0.22,1,0.36,1), visibility 0s linear 0.42s;
+}
 .bs-sheet.bs-page::before { border-radius: 0; height: 220px; }
 @media (min-width: 640px) {
   .bs-sheet.bs-page {
