@@ -2,7 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Icon from './Icon'
 import QRCode from 'qrcode'
 import { decodeQrFromImageFile } from '../utils/qrBackup'
-import { trackProfileCreated } from '../analytics'
+import { track, trackProfileCreated } from '../analytics'
+
+// Server that delivers the backup email (from noreply@walletlens.live via Resend).
+const MAIL_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const BACKUP_KEYS = [
   'crypto_tracker_transactions',
@@ -220,6 +224,11 @@ export default function BackupCode({ hideTrigger = false }) {
   const [showQr, setShowQr] = useState(false)
   const [qrParts, setQrParts] = useState([])
 
+  // Email backup
+  const [emailAddr, setEmailAddr] = useState('')
+  const [emailStatus, setEmailStatus] = useState('idle') // idle | sending | sent | error
+  const [emailErr, setEmailErr] = useState('')
+
   // QR scan (import)
   const [scanning, setScanning] = useState(false)
   const [scanMsg, setScanMsg] = useState('')
@@ -257,6 +266,41 @@ export default function BackupCode({ hideTrigger = false }) {
     const parts = await makeQrParts(exportCode)
     setQrParts(parts)
     setShowQr(true)
+  }
+
+  const emailBackup = async () => {
+    const email = emailAddr.trim().toLowerCase()
+    if (!EMAIL_RE.test(email)) { setEmailErr('Enter a valid email address.'); return }
+    if (!exportCode) { setEmailErr('Generate your backup first.'); return }
+    setEmailErr(''); setEmailStatus('sending')
+    try {
+      // Attach a single scannable QR when the code fits one; the full code is
+      // always included in the email body so restore works regardless.
+      let qrPng = null
+      if (exportCode.length <= QR_CHUNK) {
+        const dataUrl = await makeQrDataUrl(exportCode)
+        const b64 = (dataUrl || '').split(',')[1] || ''
+        if (b64 && b64.length < 45000) qrPng = b64
+      }
+      const res = await fetch(MAIL_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'backup_email', email, code: exportCode, qrPng }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.ok) { setEmailStatus('sent'); track('backup_email_sent') }
+      else {
+        const r = String(data.reason || data.error || '')
+        setEmailErr(
+          r.includes('mail_not_configured') ? 'Email isn\'t set up on the server yet.'
+          : r.includes('not verified') || r.includes('domain') ? 'The walletlens.live email domain isn\'t verified in Resend yet.'
+          : 'Couldn\'t send the backup email. Double-check your address and try again.'
+        )
+        setEmailStatus('error')
+      }
+    } catch {
+      setEmailErr('Couldn\'t reach the email service. Check your connection and try again.')
+      setEmailStatus('error')
+    }
   }
 
   // Ingest a scanned string — handles plain and multi-part WQ<i>/<n>: codes.
@@ -499,6 +543,45 @@ export default function BackupCode({ hideTrigger = false }) {
                   <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.7rem 0 0', textAlign:'center', fontStyle:'italic' }}>
                     <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Keep this code private — anyone with it can restore your portfolio.
                   </p>
+
+                  {/* ── Email me my backup ── */}
+                  <div style={{ marginTop:'0.9rem', paddingTop:'0.9rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
+                    <div style={{ fontSize:'0.82rem', fontWeight:700, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                      <Icon name="mail" size={15} /> Email me my backup
+                    </div>
+                    <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.55rem', lineHeight:1.5 }}>
+                      We'll send your backup code{' '}{exportCode.length <= QR_CHUNK ? '+ a scannable QR ' : ''}to your inbox from <strong>noreply@walletlens.live</strong> so you can restore on any device. It's delivered once — WalletLens keeps no copy.
+                    </p>
+                    <div style={{ display:'flex', gap:'0.5rem' }}>
+                      <input
+                        type="email" inputMode="email" autoComplete="email"
+                        value={emailAddr}
+                        onChange={e => { setEmailAddr(e.target.value); if (emailErr) setEmailErr(''); if (emailStatus !== 'idle') setEmailStatus('idle') }}
+                        placeholder="you@example.com"
+                        style={{
+                          flex:1, minWidth:0, background:'rgba(0,0,0,0.25)',
+                          border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
+                          padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
+                        }} />
+                      <button onClick={emailBackup} disabled={emailStatus === 'sending'} style={btn({
+                        background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
+                        fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
+                        display:'inline-flex', alignItems:'center', gap:'0.35rem',
+                      })}>
+                        {emailStatus === 'sending'
+                          ? 'Sending…'
+                          : <><Icon name="mail" size={14} /> Send</>}
+                      </button>
+                    </div>
+                    {emailStatus === 'sent' && (
+                      <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
+                        <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
+                      </p>
+                    )}
+                    {emailErr && (
+                      <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
+                    )}
+                  </div>
                 </>
               )}
             </>
