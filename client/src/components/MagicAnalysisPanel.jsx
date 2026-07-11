@@ -323,8 +323,8 @@ function tweetTextFor(item, verdict) {
   const verdictLine = verdict?.oneLiner ? `\n${verdict.oneLiner}` : ''
   // Top bull/bear point each — keeps the tweet readable while surfacing the
   // detailed analysis in the text (the full set still goes in the image).
-  const bull = verdict?.bull?.[0] ? `\n✅ ${verdict.bull[0]}` : ''
-  const bear = verdict?.bear?.[0] ? `\n⚠️ ${verdict.bear[0]}` : ''
+  const bull = verdict?.bull?.[0] ? `\n${verdict.bull[0]}` : ''
+  const bear = verdict?.bear?.[0] ? `\n${verdict.bear[0]}` : ''
   const actionLine = verdict?.action ? `\n→ ${verdict.action}` : ''
   return encodeURIComponent(
     `$${sym} ${item.coin_name ? '— ' + item.coin_name : ''}\n` +
@@ -484,7 +484,7 @@ function AiVerdict({ item, onVerdictReady }) {
       <Icon name="search" size={15} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />Detailed Analysis
     </button>
   )
-  if (state === 'loading') return <div className="magic-ai-loading">✦ Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
+  if (state === 'loading') return <div className="magic-ai-loading"><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
   if (state === 'error') {
     return (
       <div className="magic-ai-err">

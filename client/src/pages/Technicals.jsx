@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -47,7 +48,7 @@ export default function Technicals() {
     return (
       <div className="dvx-page">
         <div className="glass-card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📐</div>
+          <div style={{ marginBottom: '0.5rem', display:'flex', justifyContent:'center' }}><Icon name="ruler" size={36} /></div>
           <h2 style={{ margin: '0 0 0.4rem' }}>Technical & On-Chain Analysis</h2>
           <p className="muted" style={{ maxWidth: 420, margin: '0 auto 1.2rem' }}>
             Add a crypto holding and the Magic Indicator will merge technicals, on-chain flow,
@@ -62,7 +63,7 @@ export default function Technicals() {
   return (
     <div className="dvx-page">
       <div className="magic-hero">
-        <h1 className="magic-hero-title">📐 Technical & On-Chain Analysis</h1>
+        <h1 className="magic-hero-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="ruler" size={22} />Technical & On-Chain Analysis</h1>
         <p className="magic-hero-sub">
           The <b>Magic Indicator</b> fuses five signals — technical, on-chain, volume, whales and
           fundamentals — into one direction per crypto holding.

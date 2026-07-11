@@ -8,9 +8,9 @@ const ETH_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vi
 const SOLANA_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231a0a2e'/%3E%3Cpath d='M6,31L28,31L34,25L12,25Z' fill='%239945ff'/%3E%3Cpath d='M6,23L28,23L34,17L12,17Z' fill='%239945ff'/%3E%3Cpath d='M6,15L28,15L34,9L12,9Z' fill='%239945ff'/%3E%3C/svg%3E`
 
 export const THEMES = [
-  { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: '🟢' },
-  { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: '🥇', logo: GOLD_BAR_SVG },
-  { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: '🥈', logo: SILVER_BAR_SVG },
+  { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: 'sparkles' },
+  { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG },
+  { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: 'award', logo: SILVER_BAR_SVG },
   { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿'  },
   { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG },
   { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎',  logo: SOLANA_SVG },

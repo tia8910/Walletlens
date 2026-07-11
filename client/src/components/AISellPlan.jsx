@@ -260,7 +260,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                 animation:'sp-btn-shimmer 3.5s ease-in-out infinite',
               }} />
             )}
-            <span style={{ position:'relative' }}>{loading ? '⏳ Analyzing…' : '✨ Generate'}</span>
+            <span style={{ position:'relative' }}>{loading ? <><Icon name="hourglass" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Analyzing…</> : <><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Generate</>}</span>
           </button>
         )}
         {open && (

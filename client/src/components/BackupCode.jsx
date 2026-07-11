@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Icon from './Icon'
 import QRCode from 'qrcode'
 import { decodeQrFromImageFile } from '../utils/qrBackup'
 import { trackProfileCreated } from '../analytics'
@@ -441,7 +442,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     borderRadius:'8px', padding:'0.55rem 0.75rem', marginBottom:'0.6rem',
                     fontSize:'0.75rem', color:'var(--g-ink)', display:'flex', justifyContent:'space-between',
                   }}>
-                    <span>✅ {exportInfo?.txCount} trades · {exportInfo?.walletCount} wallets</span>
+                    <span><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{exportInfo?.txCount} trades · {exportInfo?.walletCount} wallets</span>
                     <span style={{ color:'var(--text-muted)' }}>{(exportInfo?.size / 1024).toFixed(1)} KB</span>
                   </div>
                   <textarea id="wl-backup-code-textarea" value={exportCode} readOnly
@@ -458,7 +459,7 @@ export default function BackupCode({ hideTrigger = false }) {
                       color: copied ? 'var(--g-ink)' : '#93c5fd',
                       display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
                     })}>
-                      {copied ? '✅ Copied!' : <><CopyIcon /> Copy code</>}
+                      {copied ? <><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Copied!</> : <><CopyIcon /> Copy code</>}
                     </button>
                     <button onClick={handleDownload} style={btn({
                       background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
@@ -496,7 +497,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     </div>
                   )}
                   <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.7rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                    🔒 Keep this code private — anyone with it can restore your portfolio.
+                    <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Keep this code private — anyone with it can restore your portfolio.
                   </p>
                 </>
               )}
@@ -524,7 +525,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem',
                   cursor:'pointer', fontWeight:600,
                 }}>
-                  📂 File / QR image
+                  <Icon name="folder" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />File / QR image
                   <input type="file" accept=".txt,text/plain,image/*" onChange={handleFileUpload} style={{ display:'none' }} />
                 </label>
                 <button onClick={scanning ? stopCamera : startScan} style={btn({
@@ -564,7 +565,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   borderRadius:'8px', color:'#a78bfa', padding:'0.45rem 0.75rem',
                   fontSize:'0.75rem', marginBottom:'0.6rem', textAlign:'center', fontWeight:600,
                 }}>
-                  ✅ {scanMsg}
+                  <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{scanMsg}
                 </div>
               )}
               {error && (
@@ -573,7 +574,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   borderRadius:'8px', color:'#f87171', padding:'0.5rem 0.75rem',
                   fontSize:'0.78rem', marginBottom:'0.6rem',
                 }}>
-                  ⚠️ {error}
+                  <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{error}
                 </div>
               )}
               {importResult ? (
@@ -582,7 +583,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   borderRadius:'8px', color:'var(--g-ink)', padding:'0.6rem 0.75rem',
                   fontSize:'0.85rem', textAlign:'center', fontWeight:600,
                 }}>
-                  ✅ Restored {importResult.restored} data set{importResult.restored !== 1 ? 's' : ''}!
+                  <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Restored {importResult.restored} data set{importResult.restored !== 1 ? 's' : ''}!
                   <div style={{ fontSize:'0.72rem', fontWeight:400, marginTop:'0.2rem', opacity:0.85 }}>Opening your overview…</div>
                 </div>
               ) : confirmImport ? (
@@ -590,7 +591,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   <button onClick={handleImport} disabled={importing} style={btn({
                     flex:1, background:'linear-gradient(135deg, #f87171, #dc2626)', color:'#fff', padding:'0.55rem',
                   })}>
-                    {importing ? 'Restoring…' : '⚠️ Yes, overwrite my data'}
+                    {importing ? 'Restoring…' : <><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Yes, overwrite my data</>}
                   </button>
                   <button onClick={() => setConfirmImport(false)} style={btn({
                     background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',

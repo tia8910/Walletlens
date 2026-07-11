@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import Icon from './Icon'
 import CoinLogo from './CoinLogo'
 import { isStablecoin } from '../stablecoins'
 
@@ -61,7 +62,7 @@ export default function RiskBudget({ enriched, totalValue }) {
         </div>
         {overexposedCount > 0 && (
           <div className="rb-sum-card rb-alert">
-            <span className="rb-sum-label">⚠️ Overexposed</span>
+            <span className="rb-sum-label"><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Overexposed</span>
             <span className="rb-sum-val">{overexposedCount} asset{overexposedCount > 1 ? 's' : ''}</span>
           </div>
         )}
@@ -111,7 +112,7 @@ export default function RiskBudget({ enriched, totalValue }) {
                 </div>
                 <div className="rb-bar-labels">
                   <span style={{ color: r.overexposed ? '#f87171' : 'var(--text-muted)' }}>
-                    {r.overexposed ? '⚠️ ' : ''}
+                    {r.overexposed ? <Icon name="warning" size={12} style={{ verticalAlign:'-2px', marginRight:'0.25em' }} /> : null}
                     Loss: {r.currentLoss < 0 ? `-$${fmt(Math.abs(r.currentLoss))}` : `+$${fmt(r.currentLoss)}`}
                   </span>
                   <span style={{ color: 'var(--text-muted)' }}>

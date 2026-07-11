@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 
 /**
@@ -165,7 +166,7 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
 
         {advice.length > 0 && (
           <div className="wl-reb-advice">
-            <div className="wl-reb-advice-title">💡 To stay on the safe side</div>
+            <div className="wl-reb-advice-title"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />To stay on the safe side</div>
             {advice.map((a, i) => <p key={i}>{a}</p>)}
           </div>
         )}

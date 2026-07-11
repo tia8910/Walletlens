@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 
 const SECTORS = {
   'Layer 1':    ['bitcoin','ethereum','solana','avalanche-2','cardano','near','aptos','sui'],
@@ -166,8 +167,8 @@ export default function SectorHeatmap() {
           {tiles && (
             <>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                {hot > 0 && <span style={{ color: 'var(--g-ink)', marginRight: '0.75rem' }}>🔥 Hot: {hot} sector{hot > 1 ? 's' : ''}</span>}
-                {cold > 0 && <span style={{ color: '#fb923c' }}>❄️ Cold: {cold} sector{cold > 1 ? 's' : ''}</span>}
+                {hot > 0 && <span style={{ color: 'var(--g-ink)', marginRight: '0.75rem' }}><Icon name="flame" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Hot: {hot} sector{hot > 1 ? 's' : ''}</span>}
+                {cold > 0 && <span style={{ color: '#fb923c' }}><Icon name="snowflake" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Cold: {cold} sector{cold > 1 ? 's' : ''}</span>}
                 {hot === 0 && cold === 0 && <span>Neutral market across sectors</span>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>

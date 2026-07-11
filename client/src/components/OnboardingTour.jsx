@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Icon from './Icon'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 
@@ -8,7 +9,7 @@ const TOUR_KEY = 'wl_tour_done_v2'
 const STEPS = [
   {
     id: 'welcome', mode: 'card',
-    icon: '👋',
+    icon: 'sparkles',
     title: 'Welcome to WalletLens',
     subtitle: 'Smart crypto portfolio tracking',
     desc: 'No account. No server. Your data stays privately on your device. Let\'s take a 60-second tour.',
@@ -19,7 +20,7 @@ const STEPS = [
   {
     id: 'trades', mode: 'spotlight',
     target: '.wl-nav-item:nth-child(2)',
-    icon: '📈',
+    icon: 'trend-up',
     title: 'Log Every Trade',
     desc: 'Record buys & sells. WalletLens auto-tracks your P&L, average cost, and total performance.',
     cta: 'Got it →',
@@ -28,7 +29,7 @@ const STEPS = [
   {
     id: 'dashboard', mode: 'spotlight',
     target: '.wl-nav-item:nth-child(1)',
-    icon: '🏠',
+    icon: 'home',
     title: 'Portfolio Hub',
     desc: 'Total value, AI analysis, price alerts, and risk scores — all in one glance.',
     cta: 'Got it →',
@@ -37,7 +38,7 @@ const STEPS = [
   {
     id: 'whales', mode: 'spotlight',
     target: '.wl-nav-item:nth-child(4)',
-    icon: '🐋',
+    icon: 'whale',
     title: 'Follow Smart Money',
     desc: 'Track the biggest crypto wallets. See what whales are buying before the crowd reacts.',
     cta: 'Got it →',
@@ -46,7 +47,7 @@ const STEPS = [
   {
     id: 'alpha', mode: 'spotlight',
     target: '.wl-nav-item:nth-child(5)',
-    icon: '⚡',
+    icon: 'zap',
     title: 'Portfolio Alpha',
     desc: 'AI-powered Alpha Score, hidden gems, and smart money signals — all for your portfolio.',
     cta: 'Got it →',
@@ -54,7 +55,7 @@ const STEPS = [
   },
   {
     id: 'ai', mode: 'card',
-    icon: '🤖',
+    icon: 'cpu',
     title: 'AI & Safety Tools',
     desc: 'Risk Scanner catches scams & rug pulls. AI Advisor gives personalised portfolio recommendations. Academy sharpens your crypto IQ.',
     cta: 'Got it →',
@@ -63,7 +64,7 @@ const STEPS = [
   },
   {
     id: 'done', mode: 'card',
-    icon: '🚀',
+    icon: 'rocket',
     title: "You're All Set!",
     subtitle: 'Time to grow your portfolio',
     desc: 'Log your first trade to get started. WalletLens works best with your real holdings.',
@@ -138,7 +139,7 @@ function SpotlightStep({ step, onNext, onSkip, stepNum, total }) {
         />
 
         <div className="tour-tt-top">
-          <span className="tour-tt-icon">{step.icon}</span>
+          <span className="tour-tt-icon"><Icon name={step.icon} size={18} /></span>
           <button className="tour-tt-skip" onClick={onSkip}>Skip tour</button>
         </div>
         <div className="tour-tt-title">{step.title}</div>
@@ -166,7 +167,7 @@ function CardStep({ step, onNext, onSkip, stepNum, total, closing }) {
             <button className="tour-card2-skip" onClick={onSkip}>Skip tour</button>
           )}
           <div className="tour-card2-icon-wrap" style={{ background: step.accent + '22', border: `1.5px solid ${step.accent}44` }}>
-            <span className="tour-card2-icon">{step.icon}</span>
+            <span className="tour-card2-icon"><Icon name={step.icon} size={26} /></span>
           </div>
           {step.subtitle && <div className="tour-card2-subtitle" style={{ color: step.accent }}>{step.subtitle}</div>}
         </div>

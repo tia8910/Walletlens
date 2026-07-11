@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
 import EmailOptIn from './EmailOptIn'
@@ -279,7 +280,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
     track('weekly_report_share_x')
     const up = stats?.weekChange >= 0
     const text = encodeURIComponent(
-      `My crypto portfolio week: ${up ? '📈' : '📉'} ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with WalletLens — free, private, no account.\n\nwalletlens.live #WalletLens`
+      `My crypto portfolio week: ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with WalletLens — free, private, no account.\n\nwalletlens.live #WalletLens`
     )
     try {
       if (navigator.canShare) {
@@ -303,7 +304,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
       <div className="share-modal">
         <div className="share-modal-header"><span>Weekly Report</span><button className="share-close" onClick={onClose} aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button></div>
         <div style={{ padding:'2rem', textAlign:'center' }}>
-          <div style={{ fontSize:'2rem', marginBottom:'0.75rem' }}>📅</div>
+          <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="calendar" size={30} /></div>
           <p style={{ color:'var(--text)', fontSize:'0.9rem' }}>
             Keep the app open for a few days and WalletLens will build your real portfolio history. Your first weekly report will be ready soon!
           </p>
@@ -316,7 +317,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
     <div className="share-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="share-modal">
         <div className="share-modal-header">
-          <span>📅 Weekly Report — {stats.weekLabel}</span>
+          <span><Icon name="calendar" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Weekly Report — {stats.weekLabel}</span>
           <button className="share-close" onClick={onClose} aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
         </div>
         <canvas ref={canvasRef} className="share-canvas" />
@@ -330,9 +331,9 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
             {sharing ? 'Opening…' : 'Share on X'}
           </button>
         </div>
-        <p className="share-hint">📱 On mobile the image attaches directly to your post.</p>
+        <p className="share-hint"><Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />On mobile the image attaches directly to your post.</p>
         <div className="wr-email-section">
-          <p className="wr-email-label">📬 Get this report in your inbox every week</p>
+          <p className="wr-email-label"><Icon name="mail" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Get this report in your inbox every week</p>
           <EmailOptIn source="weekly_report" compact />
         </div>
       </div>

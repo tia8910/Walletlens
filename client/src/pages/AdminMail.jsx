@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from '../components/Icon'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 const TOKEN_KEY = 'wl_admin_mail_token'
@@ -87,7 +88,7 @@ export default function AdminMail() {
         {stats && <p style={{ color: 'var(--g-ink)', fontSize: '0.82rem', marginTop: '0.5rem' }}>✓ {stats.count} subscriber(s) on the list</p>}
 
         <label style={label}>Subject</label>
-        <input style={input} placeholder="📉 This week's market sentiment" value={subject} onChange={e => setSubject(e.target.value)} />
+        <input style={input} placeholder="This week's market sentiment" value={subject} onChange={e => setSubject(e.target.value)} />
 
         <label style={label}>Message (HTML allowed — wrapped in the WalletLens template automatically)</label>
         <textarea style={{ ...input, minHeight: 220, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: '0.82rem', lineHeight: 1.5 }}

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import LenzLogo from '../components/LenzLogo'
 
@@ -79,10 +80,10 @@ export default function Lenz() {
         <h1 className="lz-title">$LENZ</h1>
         <p className="lz-tagline">The native token of WalletLens — a fixed <strong>10M</strong>-supply coin on <strong>Sui</strong>. <strong>Earn it by using the app.</strong> No sale. No insider bag. Mint frozen. Verifiable.</p>
         <div className="lz-badges">
-          <span className="lz-badge">🎁 Earn by using</span>
-          <span className="lz-badge">🚫 No sale · No IPO</span>
-          <span className="lz-badge">⚖️ 0% insiders</span>
-          <span className="lz-badge">🔒 Mint frozen</span>
+          <span className="lz-badge"><Icon name="gift" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Earn by using</span>
+          <span className="lz-badge"><Icon name="x" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />No sale · No IPO</span>
+          <span className="lz-badge"><Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />0% insiders</span>
+          <span className="lz-badge"><Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Mint frozen</span>
         </div>
         <div className="lz-chips">
           <span className="lz-chip"><b>10M</b> fixed supply</span>

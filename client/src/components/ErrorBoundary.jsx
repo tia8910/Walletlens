@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import Icon from './Icon'
 
 const isChunkError = (msg = '') =>
   msg.includes('Failed to fetch dynamically imported module') ||
@@ -75,7 +76,7 @@ export default class ErrorBoundary extends Component {
       return (
         <div className="page" role="status" style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>
           <div style={{ textAlign:'center' }}>
-            <div style={{ fontSize:'2rem', marginBottom:'0.75rem' }}>⚡</div>
+            <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="zap" size={30} /></div>
             <p style={{ fontWeight:700, marginBottom:'0.25rem' }}>Updating WalletLens…</p>
             <p className="muted" style={{ fontSize:'0.85rem' }}>Loading the latest version</p>
           </div>
@@ -87,7 +88,7 @@ export default class ErrorBoundary extends Component {
       <div className="page" role="alert">
         <div className="card">
           <h3 style={{ marginBottom: '0.5rem' }}>
-            {this.state.isChunk ? '⚡ App updated' : 'Something went wrong'}
+            {this.state.isChunk ? <><Icon name="zap" size={15} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />App updated</> : 'Something went wrong'}
           </h3>
           <p className="muted" style={{ marginBottom: '1rem' }}>
             {this.state.isChunk

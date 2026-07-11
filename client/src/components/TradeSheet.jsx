@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon'
 import { api, FIAT_PREFIX, GOLD_ID, SILVER_ID, STOCK_PREFIX, XSTOCK_PREFIX, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS } from '../api'
 
 function playTradeSound(isBuy) {
@@ -79,17 +80,17 @@ const IcoSilverBar = (
 )
 
 const IcoOther = (
-  <span style={{ fontSize: '0.72em', letterSpacing: '-1px', lineHeight: 1 }}>🏠🚗⌚</span>
+  <Icon name="package" size={16} />
 )
 
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto',  icon: '₿',           color: '#6366f1' },
-  { key: 'stock',  label: 'Stocks',  icon: '📈',           color: 'var(--g-ink)' },
-  { key: 'tstock', label: 'Tokenized', icon: '🪙',         color: '#f0b90b' },
+  { key: 'stock',  label: 'Stocks',  icon: 'trend-up',           color: 'var(--g-ink)' },
+  { key: 'tstock', label: 'Tokenized', icon: 'coins',         color: '#f0b90b' },
   { key: 'gold',   label: 'Gold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver',  icon: IcoSilverBar,   color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat',    icon: '$',            color: '#0ea5e9' },
-  { key: 'bond',   label: 'Bonds',   icon: '🏛️',           color: '#0284c7' },
+  { key: 'bond',   label: 'Bonds',   icon: 'building',           color: '#0284c7' },
   { key: 'other',  label: 'Other',   icon: IcoOther,       color: '#a78bfa' },
 ]
 
@@ -101,7 +102,7 @@ const BUY_WITH_OPTIONS = [
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
   { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
   { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
-  { key: 'CUSTOM', label: 'Other',  icon: '✎', color: '#a78bfa' },
+  { key: 'CUSTOM', label: 'Other',  icon: 'edit', color: '#a78bfa' },
 ]
 const SELL_FOR_OPTIONS = [
   { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
@@ -109,8 +110,8 @@ const SELL_FOR_OPTIONS = [
   { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
   { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
-  { key: 'CUSTOM', label: 'Other',  icon: '✎', color: '#a78bfa' },
-  { key: 'REMOVE', label: 'Remove', icon: '🗑', color: '#f87171' },
+  { key: 'CUSTOM', label: 'Other',  icon: 'edit', color: '#a78bfa' },
+  { key: 'REMOVE', label: 'Remove', icon: 'trash', color: '#f87171' },
 ]
 
 // ── Preset asset for each non-crypto category ─────────────────────────────
@@ -628,7 +629,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
                       style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><Icon name={o.icon} size={15} /></span>
                       <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
                     </button>
                   ))}
@@ -699,7 +700,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
                       onClick={() => { track('trade_category_select', { category: c.key, trade_type: type }); setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
                     >
-                      <span>{c.icon}</span> {c.label}
+                      <span><Icon name={c.icon} size={15} /></span> {c.label}
                     </button>
                   ))}
                 </div>
@@ -1117,7 +1118,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={sellFor === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => setSellFor(o.key)}
                     >
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}>{o.icon}</span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><Icon name={o.icon} size={15} /></span>
                       <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.label}</span>
                     </button>
                   ))}

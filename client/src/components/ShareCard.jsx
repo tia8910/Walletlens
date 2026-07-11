@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme } from '../ThemeContext'
 
@@ -166,7 +167,7 @@ function drawCard(canvas, { totalValue, totalPnL, totalPnLPct, topHoldings, toda
   ctx.fillStyle = accent + '99'
   ctx.font = '13px system-ui, sans-serif'
   ctx.textAlign = 'right'
-  ctx.fillText('Zoom in your wealth 🔍', W - 48, 52)
+  ctx.fillText('Zoom in your wealth', W - 48, 52)
 
   // ── Divider ──────────────────────────────────────────────────────────────
   ctx.strokeStyle = 'rgba(255,255,255,0.07)'
@@ -339,7 +340,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
   const tweetText = () => {
     const pnlSign = totalPnLPct >= 0 ? '+' : ''
     return encodeURIComponent(
-      `My crypto portfolio is ${pnlSign}${fmtPct(totalPnLPct)} all-time 📈\n\nTracked with WalletLens — free, no account, 100% private.\n\nwalletlens.live/?ref=share`
+      `My crypto portfolio is ${pnlSign}${fmtPct(totalPnLPct)} all-time\n\nTracked with WalletLens — free, no account, 100% private.\n\nwalletlens.live/?ref=share`
     )
   }
 
@@ -424,7 +425,7 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
           </button>
         </div>
 
-        <p className="share-hint">📱 On mobile, the image attaches directly to your post. On desktop it saves first, then opens X.</p>
+        <p className="share-hint"><Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />On mobile, the image attaches directly to your post. On desktop it saves first, then opens X.</p>
       </div>
     </div>
   )
