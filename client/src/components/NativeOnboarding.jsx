@@ -200,13 +200,27 @@ export default function NativeOnboarding({ onDone }) {
         <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
       </div>
 
-      {/* Circle dots */}
+      {/* Trend chart navigation */}
       <div className="no-dots">
-        {SLIDES.map((_, i) => (
-          <button key={i} className={`no-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
-            onClick={() => goTo(i)}
-            aria-label={`Slide ${i + 1}`} />
-        ))}
+        {SLIDES.map((_, i) => {
+          const paths = ['M2 10 L5 6 L8 8 L12 3 L16 5 L20 2', 'M2 8 L6 4 L10 7 L14 2 L18 5 L20 3', 'M2 9 L4 5 L8 7 L12 3 L16 6 L20 1', 'M2 7 L5 3 L9 6 L13 2 L17 4 L20 2'];
+          const isActive = i === step;
+          const isDone = i < step;
+          return (
+            <button key={i} className="no-trend-btn"
+              style={{ background: 'none', border: 'none', padding: '6px 2px', cursor: 'pointer',
+                opacity: isActive ? 1 : isDone ? 0.4 : 0.2, transition: 'opacity 0.3s' }}
+              onClick={() => goTo(i)} aria-label={`Slide ${i + 1}`}>
+              <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
+                <path d={paths[i % paths.length]}
+                  stroke={isActive ? s.accent : 'rgba(255,255,255,0.5)'}
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                  strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                {isActive && <circle cx="20" cy="2" r="2.5" fill={s.accent} />}
+              </svg>
+            </button>
+          );
+        })}
       </div>
 
       {/* Final slide: pulsing circle */}
