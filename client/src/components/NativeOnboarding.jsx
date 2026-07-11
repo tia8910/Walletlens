@@ -1,23 +1,13 @@
-import { useState, useRef, useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
-import { track, trackProfileCreated } from '../analytics'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { track } from '../analytics'
 import { api } from '../api'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
-import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
+import { POPULAR_FIAT } from '../data/assets'
 import sfx from '../sfx'
-const WelcomeStart = lazy(() => import("./WelcomeStart"))
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
-const STARTED_KEY = 'wl_started'
-
-function readCurrency() {
-  try { return (JSON.parse(localStorage.getItem('wl_settings') || '{}').currency || 'USD').toUpperCase() }
-  catch { return 'USD' }
-}
-
-const USDT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%2326a17b'/%3E%3Crect x='9' y='11' width='22' height='4.2' rx='1' fill='white'/%3E%3Crect x='17.4' y='11' width='5.2' height='20' rx='1.2' fill='white'/%3E%3Crect x='12.5' y='16.4' width='15' height='3.4' rx='1' fill='white'/%3E%3C/svg%3E"
-const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
 
 const THEME_ICONS = {
   sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
@@ -41,13 +31,6 @@ const SLIDES = [
     particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'], icon: '🎨',
     eyebrow: 'PERSONALISE', title: 'Make it yours',
     desc: 'Pick your look. Change anytime in Settings.', cta: 'Continue', isTheme: true,
-  },
-  {
-    id: 'portfolio', gradient: 'linear-gradient(165deg, #041a10 0%, #073a1e 55%, #051a10 100%)',
-    accent: '#34d399', glow: 'rgba(52,211,153,0.32)',
-    particles: ['📈', '💰', '💎', '🚀', '📊', '💹'], icon: '💼',
-    eyebrow: 'PORTFOLIO', title: 'Add Your Balances',
-    desc: 'Start with what you hold. See your net worth instantly.', cta: 'Continue', isPortfolio: true,
   },
   {
     id: 'security', gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
@@ -88,36 +71,6 @@ function Particles({ step }) {
   )
 }
 
-// ── Asset row component matching web styling ──────────────────────────────
-function AssetRow({ icon, label, value, onChange, suffix, prefix, type, typeOptions, typeValue, onTypeChange }) {
-  return (
-    <div className="no-asset-row">
-      <div className="no-asset-icon">{icon}</div>
-      <div className="no-asset-fields">
-        <div className="no-asset-header">
-          <span className="no-asset-label">{label}</span>
-          {typeOptions && (
-            <select className="no-asset-type" value={typeValue} onChange={e => onTypeChange(e.target.value)}>
-              {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          )}
-        </div>
-        <div className="no-asset-input-wrap">
-          {prefix && <span className="no-asset-prefix">{prefix}</span>}
-          <input
-            className="no-asset-input"
-            type="number" inputMode="decimal" min="0"
-            placeholder="0.00"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-          />
-          {suffix && <span className="no-asset-suffix">{suffix}</span>}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
   const [bioBusy, setBioBusy] = useState(false)
@@ -126,7 +79,6 @@ export default function NativeOnboarding({ onDone }) {
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
-
 
   const s = SLIDES[step]
   const total = SLIDES.length
@@ -140,7 +92,6 @@ export default function NativeOnboarding({ onDone }) {
     if (step > 0) { setStep(x => x - 1); sfx.playWhoosh() }
   }, [step])
 
-  // Touch swipe
   const onTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
@@ -163,7 +114,6 @@ export default function NativeOnboarding({ onDone }) {
     return () => window.removeEventListener('keydown', h)
   }, [goNext, goPrev])
 
-  // Start ambient sound on mount
   useEffect(() => {
     sfx.startAmbient()
     return () => sfx.stopAmbient()
@@ -181,12 +131,11 @@ export default function NativeOnboarding({ onDone }) {
 
   function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
-    // Dispatch event so Dashboard reloads data
-    window.dispatchEvent(new Event('wl:portfolio-updated'))
-    // Fallback: small delay then dispatch again in case Dashboard wasn't ready
-    setTimeout(() => window.dispatchEvent(new Event('wl:portfolio-updated')), 500)
+    // Dispatch event so Dashboard knows to show InterestPicker
+    window.dispatchEvent(new Event('wl-welcome-done'))
     onDone?.()
   }
+
   function getThemeIcon(th) {
     if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
     if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
@@ -230,13 +179,6 @@ export default function NativeOnboarding({ onDone }) {
                 <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
               </button>
             ))}
-          </div>
-        )}
-        {s.isPortfolio && (
-          <div style={{ width: "100%", maxWidth: 380 }}>
-            <Suspense fallback={null}>
-              <WelcomeStart onDone={goNext} />
-            </Suspense>
           </div>
         )}
 
