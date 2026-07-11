@@ -1,4 +1,5 @@
 import { track } from '../analytics'
+import Icon from './Icon'
 
 const ROUND_MILESTONES = [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000]
 const STORAGE_KEY = 'wl_milestones_seen'
@@ -37,7 +38,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
   // First time P&L turns positive — only if we had a real previous reading (not first load)
   if (prevTotalPnL !== null && prevTotalPnL <= 0 && totalPnL > 0) {
     const key = 'first_profit'
-    if (!seen.has(key)) return { key, type: 'first_profit', emoji: '🎉', title: 'First profit!', sub: `Your portfolio just turned green — congrats!` }
+    if (!seen.has(key)) return { key, type: 'first_profit', emoji: 'trophy', title: 'First profit!', sub: `Your portfolio just turned green — congrats!` }
   }
 
   // Round number milestone
@@ -45,7 +46,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
     const key = `round_${m}`
     if (totalValue >= m && !seen.has(key)) {
       const label = m >= 1_000_000 ? `$${m / 1_000_000}M` : m >= 1_000 ? `$${m / 1_000}k` : `$${m}`
-      return { key, type: 'round_number', emoji: '🏆', title: `Portfolio hit ${label}!`, sub: `You just crossed the ${label} mark. Time to celebrate!` }
+      return { key, type: 'round_number', emoji: 'trophy', title: `Portfolio hit ${label}!`, sub: `You just crossed the ${label} mark. Time to celebrate!` }
     }
   }
 
@@ -53,7 +54,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
   if (dayChangePct >= 5) {
     const today = new Date().toDateString()
     const key = `green_day_${today}`
-    if (!seen.has(key)) return { key, type: 'green_day', emoji: '🚀', title: `Up ${dayChangePct.toFixed(1)}% today!`, sub: `That's a great day. Share the win?` }
+    if (!seen.has(key)) return { key, type: 'green_day', emoji: 'rocket', title: `Up ${dayChangePct.toFixed(1)}% today!`, sub: `That's a great day. Share the win?` }
   }
 
   return null
@@ -112,7 +113,7 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
         <button className="ms-close" onClick={handleDismiss} aria-label="Close">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
-        <div className="ms-emoji">{milestone.emoji}</div>
+        <div className="ms-emoji"><Icon name={milestone.emoji} size={44} /></div>
         <h3 className="ms-title">{milestone.title}</h3>
         <p className="ms-sub">{milestone.sub}</p>
         <div className="ms-actions">
@@ -122,7 +123,7 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
             </button>
           ) : (
             <button className="ms-btn ms-btn-share" onClick={handleShare}>
-              📤 Share this win
+              <Icon name="share" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Share this win
             </button>
           )}
           <button className="ms-btn ms-btn-skip" onClick={handleDismiss}>

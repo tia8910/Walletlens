@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
+import Icon from './Icon'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 const GOPLUS_BASE    = 'https://api.gopluslabs.io/api/v1'
@@ -302,7 +303,7 @@ async function scoreToken(coinId, forceRefresh = false, symbol = '') {
         // Honeypot (30 pts)
         maxPoints += 30
         if (info.is_honeypot === '0') { totalPoints += 30; signals.push({ label: 'Not a honeypot ✓', status: 'good' }) }
-        else if (info.is_honeypot === '1') { signals.push({ label: '⚠️ HONEYPOT DETECTED — cannot sell', status: 'bad' }) }
+        else if (info.is_honeypot === '1') { signals.push({ label: 'HONEYPOT DETECTED — cannot sell', status: 'bad' }) }
         else { totalPoints += 12; signals.push({ label: 'Honeypot status unverified', status: 'warn' }) }
 
         // Contract verified / open source (8 pts)
@@ -450,10 +451,10 @@ function PortfolioRiskSummary({ results, holdings }) {
 // ── Signal badge ──────────────────────────────────────────────────────────
 function SignalBadge({ status, label }) {
   const colors = { good: 'var(--g)', warn: '#f59e0b', bad: '#f87171', info: 'var(--text-muted)' }
-  const icons  = { good: '✓', warn: '⚠', bad: '✕', info: 'ℹ' }
+  const icons  = { good: 'check', warn: 'warning', bad: 'x', info: 'info' }
   return (
     <div className="risk-signal">
-      <span className="risk-signal-icon" style={{ color: colors[status] }}>{icons[status]}</span>
+      <span className="risk-signal-icon" style={{ color: colors[status] }}><Icon name={icons[status]} size={13} /></span>
       <span className="risk-signal-label">{label}</span>
     </div>
   )
@@ -584,46 +585,46 @@ async function checkScamAddress(input) {
     let danger = 0
 
     if (info.is_honeypot === '1') {
-      danger += 40; flags.push({ icon: '🚨', text: 'HONEYPOT — you cannot sell this token', color: '#ef4444' })
+      danger += 40; flags.push({ icon: 'siren', text: 'HONEYPOT — you cannot sell this token', color: '#ef4444' })
     } else if (info.is_honeypot === '0') {
-      flags.push({ icon: '✓', text: 'Not a honeypot — selling is possible', color: 'var(--g-ink)', fontWeight: 700 })
+      flags.push({ icon: 'check', text: 'Not a honeypot — selling is possible', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     if (info.is_open_source === '0') {
-      danger += 15; flags.push({ icon: '✕', text: 'Contract is NOT verified — hidden code', color: '#f87171' })
+      danger += 15; flags.push({ icon: 'x', text: 'Contract is NOT verified — hidden code', color: '#f87171' })
     } else if (info.is_open_source === '1') {
-      flags.push({ icon: '✓', text: 'Contract is open source and verified', color: 'var(--g-ink)', fontWeight: 700 })
+      flags.push({ icon: 'check', text: 'Contract is open source and verified', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     if (info.can_mint === '1') {
-      danger += 15; flags.push({ icon: '⚠', text: 'Owner can mint unlimited new tokens', color: '#f87171' })
+      danger += 15; flags.push({ icon: 'warning', text: 'Owner can mint unlimited new tokens', color: '#f87171' })
     }
 
     if (info.transfer_pausable === '1') {
-      danger += 10; flags.push({ icon: '⚠', text: 'Owner can pause/freeze all transfers', color: '#f87171' })
+      danger += 10; flags.push({ icon: 'warning', text: 'Owner can pause/freeze all transfers', color: '#f87171' })
     }
 
     const buyTax  = parseFloat(info.buy_tax  || '0') * 100
     const sellTax = parseFloat(info.sell_tax || '0') * 100
     if (sellTax > 30) {
-      danger += 20; flags.push({ icon: '🚨', text: `Sell tax is ${sellTax.toFixed(0)}% — effectively a trap`, color: '#ef4444' })
+      danger += 20; flags.push({ icon: 'siren', text: `Sell tax is ${sellTax.toFixed(0)}% — effectively a trap`, color: '#ef4444' })
     } else if (sellTax > 10) {
-      danger += 10; flags.push({ icon: '⚠', text: `High sell tax: ${sellTax.toFixed(1)}%`, color: '#f87171' })
+      danger += 10; flags.push({ icon: 'warning', text: `High sell tax: ${sellTax.toFixed(1)}%`, color: '#f87171' })
     } else if (buyTax > 0 || sellTax > 0) {
-      flags.push({ icon: '⚠', text: `Tax: buy ${buyTax.toFixed(1)}% / sell ${sellTax.toFixed(1)}%`, color: '#f59e0b' })
+      flags.push({ icon: 'warning', text: `Tax: buy ${buyTax.toFixed(1)}% / sell ${sellTax.toFixed(1)}%`, color: '#f59e0b' })
     } else {
-      flags.push({ icon: '✓', text: 'Zero buy/sell tax', color: 'var(--g-ink)', fontWeight: 700 })
+      flags.push({ icon: 'check', text: 'Zero buy/sell tax', color: 'var(--g-ink)', fontWeight: 700 })
     }
 
     const holders = info.holders || []
     if (holders.length > 0) {
       const top3Pct = holders.slice(0, 3).reduce((s, h) => s + parseFloat(h.percent || 0), 0) * 100
       if (top3Pct > 50) {
-        danger += 15; flags.push({ icon: '⚠', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}% — extreme whale concentration`, color: '#f87171' })
+        danger += 15; flags.push({ icon: 'warning', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}% — extreme whale concentration`, color: '#f87171' })
       } else if (top3Pct > 20) {
-        flags.push({ icon: '⚠', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}%`, color: '#f59e0b' })
+        flags.push({ icon: 'warning', text: `Top 3 wallets hold ${top3Pct.toFixed(0)}%`, color: '#f59e0b' })
       } else {
-        flags.push({ icon: '✓', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: 'var(--g-ink)', fontWeight: 700 })
+        flags.push({ icon: 'check', text: `Good distribution — top 3 hold ${top3Pct.toFixed(0)}%`, color: 'var(--g-ink)', fontWeight: 700 })
       }
     }
 
@@ -642,7 +643,7 @@ async function checkScamAddress(input) {
   const search = await fetchJSON(`${COINGECKO_BASE}/coins/solana/contract/${input}`)
   if (!search?.id) {
     flags.push({ icon: '?', text: 'Not found on CoinGecko — unverified Solana token', color: '#f59e0b' })
-    flags.push({ icon: '⚠', text: 'No market data available — exercise extreme caution', color: '#f87171' })
+    flags.push({ icon: 'warning', text: 'No market data available — exercise extreme caution', color: '#f87171' })
     return { verdict: 'UNVERIFIED', verdictColor: '#f87171', flags, score: null }
   }
 
@@ -672,7 +673,7 @@ function ScamCatcher() {
   return (
     <div className="glass-card risk-scam-card">
       <div className="risk-scam-header">
-        <span style={{ fontSize: '1.2rem' }}>🔍</span>
+        <Icon name="search" size={19} />
         <span className="risk-scam-title">Scam Catcher</span>
       </div>
       <p className="risk-scam-desc">
@@ -695,7 +696,7 @@ function ScamCatcher() {
         <div className="risk-scam-result">
           <div className="risk-scam-verdict">
             <span className="risk-scam-verdict-icon">
-              {result.verdict === 'LOOKS CLEAN' ? '✅' : result.verdict === 'LIKELY SCAM' ? '🚨' : result.verdict === 'HIGH RISK' ? '🔴' : '⚠️'}
+              <Icon name={result.verdict === 'LOOKS CLEAN' ? 'shield-check' : result.verdict === 'LIKELY SCAM' ? 'siren' : 'warning'} size={22} style={{ color: result.verdictColor }} />
             </span>
             <span className="risk-scam-verdict-text" style={{ color: result.verdictColor }}>
               {result.verdict}
@@ -706,7 +707,7 @@ function ScamCatcher() {
           <div className="risk-scam-flags">
             {result.flags.map((f, i) => (
               <div key={i} className="risk-scam-flag">
-                <span style={{ color: f.color, fontWeight: 700, flexShrink: 0 }}>{f.icon}</span>
+                <span style={{ color: f.color, flexShrink: 0, display: 'inline-flex' }}><Icon name={f.icon} size={15} /></span>
                 <span style={{ color: f.color === 'var(--text-muted)' ? f.color : undefined }}>{f.text}</span>
               </div>
             ))}
