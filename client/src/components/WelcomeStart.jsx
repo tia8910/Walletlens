@@ -205,7 +205,7 @@ export default function WelcomeStart({ onDone }) {
         </div>
 
         <button className="wls-cta" onClick={start} disabled={busy}>
-          {busy ? 'Setting up…' : hasAny ? 'See my dashboard →' : 'Continue →'}
+          {busy ? 'Setting up…' : hasAny ? '✦ See my dashboard' : 'Next'}
         </button>
         <button
           className="wls-skip" onClick={askSkip} disabled={busy}

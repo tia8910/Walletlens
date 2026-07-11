@@ -23,28 +23,28 @@ const SLIDES = [
     eyebrow: 'WELCOME TO', title: 'WalletLens',
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
     desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
-    features: ['🔒 Private', '📊 Live P&L', '🤖 AI Insights', '🆓 Free'], cta: 'Get Started',
+    features: ['🔒 Private', '📊 Live P&L', '🤖 AI Insights', '🆓 Free'], cta: '✦ Get Started',
   },
   {
     id: 'theme', gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
     particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'], icon: '🎨',
     eyebrow: 'PERSONALISE', title: 'Make it yours',
-    desc: 'Pick your look. Change anytime in Settings.', cta: 'Continue', isTheme: true,
+    desc: 'Pick your look. Change anytime in Settings.', cta: 'Next', isTheme: true,
   },
   {
     id: 'security', gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.3)',
     particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'], icon: '🔐',
     eyebrow: 'SECURITY', title: 'Lock with fingerprint',
-    desc: 'Keep your portfolio for your eyes only.', cta: 'Continue', isSecurity: true,
+    desc: 'Keep your portfolio for your eyes only.', cta: 'Next', isSecurity: true,
   },
   {
     id: 'go', gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
     accent: '#22c55e', glow: 'rgba(34,197,94,0.35)',
     particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'], icon: '🚀',
     eyebrow: 'ALL SET', title: 'Ready to grow',
-    desc: 'Your dashboard awaits.', cta: "Let's go →", final: true,
+    desc: 'Your dashboard awaits.', cta: '🚀 Launch', final: true,
   },
 ]
 
@@ -211,12 +211,7 @@ export default function NativeOnboarding({ onDone }) {
         ))}
       </div>
 
-      <button className="no-cta"
-        style={{
-          background: s.id === 'welcome' ? 'linear-gradient(135deg, #00c853 0%, #00a040 100%)' : s.accent,
-          boxShadow: s.id === 'welcome' ? '0 4px 24px rgba(0,200,83,0.45)' : `0 4px 24px ${s.glow}`,
-        }}
-        onClick={() => {
+      <button className="no-cta" onClick={() => {
           sfx.playChime()
           if (s.isSecurity && !bioEnabled && bioAvailable) { enableBiometric(); return }
           if (s.final) { sfx.playTriumph(); finish(); return }
@@ -224,7 +219,8 @@ export default function NativeOnboarding({ onDone }) {
         }}
         disabled={false}
       >
-        {s.isSecurity && bioEnabled ? "Continue →" : s.cta}
+        {s.isSecurity && bioEnabled ? "Continue \u2192" : s.cta}
+        {!s.final && !(s.isSecurity && bioEnabled) && <span className="no-cta-arrow">\u2197</span>}
       </button>
     </div>
   )
