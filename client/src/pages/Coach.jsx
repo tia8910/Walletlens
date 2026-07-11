@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
+import Icon from '../components/Icon'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
