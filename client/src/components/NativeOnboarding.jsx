@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
 import Logo from './Logo'
+import sfx from '../sfx'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
@@ -125,6 +126,11 @@ export default function NativeOnboarding({ onDone }) {
   const [bioError, setBioError] = useState('')
   const { theme, setTheme } = useTheme()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
+  useEffect(() => {
+    sfx.startAmbient()
+    return () => sfx.stopAmbient()
+  }, [])
+
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
