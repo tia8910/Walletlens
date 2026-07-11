@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Icon from './Icon'
 import { track } from '../analytics'
 import sfx from '../sfx'
 import { ASSET_CATEGORIES } from '../data/assets'
@@ -26,13 +27,13 @@ const OPTIONS = [
   { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, label: 'Crypto' },
   { id: 'stablecoins', img: USDT_LOGO, label: 'Stablecoins' },
   { id: 'stocks',      emoji: C.stock.icon, label: 'Stocks' },
-  { id: 'etfs',        emoji: '🧺', label: 'ETFs' },
+  { id: 'etfs',        emoji: 'package', label: 'ETFs' },
   { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, label: 'Gold' },
   { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, label: 'Silver' },
   { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, label: 'Cash' },
-  { id: 'realestate',  emoji: '🏠', label: 'Real estate' },
+  { id: 'realestate',  emoji: 'home', label: 'Real estate' },
   { id: 'bonds',       emoji: C.bond.icon, label: 'Bonds' },
-  { id: 'commodities', emoji: '🛢️', label: 'Commodities' },
+  { id: 'commodities', emoji: 'droplet', label: 'Commodities' },
 ]
 
 export default function InterestPicker({ onDone }) {
@@ -105,7 +106,7 @@ export default function InterestPicker({ onDone }) {
                       className={`ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
                       style={o.color ? { color: o.color } : undefined}
                       aria-hidden="true"
-                    >{o.emoji}</span>}
+                    ><Icon name={o.emoji} size={20} /></span>}
                 {o.label}
                 {on && (
                   <span className="ip-chip-check" aria-hidden="true">

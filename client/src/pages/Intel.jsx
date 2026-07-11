@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -51,17 +52,17 @@ function WalletReader() {
   }
 
   function whaleLabel(balUsd) {
-    if (balUsd >= 10_000_000) return { l: '🐋 Mega Whale', c: 'var(--g)' }
-    if (balUsd >= 1_000_000)  return { l: '🐳 Whale',       c: 'var(--g)' }
-    if (balUsd >= 100_000)    return { l: '🦈 Shark',        c: '#fbbf24' }
-    if (balUsd >= 10_000)     return { l: '🐬 Dolphin',      c: '#60a5fa' }
-    return { l: '🐟 Retail',  c: 'var(--text-muted)' }
+    if (balUsd >= 10_000_000) return { l: 'Mega Whale', c: 'var(--g)' }
+    if (balUsd >= 1_000_000)  return { l: 'Whale',       c: 'var(--g)' }
+    if (balUsd >= 100_000)    return { l: 'Shark',        c: '#fbbf24' }
+    if (balUsd >= 10_000)     return { l: 'Dolphin',      c: '#60a5fa' }
+    return { l: 'Retail',  c: 'var(--text-muted)' }
   }
 
   return (
     <div className="intel-section">
       <div className="intel-hero">
-        <div className="intel-hero-icon">👛</div>
+        <div className="intel-hero-icon"><Icon name="wallet" size={26} /></div>
         <h2 className="intel-hero-title">Wallet Reader</h2>
         <p className="intel-hero-sub">Paste any BTC or ETH address to instantly profile it — balance, activity, and whale classification.</p>
       </div>
@@ -84,7 +85,7 @@ function WalletReader() {
           spellCheck={false}
         />
         <button className="wr-lookup-btn" onClick={lookup} disabled={loading || !addr.trim()}>
-          {loading ? <span className="qs-spinner" /> : '🔍'} Lookup
+          {loading ? <span className="qs-spinner" /> : <Icon name="search" size={15} />} Lookup
         </button>
       </div>
 
@@ -170,7 +171,7 @@ function GemsTab({ market }) {
   return (
     <div className="intel-section">
       <div className="intel-hero">
-        <div className="intel-hero-icon">💎</div>
+        <div className="intel-hero-icon"><Icon name="diamond" size={26} /></div>
         <h2 className="intel-hero-title">Gems to Catch</h2>
         <p className="intel-hero-sub">Low-to-mid cap coins with unusual volume spikes and momentum — early signal radar before the crowd arrives.</p>
       </div>
@@ -226,7 +227,7 @@ function AlphaTab({ market, trending }) {
     .sort((a, b) => (b.total_volume/b.market_cap) - (a.total_volume/a.market_cap))
     .slice(0, 4)
     .forEach(c => signals.push({
-      type: 'volume_spike', icon: '⚡', color: '#fbbf24',
+      type: 'volume_spike', icon: 'zap', color: '#fbbf24',
       tag: 'Volume Spike',
       coin: c, detail: `${(c.total_volume/c.market_cap*100).toFixed(0)}% turnover in 24h`,
     }))
@@ -236,7 +237,7 @@ function AlphaTab({ market, trending }) {
     .filter(t => t.market_cap_rank > 100 || !t.market_cap_rank)
     .slice(0, 3)
     .forEach(t => signals.push({
-      type: 'trending_smallcap', icon: '🔥', color: '#f87171',
+      type: 'trending_smallcap', icon: 'flame', color: '#f87171',
       tag: 'Trending Low-Cap',
       coin: { ...t, id: t.id, image: t.thumb, name: t.name, symbol: t.symbol, current_price: null },
       detail: `#${t.score ?? '?'} trending · MCap rank #${t.market_cap_rank ?? '?'}`,
@@ -248,7 +249,7 @@ function AlphaTab({ market, trending }) {
     .sort((a, b) => Math.abs(b.price_change_percentage_24h_in_currency||0) - Math.abs(a.price_change_percentage_24h_in_currency||0))
     .slice(0, 4)
     .forEach(c => signals.push({
-      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? '🚀' : '🩸', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g-ink)' : '#f87171',
+      type: 'big_mover', icon: c.price_change_percentage_24h_in_currency >= 0 ? 'rocket' : 'trend-down', color: c.price_change_percentage_24h_in_currency >= 0 ? 'var(--g-ink)' : '#f87171',
       tag: c.price_change_percentage_24h_in_currency >= 0 ? 'Breakout' : 'Capitulation',
       coin: c, detail: `${fmtPct(c.price_change_percentage_24h_in_currency)} · MCap ${fmtUsd(c.market_cap)}`,
     }))
@@ -258,14 +259,14 @@ function AlphaTab({ market, trending }) {
   return (
     <div className="intel-section">
       <div className="intel-hero">
-        <div className="intel-hero-icon">⚡</div>
+        <div className="intel-hero-icon"><Icon name="zap" size={26} /></div>
         <h2 className="intel-hero-title">Alpha Feed</h2>
         <p className="intel-hero-sub">Real-time signals — volume anomalies, trending low-caps, and big movers before the herd catches on.</p>
       </div>
       <div className="alpha-feed">
         {signals.map((s, i) => (
           <Link key={i} to={`/asset/${s.coin.id}`} className="alpha-card">
-            <div className="alpha-icon" style={{ background: s.color + '22', color: s.color }}>{s.icon}</div>
+            <div className="alpha-icon" style={{ background: s.color + '22', color: s.color }}><Icon name={s.icon} size={18} /></div>
             <div className="alpha-content">
               <div className="alpha-tag" style={{ color: s.color }}>{s.tag}</div>
               <div className="alpha-name">
@@ -303,7 +304,7 @@ function IndicatorsTab({ market, globalData }) {
   const btcChange = btc?.price_change_percentage_24h_in_currency || 0
   const altOutperforming = top50.filter(c => (c.price_change_percentage_24h_in_currency||0) > btcChange).length
   const altseasonScore = Math.round((altOutperforming / top50.length) * 100)
-  const altseasonLabel = altseasonScore >= 75 ? 'Alt Season 🔥' : altseasonScore >= 50 ? 'Alts Heating Up' : altseasonScore >= 25 ? 'BTC Season' : 'BTC Dominates ₿'
+  const altseasonLabel = altseasonScore >= 75 ? 'Alt Season' : altseasonScore >= 50 ? 'Alts Heating Up' : altseasonScore >= 25 ? 'BTC Season' : 'BTC Dominates ₿'
   const altseasonColor = altseasonScore >= 75 ? '#f59e0b' : altseasonScore >= 50 ? 'var(--g)' : altseasonScore >= 25 ? '#60a5fa' : '#818cf8'
 
   // Simple RSI-like signal for top 10 (using 24h change as proxy)
@@ -312,7 +313,7 @@ function IndicatorsTab({ market, globalData }) {
   return (
     <div className="intel-section">
       <div className="intel-hero">
-        <div className="intel-hero-icon">📊</div>
+        <div className="intel-hero-icon"><Icon name="bar-chart" size={26} /></div>
         <h2 className="intel-hero-title">Market Indicators</h2>
         <p className="intel-hero-sub">Macro crypto health at a glance — dominance, altseason index, BTC/ETH ratio, and momentum signals.</p>
       </div>
@@ -330,7 +331,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* Altseason Index */}
         <div className="ind-card">
-          <div className="ind-card-title">🔄 Altseason Index</div>
+          <div className="ind-card-title"><Icon name="refresh" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Altseason Index</div>
           <div className="ind-gauge-wrap">
             <GaugeSemi value={altseasonScore} max={100} color={altseasonColor} />
           </div>
@@ -340,7 +341,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* Total Market Cap */}
         <div className="ind-card">
-          <div className="ind-card-title">🌍 Total Market Cap</div>
+          <div className="ind-card-title"><Icon name="globe" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Total Market Cap</div>
           <div className="ind-big-stat">{fmtUsd(totalMcap)}</div>
           <div className="ind-hint">Combined top {market.length} assets</div>
           <div className={`ind-badge ${(btc?.price_change_percentage_24h_in_currency||0) >= 0 ? 'pos' : 'neg'}`}>
@@ -350,7 +351,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* BTC/ETH Ratio */}
         <div className="ind-card">
-          <div className="ind-card-title">⚖️ BTC / ETH Ratio</div>
+          <div className="ind-card-title"><Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />BTC / ETH Ratio</div>
           <div className="ind-big-stat">{btcEthRatio != null ? btcEthRatio.toFixed(1) + 'x' : '–'}</div>
           <div className="ind-hint">{btcEthRatio != null ? (btcEthRatio > 20 ? 'ETH undervalued vs BTC' : btcEthRatio < 12 ? 'ETH strong vs BTC' : 'Neutral ratio') : ''}</div>
         </div>
@@ -430,10 +431,10 @@ export default function Intel() {
   }
 
   const TABS = [
-    { k: 'wallets',    l: '👛 Wallet Reader' },
-    { k: 'gems',       l: '💎 Gems'          },
-    { k: 'alpha',      l: '⚡ Alpha'          },
-    { k: 'indicators', l: '📊 Indicators'     },
+    { k: 'wallets',    l: 'Wallet Reader' },
+    { k: 'gems',       l: 'Gems'          },
+    { k: 'alpha',      l: 'Alpha'          },
+    { k: 'indicators', l: 'Indicators'     },
   ]
 
   return (
