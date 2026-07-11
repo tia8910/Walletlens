@@ -104,6 +104,7 @@ const PATHS = {
   'mail':           'M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zM22 6l-10 7L2 6',
   'snowflake':      'M12 2v20M2 12h20M5.5 5.5l13 13M18.5 5.5l-13 13',
   'edit':           'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z',
+  'arrow-right':    'M5 12h14M13 6l6 6-6 6',
 }
 
 function Icon({ name, size = 16, className = '', style }) {
