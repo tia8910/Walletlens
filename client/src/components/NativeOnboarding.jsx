@@ -1,62 +1,52 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { track } from '../analytics'
-import { api } from '../api'
-import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
-import { POPULAR_FIAT } from '../data/assets'
 import sfx from '../sfx'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
-const THEME_ICONS = {
-  sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
-  sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎',
-  fire: '🔥', crown: '👑', gem: '💠', bolt: '⚡',
-}
-
 const SLIDES = [
   {
-    id: 'welcome', gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
+    id: 'welcome',
+    gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
     accent: '#00c853', glow: 'rgba(0,200,83,0.28)',
-    particles: ['₿', 'Ξ', '◎', '📈', '💎', '🚀'], icon: 'logo',
     eyebrow: 'WELCOME TO', title: 'WalletLens',
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
     desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
-    features: ['🔒 Private', '📊 Live P&L', '🤖 AI Insights', '🆓 Free'], cta: '✦ Get Started',
+    features: ['Private', 'Live P&L', 'AI Insights', 'Free'],
   },
   {
-    id: 'theme', gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
+    id: 'theme',
+    gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
-    particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'], icon: '🎨',
     eyebrow: 'PERSONALISE', title: 'Make it yours',
-    desc: 'Pick your look. Change anytime in Settings.', cta: 'Next', isTheme: true,
+    desc: 'Pick your look. Change anytime in Settings.', isTheme: true,
   },
   {
-    id: 'security', gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
+    id: 'security',
+    gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.3)',
-    particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'], icon: '🔐',
     eyebrow: 'SECURITY', title: 'Lock with fingerprint',
-    desc: 'Keep your portfolio for your eyes only.', cta: 'Next', isSecurity: true,
+    desc: 'Keep your portfolio for your eyes only.', isSecurity: true,
   },
   {
-    id: 'go', gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
+    id: 'go',
+    gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
     accent: '#22c55e', glow: 'rgba(34,197,94,0.35)',
-    particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'], icon: '🚀',
     eyebrow: 'ALL SET', title: 'Ready to grow',
-    desc: 'Your dashboard awaits.', cta: '🚀 Launch', final: true,
+    desc: 'Your dashboard awaits.', final: true,
   },
 ]
 
 function Particles({ step }) {
-  const emojis = SLIDES[step].particles
-  const items = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
-    emoji: emojis[(i * 3 + step) % emojis.length],
+  const items = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
+    char: ['◆', '●', '○', '△', '◇', '▽'][(i + step) % 6],
     left: 5 + ((i * 91 + step * 23) % 85),
-    delay: ((i * 0.4 + step * 0.15) % 3).toFixed(2),
+    delay: ((i * 0.5 + step * 0.2) % 3).toFixed(2),
     dur: (3 + ((i * 0.6 + step * 0.2) % 2)).toFixed(2),
-    size: 16 + ((i * 3) % 14),
-  })), [step, emojis])
+    size: 8 + ((i * 3) % 8),
+  })), [step])
 
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
@@ -65,7 +55,7 @@ function Particles({ step }) {
           position: 'absolute', bottom: '-30px', left: `${p.left}%`,
           fontSize: `${p.size}px`, opacity: 0,
           animation: `no-float ${p.dur}s ${p.delay}s linear infinite`,
-        }}>{p.emoji}</span>
+        }}>{p.char}</span>
       ))}
     </div>
   )
@@ -79,10 +69,11 @@ export default function NativeOnboarding({ onDone }) {
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+  const [swiping, setSwiping] = useState(false)
+  const [swipeOffset, setSwipeOffset] = useState(0)
 
   const s = SLIDES[step]
   const total = SLIDES.length
-  const progress = ((step + 1) / total) * 100
 
   const goNext = useCallback(() => {
     if (step < total - 1) { setStep(x => x + 1); sfx.playWhoosh() }
@@ -92,17 +83,36 @@ export default function NativeOnboarding({ onDone }) {
     if (step > 0) { setStep(x => x - 1); sfx.playWhoosh() }
   }, [step])
 
+  const goTo = useCallback((i) => {
+    if (i >= 0 && i < total && i !== step) {
+      setStep(i)
+      sfx.playWhoosh()
+    }
+  }, [step, total])
+
   const onTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
+    setSwiping(true)
+    setSwipeOffset(0)
   }, [])
+
+  const onTouchMove = useCallback((e) => {
+    if (!swiping) return
+    const dx = e.touches[0].clientX - touchStartX.current
+    const dy = e.touches[0].clientY - touchStartY.current
+    if (Math.abs(dy) > Math.abs(dx) * 1.2) { setSwiping(false); return }
+    setSwipeOffset(dx * 0.4)
+  }, [swiping])
 
   const onTouchEnd = useCallback((e) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current
-    const dy = e.changedTouches[0].clientY - touchStartY.current
-    if (Math.abs(dy) > Math.abs(dx)) return
-    if (dx < -60) goNext()
-    else if (dx > 60) goPrev()
+    setSwiping(false)
+    setSwipeOffset(0)
+    if (Math.abs(dx) > 60) {
+      if (dx < 0) goNext()
+      else goPrev()
+    }
   }, [goNext, goPrev])
 
   useEffect(() => {
@@ -131,33 +141,26 @@ export default function NativeOnboarding({ onDone }) {
 
   function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
-    // Dispatch event so Dashboard knows to show InterestPicker
     window.dispatchEvent(new Event('wl-welcome-done'))
     onDone?.()
   }
 
-  function getThemeIcon(th) {
-    if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-    if (th.icon && THEME_ICONS[th.icon]) return THEME_ICONS[th.icon]
-    if (th.icon && th.icon.length <= 2) return th.icon
-    return '🎨'
-  }
-
   return (
     <div className="no-container" style={{ background: s.gradient }}
-      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <Particles step={step} />
 
-      <div className="no-slide" key={step}>
-        <div className="no-icon-wrap" style={{ '--accent': s.accent, '--glow': s.glow }}>
-          {s.icon === 'logo' ? <Logo size={72} animated /> : <span className="no-icon-emoji">{s.icon}</span>}
-        </div>
+      <div className="no-slide" key={step}
+        style={swiping ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' } : {}}>
+
         <div className="no-eyebrow" style={{ color: s.accent }}>{s.eyebrow}</div>
+
         {s.titleGrad ? (
           <h1 className="no-title" style={{ backgroundImage: s.titleGrad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{s.title}</h1>
         ) : (
           <h1 className="no-title">{s.title}</h1>
         )}
+
         <p className="no-desc">{s.desc}</p>
 
         {s.features && (
@@ -175,7 +178,7 @@ export default function NativeOnboarding({ onDone }) {
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
-                }}>{getThemeIcon(th)}</span>
+                }} />
                 <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
               </button>
             ))}
@@ -187,12 +190,9 @@ export default function NativeOnboarding({ onDone }) {
             {!bioAvailable ? (
               <div className="no-bio-unavailable">Fingerprint not available on this device</div>
             ) : bioEnabled ? (
-              <div className="no-bio-enabled">✓ Fingerprint enabled</div>
+              <div className="no-bio-enabled">Fingerprint enabled</div>
             ) : (
               <button className="no-bio-btn" onClick={enableBiometric} disabled={bioBusy}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
                 {bioBusy ? 'Setting up…' : 'Enable fingerprint lock'}
               </button>
             )}
@@ -201,27 +201,32 @@ export default function NativeOnboarding({ onDone }) {
         )}
       </div>
 
+      {/* Progress track */}
       <div className="no-progress-track">
-        <div className="no-progress-fill" style={{ width: `${progress}%`, background: s.accent }} />
+        <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
       </div>
+
+      {/* Interactive dot slider — tappable, no text */}
       <div className="no-dots">
         {SLIDES.map((_, i) => (
-          <div key={i} className={`no-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
-            style={i <= step ? { background: s.accent } : {}} />
+          <button key={i} className={`no-dot${i === step ? ' active' : i < step ? ' done' : ''}`}
+            style={i === step ? { background: s.accent, boxShadow: `0 0 8px ${s.accent}88` } : i < step ? { background: s.accent } : {}}
+            onClick={() => goTo(i)}
+            aria-label={`Slide ${i + 1}`} />
         ))}
       </div>
 
-      <button className="no-cta" onClick={() => {
-          sfx.playChime()
-          if (s.isSecurity && !bioEnabled && bioAvailable) { enableBiometric(); return }
-          if (s.final) { sfx.playTriumph(); finish(); return }
-          goNext()
-        }}
-        disabled={false}
-      >
-        {s.isSecurity && bioEnabled ? "Continue \u2192" : s.cta}
-        {!s.final && !(s.isSecurity && bioEnabled) && <span className="no-cta-arrow">\u2197</span>}
-      </button>
+      {/* Final slide: pulsing circle to launch — no icon */}
+      {s.final && (
+        <div className="no-launch-area">
+          <button className="no-launch-circle" onClick={() => { sfx.playTriumph(); finish() }}
+            style={{ '--accent': s.accent, '--glow': s.glow }}>
+            <div className="no-launch-ring" style={{ borderColor: s.accent }} />
+            <div className="no-launch-core" style={{ background: `linear-gradient(135deg, ${s.accent}, #4ade80)` }} />
+          </button>
+          <div className="no-launch-hint" style={{ color: s.accent }}>Tap to start</div>
+        </div>
+      )}
     </div>
   )
 }
