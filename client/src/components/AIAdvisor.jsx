@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react'
+import Icon from './Icon'
 import { ANTHROPIC_KEY } from '../anthropic'
 
 const KEY_STORAGE = 'walletlens_anthropic_key'
@@ -39,21 +40,21 @@ const ANALYSIS_PROMPT = `Give me a comprehensive portfolio analysis with these e
 ## Portfolio Health: [Grade A+/A/B+/B/C/D] — [one-line verdict]
 Honest one-paragraph assessment.
 
-## 🔴 Top Risks
+## Top Risks
 3–5 specific risks based on actual holdings. Reference asset names and concentrations.
 
-## 🟢 Opportunities
+## Opportunities
 3–5 specific opportunities or optimizations visible in this portfolio.
 
-## ⚡ Priority Actions
+## Priority Actions
 3–5 concrete actions ranked by urgency. Name the asset, price level, and exact reasoning.
 
-## 📊 Stress Test
-- 🐻 Bear (BTC −50%): estimated total loss and worst positions
-- 🦀 Sideways 6 months: opportunity cost observation
-- 🐂 Bull (BTC +100%): estimated gain and best positions
+## Stress Test
+- Bear (BTC −50%): estimated total loss and worst positions
+- Sideways 6 months: opportunity cost observation
+- Bull (BTC +100%): estimated gain and best positions
 
-## 💡 Contrarian Insight
+## Contrarian Insight
 One surprising insight most retail investors miss about this specific portfolio.`
 
 async function callClaude(apiKey, messages, system, onChunk) {
@@ -254,7 +255,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
   if (!apiKey) {
     return (
       <div className="ai-adv-setup glass-card">
-        <div className="ai-adv-setup-icon">✦</div>
+        <div className="ai-adv-setup-icon"><Icon name="sparkles" size={26} /></div>
         <h3 className="ai-adv-setup-title">AI Portfolio Advisor</h3>
         <p className="ai-adv-setup-sub">
           Powered by Claude — enter your Anthropic API key to get a CFA-level analysis of your portfolio.<br/>
@@ -270,7 +271,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
             className="ai-adv-key-input"
           />
           <button className="ai-adv-key-eye" onClick={() => setShowKey(v => !v)}>
-            {showKey ? '🙈' : '👁️'}
+            <Icon name="eye" size={16} />
           </button>
         </div>
         <button className="dvx-btn dvx-btn-primary ai-adv-key-save" onClick={saveKey} disabled={!keyInput.trim()}>
@@ -292,16 +293,16 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           className={`ai-adv-mode-btn ${mode === 'analysis' ? 'active' : ''}`}
           onClick={() => setMode('analysis')}
         >
-          📊 Deep Analysis
+          <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Deep Analysis
         </button>
         <button
           className={`ai-adv-mode-btn ${mode === 'chat' ? 'active' : ''}`}
           onClick={() => setMode('chat')}
         >
-          💬 AI Chat
+          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />AI Chat
         </button>
         <button className="ai-adv-key-remove" onClick={removeKey} title="Remove API key">
-          🔑
+          <Icon name="key" size={16} />
         </button>
       </div>
 
@@ -317,7 +318,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
                 institutional-grade insights — risks, opportunities, priority actions, and stress tests.
               </p>
               <button className="dvx-btn dvx-btn-primary ai-adv-analyze-btn" onClick={runAnalysis}>
-                ⚡ Analyze My Portfolio
+                <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Analyze My Portfolio
               </button>
             </div>
           )}
@@ -331,7 +332,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
 
           {analysisErr && (
             <div className="ai-adv-error glass-card">
-              <p>⚠️ {analysisErr}</p>
+              <p><Icon name="warning" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{analysisErr}</p>
               <button className="dvx-btn" onClick={runAnalysis} style={{marginTop:'0.75rem'}}>Retry</button>
             </div>
           )}
@@ -341,7 +342,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
               <div className="ai-adv-result-header">
                 <span className="ai-badge">Claude Opus</span>
                 <button className="ai-adv-refresh-btn" onClick={runAnalysis} disabled={analyzing} title="Re-analyze">
-                  {analyzing ? '⏳' : '🔄'}
+                  {analyzing ? <Icon name="hourglass" size={15} /> : <Icon name="refresh" size={15} />}
                 </button>
               </div>
               <MarkdownText text={analysis} />
@@ -357,7 +358,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           <div className="ai-chat-log">
             {messages.length === 0 && (
               <div className="ai-chat-empty">
-                <div className="ai-chat-empty-icon">💬</div>
+                <div className="ai-chat-empty-icon"><Icon name="message" size={26} /></div>
                 <p>Ask me anything about your portfolio.</p>
                 <div className="ai-chat-suggestions">
                   {[
@@ -381,7 +382,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
                 <span className="ai-adv-dots"><span /><span /><span /></span>
               </div>
             )}
-            {chatErr && <p className="ai-adv-error-inline">⚠️ {chatErr}</p>}
+            {chatErr && <p className="ai-adv-error-inline"><Icon name="warning" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{chatErr}</p>}
             <div ref={bottomRef} />
           </div>
 
@@ -400,7 +401,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
               onClick={sendChat}
               disabled={chatLoading || !input.trim()}
             >
-              {chatLoading ? '⏳' : '↑'}
+              {chatLoading ? <Icon name="hourglass" size={14} /> : '↑'}
             </button>
           </div>
         </div>

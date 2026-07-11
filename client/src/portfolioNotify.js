@@ -114,7 +114,7 @@ export function checkPortfolioMove(currentValue) {
 
   const up  = change > 0
   const pct = Math.abs(change * 100).toFixed(1)
-  const title = up ? `📈 Portfolio up ${pct}%` : `📉 Portfolio down ${pct}%`
+  const title = up ? `Portfolio up ${pct}%` : `Portfolio down ${pct}%`
   const body  = up
     ? `Your portfolio gained ${pct}% — now worth ${fmtUsd(currentValue)}.`
     : `Your portfolio dropped ${pct}% — now worth ${fmtUsd(currentValue)}.`
@@ -155,7 +155,7 @@ export function notifyTargetsReached(reached, activeIds = []) {
     const priceStr = t.price >= 1
       ? '$' + t.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
       : '$' + t.price.toPrecision(2)
-    fireNotification(`🎯 Target reached — ${sym}`, `You reached your target for ${sym} at ${priceStr}.`, `target-${t.id}`)
+    fireNotification(`Target reached — ${sym}`, `You reached your target for ${sym} at ${priceStr}.`, `target-${t.id}`)
   }
   if (changed) saveFiredTargets(fired)
 }
@@ -170,13 +170,13 @@ export function checkDailyWelcome(streak) {
   localStorage.setItem(DAILY_NOTIF_KEY, today)
 
   if (streak >= 7) {
-    fireNotification(`🔥 ${streak}-day streak!`, `You've checked your portfolio ${streak} days in a row. Consistency pays off!`, 'daily-streak')
+    fireNotification(`${streak}-day streak!`, `You've checked your portfolio ${streak} days in a row. Consistency pays off!`, 'daily-streak')
   } else if (streak >= 3) {
-    fireNotification(`👋 Welcome back — ${streak} day streak!`, 'Keep tracking your financial journey.', 'daily-streak')
+    fireNotification(`Welcome back — ${streak} day streak!`, 'Keep tracking your financial journey.', 'daily-streak')
   } else {
     // Time-based greeting
     const hour = new Date().getHours()
-    let greeting = hour < 12 ? '☀️ Good morning' : hour < 17 ? '🌤️ Good afternoon' : '🌙 Good evening'
+    let greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
     fireNotification(`${greeting}!`, 'Your portfolio is ready — see what\'s moved.', 'daily-welcome')
   }
 }
@@ -204,9 +204,9 @@ export function checkWeeklySummary(currentValue) {
   const changeStr = change ? (change > 0 ? `+${change}%` : `${change}%`) : ''
 
   if (changeStr && valueStr) {
-    fireNotification('📊 Weekly Portfolio', `Your portfolio is at ${valueStr} (${changeStr} this week).`, 'weekly-summary')
+    fireNotification('Weekly Portfolio', `Your portfolio is at ${valueStr} (${changeStr} this week).`, 'weekly-summary')
   } else {
-    fireNotification('📊 Weekly Check-In', 'Review your portfolio and set goals for the week ahead.', 'weekly-summary')
+    fireNotification('Weekly Check-In', 'Review your portfolio and set goals for the week ahead.', 'weekly-summary')
   }
 }
 
@@ -229,7 +229,7 @@ export function checkReEngagement() {
     'See what\'s changed in your portfolio since your last visit.',
   ]
   const msg = messages[Math.floor(Math.random() * messages.length)]
-  fireNotification('👀 We miss you!', msg, 're-engage')
+  fireNotification('We miss you!', msg, 're-engage')
 }
 
 // ── Permission ─────────────────────────────────────────────────────────
