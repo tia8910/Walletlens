@@ -35,7 +35,7 @@ function startAmbient() {
 
   const out = c.createGain()
   out.gain.setValueAtTime(0.0001, now)
-  out.gain.exponentialRampToValueAtTime(0.18, now + 4)
+  out.gain.exponentialRampToValueAtTime(0.35, now + 4)
 
   // Warm lowpass with breathing LFO
   const filter = c.createBiquadFilter()

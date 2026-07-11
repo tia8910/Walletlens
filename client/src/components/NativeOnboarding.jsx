@@ -2,10 +2,10 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
 import Logo from './Logo'
-import sfx from '../sfx'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useBiometricLock } from './BiometricLock'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
+import sfx from '../sfx'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 const STARTED_KEY = 'wl_started'
@@ -18,7 +18,6 @@ function readCurrency() {
 const USDT_LOGO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%2326a17b'/%3E%3Crect x='9' y='11' width='22' height='4.2' rx='1' fill='white'/%3E%3Crect x='17.4' y='11' width='5.2' height='20' rx='1.2' fill='white'/%3E%3Crect x='12.5' y='16.4' width='15' height='3.4' rx='1' fill='white'/%3E%3C/svg%3E"
 const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
 
-// Map theme icon strings to emojis for display
 const THEME_ICONS = {
   sparkles: '✨', award: '🏆', star: '⭐', zap: '⚡',
   sun: '☀️', moon: '🌙', heart: '💚', diamond: '💎',
@@ -27,70 +26,41 @@ const THEME_ICONS = {
 
 const SLIDES = [
   {
-    id: 'welcome',
-    gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
-    accent: '#00c853',
-    glow: 'rgba(0,200,83,0.28)',
-    particles: ['₿', 'Ξ', '◎', '📈', '💎', '🚀'],
-    icon: 'logo',
-    eyebrow: 'WELCOME TO',
-    title: 'WalletLens',
+    id: 'welcome', gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
+    accent: '#00c853', glow: 'rgba(0,200,83,0.28)',
+    particles: ['₿', 'Ξ', '◎', '📈', '💎', '🚀'], icon: 'logo',
+    eyebrow: 'WELCOME TO', title: 'WalletLens',
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place. No account needed.',
-    features: ['🔒 Private', '📊 Live P&L', '🤖 AI Insights', '🆓 Free'],
-    cta: 'Get Started',
+    desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
+    features: ['🔒 Private', '📊 Live P&L', '🤖 AI Insights', '🆓 Free'], cta: 'Get Started',
   },
   {
-    id: 'theme',
-    gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
-    accent: '#00e676',
-    glow: 'rgba(0,230,118,0.22)',
-    particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'],
-    icon: '🎨',
-    eyebrow: 'PERSONALISE',
-    title: 'Make it yours',
-    desc: 'Pick your look. Change anytime in Settings.',
-    cta: 'Continue',
-    isTheme: true,
+    id: 'theme', gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
+    accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
+    particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'], icon: '🎨',
+    eyebrow: 'PERSONALISE', title: 'Make it yours',
+    desc: 'Pick your look. Change anytime in Settings.', cta: 'Continue', isTheme: true,
   },
   {
-    id: 'portfolio',
-    gradient: 'linear-gradient(165deg, #041a10 0%, #073a1e 55%, #051a10 100%)',
-    accent: '#34d399',
-    glow: 'rgba(52,211,153,0.32)',
-    particles: ['📈', '💰', '💎', '🚀', '📊', '💹'],
-    icon: '💼',
-    eyebrow: 'PORTFOLIO',
-    title: 'Add Your Balances',
-    desc: 'Start with what you hold. See your net worth instantly.',
-    cta: 'Continue',
-    isPortfolio: true,
+    id: 'portfolio', gradient: 'linear-gradient(165deg, #041a10 0%, #073a1e 55%, #051a10 100%)',
+    accent: '#34d399', glow: 'rgba(52,211,153,0.32)',
+    particles: ['📈', '💰', '💎', '🚀', '📊', '💹'], icon: '💼',
+    eyebrow: 'PORTFOLIO', title: 'Add Your Balances',
+    desc: 'Start with what you hold. See your net worth instantly.', cta: 'Continue', isPortfolio: true,
   },
   {
-    id: 'security',
-    gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
-    accent: '#00e676',
-    glow: 'rgba(0,230,118,0.3)',
-    particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'],
-    icon: '🔐',
-    eyebrow: 'SECURITY',
-    title: 'Lock with fingerprint',
-    desc: 'Keep your portfolio for your eyes only.',
-    cta: 'Continue',
-    isSecurity: true,
+    id: 'security', gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
+    accent: '#00e676', glow: 'rgba(0,230,118,0.3)',
+    particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'], icon: '🔐',
+    eyebrow: 'SECURITY', title: 'Lock with fingerprint',
+    desc: 'Keep your portfolio for your eyes only.', cta: 'Continue', isSecurity: true,
   },
   {
-    id: 'go',
-    gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
-    accent: '#22c55e',
-    glow: 'rgba(34,197,94,0.35)',
-    particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'],
-    icon: '🚀',
-    eyebrow: 'ALL SET',
-    title: 'Ready to grow',
-    desc: 'Your dashboard awaits. Track, analyse, and grow your wealth.',
-    cta: "Let's go →",
-    final: true,
+    id: 'go', gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
+    accent: '#22c55e', glow: 'rgba(34,197,94,0.35)',
+    particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'], icon: '🚀',
+    eyebrow: 'ALL SET', title: 'Ready to grow',
+    desc: 'Your dashboard awaits.', cta: "Let's go →", final: true,
   },
 ]
 
@@ -108,10 +78,8 @@ function Particles({ step }) {
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
       {items.map((p, i) => (
         <span key={i} style={{
-          position: 'absolute', bottom: '-30px',
-          left: `${p.left}%`,
-          fontSize: `${p.size}px`,
-          opacity: 0,
+          position: 'absolute', bottom: '-30px', left: `${p.left}%`,
+          fontSize: `${p.size}px`, opacity: 0,
           animation: `no-float ${p.dur}s ${p.delay}s linear infinite`,
         }}>{p.emoji}</span>
       ))}
@@ -119,18 +87,42 @@ function Particles({ step }) {
   )
 }
 
+// ── Asset row component matching web styling ──────────────────────────────
+function AssetRow({ icon, label, value, onChange, suffix, prefix, type, typeOptions, typeValue, onTypeChange }) {
+  return (
+    <div className="no-asset-row">
+      <div className="no-asset-icon">{icon}</div>
+      <div className="no-asset-fields">
+        <div className="no-asset-header">
+          <span className="no-asset-label">{label}</span>
+          {typeOptions && (
+            <select className="no-asset-type" value={typeValue} onChange={e => onTypeChange(e.target.value)}>
+              {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          )}
+        </div>
+        <div className="no-asset-input-wrap">
+          {prefix && <span className="no-asset-prefix">{prefix}</span>}
+          <input
+            className="no-asset-input"
+            type="number" inputMode="decimal" min="0"
+            placeholder="0.00"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+          />
+          {suffix && <span className="no-asset-suffix">{suffix}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
-  const [animDir, setAnimDir] = useState(1)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, setTheme } = useTheme()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
-  useEffect(() => {
-    sfx.startAmbient()
-    return () => sfx.stopAmbient()
-  }, [])
-
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
 
@@ -149,13 +141,14 @@ export default function NativeOnboarding({ onDone }) {
   const s = SLIDES[step]
   const total = SLIDES.length
   const progress = ((step + 1) / total) * 100
+  const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
 
   const goNext = useCallback(() => {
-    if (step < total - 1) { setAnimDir(1); setStep(x => x + 1); sfx.playWhoosh() }
+    if (step < total - 1) { setStep(x => x + 1); sfx.playWhoosh() }
   }, [step, total])
 
   const goPrev = useCallback(() => {
-    if (step > 0) { setAnimDir(-1); setStep(x => x - 1) }
+    if (step > 0) { setStep(x => x - 1); sfx.playWhoosh() }
   }, [step])
 
   // Touch swipe
@@ -172,7 +165,6 @@ export default function NativeOnboarding({ onDone }) {
     else if (dx > 60) goPrev()
   }, [goNext, goPrev])
 
-  // Keyboard
   useEffect(() => {
     const h = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') goNext()
@@ -181,6 +173,12 @@ export default function NativeOnboarding({ onDone }) {
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [goNext, goPrev])
+
+  // Start ambient sound on mount
+  useEffect(() => {
+    sfx.startAmbient()
+    return () => sfx.stopAmbient()
+  }, [])
 
   async function enableBiometric() {
     if (bioBusy) return
@@ -206,29 +204,34 @@ export default function NativeOnboarding({ onDone }) {
       const wallet = await api.ensureWallet()
       const date = new Date().toISOString().split('T')[0]
       const ids = []
-      if (cashN > 0) ids.push(`fiat:${currency.toLowerCase()}`)
+      const fiatId = `fiat:${currency.toLowerCase()}`
+      if (cashN > 0) ids.push(fiatId)
       if (usdtN > 0) ids.push('tether')
       if (goldN > 0) ids.push(GOLD_ID)
       if (btcN > 0) ids.push('bitcoin')
       let prices = {}
       try { prices = ids.length ? await api.getPrices(ids.join(',')) : {} } catch {}
       const px = (id, fb) => (prices[id]?.usd ?? prices[id]?.price ?? fb)
-      if (cashN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'fiat', coin_id: `fiat:${currency.toLowerCase()}`, coin_symbol: currency, coin_name: `${currency} Cash`, amount: cashN, price_per_unit: px(`fiat:${currency.toLowerCase()}`, 1), date })
+
+      if (cashN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'fiat', coin_id: fiatId, coin_symbol: currency, coin_name: `${currency} Cash`, amount: cashN, price_per_unit: px(fiatId, 1), date })
       if (usdtN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'tether', coin_symbol: 'USDT', coin_name: 'Tether', amount: usdtN, price_per_unit: px('tether', 1), date })
       if (goldN > 0) {
         const goldOz = goldUnit === 'g' ? goldN / 31.1034768 : goldN
         await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'gold', coin_id: GOLD_ID, coin_symbol: 'XAU', coin_name: 'Gold (1 oz)', amount: goldOz, price_per_unit: px(GOLD_ID, 0), date })
       }
       if (btcN > 0) await api.addTransaction({ wallet_id: wallet.id, type: 'buy', category: 'crypto', coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin', amount: btcN, price_per_unit: px('bitcoin', 0), date })
+
       track('native_onboarding_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0 })
       trackProfileCreated({ cash: cashN, usdt: usdtN, gold_oz: goldN, btc: btcN, currency })
       try { localStorage.setItem(STARTED_KEY, '1') } catch {}
+      sfx.playChime()
+      sfx.haptic([10, 30, 12])
       goNext()
-    } catch { goNext() }
-    finally { setBusy(false) }
+    } catch (err) {
+      console.error('Portfolio seed failed:', err)
+      goNext()
+    } finally { setBusy(false) }
   }
-
-  const sym = POPULAR_FIAT.find(f => f.code === currency)?.symbol || currency
 
   function getThemeIcon(th) {
     if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -238,113 +241,91 @@ export default function NativeOnboarding({ onDone }) {
   }
 
   return (
-    <div
-      className="no-container"
-      style={{ background: s.gradient }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
+    <div className="no-container" style={{ background: s.gradient }}
+      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <Particles step={step} />
 
       <div className="no-slide" key={step}>
-        {/* Icon */}
         <div className="no-icon-wrap" style={{ '--accent': s.accent, '--glow': s.glow }}>
-          {s.icon === 'logo' ? (
-            <Logo size={72} animated />
-          ) : (
-            <span className="no-icon-emoji">{s.icon}</span>
-          )}
+          {s.icon === 'logo' ? <Logo size={72} animated /> : <span className="no-icon-emoji">{s.icon}</span>}
         </div>
-
-        {/* Eyebrow */}
         <div className="no-eyebrow" style={{ color: s.accent }}>{s.eyebrow}</div>
-
-        {/* Title */}
         {s.titleGrad ? (
           <h1 className="no-title" style={{ backgroundImage: s.titleGrad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{s.title}</h1>
         ) : (
           <h1 className="no-title">{s.title}</h1>
         )}
-
-        {/* Description */}
         <p className="no-desc">{s.desc}</p>
 
-        {/* Features */}
         {s.features && (
           <div className="no-features">
-            {s.features.map((f, i) => (
-              <div key={i} className="no-feature">{f}</div>
-            ))}
+            {s.features.map((f, i) => <div key={i} className="no-feature">{f}</div>)}
           </div>
         )}
 
-        {/* Theme picker */}
         {s.isTheme && (
           <div className="no-theme-grid">
             {THEMES.map(th => (
-              <button
-                key={th.id}
-                className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
+              <button key={th.id} className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
                 style={{ borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
-                onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
-              >
+                onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}>
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
-                }}>
-                  {getThemeIcon(th)}
-                </span>
+                }}>{getThemeIcon(th)}</span>
                 <span className="no-theme-label" style={{ color: theme === th.id ? th.swatch : undefined }}>{th.name}</span>
               </button>
             ))}
           </div>
         )}
 
-        {/* Portfolio inputs — matching web WelcomeStart style */}
         {s.isPortfolio && (
-          <div className="no-portfolio">
-            <div className="no-field">
-              <label className="no-label">💵 Cash balance</label>
-              <div className="no-input-wrap">
-                <span className="no-prefix">{sym}</span>
-                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={cash} onChange={e => setCash(e.target.value)} autoFocus />
-                <select className="no-select" value={currency} onChange={e => setCurrency(e.target.value)}>
-                  {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-                </select>
-              </div>
+          <div className="no-portfolio-form">
+            <div className="no-portfolio-header">
+              <span className="no-portfolio-icon">💵</span>
+              <span className="no-portfolio-title">Cash Balance</span>
             </div>
-            <div className="no-field">
-              <label className="no-label">₿ Bitcoin</label>
-              <div className="no-input-wrap">
-                <span className="no-prefix no-prefix-btc">₿</span>
-                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={btc} onChange={e => setBtc(e.target.value)} />
-                <span className="no-suffix">BTC</span>
-              </div>
+            <div className="no-portfolio-row">
+              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={cash} onChange={e => setCash(e.target.value)} autoFocus />
+              <select className="no-portfolio-currency" value={currency} onChange={e => setCurrency(e.target.value)}>
+                {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
+              </select>
             </div>
-            <div className="no-field">
-              <label className="no-label">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4 }} /> : '🥇'} Gold</label>
-              <div className="no-input-wrap">
-                <span className="no-prefix">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 14, height: 14 }} /> : '🥇'}</span>
-                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={gold} onChange={e => setGold(e.target.value)} />
-                <select className="no-select" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
-                  <option value="oz">oz</option>
-                  <option value="g">gram</option>
-                </select>
-              </div>
+
+            <div className="no-portfolio-header">
+              <span className="no-portfolio-icon">₿</span>
+              <span className="no-portfolio-title">Bitcoin</span>
             </div>
-            <div className="no-field">
-              <label className="no-label"><img src={USDT_LOGO} alt="" style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: 4 }} /> USDT</label>
-              <div className="no-input-wrap">
-                <span className="no-prefix"><img src={USDT_LOGO} alt="" style={{ width: 14, height: 14 }} /></span>
-                <input className="no-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={usdt} onChange={e => setUsdt(e.target.value)} />
-                <span className="no-suffix">USDT</span>
-              </div>
+            <div className="no-portfolio-row">
+              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={btc} onChange={e => setBtc(e.target.value)} />
+              <span className="no-portfolio-unit">BTC</span>
             </div>
-            <p className="no-privacy">🔒 100% private — stays on your device</p>
+
+            <div className="no-portfolio-header">
+              <span className="no-portfolio-icon">{GOLD_LOGO ? <img src={GOLD_LOGO} alt="" style={{ width: 18, height: 18 }} /> : '🥇'}</span>
+              <span className="no-portfolio-title">Gold</span>
+            </div>
+            <div className="no-portfolio-row">
+              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={gold} onChange={e => setGold(e.target.value)} />
+              <select className="no-portfolio-currency" value={goldUnit} onChange={e => setGoldUnit(e.target.value)}>
+                <option value="oz">oz</option>
+                <option value="g">gram</option>
+              </select>
+            </div>
+
+            <div className="no-portfolio-header">
+              <span className="no-portfolio-icon"><img src={USDT_LOGO} alt="" style={{ width: 18, height: 18 }} /></span>
+              <span className="no-portfolio-title">USDT</span>
+            </div>
+            <div className="no-portfolio-row">
+              <input className="no-portfolio-input" type="number" inputMode="decimal" min="0" placeholder="0.00" value={usdt} onChange={e => setUsdt(e.target.value)} />
+              <span className="no-portfolio-unit">USDT</span>
+            </div>
+
+            <p className="no-privacy-note">🔒 100% private — stays on your device</p>
           </div>
         )}
 
-        {/* Security */}
         {s.isSecurity && (
           <div className="no-security">
             {!bioAvailable ? (
@@ -364,7 +345,6 @@ export default function NativeOnboarding({ onDone }) {
         )}
       </div>
 
-      {/* Progress */}
       <div className="no-progress-track">
         <div className="no-progress-fill" style={{ width: `${progress}%`, background: s.accent }} />
       </div>
@@ -375,15 +355,14 @@ export default function NativeOnboarding({ onDone }) {
         ))}
       </div>
 
-      {/* CTA */}
-      <button
-        className="no-cta"
+      <button className="no-cta"
         style={{
           background: s.id === 'welcome' ? 'linear-gradient(135deg, #00c853 0%, #00a040 100%)' : s.accent,
-          boxShadow: s.id === 'welcome' ? '0 4px 20px rgba(0,200,83,0.45)' : undefined,
+          boxShadow: s.id === 'welcome' ? '0 4px 24px rgba(0,200,83,0.45)' : `0 4px 24px ${s.glow}`,
         }}
         onClick={() => {
-          sfx.playChime(); if (s.isPortfolio) { handlePortfolio(); return }
+          sfx.playChime()
+          if (s.isPortfolio) { handlePortfolio(); return }
           if (s.isSecurity && !bioEnabled && bioAvailable) { enableBiometric(); return }
           if (s.final) { sfx.playTriumph(); finish(); return }
           goNext()
