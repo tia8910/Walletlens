@@ -360,78 +360,6 @@ export default function BackupCode({ hideTrigger = false }) {
                 </>
               )}
 
-              {/* ── Weekly email backup subscription (always available) ── */}
-              <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
-                <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                  <Icon name="mail" size={15} /> Weekly email backup
-                </div>
-
-                {!sub ? (
-                  <>
-                    <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.6rem', lineHeight:1.55 }}>
-                      Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
-                    </p>
-                    <div style={{ display:'flex', gap:'0.5rem' }}>
-                      <input
-                        type="email" inputMode="email" autoComplete="email"
-                        value={emailAddr}
-                        onChange={e => { setEmailAddr(e.target.value); if (emailErr) setEmailErr(''); if (emailStatus !== 'idle') setEmailStatus('idle') }}
-                        placeholder="you@example.com"
-                        style={{
-                          flex:1, minWidth:0, background:'rgba(0,0,0,0.25)',
-                          border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
-                          padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
-                        }} />
-                      <button onClick={subscribeBackup} disabled={emailStatus === 'sending'} style={btn({
-                        background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
-                        fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
-                        display:'inline-flex', alignItems:'center', gap:'0.35rem',
-                      })}>
-                        {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap',
-                      background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
-                      borderRadius:'10px', padding:'0.55rem 0.75rem', margin:'0.15rem 0 0.6rem',
-                      fontSize:'0.75rem', color:'var(--g-ink)', fontWeight:600,
-                    }}>
-                      <Icon name="check" size={14} />
-                      <span style={{ wordBreak:'break-all' }}>Weekly backup on · {sub.email}</span>
-                      {daysUntilNextBackup() != null && (
-                        <span style={{ color:'var(--text-muted)', fontWeight:500, marginLeft:'auto' }}>
-                          next in ~{daysUntilNextBackup()}d
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display:'flex', gap:'0.5rem' }}>
-                      <button onClick={sendBackupNow} disabled={emailStatus === 'sending'} style={btn({
-                        flex:1, background:'rgba(59,130,246,0.18)', border:'1px solid rgba(59,130,246,0.4)',
-                        color:'#93c5fd', fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1,
-                        display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
-                      })}>
-                        {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
-                      </button>
-                      <button onClick={unsubscribeBackup} style={btn({
-                        background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
-                        color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
-                      })}>Unsubscribe</button>
-                    </div>
-                  </>
-                )}
-
-                {emailStatus === 'sent' && (
-                  <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-                    <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
-                  </p>
-                )}
-                {emailErr && (
-                  <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
-                )}
-              </div>
             </>
           )}
 
@@ -544,6 +472,79 @@ export default function BackupCode({ hideTrigger = false }) {
               )}
             </>
           )}
+
+          {/* ── Weekly email backup subscription (always available) ── */}
+          <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
+            <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+              <Icon name="mail" size={15} /> Weekly email backup
+            </div>
+
+            {!sub ? (
+              <>
+                <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.6rem', lineHeight:1.55 }}>
+                  Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
+                </p>
+                <div style={{ display:'flex', gap:'0.5rem' }}>
+                  <input
+                    type="email" inputMode="email" autoComplete="email"
+                    value={emailAddr}
+                    onChange={e => { setEmailAddr(e.target.value); if (emailErr) setEmailErr(''); if (emailStatus !== 'idle') setEmailStatus('idle') }}
+                    placeholder="you@example.com"
+                    style={{
+                      flex:1, minWidth:0, background:'rgba(0,0,0,0.25)',
+                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
+                      padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
+                    }} />
+                  <button onClick={subscribeBackup} disabled={emailStatus === 'sending'} style={btn({
+                    background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
+                    fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
+                    display:'inline-flex', alignItems:'center', gap:'0.35rem',
+                  })}>
+                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap',
+                  background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
+                  borderRadius:'10px', padding:'0.55rem 0.75rem', margin:'0.15rem 0 0.6rem',
+                  fontSize:'0.75rem', color:'var(--g-ink)', fontWeight:600,
+                }}>
+                  <Icon name="check" size={14} />
+                  <span style={{ wordBreak:'break-all' }}>Weekly backup on · {sub.email}</span>
+                  {daysUntilNextBackup() != null && (
+                    <span style={{ color:'var(--text-muted)', fontWeight:500, marginLeft:'auto' }}>
+                      next in ~{daysUntilNextBackup()}d
+                    </span>
+                  )}
+                </div>
+                <div style={{ display:'flex', gap:'0.5rem' }}>
+                  <button onClick={sendBackupNow} disabled={emailStatus === 'sending'} style={btn({
+                    flex:1, background:'rgba(59,130,246,0.18)', border:'1px solid rgba(59,130,246,0.4)',
+                    color:'#93c5fd', fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1,
+                    display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
+                  })}>
+                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+                  </button>
+                  <button onClick={unsubscribeBackup} style={btn({
+                    background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
+                    color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
+                  })}>Unsubscribe</button>
+                </div>
+              </>
+            )}
+
+            {emailStatus === 'sent' && (
+              <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
+                <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
+              </p>
+            )}
+            {emailErr && (
+              <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
+            )}
+          </div>
         </div>
       )}
     </div>
