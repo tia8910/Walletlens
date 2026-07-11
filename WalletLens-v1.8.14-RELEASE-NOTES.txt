@@ -1,0 +1,22 @@
+WalletLens v1.8.14 — Release Notes
+====================================
+
+BUG FIXES:
+- Bottom navigation active tab no longer disappears after a while
+  (persisted to localStorage, stays highlighted until user taps another)
+- All onboarding crash-proofed with try/catch wrappers
+- First-run bug message fixed
+
+NEW FEATURES:
+- Portfolio Guardian notification: reminder to set up the feature
+  (fires once per day if not already active, shows in system notifications)
+
+IMPROVEMENTS:
+- Active nav tab persists across page navigation and app restarts
+- Guardian reminder uses same notification system as price alerts
+
+FILES:
+- WalletLens-v1.8.14.aab → Upload to Google Play Console
+- WalletLens-v1.8.14.apk → Test on device
+
+VERSION: 1.8.14 (versionCode 25)

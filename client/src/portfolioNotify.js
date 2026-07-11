@@ -22,6 +22,7 @@ const LAST_VISIT_KEY       = 'wl_last_visit'
 const DAILY_NOTIF_KEY      = 'wl_daily_notif_date'
 const WEEKLY_SUMMARY_KEY   = 'wl_weekly_summary_week'
 const ENGAGEMENT_KEY       = 'wl_engagement_ts'
+const GUARDIAN_REMIND_KEY  = 'wl_guardian_remind_ts'
 
 const THRESHOLD    = 0.05           // 5% portfolio move
 const COOLDOWN_MS  = 30 * 60 * 1000 // 30 min between portfolio alerts
@@ -232,6 +233,34 @@ export function checkReEngagement() {
   fireNotification('We miss you!', msg, 're-engage')
 }
 
+// ── 6. Portfolio Guardian reminder ────────────────────────────────────
+
+const GUARDIAN_REMIND_INTERVAL = 24 * 60 * 60 * 1000 // once per day
+
+export function checkGuardianReminder() {
+  if (!canNotify()) return
+
+  // Check if guardian is already active
+  try {
+    const guardian = JSON.parse(localStorage.getItem('wl_guardian') || 'null')
+    if (guardian?.active) return // Already set up, no need to remind
+  } catch {}
+
+  // Cooldown
+  try {
+    const last = parseInt(localStorage.getItem(GUARDIAN_REMIND_KEY) || '0', 10)
+    if (Date.now() - last < GUARDIAN_REMIND_INTERVAL) return
+  } catch {}
+
+  localStorage.setItem(GUARDIAN_REMIND_KEY, String(Date.now()))
+
+  fireNotification(
+    'Protect your portfolio',
+    'Portfolio Guardian notifies your trusted contacts if something happens to you. Set it up in a tap.',
+    'guardian-remind'
+  )
+}
+
 // ── Permission ─────────────────────────────────────────────────────────
 
 export async function requestPortfolioNotifPermission() {
@@ -263,7 +292,10 @@ export function initNotifications(currentPortfolioValue) {
   // 5. Re-engagement if idle >3 days
   checkReEngagement()
 
-  // 6. Set baseline if first time
+  // 6. Portfolio Guardian reminder
+  checkGuardianReminder()
+
+  // 7. Set baseline if first time
   if (currentPortfolioValue != null) {
     setPortfolioBaseline(currentPortfolioValue)
   }
