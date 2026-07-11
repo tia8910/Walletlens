@@ -28,6 +28,7 @@ import GoalTracker from '../components/GoalTracker'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import InstallExtension from '../components/InstallExtension'
 import { BiometricToggle } from '../components/BiometricLock'
+import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
@@ -1278,6 +1279,130 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
 }
 
 // ── Data panel — short WLZ backup code ───────────────────────────────────
+// Weekly email-backup subscription. Register an email once; the app emails the
+// current backup (code + scannable QR) from noreply@walletlens.live now, then
+// automatically every week when opened. The portfolio never leaves the device
+// on our servers — the app regenerates and sends each time.
+function EmailBackupPanel() {
+  const [emailAddr, setEmailAddr] = useState('')
+  const [status, setStatus] = useState('idle') // idle | sending | sent | error
+  const [err, setErr] = useState('')
+  const [sub, setSub] = useState(() => loadBackupSub())
+
+  const explainMailErr = (reason) => {
+    const r = String(reason || '')
+    return r.includes('mail_not_configured') ? 'Email isn\'t set up on the server yet.'
+      : r.includes('not verified') || r.includes('domain') ? 'The walletlens.live email domain isn\'t verified in Resend yet.'
+      : r.includes('network') ? 'Couldn\'t reach the email service. Check your connection and try again.'
+      : 'Couldn\'t send the backup email. Double-check your address and try again.'
+  }
+
+  const subscribe = async () => {
+    const email = emailAddr.trim().toLowerCase()
+    if (!EMAIL_RE.test(email)) { setErr('Enter a valid email address.'); return }
+    setErr(''); setStatus('sending')
+    try {
+      await subscribeBackupEmail(email)
+      setSub(loadBackupSub()); setStatus('sent'); track('backup_email_subscribed')
+    } catch (e) {
+      setErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
+      setStatus('error')
+    }
+  }
+
+  const sendNow = async () => {
+    setErr(''); setStatus('sending')
+    try {
+      await resendBackupNow()
+      setSub(loadBackupSub()); setStatus('sent'); track('backup_email_resent')
+    } catch (e) {
+      setErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
+      setStatus('error')
+    }
+  }
+
+  const unsubscribe = () => {
+    clearBackupSub(); setSub(null); setStatus('idle'); setErr(''); track('backup_email_unsubscribed')
+  }
+
+  const btn = (extra) => ({
+    padding:'0.55rem 0.85rem', borderRadius:'8px', cursor:'pointer',
+    fontSize:'0.8rem', ...extra,
+  })
+
+  return (
+    <div className="dvx-email-backup" style={{ marginTop:'1.1rem', paddingTop:'1.1rem', borderTop:'1px solid var(--border, rgba(128,128,128,0.18))' }}>
+      <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', color:'var(--text)', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+        <Icon name="mail" size={15} /> Weekly email backup
+      </div>
+
+      {!sub ? (
+        <>
+          <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0.15rem 0 0.6rem', lineHeight:1.55 }}>
+            Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
+          </p>
+          <div style={{ display:'flex', gap:'0.5rem' }}>
+            <input
+              type="email" inputMode="email" autoComplete="email"
+              value={emailAddr}
+              onChange={e => { setEmailAddr(e.target.value); if (err) setErr(''); if (status !== 'idle') setStatus('idle') }}
+              placeholder="you@example.com"
+              style={{
+                flex:1, minWidth:0, background:'var(--input-bg, rgba(128,128,128,0.08))',
+                border:'1px solid rgba(16,185,129,0.3)', borderRadius:'8px', color:'var(--text)',
+                padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
+              }} />
+            <button onClick={subscribe} disabled={status === 'sending'} style={btn({
+              background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
+              fontWeight:700, opacity: status === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
+              display:'inline-flex', alignItems:'center', gap:'0.35rem',
+            })}>
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{
+            display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap',
+            background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
+            borderRadius:'10px', padding:'0.55rem 0.75rem', margin:'0.15rem 0 0.6rem',
+            fontSize:'0.75rem', color:'var(--g-ink)', fontWeight:600,
+          }}>
+            <Icon name="check" size={14} />
+            <span style={{ wordBreak:'break-all' }}>Weekly backup on · {sub.email}</span>
+            {daysUntilNextBackup() != null && (
+              <span style={{ color:'var(--text-muted)', fontWeight:500, marginLeft:'auto' }}>
+                next in ~{daysUntilNextBackup()}d
+              </span>
+            )}
+          </div>
+          <div style={{ display:'flex', gap:'0.5rem' }}>
+            <button onClick={sendNow} disabled={status === 'sending'} style={btn({
+              flex:1, background:'rgba(59,130,246,0.18)', border:'1px solid rgba(59,130,246,0.4)',
+              color:'#3b82f6', fontWeight:700, opacity: status === 'sending' ? 0.7 : 1,
+              display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
+            })}>
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+            </button>
+            <button onClick={unsubscribe} style={btn({
+              background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
+              color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
+            })}>Unsubscribe</button>
+          </div>
+        </>
+      )}
+
+      {status === 'sent' && (
+        <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
+          <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
+        </p>
+      )}
+      {err && <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{err}</p>}
+    </div>
+  )
+}
+
 function DataPanel({ onRefresh, onImported }) {
   const { t } = useLanguage()
   const [code, setCode]     = useState('')
@@ -1461,6 +1586,8 @@ function DataPanel({ onRefresh, onImported }) {
           </button>
         )}
       </div>
+
+      <EmailBackupPanel />
     </div>
   )
 }
