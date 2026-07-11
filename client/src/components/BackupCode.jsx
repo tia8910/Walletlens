@@ -1,207 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Icon from './Icon'
-import QRCode from 'qrcode'
 import { decodeQrFromImageFile } from '../utils/qrBackup'
 import { track, trackProfileCreated } from '../analytics'
 
-// Server that delivers the backup email (from noreply@walletlens.live via Resend).
-const MAIL_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const BACKUP_KEYS = [
-  'crypto_tracker_transactions',
-  'crypto_tracker_wallets',
-  'crypto_tracker_coin_targets',
-  'crypto_tracker_exchanges',
-  'crypto_tracker_coin_notes',
-  'crypto_tracker_manual_prices',
-  'crypto_tracker_next_tx_id',
-  'crypto_tracker_next_wallet_id',
-  'crypto_tracker_next_ex_id',
-  'wl_settings',
-  'wl_card_vis',
-  // Portfolio Guardian identity — including these means restoring a backup on a
-  // new device recovers the SAME Guardian registration, so a lost phone doesn't
-  // leave the dead-man's switch stranded (it can be reset/cancelled again).
-  'wl_guardian',
-  'wl_guardian_device_id',
-]
-
-// ── Compression helpers (WL2 format) ──────────────────────────────────────
-
-async function gzipB64(str) {
-  if (!window.CompressionStream) return null
-  const bytes = new TextEncoder().encode(str)
-  const cs = new CompressionStream('gzip')
-  const w = cs.writable.getWriter(); w.write(bytes); w.close()
-  const chunks = []; const r = cs.readable.getReader()
-  while (true) { const { done, value } = await r.read(); if (done) break; chunks.push(value) }
-  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0))
-  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length }
-  let s = ''; out.forEach(b => s += String.fromCharCode(b))
-  return btoa(s)
-}
-
-async function gunzipB64(b64) {
-  const binary = atob(b64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  const ds = new DecompressionStream('gzip')
-  const w = ds.writable.getWriter(); w.write(bytes); w.close()
-  const chunks = []; const r = ds.readable.getReader()
-  while (true) { const { done, value } = await r.read(); if (done) break; chunks.push(value) }
-  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0))
-  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length }
-  return new TextDecoder().decode(out)
-}
-
-// ── utf8-safe base64 fallback (WL1 format) ────────────────────────────────
-
-function b64encode(str) { return btoa(unescape(encodeURIComponent(str))) }
-function b64decode(str) { return decodeURIComponent(escape(atob(str))) }
-
-// ── Core logic ────────────────────────────────────────────────────────────
-
-// WL3 format — compact parsed objects, coin_image stripped (re-fetched on load),
-// empty optional fields omitted. Avoids the double-encoding of WL2 (which stored
-// each localStorage string value inside an outer JSON.stringify, escaping every
-// inner quote). Result: 40–60% smaller payload → most portfolios fit in one QR.
-async function generateBackupCode() {
-  const txsRaw = localStorage.getItem('crypto_tracker_transactions')
-  const wsRaw  = localStorage.getItem('crypto_tracker_wallets')
-  const txs = txsRaw ? JSON.parse(txsRaw) : []
-  const ws  = wsRaw  ? JSON.parse(wsRaw)  : []
-
-  // Drop coin_image (large URL, fetched fresh from CoinGecko on next load)
-  // and drop empty/default optional fields to reduce payload.
-  const compactTxs = txs.map(tx => {
-    // eslint-disable-next-line no-unused-vars
-    const { coin_image, ...rest } = tx
-    const out = { ...rest }
-    if (!out.exchange)                     delete out.exchange
-    if (!out.notes)                        delete out.notes
-    if (!out.fee && out.fee !== 0)         delete out.fee
-    if (out.fee === 0)                     delete out.fee
-    if (!out.category || out.category === 'crypto') delete out.category
-    return out
-  })
-
-  const payload = { v: 3, ts: Date.now(), txs: compactTxs, ws }
-
-  // ID counters — needed so the next add doesn't collide
-  const wId = localStorage.getItem('crypto_tracker_next_wallet_id')
-  const tId = localStorage.getItem('crypto_tracker_next_tx_id')
-  const eId = localStorage.getItem('crypto_tracker_next_ex_id')
-  if (wId || tId || eId) payload.ids = { w: wId || '1', t: tId || '1', e: eId || '1' }
-
-  // Optional blobs (coin targets, notes, manual prices, settings, card vis,
-  // exchanges, Portfolio Guardian config + device id)
-  const OPT = {
-    ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
-    mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
-    cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
-    gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
-  }
-  for (const [alias, key] of Object.entries(OPT)) {
-    const raw = localStorage.getItem(key)
-    // Most blobs are JSON; wl_guardian_device_id is a plain string — keep it raw.
-    if (raw != null) { try { payload[alias] = JSON.parse(raw) } catch { payload[alias] = raw } }
-  }
-
-  const json = JSON.stringify(payload)
-  const compressed = await gzipB64(json)
-  const code = compressed ? `WL3-${compressed}` : `WL1-${b64encode(json)}`
-  return { code, txCount: txs.length, walletCount: ws.length }
-}
-
-async function applyBackupCode(raw) {
-  const code = (raw || '').trim().replace(/\s+/g, '')
-  if (!code) throw new Error('Paste a backup code first.')
-
-  let json
-  if (code.startsWith('WL3-') || code.startsWith('WL2-')) {
-    try { json = await gunzipB64(code.slice(4)) }
-    catch { throw new Error('Could not decompress backup code — make sure you copied it completely.') }
-  } else {
-    const b64 = code.startsWith('WL1-') ? code.slice(4) : code
-    try { json = b64decode(b64) }
-    catch { throw new Error('Could not decode backup code — make sure you copied it completely.') }
-  }
-
-  let parsed
-  try { parsed = JSON.parse(json) } catch { throw new Error('Backup data is corrupted or incomplete.') }
-
-  if (parsed?.v === 3) {
-    if (!Array.isArray(parsed.txs)) throw new Error('Backup data is missing or corrupted.')
-    // Re-add coin_image as empty string; dashboard fetches it from CoinGecko on load.
-    const txs = parsed.txs.map(tx => ({ coin_image: '', category: 'crypto', ...tx }))
-    localStorage.setItem('crypto_tracker_transactions', JSON.stringify(txs))
-    localStorage.setItem('crypto_tracker_wallets', JSON.stringify(parsed.ws || []))
-    if (parsed.ids) {
-      if (parsed.ids.w) localStorage.setItem('crypto_tracker_next_wallet_id', String(parsed.ids.w))
-      if (parsed.ids.t) localStorage.setItem('crypto_tracker_next_tx_id', String(parsed.ids.t))
-      if (parsed.ids.e) localStorage.setItem('crypto_tracker_next_ex_id', String(parsed.ids.e))
-    }
-    const OPT = {
-      ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
-      mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
-      cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
-      gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
-    }
-    let restored = 2
-    for (const [alias, key] of Object.entries(OPT)) {
-      if (parsed[alias] != null) {
-        const v = parsed[alias]
-        // Preserve raw strings (device id) verbatim; JSON-encode object blobs.
-        localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v))
-        restored++
-      }
-    }
-    return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
-  }
-
-  // Legacy WL1/WL2 — data-bag of raw localStorage strings
-  if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.')
-  let restored = 0
-  for (const [key, val] of Object.entries(parsed.data)) {
-    if (BACKUP_KEYS.includes(key) && typeof val === 'string') {
-      localStorage.setItem(key, val); restored++
-    }
-  }
-  return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
-}
-
-// ── QR helpers ────────────────────────────────────────────────────────────
-
-// Split large codes into chunks so each QR stays at a manageable version/density.
-// At 400px width, version-25 (117×117) needs ~1200 bytes max for ~3.4px/module.
-const QR_CHUNK = 1200
-
-async function makeQrDataUrl(data) {
-  return QRCode.toDataURL(data, {
-    // scale (px/module) not fixed width — dense codes forced into 400px fell
-    // to ~2px per module and became hard for cameras/decoders to read.
-    errorCorrectionLevel: 'L', margin: 2, scale: 5,
-    color: { dark: '#000000', light: '#ffffff' },
-  }).catch(() => '')
-}
-
-// Returns [{idx, total, url}, ...]. Single-element for small codes.
-async function makeQrParts(code) {
-  if (code.length <= QR_CHUNK) {
-    const url = await makeQrDataUrl(code)
-    return url ? [{ idx: 1, total: 1, url }] : []
-  }
-  const total = Math.ceil(code.length / QR_CHUNK)
-  const parts = []
-  for (let i = 0; i < total; i++) {
-    const chunk = code.slice(i * QR_CHUNK, (i + 1) * QR_CHUNK)
-    const url = await makeQrDataUrl(`WQ${i + 1}/${total}:${chunk}`)
-    if (!url) return []
-    parts.push({ idx: i + 1, total, url })
-  }
-  return parts
-}
+import { generateBackupCode, applyBackupCode, makeQrParts } from '../backupCore'
+import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -224,10 +27,11 @@ export default function BackupCode({ hideTrigger = false }) {
   const [showQr, setShowQr] = useState(false)
   const [qrParts, setQrParts] = useState([])
 
-  // Email backup
+  // Weekly email-backup subscription
   const [emailAddr, setEmailAddr] = useState('')
   const [emailStatus, setEmailStatus] = useState('idle') // idle | sending | sent | error
   const [emailErr, setEmailErr] = useState('')
+  const [sub, setSub] = useState(() => loadBackupSub())
 
   // QR scan (import)
   const [scanning, setScanning] = useState(false)
@@ -268,39 +72,49 @@ export default function BackupCode({ hideTrigger = false }) {
     setShowQr(true)
   }
 
-  const emailBackup = async () => {
+  const explainMailErr = (reason) => {
+    const r = String(reason || '')
+    return r.includes('mail_not_configured') ? 'Email isn\'t set up on the server yet.'
+      : r.includes('not verified') || r.includes('domain') ? 'The walletlens.live email domain isn\'t verified in Resend yet.'
+      : r.includes('network') ? 'Couldn\'t reach the email service. Check your connection and try again.'
+      : 'Couldn\'t send the backup email. Double-check your address and try again.'
+  }
+
+  // Subscribe: sends the backup now and enables the automatic weekly email.
+  const subscribeBackup = async () => {
     const email = emailAddr.trim().toLowerCase()
     if (!EMAIL_RE.test(email)) { setEmailErr('Enter a valid email address.'); return }
-    if (!exportCode) { setEmailErr('Generate your backup first.'); return }
     setEmailErr(''); setEmailStatus('sending')
     try {
-      // Attach a single scannable QR when the code fits one; the full code is
-      // always included in the email body so restore works regardless.
-      let qrPng = null
-      if (exportCode.length <= QR_CHUNK) {
-        const dataUrl = await makeQrDataUrl(exportCode)
-        const b64 = (dataUrl || '').split(',')[1] || ''
-        if (b64 && b64.length < 45000) qrPng = b64
-      }
-      const res = await fetch(MAIL_ENDPOINT, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'backup_email', email, code: exportCode, qrPng }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (res.ok && data.ok) { setEmailStatus('sent'); track('backup_email_sent') }
-      else {
-        const r = String(data.reason || data.error || '')
-        setEmailErr(
-          r.includes('mail_not_configured') ? 'Email isn\'t set up on the server yet.'
-          : r.includes('not verified') || r.includes('domain') ? 'The walletlens.live email domain isn\'t verified in Resend yet.'
-          : 'Couldn\'t send the backup email. Double-check your address and try again.'
-        )
-        setEmailStatus('error')
-      }
-    } catch {
-      setEmailErr('Couldn\'t reach the email service. Check your connection and try again.')
+      await subscribeBackupEmail(email)
+      setSub(loadBackupSub())
+      setEmailStatus('sent')
+      track('backup_email_subscribed')
+    } catch (e) {
+      setEmailErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
       setEmailStatus('error')
     }
+  }
+
+  const sendBackupNow = async () => {
+    setEmailErr(''); setEmailStatus('sending')
+    try {
+      await resendBackupNow()
+      setSub(loadBackupSub())
+      setEmailStatus('sent')
+      track('backup_email_resent')
+    } catch (e) {
+      setEmailErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
+      setEmailStatus('error')
+    }
+  }
+
+  const unsubscribeBackup = () => {
+    clearBackupSub()
+    setSub(null)
+    setEmailStatus('idle')
+    setEmailErr('')
+    track('backup_email_unsubscribed')
   }
 
   // Ingest a scanned string — handles plain and multi-part WQ<i>/<n>: codes.
@@ -543,14 +357,19 @@ export default function BackupCode({ hideTrigger = false }) {
                   <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.7rem 0 0', textAlign:'center', fontStyle:'italic' }}>
                     <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Keep this code private — anyone with it can restore your portfolio.
                   </p>
+                </>
+              )}
 
-                  {/* ── Email me my backup ── */}
-                  <div style={{ marginTop:'0.9rem', paddingTop:'0.9rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
-                    <div style={{ fontSize:'0.82rem', fontWeight:700, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                      <Icon name="mail" size={15} /> Email me my backup
-                    </div>
-                    <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.55rem', lineHeight:1.5 }}>
-                      We'll send your backup code{' '}{exportCode.length <= QR_CHUNK ? '+ a scannable QR ' : ''}to your inbox from <strong>noreply@walletlens.live</strong> so you can restore on any device. It's delivered once — WalletLens keeps no copy.
+              {/* ── Weekly email backup subscription (always available) ── */}
+              <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
+                <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                  <Icon name="mail" size={15} /> Weekly email backup
+                </div>
+
+                {!sub ? (
+                  <>
+                    <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.6rem', lineHeight:1.55 }}>
+                      Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
                     </p>
                     <div style={{ display:'flex', gap:'0.5rem' }}>
                       <input
@@ -563,27 +382,56 @@ export default function BackupCode({ hideTrigger = false }) {
                           border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                           padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
                         }} />
-                      <button onClick={emailBackup} disabled={emailStatus === 'sending'} style={btn({
+                      <button onClick={subscribeBackup} disabled={emailStatus === 'sending'} style={btn({
                         background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
                         fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
                         display:'inline-flex', alignItems:'center', gap:'0.35rem',
                       })}>
-                        {emailStatus === 'sending'
-                          ? 'Sending…'
-                          : <><Icon name="mail" size={14} /> Send</>}
+                        {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
                       </button>
                     </div>
-                    {emailStatus === 'sent' && (
-                      <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-                        <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
-                      </p>
-                    )}
-                    {emailErr && (
-                      <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
-                    )}
-                  </div>
-                </>
-              )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap',
+                      background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
+                      borderRadius:'10px', padding:'0.55rem 0.75rem', margin:'0.15rem 0 0.6rem',
+                      fontSize:'0.75rem', color:'var(--g-ink)', fontWeight:600,
+                    }}>
+                      <Icon name="check" size={14} />
+                      <span style={{ wordBreak:'break-all' }}>Weekly backup on · {sub.email}</span>
+                      {daysUntilNextBackup() != null && (
+                        <span style={{ color:'var(--text-muted)', fontWeight:500, marginLeft:'auto' }}>
+                          next in ~{daysUntilNextBackup()}d
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display:'flex', gap:'0.5rem' }}>
+                      <button onClick={sendBackupNow} disabled={emailStatus === 'sending'} style={btn({
+                        flex:1, background:'rgba(59,130,246,0.18)', border:'1px solid rgba(59,130,246,0.4)',
+                        color:'#93c5fd', fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1,
+                        display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
+                      })}>
+                        {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+                      </button>
+                      <button onClick={unsubscribeBackup} style={btn({
+                        background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
+                        color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
+                      })}>Unsubscribe</button>
+                    </div>
+                  </>
+                )}
+
+                {emailStatus === 'sent' && (
+                  <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
+                    <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
+                  </p>
+                )}
+                {emailErr && (
+                  <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
+                )}
+              </div>
             </>
           )}
 
