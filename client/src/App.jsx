@@ -542,7 +542,7 @@ export default function App() {
   }
 
   return (
-    <div className="wl-app">
+    <div className={`wl-app${isStandalone ? " wl-native-app" : ""}`}>
       <UpdateBanner />
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
@@ -594,7 +594,7 @@ export default function App() {
             </button>
           </div>
         </div>
-      </header>
+      </header>}
 
       <PriceTicker />
 

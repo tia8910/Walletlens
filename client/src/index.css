@@ -5195,6 +5195,11 @@ tr:last-child td { border-bottom: none; }
 }
 
 .twa-mode .news-ticker { margin-top: 0.75rem; }
+/* Hide web topbar in native mobile app */
+.twa-mode .wl-content { padding-top: 0 !important; }
+.wl-native-app .wl-topbar { display: none !important; }
+.wl-native-app .wl-content { padding-top: 0 !important; }
+
 .twa-mode .dvx > .news-ticker:first-child { margin-top: 1rem; }
 
 /* Bottom nav — premium 6-tab bar */
