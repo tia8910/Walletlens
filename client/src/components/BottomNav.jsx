@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useCallback } from 'react'
+import { memo, useMemo, useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 
@@ -85,33 +85,29 @@ const NAV_ITEMS = [
 const BottomNav = memo(function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [persistedTab, setPersistedTab] = useState(() => {
+  const [activeTab, setActiveTab] = useState(() => {
     try { return localStorage.getItem('wl_bottomnav_tab') || 'overview' } catch { return 'overview' }
   })
 
-  const activeTab = useMemo(() => {
+  // Sync from route state when navigating via bottom nav
+  useEffect(() => {
     const stateTab = location.state?.tab
-    if (stateTab) {
-      if (stateTab !== persistedTab) {
-        setPersistedTab(stateTab)
-        try { localStorage.setItem('wl_bottomnav_tab', stateTab) } catch {}
-      }
-      return stateTab
+    if (stateTab && stateTab !== activeTab) {
+      setActiveTab(stateTab)
+      try { localStorage.setItem('wl_bottomnav_tab', stateTab) } catch {}
     }
-    if (location.pathname === '/dashboard') return persistedTab
-    return persistedTab
-  }, [location.pathname, location.state?.tab, persistedTab])
+  }, [location.state?.tab])
 
   return (
     <nav className="wl-bottom-nav" role="navigation" aria-label="Main navigation">
       {NAV_ITEMS.map(item => {
-        const isActive = activeTab === item.tab || (!activeTab && item.id === 'dashboard')
+        const isActive = activeTab === item.tab
         return (
           <button
             key={item.id}
             className={`wl-nav-item${isActive ? ' active' : ''}`}
             onClick={() => {
-              setPersistedTab(item.tab)
+              setActiveTab(item.tab)
               try { localStorage.setItem('wl_bottomnav_tab', item.tab) } catch {}
               track('bottomnav_click', { tab: item.id })
               navigate(item.path, { state: { tab: item.tab } })

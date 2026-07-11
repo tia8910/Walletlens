@@ -1,0 +1,17 @@
+WalletLens v1.8.17 — Release Notes
+====================================
+
+PERFORMANCE:
+- App startup significantly faster — shell renders immediately
+- Settings/mood initialization deferred to after first paint
+- No more 3-second idle callback delay on launch
+
+BUG FIXES:
+- Bottom nav active tab now stays colored correctly (state managed via useState + useEffect)
+- Side effects removed from useMemo (was causing unreliable tab highlighting)
+
+FILES:
+- WalletLens-v1.8.17.aab → Upload to Google Play Console
+- WalletLens-v1.8.17.apk → Test on device
+
+VERSION: 1.8.17 (versionCode 28)

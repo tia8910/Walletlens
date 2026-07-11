@@ -394,8 +394,7 @@ export default function App() {
 
   const _guardianChecked = useRef(false)
   useEffect(() => {
-    applySettings()
-    initMood()
+    requestAnimationFrame(() => { applySettings(); initMood() })
     const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
     if (_standalone) {
       setIsStandalone(true)
@@ -437,10 +436,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const id = typeof requestIdleCallback !== 'undefined'
-      ? requestIdleCallback(() => setShellReady(true), { timeout: 3000 })
-      : setTimeout(() => setShellReady(true), 1500)
-    return () => typeof requestIdleCallback !== 'undefined' ? cancelIdleCallback(id) : clearTimeout(id)
+    // Render shell immediately — no idle-callback delay
+    setShellReady(true)
   }, [])
 
   // Prefetch page chunks during idle based on the current route so the next
