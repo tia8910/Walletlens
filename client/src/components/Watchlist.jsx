@@ -103,26 +103,34 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const [notifPerm, setNotifPerm] = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
+  const itemsRef   = useRef(items)
   alertsRef.current = alerts
+  itemsRef.current  = items
 
   // Persist locally and mirror rules to the push server (no-op if push is off)
   // so price targets can fire even when the app is closed.
   useEffect(() => { saveAlerts(alerts); syncAlerts() }, [alerts])
 
+  // Reads from itemsRef (not items state) so the polling interval is set up
+  // once and never torn down/recreated every time the watchlist is edited.
   const fetchPrices = useCallback(async () => {
-    if (!items.length) return
-    const ids = items.map(i => i.coin_id).join(',')
+    if (!itemsRef.current.length) return
+    const ids = itemsRef.current.map(i => i.coin_id).join(',')
     try {
       const px = await api.getPrices(ids)
       if (px) setPrices(px)
     } catch {}
-  }, [items])
+  }, [])
 
   useEffect(() => {
     fetchPrices()
     const iv = setInterval(fetchPrices, 60_000)
     return () => clearInterval(iv)
   }, [fetchPrices])
+
+  // Re-fetch immediately when the watchlist itself changes (add/remove),
+  // instead of waiting up to 60s for the next tick.
+  useEffect(() => { fetchPrices() }, [items, fetchPrices])
 
   // Alert checking — fires browser notifications when a target is crossed
   const prevPricesRef = useRef({})
