@@ -200,27 +200,30 @@ export default function NativeOnboarding({ onDone }) {
         <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
       </div>
 
-      {/* Trend chart navigation */}
-      <div className="no-dots">
-        {SLIDES.map((_, i) => {
-          const paths = ['M2 10 L5 6 L8 8 L12 3 L16 5 L20 2', 'M2 8 L6 4 L10 7 L14 2 L18 5 L20 3', 'M2 9 L4 5 L8 7 L12 3 L16 6 L20 1', 'M2 7 L5 3 L9 6 L13 2 L17 4 L20 2'];
-          const isActive = i === step;
-          const isDone = i < step;
-          return (
-            <button key={i} className="no-trend-btn"
-              style={{ background: 'none', border: 'none', padding: '6px 2px', cursor: 'pointer',
-                opacity: isActive ? 1 : isDone ? 0.4 : 0.2, transition: 'opacity 0.3s' }}
-              onClick={() => goTo(i)} aria-label={`Slide ${i + 1}`}>
-              <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
-                <path d={paths[i % paths.length]}
-                  stroke={isActive ? s.accent : 'rgba(255,255,255,0.5)'}
-                  strokeWidth={isActive ? 2.5 : 1.5}
-                  strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                {isActive && <circle cx="20" cy="2" r="2.5" fill={s.accent} />}
-              </svg>
-            </button>
-          );
-        })}
+      {/* Single dynamic trend line */}
+      <div className="no-trend-wrap">
+        <svg className="no-trend-svg" viewBox="0 0 320 40" fill="none">
+          <defs>
+            <linearGradient id="tg" x1="0" y1="0" x2="320" y2="0">
+              <stop offset="0%" stopColor={s.accent} stopOpacity="0.2" />
+              <stop offset="100%" stopColor={s.accent} stopOpacity="1" />
+            </linearGradient>
+          </defs>
+          <path
+            d={`M 0 30 Q 40 30 60 ${28 - step * 6} Q 80 ${26 - step * 6} 110 ${24 - step * 4} Q 140 ${22 - step * 4} 160 ${18 - step * 2} Q 190 ${16 - step * 2} 210 ${14 - step * 2} Q 240 ${12 - step * 2} 260 ${10 - step} Q 290 ${8 - step} 310 ${6}`}
+            stroke="url(#tg)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <circle cx={60 + step * 65} cy={28 - step * 7} r="4" fill={s.accent} />
+        </svg>
+        <div className="no-trend-segs">
+          {SLIDES.map((_, i) => (
+            <button key={i} className="no-trend-seg" onClick={() => goTo(i)}
+              aria-label={`Slide ${i + 1}`} />
+          ))}
+        </div>
       </div>
 
       {/* Final slide: pulsing circle */}
