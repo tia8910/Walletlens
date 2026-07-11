@@ -1,0 +1,22 @@
+WalletLens v1.8.13 — Release Notes
+====================================
+
+BUG FIXES:
+- Fixed crash on first app launch — all sound, biometric, and analytics 
+  calls wrapped in try/catch to prevent runtime errors
+- Removed stray code that caused error boundary to trigger on startup
+- Biometric setup failure now shows friendly message instead of crashing
+
+IMPROVEMENTS:
+- Web top navigation bar hidden in mobile app (bottom nav stays)
+- Trend chart navigation replaces old dot/circle indicators
+- Single dynamic trend line with gradient stroke for slide navigation
+- Onboarding: no text CTA buttons — pure swipe/tap gesture navigation
+- Theme selector icons restored to match web version
+- All onboarding interactions crash-proofed
+
+FILES:
+- WalletLens-v1.8.13.aab → Upload to Google Play Console
+- WalletLens-v1.8.13.apk → Test on device
+
+VERSION: 1.8.13 (versionCode 24)

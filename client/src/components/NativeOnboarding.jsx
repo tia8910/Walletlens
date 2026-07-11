@@ -61,17 +61,17 @@ export default function NativeOnboarding({ onDone }) {
   const total = SLIDES.length
 
   const goNext = useCallback(() => {
-    if (step < total - 1) { setStep(x => x + 1); sfx.playWhoosh() }
+    if (step < total - 1) { setStep(x => x + 1); try { sfx.playWhoosh() } catch {} }
   }, [step, total])
 
   const goPrev = useCallback(() => {
-    if (step > 0) { setStep(x => x - 1); sfx.playWhoosh() }
+    if (step > 0) { setStep(x => x - 1); try { sfx.playWhoosh() } catch {} }
   }, [step])
 
   const goTo = useCallback((i) => {
     if (i >= 0 && i < total && i !== step) {
       setStep(i)
-      sfx.playWhoosh()
+      try { sfx.playWhoosh() } catch {}
     }
   }, [step, total])
 
@@ -110,8 +110,8 @@ export default function NativeOnboarding({ onDone }) {
   }, [goNext, goPrev])
 
   useEffect(() => {
-    sfx.startAmbient()
-    return () => sfx.stopAmbient()
+    try { sfx.startAmbient() } catch {}
+    return () => { try { sfx.stopAmbient() } catch {} }
   }, [])
 
   async function enableBiometric() {
@@ -119,15 +119,16 @@ export default function NativeOnboarding({ onDone }) {
     setBioBusy(true); setBioError('')
     try {
       const ok = await enableBio()
-      if (ok) { track('biometric_enabled_onboarding'); goNext() }
+      if (ok) { try { track('biometric_enabled_onboarding') } catch {}; goNext() }
       else setBioError("Couldn't set up fingerprint. Make sure it's enrolled in device settings.")
-    } finally { setBioBusy(false) }
+    } catch (e) { setBioError('Biometric setup failed. You can enable it later in Settings.') }
+    finally { setBioBusy(false) }
   }
 
   function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
-    window.dispatchEvent(new Event('wl-welcome-done'))
-    onDone?.()
+    try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
+    try { onDone?.() } catch {}
   }
 
   function getThemeIcon(th) {
@@ -168,7 +169,7 @@ export default function NativeOnboarding({ onDone }) {
             {THEMES.map(th => (
               <button key={th.id} className={`no-theme-btn${theme === th.id ? ' active' : ''}`}
                 style={{ borderColor: theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)' }}
-                onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}>
+                onClick={() => { try { setTheme(th.id) } catch {}; try { track('theme_changed', { theme: th.id }) } catch {} }}>
                 <span className="no-theme-swatch" style={{
                   background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
                   boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
@@ -229,7 +230,7 @@ export default function NativeOnboarding({ onDone }) {
       {/* Final slide: pulsing circle */}
       {s.final && (
         <div className="no-launch-area">
-          <button className="no-launch-circle" onClick={() => { sfx.playTriumph(); finish() }}
+          <button className="no-launch-circle" onClick={() => { try { sfx.playTriumph() } catch {}; finish() }}
             style={{ '--accent': s.accent, '--glow': s.glow }}>
             <div className="no-launch-ring" style={{ borderColor: s.accent }} />
             <div className="no-launch-core" style={{ background: `linear-gradient(135deg, ${s.accent}, #4ade80)` }} />
