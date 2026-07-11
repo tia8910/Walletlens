@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import Icon from './Icon'
 import { loadData, saveData, bumpId } from '../data/storage'
 import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
@@ -871,15 +872,15 @@ async function buildVoiceLeg(legKey, isBuy, costUsd) {
 // ── Fun reactions for slang detected — adds personality ────────────────────
 function getReaction(text, parsed) {
   const t = text.toLowerCase()
-  if (t.includes('yolo') || t.includes('aped')) return { emoji:'🦍', msg:'Apes together strong!' }
-  if (t.includes('diamond') || t.includes('hodl')) return { emoji:'💎', msg:'Diamond hands!' }
-  if (t.includes('moon') || t.includes('to the moon')) return { emoji:'🚀', msg:'To the moon!' }
-  if (t.includes('rugged') || t.includes('dumped')) return { emoji:'📉', msg:'Got it. Better luck next time.' }
-  if (t.includes('took profits') || t.includes('tp\'d')) return { emoji:'💰', msg:'Nice profits!' }
-  if (t.includes('بعت') && parsed.type === 'sell') return { emoji:'💸', msg:'تم البيع!' }
-  if (t.includes('اشتريت') && parsed.type === 'buy') return { emoji:'🎯', msg:'صفقة شراء!' }
-  if (parsed.type === 'buy') return { emoji:'📈', msg:'New position locked in.' }
-  if (parsed.type === 'sell') return { emoji:'✅', msg:'Position closed.' }
+  if (t.includes('yolo') || t.includes('aped')) return { emoji:'', msg:'Apes together strong!' }
+  if (t.includes('diamond') || t.includes('hodl')) return { emoji:'', msg:'Diamond hands!' }
+  if (t.includes('moon') || t.includes('to the moon')) return { emoji:'', msg:'To the moon!' }
+  if (t.includes('rugged') || t.includes('dumped')) return { emoji:'', msg:'Got it. Better luck next time.' }
+  if (t.includes('took profits') || t.includes('tp\'d')) return { emoji:'', msg:'Nice profits!' }
+  if (t.includes('بعت') && parsed.type === 'sell') return { emoji:'', msg:'تم البيع!' }
+  if (t.includes('اشتريت') && parsed.type === 'buy') return { emoji:'', msg:'صفقة شراء!' }
+  if (parsed.type === 'buy') return { emoji:'', msg:'New position locked in.' }
+  if (parsed.type === 'sell') return { emoji:'', msg:'Position closed.' }
   return null
 }
 
@@ -1412,8 +1413,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           {/* Language selector — pick Arabic or English before speaking */}
           <div style={{ display:'flex', justifyContent:'center', gap:'0.6rem', marginBottom:'1rem' }}>
             {[
-              { value:'ar', flags:'🇸🇦🇪🇬', label: isAr ? 'عربي' : 'Arabic', color:'#f59e0b', bg:'rgba(245,158,11,0.14)', border:'rgba(245,158,11,0.45)' },
-              { value:'en', flags:'🇺🇸',     label: isAr ? 'إنجليزي' : 'English', color:'#60a5fa', bg:'rgba(96,165,250,0.14)', border:'rgba(96,165,250,0.45)' },
+              { value:'ar', flags:'', label: isAr ? 'عربي' : 'Arabic', color:'#f59e0b', bg:'rgba(245,158,11,0.14)', border:'rgba(245,158,11,0.45)' },
+              { value:'en', flags:'',     label: isAr ? 'إنجليزي' : 'English', color:'#60a5fa', bg:'rgba(96,165,250,0.14)', border:'rgba(96,165,250,0.45)' },
             ].map(m => {
               const active = voiceLang === m.value
               return (
@@ -1572,8 +1573,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             <div style={{ marginBottom:'0.8rem', padding:'0.55rem 0.9rem', borderRadius:'10px', background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)' }}>
               <p style={{ margin:0, fontSize:'0.82rem', color:'#f59e0b', fontWeight:600 }}>
                 {isAr
-                  ? '⚠️ لم أسمع شيئاً — تحدث بوضوح، أو تحقق من إذن الميكروفون والإنترنت'
-                  : '⚠️ Not hearing you — speak clearly, or check mic permission and internet connection'}
+                  ? 'لم أسمع شيئاً — تحدث بوضوح، أو تحقق من إذن الميكروفون والإنترنت'
+                  : 'Not hearing you — speak clearly, or check mic permission and internet connection'}
               </p>
             </div>
           )}
@@ -1583,7 +1584,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'0.6rem', padding:'0.5rem 0.9rem', borderRadius:'10px', background:'rgba(129,140,248,0.1)', border:'1px solid rgba(129,140,248,0.3)' }}>
               <span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(129,140,248,0.35)', borderTopColor:'#818cf8', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
               <span style={{ fontSize:'0.8rem', color:'#818cf8', fontWeight:700 }}>
-                {isAr ? '✨ الذكاء الاصطناعي يحلل كلامك…' : '✨ AI is interpreting your trade…'}
+                {isAr ? 'الذكاء الاصطناعي يحلل كلامك…' : 'AI is interpreting your trade…'}
               </span>
             </div>
           )}
@@ -1591,7 +1592,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           {/* Reaction banner */}
           {reaction && parsed && (
             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
-              <span style={{ fontSize:'1.4rem' }}>{reaction.emoji}</span>
+              
               <span style={{ fontSize:'0.83rem', color:'var(--text)', fontWeight:600 }}>{reaction.msg}</span>
             </div>
           )}
@@ -1630,7 +1631,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         ? (t === 'buy' ? '#4ade80' : '#f87171')
                         : 'var(--text-muted)',
                     }}>
-                      {t === 'buy' ? (isAr ? '🟢 شراء' : '🟢 Buy') : (isAr ? '🔴 بيع' : '🔴 Sell')}
+                      {t === 'buy' ? (isAr ? 'شراء' : 'Buy') : (isAr ? 'بيع' : 'Sell')}
                     </button>
                   ))}
                 </div>
@@ -1700,7 +1701,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
                   <div>
                     <label style={{ fontSize:'0.72rem', color: tx.amount == null ? '#f59e0b' : 'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:'0.2rem' }}>
-                      {tx.amount == null ? (isAr ? '⚠️ الكمية' : '⚠️ Amount') : (isAr ? 'الكمية' : 'Amount')}
+                      {tx.amount == null ? (isAr ? 'الكمية' : 'Amount') : (isAr ? 'الكمية' : 'Amount')}
                     </label>
                     <input
                       type="number" min="0" step="any"
@@ -1809,7 +1810,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               borderRadius:'10px', color:'var(--g-ink)',
               padding:'0.6rem 0.75rem', fontSize:'0.85rem', textAlign:'center', fontWeight:700,
             }}>
-              ✅ {isAr
+              <Icon name="check" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{isAr
                 ? `تم إضافة ${readyCount} صفقة بنجاح!`
                 : `${readyCount} trade${readyCount > 1 ? 's' : ''} added!`}
             </div>
@@ -1821,7 +1822,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               padding:'0.7rem', fontWeight:800, fontSize:'0.9rem', cursor:'pointer',
               boxShadow:'0 4px 14px rgba(34,197,94,0.4)',
             }}>
-              ✨ {readyCount > 1
+              <Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{readyCount > 1
                 ? (isAr ? `إضافة ${readyCount} صفقات` : `Add ${readyCount} trades`)
                 : (isAr ? 'إضافة الصفقة' : 'Add this trade')}
             </button>
@@ -1831,7 +1832,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           {!transcript && !error && (
             <div style={{ marginTop:'0.5rem' }}>
               <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem', textAlign:'center' }}>
-                {isAr ? '💡 جرّب أن تقول' : '💡 Try saying'}
+                {isAr ? 'جرّب أن تقول' : 'Try saying'}
               </p>
               <div style={{ display:'flex', flexDirection:'column', gap:'0.35rem' }}>
                 {(isAr ? EXAMPLES_AR : EXAMPLES_EN).map((ex, i) => (
@@ -1849,7 +1850,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
           {!SUPPORTED && (
             <p style={{ fontSize:'0.75rem', color:'#f59e0b', margin:'0.75rem 0 0', textAlign:'center' }}>
-              ⚠️ {IS_IOS
+              <Icon name="warning" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{IS_IOS
                 ? (isAr ? 'افتح التطبيق في Safari على iOS 14.5 أو أحدث لدعم الصوت' : 'Open in Safari (iOS 14.5+) to use voice import.')
                 : (isAr ? 'المتصفح لا يدعم التعرف على الصوت' : 'Your browser does not support voice recognition. Try Chrome, Edge, or Safari.')}
             </p>
