@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import Icon from '../components/Icon'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
@@ -157,28 +158,28 @@ function generateAnalysis(detail, type) {
   score = Math.max(0, Math.min(100, score))
 
   let sentiment, sentimentColor, sentimentEmoji
-  if (score >= 75) { sentiment = 'Strong Bullish'; sentimentColor = 'var(--gd)'; sentimentEmoji = '🚀' }
-  else if (score >= 60) { sentiment = 'Bullish'; sentimentColor = 'var(--g)'; sentimentEmoji = '📈' }
-  else if (score >= 45) { sentiment = 'Neutral'; sentimentColor = '#f59e0b'; sentimentEmoji = '⚖️' }
-  else if (score >= 30) { sentiment = 'Bearish'; sentimentColor = '#f97316'; sentimentEmoji = '📉' }
-  else { sentiment = 'Strong Bearish'; sentimentColor = '#ef4444'; sentimentEmoji = '🔻' }
+  if (score >= 75) { sentiment = 'Strong Bullish'; sentimentColor = 'var(--gd)'; sentimentEmoji = 'rocket' }
+  else if (score >= 60) { sentiment = 'Bullish'; sentimentColor = 'var(--g)'; sentimentEmoji = 'trend-up' }
+  else if (score >= 45) { sentiment = 'Neutral'; sentimentColor = '#f59e0b'; sentimentEmoji = 'scale' }
+  else if (score >= 30) { sentiment = 'Bearish'; sentimentColor = '#f97316'; sentimentEmoji = 'trend-down' }
+  else { sentiment = 'Strong Bearish'; sentimentColor = '#ef4444'; sentimentEmoji = 'trend-down' }
 
   // Generate insights
   const insights = []
   if (type === 'buy') {
-    if (change24 < -5) insights.push({ icon: '💡', text: `Dip opportunity — down ${Math.abs(change24).toFixed(1)}% today` })
-    if (athDrop < -50) insights.push({ icon: '📊', text: `${Math.abs(athDrop).toFixed(0)}% below ATH ($${fmt(ath)}) — potential recovery play` })
-    if (change7d > 10 && change24 > 0) insights.push({ icon: '⚠️', text: 'Strong rally this week — consider DCA instead of lump sum' })
-    if (volToMcap > 10) insights.push({ icon: '🔥', text: 'High volume activity — strong market interest' })
-    if (change30d < -30) insights.push({ icon: '🎯', text: 'Significant monthly drop — could be accumulation zone' })
+    if (change24 < -5) insights.push({ icon: 'lightbulb', text: `Dip opportunity — down ${Math.abs(change24).toFixed(1)}% today` })
+    if (athDrop < -50) insights.push({ icon: 'bar-chart', text: `${Math.abs(athDrop).toFixed(0)}% below ATH ($${fmt(ath)}) — potential recovery play` })
+    if (change7d > 10 && change24 > 0) insights.push({ icon: 'warning', text: 'Strong rally this week — consider DCA instead of lump sum' })
+    if (volToMcap > 10) insights.push({ icon: 'flame', text: 'High volume activity — strong market interest' })
+    if (change30d < -30) insights.push({ icon: 'target', text: 'Significant monthly drop — could be accumulation zone' })
   } else {
-    if (change24 > 5) insights.push({ icon: '💰', text: `Up ${change24.toFixed(1)}% today — good exit momentum` })
-    if (athDrop > -5) insights.push({ icon: '🏔️', text: 'Near all-time high — consider taking profits' })
-    if (change7d > 15) insights.push({ icon: '📈', text: `+${change7d.toFixed(1)}% this week — extended rally` })
-    if (change30d > 50) insights.push({ icon: '🎉', text: `+${change30d.toFixed(0)}% this month — strong gains to lock in` })
+    if (change24 > 5) insights.push({ icon: 'banknote', text: `Up ${change24.toFixed(1)}% today — good exit momentum` })
+    if (athDrop > -5) insights.push({ icon: 'trend-up', text: 'Near all-time high — consider taking profits' })
+    if (change7d > 15) insights.push({ icon: 'trend-up', text: `+${change7d.toFixed(1)}% this week — extended rally` })
+    if (change30d > 50) insights.push({ icon: 'trophy', text: `+${change30d.toFixed(0)}% this month — strong gains to lock in` })
   }
   if (insights.length === 0) {
-    insights.push({ icon: '📌', text: 'Market conditions are relatively stable' })
+    insights.push({ icon: 'clipboard', text: 'Market conditions are relatively stable' })
   }
 
   // Range position (where price is between 24h low and high)
@@ -756,7 +757,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <span className="ai-badge">AI</span>
                     <span className="ai-title">Market Analysis</span>
                     <span className="ai-sentiment" style={{ color: coinAnalysis.sentimentColor }}>
-                      {coinAnalysis.sentimentEmoji} {coinAnalysis.sentiment}
+                      <Icon name={coinAnalysis.sentimentEmoji} size={15} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{coinAnalysis.sentiment}
                     </span>
                   </div>
 
@@ -819,7 +820,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   <div className="ai-insights">
                     {coinAnalysis.insights.map((ins, i) => (
                       <div key={i} className="ai-insight">
-                        <span className="ai-insight-icon">{ins.icon}</span>
+                        <span className="ai-insight-icon"><Icon name={ins.icon} size={14} /></span>
                         <span>{ins.text}</span>
                       </div>
                     ))}

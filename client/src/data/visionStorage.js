@@ -4,11 +4,11 @@ const KEY = 'vision_buckets'
 const ID_KEY = 'crypto_tracker_next_vision_id'
 
 export const BUCKET_TYPES = {
-  emergency:  { label: 'Emergency Fund',   icon: '🛡️',  desc: 'Safety net for unexpected costs' },
-  withdrawal: { label: 'Withdrawal Plan',  icon: '💸',  desc: 'Regular income or spending drawdown' },
-  hold:       { label: 'Long-term Hold',   icon: '🔒',  desc: 'Assets to hold and not touch' },
-  invest:     { label: 'Investment Goal',  icon: '📈',  desc: 'Growth-focused allocation' },
-  rest:       { label: 'Everything Else',  icon: '🗂️',  desc: 'Remaining portfolio not yet allocated' },
+  emergency:  { label: 'Emergency Fund',   icon: 'shield',  desc: 'Safety net for unexpected costs' },
+  withdrawal: { label: 'Withdrawal Plan',  icon: 'banknote',  desc: 'Regular income or spending drawdown' },
+  hold:       { label: 'Long-term Hold',   icon: 'lock',  desc: 'Assets to hold and not touch' },
+  invest:     { label: 'Investment Goal',  icon: 'trend-up',  desc: 'Growth-focused allocation' },
+  rest:       { label: 'Everything Else',  icon: 'folder',  desc: 'Remaining portfolio not yet allocated' },
 }
 
 export const BUCKET_COLORS = [
