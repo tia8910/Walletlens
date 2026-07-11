@@ -542,7 +542,7 @@ export default function App() {
   }
 
   return (
-    <div className={`wl-app${isStandalone ? " wl-native-app" : ""}`}>
+    <div className="wl-app">
       <UpdateBanner />
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
@@ -562,7 +562,7 @@ export default function App() {
             </button>
             <div className="wl-topbar-brand-text">
               <strong className="wl-topbar-brand-name">WalletLens<span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
-              <TopbarCyclingActions />
+              {!isStandalone && <TopbarCyclingActions />}
             </div>
           </div>
           <div className="wl-topbar-right">

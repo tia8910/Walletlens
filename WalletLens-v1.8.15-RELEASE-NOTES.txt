@@ -1,0 +1,15 @@
+WalletLens v1.8.15 — Release Notes
+====================================
+
+CHANGES:
+- Only the "Track | Analyze | Grow" cycling text hidden in mobile app
+- Logo, brand name, hamburger menu, settings, help, stats — all visible
+- Bottom nav active tab persists until user selects another
+- Portfolio Guardian daily reminder notification added
+- All onboarding crash-proofed
+
+FILES:
+- WalletLens-v1.8.15.aab → Upload to Google Play Console
+- WalletLens-v1.8.15.apk → Test on device
+
+VERSION: 1.8.15 (versionCode 26)

@@ -100,8 +100,8 @@ android {
         applicationId "live.walletlens.twa"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 25
-        versionName "1.8.14"
+        versionCode 26
+        versionName "1.8.15"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
