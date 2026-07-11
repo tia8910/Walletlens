@@ -788,7 +788,7 @@ input, select, textarea {
   border: none; padding: 8px; cursor: pointer;
   transition: all 0.3s ease;
 }
-.no-dot.active { width: 24px; border-radius: 4px; background: rgba(255,255,255,0.7); }
+.no-dot.active { transform: scale(1.5); background: rgba(255,255,255,0.8); }
 .no-dot.done { background: rgba(255,255,255,0.3); }
 /* ── Premium Glass-Morphism CTA Button ── */
 @keyframes no-btn-shimmer {
@@ -14330,7 +14330,7 @@ input, select, textarea, .dvx-input {
   border: none; padding: 8px; cursor: pointer;
   transition: all 0.3s ease;
 }
-.no-dot.active { width: 24px; border-radius: 4px; background: rgba(255,255,255,0.7); }
+.no-dot.active { transform: scale(1.5); background: rgba(255,255,255,0.8); }
 .no-dot.done { background: rgba(255,255,255,0.3); }
 
 /* CTA button (second definition - overrides first) */
