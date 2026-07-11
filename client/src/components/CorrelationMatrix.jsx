@@ -111,24 +111,27 @@ function pearson(a, b) {
   return denom === 0 ? null : Math.max(-1, Math.min(1, num / denom))
 }
 
+// Diverging heat ramp — translucent so it reads on both light and dark cards.
+// The fill carries the category; the number stays high-contrast neutral.
 function corrColor(r) {
   if (r === null) return 'var(--surface-1)'
-  if (r >= 0.8)  return 'rgba(248,113,113,0.55)'
-  if (r >= 0.5)  return 'rgba(251,146,60,0.40)'
-  if (r >= 0.2)  return 'rgba(250,204,21,0.25)'
-  if (r >= -0.2) return 'rgba(148,163,184,0.18)'
-  if (r >= -0.5) return 'rgba(96,165,250,0.30)'
-  return 'rgba(34,197,94,0.40)'
+  if (r >= 0.8)  return 'rgba(239,68,68,0.30)'
+  if (r >= 0.5)  return 'rgba(251,146,60,0.28)'
+  if (r >= 0.2)  return 'rgba(234,179,8,0.22)'
+  if (r >= -0.2) return 'rgba(148,163,184,0.16)'
+  if (r >= -0.5) return 'rgba(59,130,246,0.28)'
+  return 'rgba(34,197,94,0.30)'
 }
 
-function corrTextColor(r) {
-  if (r === null) return 'var(--text-sub)'
-  if (r >= 0.8)  return '#f87171'
-  if (r >= 0.5)  return '#fb923c'
-  if (r >= 0.2)  return '#fde68a'
-  if (r >= -0.2) return 'var(--text-muted)'
-  if (r >= -0.5) return '#93c5fd'
-  return '#4ade80'
+// Subtly tinted border in the same hue for a crisp, premium cell edge.
+function corrBorder(r) {
+  if (r === null) return '1px solid var(--border)'
+  if (r >= 0.8)  return '1px solid rgba(239,68,68,0.42)'
+  if (r >= 0.5)  return '1px solid rgba(251,146,60,0.40)'
+  if (r >= 0.2)  return '1px solid rgba(234,179,8,0.38)'
+  if (r >= -0.2) return '1px solid rgba(148,163,184,0.30)'
+  if (r >= -0.5) return '1px solid rgba(59,130,246,0.40)'
+  return '1px solid rgba(34,197,94,0.42)'
 }
 
 const MAX_ASSETS = 8
@@ -228,7 +231,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
           {matrix && (
             <>
               <div style={{ overflowX: 'auto', marginBottom: '0.8rem' }}>
-                <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: matrix.ids.length * 52 }}>
+                <table style={{ borderCollapse: 'separate', borderSpacing: '4px', width: '100%', minWidth: matrix.ids.length * 52 }}>
                   <thead>
                     <tr>
                       <td style={{ width: 44 }} />
@@ -249,7 +252,16 @@ export default function CorrelationMatrix({ enriched = [] }) {
                           const r = matrix.mat[rowH.coin_id]?.[colH.coin_id] ?? null
                           const isDiag = rowH.coin_id === colH.coin_id
                           return (
-                            <td key={colH.coin_id} style={{ width: 44, height: 36, background: corrColor(r), borderRadius: 6, textAlign: 'center', fontSize: isDiag ? '0.65rem' : '0.68rem', fontWeight: 700, color: isDiag ? 'var(--text-sub)' : corrTextColor(r), padding: '0 2px', border: '1px solid var(--border)' }}>
+                            <td key={colH.coin_id} style={{
+                              width: 44, height: 38,
+                              background: isDiag ? 'var(--surface-2)' : corrColor(r),
+                              border: isDiag ? '1px solid var(--border)' : corrBorder(r),
+                              borderRadius: 9, textAlign: 'center',
+                              fontSize: '0.7rem', fontWeight: 800,
+                              color: isDiag ? 'var(--text-sub)' : 'var(--text)',
+                              opacity: isDiag ? 0.6 : 1,
+                              padding: '0 2px', fontVariantNumeric: 'tabular-nums',
+                            }}>
                               {isDiag ? '—' : (r !== null ? r.toFixed(2) : '—')}
                             </td>
                           )
@@ -259,16 +271,16 @@ export default function CorrelationMatrix({ enriched = [] }) {
                   </tbody>
                 </table>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'var(--text-sub)' }}>
+              <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap', fontSize: '0.62rem', color: 'var(--text-sub)' }}>
                 {[
-                  { color: '#f87171', label: '> 0.8  High risk' },
+                  { color: '#ef4444', label: '> 0.8  High risk' },
                   { color: '#fb923c', label: '0.5–0.8  Correlated' },
                   { color: '#94a3b8', label: '~0  Uncorrelated' },
-                  { color: '#93c5fd', label: '< -0.2  Diversifying' },
-                  { color: 'var(--g-ink)', label: '< -0.5  Hedge' },
+                  { color: '#3b82f6', label: '< -0.2  Diversifying' },
+                  { color: '#22c55e', label: '< -0.5  Hedge' },
                 ].map(l => (
-                  <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 3, background: l.color, opacity: 0.8, flexShrink: 0 }} />
+                  <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ width: 11, height: 11, borderRadius: 4, background: `${l.color}55`, border: `1px solid ${l.color}`, flexShrink: 0 }} />
                     {l.label}
                   </span>
                 ))}
@@ -287,7 +299,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
                 const symA = (matrix.holdings.find(h => h.coin_id === worst.a)?.coin_symbol || worst.a).toUpperCase()
                 const symB = (matrix.holdings.find(h => h.coin_id === worst.b)?.coin_symbol || worst.b).toUpperCase()
                 return (
-                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', borderRadius: 10, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.74rem', color: '#fca5a5', lineHeight: 1.5 }}>
+                  <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.85rem', borderRadius: 12, background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.28)', fontSize: '0.74rem', color: '#ef4444', fontWeight: 500, lineHeight: 1.5 }}>
                     <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} /><strong>{symA} & {symB}</strong> move together ({worst.r.toFixed(2)}) — holding both adds concentration risk without diversification.
                   </div>
                 )
