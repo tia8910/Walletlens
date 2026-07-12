@@ -4149,7 +4149,11 @@ tr:last-child td { border-bottom: none; }
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
-.wl-logo-btn:hover { transform: scale(1.1); }
+/* background: none must be restated here — the global `button:hover
+   { background: var(--accent2) }` base skin outranks .wl-logo-btn on hover,
+   flooding the round button dark green. On touch, hover sticks after a tap,
+   which is the green oval that appeared when pressing the logo. */
+.wl-logo-btn:hover { transform: scale(1.1); background: none; }
 .wl-logo-btn:focus,
 .wl-logo-btn:focus-visible { outline: none; }
 .wl-logo-btn.burst { transform: scale(1.35); transition: transform 0.18s ease; }
