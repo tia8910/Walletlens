@@ -811,20 +811,10 @@ input, select, textarea {
   background: rgba(255,255,255,0.88);
 }
 [data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
-/* Active tab on the light nav bar: a single premium gradient pill with the white
-   glyph and label sitting directly on it — high contrast and unmistakable. The
-   icon has no chip of its own, so there's one clean frame rather than a pill
-   nested inside an icon box. The pill is an inset ::before so the flex
-   layout/alignment is untouched. */
-[data-wl-light] .wl-nav-item.active { position: relative; color: #fff; font-weight: 700; text-shadow: none; }
-[data-wl-light] .wl-nav-item.active::before {
-  content: ''; position: absolute; inset: 4px 7px; border-radius: 16px;
-  background: linear-gradient(150deg, var(--g), var(--gd));
-  box-shadow: 0 6px 16px rgba(var(--g-rgb), 0.38); z-index: 0;
-}
-[data-wl-light] .wl-nav-item.active .wl-nav-icon { background: transparent; color: #fff; filter: none; position: relative; z-index: 1; }
-[data-wl-light] .wl-nav-item.active .wl-nav-label { color: #fff; position: relative; z-index: 1; }
-[data-wl-light] .wl-nav-item.active .wl-nav-indicator { display: none; }
+/* Active tab: minimal, premium treatment shared by both themes (see the base
+   .wl-nav-item.active rules). No fill — just the accent-tinted icon + label and a
+   slim accent indicator bar at the top. Only the inactive colour differs per
+   theme, handled by the [data-wl-light] .wl-nav-item rule above. */
 
 /* ── Drawer ── */
 [data-wl-light] .wl-drawer {
@@ -5261,27 +5251,29 @@ tr:last-child td { border-bottom: none; }
   line-height: 1;
   transition: color 0.2s;
 }
+/* Slim accent indicator bar that hangs from the top edge of the active tab. */
 .wl-nav-item .wl-nav-indicator {
   position: absolute;
   top: 0;
   left: 50%;
-  background: #fff;
-  box-shadow: 0 0 8px rgba(255,255,255,0.5);
-  height: 2.5px;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  background: var(--g);
   border-radius: 0 0 4px 4px;
 }
+/* Active tab — minimal: accent icon + label, no fill or glow. */
 .wl-nav-item.active {
-  color: #fff;
+  color: var(--g);
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.25);
 }
 .wl-nav-item.active .wl-nav-icon {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+  background: transparent;
+  color: var(--g);
+  filter: none;
 }
 .wl-nav-item.active .wl-nav-label {
-  color: #fff;
+  color: var(--g);
 }
 .wl-nav-item:hover { color: rgba(255,255,255,0.85); }
 
