@@ -11017,13 +11017,13 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .coach-action-arrow { font-size: 1rem; color: rgba(255,255,255,0.7); flex-shrink: 0; }
 
 .coach-cta-btn {
-  background: linear-gradient(135deg, #00c853, #00a040);
-  color: #000; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, var(--g), var(--gd));
+  color: #fff; border: none; border-radius: 12px;
   padding: 0.75rem 1.75rem; font-size: 0.9rem; font-weight: 800;
-  cursor: pointer; box-shadow: 0 4px 16px rgba(0,200,83,0.35);
+  cursor: pointer; box-shadow: 0 4px 16px rgba(var(--g-rgb),0.35);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.coach-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,200,83,0.45); }
+.coach-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(var(--g-rgb),0.45); }
 
 /* Light mode */
 [data-wl-light] .coach-hero { background: linear-gradient(165deg, #e8f5e9 0%, #f1f8e9 50%, #e8f5e9 100%); border-color: rgba(0,150,60,0.15); }
