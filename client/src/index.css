@@ -67,13 +67,17 @@ html {
   /* Full height — required for 100dvh children on Android WebView */
   height: 100%;
 }
+/* Kill the OS tap flash on EVERY element. -webkit-tap-highlight-color does NOT
+   inherit, so setting it on body alone leaves buttons (e.g. the header logo)
+   with the UA default — Android draws it as a coloured oval over the pressed
+   control. The universal selector is the standard fix. */
+* { -webkit-tap-highlight-color: transparent; }
+
 body {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
   min-height: 100%;
-  /* Kill the blue/grey flash on tap (Android Chrome) */
-  -webkit-tap-highlight-color: transparent;
   /* Prevent text selection on UI elements */
   -webkit-user-select: none;
   user-select: none;
