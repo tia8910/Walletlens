@@ -5252,37 +5252,29 @@ tr:last-child td { border-bottom: none; }
   transition: color 0.2s;
 }
 /* Slim accent indicator bar that hangs from the top edge of the active tab. */
-/* The pill replaces the top indicator bar, so hide it on the active tab. */
-.wl-nav-item .wl-nav-indicator { display: none; }
-/* Active tab — a single clean accent pill with the icon + label in white. The
-   pill is an inset ::before so the flex layout/alignment stays intact; the icon
-   has no chip of its own, so it's one shape, not a nested frame. */
-.wl-nav-item.active {
-  position: relative;
-  color: #fff;
-  font-weight: 700;
-  text-shadow: none;
-}
-.wl-nav-item.active::before {
-  content: '';
+.wl-nav-item .wl-nav-indicator {
   position: absolute;
-  inset: 4px 7px;
-  border-radius: 16px;
-  background: linear-gradient(150deg, var(--g), var(--gd));
-  box-shadow: 0 4px 14px rgba(var(--g-rgb), 0.30);
-  z-index: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  background: var(--g);
+  border-radius: 0 0 4px 4px;
+}
+/* Active tab — no fill: just the accent-tinted icon + label and the slim accent
+   indicator bar above. */
+.wl-nav-item.active {
+  color: var(--g);
+  font-weight: 700;
 }
 .wl-nav-item.active .wl-nav-icon {
   background: transparent;
-  color: #fff;
+  color: var(--g);
   filter: none;
-  position: relative;
-  z-index: 1;
 }
 .wl-nav-item.active .wl-nav-label {
-  color: #fff;
-  position: relative;
-  z-index: 1;
+  color: var(--g);
 }
 .wl-nav-item:hover { color: rgba(255,255,255,0.85); }
 
