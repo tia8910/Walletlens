@@ -150,10 +150,20 @@ export default function Alpha() {
   const refreshRef = useRef(null)
 
   useEffect(() => {
+    const startPolling = () => { if (!refreshRef.current) refreshRef.current = setInterval(loadAll, CACHE_TTL) }
+    const stopPolling = () => { clearInterval(refreshRef.current); refreshRef.current = null }
+    const handleVisibility = () => {
+      if (document.hidden) stopPolling()
+      else { loadAll(); startPolling() }
+    }
     loadAll()
-    refreshRef.current = setInterval(loadAll, CACHE_TTL)
+    if (!document.hidden) startPolling()
     track('alpha_view')
-    return () => clearInterval(refreshRef.current)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   async function loadAll() {

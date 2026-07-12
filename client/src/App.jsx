@@ -604,11 +604,11 @@ export default function App() {
             </button>
           </div>
         </div>
-      </header>}
+      </header>
 
       <PriceTicker />
 
-      {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+      {drawerMounted && <Drawer open={drawerOpen} onClose={closeDrawer} />}
 
       <main className={`wl-content${isStandalone ? ' twa-mode' : ''}`}>
         <ErrorBoundary>

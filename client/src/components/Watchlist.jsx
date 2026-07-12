@@ -119,9 +119,20 @@ export default function Watchlist({ portfolioPrices = {} }) {
   }, [items])
 
   useEffect(() => {
+    let intervalId = null
+    const startPolling = () => { if (!intervalId) intervalId = setInterval(fetchPrices, 60_000) }
+    const stopPolling = () => { clearInterval(intervalId); intervalId = null }
+    const handleVisibility = () => {
+      if (document.hidden) stopPolling()
+      else { fetchPrices(); startPolling() }
+    }
     fetchPrices()
-    const iv = setInterval(fetchPrices, 60_000)
-    return () => clearInterval(iv)
+    if (!document.hidden) startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [fetchPrices])
 
   // Alert checking — fires browser notifications when a target is crossed
