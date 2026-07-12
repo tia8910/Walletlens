@@ -158,9 +158,19 @@ export default function MarketIndex() {
   useEffect(() => {
     document.title = 'WalletLens Market Index — Live Crypto Market Sentiment Score'
     track('market_index_view')
+    const startPolling = () => { if (!timerRef.current) timerRef.current = setInterval(load, REFRESH_MS) }
+    const stopPolling = () => { clearInterval(timerRef.current); timerRef.current = null }
+    const handleVisibility = () => {
+      if (document.hidden) stopPolling()
+      else { load(); startPolling() }
+    }
     load()
-    timerRef.current = setInterval(load, REFRESH_MS)
-    return () => clearInterval(timerRef.current)
+    if (!document.hidden) startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   async function load() {
