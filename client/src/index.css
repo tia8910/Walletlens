@@ -5251,37 +5251,33 @@ tr:last-child td { border-bottom: none; }
   line-height: 1;
   transition: color 0.2s;
 }
-/* The dark pill marks the active tab, so hide the top indicator bar. */
-.wl-nav-item .wl-nav-indicator { display: none; }
-/* Active tab — neutral dark pill (not the theme accent) with white icon + label.
-   The pill is an inset ::before so the flex layout stays intact; a subtle inner
-   ring keeps it legible on the dark bar too. */
-.wl-nav-item.active {
-  position: relative;
-  color: #fff;
-  font-weight: 700;
-  text-shadow: none;
-}
-.wl-nav-item.active::before {
-  content: '';
+/* Slim indicator bar hanging from the top edge of the active tab (monochrome,
+   uses --text — not the theme accent). */
+.wl-nav-item .wl-nav-indicator {
   position: absolute;
-  inset: 4px 7px;
-  border-radius: 16px;
-  background: #1f2024;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.20), inset 0 0 0 1px rgba(255,255,255,0.06);
-  z-index: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  background: var(--text);
+  border-radius: 0 0 4px 4px;
+}
+/* Active tab — transparent background (no pill). The icon + label take the
+   primary text colour (dark on the light bar, light on dark) so they stay
+   visible; white would disappear on the light bar. */
+.wl-nav-item.active {
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
 }
 .wl-nav-item.active .wl-nav-icon {
   background: transparent;
-  color: #fff;
+  color: var(--text);
   filter: none;
-  position: relative;
-  z-index: 1;
 }
 .wl-nav-item.active .wl-nav-label {
-  color: #fff;
-  position: relative;
-  z-index: 1;
+  color: var(--text);
 }
 .wl-nav-item:hover { color: rgba(255,255,255,0.85); }
 
