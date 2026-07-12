@@ -5185,7 +5185,7 @@ tr:last-child td { border-bottom: none; }
 .wl-content {
   width: 100%;
   max-width: 100vw;
-  padding-top: 100px; /* topbar height + ticker */
+  padding-top: 0.75rem; /* the in-flow price ticker already clears the fixed topbar; keep just a small gap */
   padding-bottom: 4.5rem; /* bottom nav */
 }
 
@@ -13910,7 +13910,7 @@ button:not(:disabled):active,
   .wl-live-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
   
   /* Reduce content padding-top so more is visible above the fold */
-  .wl-content { padding-top: 88px; }
+  .wl-content { padding-top: 0.75rem; }
 
   /* Bottom nav — tighter spacing */
   .wl-nav-item { padding: 0.4rem 0.1rem 0.3rem; font-size: 0.52rem; }
@@ -13965,7 +13965,7 @@ button:not(:disabled):active,
 /* ── Small screens (401px–480px) ── */
 @media (max-width: 480px) {
   .wl-topbar-inner { padding: 0.55rem 0.75rem; }
-  .wl-content { padding-top: 92px; }
+  .wl-content { padding-top: 0.75rem; }
   
   /* Ensure full-width content */
   .dvx { padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -13988,7 +13988,7 @@ button:not(:disabled):active,
 
 /* ── Medium screens (481px–768px) ── */
 @media (max-width: 768px) {
-  .wl-content { padding-top: 95px; }
+  .wl-content { padding-top: 0.75rem; }
 }
 
 /* ── Global word-break safeguard for long tickers / coin names ── */
