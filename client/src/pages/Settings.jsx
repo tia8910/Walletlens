@@ -39,7 +39,6 @@ export default function Settings() {
   }
 
   const fontSize = settings.fontSize || 'md'
-  const compactMode = settings.compactMode ?? false
   const hideValues  = settings.hideValues  ?? false
 
   return (
@@ -134,18 +133,6 @@ export default function Settings() {
 
         <div className="settings-row settings-row-toggle">
           <div className="settings-label">
-            <span>Compact Mode</span>
-            <span className="settings-hint">Tighter spacing, more on screen</span>
-          </div>
-          <button className={`settings-toggle ${compactMode ? 'on' : ''}`} onClick={() => update('compactMode', !compactMode)}>
-            <span className="settings-toggle-thumb"/>
-          </button>
-        </div>
-
-        <div className="settings-divider"/>
-
-        <div className="settings-row settings-row-toggle">
-          <div className="settings-label">
             <span>Hide Values</span>
             <span className="settings-hint">Blur portfolio amounts by default</span>
           </div>
@@ -161,27 +148,6 @@ export default function Settings() {
         <BiometricToggle />
       </div>
 
-      {/* ── About ── */}
-      <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>About</h3>
-        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem', fontSize:'0.85rem', color:'var(--text-muted)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Version</span><span style={{ color:'var(--text)' }}>1.0.0</span>
-          </div>
-          <div className="settings-divider"/>
-          <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Data storage</span><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>100% local · never uploaded</span>
-          </div>
-          <div className="settings-divider"/>
-          <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>API keys</span><span style={{ color:'var(--text)' }}>Stored in your browser only</span>
-          </div>
-          <div className="settings-divider"/>
-          <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>
-            <a href="/privacy" style={{ color: 'var(--g-ink)', fontWeight: 700, textDecoration:'none' }}>Privacy Policy</a>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
