@@ -12277,11 +12277,16 @@ button:not(:disabled):active,
 .vp-asset-check:last-child { border-bottom: none; }
 .vp-asset-check:hover { background: rgba(255,255,255,.04); }
 .vp-btn-primary {
-  background: var(--g-ink); color: #000; border: none; border-radius: 10px;
+  background: var(--g); color: #000; border: none; border-radius: 10px;
   padding: .55rem 1.1rem; font-size: .88rem; font-weight: 700; cursor: pointer;
-  transition: opacity .15s;
+  box-shadow: 0 4px 14px rgba(var(--g-rgb), 0.32);
+  transition: opacity .15s, filter .15s;
 }
 .vp-btn-primary:hover { opacity: .85; }
+/* In light mode --g flips to a deep, saturated accent, so on-accent text must be
+   white (matches the unified .dvx-btn-primary set). Previously this button used
+   --g-ink as its background, which is near-black in light mode → invisible text. */
+[data-wl-light] .vp-btn-primary { color: #fff; }
 .vp-btn-ghost {
   background: rgba(255,255,255,.07); color: var(--fg); border: 1px solid rgba(255,255,255,.12);
   border-radius: 10px; padding: .55rem 1.1rem; font-size: .88rem; font-weight: 600; cursor: pointer;
