@@ -6,6 +6,7 @@ import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import InstallExtension from '../components/InstallExtension'
+import InterestPicker from '../components/InterestPicker'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -40,6 +41,7 @@ export default function Settings() {
 
   const fontSize = settings.fontSize || 'md'
   const hideValues  = settings.hideValues  ?? false
+  const [editInterests, setEditInterests] = useState(false)
 
   return (
     <div className="page settings-page">
@@ -140,6 +142,19 @@ export default function Settings() {
             <span className="settings-toggle-thumb"/>
           </button>
         </div>
+
+        <div className="settings-divider"/>
+
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>Assets I track</span>
+            <span className="settings-hint">Personalizes quick-add &amp; your dashboard</span>
+          </div>
+          <button className="settings-chip" onClick={() => { setEditInterests(true); track('interests_edit_open', { source: 'settings' }) }}
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+            <Icon name="edit" size={14} /> Edit
+          </button>
+        </div>
       </div>
 
       {/* ── Security ── */}
@@ -148,6 +163,13 @@ export default function Settings() {
         <BiometricToggle />
       </div>
 
+      {editInterests && (
+        <InterestPicker
+          editMode
+          onDone={() => setEditInterests(false)}
+          onClose={() => setEditInterests(false)}
+        />
+      )}
     </div>
   )
 }

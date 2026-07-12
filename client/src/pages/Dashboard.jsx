@@ -2325,16 +2325,21 @@ function readInterests() {
   try { const v = JSON.parse(localStorage.getItem('wl_interests') || 'null'); return Array.isArray(v) ? v : [] }
   catch { return [] }
 }
-// Reorder the quick-add chips so the classes the user said they track lead.
+// Personalize the quick-add chips from the classes the user said they track:
+// show only those classes when that still yields a usable set, otherwise just
+// lead with them. Returns the full list when no interests are set.
 function orderQuickAdd(list) {
   const interests = readInterests()
   if (!interests.length) return list
   const wanted = new Set(interests.map(i => INTEREST_TO_CAT[i]).filter(Boolean))
-  return list.map((a, i) => [a, i]).sort((x, y) => {
+  const ordered = list.map((a, i) => [a, i]).sort((x, y) => {
     const xm = wanted.has(x[0].prefill.category) ? 0 : 1
     const ym = wanted.has(y[0].prefill.category) ? 0 : 1
     return xm - ym || x[1] - y[1] // stable: keep original order within a group
   }).map(p => p[0])
+  // Hide the classes they didn't pick — but only when enough shortcuts remain.
+  const matched = ordered.filter(a => wanted.has(a.prefill.category))
+  return matched.length >= 2 ? matched : ordered
 }
 
 const QUICK_ADD_ASSETS = [

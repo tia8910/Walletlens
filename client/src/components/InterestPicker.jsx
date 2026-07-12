@@ -36,8 +36,15 @@ const OPTIONS = [
   { id: 'commodities', emoji: 'droplet', label: 'Commodities' },
 ]
 
-export default function InterestPicker({ onDone }) {
-  const [selected, setSelected] = useState(() => new Set())
+export default function InterestPicker({ onDone, onClose, editMode = false }) {
+  // Pre-load any existing choice so re-opening (e.g. from Settings) shows the
+  // current selection. New users have nothing stored → empty, as before.
+  const [selected, setSelected] = useState(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(INTERESTS_KEY) || 'null')
+      return new Set(Array.isArray(v) ? v : [])
+    } catch { return new Set() }
+  })
   const [confirmSkip, setConfirmSkip] = useState(false)
   const [canSkip, setCanSkip] = useState(false)
 
@@ -82,7 +89,7 @@ export default function InterestPicker({ onDone }) {
   return (
     <div className="ip-overlay" role="dialog" aria-modal="true" aria-label="Select what you track">
       <div className="ip-card">
-        <button className="wlm-close" onClick={skip} aria-label="Close" title="Close">
+        <button className="wlm-close" onClick={editMode ? (onClose || skip) : skip} aria-label="Close" title="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
@@ -125,14 +132,18 @@ export default function InterestPicker({ onDone }) {
 
         <div className="ip-footer">
           <button className="ip-cta" onClick={getStarted}>
-            <span>{count > 0 ? `Get started · ${count} selected` : 'Get started'}</span>
+            <span>{editMode ? `Save${count > 0 ? ` · ${count} selected` : ''}` : (count > 0 ? `Get started · ${count} selected` : 'Get started')}</span>
             <Icon name="arrow-right" size={17} />
           </button>
-          <button
-            className="ip-skip"
-            onClick={askSkip}
-            style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
-          >Skip for now</button>
+          {editMode ? (
+            <button className="ip-skip" onClick={onClose}>Cancel</button>
+          ) : (
+            <button
+              className="ip-skip"
+              onClick={askSkip}
+              style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
+            >Skip for now</button>
+          )}
         </div>
 
         {confirmSkip && (
