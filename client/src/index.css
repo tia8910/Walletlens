@@ -11486,6 +11486,21 @@ textarea:focus-visible {
 /* Remove the legacy hard outline in favour of the ring above. */
 :focus:not(:focus-visible) { outline: none; }
 
+/* Touch devices (Android Chrome especially) mis-fire :focus-visible on a plain
+   tap, so the green keyboard ring flashes behind whatever you press — most
+   noticeably the logo. Suppress the focus ring on coarse-pointer devices; real
+   keyboards (fine pointer) keep it. */
+@media (hover: none) and (pointer: coarse) {
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible,
+  summary:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible { outline: none; }
+}
+
 /* Unified disabled state for all buttons — clearly inert, no hover lift. */
 button:disabled,
 button[disabled],
