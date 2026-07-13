@@ -1413,7 +1413,16 @@ input, select, textarea {
 [data-wl-light] .doc-article code { background: rgba(var(--g-rgb),0.1); color: var(--text); }
 
 /* ── Academy guessr ── */
-[data-wl-light] .guessr-reveal-btn  { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+/* The base game uses white-tint surfaces (rgba(255,255,255,0.0x)) that vanish
+   on the light page, and muted text that's near-invisible. Give every element a
+   readable light surface + solid text. */
+[data-wl-light] .guessr-mystery-coin { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] .guessr-clue         { background: var(--surface-1); color: var(--text); }
+[data-wl-light] .guessr-clue-num     { background: rgba(124,92,246,0.16); color: #6d4bd8; }
+[data-wl-light] .guessr-reveal-btn   { background: var(--surface-2); border-color: rgba(0,0,0,0.14); color: var(--text); font-weight: 600; }
+[data-wl-light] .guessr-reveal-btn:hover { background: var(--surface-3); }
+[data-wl-light] .guessr-option       { background: #fff; border-color: rgba(0,0,0,0.14); color: var(--text); }
+[data-wl-light] .guessr-option:hover { background: rgba(124,92,246,0.10); border-color: rgba(124,92,246,0.5); }
 
 /* ── Heatmap ── */
 [data-wl-light] .heatmap-sym  { color: rgba(0,0,0,0.9); }
