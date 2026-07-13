@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WalletLens asset allocation widget — 4×2 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_bg">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎯 Asset Allocation"
+            android:textColor="#10b981"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/alloc_update"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textColor="#777"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2a2a3e"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Allocation bars -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Crypto -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Crypto" android:textColor="#ddd" android:textSize="11sp" android:layout_marginEnd="6dp" android:minWidth="50dp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="12dp" android:layout_weight="1" android:background="#2a2a3e" android:gravity="start" android:padding="0dp" >
+                <TextView android:id="@+id/alloc_crypto_bar" android:layout_width="0dp" android:layout_height="match_parent" android:background="#9945ff" android:layout_weight="0" android:minWidth="4dp" />
+            </LinearLayout>
+            <TextView android:id="@+id/alloc_crypto_pct" android:layout_width="30dp" android:layout_height="wrap_content" android:text="0%" android:textColor="#aaa" android:textSize="11sp" android:textAlignment="textEnd" />
+        </LinearLayout>
+
+        <!-- Stocks -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stocks" android:textColor="#ddd" android:textSize="9sp" android:layout_marginEnd="6dp" android:minWidth="50dp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="12dp" android:layout_weight="1" android:background="#2a2a3e" android:gravity="start" android:padding="0dp" >
+                <TextView android:id="@+id/alloc_stocks_bar" android:layout_width="0dp" android:layout_height="match_parent" android:background="#3b82f6" android:layout_weight="0" android:minWidth="4dp" />
+            </LinearLayout>
+            <TextView android:id="@+id/alloc_stocks_pct" android:layout_width="30dp" android:layout_height="wrap_content" android:text="0%" android:textColor="#aaa" android:textSize="11sp" android:textAlignment="textEnd" />
+        </LinearLayout>
+
+        <!-- Gold & Silver -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gold/Silver" android:textColor="#fbbf24" android:textSize="9sp" android:layout_marginEnd="6dp" android:minWidth="50dp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="12dp" android:layout_weight="1" android:background="#2a2a3e" android:gravity="start" android:padding="0dp" >
+                <TextView android:id="@+id/alloc_gold_bar" android:layout_width="0dp" android:layout_height="match_parent" android:background="#f5c542" android:layout_weight="0" android:minWidth="4dp" />
+            </LinearLayout>
+            <TextView android:id="@+id/alloc_gold_pct" android:width="30dp" android:layout_height="wrap_content" android:text="0%" android:textColor="#aaa" android:textSize="11sp" android:textAlignment="textEnd" />
+        </LinearLayout>
+
+        <!-- Cash -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cash" android:textColor="#ddd" android:textSize="9sp" android:layout_marginEnd="6dp" android:minWidth="50dp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="12dp" android:layout_weight="1" android:background="#2a2a3e" android:gravity="start" android:padding="0dp">
+                <TextView android:id="@+id/alloc_cash_bar" android:layout_width="0dp" android:layout_height="match_parent" android:background="#10b981" android:layout_weight="0" android:minWidth="4dp" />
+            </LinearLayout>
+            <TextView android:id="@+id/alloc_cash_pct" android:layout_width="30dp" android:layout_height="wrap_content" android:text="0%" android:textColor="#aaa" android:textSize="11sp" android:textAlignment="textEnd" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- net worth total row -->
+    <TextView
+        android:id="@+id/alloc_total"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Total: $0"
+        android:textColor="#777"
+        android:textSize="10sp"
+        android:layout_marginTop="4dp" />
+</LinearLayout>
