@@ -12538,6 +12538,33 @@ button:not(:disabled):active,
 .wr-email-section { border-top: 1px solid rgba(255,255,255,.08); padding: 1rem 1.25rem .75rem; }
 .wr-email-label { font-size: .82rem; color: var(--text-muted); font-weight: 600; margin-bottom: .65rem; text-align: center; }
 
+/* Weekly-report email subscription */
+.wr-sub-form { width: 100%; max-width: 440px; margin: 0 auto; }
+.wr-sub-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.wr-sub-input {
+  flex: 1 1 200px; min-width: 0; border-radius: 10px; padding: 0.65rem 0.85rem;
+  font-size: 0.9rem; background: var(--surface-1); border: 1px solid var(--border);
+  color: var(--text); outline: none;
+}
+.wr-sub-input:focus { border-color: rgba(var(--g-rgb),0.5); }
+.wr-sub-btn {
+  flex-shrink: 0; border: none; border-radius: 10px; padding: 0.65rem 1.1rem;
+  font-size: 0.86rem; font-weight: 700; cursor: pointer; color: #fff;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.wr-sub-btn:disabled { opacity: 0.65; cursor: default; }
+.wr-sub-err { color: #f87171; font-size: 0.78rem; margin: 0.5rem 0 0; text-align: center; }
+.wr-sub-note { color: var(--text-muted); font-size: 0.7rem; margin: 0.55rem 0 0; text-align: center; line-height: 1.5; }
+.wr-sub-active { text-align: center; }
+.wr-sub-ok { color: var(--g-ink); font-weight: 700; font-size: 0.85rem; margin: 0 0 0.5rem; }
+.wr-sub-email { display: block; color: var(--text-muted); font-weight: 600; font-size: 0.78rem; margin-top: 0.15rem; }
+.wr-sub-off {
+  background: none; border: none; color: var(--text-muted); font-size: 0.76rem;
+  text-decoration: underline; cursor: pointer; padding: 0.2rem;
+}
+.wr-sub-off:hover { color: var(--text); background: none; }
+
 /* ── Print / Export PDF ── */
 @media print {
   .shell-nav, .shell-header, .dvx-tabs, .vp-btn-add,

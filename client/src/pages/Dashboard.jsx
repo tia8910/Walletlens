@@ -20,6 +20,7 @@ import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
+import { isWeeklySubscribed, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
@@ -3392,6 +3393,14 @@ export default function Dashboard() {
       assetTypes,
     })
   }, [loaded])
+
+  // Keep the weekly-report email snapshot fresh: if the user is subscribed, push
+  // the current rounded stats on open so the Monday cron sends up-to-date numbers.
+  useEffect(() => {
+    if (!loaded || isDemo || !isWeeklySubscribed()) return
+    if (!(totalValue > 0)) return
+    refreshWeekly(buildWeeklyPayload({ enriched, currency: 'USD' }))
+  }, [loaded, isDemo, totalValue])
 
   const [perfTf, setPerfTf] = useState('30D')
   const [chartType, setChartType] = useState(() => {
