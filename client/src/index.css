@@ -2146,16 +2146,9 @@ body::after {
   font-size: 1.1rem; font-weight: 700;
   color: #fff; letter-spacing: -0.01em;
 }
-.share-close {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: rgba(255,255,255,0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  width: 32px; height: 32px;
-  border-radius: 8px !important;
-  font-size: 1.25rem !important; line-height: 1;
-  padding: 0 !important; cursor: pointer;
-}
-.share-close:hover { background: rgba(255, 255, 255, 0.12) !important; color: #fff !important; }
+/* (legacy white-pill .share-close skin removed — its `color: #fff !important`
+   made the ✕ invisible on the light share modal; the unified close-button
+   rules further down are theme-aware and handle it.) */
 .share-modal-body {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
