@@ -3663,27 +3663,49 @@ export default function Dashboard() {
     return id
   }
 
-  // Quick import options (Excel / Voice / Screenshot / Backup). Shown under the
-  // Buy/Sell strip on the web, and in place of the tile grid inside the native
-  // app (where the tile grid is redundant with the native bottom nav).
+  // Import your net worth smartly — Excel / Voice / Screenshot / Backup shown as
+  // an always-visible tree. Each branch expands its import panel INLINE (nothing
+  // hidden elsewhere on the page). Shown under the Buy/Sell strip on the web, and
+  // in place of the tile grid inside the native app.
   const importOptions = (
-    <div style={{ display:'flex', gap:'0.5rem', margin:'0 0 0.5rem', flexWrap:'wrap' }}>
-      {[
-        { key:'excel',      label:'Excel',      icon:'bar-chart', on:showExcelImport, fn:() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-        { key:'voice',      label:'Voice',      icon:'mic',       on:showVoiceImport, fn:() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-        { key:'screenshot', label:'Screenshot', icon:'camera',    on:showScreenshot,  fn:() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) } },
-        { key:'backup',     label:'Backup',     icon:'folder',    on:showBackupCode,  fn:() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) } },
-      ].map(o => (
-        <button key={o.key} onClick={o.fn} style={{
-          flex:1, minWidth:'70px', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
-          padding:'0.5rem 0.4rem', borderRadius:'12px', cursor:'pointer', fontSize:'0.75rem', fontWeight:700,
-          background: o.on ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.08)',
-          border: `1px solid rgba(var(--g-rgb),${o.on ? '0.5' : '0.22'})`, color:'var(--g-ink)',
-          transition:'background 0.15s',
-        }}>
-          <Icon name={o.icon} size={14} /> {o.label}
-        </button>
-      ))}
+    <div style={{ margin:'0 0 0.75rem' }}>
+      <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
+        Import your net worth smartly
+      </div>
+      <div className="wl-import-tree">
+        {[
+          { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Upload a spreadsheet',    color:'167,139,250' },
+          { key:'voice',      icon:'mic',       label:'Voice',       desc:'Say your trades out loud',color:'16,185,129' },
+          { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'AI reads your holdings',  color:'244,114,182' },
+          { key:'backup',     icon:'folder',    label:'Backup',      desc:'Restore from a code',     color:'96,165,250' },
+        ].map(m => {
+          const open = openImport === m.key
+          return (
+            <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
+              <button className="wl-import-node" style={{ '--c':`rgb(${m.color})`, '--cbg':`rgba(${m.color},0.12)` }}
+                aria-expanded={open}
+                onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('quick_import_open', { method: m.key }) }}>
+                <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
+                <span className="wl-import-node-text">
+                  <span className="wl-import-node-label">{m.label}</span>
+                  <span className="wl-import-node-desc">{m.desc}</span>
+                </span>
+                <span className="wl-import-node-chev">{open ? '▾' : '▸'}</span>
+              </button>
+              {open && (
+                <div className="wl-import-panel">
+                  <Suspense fallback={<TabFallback />}>
+                    {m.key === 'excel'      && <SmartImport wallets={wallets} onImported={() => { loadAll(); setOpenImport(null) }} />}
+                    {m.key === 'voice'      && <VoiceImport hideTrigger onImported={loadAll} />}
+                    {m.key === 'screenshot' && <SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setOpenImport(null) }} />}
+                    {m.key === 'backup'     && <DataPanel onRefresh={loadAll} onImported={loadAll} />}
+                  </Suspense>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 
