@@ -7661,6 +7661,9 @@ input[type="date"] { color-scheme: dark; }
   border: 1px solid rgba(255,255,255,0.06);
   display: block; aspect-ratio: 1200 / 630;
 }
+/* Weekly Report canvas is drawn square (1080×1080), so it must not inherit the
+   1200×630 card ratio — that stretches the image. */
+.share-canvas--square { aspect-ratio: 1 / 1; }
 .share-modal-header {
   display: flex; justify-content: space-between; align-items: center;
   font-weight: 700; font-size: 1rem; color: var(--text);
