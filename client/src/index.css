@@ -9062,6 +9062,128 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .guessr-result-wrong-opt { background: rgba(248,113,113,0.15); color: var(--negative); text-decoration: line-through; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── Dashboard "Spin & Learn" card ─────────────────────────────────────── */
+.dvx-spin-card {
+  display: flex; align-items: center; gap: 0.85rem; text-decoration: none;
+  padding: 0.9rem 1rem; cursor: pointer;
+  background: linear-gradient(135deg, rgba(var(--g-rgb),0.12), rgba(var(--g-rgb),0.04));
+  border: 1px solid rgba(var(--g-rgb),0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dvx-spin-card:hover { transform: translateY(-1px); border-color: rgba(var(--g-rgb),0.5); box-shadow: 0 6px 18px rgba(var(--g-rgb),0.16); }
+.dvx-spin-card:active { transform: scale(0.99); }
+.dvx-spin-emoji { font-size: 1.7rem; line-height: 1; }
+.dvx-spin-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.dvx-spin-title { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.dvx-spin-sub { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; margin-top: 0.1rem; }
+.dvx-spin-badge {
+  flex-shrink: 0; font-size: 0.72rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  border-radius: 999px; padding: 0.3rem 0.7rem; box-shadow: 0 2px 8px rgba(var(--g-rgb),0.3);
+}
+
+/* ── Smart Import tree ─────────────────────────────────────────────────── */
+.wl-import-tree { position: relative; display: flex; flex-direction: column; gap: 0.6rem; padding-left: 1.15rem; }
+/* Trunk line */
+.wl-import-tree::before {
+  content: ''; position: absolute; left: 0.35rem; top: 1.35rem; bottom: 1.35rem; width: 2px;
+  background: var(--border); border-radius: 2px;
+}
+.wl-import-branch { position: relative; }
+/* Branch connector from trunk to node */
+.wl-import-branch::before {
+  content: ''; position: absolute; left: -0.8rem; top: 1.4rem; width: 0.8rem; height: 2px;
+  background: var(--border); border-radius: 2px;
+}
+.wl-import-node {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%; text-align: left; cursor: pointer;
+  padding: 0.65rem 0.8rem; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface-1); transition: background 0.15s, border-color 0.15s;
+}
+.wl-import-node:hover { background: var(--surface-2); border-color: var(--c); }
+.wl-import-branch.open > .wl-import-node { border-color: var(--c); background: var(--cbg); }
+.wl-import-node-icon {
+  display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border-radius: 9px; background: var(--cbg); color: var(--c); flex-shrink: 0;
+}
+.wl-import-node-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.wl-import-node-label { font-weight: 800; font-size: 0.9rem; color: var(--text); }
+.wl-import-node-desc { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; }
+.wl-import-node-chev { color: var(--text-muted); font-size: 0.85rem; flex-shrink: 0; }
+.wl-import-panel {
+  margin: 0.55rem 0 0.2rem 0.4rem; padding: 0.6rem 0 0.2rem 0.75rem;
+  border-left: 2px dashed var(--border); animation: fadeInUp 0.25s ease;
+}
+
+/* ── Knowledge Wheel (Spin & Learn) ────────────────────────────────────── */
+.kw-wrap { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.kw-topbar { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.75rem; }
+.kw-spins { display: flex; flex-direction: column; line-height: 1; }
+.kw-spins-num { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+.kw-spins-lbl { font-size: 0.7rem; margin-top: 0.15rem; }
+.kw-share-btn {
+  border: 1px solid rgba(var(--g-rgb),0.35); background: rgba(var(--g-rgb),0.1); color: var(--g-ink);
+  border-radius: 10px; padding: 0.5rem 0.85rem; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.kw-share-btn:hover:not(:disabled) { background: rgba(var(--g-rgb),0.18); }
+.kw-share-btn:active:not(:disabled) { transform: scale(0.95); }
+.kw-share-btn:disabled { opacity: 0.55; cursor: default; }
+
+.kw-wheel-stage { position: relative; width: 240px; height: 240px; margin: 0.5rem 0; }
+/* Pointer at 12 o'clock, pointing down into the wheel */
+.kw-pointer {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%); z-index: 3;
+  width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent;
+  border-top: 20px solid #fff; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+}
+.kw-wheel {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 6px solid rgba(255,255,255,0.9);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(0,0,0,0.15);
+  will-change: transform;
+}
+.kw-wedge-label {
+  position: absolute; top: 50%; left: 50%; margin: -14px 0 0 -14px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; color: #fff;
+}
+.kw-wedge-label svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
+.kw-hub {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 2;
+  width: 52px; height: 52px; border-radius: 50%; background: #fff; color: #111;
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+}
+.kw-spin-btn { min-width: 160px; font-size: 1rem; letter-spacing: 0.06em; }
+.kw-hint { font-size: 0.76rem; text-align: center; margin: -0.35rem 0 0; }
+
+.kw-result { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; padding: 1.25rem; width: 100%; text-align: center; }
+.kw-result-emoji { font-size: 2.4rem; }
+.kw-result-title { font-size: 1rem; font-weight: 800; color: var(--text); }
+
+.kw-question { display: flex; flex-direction: column; gap: 0.8rem; padding: 1.1rem; width: 100%; animation: fadeInUp 0.3s ease; }
+.kw-q-cat { align-self: flex-start; padding: 0.28rem 0.7rem; border-radius: 999px; font-size: 0.74rem; font-weight: 800; }
+.kw-q-text { font-size: 0.95rem; font-weight: 700; color: var(--text); line-height: 1.4; }
+.kw-q-opts { display: flex; flex-direction: column; gap: 0.5rem; }
+.kw-q-opt {
+  text-align: left; padding: 0.7rem 0.85rem; border-radius: 10px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; color: var(--text);
+  background: var(--surface-1); border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
+}
+.kw-q-opt:hover:not(:disabled) { background: var(--surface-2); border-color: rgba(var(--g-rgb),0.4); }
+.kw-q-opt:disabled { cursor: default; }
+.kw-q-correct { background: rgba(var(--g-rgb),0.15) !important; border-color: rgba(var(--g-rgb),0.5) !important; color: var(--g-ink) !important; font-weight: 700; }
+.kw-q-wrong { background: rgba(248,113,113,0.14) !important; border-color: rgba(248,113,113,0.5) !important; }
+.kw-explain { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+.kw-verdict { font-size: 0.9rem; font-weight: 800; }
+.kw-verdict.ok { color: var(--g-ink); }
+.kw-verdict.no { color: #f87171; }
+.kw-exp-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .kw-wheel { transition: none !important; }
+}
+
 /* ── Onboarding Tour (v2) ──────────────────────────────────────────────── */
 /* shared fade animations */
 .tour-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); padding: 0 0 env(safe-area-inset-bottom,0); }

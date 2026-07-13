@@ -1,6 +1,6 @@
 import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
@@ -2852,6 +2852,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 
 // ── Static card config — defined at module level to avoid recreating on every render ──
 const CARD_CONFIG = [
+  { id:'spin_learn',         label:'Spin & Learn' },
   { id:'pnl_chart',          label:'P&L by Asset' },
   { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
   { id:'goal_tracker',       label:'Goal Tracker' },
@@ -3047,6 +3048,8 @@ export default function Dashboard() {
   const [showVoiceImport, setShowVoiceImport] = useState(false)
   const [showScreenshot, setShowScreenshot] = useState(false)
   const [showBackupCode, setShowBackupCode] = useState(false)
+  // Smart Import tree — which method branch is expanded (excel | voice | screenshot | null)
+  const [openImport, setOpenImport] = useState(null)
   const currencyBtnRef = useRef(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
@@ -3055,6 +3058,18 @@ export default function Dashboard() {
     catch { return DEFAULT_VIS }
   })
   const [showCardConfig, setShowCardConfig] = useState(false)
+  // Academy "Spin & Learn" snapshot (spins left today + current IQ) for the
+  // dashboard card. Read once on mount; the route remounts when returning from
+  // /academy, so it stays current.
+  const [spinLearn] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('wl_academy_v1') || '{}')
+      const today = new Date().toISOString().split('T')[0]
+      const w = s.wheel
+      const spins = (!w || w.date !== today) ? 3 : Math.max(0, w.left ?? 3)
+      return { spins, iq: s.iq || 0 }
+    } catch { return { spins: 3, iq: 0 } }
+  })
   function toggleCard(id) {
     setCardVis(v => {
       const next = { ...v, [id]: !v[id] }
@@ -3648,27 +3663,49 @@ export default function Dashboard() {
     return id
   }
 
-  // Quick import options (Excel / Voice / Screenshot / Backup). Shown under the
-  // Buy/Sell strip on the web, and in place of the tile grid inside the native
-  // app (where the tile grid is redundant with the native bottom nav).
+  // Import your net worth smartly — Excel / Voice / Screenshot / Backup shown as
+  // an always-visible tree. Each branch expands its import panel INLINE (nothing
+  // hidden elsewhere on the page). Shown under the Buy/Sell strip on the web, and
+  // in place of the tile grid inside the native app.
   const importOptions = (
-    <div style={{ display:'flex', gap:'0.5rem', margin:'0 0 0.5rem', flexWrap:'wrap' }}>
-      {[
-        { key:'excel',      label:'Excel',      icon:'bar-chart', on:showExcelImport, fn:() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-        { key:'voice',      label:'Voice',      icon:'mic',       on:showVoiceImport, fn:() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowScreenshot(false); setShowBackupCode(false) } },
-        { key:'screenshot', label:'Screenshot', icon:'camera',    on:showScreenshot,  fn:() => { setShowScreenshot(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) } },
-        { key:'backup',     label:'Backup',     icon:'folder',    on:showBackupCode,  fn:() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false); setShowScreenshot(false) } },
-      ].map(o => (
-        <button key={o.key} onClick={o.fn} style={{
-          flex:1, minWidth:'70px', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
-          padding:'0.5rem 0.4rem', borderRadius:'12px', cursor:'pointer', fontSize:'0.75rem', fontWeight:700,
-          background: o.on ? 'rgba(var(--g-rgb),0.18)' : 'rgba(var(--g-rgb),0.08)',
-          border: `1px solid rgba(var(--g-rgb),${o.on ? '0.5' : '0.22'})`, color:'var(--g-ink)',
-          transition:'background 0.15s',
-        }}>
-          <Icon name={o.icon} size={14} /> {o.label}
-        </button>
-      ))}
+    <div style={{ margin:'0 0 0.75rem' }}>
+      <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
+        Import your net worth smartly
+      </div>
+      <div className="wl-import-tree">
+        {[
+          { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
+          { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
+          { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
+          { key:'backup',     icon:'folder',    label:'Backup',      desc:'Bring your portfolio to any device',           color:'96,165,250' },
+        ].map(m => {
+          const open = openImport === m.key
+          return (
+            <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
+              <button className="wl-import-node" style={{ '--c':`rgb(${m.color})`, '--cbg':`rgba(${m.color},0.12)` }}
+                aria-expanded={open}
+                onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('quick_import_open', { method: m.key }) }}>
+                <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
+                <span className="wl-import-node-text">
+                  <span className="wl-import-node-label">{m.label}</span>
+                  <span className="wl-import-node-desc">{m.desc}</span>
+                </span>
+                <span className="wl-import-node-chev">{open ? '▾' : '▸'}</span>
+              </button>
+              {open && (
+                <div className="wl-import-panel">
+                  <Suspense fallback={<TabFallback />}>
+                    {m.key === 'excel'      && <SmartImport wallets={wallets} onImported={() => { loadAll(); setOpenImport(null) }} />}
+                    {m.key === 'voice'      && <VoiceImport hideTrigger onImported={loadAll} />}
+                    {m.key === 'screenshot' && <SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setOpenImport(null) }} />}
+                    {m.key === 'backup'     && <DataPanel onRefresh={loadAll} onImported={loadAll} />}
+                  </Suspense>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 
@@ -4219,6 +4256,19 @@ export default function Dashboard() {
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
+
+              {/* Spin & Learn — link to the Academy Knowledge Wheel */}
+              {cardVis.spin_learn && (
+                <Link to="/academy?tab=wheel" className="glass-card dvx-spin-card"
+                  onClick={() => track('spin_learn_card_click', { spins: spinLearn.spins })}>
+                  <span className="dvx-spin-emoji">🎡</span>
+                  <span className="dvx-spin-text">
+                    <span className="dvx-spin-title">Spin &amp; Learn</span>
+                    <span className="dvx-spin-sub">Grow your Investor IQ · {spinLearn.iq} IQ</span>
+                  </span>
+                  <span className="dvx-spin-badge">{spinLearn.spins} spin{spinLearn.spins === 1 ? '' : 's'} left</span>
+                </Link>
+              )}
 
               {/* P&L bar chart */}
               {cardVis.pnl_chart && pnlData.length > 0 && (
@@ -4862,10 +4912,39 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Smart Import</h3>
-            <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>Import holdings from a portfolio screenshot (AI-powered) or an Excel / CSV file.</p>
-            <Suspense fallback={<TabFallback />}>
-              <SmartImport wallets={wallets} onImported={loadAll} />
-            </Suspense>
+            <p className="dvx-data-hint" style={{ marginBottom: '0.9rem' }}>Import your net worth smartly — pick a method.</p>
+            <div className="wl-import-tree">
+              {[
+                { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
+                { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
+                { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
+              ].map(m => {
+                const open = openImport === m.key
+                return (
+                  <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
+                    <button className="wl-import-node" style={{ '--c': `rgb(${m.color})`, '--cbg': `rgba(${m.color},0.12)` }}
+                      aria-expanded={open}
+                      onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('smart_import_open', { method: m.key }) }}>
+                      <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
+                      <span className="wl-import-node-text">
+                        <span className="wl-import-node-label">{m.label}</span>
+                        <span className="wl-import-node-desc">{m.desc}</span>
+                      </span>
+                      <span className="wl-import-node-chev">{open ? '▾' : '▸'}</span>
+                    </button>
+                    {open && (
+                      <div className="wl-import-panel">
+                        <Suspense fallback={<TabFallback />}>
+                          {m.key === 'excel'      && <SmartImport wallets={wallets} onImported={loadAll} />}
+                          {m.key === 'voice'      && <VoiceImport hideTrigger onImported={loadAll} />}
+                          {m.key === 'screenshot' && <SmartImport wallets={wallets} defaultMode="screenshot" onImported={loadAll} />}
+                        </Suspense>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
