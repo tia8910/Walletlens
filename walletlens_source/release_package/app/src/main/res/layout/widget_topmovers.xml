@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WalletLens top movers widget — 4×2 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_bg">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="📈 Top Movers"
+            android:textColor="#10b981"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_tm_update"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textColor="#777777"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2a2a3e"
+        android:layout_marginBottom="6dp" />
+
+    <!-- Movers list -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Row 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView android:id="@+id/mover1_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="—" android:textColor="#ddd" android:textSize="12sp" />
+            <TextView android:id="@+id/mover1_price" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#ccc" android:textSize="11sp" android:layout_marginEnd="8dp" />
+            <TextView android:id="@+id/mover1_change" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Row 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView android:id="@+id/mover2_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="—" android:textColor="#ddd" android:textSize="12sp" />
+            <TextView android:id="@+id/mover2_price" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#ccc" android:textSize="11sp" android:layout_marginEnd="8dp" />
+            <TextView android:id="@+id/mover2_change" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Row 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView android:id="@+id/mover3_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="—" android:textColor="#ddd" android:textSize="12sp" />
+            <TextView android:id="@+id/mover3_price" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#ccc" android:textSize="11sp" android:layout_marginEnd="8dp" />
+            <TextView android:id="@+id/mover3_change" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Row 4 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView android:id="@+id/mover4_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="—" android:textColor="#ddd" android:textSize="12sp" />
+            <TextView android:id="@+id/mover4_price" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#ccc" android:textSize="11sp" android:layout_marginEnd="8dp" />
+            <TextView android:id="@+id/mover4_change" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Row 5 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView android:id="@+id/mover5_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="—" android:textColor="#ddd" android:textSize="12sp" />
+            <TextView android:id="@+id/mover5_price" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#ccc" android:textSize="11sp" android:layout_marginEnd="8dp" />
+            <TextView android:id="@+id/mover5_change" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

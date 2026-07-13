@@ -322,4 +322,78 @@ public class PeriodicUpdateWorker extends Worker {
         conn.disconnect();
         return sb.toString();
     }
+
+    // ── Widget update ──────────────────────────────────────────────
+
+    private void updateAllWidgets() {
+        try {
+            Context ctx = getApplicationContext();
+            String json = httpGet(CRYPTO_URL);
+            JSONObject data = new JSONObject(json);
+
+            NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
+            StringBuilder moversSb = new StringBuilder();
+            String[] ids = {"bitcoin", "ethereum", "ripple", "solana", "cardano"};
+            String[] symbols = {"BTC", "ETH", "XRP", "SOL", "ADA"};
+
+            String topName = "—";
+            double topChange = 0;
+            int tracked = 0;
+            double totalPnl = 0;
+
+            for (int i = 0; i < ids.length; i++) {
+                if (data.has(ids[i])) {
+                    JSONObject c = data.getJSONObject(ids[i]);
+                    double price = c.getDouble("usd");
+                    double change = c.optDouble("usd_24h_change", 0);
+                    tracked++;
+                    totalPnl += change;
+                    if (change > topChange) {
+                        topChange = change;
+                        topName = symbols[i] + " " + String.format(Locale.US, "%+.1f%%", change);
+                    }
+                }
+            }
+
+            // Update net worth widget
+            double dailyPct = tracked > 0 ? totalPnl / tracked : 0;
+            WalletLensWidgetProvider.saveWidgetData(ctx, 0, 0, dailyPct, tracked, topName);
+
+            // Update top movers widget
+            String[] mNames = new String[5];
+            String[] mPrices = new String[5];
+            float[] mChanges = new float[5];
+            for (int i = 0; i < 5; i++) {
+                if (data.has(ids[i])) {
+                    JSONObject c = data.getJSONObject(ids[i]);
+                    mNames[i] = symbols[i];
+                    mPrices[i] = fmt.format(c.getDouble("usd"));
+                    mChanges[i] = (float) c.optDouble("usd_24h_change", 0);
+                } else {
+                    mNames[i] = symbols[i];
+                    mPrices[i] = "—";
+                    mChanges[i] = 0;
+                }
+            }
+            TopMoversWidgetProvider.saveTopMovers(ctx, mNames, mPrices, mChanges);
+
+            // Update P&L widget
+            int winners = 0, losers = 0;
+            for (int i = 0; i < ids.length; i++) {
+                if (data.has(ids[i])) {
+                    JSONObject c = data.getJSONObject(ids[i]);
+                    if (c.optDouble("usd_24h_change", 0) >= 0) winners++;
+                    else losers++;
+                }
+            }
+            DailyPnlWidgetProvider.savePnlData(ctx, 0, dailyPct, winners, losers, topName);
+
+            // Update allocation widget — estimate from available data
+            float cryptoPct = 100f; // Default: all crypto until portfolio data is available
+            AllocationWidgetProvider.saveAllocation(ctx, cryptoPct, 0, 0, 0, 0);
+
+        } catch (Exception e) {
+            android.util.Log.w(TAG, "Widget update failed: " + e.getMessage());
+        }
+    }
 }

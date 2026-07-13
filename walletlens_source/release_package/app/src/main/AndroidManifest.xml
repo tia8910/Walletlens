@@ -289,5 +289,42 @@
             android:exported="false"
             android:enabled="true" />
 
+
+        <!-- Top Movers widget -->
+        <receiver
+            android:name=".TopMoversWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_topmovers_info" />
+        </receiver>
+
+        <!-- Daily P&L widget -->
+        <receiver
+            android:name=".DailyPnlWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_pnl_info" />
+        </receiver>
+
+        <!-- Asset Allocation widget -->
+        <receiver
+            android:name=".AllocationWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_allocation_info" />
+        </receiver>
+
     </application>
 </manifest>
