@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { track } from '../analytics'
+import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
 import { POSTS } from '../data/blogPosts'
 
@@ -285,14 +286,14 @@ function CryptoGuessr({ onIqGain }) {
 // answers grant IQ + a free spin; sharing grants spins once a day. All spins are
 // tracked in the shared academy store so the dashboard card can show them.
 const WHEEL_WEDGES = [
-  { id: 'crypto',   label: 'Crypto',   emoji: '🪙', cat: 'Crypto',   color: '#f7931a' },
-  { id: 'markets',  label: 'Markets',  emoji: '📊', cat: 'Markets',  color: '#3b82f6' },
-  { id: 'risk',     label: 'Risk',     emoji: '🛡️', cat: 'Risk',     color: '#ef4444' },
-  { id: 'defi',     label: 'DeFi',     emoji: '🌾', cat: 'DeFi',     color: '#22c55e' },
-  { id: 'security', label: 'Security', emoji: '🔒', cat: 'Security', color: '#8b5cf6' },
-  { id: 'strategy', label: 'Strategy', emoji: '🎯', cat: 'Strategy', color: '#0ea5e9' },
-  { id: 'double',   label: '2× IQ',    emoji: '⭐', cat: null, multiplier: 2, color: '#fbbf24' },
-  { id: 'bonus',    label: '+2 Spins', emoji: '🎁', cat: null, reward: 'spins', color: '#ec4899' },
+  { id: 'crypto',   label: 'Crypto',   icon: 'coins',    cat: 'Crypto',   color: '#f7931a' },
+  { id: 'markets',  label: 'Markets',  icon: 'trend-up', cat: 'Markets',  color: '#3b82f6' },
+  { id: 'risk',     label: 'Risk',     icon: 'shield',   cat: 'Risk',     color: '#ef4444' },
+  { id: 'defi',     label: 'DeFi',     icon: 'bank',     cat: 'DeFi',     color: '#22c55e' },
+  { id: 'security', label: 'Security', icon: 'lock',     cat: 'Security', color: '#8b5cf6' },
+  { id: 'strategy', label: 'Strategy', icon: 'target',   cat: 'Strategy', color: '#0ea5e9' },
+  { id: 'double',   label: '2× IQ',    icon: 'diamond',  cat: null, multiplier: 2, color: '#fbbf24' },
+  { id: 'bonus',    label: '+2 Spins', icon: 'gift',     cat: null, reward: 'spins', color: '#ec4899' },
 ]
 const WHEEL_SLICE = 360 / WHEEL_WEDGES.length
 const WHEEL_DAILY_SPINS = 3
@@ -416,7 +417,7 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
             const angle = i * WHEEL_SLICE + WHEEL_SLICE / 2
             return (
               <div key={w.id} className="kw-wedge-label" style={{ transform: `rotate(${angle}deg) translateY(-96px) rotate(${-angle}deg)` }}>
-                <span className="kw-wedge-emoji">{w.emoji}</span>
+                <Icon name={w.icon} size={24} />
               </div>
             )
           })}
@@ -434,7 +435,7 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       {/* Reward wedge result */}
       {phase === 'reward' && wedge && (
         <div className="kw-result glass-card">
-          <div className="kw-result-emoji">{wedge.emoji}</div>
+          <div className="kw-result-emoji" style={{ color: wedge.color }}><Icon name={wedge.icon} size={40} /></div>
           <div className="kw-result-title">{rewardMsg}</div>
           <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>Spin again</button>
         </div>
@@ -443,8 +444,8 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       {/* Question flow */}
       {(phase === 'question' || phase === 'answered') && q && (
         <div className="kw-question glass-card">
-          <div className="kw-q-cat" style={{ background: (wedge?.color || 'var(--g)') + '22', color: wedge?.color || 'var(--g-ink)' }}>
-            {wedge?.emoji} {wedge?.label}{wedge?.multiplier ? ' — double points!' : ''}
+          <div className="kw-q-cat" style={{ background: (wedge?.color || 'var(--g)') + '22', color: wedge?.color || 'var(--g-ink)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            {wedge && <Icon name={wedge.icon} size={14} />} {wedge?.label}{wedge?.multiplier ? ' — double points!' : ''}
           </div>
           <div className="kw-q-text">{q.q}</div>
           <div className="kw-q-opts">
