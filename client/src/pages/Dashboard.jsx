@@ -3674,10 +3674,10 @@ export default function Dashboard() {
       </div>
       <div className="wl-import-tree">
         {[
-          { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Upload a spreadsheet',    color:'167,139,250' },
-          { key:'voice',      icon:'mic',       label:'Voice',       desc:'Say your trades out loud',color:'16,185,129' },
-          { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'AI reads your holdings',  color:'244,114,182' },
-          { key:'backup',     icon:'folder',    label:'Backup',      desc:'Restore from a code',     color:'96,165,250' },
+          { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
+          { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
+          { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
+          { key:'backup',     icon:'folder',    label:'Backup',      desc:'Bring your portfolio to any device',           color:'96,165,250' },
         ].map(m => {
           const open = openImport === m.key
           return (
@@ -4915,9 +4915,9 @@ export default function Dashboard() {
             <p className="dvx-data-hint" style={{ marginBottom: '0.9rem' }}>Import your net worth smartly — pick a method.</p>
             <div className="wl-import-tree">
               {[
-                { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Upload a spreadsheet',    color:'167,139,250' },
-                { key:'voice',      icon:'mic',       label:'Voice',       desc:'Just say your trades',   color:'16,185,129' },
-                { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'AI reads your holdings', color:'244,114,182' },
+                { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
+                { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
+                { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
               ].map(m => {
                 const open = openImport === m.key
                 return (
