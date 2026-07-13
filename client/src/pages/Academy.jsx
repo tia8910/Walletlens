@@ -279,6 +279,205 @@ function CryptoGuessr({ onIqGain }) {
   )
 }
 
+// ── Game: Knowledge Wheel (Spin & Learn) ──────────────────────────────────
+// A spin-the-wheel quiz. Six topic wedges serve a question from that category;
+// two bonus wedges reward the player (2× IQ question, or +2 free spins). Correct
+// answers grant IQ + a free spin; sharing grants spins once a day. All spins are
+// tracked in the shared academy store so the dashboard card can show them.
+const WHEEL_WEDGES = [
+  { id: 'crypto',   label: 'Crypto',   emoji: '🪙', cat: 'Crypto',   color: '#f7931a' },
+  { id: 'markets',  label: 'Markets',  emoji: '📊', cat: 'Markets',  color: '#3b82f6' },
+  { id: 'risk',     label: 'Risk',     emoji: '🛡️', cat: 'Risk',     color: '#ef4444' },
+  { id: 'defi',     label: 'DeFi',     emoji: '🌾', cat: 'DeFi',     color: '#22c55e' },
+  { id: 'security', label: 'Security', emoji: '🔒', cat: 'Security', color: '#8b5cf6' },
+  { id: 'strategy', label: 'Strategy', emoji: '🎯', cat: 'Strategy', color: '#0ea5e9' },
+  { id: 'double',   label: '2× IQ',    emoji: '⭐', cat: null, multiplier: 2, color: '#fbbf24' },
+  { id: 'bonus',    label: '+2 Spins', emoji: '🎁', cat: null, reward: 'spins', color: '#ec4899' },
+]
+const WHEEL_SLICE = 360 / WHEEL_WEDGES.length
+const WHEEL_DAILY_SPINS = 3
+
+function wheelStateOf(store) {
+  const today = getTodayStr()
+  const w = store?.wheel
+  if (!w || w.date !== today) return { date: today, left: WHEEL_DAILY_SPINS, sharedToday: false }
+  return w
+}
+
+function pickQuestion(cat) {
+  const pool = cat ? QUESTIONS.filter(q => q.cat === cat) : QUESTIONS
+  const list = pool.length ? pool : QUESTIONS
+  return list[Math.floor(Math.random() * list.length)]
+}
+
+function KnowledgeWheel({ store, onIqGain, setWheel }) {
+  const [rotation, setRotation] = useState(0)
+  const [spinning, setSpinning] = useState(false)
+  const [phase, setPhase]       = useState('idle') // idle | question | answered | reward
+  const [wedge, setWedge]       = useState(null)
+  const [q, setQ]               = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [rewardMsg, setRewardMsg] = useState('')
+  const [lastIq, setLastIq]     = useState(0)
+  const rotRef = useRef(0)
+  const wRef   = useRef(wheelStateOf(store))
+  wRef.current = wheelStateOf(store)
+  const spins = wRef.current.left
+  const sharedToday = wRef.current.sharedToday
+
+  function commitWheel(patch) {
+    const next = { ...wRef.current, ...patch }
+    wRef.current = next
+    setWheel(next)
+  }
+
+  function spin() {
+    if (spinning || spins <= 0) return
+    setSpinning(true)
+    setPhase('idle'); setWedge(null); setQ(null); setSelected(null); setRewardMsg('')
+    commitWheel({ left: spins - 1 })
+    const k = Math.floor(Math.random() * WHEEL_WEDGES.length)
+    const targetPos = k * WHEEL_SLICE + WHEEL_SLICE / 2
+    const currentMod = ((rotRef.current % 360) + 360) % 360
+    let delta = ((360 - targetPos) - currentMod)
+    delta = ((delta % 360) + 360) % 360
+    const next = rotRef.current + 360 * 5 + delta
+    rotRef.current = next
+    setRotation(next)
+    track('wheel_spin', { wedge: WHEEL_WEDGES[k].id })
+    setTimeout(() => {
+      setSpinning(false)
+      const landed = WHEEL_WEDGES[k]
+      setWedge(landed)
+      if (landed.reward === 'spins') {
+        commitWheel({ left: wRef.current.left + 2 })
+        setRewardMsg('🎁 Bonus! +2 free spins')
+        setPhase('reward')
+      } else {
+        setQ(pickQuestion(landed.cat))
+        setPhase('question')
+      }
+    }, 4200)
+  }
+
+  function answer(idx) {
+    if (phase !== 'question' || selected !== null) return
+    setSelected(idx)
+    const correct = idx === q.a
+    const mult = wedge?.multiplier || 1
+    const gain = correct ? 25 * mult : 0
+    setLastIq(gain)
+    if (correct) {
+      onIqGain(gain)
+      commitWheel({ left: wRef.current.left + 1 }) // earn a spin for a correct answer
+    }
+    setPhase('answered')
+    track('wheel_answer', { correct, cat: wedge?.cat || wedge?.id, gain })
+  }
+
+  async function shareForSpins() {
+    track('wheel_share', { alreadyClaimed: sharedToday })
+    const text = `I'm leveling up my investing IQ on the WalletLens Knowledge Wheel 🎡 — spin, learn, and grow. Try it free:`
+    const url = 'https://walletlens.live/academy?tab=wheel'
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'WalletLens Knowledge Wheel', text, url })
+      } else {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener')
+      }
+    } catch { /* user cancelled share sheet — still grant once daily below */ }
+    if (!wRef.current.sharedToday) {
+      commitWheel({ left: wRef.current.left + 2, sharedToday: true })
+      setRewardMsg('🎉 Thanks for sharing! +2 free spins')
+    }
+  }
+
+  return (
+    <div className="kw-wrap">
+      <div className="kw-topbar">
+        <div className="kw-spins">
+          <span className="kw-spins-num">{spins}</span>
+          <span className="kw-spins-lbl muted">spins left today</span>
+        </div>
+        <button className="kw-share-btn" onClick={shareForSpins} disabled={sharedToday}
+          title={sharedToday ? 'Share bonus already claimed today' : 'Share to earn +2 spins'}>
+          {sharedToday ? '✓ Shared (+2)' : '📤 Share for +2 spins'}
+        </button>
+      </div>
+
+      <div className="kw-wheel-stage">
+        <div className="kw-pointer" />
+        <div className="kw-wheel" style={{
+          transform: `rotate(${rotation}deg)`,
+          transition: spinning ? 'transform 4.1s cubic-bezier(0.16,1,0.3,1)' : 'none',
+          background: `conic-gradient(${WHEEL_WEDGES.map((w, i) => `${w.color} ${i * WHEEL_SLICE}deg ${(i + 1) * WHEEL_SLICE}deg`).join(', ')})`,
+        }}>
+          {WHEEL_WEDGES.map((w, i) => {
+            const angle = i * WHEEL_SLICE + WHEEL_SLICE / 2
+            return (
+              <div key={w.id} className="kw-wedge-label" style={{ transform: `rotate(${angle}deg) translateY(-96px) rotate(${-angle}deg)` }}>
+                <span className="kw-wedge-emoji">{w.emoji}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="kw-hub">🎡</div>
+      </div>
+
+      <button className="kw-spin-btn blitz-start-btn" onClick={spin} disabled={spinning || spins <= 0}>
+        {spinning ? 'Spinning…' : spins > 0 ? 'SPIN' : 'No spins left'}
+      </button>
+      {spins <= 0 && !spinning && (
+        <p className="kw-hint muted">Answer questions or share to earn more — spins refill daily.</p>
+      )}
+
+      {/* Reward wedge result */}
+      {phase === 'reward' && wedge && (
+        <div className="kw-result glass-card">
+          <div className="kw-result-emoji">{wedge.emoji}</div>
+          <div className="kw-result-title">{rewardMsg}</div>
+          <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>Spin again</button>
+        </div>
+      )}
+
+      {/* Question flow */}
+      {(phase === 'question' || phase === 'answered') && q && (
+        <div className="kw-question glass-card">
+          <div className="kw-q-cat" style={{ background: (wedge?.color || 'var(--g)') + '22', color: wedge?.color || 'var(--g-ink)' }}>
+            {wedge?.emoji} {wedge?.label}{wedge?.multiplier ? ' — double points!' : ''}
+          </div>
+          <div className="kw-q-text">{q.q}</div>
+          <div className="kw-q-opts">
+            {q.opts.map((opt, i) => {
+              let cls = 'kw-q-opt'
+              if (phase === 'answered') {
+                if (i === q.a) cls += ' kw-q-correct'
+                else if (i === selected) cls += ' kw-q-wrong'
+              }
+              return (
+                <button key={i} className={cls} onClick={() => answer(i)} disabled={phase === 'answered'}>
+                  {opt}
+                </button>
+              )
+            })}
+          </div>
+          {phase === 'answered' && (
+            <div className="kw-explain">
+              <div className={`kw-verdict ${selected === q.a ? 'ok' : 'no'}`}>
+                {selected === q.a ? `✅ Correct! +${lastIq} IQ · +1 spin` : '❌ Not quite'}
+              </div>
+              <p className="kw-exp-text">{q.exp}</p>
+              <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>
+                {spins > 0 ? 'Spin again' : 'Out of spins'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Investment Hacks ─────────────────────────────────────────────────────
 const HACKS = [
   { icon: '🎯', cat: 'Entry', title: 'Buy in thirds, not all at once', body: 'Split your planned buy into 3 equal parts. Enter 1/3 now, 1/3 on a 10% dip, 1/3 on a 20% dip. You will never perfectly time the market — but you can average into a better price every time.' },
@@ -537,7 +736,15 @@ export default function Academy() {
   const [selected, setSelected]   = useState(null)
   const [timeLeft, setTimeLeft]   = useState(10)
   const [newBadges, setNewBadges] = useState([])
-  const [activeTab, setActiveTab] = useState('challenge') // challenge | badges | game | hacks | articles
+  const [activeTab, setActiveTab] = useState(() => {
+    // Deep-link support: /academy?tab=wheel opens a specific tab (used by the
+    // dashboard "Spin & Learn" card).
+    try {
+      const t = new URLSearchParams(window.location.search).get('tab')
+      if (['challenge', 'badges', 'wheel', 'game', 'hacks', 'articles'].includes(t)) return t
+    } catch { /* no window/search */ }
+    return 'challenge'
+  }) // challenge | badges | wheel | game | hacks | articles
   const [articleFilter, setArticleFilter] = useState('All')
   const timerRef = useRef(null)
   const startTime = useRef(null)
@@ -721,6 +928,7 @@ export default function Academy() {
         {[
           { id: 'challenge', label: '📅 Daily Challenge' },
           { id: 'badges',    label: `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})` },
+          { id: 'wheel',     label: '🎡 Spin & Learn' },
           { id: 'game',      label: '🕵️ Crypto Guessr' },
           { id: 'hacks',     label: '💡 Investment Hacks' },
           { id: 'articles',  label: `📚 Articles (${POSTS.length})` },
@@ -830,6 +1038,28 @@ export default function Academy() {
       )}
 
       {/* ── GAME TAB ── */}
+      {activeTab === 'wheel' && (
+        <div className="glass-card" style={{ padding: '1.25rem' }}>
+          <KnowledgeWheel
+            store={store}
+            onIqGain={pts => {
+              setStore(prev => {
+                const updated = { ...prev, iq: (prev.iq || 0) + pts }
+                saveStore(updated)
+                return updated
+              })
+            }}
+            setWheel={w => {
+              setStore(prev => {
+                const updated = { ...prev, wheel: w }
+                saveStore(updated)
+                return updated
+              })
+            }}
+          />
+        </div>
+      )}
+
       {activeTab === 'game' && (
         <div className="glass-card" style={{ padding: '1.25rem' }}>
           <CryptoGuessr onIqGain={pts => {
