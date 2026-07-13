@@ -885,7 +885,7 @@ input, select, textarea {
 /* ── Currency pills ── */
 [data-wl-light] .dvx-currency-pill { color: var(--text-muted); border-color: rgba(0,0,0,0.7); }
 [data-wl-light] .dvx-currency-pill:hover { background: var(--surface-2); color: var(--text); }
-[data-wl-light] .dvx-currency-dropdown { background: var(--bg4); border-color: rgba(0,0,0,0.1); }
+[data-wl-light] .dvx-currency-dropdown { background: #ffffff; border-color: rgba(0,0,0,0.1); box-shadow: 0 12px 36px rgba(0,0,0,0.16); }
 [data-wl-light] .dvx-currency-opt { color: var(--text); }
 [data-wl-light] .dvx-currency-opt span { color: var(--text-muted); }
 [data-wl-light] .dvx-currency-opt:hover { background: var(--surface-2); color: var(--text); }
@@ -4898,9 +4898,14 @@ tr:last-child td { border-bottom: none; }
 .dvx-currency-pill.active { background: var(--g); color: #fff; border-color: var(--g); }
 .dvx-currency-dropdown {
   position: fixed; z-index: 1000;
-  background: var(--card-bg, #1a1a2e); border: 1px solid rgba(255,255,255,0.12);
+  /* Opaque surface — --bg4 is a solid hex per theme, so card borders/content
+     never bleed through the menu. Blur is belt-and-suspenders for any theme. */
+  background: var(--bg4, #16181d);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 12px; padding: 0.4rem; display: flex; flex-direction: column; gap: 0.15rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4); min-width: 180px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.5); min-width: 180px;
+  max-height: min(58vh, 420px); overflow-y: auto;
 }
 .dvx-currency-opt {
   display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem;

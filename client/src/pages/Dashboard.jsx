@@ -3893,7 +3893,11 @@ export default function Dashboard() {
                 onClick={() => {
                   if (currencyBtnRef.current) {
                     const r = currencyBtnRef.current.getBoundingClientRect()
-                    setDropdownPos({ top: r.bottom + 6, left: r.left })
+                    // Keep the 180px-wide menu fully on-screen — right-align to the
+                    // button if it would spill past the right edge, and never go < 8px.
+                    const menuW = 190
+                    const left = Math.max(8, Math.min(r.left, window.innerWidth - menuW - 8))
+                    setDropdownPos({ top: r.bottom + 6, left })
                   }
                   setShowCurrencyPicker(p => !p)
                 }}
@@ -3905,7 +3909,7 @@ export default function Dashboard() {
               </button>
               {showCurrencyPicker && createPortal(
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowCurrencyPicker(false)} />
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.08)' }} onClick={() => setShowCurrencyPicker(false)} />
                   <div className="dvx-currency-dropdown" style={{ top: dropdownPos.top, left: dropdownPos.left }}>
                     {POPULAR_FIAT.filter(f => !['USD','EUR','GBP'].includes(f.code)).map(f => (
                       <button key={f.code} className={`dvx-currency-opt${displayCurrency === f.code ? ' active' : ''}`} onClick={() => saveCurrency(f.code)}>
