@@ -211,6 +211,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [coinAnalysis, setCoinAnalysis] = useState(null)
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [sellHoldings, setSellHoldings] = useState(null)
+  const [visibleCount, setVisibleCount] = useState(50)
   const [form, setForm] = useState({
     wallet_id: '', type: 'buy', category: 'crypto',
     coin_id: '', coin_symbol: '', coin_name: '', coin_image: '',
@@ -227,6 +228,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const searchTimeout = useRef(null)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(50) }, [filterWallet])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1051,7 +1053,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1086,6 +1088,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             )
           })}
         </div>
+      )}
+
+      {transactions.length > visibleCount && (
+        <button className="btn-secondary" style={{ width: '100%', marginTop: '0.75rem' }} onClick={() => setVisibleCount(c => c + 50)}>
+          Load more ({transactions.length - visibleCount} remaining)
+        </button>
       )}
 
       <Suspense fallback={null}>

@@ -60,7 +60,7 @@ async function fetchBinanceBalances(apiKey, apiSecret) {
 
   const response = await fetch(
     `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`,
-    { headers: { 'X-MBX-APIKEY': apiKey } }
+    { headers: { 'X-MBX-APIKEY': apiKey }, signal: AbortSignal.timeout(8000) }
   );
 
   if (!response.ok) throw new Error('Binance API error: ' + response.statusText);
@@ -90,6 +90,7 @@ async function fetchCoinbaseBalances(apiKey, apiSecret) {
       'CB-ACCESS-TIMESTAMP': timestamp.toString(),
       'CB-VERSION': '2024-01-01',
     },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) throw new Error('Coinbase API error: ' + response.statusText);

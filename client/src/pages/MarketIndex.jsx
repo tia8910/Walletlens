@@ -324,7 +324,7 @@ export default function MarketIndex() {
                 <div className="mki-trend-row">
                   {trending.map(t => (
                     <span key={t.id} className="mki-trend-chip">
-                      {t.thumb && <img src={t.thumb} alt="" width="16" height="16" />}
+                      {t.thumb && <img src={t.thumb} alt="" width="16" height="16" loading="lazy" decoding="async" />}
                       {t.symbol?.toUpperCase()}
                     </span>
                   ))}
@@ -415,7 +415,7 @@ function MoverTable({ title, coins, accent }) {
         {coins.map(c => (
           <li key={c.id} className="mki-mover-row">
             <span className="mki-mover-name">
-              {c.image && <img src={c.image} alt="" width="20" height="20" />}
+              {c.image && <img src={c.image} alt="" width="20" height="20" loading="lazy" decoding="async" />}
               <strong>{(c.symbol || '').toUpperCase()}</strong>
             </span>
             <span className="mki-mover-price">{fmtPrice(c.current_price || 0)}</span>
