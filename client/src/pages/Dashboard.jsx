@@ -1071,11 +1071,18 @@ const TIMEFRAMES = [
   { id: '1D',  label: '1D',  pts: 48 },
   { id: '7D',  label: '7D',  pts: 56 },
   { id: '30D', label: '30D', pts: 60 },
+  { id: '90D', label: '90D', pts: 60 },
+  { id: '1Y',  label: '1Y',  pts: 64 },
+  { id: 'ALL', label: 'All', pts: 64 },
 ]
+// Days covered by each timeframe (0 = intraday 4-hour window; ALL = 10 years,
+// effectively "everything we have").
+const TF_DAYS = { '4H': 0, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
+const TF_PTS  = { '4H': 48, '1D': 48, '7D': 56, '30D': 60, '90D': 60, '1Y': 64, 'ALL': 64 }
 
 function buildPerfSeries(base, tf = '30D', transactions = []) {
-  const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[tf] || 30
-  const pts = { '4H': 48, '1D': 48, '7D': 56, '30D': 60 }[tf] || 60
+  const days = TF_DAYS[tf] ?? 30
+  const pts = TF_PTS[tf] ?? 60
   const b = Math.max(base || 10000, 1)
 
   // ── Level 1: real snapshots (most accurate) ──────────────────────────────
@@ -1094,7 +1101,7 @@ function buildPerfSeries(base, tf = '30D', transactions = []) {
           }
         }
         const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
-        return { i, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
+        return { i, ts: targetTs, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
       })
     }
   }
@@ -1139,18 +1146,20 @@ function buildPerfSeries(base, tf = '30D', transactions = []) {
 
       // Final point always equals current market value exactly
       const v = i === pts - 1 ? b : Math.max(runningCost * scale, 0)
-      return { i, v }
+      return { i, ts: pointTime, v }
     })
   }
 
   // ── Level 3: pure simulation (no real data at all) ───────────────────────
-  const startRatio = { '4H': 0.97, '1D': 0.93, '7D': 0.82, '30D': 0.68 }[tf] || 0.75
+  const startRatio = { '4H': 0.97, '1D': 0.93, '7D': 0.82, '30D': 0.68, '90D': 0.6, '1Y': 0.5, 'ALL': 0.42 }[tf] || 0.75
   const seed = Math.round(b) % 997
+  const simNow = Date.now()
+  const simWindow = days > 0 ? days * 864e5 : 4 * 36e5
   return Array.from({ length: pts }, (_, i) => {
     const t = i / (pts - 1)
     const trend = startRatio * b + t * (1 - startRatio) * b
     const noise = Math.sin((i + seed) * 0.7) * b * 0.012 + Math.sin((i + seed) * 1.9) * b * 0.006
-    return { i, v: Math.max(trend + noise, b * 0.1) }
+    return { i, ts: simNow - simWindow + t * simWindow, v: Math.max(trend + noise, b * 0.1) }
   })
 }
 
@@ -3387,7 +3396,7 @@ export default function Dashboard() {
   const [perfTf, setPerfTf] = useState('30D')
   const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf, transactions), [totalValue, perfTf, transactions])
   const perfHasRealData = useMemo(() => {
-    const days = { '4H': 0, '1D': 1, '7D': 7, '30D': 30 }[perfTf] || 30
+    const days = TF_DAYS[perfTf] ?? 30
     return hasRealData(days) || transactions.some(tx => tx.date && tx.price_per_unit > 0)
   }, [perfTf, transactions])
   const perfChange = useMemo(() => {
@@ -3937,6 +3946,25 @@ export default function Dashboard() {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
               const gradId = up ? 'pg-up' : 'pg-dn'
+              // Invested baseline: a dashed cost-basis line with the area tinted
+              // green above it (profit zone) and red below it (loss zone). The
+              // split point of the vertical gradient is where the baseline sits
+              // within the chart's y-domain, which we pin exactly via YAxis.
+              const inv = !hidden && totalInvested > 0 ? totalInvested : 0
+              let invStop = null
+              if (inv > 0 && perfSeries.length) {
+                let min = inv, max = inv
+                for (const p of perfSeries) { if (p.v < min) min = p.v; if (p.v > max) max = p.v }
+                invStop = max === min ? 0.5 : Math.min(Math.max((max - inv) / (max - min), 0), 1)
+              }
+              // Tooltip label: intraday ranges show the time, longer ranges the date.
+              const fmtTs = ts => {
+                if (!ts) return ''
+                const d = new Date(ts)
+                if (perfTf === '4H' || perfTf === '1D') return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+                if (perfTf === '1Y' || perfTf === 'ALL') return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
+                return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
+              }
               // Clean line chart driven directly by the real perfSeries values
               // (snapshots → transaction replay → simulation), so the curve is accurate.
               return (
@@ -3948,18 +3976,34 @@ export default function Dashboard() {
                         <stop offset="85%" stopColor={strokeColor} stopOpacity={0.02}/>
                         <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
                       </linearGradient>
+                      {invStop != null && (
+                        <linearGradient id="pg-split" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--g)" stopOpacity={0.26}/>
+                          <stop offset={invStop} stopColor="var(--g)" stopOpacity={0.03}/>
+                          <stop offset={invStop} stopColor="#f87171" stopOpacity={0.04}/>
+                          <stop offset="100%" stopColor="#f87171" stopOpacity={0.22}/>
+                        </linearGradient>
+                      )}
                     </defs>
                     <XAxis hide dataKey="i" />
-                    <YAxis hide domain={['auto', 'auto']} />
+                    <YAxis hide domain={inv > 0
+                      ? [dMin => Math.min(dMin, inv), dMax => Math.max(dMax, inv)]
+                      : ['auto', 'auto']} />
                     <Tooltip
                       contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
                       itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
-                      labelStyle={{ display:'none' }}
+                      labelStyle={{ color:'var(--text-muted)', fontWeight:600, fontSize:'0.72rem', marginBottom:'0.15rem' }}
+                      separator=""
                       formatter={v => [cv(v), '']}
+                      labelFormatter={(_, payload) => fmtTs(payload?.[0]?.payload?.ts)}
                       cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
                     />
+                    {inv > 0 && (
+                      <ReferenceLine y={inv} stroke="var(--text-sub)" strokeDasharray="5 4" strokeOpacity={0.7}
+                        label={{ value: 'Invested', position: 'insideLeft', fill: 'var(--text-sub)', fontSize: 10, fontWeight: 700, dy: -7 }} />
+                    )}
                     <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
-                      fill={`url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
+                      fill={invStop != null ? 'url(#pg-split)' : `url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
                       isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
                   </AreaChart>
                 </ResponsiveContainer>

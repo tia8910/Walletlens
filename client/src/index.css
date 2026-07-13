@@ -2641,7 +2641,12 @@ select option { background: var(--bg3); color: var(--text); }
 .wallet-item span { flex: 1; font-weight: 500; }
 
 button { padding: 0.55rem 1.1rem; border-radius: 10px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; background: var(--accent); color: white; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s; }
-button:hover { background: var(--accent2); }
+/* Hover-capable devices only: on touch, :hover sticks after a tap, so this
+   base-skin fill would leave ghost/icon buttons (eye, gear, logo…) painted as
+   a solid accent oval after every press. */
+@media (hover: hover) {
+  button:hover { background: var(--accent2); }
+}
 .btn-danger { background: var(--red-bg); color: var(--red); }
 .btn-danger:hover { background: rgba(248, 113, 113, 0.2); }
 .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
@@ -7702,7 +7707,9 @@ input[type="date"] { color-scheme: dark; }
   opacity: .6; transition: opacity .15s;
   line-height: 1;
 }
-.dvx-eye-btn:hover { opacity: 1; }
+/* Ghost icon button — restate background so the global button:hover accent
+   fill can't paint an oval behind the icon on desktop either. */
+.dvx-eye-btn:hover { opacity: 1; background: none; }
 /* Portfolio Guardian shield in the header */
 .dvx-guardian-badge {
   display: inline-flex; align-items: center; gap: 2px;
