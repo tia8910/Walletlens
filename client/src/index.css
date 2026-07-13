@@ -13497,6 +13497,30 @@ button:not(:disabled):active,
   box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 
+/* Chart-type segmented control — Area · Line · Candles. Compact inset track. */
+.dvx-charttype-seg {
+  display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 0.6rem;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+}
+.dvx-ct-chip {
+  display: inline-flex; align-items: center; gap: 0.32rem;
+  padding: 0.28rem 0.62rem; border-radius: 7px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 0.72rem; font-weight: 700;
+  background: transparent; color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.dvx-ct-chip svg { opacity: 0.85; }
+.dvx-ct-chip.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.dvx-ct-chip.active svg { opacity: 1; }
+.dvx-ct-chip:active { transform: scale(0.94); }
+@media (hover: hover) {
+  .dvx-ct-chip:not(.active):hover { color: var(--text); background: none; }
+}
+
 /* 4. Live indicator softly pulses. */
 .dvx-live-ind { animation: wl-live-pulse 1.8s ease-in-out infinite; }
 @keyframes wl-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
