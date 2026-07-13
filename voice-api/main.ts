@@ -132,6 +132,9 @@ const MAIL_FROM = "WalletLens <contact@walletlens.live>"
 // Replies are still routed to contact@ so anyone who does hit "reply" reaches us.
 const GUARDIAN_FROM = "WalletLens Portfolio Guardian <noreply@walletlens.live>"
 const BACKUP_FROM = "WalletLens Backup <noreply@walletlens.live>"
+// The automated weekly portfolio digest — unattended mail, so it goes out from
+// the no-reply address (replies still route to contact@ via reply_to).
+const WEEKLY_FROM = "WalletLens Weekly <noreply@walletlens.live>"
 
 // Returns the raw send result so callers that need to explain a failure to the
 // user (e.g. the Guardian test-email) can surface Resend's actual reason
@@ -237,6 +240,88 @@ const WELCOME_HTML = emailShell(`
     You'll get a weekly market-sentiment digest and early access to new features. That's it.
   </p>
 `)
+
+// ── Weekly portfolio report ─────────────────────────────────────────────────
+// A privacy-minded weekly digest. The client sends only a small, rounded
+// snapshot of stats (no per-transaction data, no exact holdings amounts); the
+// server stores that and emails a branded HTML report every week from
+// noreply@walletlens.live. Everything is rounded and bounded, mirroring the
+// Portfolio Guardian summary model.
+type WeeklyHolding = { sym: string; valueUsd: number; pnlPct: number }
+type WeeklyStats = {
+  currency: string; totalUsd: number; weekChange: number; weekChangePct: number
+  daysTracked: number; assetCount: number; holdings: WeeklyHolding[]; weekLabel: string
+}
+// deno-lint-ignore no-explicit-any
+function sanitizeWeeklyStats(raw: any): WeeklyStats | null {
+  if (!raw || typeof raw !== "object") return null
+  const num = (v: unknown, d = 0) => (typeof v === "number" && isFinite(v)) ? v : d
+  // deno-lint-ignore no-explicit-any
+  const holdings: WeeklyHolding[] = Array.isArray(raw.holdings)
+    ? raw.holdings.slice(0, 6).map((h: any) => ({
+        sym: String(h?.sym || "?").slice(0, 8).toUpperCase(),
+        valueUsd: Math.round(num(h?.valueUsd)),
+        pnlPct: Math.round(num(h?.pnlPct) * 100) / 100,
+      }))
+    : []
+  return {
+    currency: String(raw.currency || "USD").slice(0, 5).toUpperCase(),
+    totalUsd: Math.round(num(raw.totalUsd)),
+    weekChange: Math.round(num(raw.weekChange)),
+    weekChangePct: Math.round(num(raw.weekChangePct) * 100) / 100,
+    daysTracked: Math.max(0, Math.round(num(raw.daysTracked))),
+    assetCount: Math.max(0, Math.round(num(raw.assetCount))),
+    holdings,
+    weekLabel: String(raw.weekLabel || "").replace(/[<>]/g, "").slice(0, 40),
+  }
+}
+
+function weeklyReportContent(s: WeeklyStats): { subject: string; html: string } {
+  const cur = s.currency || "USD"
+  const money = (n: number) => `${cur} ${Math.round(n).toLocaleString("en-US")}`
+  const up = s.weekChange >= 0
+  const changeColor = up ? "#16a34a" : "#dc2626"
+  const changeBg = up ? "#ecfdf5" : "#fef2f2"
+  const pct = `${up ? "+" : ""}${s.weekChangePct.toFixed(2)}%`
+  const changeLine = `${up ? "▲ +" : "▼ "}${money(Math.abs(s.weekChange))} (${pct})`
+
+  const holdingRows = s.holdings.map((h) => {
+    const hUp = h.pnlPct >= 0
+    return `<tr>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;font-weight:700;color:#0f172a">${h.sym}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;text-align:right;color:#334155">${money(h.valueUsd)}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;text-align:right;font-weight:700;color:${hUp ? "#16a34a" : "#dc2626"}">${hUp ? "+" : ""}${h.pnlPct.toFixed(2)}%</td>
+    </tr>`
+  }).join("")
+
+  const html = emailShell(`
+    <p style="margin:0 0 4px;font-size:12px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Weekly report${s.weekLabel ? ` · ${s.weekLabel}` : ""}</p>
+    <h1 style="margin:0 0 6px;font-size:30px;line-height:1.1;color:#fff">${money(s.totalUsd)}</h1>
+    <div style="display:inline-block;background:${changeBg};color:${changeColor};font-weight:800;font-size:14px;border-radius:10px;padding:6px 12px;margin:0 0 22px">${changeLine} this week</div>
+    ${s.holdings.length ? `
+    <p style="margin:0 0 8px;font-size:12px;letter-spacing:.06em;color:#8a93a0;font-weight:700;text-transform:uppercase">Your holdings</p>
+    <table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e6e9ee;border-radius:12px;overflow:hidden;margin:0 0 22px">
+      <tr style="background:#f8fafc">
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase">Asset</td>
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase;text-align:right">Value</td>
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase;text-align:right">P&amp;L</td>
+      </tr>
+      ${holdingRows}
+    </table>` : ""}
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px">
+      <tr>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:#fff">${s.daysTracked}</div><div style="font-size:12px;color:#8a93a0">Days tracked</div></td>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:#fff">${s.assetCount}</div><div style="font-size:12px;color:#8a93a0">Assets</div></td>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:${changeColor}">${pct}</div><div style="font-size:12px;color:#8a93a0">This week</div></td>
+      </tr>
+    </table>
+    <div style="text-align:center;margin:0 0 8px">
+      <a href="https://walletlens.live/dashboard" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:12px 24px;border-radius:12px">Open my dashboard →</a>
+    </div>
+  `)
+  const subject = `Your WalletLens week: ${money(s.totalUsd)} (${pct})`
+  return { subject, html }
+}
 
 function buildPrompt(transcript: string, hintLang: string, alternatives: string[]): string {
   // When several speech-to-text engines disagree, listing every candidate
@@ -795,6 +880,39 @@ Deno.cron("guardian-sweep", "0 */6 * * *", async () => {
   try { await runGuardianCron() } catch (e) { console.error("Guardian cron failed:", e) }
 })
 
+// ── Weekly report cron ──────────────────────────────────────────────────────
+// Every Monday 13:00 UTC, email each active subscriber their most recent stored
+// stats from noreply@walletlens.live. The ~6.4-day guard means a fresh
+// subscribe (which sends immediately and stamps lastSentAt) is never doubled up
+// by the very next Monday.
+const WEEKLY_MIN_GAP_MS = 6.4 * 24 * 60 * 60 * 1000
+async function runWeeklyCron(): Promise<{ scanned: number; sent: number }> {
+  const kv = await Deno.openKv()
+  const now = Date.now()
+  let scanned = 0, sent = 0
+  for await (const entry of kv.list<Record<string, unknown>>({ prefix: ["weekly"] })) {
+    scanned++
+    const rec = entry.value
+    if (!rec?.active || !rec.email || !rec.stats) continue
+    const last = rec.lastSentAt ? new Date(rec.lastSentAt as string).getTime() : 0
+    if (last && now - last < WEEKLY_MIN_GAP_MS) continue
+    const { subject, html } = weeklyReportContent(rec.stats as WeeklyStats)
+    const ok = await sendEmail(rec.email as string, subject, html, WEEKLY_FROM)
+    if (ok) {
+      await kv.set(entry.key, { ...rec, lastSentAt: new Date().toISOString() })
+      sent++
+    }
+    // Stay under Resend's rate limit.
+    await new Promise((r) => setTimeout(r, 120))
+  }
+  console.log(`Weekly cron: scanned ${scanned}, sent ${sent}`)
+  return { scanned, sent }
+}
+
+Deno.cron("weekly-report", "0 13 * * 1", async () => {
+  try { await runWeeklyCron() } catch (e) { console.error("Weekly cron failed:", e) }
+})
+
 // ── Per-IP rate limiting ────────────────────────────────────────────────────
 // The AI modes are unauthenticated (CORS only stops browsers, not scripts) and
 // each call spends real Anthropic API money. This in-memory limiter is per
@@ -816,7 +934,7 @@ function rateLimited(ip: string, bucket: string, max: number, windowMs = 60_000)
   return b.n > max
 }
 const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap"])
-const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email"])
+const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email", "weekly_subscribe"])
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin")
@@ -995,6 +1113,98 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: false, reason: r.reason || "send_failed" }), { status: 200, headers })
     }
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+  }
+
+  // ── Weekly report: subscribe / refresh / unsubscribe ─────────────────────
+  // KV schema: ["weekly", deviceId] → { deviceId, email, stats, active, createdAt, lastSentAt }
+  // Only rounded, bounded stats are stored — same privacy model as Guardian.
+  if (body?.mode === "weekly_subscribe") {
+    // POST { mode, email, deviceId, stats } — store the subscription and send the
+    // first report immediately from noreply@walletlens.live.
+    const email = String(body.email || "").trim().toLowerCase()
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers })
+    }
+    const deviceId = String(body.deviceId || "")
+    if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    const stats = sanitizeWeeklyStats(body.stats)
+    try {
+      const kv = await Deno.openKv()
+      let lastSentAt: string | null = null
+      let sent = false
+      // Send the first report right away so the subscription is felt immediately.
+      if (stats) {
+        const { subject, html } = weeklyReportContent(stats)
+        const r = await sendEmailResult(email, subject, html, WEEKLY_FROM)
+        sent = r.ok
+        if (r.ok) lastSentAt = new Date().toISOString()
+      }
+      await kv.set(["weekly", deviceId], {
+        deviceId, email, stats, active: true,
+        createdAt: new Date().toISOString(), lastSentAt,
+      })
+      return new Response(JSON.stringify({ ok: true, sent }), { status: 200, headers })
+    } catch (e) {
+      console.error("Weekly subscribe error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  if (body?.mode === "weekly_refresh") {
+    // POST { mode, deviceId, email?, stats } — keep the stored snapshot current so
+    // the cron sends fresh numbers. Merges: holdings are only replaced when the
+    // client actually sends them (a snapshot-only refresh keeps the last list).
+    const deviceId = String(body.deviceId || "")
+    if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const entry = await kv.get<Record<string, unknown>>(["weekly", deviceId])
+      if (!entry.value || !entry.value.active) {
+        return new Response(JSON.stringify({ ok: false, reason: "not_subscribed" }), { status: 200, headers })
+      }
+      const fresh = sanitizeWeeklyStats(body.stats)
+      if (fresh) {
+        const prev = (entry.value.stats || {}) as WeeklyStats
+        // Keep prior holdings if this refresh didn't include any.
+        const merged: WeeklyStats = { ...fresh, holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []) }
+        await kv.set(["weekly", deviceId], { ...entry.value, stats: merged })
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+    } catch (e) {
+      console.error("Weekly refresh error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  if (body?.mode === "weekly_unsubscribe") {
+    // POST { mode, deviceId } — stop future weekly sends.
+    const deviceId = String(body.deviceId || "")
+    if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+      return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const entry = await kv.get<Record<string, unknown>>(["weekly", deviceId])
+      if (entry.value) await kv.set(["weekly", deviceId], { ...entry.value, active: false })
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+    } catch (e) {
+      console.error("Weekly unsubscribe error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
+  // Manual admin trigger for the weekly cron (protected).
+  if (body?.mode === "weekly_cron_trigger") {
+    const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+    if (!expected || body.token !== expected) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers })
+    }
+    const result = await runWeeklyCron()
+    return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers })
   }
 
   // ── Portfolio Guardian — Dead Man's Switch ───────────────────────────────

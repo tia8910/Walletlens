@@ -2,7 +2,7 @@ import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar,
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { api } from '../api'
@@ -20,6 +20,7 @@ import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
+import { isWeeklySubscribed, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
@@ -3393,8 +3394,53 @@ export default function Dashboard() {
     })
   }, [loaded])
 
+  // Keep the weekly-report email snapshot fresh: if the user is subscribed, push
+  // the current rounded stats on open so the Monday cron sends up-to-date numbers.
+  useEffect(() => {
+    if (!loaded || isDemo || !isWeeklySubscribed()) return
+    if (!(totalValue > 0)) return
+    refreshWeekly(buildWeeklyPayload({ enriched, currency: 'USD' }))
+  }, [loaded, isDemo, totalValue])
+
   const [perfTf, setPerfTf] = useState('30D')
+  const [chartType, setChartType] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').chartType || 'area' } catch { return 'area' }
+  })
+  const setChartTypePersist = useCallback(type => {
+    setChartType(type)
+    try {
+      const s = JSON.parse(localStorage.getItem('wl_settings') || '{}')
+      s.chartType = type
+      localStorage.setItem('wl_settings', JSON.stringify(s))
+    } catch {}
+    track('perf_chart_type_switch', { type })
+  }, [])
   const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf, transactions), [totalValue, perfTf, transactions])
+  // OHLC candles: bucket the raw perf series into ~22 candles (open/close = first/last
+  // value in each bucket, high/low = min/max). Recharts has no native candlestick, so a
+  // custom Bar shape draws the wick + body from the [low, high] range dataKey below.
+  const perfCandles = useMemo(() => {
+    if (chartType !== 'candles' || perfSeries.length < 2) return []
+    const target = Math.min(22, perfSeries.length)
+    const size = Math.ceil(perfSeries.length / target)
+    const out = []
+    for (let i = 0; i < perfSeries.length; i += size) {
+      const bucket = perfSeries.slice(i, i + size)
+      if (!bucket.length) continue
+      let hi = bucket[0].v, lo = bucket[0].v
+      for (const p of bucket) { if (p.v > hi) hi = p.v; if (p.v < lo) lo = p.v }
+      out.push({
+        i: out.length,
+        ts: bucket[0].ts,
+        open: bucket[0].v,
+        close: bucket[bucket.length - 1].v,
+        high: hi,
+        low: lo,
+        range: [lo, hi],
+      })
+    }
+    return out
+  }, [chartType, perfSeries])
   const perfHasRealData = useMemo(() => {
     const days = TF_DAYS[perfTf] ?? 30
     return hasRealData(days) || transactions.some(tx => tx.date && tx.price_per_unit > 0)
@@ -3856,7 +3902,11 @@ export default function Dashboard() {
                 onClick={() => {
                   if (currencyBtnRef.current) {
                     const r = currencyBtnRef.current.getBoundingClientRect()
-                    setDropdownPos({ top: r.bottom + 6, left: r.left })
+                    // Keep the 180px-wide menu fully on-screen — right-align to the
+                    // button if it would spill past the right edge, and never go < 8px.
+                    const menuW = 190
+                    const left = Math.max(8, Math.min(r.left, window.innerWidth - menuW - 8))
+                    setDropdownPos({ top: r.bottom + 6, left })
                   }
                   setShowCurrencyPicker(p => !p)
                 }}
@@ -3868,7 +3918,7 @@ export default function Dashboard() {
               </button>
               {showCurrencyPicker && createPortal(
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowCurrencyPicker(false)} />
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.08)' }} onClick={() => setShowCurrencyPicker(false)} />
                   <div className="dvx-currency-dropdown" style={{ top: dropdownPos.top, left: dropdownPos.left }}>
                     {POPULAR_FIAT.filter(f => !['USD','EUR','GBP'].includes(f.code)).map(f => (
                       <button key={f.code} className={`dvx-currency-opt${displayCurrency === f.code ? ' active' : ''}`} onClick={() => saveCurrency(f.code)}>
@@ -3942,6 +3992,21 @@ export default function Dashboard() {
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
+            {/* Chart-type picker — Area (default) · Line · Candles */}
+            <div className="dvx-charttype-seg" role="tablist" aria-label="Chart type">
+              {[
+                { id: 'area',    label: 'Area',    icon: <><path d="M3 15l4-5 4 3 5-7 3 4v6H3z"/></> },
+                { id: 'line',    label: 'Line',    icon: <><polyline points="3 14 8 9 12 12 20 4"/></> },
+                { id: 'candles', label: 'Candles', icon: <><line x1="6" y1="3" x2="6" y2="21"/><rect x="3.5" y="7" width="5" height="8" rx="1"/><line x1="16" y1="3" x2="16" y2="21"/><rect x="13.5" y="10" width="5" height="7" rx="1"/></> },
+              ].map(ct => (
+                <button key={ct.id} role="tab" aria-selected={chartType === ct.id}
+                  className={`dvx-ct-chip${chartType === ct.id ? ' active' : ''}`}
+                  onClick={() => setChartTypePersist(ct.id)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{ct.icon}</svg>
+                  {ct.label}
+                </button>
+              ))}
+            </div>
             {(() => {
               const up = perfChange.pct >= 0
               const strokeColor = up ? 'var(--g)' : '#f87171'
@@ -3965,11 +4030,47 @@ export default function Dashboard() {
                 if (perfTf === '1Y' || perfTf === 'ALL') return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
                 return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
               }
-              // Clean line chart driven directly by the real perfSeries values
-              // (snapshots → transaction replay → simulation), so the curve is accurate.
+              // Candlestick shape — recharts has no native candle, so we draw the
+              // wick (high→low) and body (open↔close) from the [low, high] range bar.
+              const Candle = ({ x, y, width, height, payload }) => {
+                if (!payload) return null
+                const { open, close, high, low } = payload
+                const color = close >= open ? 'var(--g)' : '#f87171'
+                const span = high - low
+                const pp = span > 0 ? height / span : 0
+                const bodyY = span > 0 ? y + (high - Math.max(open, close)) * pp : y
+                const bodyH = Math.max(1.5, span > 0 ? Math.abs(close - open) * pp : height)
+                const cx = x + width / 2
+                const bw = Math.min(Math.max(width * 0.6, 3), 11)
+                return (
+                  <g>
+                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.25} strokeOpacity={0.85} />
+                    <rect x={cx - bw / 2} y={bodyY} width={bw} height={bodyH} rx={1} fill={color} />
+                  </g>
+                )
+              }
+              // O/H/L/C tooltip for the candlestick view.
+              const candleTip = ({ active, payload }) => {
+                if (!active || !payload?.length) return null
+                const d = payload[0].payload
+                return (
+                  <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.75rem', boxShadow:'var(--shadow)', fontSize:'0.72rem' }}>
+                    <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.3rem' }}>{fmtTs(d.ts)}</div>
+                    <div style={{ display:'grid', gridTemplateColumns:'auto auto', gap:'0.1rem 0.7rem', fontWeight:700, color:'var(--text)' }}>
+                      <span style={{ color:'var(--text-sub)' }}>O</span><span>{cv(d.open)}</span>
+                      <span style={{ color:'var(--text-sub)' }}>H</span><span>{cv(d.high)}</span>
+                      <span style={{ color:'var(--text-sub)' }}>L</span><span>{cv(d.low)}</span>
+                      <span style={{ color:'var(--text-sub)' }}>C</span><span style={{ color: d.close >= d.open ? 'var(--g)' : '#f87171' }}>{cv(d.close)}</span>
+                    </div>
+                  </div>
+                )
+              }
+              const isCandles = chartType === 'candles'
+              // Driven directly by the real perfSeries values (snapshots → transaction
+              // replay → simulation), so the curve is accurate across all chart types.
               return (
-                <ResponsiveContainer key={perfTf} width="100%" height={180}>
-                  <AreaChart data={perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
+                <ResponsiveContainer key={perfTf + chartType} width="100%" height={180}>
+                  <ComposedChart data={isCandles ? perfCandles : perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
                       <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22}/>
@@ -3989,23 +4090,37 @@ export default function Dashboard() {
                     <YAxis hide domain={inv > 0
                       ? [dMin => Math.min(dMin, inv), dMax => Math.max(dMax, inv)]
                       : ['auto', 'auto']} />
-                    <Tooltip
-                      contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
-                      itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
-                      labelStyle={{ color:'var(--text-muted)', fontWeight:600, fontSize:'0.72rem', marginBottom:'0.15rem' }}
-                      separator=""
-                      formatter={v => [cv(v), '']}
-                      labelFormatter={(_, payload) => fmtTs(payload?.[0]?.payload?.ts)}
-                      cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
-                    />
+                    {isCandles ? (
+                      <Tooltip content={candleTip} cursor={{ stroke: 'var(--text-sub)', strokeWidth:1, strokeDasharray:'4 3', opacity:0.4 }} />
+                    ) : (
+                      <Tooltip
+                        contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
+                        itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
+                        labelStyle={{ color:'var(--text-muted)', fontWeight:600, fontSize:'0.72rem', marginBottom:'0.15rem' }}
+                        separator=""
+                        formatter={v => [cv(v), '']}
+                        labelFormatter={(_, payload) => fmtTs(payload?.[0]?.payload?.ts)}
+                        cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
+                      />
+                    )}
                     {inv > 0 && (
                       <ReferenceLine y={inv} stroke="var(--text-sub)" strokeDasharray="5 4" strokeOpacity={0.7}
                         label={{ value: 'Invested', position: 'insideLeft', fill: 'var(--text-sub)', fontSize: 10, fontWeight: 700, dy: -7 }} />
                     )}
-                    <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
-                      fill={invStop != null ? 'url(#pg-split)' : `url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
-                      isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
-                  </AreaChart>
+                    {chartType === 'area' && (
+                      <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
+                        fill={invStop != null ? 'url(#pg-split)' : `url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
+                        isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
+                    )}
+                    {chartType === 'line' && (
+                      <Line type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
+                        dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
+                        isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
+                    )}
+                    {isCandles && (
+                      <Bar dataKey="range" shape={<Candle />} isAnimationActive={false} />
+                    )}
+                  </ComposedChart>
                 </ResponsiveContainer>
               )
             })()}

@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
-import EmailOptIn from './EmailOptIn'
+import { subscribeWeekly, unsubscribeWeekly, buildWeeklyPayload, getWeeklySub } from '../weeklyEmail'
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '$0'
@@ -259,6 +259,43 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
   const [sharing, setSharing] = useState(false)
   const stats = computeWeeklyStats()
 
+  // Weekly email subscription state
+  const existingSub = getWeeklySub()
+  const [subEmail, setSubEmail] = useState('')
+  const [subState, setSubState] = useState(existingSub?.email ? 'subscribed' : 'idle') // idle | sending | subscribed | error
+  const [subMsg, setSubMsg] = useState('')
+  const [subbedEmail, setSubbedEmail] = useState(existingSub?.email || '')
+
+  async function subscribe(e) {
+    e.preventDefault()
+    const value = subEmail.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setSubState('error'); setSubMsg('Please enter a valid email address.')
+      return
+    }
+    setSubState('sending'); setSubMsg('')
+    track('weekly_email_subscribe', {})
+    try {
+      const payload = buildWeeklyPayload({ enriched, currency: 'USD' })
+      const data = await subscribeWeekly(value, payload)
+      setSubbedEmail(value)
+      setSubState('subscribed')
+      setSubMsg(data.sent ? "Subscribed — your first report is on its way." : "Subscribed — your first report arrives next Monday.")
+      track('weekly_email_subscribe_ok', { sent: data.sent ? 'yes' : 'no' })
+    } catch (err) {
+      setSubState('error')
+      setSubMsg('Something went wrong — please try again.')
+      track('weekly_email_subscribe_error', { error_code: String(err?.message || 'unknown') })
+    }
+  }
+
+  async function unsubscribe() {
+    setSubState('sending')
+    track('weekly_email_unsubscribe', {})
+    await unsubscribeWeekly()
+    setSubbedEmail(''); setSubEmail(''); setSubState('idle'); setSubMsg('')
+  }
+
   useEffect(() => {
     if (canvasRef.current && stats) {
       drawReport(canvasRef.current, stats, enriched)
@@ -320,7 +357,7 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
           <span><Icon name="calendar" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Weekly Report — {stats.weekLabel}</span>
           <button className="share-close" onClick={onClose} aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
         </div>
-        <canvas ref={canvasRef} className="share-canvas" />
+        <canvas ref={canvasRef} className="share-canvas share-canvas--square" />
         <div className="share-actions">
           <button className="share-btn share-btn-dl" onClick={download}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -334,7 +371,30 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
         <p className="share-hint"><Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />On mobile the image attaches directly to your post.</p>
         <div className="wr-email-section">
           <p className="wr-email-label"><Icon name="mail" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Get this report in your inbox every week</p>
-          <EmailOptIn source="weekly_report" compact />
+          {subState === 'subscribed' ? (
+            <div className="wr-sub-active">
+              <p className="wr-sub-ok"><Icon name="check" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />
+                {subMsg || 'You’re subscribed.'} <span className="wr-sub-email">{subbedEmail}</span>
+              </p>
+              <button type="button" className="wr-sub-off" onClick={unsubscribe}>Turn off weekly emails</button>
+            </div>
+          ) : (
+            <form onSubmit={subscribe} className="wr-sub-form">
+              <div className="wr-sub-row">
+                <input
+                  type="email" inputMode="email" autoComplete="email"
+                  placeholder="your@email.com" value={subEmail}
+                  onChange={e => { setSubEmail(e.target.value); if (subState === 'error') { setSubState('idle'); setSubMsg('') } }}
+                  aria-label="Email address" className="wr-sub-input"
+                />
+                <button type="submit" className="wr-sub-btn" disabled={subState === 'sending'}>
+                  {subState === 'sending' ? 'Sending…' : 'Email it weekly'}
+                </button>
+              </div>
+              {subState === 'error' && <p className="wr-sub-err">{subMsg}</p>}
+              <p className="wr-sub-note">Sent from noreply@walletlens.live. Only a rounded summary is stored — never your exact holdings or transactions. Unsubscribe anytime.</p>
+            </form>
+          )}
         </div>
       </div>
     </div>
