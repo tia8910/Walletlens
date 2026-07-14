@@ -461,6 +461,44 @@ Using these numbers AND your knowledge of this asset's fundamentals, tokenomics 
 Keep bull/bear to 2-3 items each. Ground every point in the pillars/stats or well-known facts about the asset. This is analysis, not financial advice.`
 }
 
+// ── Sell-target reality check (mode: "target_analysis") ────────────────────
+// Given a user's sell target for one asset plus a few pre-computed local stats
+// (current price, ATH, ~1-year return, annualised volatility), returns a concise
+// verdict on whether the target is reasonable and a rough timeframe. Education,
+// never a price prediction.
+// deno-lint-ignore no-explicit-any
+function buildTargetAnalysisPrompt(p: any): string {
+  const sym = String(p?.symbol || "the asset").slice(0, 12)
+  const name = String(p?.name || sym).slice(0, 40)
+  const num = (v: unknown) => (typeof v === "number" && isFinite(v)) ? v : null
+  const cur = num(p?.current)
+  const tgt = num(p?.target)
+  const ath = num(p?.ath)
+  const yr = num(p?.oneYearReturnPct)
+  const vol = num(p?.volatilityPct)
+  const reqPct = (cur && tgt) ? ((tgt - cur) / cur) * 100 : null
+  const lines = [
+    `Asset: ${name} (${sym})`,
+    cur != null ? `Current price: $${cur.toLocaleString()}` : null,
+    tgt != null ? `User's sell target: $${tgt.toLocaleString()}` : null,
+    reqPct != null ? `Required move: ${reqPct >= 0 ? "+" : ""}${reqPct.toFixed(1)}%` : null,
+    ath != null ? `All-time high: $${ath.toLocaleString()}${(tgt && ath) ? ` (target is ${tgt <= ath ? `${(((ath - tgt) / ath) * 100).toFixed(0)}% below ATH — traded there before` : `${(((tgt - ath) / ath) * 100).toFixed(0)}% above ATH — uncharted`})` : ""}` : null,
+    yr != null ? `~1-year price change: ${yr >= 0 ? "+" : ""}${yr.toFixed(0)}%` : null,
+    vol != null ? `Annualised volatility: ${vol.toFixed(0)}%` : null,
+  ].filter(Boolean).join("\n")
+
+  return `You are a seasoned, level-headed markets analyst inside a portfolio app. A user has set a SELL target for an asset. Judge whether the target is reasonable and roughly how long it could take, grounded ONLY in the numbers below plus your general knowledge of this asset. This is education, NOT financial advice, and you must NEVER promise or predict a price will be hit.
+
+${lines}
+
+Return STRICT JSON ONLY — no markdown, no commentary:
+{
+  "verdict": "Reasonable" | "Ambitious" | "Aggressive" | "Very aggressive" | "Extreme",
+  "timeframe": "<short rough horizon, e.g. '1–2 years at its historical pace' or 'unlikely within a few years'>",
+  "reasoning": "<2-3 sentence plain-English explanation grounded in the numbers: how big the move is, whether it has precedent (ATH), and what would need to happen. End with a soft reminder this is not a prediction.>"
+}`
+}
+
 // ── Portfolio Vision advice ────────────────────────────────────────────────
 // Reviews the user's planning "buckets" (goals, targets, monthly cash-flow) and
 // asset-class mix, and returns concrete, prioritised planning advice. Reasons
@@ -933,7 +971,7 @@ function rateLimited(ip: string, bucket: string, max: number, windowMs = 60_000)
   b.n++
   return b.n > max
 }
-const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap"])
+const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap", "target_analysis"])
 const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email", "weekly_subscribe"])
 
 Deno.serve(async (req: Request) => {
@@ -1513,6 +1551,39 @@ Rules:
       return new Response(JSON.stringify({ ok: true, verdict }), { headers })
     } catch (e) {
       console.error("analyze error:", e)
+      return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
+    }
+  }
+
+  // ── Sell-target reality check (mode: "target_analysis") ────────────────────
+  if (body?.mode === "target_analysis") {
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 400,
+          messages: [{ role: "user", content: buildTargetAnalysisPrompt(body) }],
+        }),
+      })
+      if (!resp.ok) {
+        const err = await resp.text()
+        console.error("Claude API error (target_analysis):", resp.status, err)
+        return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers })
+      }
+      const data = await resp.json()
+      const text = data.content?.[0]?.text || ""
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error("no JSON in response")
+      const analysis = JSON.parse(match[0])
+      return new Response(JSON.stringify({ ok: true, analysis }), { headers })
+    } catch (e) {
+      console.error("target_analysis error:", e)
       return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers })
     }
   }

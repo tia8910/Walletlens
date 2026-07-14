@@ -9082,6 +9082,41 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   border-radius: 999px; padding: 0.3rem 0.7rem; box-shadow: 0 2px 8px rgba(var(--g-rgb),0.3);
 }
 
+/* ── Sell-target reality check ─────────────────────────────────────────── */
+.dvx-trc {
+  margin: 0.6rem 0 0.2rem; padding: 0.7rem 0.8rem; border-radius: 12px;
+  background: color-mix(in srgb, var(--trc) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--trc) 32%, transparent);
+}
+.dvx-trc-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+.dvx-trc-badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em;
+  color: #fff; background: var(--trc); border-radius: 999px; padding: 0.2rem 0.6rem;
+}
+.dvx-trc-req { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+.dvx-trc-line { font-size: 0.78rem; color: var(--text); line-height: 1.5; margin-top: 0.15rem; }
+.dvx-trc-sub { color: var(--text-muted); }
+.dvx-trc-ai {
+  margin-top: 0.55rem; padding: 0.55rem 0.65rem; border-radius: 10px;
+  background: var(--surface-1); border: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--text); line-height: 1.55;
+}
+.dvx-trc-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.55rem; }
+.dvx-trc-ai-btn {
+  border: 1px solid rgba(var(--g-rgb),0.35); background: rgba(var(--g-rgb),0.1); color: var(--g-ink);
+  border-radius: 9px; padding: 0.4rem 0.7rem; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.dvx-trc-ai-btn:hover:not(:disabled) { background: rgba(var(--g-rgb),0.18); }
+.dvx-trc-ai-btn:disabled { opacity: 0.6; cursor: default; }
+.dvx-trc-disclaimer { font-size: 0.68rem; color: var(--text-sub); }
+/* Compact variant on saved target rows */
+.dvx-trc-compact {
+  margin: 0.5rem 0 0; padding: 0.4rem 0.6rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.dvx-trc-compact .dvx-trc-badge { font-size: 0.68rem; padding: 0.15rem 0.5rem; }
+.dvx-trc-compact-tf { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+
 /* ── Smart Import tree ─────────────────────────────────────────────────── */
 .wl-import-tree { position: relative; display: flex; flex-direction: column; gap: 0.6rem; padding-left: 1.15rem; }
 /* Trunk line */
