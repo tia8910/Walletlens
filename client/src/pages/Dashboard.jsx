@@ -21,6 +21,7 @@ import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
 import { isWeeklySubscribed, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
+import { analyzeTarget, fetchTargetData } from '../targetAnalysis'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
@@ -2540,6 +2541,72 @@ function fmtQty(n) {
   return n.toFixed(4).replace(/\.?0+$/, '') || '0'
 }
 
+// Sell-target reality check — "is this target reasonable, and how long might it
+// take?" Local heuristic (ATH + past-year pace + trend) with an optional AI take.
+const VOICE_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, targetPrice, assetClass, compact = false }) {
+  const [data, setData] = useState(null)
+  const [ai, setAi] = useState({ state: 'idle' })
+
+  useEffect(() => {
+    let alive = true
+    fetchTargetData(coinId).then(d => { if (alive) setData(d) }).catch(() => {})
+    return () => { alive = false }
+  }, [coinId])
+
+  const analysis = useMemo(
+    () => (targetPrice > 0 ? analyzeTarget({ symbol: coinSymbol, currentPrice, targetPrice, ath: data?.ath, change30d: data?.change30d, oneYearReturnPct: data?.oneYearReturnPct }) : null),
+    [coinSymbol, currentPrice, targetPrice, data]
+  )
+  if (!analysis) return null
+
+  async function askAi() {
+    setAi({ state: 'loading' })
+    track('target_ai_analysis', { coin_id: coinId })
+    try {
+      const resp = await fetch(VOICE_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'target_analysis', symbol: coinSymbol, name: coinName, current: currentPrice, target: targetPrice, ath: data?.ath, oneYearReturnPct: data?.oneYearReturnPct, volatilityPct: data?.volatilityPct, assetClass }),
+      })
+      const j = await resp.json().catch(() => ({}))
+      if (resp.ok && j.ok && j.analysis) setAi({ state: 'done', ...j.analysis })
+      else setAi({ state: 'error' })
+    } catch { setAi({ state: 'error' }) }
+  }
+
+  if (compact) {
+    return (
+      <div className="dvx-trc dvx-trc-compact" style={{ '--trc': analysis.color }}>
+        <span className="dvx-trc-badge">{analysis.label}</span>
+        {analysis.timeframe && <span className="dvx-trc-compact-tf">{analysis.timeframe}</span>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="dvx-trc" style={{ '--trc': analysis.color }}>
+      <div className="dvx-trc-head">
+        <span className="dvx-trc-badge">{analysis.label}</span>
+        <span className="dvx-trc-req">{analysis.requiredPct >= 0 ? '+' : ''}{analysis.requiredPct.toFixed(0)}% away</span>
+      </div>
+      <div className="dvx-trc-line">{analysis.context}</div>
+      {analysis.timeframe && <div className="dvx-trc-line"><Icon name="clock" size={12} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} />{analysis.timeframe}</div>}
+      {analysis.trend && <div className="dvx-trc-line dvx-trc-sub">{analysis.trend}</div>}
+      {ai.state === 'done' && ai.reasoning && (
+        <div className="dvx-trc-ai"><Icon name="sparkles" size={12} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} /><strong>{ai.verdict || 'AI'}{ai.timeframe ? ` · ${ai.timeframe}` : ''}</strong><br />{ai.reasoning}</div>
+      )}
+      <div className="dvx-trc-foot">
+        {ai.state !== 'done' && (
+          <button type="button" className="dvx-trc-ai-btn" onClick={askAi} disabled={ai.state === 'loading'}>
+            {ai.state === 'loading' ? 'Analyzing…' : ai.state === 'error' ? 'Retry AI take' : '✨ Ask AI for a deeper take'}
+          </button>
+        )}
+        <span className="dvx-trc-disclaimer">Rough estimate — not a prediction or financial advice.</span>
+      </div>
+    </div>
+  )
+}
+
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
@@ -2779,6 +2846,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       {' · '}<strong style={{ color:'var(--text)' }}>{parseFloat(remainingAfter.toFixed(6))} {h.coin_symbol?.toUpperCase()} left</strong>
                     </div>
                   </div>
+                  {addPriceNum > currentPrice && (
+                    <TargetRealityCheck
+                      coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
+                      currentPrice={currentPrice} targetPrice={addPriceNum} assetClass={categorizeAsset(h)} />
+                  )}
                   <button
                     className="dvx-btn dvx-btn-primary dvx-tgt-save"
                     disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0 || priceTooLow}
@@ -2832,6 +2904,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                       </div>
                       <span className="dvx-target-bar-pct">{progress.toFixed(0)}%</span>
                     </div>
+                    {!reached && (
+                      <TargetRealityCheck compact
+                        coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
+                        currentPrice={currentPrice} targetPrice={t.price} assetClass={categorizeAsset(h)} />
+                    )}
                   </div>
                 )
               })}
