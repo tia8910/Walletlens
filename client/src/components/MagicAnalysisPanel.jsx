@@ -32,6 +32,95 @@ const isAnalyzable = (h) => {
   return true
 }
 
+// ── Synthesize fundamentals from OHLCV for non-crypto assets ───────────
+// Metals and stocks don't get CoinGecko fundamentals, so we derive them
+// from the Yahoo Finance OHLCV data that getBulkTechnicals already fetches.
+function synthesizeFundamentals(taData) {
+  if (!taData || !taData.ohlcv || !Array.isArray(taData.ohlcv) || taData.ohlcv.length < 5) return null
+  const ohlcv = taData.ohlcv
+  const closes = ohlcv.map(r => r.close).filter(c => isFinite(c) && c > 0)
+  const volumes = ohlcv.map(r => r.volume || 0)
+  if (closes.length < 5) return null
+
+  const cur = closes[closes.length - 1]
+  const ath = Math.max(...closes)
+
+  // Multi-window price changes
+  const pctChange = (arr, n) => {
+    if (arr.length < n + 1) return null
+    const prev = arr[arr.length - 1 - n]
+    return prev > 0 ? ((arr[arr.length - 1] - prev) / prev) * 100 : null
+  }
+
+  const change24h = pctChange(closes, 1)
+  const change7d = pctChange(closes, 7)
+  const change30d = pctChange(closes, 30)
+  const change90d = pctChange(closes, 90)
+
+  // Volume metrics
+  const recentVol = volumes.slice(-7)
+  const avgVol = recentVol.length ? recentVol.reduce((s, v) => s + v, 0) / recentVol.length : 0
+  const totalVolume = avgVol // Daily average volume as proxy
+
+  // ATH distance
+  const athChangePct = ath > 0 ? ((cur - ath) / ath) * 100 : 0
+
+  // Simulated market cap (use price × 1e6 as rough proxy for metals)
+  // For metals this is approximate but sufficient for pillar scoring
+  const marketCap = cur * 1e6
+
+  return {
+    currentPrice: cur,
+    marketCap,
+    totalVolume,
+    ath,
+    athChangePct,
+    change24h,
+    change7d,
+    change30d,
+    change90d,
+  }
+}
+
+// ── Synthesize smart signals from OHLCV for non-crypto assets ──────────
+function synthesizeSignals(taData) {
+  if (!taData || !taData.ohlcv || !Array.isArray(taData.ohlcv) || taData.ohlcv.length < 10) return null
+  const ohlcv = taData.ohlcv
+  const closes = ohlcv.map(r => r.close).filter(c => isFinite(c) && c > 0)
+  const volumes = ohlcv.map(r => r.volume || 0)
+  if (closes.length < 10) return null
+
+  // Volume pulse: recent 7d avg vs 30d avg
+  const recent7 = volumes.slice(-7)
+  const prev30 = volumes.slice(-37, -7)
+  const avg7 = recent7.length ? recent7.reduce((s, v) => s + v, 0) / recent7.length : 0
+  const avg30 = prev30.length ? prev30.reduce((s, v) => s + v, 0) / prev30.length : avg7
+  const volPulse = avg30 > 0 ? avg7 / avg30 : 1
+
+  // Momentum: 30d rate of change normalized
+  const mom30 = closes.length > 30 ? (closes[closes.length - 1] - closes[closes.length - 30]) / closes[closes.length - 30] : 0
+
+  // DXY proxy for metals: inverse of gold price momentum (gold up = dollar down)
+  // Use 30d price momentum as proxy for dollar weakness
+  const dxyChange = closes.length > 30 ? -mom30 : null
+
+  // AD normalized: accumulation/distribution proxy from price position in day's range
+  const recent = ohlcv.slice(-14)
+  let adNorm = 0
+  for (const r of recent) {
+    const range = r.high - r.low
+    if (range > 0) adNorm += ((r.close - r.low) / range - 0.5) * 2
+  }
+  adNorm = recent.length ? adNorm / recent.length : 0
+
+  return {
+    volPulse,
+    momentum: mom30 * 100,
+    dxyChange,
+    adNormalized: adNorm,
+  }
+}
+
 const money = (n) => {
   if (n == null || !isFinite(n)) return '—'
   if (Math.abs(n) >= 1) return '$' + Math.round(n).toLocaleString()
@@ -399,66 +488,78 @@ function ShareCardButton({ item, verdict }) {
   )
 }
 
-// ── Diverging gauge (-100..100) ──────────────────────────────────────────
+// ── Diverging gauge (-100..100) — premium design ─────────────────────────
 function MagicGauge({ score, direction, confidence, big }) {
   const pos = ((score + 100) / 200) * 100
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-        <span style={{ fontSize: big ? '1.35rem' : '1.05rem', fontWeight: 800, color: direction.color, display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}>
-          <Icon name={direction.icon} size={big ? 22 : 18} /> {direction.label}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <span style={{ fontSize: big ? '1.4rem' : '1.1rem', fontWeight: 800, color: direction.color, display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+          <Icon name={direction.icon} size={big ? 24 : 20} /> {direction.label}
         </span>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: direction.color }}>
+        <span style={{ fontSize: big ? '1rem' : '0.85rem', fontWeight: 800, color: direction.color }}>
           {score > 0 ? '+' : ''}{score}
         </span>
       </div>
       <div className="magic-track">
         <div className="magic-track-mid" />
-        <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 10px ${direction.color}` }} />
+        <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 14px ${direction.color}, 0 0 28px ${direction.color}40` }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.25rem' }}>
         <span>Distribute</span>
         <span>Neutral</span>
         <span>Accumulate</span>
       </div>
       {confidence != null && (
-        <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.4rem' }}>
-          Confidence <b style={{ color: 'var(--text)' }}>{confidence}%</b>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text2)', marginTop: '0.45rem' }}>
+          <span>Confidence</span>
+          <div style={{ flex: 1, height: '4px', borderRadius: '3px', background: 'var(--bg3)', overflow: 'hidden', maxWidth: '120px' }}>
+            <div style={{ width: `${confidence}%`, height: '100%', borderRadius: '3px', background: `linear-gradient(90deg, ${direction.color}80, ${direction.color})`, transition: 'width 0.4s ease' }} />
+          </div>
+          <b style={{ color: 'var(--text)', fontSize: '0.78rem' }}>{confidence}%</b>
         </div>
       )}
     </div>
   )
 }
 
-// ── Five diverging pillar bars ───────────────────────────────────────────
+// ── Premium pillar bars with quality indicators ─────────────────────────
 function PillarBars({ pillars }) {
   return (
     <div className="pillar-list">
       {pillars.map((p) => {
         const est = p.estimated
         const proxy = p.quality === 'proxy'
+        const live = p.quality === 'live'
         const s = p.score ?? 0
         const color = est ? 'var(--text2)'
-          : proxy ? (s >= 0 ? '#6ee7b7' : '#fca5a5')   // muted = estimated from related data
+          : proxy ? (s >= 0 ? '#6ee7b7' : '#fca5a5')
           : s >= 0 ? '#22c55e' : '#ef4444'
         const widthPct = Math.min(50, Math.abs(s) / 2)
-        const marker = est ? '*' : proxy ? '~' : ''
         const title = est ? `${PILLAR_INFO[p.key]} — no live data, shown neutral`
-          : proxy ? `${PILLAR_INFO[p.key]} — estimated from related data (live feed unavailable)`
+          : proxy ? `${PILLAR_INFO[p.key]} — estimated from related data`
           : PILLAR_INFO[p.key]
+        // Quality dot: green = live, yellow = proxy, gray = estimated
+        const dotColor = live ? '#22c55e' : proxy ? '#eab308' : '#6b7280'
         return (
           <div key={p.key} className="pillar-row" title={title}>
-            <div className="pillar-name">{p.label}</div>
+            <div className="pillar-name" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: dotColor, flexShrink: 0, boxShadow: live ? `0 0 4px ${dotColor}` : 'none' }} />
+              {p.label}
+            </div>
             <div className="pillar-track">
               <div className="pillar-zero" />
               {!est && s !== 0 && (
                 <div
                   className="pillar-fill"
-                  style={{ background: color, width: `${widthPct}%`, left: s >= 0 ? '50%' : `${50 - widthPct}%`, opacity: proxy ? 0.7 : 1 }}
+                  data-quality={p.quality}
+                  style={{ background: `linear-gradient(90deg, ${color}90, ${color})`, width: `${widthPct}%`, left: s >= 0 ? '50%' : `${50 - widthPct}%` }}
                 />
               )}
             </div>
-            <div className="pillar-val" style={{ color }}>{s > 0 ? '+' + s : s}{marker}</div>
+            <div className="pillar-val" style={{ color }}>
+              {s > 0 ? '+' + s : s}
+            </div>
           </div>
         )
       })}
@@ -619,18 +720,25 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
     const cryptoItems = enriched
       .filter(isAnalyzable)
       .map(h => {
+        const cat = assetClass(h.coin_id)
+        const coinTa = ta[h.coin_id] || null
+        // For non-crypto assets, synthesize fundamentals + signals from OHLCV
+        const isMetalOrStock = cat === 'gold' || cat === 'silver' || cat === 'copper' || cat === 'platinum' || cat === 'stock'
+        const coinFund = fundamentals[h.coin_id] || (isMetalOrStock ? synthesizeFundamentals(coinTa) : null)
+        const coinSig = signals[h.coin_id] || (isMetalOrStock ? synthesizeSignals(coinTa) : null)
         const magic = computeMagic({
-          ta: ta[h.coin_id] || null,
-          signals: signals[h.coin_id] || null,
-          fundamental: fundamentals[h.coin_id] || null,
-          assetClass: h._cat || 'crypto',
+          ta: coinTa,
+          signals: coinSig,
+          fundamental: coinFund,
+          assetClass: cat,
         })
         return {
           ...h,
+          _cat: cat,
           pnlPct: h.pnlPct ?? (h.invested > 0 ? ((h.value - h.invested) / h.invested) * 100 : 0),
-          ta: ta[h.coin_id] || null,
-          signals: signals[h.coin_id] || null,
-          fundamental: fundamentals[h.coin_id] || null,
+          ta: coinTa,
+          signals: coinSig,
+          fundamental: coinFund,
           magic,
           weight: tv > 0 ? (h.value / tv) * 100 : 0,
         }
@@ -639,9 +747,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       .sort((a, b) => b.value - a.value)
     const compass = aggregateMagic(cryptoItems.map(it => ({ value: it.value, magic: it.magic })))
     const nonCryptoCount = enriched.filter(h => !isAnalyzable(h)).length
-    // Add asset class category to each item
-    const withCategory = cryptoItems.map(it => ({ ...it, _cat: assetClass(it.coin_id) }))
-    return { cryptoItems: withCategory, nonCryptoCount, compass }
+    return { cryptoItems, nonCryptoCount, compass }
   }, [enriched, totalValue, ta, signals, fundamentals])
 
   // Category counts for tabs

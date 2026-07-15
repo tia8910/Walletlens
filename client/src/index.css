@@ -3329,44 +3329,72 @@ tr:last-child td { border-bottom: none; }
   color: var(--text2); text-transform: uppercase; margin-bottom: 0.6rem;
 }
 
-/* Diverging score gauge */
+/* Diverging score gauge — premium wide track */
 .magic-track {
-  position: relative; height: 8px; border-radius: 5px;
-  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 30%, #6b7280 50%, #22c55e 70%, #16a34a 100%);
-  opacity: 0.55;
+  position: relative; height: 12px; border-radius: 7px;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #6b7280 50%, #22c55e 75%, #16a34a 100%);
+  opacity: 0.6;
 }
 .magic-track-mid {
-  position: absolute; left: 50%; top: -3px; width: 2px; height: 14px;
+  position: absolute; left: 50%; top: -4px; width: 2px; height: 20px;
   background: var(--text2); transform: translateX(-50%); border-radius: 2px;
 }
 .magic-marker {
-  position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
-  transform: translate(-50%, -50%); border: 2px solid var(--bg2, #0b0f0c);
-  transition: left 0.4s ease;
+  position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%;
+  transform: translate(-50%, -50%); border: 3px solid var(--bg2, #0b0f0c);
+  transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Pillar bars */
-.pillar-list { display: flex; flex-direction: column; gap: 0.4rem; }
-.pillar-row { display: grid; grid-template-columns: 78px 1fr 38px; align-items: center; gap: 0.5rem; }
-.pillar-name { font-size: 0.74rem; font-weight: 600; color: var(--text2); }
-.pillar-track {
-  position: relative; height: 7px; border-radius: 4px; background: var(--bg3); overflow: hidden;
+/* Pillar bars — premium design */
+.pillar-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.pillar-row {
+  display: grid; grid-template-columns: 80px 1fr 42px;
+  align-items: center; gap: 0.5rem;
+  padding: 0.25rem 0;
 }
-.pillar-zero { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: var(--border); }
-.pillar-fill { position: absolute; top: 0; height: 100%; border-radius: 4px; transition: width 0.4s ease, left 0.4s ease; }
-.pillar-val { font-size: 0.72rem; font-weight: 700; text-align: right; }
+.pillar-name {
+  font-size: 0.72rem; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.pillar-track {
+  position: relative; height: 10px; border-radius: 5px;
+  background: var(--bg3); overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.pillar-zero {
+  position: absolute; left: 50%; top: 0; width: 1px; height: 100%;
+  background: rgba(255,255,255,0.12);
+}
+.pillar-fill {
+  position: absolute; top: 0; height: 100%; border-radius: 5px;
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(0,0,0,0.15);
+}
+.pillar-fill[data-quality="live"] { opacity: 1; }
+.pillar-fill[data-quality="proxy"] { opacity: 0.75; }
+.pillar-fill[data-quality="none"] { opacity: 0.3; }
+.pillar-val { font-size: 0.74rem; font-weight: 800; text-align: right; }
 
 .magic-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.85rem;
 }
-.magic-card { padding: 0.9rem 1rem; }
+.magic-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.magic-card:hover {
+  border-color: rgba(var(--g-rgb), 0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
 .magic-card-head { display: flex; align-items: center; gap: 0.6rem; }
 .magic-ta-strip {
-  display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem;
+  display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem;
 }
 .magic-ta-strip span {
-  font-size: 0.7rem; font-weight: 600; color: var(--text2);
-  background: var(--bg3); border-radius: 6px; padding: 0.12rem 0.45rem;
+  font-size: 0.68rem; font-weight: 600; color: var(--text2);
+  background: var(--bg3); border-radius: 6px; padding: 0.15rem 0.5rem;
+  border: 1px solid rgba(255,255,255,0.04);
 }
 .magic-card-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
 .magic-foot-actions { display: flex; align-items: center; gap: 0.65rem; margin-left: auto; }

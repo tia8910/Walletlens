@@ -420,6 +420,7 @@ export function analyzeTechnicals(closes, currentPrice, ohlcv = null) {
     cci: cciVal,
     ichimoku: ichimokuVal,
     vwap: vwapVal,
+    ohlcv: ohlcv || null,
     sar: sarVal,
     obv: obvVal,
     mfi: mfiVal,
