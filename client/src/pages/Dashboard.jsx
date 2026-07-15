@@ -3798,7 +3798,7 @@ export default function Dashboard() {
       <NewsTicker />
 
       {/* Weekly Report Email subscribe banner — shown at top until subscribed or dismissed */}
-      {!isWeeklySubscribed() && !weeklyBannerDismissed && !isDemo && (
+      {!isWeeklySubscribed() && !weeklyBannerDismissed && !isDemo && enriched.length > 0 && (
         <div style={{
           margin: '0.5rem 0.75rem', padding: '0.7rem 0.9rem', borderRadius: '14px',
           background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.12), rgba(var(--g-rgb),0.04))',
