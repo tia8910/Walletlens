@@ -1970,7 +1970,7 @@ export const api = {
   getBulkSmartSignals: async (coinIds, days = 30) => {
     const out = {};
     if (!Array.isArray(coinIds) || coinIds.length === 0) return out;
-    const CACHE_KEY = 'crypto_tracker_signals_cache_v1';
+    const CACHE_KEY = 'crypto_tracker_signals_cache_v2';
     const TTL_MS = 60 * 60 * 1000;
     let cache = {};
     try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
@@ -2025,7 +2025,7 @@ export const api = {
       return 'crypto';
     };
 
-    const CACHE_KEY = 'crypto_tracker_ta_cache_v2';
+    const CACHE_KEY = 'crypto_tracker_ta_cache_v3';
     const TTL_MS = 60 * 60 * 1000;
     let cache = {};
     try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}
@@ -2124,7 +2124,7 @@ export const api = {
       id.startsWith('bond:') || id.startsWith('other:') ||
       id.startsWith('metal:') || id.startsWith('stock:') || id.startsWith('real:') || id.startsWith('cash:');
 
-    const CACHE_KEY = 'crypto_tracker_fundamentals_cache_v1';
+    const CACHE_KEY = 'crypto_tracker_fundamentals_cache_v2';
     const TTL_MS = 60 * 60 * 1000;
     let cache = {};
     try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch {}

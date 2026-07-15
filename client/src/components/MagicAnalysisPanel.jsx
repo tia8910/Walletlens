@@ -36,8 +36,9 @@ const isAnalyzable = (h) => {
 // Metals and stocks don't get CoinGecko fundamentals, so we derive them
 // from the Yahoo Finance OHLCV data that getBulkTechnicals already fetches.
 function synthesizeFundamentals(taData) {
-  if (!taData || !taData.ohlcv || !Array.isArray(taData.ohlcv) || taData.ohlcv.length < 5) return null
+  if (!taData) return null
   const ohlcv = taData.ohlcv
+  if (!Array.isArray(ohlcv) || ohlcv.length < 3) return null
   const closes = ohlcv.map(r => r.close).filter(c => isFinite(c) && c > 0)
   const volumes = ohlcv.map(r => r.volume || 0)
   if (closes.length < 5) return null
@@ -85,7 +86,6 @@ function synthesizeFundamentals(taData) {
 // ── Synthesize smart signals from OHLCV for non-crypto assets ──────────
 function synthesizeSignals(taData) {
   if (!taData || !taData.ohlcv || !Array.isArray(taData.ohlcv) || taData.ohlcv.length < 10) return null
-  const ohlcv = taData.ohlcv
   const closes = ohlcv.map(r => r.close).filter(c => isFinite(c) && c > 0)
   const volumes = ohlcv.map(r => r.volume || 0)
   if (closes.length < 10) return null
