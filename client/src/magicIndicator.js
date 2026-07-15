@@ -1,5 +1,5 @@
 // ── Magic Indicator ───────────────────────────────────────────────────────
-// Merges five independent read-outs of a crypto holding into one direction:
+// Merges five independent read-outs of each holding into one direction:
 //   1. Technical   — RSI / MACD / Bollinger / trend (from technicals.js)
 //   2. On-chain    — flow + supply/turnover proxies (free data, no paid API)
 //   3. Volume      — is volume confirming the move?

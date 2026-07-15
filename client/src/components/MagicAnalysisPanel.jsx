@@ -85,7 +85,9 @@ function synthesizeFundamentals(taData) {
 
 // ── Synthesize smart signals from OHLCV for non-crypto assets ──────────
 function synthesizeSignals(taData) {
-  if (!taData || !taData.ohlcv || !Array.isArray(taData.ohlcv) || taData.ohlcv.length < 10) return null
+  if (!taData) return null
+  const ohlcv = taData.ohlcv
+  if (!Array.isArray(ohlcv) || ohlcv.length < 5) return null
   const closes = ohlcv.map(r => r.close).filter(c => isFinite(c) && c > 0)
   const volumes = ohlcv.map(r => r.volume || 0)
   if (closes.length < 10) return null
