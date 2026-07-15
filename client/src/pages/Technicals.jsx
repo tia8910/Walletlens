@@ -64,7 +64,7 @@ export default function Technicals() {
     <div className="dvx-page">
       <div className="magic-hero">
         <h1 className="magic-hero-title" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'0.35rem' }}><Icon name="ruler" size={20} /> <span>Technical Analysis</span></h1>
-        <p className="magic-hero-sub">The <b>Magic Indicator</b> fuses technicals, momentum, volume and fundamentals into one direction per holding.</p>
+        <p className="magic-hero-sub"><b>Magic Indicator</b> — technicals, momentum, volume & fundamentals in one signal.</p>
       </div>
       <MagicAnalysisPanel enriched={enriched} totalValue={totalValue} />
     </div>
