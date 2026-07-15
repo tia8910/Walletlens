@@ -14,6 +14,7 @@ import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
+import PullToRefresh from './components/PullToRefresh'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
@@ -610,6 +611,7 @@ export default function App() {
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
+      <PullToRefresh>
       <main className={`wl-content${isStandalone ? ' twa-mode' : ''}`}>
         <ErrorBoundary>
           <Suspense fallback={<PageFallback />}>
@@ -640,6 +642,7 @@ export default function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
+      </PullToRefresh>
 
       <AppFooter />
 
