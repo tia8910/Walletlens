@@ -3441,8 +3441,38 @@ tr:last-child td { border-bottom: none; }
 .magic-ai-cols li { font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.15rem; }
 .magic-ai-action { font-size: 0.8rem; font-weight: 600; color: #c4b5fd; margin: 0.55rem 0 0; }
 
+/* ── Magic Indicator — mobile-friendly ── */
 @media (max-width: 480px) {
-  .magic-grid { grid-template-columns: 1fr; }
+  .magic-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+  .magic-card { padding: 0.9rem 0.9rem; border-radius: 14px; }
+  .magic-hero-title { font-size: 1.1rem; }
+  .magic-hero-sub { font-size: 0.78rem; }
+  /* Keep gauge readable on small screens */
+  .magic-track { height: 10px; }
+  .magic-track-mid { height: 18px; top: -4px; }
+  .magic-marker { width: 18px; height: 18px; }
+  /* Pillar bars more compact */
+  .pillar-row { grid-template-columns: 65px 1fr 38px; gap: 0.35rem; padding: 0.2rem 0; }
+  .pillar-name { font-size: 0.65rem; }
+  .pillar-track { height: 10px; }
+  .pillar-val { font-size: 0.7rem; }
+  /* TA strip tags smaller */
+  .magic-ta-strip span { font-size: 0.64rem; padding: 0.12rem 0.4rem; }
+  /* Category filter tabs scrollable with smaller pills */
+  [class*="dvx-page"] .glass-card { padding: 0.85rem !important; }
+  /* Card foot better spacing */
+  .magic-card-foot { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .magic-foot-actions { margin-left: 0; justify-content: flex-end; }
+}
+
+/* Extra-small phones (≤ 360px) — super compact */
+@media (max-width: 360px) {
+  .magic-card { padding: 0.75rem 0.65rem; }
+  .magic-hero-title { font-size: 0.95rem; }
+  .magic-hero-sub { font-size: 0.72rem; }
+  .pillar-row { grid-template-columns: 58px 1fr 34px; gap: 0.3rem; }
+  .pillar-name { font-size: 0.6rem; }
+  .pillar-val { font-size: 0.65rem; }
 }
 
 /* ─── Sell Quantity Picker ─── */
@@ -11253,7 +11283,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   .coach-hero-title { font-size: 1.15rem; }
   .coach-score-num { font-size: 1.25rem; }
   .coach-score-pill { padding: 0.35rem 0.6rem; }
-  .dvx-page { overflow-x: hidden; }
+  .dvx-page { overflow-x: hidden; }.dvx-page .magic-hero { word-break: break-word; }.dvx-page .magic-hero-sub { word-break: break-word; }
 }
 [data-wl-light] .coach-score-pill { background: rgba(255,255,255,0.7); }
 

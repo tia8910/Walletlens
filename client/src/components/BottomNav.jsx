@@ -85,16 +85,13 @@ const NAV_ITEMS = [
 const BottomNav = memo(function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState(() => {
-    try { return localStorage.getItem('wl_bottomnav_tab') || 'overview' } catch { return 'overview' }
-  })
+  const [activeTab, setActiveTab] = useState('overview')
 
   // Sync from route state when navigating via bottom nav
   useEffect(() => {
     const stateTab = location.state?.tab
     if (stateTab && stateTab !== activeTab) {
       setActiveTab(stateTab)
-      try { localStorage.setItem('wl_bottomnav_tab', stateTab) } catch {}
     }
   }, [location.state?.tab])
 
@@ -108,7 +105,6 @@ const BottomNav = memo(function BottomNav() {
             className={`wl-nav-item${isActive ? ' active' : ''}`}
             onClick={() => {
               setActiveTab(item.tab)
-              try { localStorage.setItem('wl_bottomnav_tab', item.tab) } catch {}
               track('bottomnav_click', { tab: item.id })
               navigate(item.path, { state: { tab: item.tab } })
             }}

@@ -51,8 +51,8 @@ export default function Technicals() {
           <div style={{ marginBottom: '0.5rem', display:'flex', justifyContent:'center' }}><Icon name="ruler" size={36} /></div>
           <h2 style={{ margin: '0 0 0.4rem' }}>Technical & On-Chain Analysis</h2>
           <p className="muted" style={{ maxWidth: 420, margin: '0 auto 1.2rem' }}>
-            Add a crypto holding and the Magic Indicator will merge technicals, on-chain flow,
-            volume, whale activity and fundamentals into a single direction for each asset.
+            Add a holding and the Magic Indicator will merge technicals, momentum,
+            volume and fundamentals into a single direction for each asset.
           </p>
           <button className="dvx-btn-primary" onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
         </div>
@@ -65,8 +65,8 @@ export default function Technicals() {
       <div className="magic-hero">
         <h1 className="magic-hero-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="ruler" size={22} />Technical & On-Chain Analysis</h1>
         <p className="magic-hero-sub">
-          The <b>Magic Indicator</b> fuses five signals — technical, on-chain, volume, whales and
-          fundamentals — into one direction per crypto holding.
+          The <b>Magic Indicator</b> fuses five signals — technicals, momentum, volume,
+          fundamentals and more — into one direction per holding.
         </p>
       </div>
       <MagicAnalysisPanel enriched={enriched} totalValue={totalValue} />
