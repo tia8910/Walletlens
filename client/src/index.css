@@ -3321,7 +3321,7 @@ tr:last-child td { border-bottom: none; }
 /* ─── Magic Indicator / Technical Analysis page ─── */
 .magic-hero { padding: 0.5rem 0 0.75rem; }
 .magic-hero-title { margin: 0 0 0.25rem; font-size: 1.45rem; font-weight: 800; }
-.magic-hero-sub { margin: 0; font-size: 0.85rem; color: var(--text2); line-height: 1.55; max-width: 640px; }
+.magic-hero-sub { margin: 0; font-size: 0.85rem; color: var(--text2); line-height: 1.55; }
 
 /* Diverging score gauge — premium wide track */
 .magic-track {
@@ -3445,7 +3445,7 @@ tr:last-child td { border-bottom: none; }
 @media (max-width: 480px) {
   .magic-grid { grid-template-columns: 1fr; gap: 0.75rem; }
   .magic-card { padding: 0.8rem 0.85rem; border-radius: 14px; overflow: hidden; }
-  .magic-hero-title { font-size: 1.05rem; word-break: break-word; }
+  .magic-hero-title { font-size: 1.05rem; }
   .magic-hero-sub { font-size: 0.76rem; line-height: 1.45; }
   /* Gauge — compact */
   .magic-track { height: 10px; }
@@ -11290,7 +11290,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   .coach-hero-title { font-size: 1.15rem; }
   .coach-score-num { font-size: 1.25rem; }
   .coach-score-pill { padding: 0.35rem 0.6rem; }
-  .dvx-page { overflow-x: hidden; }.dvx-page .magic-hero { word-break: break-word; }.dvx-page .magic-hero-sub { word-break: break-word; }
+  .dvx-page { overflow-x: hidden; }.dvx-page .magic-hero { word-break: break-word; }
 }
 [data-wl-light] .coach-score-pill { background: rgba(255,255,255,0.7); }
 
