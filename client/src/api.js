@@ -1103,14 +1103,23 @@ async function fetchYahooOHLCV(ticker, days = 180) {
     } catch {}
   }
 
-  // 2. Fallback through CORS proxies (browser CORS blocks direct Yahoo)
-  for (const wrap of CORS_PROXIES) {
+  // 2. Fallback through Deno proxy (browser CORS blocks direct Yahoo)
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`
+    const res = await fetchWithTimeout(DENO_PROXY(url), 10000)
+    if (res.ok) {
+      const data = await res.json()
+      const out = parseYahoo(data)
+      if (out.length > 10) return out
+    }
+  } catch {}
+  // 3. Last resort: other CORS proxies
+  for (const wrap of CORS_PROXIES.filter(p => p !== DENO_PROXY)) {
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`
       const res = await fetchWithTimeout(wrap(url), 8000)
       if (!res.ok) continue
       const text = await res.text()
-      // allorigins returns raw JSON; corsproxy wraps differently
       let data
       try { data = JSON.parse(text) } catch { continue }
       const out = parseYahoo(data)
