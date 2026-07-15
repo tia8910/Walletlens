@@ -51,7 +51,120 @@ function phoneticArabic(text) {
 // Full normalization pipeline — apply to BOTH the input transcript and
 // every vocabulary entry so they're compared on equal footing.
 function fullNormalize(text) {
-  return phoneticArabic(normalizeArabic(text.toLowerCase()))
+  let t = text.toLowerCase()
+  // Apply Arabic normalization first (most common for the app's audience)
+  t = phoneticArabic(normalizeArabic(t))
+  // Also apply other script normalizations so cross-script matches work
+  t = normalizeHindiUrdu(t)
+  t = normalizeFrench(t)
+  t = normalizeTurkish(t)
+  t = normalizeSpanish(t)
+  return t
+}
+
+// ── Hindi/Urdu normalization — Devanagari + Nastaliq (Urdu) ────────────────
+// Hindi (देवनागरी) and Urdu (نستعلیق) share identical vocabulary for numbers
+// and most trade intents. STT engines often garble Devanagari → romanised
+// gibberish, so we collapse common phonetic variants.
+function normalizeHindiUrdu(text) {
+  return text
+    // Devanagari digits ०-९ → ASCII
+    .replace(/[०-९]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0966 + 0x30))
+    // Nastaliq digits ۰-۹ → ASCII
+    .replace(/[۰-۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 0x30))
+    // Hindi phonetic collapse (STT often confuses these)
+    .replace(/क्ष/g, 'क्ष')  // keep ksha as-is
+    .replace(/ज्ञ/g, 'ग्य')  // gya → gya
+}
+
+// ── French normalization ───────────────────────────────────────────────────
+// French accents (é, è, ê, ë, à, â, ù, û, ü, ô, î, ï, ç) often get
+// stripped or mangled by STT. We normalize to base letters.
+function normalizeFrench(text) {
+  return text
+    .replace(/[éèêë]/g, 'e')
+    .replace(/[àâ]/g, 'a')
+    .replace(/[ùûü]/g, 'u')
+    .replace(/[ô]/g, 'o')
+    .replace(/[îï]/g, 'i')
+    .replace(/ç/g, 'c')
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+}
+
+// ── Turkish normalization ──────────────────────────────────────────────────
+// Turkish has unique dotted/dotless i (İ/ı vs i) that STT often confuses.
+function normalizeTurkish(text) {
+  return text
+    .replace(/İ/g, 'i').replace(/I/g, 'ı')
+    .replace(/ş/g, 's').replace(/Ş/g, 's')
+    .replace(/ğ/g, 'g').replace(/Ğ/g, 'g')
+    .replace(/ç/g, 'c').replace(/Ç/g, 'c')
+    .replace(/ö/g, 'o').replace(/Ö/g, 'o')
+    .replace(/ü/g, 'u').replace(/Ü/g, 'u')
+}
+
+// ── Spanish normalization ──────────────────────────────────────────────────
+function normalizeSpanish(text) {
+  return text
+    .replace(/[á]/g, 'a').replace(/[é]/g, 'e').replace(/[í]/g, 'i')
+    .replace(/[ó]/g, 'o').replace(/[ú]/g, 'u').replace(/[ñ]/g, 'n')
+    .replace(/ü/g, 'u')
+}
+
+// ── Smart accent / language auto-detection ─────────────────────────────────
+// Analyses the raw transcript to determine which language/dialect family
+// the speaker most likely used, so we pick the best recognizer and parser.
+// Returns one of: 'ar', 'hi', 'fr', 'tr', 'es', 'en'.
+function detectAccent(text) {
+  if (!text || text.length < 2) return 'en'
+  const t = text.toLowerCase()
+
+  // Arabic script detection (U+0600–U+06FF, U+0750–U+077F, U+FB50–U+FDFF, U+FE70–U+FEFF)
+  const arabicChars = (text.match(/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/g) || []).length
+  if (arabicChars > text.length * 0.15) return 'ar'
+
+  // Devanagari script detection (U+0900–U+097F)
+  const devanagariChars = (text.match(/[\u0900-\u097F]/g) || []).length
+  if (devanagariChars > text.length * 0.15) return 'hi'
+
+  // Hindi/Urdu romanised markers (very common STT output)
+  const hindiMarkers = ['kharid', 'kharida', 'kharidi', 'bech', 'becha', 'bechi',
+    'khareeda', 'becha', 'kitna', 'kitne', 'ek', 'do', 'teen', 'char', 'paanch',
+    'dhai', 'aadha', 'pav', 'das', 'bees', 'tees', 'chaalis', 'pachas',
+    'sola', 'hazaar', 'lakh', 'crore', 'rupaye', 'rupya', 'dollar',
+    'mera', 'mere', 'meri', 'uska', 'uske', 'uski', 'kya', 'kaise', 'kab',
+    'abhi', 'bahut', 'zyada', 'kam', 'thoda', 'saara', 'sab', 'kuch',
+    'bitcoin', 'ethereum', 'solana', 'dogecoin', 'cardano', 'polkadot']
+  const hindiHits = hindiMarkers.filter(m => t.includes(m)).length
+  if (hindiHits >= 2) return 'hi'
+
+  // French markers
+  const frMarkers = ['acheter', 'achete', 'achetez', 'achetez', 'achete',
+    'vendre', 'vends', 'vendez', 'vendu', 'j ai', 'j ai achete', 'je veux',
+    'combien', 'combien de', 'un', 'deux', 'trois', 'quatre', 'cinq',
+    'dix', 'vingt', 'trente', 'cinquante', 'cent', 'mille', 'million',
+    'je suis', 'on va', 'il faut', 'c est', 'francais']
+  const frHits = frMarkers.filter(m => t.includes(m)).length
+  if (frHits >= 2) return 'fr'
+
+  // Turkish markers
+  const trMarkers = ['al', 'aldi', 'alacak', 'satis', 'saticak', 'sattim',
+    'sattim', 'bir', 'iki', 'uc', ' dort', 'bes', 'alti', 'yedi', 'sekiz',
+    'dokuz', 'on', 'yirmi', 'otuz', 'elli', 'yuz', 'bin', 'milyon',
+    'para', 'coin', 'bitcoin', 'altin', 'gram']
+  const trHits = trMarkers.filter(m => t.includes(m)).length
+  if (trHits >= 2) return 'tr'
+
+  // Spanish markers
+  const esMarkers = ['comprar', 'compre', 'compro', 'vender', 'vendi',
+    'vendo', 'cuanto', 'cuantos', 'uno', 'dos', 'tres', 'cuatro', 'cinco',
+    'diez', 'veinte', 'treinta', 'cincuenta', 'cien', 'mil', 'millon',
+    'oro', 'plata', 'bitcoin', 'acciones', 'dolares', 'pesos']
+  const esHits = esMarkers.filter(m => t.includes(m)).length
+  if (esHits >= 2) return 'es'
+
+  return 'en'
 }
 
 // Levenshtein distance — used for fuzzy coin/intent match when exact
@@ -95,7 +208,23 @@ const COIN_MAP = (() => {
   add(['bitcoin','btc','bee tee cee','bitty','bitcorn','digital gold','the king','satoshi','sats',
        // STT mis-hearings
        'big coin','big point','bit corn','bit con','bit coin','bitkoin','bit kong',
-       'بيتكوين','بتكوين','بيت كوين','بي تي سي','بيتكوبن','بيتكون','بتكون'], 'bitcoin', 'BTC', 'Bitcoin')
+       'بيتكوين','بتكوين','بيت كوين','بي تي سي','بيتكوبن','بيتكون','بتكون',
+       // Hindi/Urdu STT mis-hearings
+       'bittcoin','bit koin','bit kuan','bitkuin',
+       // French STT mis-hearings
+       'bitcoeen','bitcoene','bitcoing','bitkoin',
+       // Spanish STT mis-hearings
+       'bitcoín','bitcóin','bitkoin','bitcone',
+       // Turkish STT mis-hearings
+       'bitkoin','bitkoyn','bitkuan',
+       // Japanese/Korean romanised
+       'bittokoin','bittoin',
+       // German STT mis-hearings
+       'bitkoin','bitkoyn',
+       // Arabic dialect expanded
+       'البيتكوين','البتكون','بت كوان','بيت كوان',
+       // Hindi/Urdu Devanagari
+       'बिटकॉइन','बिटकोइन'], 'bitcoin', 'BTC', 'Bitcoin')
   // Ethereum: Arabic speech recognition produces many transliterations
   // (ث↔س, ي/ى, missing/extra letters). Include all observed variants.
   add(['ethereum','eth','ether','vitalik','smart contract coin',
@@ -103,21 +232,80 @@ const COIN_MAP = (() => {
        'a theorem','e theorem','atherium','etherium','etherian','etheria','mythirium',
        'aetherium','aether','ether room',
        'إيثيريوم','إيثر','ايثيريوم','ايثر','اي تي اتش',
+       // Hindi/Urdu STT mis-hearings
+       'ithereum','etherem','etherum','ithereem',
+       // French STT mis-hearings
+       'ethereume','ethéréum','etheriumm',
+       // Spanish STT mis-hearings
+       'eterio','etereum',
+       // Turkish STT mis-hearings
+       'eteriyum','etheryum',
+       // Japanese/Korean
+       'isrium','isriumu',
+       // German
+       'etherium','ätherium',
+       // Arabic expanded
+       'الايثيريوم','الإيثيريوم','ايثريوم',
        'اثيريوم','اثيريم','ايثيريم','ايثريوم','اثريوم',
        'اسيريوم','اسيريام','ايثيريام','اسيريم','ايسيريوم','ايسيريام',
-       'إيثيريم','إثيريوم','إثيريم','إيسيريوم'], 'ethereum', 'ETH', 'Ethereum')
+       'إيثيريم','إثيريوم','إثيريم','إيسيريوم',
+       // Hindi/Urdu Devanagari
+       'एथेरियम','इथेरियम'], 'ethereum', 'ETH', 'Ethereum')
   add(['solana','sol','salami',
        // STT mis-hearings — "Selena" is the classic Google STT failure
        'selena','salina','celina','celine','salonia','solania','solanas','sue lana','solar',
        'salem','solanya','soul lana','suelena',
-       'سولانا','سول','صولانا','صول','سولانه','صولانه'], 'solana', 'SOL', 'Solana')
+       'سولانا','سول','صولانا','صول','سولانه','صولانه',
+       // Hindi/Urdu STT
+       'solna','solona','soln','solane','soulana',
+       // French STT
+       'solana','solanah','solane',
+       // Spanish STT
+       'solána','solanna',
+       // Turkish STT
+       'solana','solano',
+       // Japanese/Korean
+       'sorana','sorana',
+       // German
+       'solana','solane',
+       // Hindi/Urdu Devanagari
+       'सोलाना','सोलना'], 'solana', 'SOL', 'Solana')
   add(['bnb','binance coin','binance','b n b','bee n bee','banance','banance coin',
        'بي إن بي','بي ان بي','بينانس','بايننس','بنانس','بنب'], 'binancecoin', 'BNB', 'BNB')
   add(['xrp','ripple','x r p','ex our pee','ex ar p','ex r p','x ah r p','exarp','ex rp',
-       'إكس آر بي','اكس ار بي','ريبل','ربيل','ريبيل','ربل'], 'ripple', 'XRP', 'XRP')
+       'إكس آر بي','اكس ار بي','ريبل','ربيل','ريبيل','ربل',
+       // Hindi/Urdu STT
+       'ex ar pee','ex r pi','exrpi','xar pee',
+       // French STT
+       'ex ar pé','ex ray pé',
+       // Spanish STT
+       'equis ar pe',
+       // Turkish STT
+       'eks ar pi','exarpi',
+       // Japanese/Korean
+       'ekkusu aaru pii',
+       // Hindi/Urdu Devanagari
+       'एक्सआरपी','एक्स आर पी'], 'ripple', 'XRP', 'XRP')
   add(['cardano','ada','car the no','cardamom','cardenas','car dano','card dano',
-       'كاردانو','ايه دي ايه','كردانو','كاردنو'], 'cardano', 'ADA', 'Cardano')
+       // Hindi/Urdu
+       'kar dano','kardano',
+       // French/Spanish
+       'cardano','cardâno',
+       // Turkish
+       'kardano',
+       // Arabic expanded
+       'كاردانو','كاردان','ايه دي ايه','كردانو','كاردنو'], 'cardano', 'ADA', 'Cardano')
   add(['dogecoin','doge','the dog','elon coin','dog coin','doggie coin','doggie',
+       // Hindi/Urdu
+       'doj','dojekoin','dog koyn',
+       // French
+       'dogekoin','doge coin',
+       // Spanish
+       'dogecóin','dogecoyn',
+       // Turkish
+       'dojekoin',
+       // Arabic expanded
+       'دوج كوين','دوجكوين','الدوج',
        'dough','dough coin','dosh','dohj',
        'دوج','دوجكوين','دوجي','دوغ','دوغكوين','دوجى','دوغه'], 'dogecoin', 'DOGE', 'Dogecoin')
   add(['shiba','shib','shiba inu','sheba','sheeba','sheeba inu','she bah',
@@ -285,8 +473,36 @@ const COIN_MAP = (() => {
   }
 
   // ── Metals ─────────────────────────────────────────────────────────────────
-  add(['gold','xau','ذهب','دهب','جولد'], GOLD_ID, 'XAU', 'Gold (1 oz)', 'gold')
-  add(['silver','xag','فضه','فضة','سيلفر'], SILVER_ID, 'XAG', 'Silver (1 oz)', 'silver')
+  add(['gold','xau','ذهب','دهب','جولد',
+       // Hindi/Urdu
+       'sona','sone','sona','sunehra',
+       // French
+       'or','l or','d or',
+       // Spanish
+       'oro','de oro','el oro',
+       // Turkish
+       'altın','altin','altın','altın','altın',
+       // German
+       'gold','das gold',
+       // Japanese/Korean romanised
+       'kin','geum',
+       // Hindi Devanagari
+       'सोना','सोने'], GOLD_ID, 'XAU', 'Gold (1 oz)', 'gold')
+  add(['silver','xag','فضه','فضة','سيلفر',
+       // Hindi/Urdu
+       'chandi','chandee','chandi',
+       // French
+       'argent','d argent',
+       // Spanish
+       'plata','de plata',
+       // Turkish
+       'gümüş','gumus','gümüs',
+       // German
+       'silber','das silber',
+       // Japanese/Korean romanised
+       'gin','eun',
+       // Hindi Devanagari
+       'चांदी','चांदी'], SILVER_ID, 'XAG', 'Silver (1 oz)', 'silver')
   add(['copper','xcu','نحاس','كوبر'], COPPER_ID, 'XCU', 'Copper (1 lb)', 'copper')
   add(['platinum','xpt','بلاتين','بلاتينيوم','بلاتين كوين'], PLATINUM_ID, 'XPT', 'Platinum (1 oz)', 'platinum')
   add(['palladium','xpd','بلاديوم'], 'metal:xpd', 'XPD', 'Palladium (1 oz)', 'other')
@@ -376,7 +592,45 @@ const BUY_WORDS = [
   'hatet','7atet','7attet','daakhal','dakhalt',
   'bashtri','hashtri','hashteri',
   'hodol','hawdal','hodled','bagged it',
-  'hodl','hodla'
+  'hodl','hodla',
+  // ── Hindi / Urdu (romanised STT output) ──
+  'kharid','kharida','kharidi','khareeda','khareed','khareedna',
+  'liya','liye','li','leli','lelia','leliya','le raha','le rahi','le raha hoon','le rahi hoon',
+  'lena','loonga','loongi','lunga','lungi','leunga','leungi',
+  'khareed lo','kharid lo','le lo','utha','utha lo','pakad','pakad lo',
+  'stock','stocks','stock kiya','stocks kiya',
+  // Hindi/Urdu Devanagari
+  'खरीद','खरीदा','खरीदी','लिया','लिए','ले रहा','ले रही','लेना','लूँगा','लूँगी',
+  // ── French ──
+  'acheter','achete','achetez','achete','achete','achetes',
+  'j ai achete','j ai','achete moi','prendre','pris','prenne',
+  'j en prends','j en veux','on achete','on prend','je prends',
+  'acquerir','acquis','acquérir','empocher','empoche',
+  // ── Turkish ──
+  'al','aldi','alacak','alayim','alirim','alsin','alcam','alacagim',
+  'satın al','satinal','almak','aldim','alacaktim',
+  'biraktim','koydum','yatirim','yatirim yaptim',
+  // ── Spanish ──
+  'comprar','compre','compro','compredo','comprado',
+  'compro','compramos','compraré','voy a comprar',
+  'adquirir','adquiere','meter','meti','meto','entro','entra','entramos',
+  'me meto','me meti','compro un','compro una',
+  // ── Portuguese ──
+  'comprar','comprei','compro','compramos','comprando','comprarei',
+  'adquirir','adquiri','adquire',
+  // ── German ──
+  'kaufen','kaufe','kauf','gekauft','kaufte','anschaffen','anschaffte',
+  'einsteigen','steige ein','bin eingestiegen','nehme','nehme auf',
+  // ── Japanese (romanised) ──
+  'kau','kaimashita','kaita','kaimasu','kaeru','kaet',
+  // ── Korean (romanised) ──
+  'sas','sa','sasoyo','sasseoyo','sata','sago','sajyo',
+  // ── Swahili ──
+  'nunua','nimenunua','tununua','nunua',
+  // ── Tagalog ──
+  'bumili','binili','bibili','bumili ako','bibili ako',
+  // ── Thai (romanised) ──
+  'suea','sue','cherng','kae',
 ]
 
 const SELL_WORDS = [
@@ -433,7 +687,51 @@ const SELL_WORDS = [
   // ── Chat-slang (latinised) ──
   'be3t','baat','beit','beitha','baeat','baea',
   'safet','saffet','sa7abt','sahabt','7arajt','kharajt',
-  'tp\'ed','tped','dumped it','rugged it','sold it','flipped it'
+  'tp\'ed','tped','dumped it','rugged it','sold it','flipped it',
+  // ── Hindi / Urdu (romanised STT output) ──
+  'bech','becha','bechi','becha','bechna','bekhna',
+  'bikri','bikray','bikr','bikta','bikti',
+  'bech diya','bech de','becho','bech lo','bech dunga','bechungi',
+  'farokht','farokht kiya','farokht karo',
+  'deva','de diya','de de','de do','bech ke','bech kar',
+  // Devanagari
+  'बेच','बेचा','बेची','बेचना','बिक्री','बिकता','बिकती',
+  // ── French ──
+  'vendre','vends','vendez','vendu','a vendu','a vendre',
+  'je vends','on vend','on vends','je donne','donner','donne',
+  'revendre','revendu','céder','cédé','liquidé','liquidation',
+  'se débarrasser','débarrassé',
+  // ── Turkish ──
+  'satis','saticak','sattim','satacak','satayim','satsin','satacam',
+  'satti','sattin','satmak','sattim','satacaktim',
+  'elden cikar','cikar','cikardi','elde tutma','tutma',
+  // ── Spanish ──
+  'vender','vendi','vendo','vendido','vendiendo',
+  'vendes','vende','vendemos','voy a vender','quiero vender',
+  'salir','salgo','sale','vender todo','vender un','vender una',
+  'liquidar','liquidez','deshacerme','me deshago',
+  // ── Portuguese ──
+  'vender','vendi','vendo','vendido','vendendo',
+  'vendes','vende','vendemos','venderia',
+  'sair','saio','saiu','liquidar','liquidado',
+  // ── German ──
+  'verkaufen','verkaufe','verkauft','verkaufte','verkauf',
+  'abstoßen','veräussern','flüssig machen','aussteigen',
+  // ── Japanese (romanised) ──
+  'uru','urimashita','utta','urimasu','uruhodo',
+  // ── Korean (romanised) ──
+  'pal','palo','passoyo','passasseoyo','patta','panda',
+  // ── Swahili ──
+  'uuza','nimenunua','nimenunua','uzo',
+  // ── Tagalog ──
+  'magbenta','ibinenta','ibebenta','magbenta ako',
+  // ── Thai (romanised) ──
+  'khai','khai tua','khai ok',
+  // ── Italian ──
+  'vendere','vendo','vendi','vende','venduto','ho venduto','vendiamo',
+  'liquidare','svuotare','svuoto',
+  // ── Russian (romanised) ──
+  'prodat','prodayu','prodast','prodal','proday','prodat\''
 ]
 
 // ── Word numbers — both languages, fractions included.
@@ -488,6 +786,107 @@ const EN_NUMBERS = {
   'gwei':0.000000001,
 }
 
+// ── Hindi / Urdu word numbers (romanised STT output) ───────────────────────
+const HI_NUMBERS = {
+  'ek':1,'do':2,'teen':3,'char':3,'chaar':4,'paanch':5,'paanchve':5,
+  'che':6,'chhe':6,'saat':7,'aath':8,'nau':9,'das':10,'gyaarah':11,'baraah':12,
+  'terah':13,'chodah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,'unnis':19,
+  'bees':20,'teees':30,'chalees':40,'pachas':50,'saath':60,
+  'sattar':70,'assii':80,'anwee':90,'sau':100,'ek sau':100,
+  'hazaar':1000,'hajar':1000,'hazar':1000,
+  'lakh':100000,'laakh':100000,
+  'crore':10000000,'karod':10000000,
+  'arab':1000000000,'arab':1000000000,
+  'pauna':0.75,'aadha':0.5,'aadh':0.5,'derh':1.5,'dedh':1.5,
+  'sawa':1.25,'paune':0.75,'dhai':2.5,'saade':0.5,
+  // Devanagari digits
+  'एक':1,'दो':2,'तीन':3,'चार':4,'पांच':5,'छह':6,'सात':7,'आठ':8,'नौ':9,'दस':10,
+  'बीस':20,'तीस':30,'चालीस':40,'पचास':50,'साठ':60,'सत्तर':70,'अस्सी':80,'नब्बे':90,
+  'सौ':100,'हज़ार':1000,'लाख':100000,'करोड़':10000000,
+}
+
+// ── French word numbers ────────────────────────────────────────────────────
+const FR_NUMBERS = {
+  'un':1,'une':1,'deux':2,'trois':3,'quatre':4,'cinq':5,
+  'six':6,'sept':7,'huit':8,'neuf':9,'dix':10,
+  'onze':11,'douze':12,'treize':13,'quatorze':14,'quinze':15,
+  'seize':16,'dix-sept':17,'dix-huit':18,'dix-neuf':19,
+  'vingt':20,'trente':30,'quarante':40,'cinquante':50,
+  'soixante':60,'soixante-dix':70,'quatre-vingts':80,'quatre-vingt-dix':90,
+  'cent':100,'deux cents':200,'trois cents':300,
+  'mille':1000,'million':1000000,'milliard':1000000000,
+  'demi':0.5,'moitié':0.5,'quart':0.25,'tiers':0.333,
+  'demy':0.5,'demi':0.5,
+}
+
+// ── Spanish word numbers ───────────────────────────────────────────────────
+const ES_NUMBERS = {
+  'uno':1,'un':1,'una':1,'dos':2,'tres':3,'cuatro':4,'cinco':5,
+  'seis':6,'siete':7,'ocho':8,'nueve':9,'diez':10,
+  'once':11,'doce':12,'trece':13,'catorce':14,'quince':15,
+  'dieciséis':16,'diecisiete':17,'dieciocho':18,'diecinueve':19,
+  'veinte':20,'treinta':30,'cuarenta':40,'cincuenta':50,
+  'sesenta':60,'setenta':70,'ochenta':80,'noventa':90,
+  'cien':100,'doscientos':200,'trescientos':300,
+  'mil':1000,'millón':1000000,'millon':1000000,'billón':1000000000,
+  'medio':0.5,'media':0.5,'cuarto':0.25,'tercio':0.333,
+}
+
+// ── Turkish word numbers ───────────────────────────────────────────────────
+const TR_NUMBERS = {
+  'bir':1,'iki':2,'üç':3,'uc':3,'dört':4,'dort':4,'beş':5,'bes':5,
+  'altı':6,'alti':6,'yedi':7,'sekiz':8,'dokuz':9,'on':10,
+  'on bir':11,'on iki':12,'on üç':13,'on dört':14,'on beş':15,
+  'yirmi':20,'otuz':30,'kırk':40,'kirk':40,'elli':50,
+  'altmış':60,'altmis':60,'yetmiş':70,'yetmis':70,
+  'seksen':80,'doksan':90,
+  'yüz':100,'bin':1000,'milyon':1000000,'milyar':1000000000,
+  'yarım':0.5,'yarim':0.5,'çeyrek':0.25,'ceyrek':0.25,
+  'buçuk':0.5,'bucuk':0.5,
+}
+
+// ── German word numbers ────────────────────────────────────────────────────
+const DE_NUMBERS = {
+  'eins':1,'ein':1,'zwei':2,'drei':3,'vier':4,'fünf':5,'fuenf':5,
+  'sechs':6,'sieben':7,'acht':8,'neun':9,'zehn':10,
+  'elf':11,'zwölf':12,'zwolf':12,'dreizehn':13,'vierzehn':14,'fünfzehn':15,
+  'zwanzig':20,'dreißig':30,'dreissig':30,'vierzig':40,'fünfzig':50,
+  'hundert':100,'tausend':1000,'million':1000000,'milliarde':1000000000,
+  'halbes':0.5,'halb':0.5,'viertel':0.25,'drittel':0.333,
+}
+
+// ── Portuguese word numbers ────────────────────────────────────────────────
+const PT_NUMBERS = {
+  'um':1,'uma':1,'dois':2,'duas':2,'três':3,'tres':3,'quatro':4,'cinco':5,
+  'seis':6,'sete':7,'oito':8,'nove':9,'dez':10,
+  'onze':11,'doze':12,'treze':13,'catorze':14,'quinze':15,
+  'vinte':20,'trinta':30,'quarenta':40,'cinquenta':50,
+  'sessenta':60,'setenta':70,'oitenta':80,'noventa':90,
+  'cem':100,'mil':1000,'milhão':1000000,'milhao':1000000,'bilhão':1000000000,
+  'meio':0.5,'meia':0.5,'quarto':0.25,'terço':0.333,
+}
+
+// ── Japanese word numbers (romanised) ──────────────────────────────────────
+const JA_NUMBERS = {
+  'ichi':1,'ni':2,'san':3,'shi':4,'yon':4,'go':5,
+  'roku':6,'shichi':7,'nana':7,'hachi':8,'ku':9,'kyuu':9,'juu':10,
+  'hyaku':100,'sen':1000,'man':10000,'ichi man':10000,
+}
+
+// ── Korean word numbers (romanised) ────────────────────────────────────────
+const KO_NUMBERS = {
+  'hana':1,'dul':2,'set':3,'net':4,'daseot':5,
+  'yeoseot':6,'ilgop':7,'yeodeol':8,'ahop':9,'yeol':10,
+  'hana':1,'do':2,'se':3,'ne':4,'daseot':5,
+  'il':1,'i':2,'sam':3,'sa':4,'o':5,' yuk':6,'chil':7,'pal':8,'gu':9,'sip':10,
+  'baek':100,'cheon':1000,'man':10000,
+}
+
+// Combined word-number map for the parseNumber() function
+const EXTRA_NUMBERS = Object.assign({}, HI_NUMBERS, FR_NUMBERS, ES_NUMBERS,
+  TR_NUMBERS, DE_NUMBERS, PT_NUMBERS, JA_NUMBERS, KO_NUMBERS)
+
+
 function parseNumber(str) {
   if (!str) return null
   const trimmed = str.trim()
@@ -507,10 +906,12 @@ function parseNumber(str) {
     else if (['ميه','مية','مائه','مائة'].includes(unit)) n *= 100
     return n
   }
-  // Word numbers (single token) — try both raw and phonetically-normalized form
+  // Word numbers (single token) — try multiple language maps
   const norm = fullNormalize(trimmed)
   if (AR_NUMBERS[norm] != null) return AR_NUMBERS[norm]
   if (EN_NUMBERS[trimmed.toLowerCase()] != null) return EN_NUMBERS[trimmed.toLowerCase()]
+  // Hindi/Urdu/French/Spanish/Turkish/German/Portuguese/Japanese/Korean numbers
+  if (EXTRA_NUMBERS[trimmed.toLowerCase()] != null) return EXTRA_NUMBERS[trimmed.toLowerCase()]
   return null
 }
 
@@ -1017,9 +1418,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // ar-SA covers Gulf/MSA, ar-EG covers Egyptian, en-US handles English +
     // phonetic mis-hearings of Arabic words by English STT engines.
     // On iOS only one mic recognizer is allowed — use the selected language.
+    // Run multiple language recognizers in parallel for maximum accent coverage.
+    // ar-SA = Gulf/MSA, ar-EG = Egyptian, en-US = English + phonetic Arabic,
+    // hi-IN = Hindi/Urdu, fr-FR = French, es-ES = Spanish, tr-TR = Turkish.
+    // On iOS only one mic recognizer is allowed — use the selected language.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : ['ar-SA', 'ar-EG', 'en-US']
+      : ['ar-SA', 'ar-EG', 'en-US', 'hi-IN', 'fr-FR', 'es-ES', 'tr-TR']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
@@ -1138,8 +1543,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // Detect whether a transcript is predominantly Arabic or English so the
   // AI prompt uses the right language hint regardless of the UI toggle.
   const detectHintLang = (text) => {
-    const arabicChars = (text.match(/[؀-ۿ]/g) || []).length
-    return arabicChars > text.length * 0.15 ? 'ar' : 'en'
+    const accent = detectAccent(text)
+    // Map accent detection to Claude hint languages
+    if (accent === 'ar') return 'ar'
+    if (accent === 'hi') return 'hi'
+    if (accent === 'fr') return 'fr'
+    if (accent === 'tr') return 'tr'
+    if (accent === 'es') return 'es'
+    return 'en'
   }
 
   // Ask Claude to interpret a transcript the local regex parser couldn't fully

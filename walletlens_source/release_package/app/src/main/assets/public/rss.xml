@@ -6,7 +6,14 @@
     <atom:link href="https://walletlens.live/rss.xml" rel="self" type="application/rss+xml" />
     <description>Guides on tracking your net worth and managing crypto, stocks, gold and cash — from WalletLens, the free private all-asset portfolio tracker.</description>
     <language>en</language>
-    <lastBuildDate>Sat, 11 Jul 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 15 Jul 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>How to Track Average Cost Basis Across Multiple Buys</title>
+      <link>https://walletlens.live/blog/how-to-track-average-cost-basis-across-multiple-buys/</link>
+      <guid isPermaLink="true">https://walletlens.live/blog/how-to-track-average-cost-basis-across-multiple-buys/</guid>
+      <pubDate>Wed, 01 Jul 2026 00:00:00 GMT</pubDate>
+      <description>Learn how average cost basis works when you buy an asset multiple times, why it matters for P&amp;L, and how to track it automatically for free.</description>
+    </item>
     <item>
       <title>How to Track Real Estate Alongside Crypto and Stocks</title>
       <link>https://walletlens.live/blog/track-real-estate-alongside-crypto-and-stocks/</link>

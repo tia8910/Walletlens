@@ -51,7 +51,7 @@ function buildPrompt(transcript, hintLang, alternatives = []) {
 
 The user spoke into their microphone and the speech-to-text engine produced this. The engine may have mis-heard words, mixed languages, or transcribed Arabic speech phonetically as English (e.g. "اشتري واحد بيتكوين" might become "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English crypto-trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd", "rugged".
 
-Transcript hint language: ${hintLang}
+Transcript hint language: ${hintLang} (this is the AUTO-DETECTED language — the user may mix languages in one sentence). For Hindi/Urdu transcripts, treat romanised words like "kharid", "liya", "bech", "ek", "do" as Hindi/Urdu. For French treat "acheter", "vendre", "un", "deux" as French. For Spanish treat "comprar", "vender", "uno", "dos" as Spanish. For Turkish treat "al", "satis", "bir", "iki" as Turkish. Use the SAME rules for buy/sell detection as Arabic and English.
 ${altBlock}
 Extract EVERY trade the user described. Return STRICT JSON ONLY — no markdown fences, no commentary outside the JSON. Use this shape:
 
@@ -74,8 +74,16 @@ Rules:
 - If the transcript is too garbled to extract ANY trade, return { "trades": [] }.
 - Recognise Arabic phonetics English STT mis-rendered (e.g. "selena" = Solana, "street ultra"/"ash tara"/"ish tari" = اشتري = buy, "baat"/"bat"/"bait" = بعت = sold).
 - Arabic dialect intent verbs: اشتري/اشتريت/شريت/جبت/أخذت/خذيت/حطيت/كومت/جمعت/كسبت/استثمرت/دخلت/نزلت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت/طلعت/فشيت = SELL.
+- Hindi/Urdu (romanised) intent: kharid/kharida/khareeda/liya/lo/lena = BUY; bech/becha/bikri/farokht = SELL. Devanagari: खरीद/लिया = BUY; बेच/बिक्री = SELL.
+- French intent: acheter/achete/pris/prends = BUY; vendre/vends/vendu = SELL.
+- Spanish intent: comprar/compre/compro = BUY; vender/vendi/vendo = SELL.
+- Turkish intent: al/aldi/satin al = BUY; satis/saticak/satti = SELL.
 - Arabic spelled numbers: واحد=1, اثنين/اتنين=2, ثلاثة/تلاتة=3, اربعة=4, خمسة=5, عشرة=10.
 - Amount slang: "5K"/"5 grand"/"5 racks"/"5 stack" = 5000; "2 mil" = 2,000,000; "half" = 0.5; "quarter" = 0.25. Arabic: الف/ألف=1000, مليون=1,000,000, نص/نصف=0.5, ربع=0.25.
+- Hindi/Urdu numbers: ek=1, do=2, teen=3, paanch=5, das=10, bees=20, sau=100, hazaar=1000, lakh=100000, crore=10M, aadha=0.5.
+- French numbers: un/une=1, deux=2, trois=3, cent=100, mille=1000, million=1M.
+- Spanish numbers: uno/un=1, dos=2, tres=3, cien=100, mil=1000, millón=1M.
+- Turkish numbers: bir=1, iki=2, üç=3, yüz=100, bin=1000, milyon=1M
 - Common STT mis-hearings of coins: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
 - Stocks: Apple = AAPL, Tesla = TSLA, Microsoft = MSFT, NVIDIA = NVDA, Google = GOOGL, Amazon = AMZN, Meta = META, Palantir = PLTR, Coinbase = COIN, Robinhood = HOOD.
 - Metals: gold = XAU, silver = XAG, platinum = XPT, copper = HG.

@@ -74,6 +74,7 @@ These two capabilities are WalletLens's strongest differentiators — no mainstr
 
 ## Blog articles
 
+- [How to Track Average Cost Basis Across Multiple Buys](https://walletlens.live/blog/how-to-track-average-cost-basis-across-multiple-buys/): Learn how average cost basis works when you buy an asset multiple times, why it matters for P&L, and how to track it automatically for free.
 - [How to Track Real Estate Alongside Crypto and Stocks](https://walletlens.live/blog/track-real-estate-alongside-crypto-and-stocks/): Learn how to include property in your net-worth picture and track real estate alongside crypto and stocks in one unified portfolio view.
 - [How to Stress-Test Your Investment Portfolio Before a Crash](https://walletlens.live/blog/how-to-stress-test-your-investment-portfolio/): Learn how to stress-test your portfolio against market crashes before they happen, so you can protect gains and sleep at night.
 - [How to Import Your Crypto Portfolio by Voice — No Typing Required](https://walletlens.live/blog/how-to-import-crypto-portfolio-by-voice/): WalletLens lets you log trades just by speaking. This guide shows you how voice import works, what phrases it understands, and why it is the fastest way to keep a portfolio up to date.
