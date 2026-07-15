@@ -3321,7 +3321,7 @@ tr:last-child td { border-bottom: none; }
 /* ─── Magic Indicator / Technical Analysis page ─── */
 .magic-hero { padding: 0.5rem 0 0.75rem; }
 .magic-hero-title { margin: 0 0 0.25rem; font-size: 1.45rem; font-weight: 800; }
-.magic-hero-sub { margin: 0; font-size: 0.85rem; color: var(--text2); line-height: 1.55; }
+.magic-hero-sub { margin: 0; font-size: 0.85rem; color: var(--text2); line-height: 1.55; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 
 /* Diverging score gauge — premium wide track */
 .magic-track {
