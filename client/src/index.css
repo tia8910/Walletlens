@@ -3443,36 +3443,43 @@ tr:last-child td { border-bottom: none; }
 
 /* ── Magic Indicator — mobile-friendly ── */
 @media (max-width: 480px) {
-  .magic-grid { grid-template-columns: 1fr; gap: 0.8rem; }
-  .magic-card { padding: 0.9rem 0.9rem; border-radius: 14px; }
-  .magic-hero-title { font-size: 1.1rem; }
-  .magic-hero-sub { font-size: 0.78rem; }
-  /* Keep gauge readable on small screens */
+  .magic-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .magic-card { padding: 0.8rem 0.85rem; border-radius: 14px; overflow: hidden; }
+  .magic-hero-title { font-size: 1.05rem; word-break: break-word; }
+  .magic-hero-sub { font-size: 0.76rem; line-height: 1.45; }
+  /* Gauge — compact */
   .magic-track { height: 10px; }
-  .magic-track-mid { height: 18px; top: -4px; }
-  .magic-marker { width: 18px; height: 18px; }
-  /* Pillar bars more compact */
-  .pillar-row { grid-template-columns: 65px 1fr 38px; gap: 0.35rem; padding: 0.2rem 0; }
-  .pillar-name { font-size: 0.65rem; }
-  .pillar-track { height: 10px; }
-  .pillar-val { font-size: 0.7rem; }
-  /* TA strip tags smaller */
-  .magic-ta-strip span { font-size: 0.64rem; padding: 0.12rem 0.4rem; }
-  /* Category filter tabs scrollable with smaller pills */
-  [class*="dvx-page"] .glass-card { padding: 0.85rem !important; }
-  /* Card foot better spacing */
-  .magic-card-foot { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .magic-track-mid { height: 16px; top: -3px; }
+  .magic-marker { width: 16px; height: 16px; }
+  /* Pillar bars — compact */
+  .pillar-list { gap: 0.35rem; }
+  .pillar-row { grid-template-columns: 60px 1fr 36px; gap: 0.3rem; padding: 0.15rem 0; }
+  .pillar-name { font-size: 0.62rem; letter-spacing: 0.02em; }
+  .pillar-track { height: 9px; }
+  .pillar-val { font-size: 0.68rem; }
+  /* TA strip tags */
+  .magic-ta-strip { gap: 0.3rem; margin-top: 0.55rem; }
+  .magic-ta-strip span { font-size: 0.62rem; padding: 0.1rem 0.35rem; }
+  /* Cards */
+  [class*="dvx-page"] .glass-card { padding: 0.8rem !important; }
+  .magic-card-head { gap: 0.5rem; }
+  .magic-card-foot { flex-direction: column; align-items: stretch; gap: 0.45rem; }
   .magic-foot-actions { margin-left: 0; justify-content: flex-end; }
+  /* Prevent any text overflow */
+  .magic-card, .glass-card { overflow-wrap: anywhere; word-break: break-word; }
+  .magic-hero { overflow-wrap: anywhere; word-break: break-word; }
 }
 
 /* Extra-small phones (≤ 360px) — super compact */
 @media (max-width: 360px) {
-  .magic-card { padding: 0.75rem 0.65rem; }
-  .magic-hero-title { font-size: 0.95rem; }
-  .magic-hero-sub { font-size: 0.72rem; }
-  .pillar-row { grid-template-columns: 58px 1fr 34px; gap: 0.3rem; }
-  .pillar-name { font-size: 0.6rem; }
-  .pillar-val { font-size: 0.65rem; }
+  .magic-card { padding: 0.65rem 0.6rem; }
+  .magic-hero-title { font-size: 0.92rem; }
+  .magic-hero-sub { font-size: 0.7rem; }
+  .pillar-row { grid-template-columns: 54px 1fr 32px; gap: 0.25rem; }
+  .pillar-name { font-size: 0.58rem; }
+  .pillar-track { height: 8px; }
+  .pillar-val { font-size: 0.62rem; }
+  .magic-ta-strip span { font-size: 0.58rem; padding: 0.08rem 0.3rem; }
 }
 
 /* ─── Sell Quantity Picker ─── */

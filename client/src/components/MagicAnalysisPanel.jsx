@@ -512,14 +512,14 @@ function MagicGauge({ score, direction, confidence, big }) {
         <div className="magic-track-mid" />
         <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 16px ${direction.color}, 0 0 32px ${direction.color}35` }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.3rem' }}>
-        <span>Distribute</span>
-        <span>Neutral</span>
-        <span>Accumulate</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--text2)', marginTop: '0.3rem', gap: '0.2rem' }}>
+        <span style={{ flex: '0 0 auto' }}>Sell</span>
+        <span style={{ flex: 1, textAlign: 'center' }}>Neutral</span>
+        <span style={{ flex: '0 0 auto' }}>Buy</span>
       </div>
       {confidence != null && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text2)', marginTop: '0.5rem' }}>
-          <span>Confidence</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text2)', marginTop: '0.5rem' }}>
+          <span style={{ flexShrink: 0 }}>Conf</span>
           <div style={{ flex: 1, height: '5px', borderRadius: '3px', background: 'var(--bg3)', overflow: 'hidden', maxWidth: '140px' }}>
             <div style={{ width: `${confidence}%`, height: '100%', borderRadius: '3px', background: `linear-gradient(90deg, ${direction.color}70, ${direction.color})`, transition: 'width 0.5s ease' }} />
           </div>
@@ -642,16 +642,16 @@ function AssetCard({ item, onOpen }) {
   return (
     <div className="glass-card magic-card">
       <div className="magic-card-head" onClick={onOpen} style={{ cursor: 'pointer' }}>
-        <CoinLogo image={item.coin_image} symbol={item.coin_symbol} coinId={item.coin_id} size={40} className="coin-logo" />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{item.coin_symbol?.toUpperCase()}</span>
-            <span className="muted" style={{ fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.coin_name}</span>
+        <CoinLogo image={item.coin_image} symbol={item.coin_symbol} coinId={item.coin_id} size={36} className="coin-logo" />
+        <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.9rem', flexShrink: 0 }}>{item.coin_symbol?.toUpperCase()}</span>
+            <span className="muted" style={{ fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.coin_name}</span>
           </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text2)', marginTop: '0.1rem' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.1rem', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.15rem 0.4rem' }}>
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>{money(item.price)}</span>
-            {chg != null && <span style={{ marginLeft: '0.5rem', color: chg >= 0 ? 'var(--g-ink)' : '#ef4444', fontWeight: 600 }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
-            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}> · {item.weight.toFixed(1)}%</span>
+            {chg != null && <span style={{ color: chg >= 0 ? 'var(--g-ink)' : '#ef4444', fontWeight: 600 }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
+            <span style={{ opacity: 0.6 }}> · {item.weight.toFixed(1)}%</span>
           </div>
         </div>
       </div>
