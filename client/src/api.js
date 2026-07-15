@@ -2000,17 +2000,19 @@ export const api = {
         try {
           let closes = [];
           if (src === 'stooq') {
-            // Try Yahoo OHLCV first (gives highs/lows/volumes for advanced indicators).
-            // Falls back to Stooq CSV (closes only) if Yahoo fails.
             const stooqSym = stooqSymbolFor(id)
+            // Try Yahoo OHLCV first (gives highs/lows/volumes for advanced indicators).
             const yahooData = await fetchYahooOHLCV(stooqSym, days)
             if (yahooData.length > 20) {
               closes = yahooData.map(r => r.close)
-              // Store full OHLCV on the out object for advanced indicators
-              out[id + ':ohlcv'] = yahooData
+              out[id + ':ohlcv'] = yahooData // stored for analyzeTechnicals
             } else {
+              // Fallback to Stooq CSV (closes only)
               const hist = await fetchStooqHistory(stooqSym, days)
               closes = hist.map(r => r.price).filter(p => isFinite(p) && p > 0)
+              // Try Yahoo again with longer range for OHLCV
+              const yahooLonger = await fetchYahooOHLCV(stooqSym, 365)
+              if (yahooLonger.length > 20) out[id + ':ohlcv'] = yahooLonger
             }
           } else {
             const data = await fetchJSON(
@@ -2023,6 +2025,21 @@ export const api = {
             closes = Object.entries(daily)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([, p]) => p);
+
+            // Also fetch OHLCV data for advanced indicators (ADX, CCI, Ichimoku etc.)
+            try {
+              const ohlcvData = await fetchJSON(
+                `${COINGECKO_BASE}/coins/${id}/ohlc?vs_currency=usd&days=${Math.min(days, 90)}`
+              );
+              if (Array.isArray(ohlcvData) && ohlcvData.length > 10) {
+                const ohlcv = ohlcvData.map(r => ({
+                  date: new Date(r[0]).toISOString().slice(0, 10),
+                  open: r[1], high: r[2], low: r[3], close: r[4],
+                  volume: 0, // CoinGecko OHLC doesn't include volume
+                }));
+                out[id + ':ohlcv'] = ohlcv;
+              }
+            } catch {}
           }
           if (closes.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
           // Pass OHLCV data for advanced indicators when available

@@ -329,8 +329,6 @@ export function pillarSentiment(signals, fundamental) {
   // BTC dominance — rising dominance = altcoins underperforming
   if (signals && typeof signals.btcDominance === 'number' && typeof signals.dominanceChange === 'number') {
     const dc = signals.dominanceChange
-    // For altcoins: rising BTC dominance = bearish for alts
-    // For BTC: rising dominance = bullish for BTC
     const isBTC = fundamental?.symbol?.toLowerCase() === 'btc'
     if (isBTC) score += clamp(dc * 8, -20, 20)
     else score += clamp(-dc * 8, -20, 20)
@@ -353,11 +351,38 @@ export function pillarSentiment(signals, fundamental) {
     notes.push(`breadth ${Math.round(mb)}%`)
   }
 
+  // Fallback for non-crypto: derive sentiment from price momentum + volume
+  if (count === 0 && fundamental) {
+    // Strong recent gains = greedy sentiment (contrarian sell signal)
+    if (typeof fundamental.change24h === 'number') {
+      const s = clamp(-fundamental.change24h * 2, -30, 30) // contrarian
+      score += s; count++
+      notes.push(`24h ${fundamental.change24h >= 0 ? '+' : ''}${Math.round(fundamental.change24h)}%`)
+    }
+    if (typeof fundamental.change30d === 'number') {
+      const s = clamp(-fundamental.change30d * 0.8, -25, 25) // contrarian
+      score += s; count++
+      notes.push(`30d ${fundamental.change30d >= 0 ? '+' : ''}${Math.round(fundamental.change30d)}%`)
+    }
+    // High volume turnover = high attention = sentiment-driven
+    if (fundamental.marketCap > 0 && fundamental.totalVolume > 0) {
+      const turnover = fundamental.totalVolume / fundamental.marketCap
+      if (turnover > 0.1) { score -= 15; notes.push('high attention') }
+      else if (turnover < 0.01) { score += 10; notes.push('low attention') }
+    }
+    // ATH distance as fear proxy — deep drawdown = fear
+    if (typeof fundamental.athChangePct === 'number') {
+      const ath = fundamental.athChangePct
+      if (ath < -50) { score += 20; notes.push(`${Math.round(ath)}% from ATH`) }
+      else if (ath > -5) { score -= 15; notes.push('near ATH') }
+    }
+  }
+
   if (count === 0) return { available: false }
   return {
     available: true,
     quality: count >= 2 ? 'live' : 'proxy',
-    score: cr(clamp(score / count)),
+    score: cr(clamp(score / Math.max(count, 1))),
     note: notes.join(' · ') || 'market sentiment',
   }
 }
@@ -375,9 +400,8 @@ export function pillarCycle(fundamental) {
 
   // Bitcoin halving cycle position (approx every 4 years)
   // Last halving: April 2024. Next: ~2028.
-  // Historically: 12-18 months after halving = bull market peak
   if (fundamental.halvingCyclePosition != null) {
-    const pos = fundamental.halvingCyclePosition // 0..1 through the cycle
+    const pos = fundamental.halvingCyclePosition
     if (pos < 0.15) { score += 30; notes.push('early cycle accumulation') }
     else if (pos < 0.4) { score += 20; notes.push('markup phase') }
     else if (pos < 0.6) { score += 5; notes.push('mid-cycle') }
@@ -385,18 +409,32 @@ export function pillarCycle(fundamental) {
     else { score -= 30; notes.push('distribution phase') }
   }
 
-  // Distance from all-time high as a cycle proxy
-  if (typeof fundamental.athChange === 'number') {
-    const ath = fundamental.athChange
+  // Distance from all-time high as a cycle proxy (works for ALL assets)
+  if (typeof fundamental.athChangePct === 'number') {
+    const ath = fundamental.athChangePct
     if (ath > -10) { score -= 20; notes.push('near ATH — late cycle') }
     else if (ath < -75) { score += 25; notes.push('deep drawdown — early cycle') }
     else if (ath < -50) { score += 15; notes.push('mid-recovery') }
+    else if (ath < -25) { score += 5; notes.push('post-ATH pullback') }
   }
 
-  // Market cap rank changes as a cycle proxy
+  // Multi-timeframe momentum as cycle proxy (works for ALL assets)
+  if (typeof fundamental.change30d === 'number' && typeof fundamental.change24h === 'number') {
+    const m30 = fundamental.change30d
+    const m24 = fundamental.change24h
+    // Strong 30d rally + slowing 24h = potential cycle top
+    if (m30 > 40 && m24 < 0) { score -= 15; notes.push('rally stalling') }
+    // Weak 30d + strong 24h bounce = potential cycle bottom
+    else if (m30 < -30 && m24 > 5) { score += 15; notes.push('bounce from bottom') }
+    // Steady uptrend
+    else if (m30 > 10 && m24 > 0) { score += 8; notes.push('uptrend momentum') }
+    // Steady downtrend
+    else if (m30 < -10 && m24 < 0) { score -= 8; notes.push('downtrend momentum') }
+  }
+
+  // Market cap rank as cycle proxy (crypto-specific, but rank changes matter for stocks too)
   if (fundamental.marketCapRank && fundamental.marketCapRank <= 10) {
-    // Blue chips tend to lead in late cycles
-    if (typeof fundamental.athChange === 'number' && fundamental.athChange > -30) {
+    if (typeof fundamental.athChangePct === 'number' && fundamental.athChangePct > -30) {
       score -= 5
     }
   }
@@ -414,58 +452,80 @@ export function pillarCycle(fundamental) {
 // Measures how correlated the asset is with BTC, SPY, gold, and DXY.
 // High BTC correlation = BTC regime matters more. Negative SPY correlation = hedge.
 export function pillarCorrelation(signals, fundamental) {
-  if (!signals) return { available: false }
+  if (!signals && !fundamental) return { available: false }
   let score = 0, notes = []
 
-  // BTC correlation (for altcoins)
-  if (typeof signals.btcCorrelation === 'number') {
+  // BTC correlation (for altcoins — from signals if available)
+  if (signals && typeof signals.btcCorrelation === 'number') {
     const corr = signals.btcCorrelation
-    // When BTC is bullish, high correlation = bullish for alts
-    // When BTC is bearish, high correlation = bearish for alts
-    // We use BTC's own momentum to decide
     const btcMomentum = signals.btcMomentum ?? 0
     if (corr > 0.7) {
       score += btcMomentum * corr * 0.5
       notes.push(`BTC corr ${corr.toFixed(2)}`)
     } else if (corr < 0.3) {
-      score += 10 // low correlation = diversification benefit = slightly positive
+      score += 10
       notes.push('low BTC corr — diversifier')
     }
   }
 
-  // SPY (S&P 500) correlation — risk-on/risk-off
-  if (typeof signals.spyCorrelation === 'number') {
+  // SPY correlation
+  if (signals && typeof signals.spyCorrelation === 'number') {
     const corr = signals.spyCorrelation
     if (corr > 0.6) {
-      // High SPY correlation = macro-driven, check SPY trend
       const spyTrend = signals.spyTrend ?? 0
       score += spyTrend * 0.3
       notes.push(`SPY corr ${corr.toFixed(2)}`)
     }
   }
 
-  // Gold correlation — hedge/diversification value
-  if (typeof signals.goldCorrelation === 'number') {
+  // Gold correlation
+  if (signals && typeof signals.goldCorrelation === 'number') {
     const corr = signals.goldCorrelation
-    if (corr < -0.3) {
-      score += 8 // negative gold correlation = good diversifier
-      notes.push('neg. gold corr — hedge')
-    } else if (corr > 0.6) {
-      notes.push('high gold corr')
-    }
+    if (corr < -0.3) { score += 8; notes.push('neg. gold corr — hedge') }
+    else if (corr > 0.6) { notes.push('high gold corr') }
   }
 
-  // DXY (Dollar Index) — inverse correlation is bullish for crypto
-  if (typeof signals.dxyChange === 'number') {
+  // DXY (Dollar Index)
+  if (signals && typeof signals.dxyChange === 'number') {
     const dxy = signals.dxyChange
-    score += clamp(-dxy * 5, -20, 20) // rising dollar = bearish for crypto
+    score += clamp(-dxy * 5, -20, 20)
     notes.push(`DXY ${dxy >= 0 ? '+' : ''}${(dxy * 100).toFixed(1)}%`)
+  }
+
+  // Fallback for non-crypto: use asset category + momentum as proxy
+  if (notes.length === 0 && fundamental) {
+    const id = fundamental.id || ''
+    const isMetal = id.startsWith('metal:') || /xau|xag|xpt|xcu/i.test(id)
+    const isStock = id.startsWith('stock:') || fundamental.stockSymbol
+
+    if (isMetal) {
+      // Metals are inflation hedges — positive in risk-off environments
+      if (typeof fundamental.change30d === 'number' && fundamental.change30d > 10) {
+        score += 15; notes.push('strong metal rally — risk-off')
+      } else if (typeof fundamental.change30d === 'number' && fundamental.change30d < -10) {
+        score -= 10; notes.push('weak metal — risk-on')
+      } else {
+        notes.push('metal — inflation hedge')
+      }
+    } else if (isStock) {
+      // Stocks correlate with macro — use momentum as proxy
+      if (typeof fundamental.change30d === 'number') {
+        score += clamp(fundamental.change30d * 0.5, -20, 20)
+        notes.push(`stock momentum ${fundamental.change30d >= 0 ? '+' : ''}${Math.round(fundamental.change30d)}%`)
+      }
+    } else {
+      // Crypto — use market cap dominance changes as proxy
+      if (typeof fundamental.change30d === 'number') {
+        score += clamp(fundamental.change30d * 0.3, -15, 15)
+        notes.push(`crypto momentum`)
+      }
+    }
   }
 
   if (notes.length === 0) return { available: false }
   return {
     available: true,
-    quality: 'proxy',
+    quality: signals ? 'live' : 'proxy',
     score: cr(clamp(score / Math.max(notes.length, 1) * 1.2)),
     note: notes.slice(0, 2).join(' · ') || 'cross-asset analysis',
   }

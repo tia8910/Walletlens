@@ -333,6 +333,9 @@ export function atrPct(values, period = 14) {
 
 // Consolidated technical posture for a series of daily closes.
 // Returns null if there isn't enough clean data to be meaningful (<20 pts).
+// Alias so the variable in analyzeTechnicals doesn't shadow the export
+const exports_stochRSI = stochRSI
+
 // analyzeTechnicals — computes all indicators from close prices and optionally
 // OHLCV arrays (for advanced indicators like ADX, CCI, Ichimoku, VWAP, SAR).
 export function analyzeTechnicals(closes, currentPrice, ohlcv = null) {
@@ -387,7 +390,7 @@ export function analyzeTechnicals(closes, currentPrice, ohlcv = null) {
     const highs = ohlcv.map(r => r.high).filter(isFinite)
     const lows = ohlcv.map(r => r.low).filter(isFinite)
     const volumes = ohlcv.map(r => r.volume || 0)
-    stochRSI = stochRSI_calc(v, 14, 14, 3, 3)
+    stochRSI = exports_stochRSI(v, 14, 14, 3, 3)
     wr = williamsR(v)
     adxVal = adx(highs, lows, v)
     cciVal = cci(highs, lows, v)
