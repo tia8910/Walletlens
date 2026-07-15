@@ -3467,7 +3467,7 @@ tr:last-child td { border-bottom: none; }
   .magic-foot-actions { margin-left: 0; justify-content: flex-end; }
   /* Prevent any text overflow */
   .magic-card, .glass-card { overflow-wrap: anywhere; word-break: break-word; }
-  .magic-hero { overflow-wrap: anywhere; word-break: break-word; }
+  .magic-hero { overflow: hidden; }
 }
 
 /* Extra-small phones (≤ 360px) — super compact */
@@ -11290,7 +11290,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   .coach-hero-title { font-size: 1.15rem; }
   .coach-score-num { font-size: 1.25rem; }
   .coach-score-pill { padding: 0.35rem 0.6rem; }
-  .dvx-page { overflow-x: hidden; }.dvx-page .magic-hero { word-break: break-word; }
+  .dvx-page { overflow-x: hidden; }.dvx-page .magic-hero { overflow: hidden; }
 }
 [data-wl-light] .coach-score-pill { background: rgba(255,255,255,0.7); }
 
