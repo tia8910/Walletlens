@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>How to Rebalance a Crypto and Stock Portfolio (Step by Step)</title>
+    <meta name="description" content="Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026." />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/blog/how-to-rebalance-crypto-stock-portfolio/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="How to Rebalance a Crypto and Stock Portfolio (Step by Step)" />
+    <meta property="og:description" content="Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026." />
+    <meta property="og:url" content="https://walletlens.live/blog/how-to-rebalance-crypto-stock-portfolio/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="How to Rebalance a Crypto and Stock Portfolio (Step by Step)" />
+    <meta name="twitter:description" content="Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026." />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-JlQXN2dk.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-DK6187wm.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-CWhJl43X.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-BSpClZaa.css">
+   <meta property="article:published_time" content="2026-06-01" />
+  <meta property="article:modified_time" content="2026-06-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"How to Rebalance a Crypto and Stock Portfolio (Step by Step)","description":"Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026.","image":"https://walletlens.live/og-image.png","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/blog/how-to-rebalance-crypto-stock-portfolio/","url":"https://walletlens.live/blog/how-to-rebalance-crypto-stock-portfolio/","speakable":{"@type":"SpeakableSpecification","cssSelector":["h1","article > p:nth-of-type(1)"]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://walletlens.live/blog/"},{"@type":"ListItem","position":3,"name":"How to Rebalance a Crypto and Stock Portfolio (Step by Step)","item":"https://walletlens.live/blog/how-to-rebalance-crypto-stock-portfolio/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>June 2026 · 7 min read</em></p>
+  <h1>How to Rebalance a Crypto and Stock Portfolio (Step by Step)</h1>
+  <p>Learn what portfolio rebalancing means, when to do it, and a practical step-by-step method for crypto, stocks, and other assets in 2026.</p>
+  <p>Most investors spend a lot of energy picking assets and almost no energy maintaining them. You build a thoughtful mix of Bitcoin, equities, gold, and cash — and then the market moves, and six months later your &quot;balanced&quot; portfolio looks nothing like what you intended. That drift is normal. What separates disciplined investors from reactive ones is a rebalancing plan.</p>
+<p>Rebalancing is the process of selling a portion of what has grown and buying more of what has lagged, so your portfolio returns to its target allocation. It sounds simple. In practice, it requires good records, a clear target, and the emotional discipline to trim your winners. This guide walks through exactly how to do it.</p>
+<h2>What Is Portfolio Rebalancing (and Why Does It Matter)?</h2>
+<p>When one asset rises sharply, its weight in your portfolio grows. If Bitcoin doubles while your stocks stay flat, crypto might balloon from 30% of your net worth to 55%. You did not choose 55% — you now have more risk than you planned for, and you probably do not realise it unless you are actively tracking allocations.</p>
+<p>Rebalancing corrects this in two ways:</p>
+<ul><li><strong>Risk control:</strong> It prevents any single asset class from silently dominating your portfolio.</li><li><strong>Systematic discipline:</strong> It forces you to sell high and buy low in a rules-based way, removing emotion from the decision.</li></ul>
+<p>Research from Vanguard and others consistently shows that a simple annual rebalance outperforms a buy-and-hold-and-ignore approach on a risk-adjusted basis over long periods — not because it maximises returns, but because it keeps volatility in check.</p>
+<h2>Step 1 — Know Your Current Allocation</h2>
+<p>Before you can rebalance, you need an honest picture of where you stand right now. This means adding up the current market value of every asset class: crypto, stocks and ETFs, gold and silver, real estate equity, and cash.</p>
+<p>Many investors underestimate how fragmented this is. Crypto lives on exchanges and wallets, stocks sit in a brokerage, gold might be a physical holding or an ETF, and savings are spread across accounts. Pulling all of this into one view manually is tedious — and errors mean your rebalance targets will be wrong.</p>
+<p>A tool like <a href="https://walletlens.live">walletlens.live</a> was built for exactly this. It lets you track crypto (10,000+ assets with live prices), stocks, ETFs, gold, silver, real estate, and cash in a single net-worth dashboard, broken down by category. The allocation donut updates automatically as prices change, so you can see in seconds whether crypto is 30% or 55% of your portfolio. Everything stays in your browser — no account, no login, no data ever sent to a server.</p>
+<h2>Step 2 — Define Your Target Allocation</h2>
+<p>Your target allocation is a personal decision based on your time horizon, income, and tolerance for volatility. There is no universally correct answer, but here are three example frameworks to give you a starting point:</p>
+<table class="blog-table"><thead><tr><th>Profile</th><th>Crypto</th><th>Stocks / ETFs</th><th>Gold / Silver</th><th>Cash</th></tr></thead><tbody><tr><td>Conservative</td><td>10%</td><td>50%</td><td>25%</td><td>15%</td></tr><tr><td>Balanced</td><td>25%</td><td>45%</td><td>20%</td><td>10%</td></tr><tr><td>Aggressive</td><td>50%</td><td>35%</td><td>10%</td><td>5%</td></tr></tbody></table>
+<p>Write your target allocation down. It needs to exist outside your head, or you will second-guess it every time the market moves.</p>
+<p>&gt; <strong>Educational note:</strong> This table is illustrative only. It is not financial advice. Your personal allocation should reflect your own circumstances and, where appropriate, guidance from a qualified adviser.</p>
+<h2>Step 3 — Calculate the Drift</h2>
+<p>Once you have your current allocation and your target, the gap between them is your drift. A common rule of thumb is to rebalance when any single asset class drifts more than <strong>5 percentage points</strong> from its target. Some investors use 10 points for a less active approach.</p>
+<p>For example: your target for crypto is 25%, but live prices have pushed it to 38%. That is 13 points of drift — well past the 5-point threshold. Time to act.</p>
+<p>If you are tracking allocations in WalletLens, the category breakdown view shows your current weights at a glance. You can compare them against your written targets without needing a spreadsheet.</p>
+<h2>Step 4 — Calculate the Trades</h2>
+<p>This is where people often stall. The maths sounds complicated, but it is straightforward.</p>
+<p>1. Note your <strong>total portfolio value</strong> (e.g. $80,000).</p>
+<p>2. Multiply each target percentage by that total to get the <strong>target dollar value</strong> per category.</p>
+<p>3. Subtract your current dollar value in each category to get the <strong>trade size</strong>.</p>
+<p>Example with a $80,000 portfolio:</p>
+<table class="blog-table"><thead><tr><th>Category</th><th>Target %</th><th>Target Value</th><th>Current Value</th><th>Action</th></tr></thead><tbody><tr><td>Crypto</td><td>25%</td><td>$20,000</td><td>$30,400</td><td>Sell $10,400</td></tr><tr><td>Stocks</td><td>45%</td><td>$36,000</td><td>$32,000</td><td>Buy $4,000</td></tr><tr><td>Gold</td><td>20%</td><td>$16,000</td><td>$14,600</td><td>Buy $1,400</td></tr><tr><td>Cash</td><td>10%</td><td>$8,000</td><td>$3,000</td><td>Add $5,000</td></tr></tbody></table>
+<p>In practice, you may not execute every trade at once — especially in crypto, where gas fees and spreads add up. It is perfectly reasonable to prioritise the largest drifts first.</p>
+<h2>Step 5 — Consider Taxes and Costs Before You Trade</h2>
+<p>Rebalancing by selling winners can trigger a taxable event, depending on your jurisdiction and holding period. In many countries, assets held longer than 12 months qualify for preferential long-term capital gains treatment. If you are close to that threshold, waiting a few weeks before selling can meaningfully change your tax outcome.</p>
+<p>Similarly, frequent rebalancing in taxable accounts erodes returns through transaction costs and taxes. A few practical ways to minimise this:</p>
+<ul><li><strong>Rebalance inside tax-advantaged accounts</strong> (ISAs, SIPPs, IRAs, superannuation) where possible.</li><li><strong>Direct new contributions</strong> toward underweight categories instead of selling overweight ones. This is called &quot;cash-flow rebalancing&quot; and avoids triggering gains entirely.</li><li><strong>Use dividends or staking rewards</strong> to top up underweight positions.</li></ul>
+<p>&gt; <strong>Educational note:</strong> Tax rules vary significantly by country and individual circumstance. Nothing here constitutes tax advice. Consult a qualified tax professional before making decisions with tax implications.</p>
+<h2>How Often Should You Rebalance?</h2>
+<p>There are two schools of thought: <strong>calendar-based</strong> (rebalance on a set schedule, e.g. every six months) and <strong>threshold-based</strong> (rebalance only when drift exceeds a set limit, e.g. 5%).</p>
+<p>Research generally favours threshold-based rebalancing because it responds to actual market movements rather than an arbitrary date. However, calendar-based is easier to stick to for most people. A hybrid approach — check quarterly, rebalance only if drift exceeds 5% — combines the structure of a schedule with the efficiency of thresholds.</p>
+<p>In volatile markets like crypto, quarterly checks are the minimum. A 40% Bitcoin move in a single month can blow past any threshold quickly.</p>
+<h2>Tracking Your Rebalance Plan Over Time</h2>
+<p>Rebalancing is not a one-time event. It is an ongoing practice. That means keeping records of your trades, your cost basis on each position, and your portfolio value at each rebalance date so you can see whether the discipline is paying off.</p>
+<p>WalletLens includes a built-in rebalance planner as part of its on-device AI analysis suite, alongside a portfolio health score and stress test. You can also log trades manually, via voice command (&quot;I bought 2 shares of SPY at $540&quot;), or by importing a CSV — and everything stays private in your browser with no cloud dependency. When you want a snapshot to return to later, you export a compact WLZ backup code and restore it in one click.</p>
+<h2>Conclusion</h2>
+<p>Rebalancing is one of the most underrated habits in long-term investing. It will not make you rich overnight, but it will prevent your carefully chosen allocation from silently morphing into something you never intended. The process is repeatable: measure your current allocation, compare it to your target, calculate the trades, consider the tax angle, and execute the largest corrections first. Do this consistently — even just once or twice a year — and you stay in control of your risk regardless of what the market does. The investors who compound wealth steadily are rarely the ones who picked the best asset. They are the ones who maintained their plan when it was hardest to do so.</p>
+  <p><a href="/dashboard/">Start tracking your portfolio for free with WalletLens →</a></p>
+  <nav aria-label="Related articles">
+    <h2>Keep reading</h2>
+    <ul>
+      <li><a href="/blog/portfolio-diversification-crypto-stocks-gold/">How to Diversify Your Portfolio Across Crypto, Stocks, and Gold</a> — Diversification across asset classes reduces risk without necessarily reducing returns. Here's a practical framework for balancing crypto, equities, and hard assets.</li>
+      <li><a href="/blog/track-apple-stock-free/">How to Track Apple (AAPL) Stock for Free in Your Portfolio</a> — Track your Apple stock position for free alongside crypto, gold, and other assets — no brokerage login required.</li>
+      <li><a href="/blog/track-real-estate-alongside-crypto-and-stocks/">How to Track Real Estate Alongside Crypto and Stocks</a> — Learn how to include property in your net-worth picture and track real estate alongside crypto and stocks in one unified portfolio view.</li>
+    </ul>
+  </nav>
+  <p><a href="/blog/">← All articles</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>

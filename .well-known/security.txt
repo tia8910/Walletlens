@@ -1,0 +1,12 @@
+# WalletLens security policy — https://walletlens.live
+# Format: RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
+
+Contact: mailto:contact@walletlens.live
+Expires: 2027-06-01T00:00:00.000Z
+Preferred-Languages: en, ar
+Canonical: https://walletlens.live/.well-known/security.txt
+
+# WalletLens is a privacy-first, client-side net worth tracker. All user
+# portfolio data stays in the browser's localStorage and is never sent to a
+# server. If you discover a security or privacy issue, please report it to the
+# contact address above. We aim to acknowledge reports within 72 hours.

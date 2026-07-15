@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1170" viewBox="0 0 540 1170">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#07140e"/>
+      <stop offset="60%" stop-color="#040f0a"/>
+      <stop offset="100%" stop-color="#020b07"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="0%" r="60%">
+      <stop offset="0%" stop-color="rgba(16,185,129,0.18)"/>
+      <stop offset="100%" stop-color="rgba(16,185,129,0)"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.06)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="netWorthGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="chartLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="540" height="1170" fill="url(#bg)"/>
+  <rect width="540" height="1170" fill="url(#glow)"/>
+
+  <!-- Status bar -->
+  <rect width="540" height="44" fill="rgba(0,0,0,0.3)"/>
+  <text x="24" y="30" font-family="Inter,sans-serif" font-size="14" font-weight="600" fill="white">9:41</text>
+  <text x="490" y="30" font-family="Inter,sans-serif" font-size="12" fill="white" text-anchor="end">●●● WiFi 🔋</text>
+
+  <!-- Nav bar -->
+  <rect y="44" width="540" height="56" fill="rgba(7,20,14,0.95)"/>
+  <!-- Lens icon -->
+  <circle cx="28" cy="72" r="10" fill="none" stroke="#10b981" stroke-width="2.5"/>
+  <line x1="35" y1="79" x2="41" y2="85" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="52" y="78" font-family="Inter,sans-serif" font-size="15" font-weight="800" fill="white">WalletLens</text>
+  <text x="52" y="91" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#10b981" letter-spacing="1">TRACK | ANALYZE | GROW</text>
+
+  <!-- Net worth card -->
+  <rect x="16" y="120" width="508" height="170" rx="16" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="36" y="152" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" font-weight="600" letter-spacing="0.5">TOTAL NET WORTH</text>
+  <text x="36" y="198" font-family="Inter,sans-serif" font-size="42" font-weight="900" fill="url(#netWorthGrad)" letter-spacing="-2">$47,832.16</text>
+  <rect x="36" y="212" width="72" height="24" rx="12" fill="rgba(16,185,129,0.2)"/>
+  <text x="72" y="229" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#10b981" text-anchor="middle">▲ +8.3%</text>
+  <text x="120" y="229" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.4)">this month</text>
+  <!-- Mini chart -->
+  <path d="M36,274 L90,258 L160,265 L220,248 L290,240 L360,228 L430,218 L488,205" stroke="url(#chartLine)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M36,274 L90,258 L160,265 L220,248 L290,240 L360,228 L430,218 L488,205 L488,280 L36,280Z" fill="url(#chartFill)"/>
+
+  <!-- Tab bar -->
+  <rect x="16" y="306" width="508" height="44" rx="22" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <rect x="20" y="310" width="120" height="36" rx="18" fill="#10b981"/>
+  <text x="80" y="333" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="white" text-anchor="middle">Portfolio</text>
+  <text x="204" y="333" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle">Analyze</text>
+  <text x="320" y="333" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle">Risk</text>
+  <text x="436" y="333" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle">Alerts</text>
+
+  <!-- Holdings list label -->
+  <text x="24" y="382" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="rgba(255,255,255,0.4)" letter-spacing="1">HOLDINGS</text>
+
+  <!-- BTC row -->
+  <rect x="16" y="394" width="508" height="72" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="52" cy="430" r="18" fill="#f7931a"/>
+  <text x="52" y="435" font-family="Inter,sans-serif" font-size="11" font-weight="900" fill="white" text-anchor="middle">₿</text>
+  <text x="82" y="425" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white">Bitcoin</text>
+  <text x="82" y="444" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.4)">0.38 BTC</text>
+  <text x="508" y="425" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="end">$23,610</text>
+  <text x="508" y="444" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#10b981" text-anchor="end">+4.2%</text>
+
+  <!-- ETH row -->
+  <rect x="16" y="474" width="508" height="72" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="52" cy="510" r="18" fill="#627eea"/>
+  <text x="52" y="515" font-family="Inter,sans-serif" font-size="12" font-weight="900" fill="white" text-anchor="middle">Ξ</text>
+  <text x="82" y="505" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white">Ethereum</text>
+  <text x="82" y="524" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.4)">4.5 ETH</text>
+  <text x="508" y="505" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="end">$11,430</text>
+  <text x="508" y="524" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f87171" text-anchor="end">-1.8%</text>
+
+  <!-- SOL row -->
+  <rect x="16" y="554" width="508" height="72" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="52" cy="590" r="18" fill="#9945ff"/>
+  <text x="52" y="595" font-family="Inter,sans-serif" font-size="11" font-weight="900" fill="white" text-anchor="middle">SOL</text>
+  <text x="82" y="585" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white">Solana</text>
+  <text x="82" y="604" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.4)">86 SOL</text>
+  <text x="508" y="585" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="end">$6,192</text>
+  <text x="508" y="604" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#10b981" text-anchor="end">+2.1%</text>
+
+  <!-- Gold row -->
+  <rect x="16" y="634" width="508" height="72" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="52" cy="670" r="18" fill="#d4a017"/>
+  <text x="52" y="676" font-family="Inter,sans-serif" font-size="13" font-weight="900" fill="white" text-anchor="middle">Au</text>
+  <text x="82" y="665" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white">Gold</text>
+  <text x="82" y="684" font-family="Inter,sans-serif" font-size="12" fill="rgba(255,255,255,0.4)">3.5 oz</text>
+  <text x="508" y="665" font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="end">$6,600</text>
+  <text x="508" y="684" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#10b981" text-anchor="end">+0.6%</text>
+
+  <!-- P&L Summary section -->
+  <text x="24" y="742" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="rgba(255,255,255,0.4)" letter-spacing="1">P&amp;L SUMMARY</text>
+
+  <rect x="16" y="754" width="244" height="96" rx="12" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="36" y="784" font-family="Inter,sans-serif" font-size="11" fill="rgba(255,255,255,0.5)">Unrealized</text>
+  <text x="36" y="812" font-family="Inter,sans-serif" font-size="24" font-weight="800" fill="#10b981">+$3,641</text>
+  <text x="36" y="836" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">▲ +8.3%</text>
+
+  <rect x="280" y="754" width="244" height="96" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="300" y="784" font-family="Inter,sans-serif" font-size="11" fill="rgba(255,255,255,0.5)">Cost Basis</text>
+  <text x="300" y="812" font-family="Inter,sans-serif" font-size="24" font-weight="800" fill="white">$44,191</text>
+  <text x="300" y="836" font-family="Inter,sans-serif" font-size="13" fill="rgba(255,255,255,0.3)">total invested</text>
+
+  <!-- Trust badges -->
+  <rect x="16" y="876" width="508" height="56" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <text x="270" y="898" font-family="Inter,sans-serif" font-size="11" fill="rgba(255,255,255,0.35)" text-anchor="middle">🔒 No wallet connection</text>
+  <text x="270" y="918" font-family="Inter,sans-serif" font-size="11" fill="rgba(255,255,255,0.35)" text-anchor="middle">🖥️ No server — 100% local · 🎙️ Import by voice</text>
+
+  <!-- CTA button -->
+  <rect x="16" y="952" width="508" height="52" rx="26" fill="#10b981"/>
+  <text x="270" y="984" font-family="Inter,sans-serif" font-size="16" font-weight="700" fill="white" text-anchor="middle">Track your net worth →</text>
+
+  <!-- Bottom nav -->
+  <rect y="1118" width="540" height="52" fill="rgba(7,20,14,0.98)"/>
+  <rect y="1118" width="540" height="1" fill="rgba(255,255,255,0.06)"/>
+  <text x="270" y="1150" font-family="Inter,sans-serif" font-size="10" fill="rgba(255,255,255,0.2)" text-anchor="middle">WalletLens.live — Free, private, no account needed</text>
+</svg>

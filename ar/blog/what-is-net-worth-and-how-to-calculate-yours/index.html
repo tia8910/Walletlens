@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Canonical-host guard: anything served from www. or plain http hops to
+         the canonical https apex before the app loads. The DNS-level 301 is
+         the primary mechanism; this covers cert/redirect edge cases so no
+         visitor or JS-executing crawler ever stays on a non-canonical host. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (h === 'www.walletlens.live' || (location.protocol === 'http:' && h === 'walletlens.live')) {
+          location.replace('https://walletlens.live' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+
+    <!-- Primary -->
+    <title>ما هو صافي الثروة وكيف تحسبه | WalletLens</title>
+    <meta name="description" content="صافي الثروة هو أهم رقم في حياتك المالية. إليك ما يعنيه، وكيف تحسبه بدقة، ولماذا يخطئ فيه معظم الناس." />
+    <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
+    <meta name="author" content="WalletLens" />
+    <link rel="canonical" href="https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/" />
+
+    <!-- Search engine site verification -->
+    <meta name="google-site-verification" content="mG3a3uyAuSgbZXy_uleDFYe3-XAlu4xNltQbjPfzq5Q" />
+
+    <!-- LLM / AI-model guide (llmstxt.org) — helps ChatGPT, Claude, Perplexity, etc. understand the site -->
+    <link rel="alternate" type="text/plain" title="llms.txt — WalletLens overview for AI" href="https://walletlens.live/llms.txt" />
+    <link rel="alternate" type="text/plain" title="llms-full.txt — WalletLens full content for AI" href="https://walletlens.live/llms-full.txt" />
+    <link rel="author" type="text/plain" href="https://walletlens.live/humans.txt" />
+
+    <!-- Crawl directives -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WalletLens" />
+    <meta property="og:title" content="ما هو صافي الثروة وكيف تحسبه | WalletLens" />
+    <meta property="og:description" content="صافي الثروة هو أهم رقم في حياتك المالية. إليك ما يعنيه، وكيف تحسبه بدقة، ولماذا يخطئ فيه معظم الناس." />
+    <meta property="og:url" content="https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/" />
+    <meta property="og:image" content="https://walletlens.live/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WalletLens — zoom in your wealth" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@wallet_lens" />
+    <meta name="twitter:creator" content="@wallet_lens" />
+    <meta name="twitter:title" content="ما هو صافي الثروة وكيف تحسبه | WalletLens" />
+    <meta name="twitter:description" content="صافي الثروة هو أهم رقم في حياتك المالية. إليك ما يعنيه، وكيف تحسبه بدقة، ولماذا يخطئ فيه معظم الناس." />
+    <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
+    <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
+
+    <!-- Brand / theme -->
+    <meta name="theme-color" content="#071a0c" />
+    <!-- Instruct the browser to render a dark chrome immediately, before
+         any stylesheet loads. Eliminates the white/grey flash on dark-mode
+         systems and ensures consistent first-paint on all platforms. -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WalletLens" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- RSS feed — lets search engines, AI crawlers and feed readers discover
+         and re-crawl fresh blog content fast. -->
+    <link rel="alternate" type="application/rss+xml" title="WalletLens Blog" href="/rss.xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preconnect for analytics — resolves TLS+CORS before the script tag fires.
+         crossorigin is required because these are CORS fetches; without it the
+         browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- Twitter/X pixel CDN and tracking endpoint -->
+    <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
+    <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+    </script>
+
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rc7yj');
+    </script>
+
+    <!-- AdSense -->
+    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
+
+    <!-- Referrer policy (settable via meta) -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- CSP — upgrade-insecure-requests forces every subresource to HTTPS
+         (kills any mixed-content / "links to HTTP" findings); form-action
+         hardens against XSS form-hijack.
+         Note: frame-ancestors only works as an HTTP response header, not in
+         a meta tag, so it is intentionally omitted here. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src 'none';
+      form-action 'self';
+      object-src 'none';
+      base-uri 'self';
+      upgrade-insecure-requests;
+    " />
+
+    <!-- Fonts — self-hosted woff2 files under /fonts/; @font-face in index.css -->
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Preconnect for the two highest-traffic price APIs (full TLS handshake pre-done).
+         crossorigin is required because all fetches to these origins are CORS requests —
+         without it the browser opens a separate anonymous connection that cannot be reused. -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.binance.com" crossorigin />
+    <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
+    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
+    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+
+    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
+         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
+    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
+    <link rel="dns-prefetch" href="https://rest.coincap.io" />
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <link rel="dns-prefetch" href="https://api.gold-api.com" />
+    <link rel="dns-prefetch" href="https://stooq.com" />
+    <link rel="dns-prefetch" href="https://open.er-api.com" />
+    <link rel="dns-prefetch" href="https://api.frankfurter.app" />
+    <link rel="dns-prefetch" href="https://finnhub.io" />
+    <link rel="dns-prefetch" href="https://api.allorigins.win" />
+    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
+    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
+    <!-- Coin icon CDN fallbacks -->
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
+    <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
+    <link rel="dns-prefetch" href="https://cors.eu.org" />
+    <link rel="dns-prefetch" href="https://api.codetabs.com" />
+
+    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
+         stock price proxy. This is one of the highest-latency origins because
+         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
+         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
+    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
+
+    <!-- Structured data — WebApplication. Surfaces in Google rich results
+         and gives LLM answer engines a clean fact card to cite. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "alternateName": "WalletLens — Private Net Worth Tracker & Investment Management Tool",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Net Worth Tracker & Investment Management",
+      "operatingSystem": "Web, iOS, Android (PWA)",
+      "browserRequirements": "Modern browser with JavaScript",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "installUrl": "https://walletlens.live/dashboard",
+      "downloadUrl": "https://walletlens.live/",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "keywords": "free net worth tracker, net worth tracker, investment tracker, investment management app, track all investments in one place, free crypto portfolio tracker, no account portfolio tracker, privacy portfolio tracker, all-asset tracker, crypto stocks gold tracker, AI portfolio analysis, voice trade import, Arabic crypto tracker",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, US stocks & ETFs, gold, silver, platinum, fiat & FX in one net-worth dashboard",
+        "AI portfolio analysis: health score A–F, diversification grade, momentum, stress test",
+        "AI voice trade import — speak multiple trades in one sentence, English & Arabic",
+        "Multi-target sell plans and price targets with live progress",
+        "Risk scanner, risk budget, correlation matrix & sector heatmap",
+        "Live whale tracking, Fear & Greed gauge, and market movers",
+        "Multi-wallet support with per-wallet net-worth view",
+        "100% free, no account, no sign-up",
+        "Local-first & private — your data never leaves your device",
+        "Backup as a single shareable code, or import from Excel/CSV",
+        "Installable as a PWA on iOS, Android & desktop"
+      ],
+      "softwareVersion": "1.0",
+      "privacyPolicy": "https://walletlens.live/privacy",
+      "termsOfService": "https://walletlens.live/terms",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Structured data — WebSite. This is the entity Google reads to attribute
+         the canonical site name + domain (prevents wrong-domain attribution in
+         Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "WalletLens",
+      "alternateName": "WalletLens — All-Asset Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "inLanguage": ["en", "ar"],
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/",
+        "logo": "https://walletlens.live/icon-512.svg"
+      }
+    }
+    </script>
+
+    <!-- Organization for brand recognition in answer-engine results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "WalletLens",
+      "url": "https://walletlens.live/",
+      "logo": "https://walletlens.live/icon-512.svg",
+      "description": "All-asset portfolio tracker — crypto, stocks, gold, silver, fiat & FX in one private dashboard.",
+      "slogan": "Zoom in your wealth",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://github.com/tia8910/walletlens",
+        "https://x.com/wallet_lens",
+        "https://t.me/walletlenss",
+        "https://youtube.com/@walletlens"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://github.com/tia8910/walletlens/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured data — SiteNavigationElement for key pages -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "WalletLens Site Navigation",
+      "itemListElement": [
+        { "@type": "SiteNavigationElement", "position": 1, "name": "Dashboard", "url": "https://walletlens.live/dashboard" },
+        { "@type": "SiteNavigationElement", "position": 2, "name": "Analysis",  "url": "https://walletlens.live/technicals" },
+        { "@type": "SiteNavigationElement", "position": 3, "name": "Blog",      "url": "https://walletlens.live/blog" },
+        { "@type": "SiteNavigationElement", "position": 4, "name": "Academy",   "url": "https://walletlens.live/academy" },
+        { "@type": "SiteNavigationElement", "position": 5, "name": "About",     "url": "https://walletlens.live/about" },
+        { "@type": "SiteNavigationElement", "position": 6, "name": "Privacy Policy",   "url": "https://walletlens.live/privacy" },
+        { "@type": "SiteNavigationElement", "position": 7, "name": "Terms of Service", "url": "https://walletlens.live/terms" }
+      ]
+    }
+    </script>
+
+   <script type="module" crossorigin src="/assets/index-JlQXN2dk.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
+   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
+   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-DK6187wm.js">
+   <link rel="modulepreload" crossorigin href="/assets/api-core-CWhJl43X.js">
+   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
+   <link rel="stylesheet" crossorigin href="/assets/index-BSpClZaa.css">
+   <meta property="article:published_time" content="2026-05-01" />
+  <meta property="article:modified_time" content="2026-05-01" />
+  <meta property="article:publisher" content="https://walletlens.live/" />
+    <link rel="alternate" hreflang="en" href="https://walletlens.live/blog/what-is-net-worth-and-how-to-calculate-yours/" />
+  <link rel="alternate" hreflang="ar" href="https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/" />
+  <link rel="alternate" hreflang="x-default" href="https://walletlens.live/blog/what-is-net-worth-and-how-to-calculate-yours/" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","inLanguage":"ar","headline":"ما هو صافي الثروة وكيف تحسبه","description":"صافي الثروة هو أهم رقم في حياتك المالية. إليك ما يعنيه، وكيف تحسبه بدقة، ولماذا يخطئ فيه معظم الناس.","image":"https://walletlens.live/og-image.png","datePublished":"2026-05-01","dateModified":"2026-05-01","author":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"publisher":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live","logo":{"@type":"ImageObject","url":"https://walletlens.live/icon-512.svg"}},"mainEntityOfPage":"https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/","url":"https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WalletLens","item":"https://walletlens.live/ar/free-net-worth-tracker/"},{"@type":"ListItem","position":2,"name":"ما هو صافي الثروة وكيف تحسبه","item":"https://walletlens.live/ar/blog/what-is-net-worth-and-how-to-calculate-yours/"}]}</script>
+  </head>
+  <body>
+    <!-- Earliest-possible dark background: set before any CSS or JS runs so
+         first-paint matches the app theme on all browsers/OSes. -->
+    <style>html,body{background:#081209;margin:0}</style>
+    <div id="root"><div id="prerender-content" dir="rtl" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
+<article>
+  <p><em>مايو 2026 · قراءة 5 دقائق</em></p>
+  <h1>ما هو صافي الثروة وكيف تحسبه</h1>
+  <p>صافي الثروة هو أهم رقم في حياتك المالية. إليك ما يعنيه، وكيف تحسبه بدقة، ولماذا يخطئ فيه معظم الناس.</p>
+  <p>صافي الثروة هو أساس التمويل الشخصي. إنه الرقم الوحيد الذي يخبرك، بصدق وبشكل كامل، أين تقف مالياً. ومع ذلك، لدى معظم الناس فكرة غامضة فقط عمّا يعنيه — ولم يحسبه أحد تقريباً مؤخراً بما يكفي للتصرّف بناءً عليه.</p>
+<h2>ما هو صافي الثروة؟</h2>
+<p>تعريف صافي الثروة بسيط: <strong>كل ما تملكه ناقص كل ما تدين به</strong>.</p>
+<p>الأصول − الالتزامات = صافي الثروة</p>
+<p>الرقم الموجب يعني أن أصولك تفوق ديونك. الرقم السالب — وهو شائع لدى الشباب المثقلين بقروض الدراسة أو رهون عقارية تفوق أصولهم — يعني أنك تدين بأكثر مما تملك. لا عيب في أيٍّ منهما؛ المهم أن تعرف الرقم وأن تدفعه في الاتجاه الصحيح.</p>
+<h2>ما الذي يُعدّ أصلاً؟</h2>
+<p>الأصول هي كل ما تملكه وله قيمة مالية:</p>
+<p><strong>الأصول السائلة (سهلة التحويل إلى نقد):</strong></p>
+<ul><li>النقد في الحسابات البنكية</li><li>حيازات العملات الرقمية</li><li>الأسهم وصناديق المؤشرات والصناديق المشتركة</li><li>العملات المستقرة وصناديق أسواق المال</li></ul>
+<p><strong>الأصول شبه السائلة:</strong></p>
+<ul><li>المعادن النفيسة (الذهب والفضة)</li><li>السندات وأدوات الدخل الثابت</li><li>حسابات التقاعد</li></ul>
+<p><strong>الأصول غير السائلة:</strong></p>
+<ul><li>العقارات (منزلك، العقارات الاستثمارية) — استخدم القيمة السوقية الحالية لا سعر الشراء</li><li>حصص ملكية المشاريع التجارية</li><li>المركبات — استخدم قيمة إعادة البيع الحالية لا ما دفعته</li></ul>
+<p>قاعدة مهمة: استخدم قيماً سوقية حالية واقعية، لا ما دفعته أو ما تأمل بيعه به. المبالغة في تقدير قيمة الأصول تنتج رقماً مُرضياً لكنه عديم الفائدة.</p>
+<h2>ما الذي يُعدّ التزاماً؟</h2>
+<p>الالتزامات هي كل ما تدين به:</p>
+<ul><li>رصيد الرهن العقاري المتبقي</li><li>قروض الدراسة</li><li>قروض السيارات</li><li>أرصدة بطاقات الائتمان (إجمالي المتبقي، لا الحد الأدنى للسداد فقط)</li><li>القروض الشخصية</li><li>أي ديون أخرى</li></ul>
+<p>لا تخلط بين القسط الشهري والالتزام. الالتزام هو كامل الرصيد المتبقي.</p>
+<h2>لماذا صافي الثروة أهم من الدخل</h2>
+<p>الدخل تدفّق، وصافي الثروة رصيد. صاحب الدخل المرتفع الذي ينفق كل شيء يكاد صافي ثروته لا ينمو. أما من يدّخر ويستثمر بانتظام براتب متوسط فيراكم ثروة حقيقية. لوحة نتائج الحياة المالية هي صافي الثروة، لا الدخل.</p>
+<p><strong>يكشف صافي الثروة مرونتك المالية الفعلية.</strong> لو فقدت دخلك غداً، فإن صافي ثروتك يحدّد كم يمكنك الصمود وما إذا كانت لديك خيارات. الدخل المرتفع مع ادخار صفري هشّ؛ وحتى صافي ثروة متواضع يوفّر أماناً.</p>
+<p><strong>يربط القرارات قصيرة الأجل بالنتائج طويلة الأجل.</strong> كلما سدّدت ديناً أو استثمرت بدل الإنفاق، رأيت الأثر على هذا الرقم الواحد.</p>
+<h2>حساب صافي الثروة عملياً</h2>
+<p>إليك مثالاً مبسّطاً:</p>
+<table class="blog-table"><thead><tr><th>الأصل</th><th>القيمة</th></tr></thead><tbody><tr><td>النقد والمدخرات</td><td>12,000 $</td></tr><tr><td>محفظة العملات الرقمية</td><td>18,500 $</td></tr><tr><td>الأسهم وصناديق المؤشرات</td><td>34,000 $</td></tr><tr><td>حيازات الذهب</td><td>8,000 $</td></tr><tr><td>السيارة (قيمة إعادة البيع)</td><td>9,500 $</td></tr><tr><td>إجمالي الأصول</td><td>82,000 $</td></tr></tbody></table>
+<table class="blog-table"><thead><tr><th>الالتزام</th><th>الرصيد</th></tr></thead><tbody><tr><td>قرض السيارة</td><td>5,200 $</td></tr><tr><td>قرض الدراسة</td><td>14,000 $</td></tr><tr><td>بطاقة الائتمان</td><td>1,800 $</td></tr><tr><td>إجمالي الالتزامات</td><td>21,000 $</td></tr></tbody></table>
+<p><strong>صافي الثروة: 82,000 $ − 21,000 $ = 61,000 $</strong></p>
+<h2>أخطاء شائعة تشوّه رقمك</h2>
+<p><strong>احتساب حسابات التقاعد بقيمتها الكاملة دون مراعاة الضرائب.</strong> في بعض حسابات التقاعد ستدين بضريبة دخل عند السحب. يخفّض بعض الناس هذه القيم بنسبة الضريبة المتوقعة لتقدير أكثر تحفّظاً.</p>
+<p><strong>استخدام سعر الشراء بدل القيمة السوقية.</strong> منزلك يساوي ما قد يدفعه أحدهم اليوم، لا ما دفعته أنت سابقاً.</p>
+<p><strong>نسيان الديون الصغيرة.</strong> رصيد بطاقة ائتمان منسيّ بقيمة 800 $ يبقى التزاماً.</p>
+<p><strong>تجاهل الأصول غير السائلة.</strong> المشروع التجاري أو مجموعة المقتنيات أو حصة في عقار، كلها تُحتسب — حتى لو احتاجت وقتاً للتحويل إلى نقد.</p>
+<h2>كم مرة ينبغي حسابه؟</h2>
+<p>شهرياً مثاليّ للمستثمرين النشطين، وربع سنوي هو الحد الأدنى. الاتجاه لا يقلّ أهمية عن الرقم. صافي ثروة ينمو باطّراد — ولو ببطء — يعني حياة مالية سليمة. أما الثابت أو المتراجع فإشارة إلى ضرورة تغيير شيء ما.</p>
+<h2>تتبّعه دون جدول بيانات</h2>
+<p>التحدي في تتبّع صافي الثروة أن الأصول مبعثرة عبر مؤسسات مختلفة: محفظة عملات رقمية هنا، وحساب وساطة هناك، وحيازة معادن، وحساب بنكي. صُمّم WalletLens لهذا تماماً: يتتبّع العملات الرقمية والمعادن النفيسة والأسهم والنقد في لوحة واحدة بأسعار حية، فيتحدّث صافي ثروتك الاستثماري لحظياً — بلا جدول بيانات، وبلا حساب، وبلا مشاركة أي بيانات مع أي خادم.</p>
+<p>ابدأ بأصولك الاستثمارية. أضف نقدك ومدخراتك يدوياً. ثم اطرح التزاماتك. ها هو صافي ثروتك.</p>
+<h2>الخلاصة</h2>
+<p>صافي الثروة هو المقياس الصادق لحياتك المالية. الأصول ناقص الالتزامات — احسبه اليوم، ولو تقريبياً، فيكون لديك خط أساس تنطلق منه. تتبّعه بانتظام يمنحك أحد أقوى أدوات التمويل الشخصي: رقم واحد يخبرك إن كنت تتقدّم.</p>
+<p>احسب صافي ثروتك وتتبّعه مجاناً على <a href="https://walletlens.live">walletlens.live</a> — عملات رقمية وأسهم وذهب ونقد في مكان واحد، بلا حساب.</p>
+  <p><a href="/dashboard/">ابدأ تتبّع محفظتك مجاناً مع WalletLens ←</a></p>
+  <p><a href="/ar/free-net-worth-tracker/">متتبّع الثروة المجاني</a> · <a href="/blog/what-is-net-worth-and-how-to-calculate-yours/">English</a></p>
+</article></div>
+      <!-- Brand-matching loading splash. React replaces #root on mount; this
+           keeps the screen on-theme until then instead of flashing a white
+           page. AEO/SEO is handled by the meta tags + JSON-LD in <head>;
+           crawlers without JS still get the <noscript> fallback below. -->
+      <noscript>
+        <main style="max-width:760px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif">
+          <p style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">WalletLens — Free All-Asset Portfolio Tracker</p>
+          <p>Track crypto, US stocks, gold, silver, fiat &amp; FX in one private dashboard. 100% free, no account.</p>
+          <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
+        </main>
+      </noscript>
+      <div class="wlboot">
+        <style>
+          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
+            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
+            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+          /* soft breathing glow behind the mark */
+          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
+            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
+            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
+          /* faint static track */
+          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
+          /* rotating scanner arc — the "lens" sweeping */
+          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
+            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+            animation:wlspin 1.05s linear infinite}
+          /* live bar-chart inside the lens (the brand mark) */
+          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
+          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
+            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
+          .wlboot-bars i:nth-child(2){animation-delay:.14s}
+          .wlboot-bars i:nth-child(3){animation-delay:.28s}
+          .wlboot-bars i:nth-child(4){animation-delay:.42s}
+          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
+            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
+            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+            animation:wlshine 2.4s linear infinite}
+          @keyframes wlspin{to{transform:rotate(360deg)}}
+          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
+          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
+          @keyframes wlshine{to{background-position:-200% 0}}
+          @media (prefers-reduced-motion:reduce){
+            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
+            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+          }
+        </style>
+        <div class="wlboot-in">
+          <div class="wlboot-mark">
+            <div class="wlboot-glow"></div>
+            <div class="wlboot-track"></div>
+            <div class="wlboot-ring"></div>
+            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="wlboot-word">WalletLens</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- X conversion tracking event — deferred to window load so it never
+         competes with the initial render or module evaluation. -->
+    <script>
+      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+    </script>
+  </body>
+</html>
