@@ -199,6 +199,278 @@ export function pillarFundamental(fundamental) {
   return { available: true, quality: 'live', score: cr(s), note: notes.join(' · ') || 'market fundamentals' }
 }
 
+
+// ── Pillar 6: Momentum (NEW — composite oscillator signal) ────────────────
+// Combines Stochastic RSI, Williams %R, ADX trend strength, and CCI into
+// a single momentum score. This catches reversals that plain RSI/MACD miss.
+export function pillarMomentum(ta) {
+  if (!ta) return { available: false }
+  let score = 0, count = 0, notes = []
+
+  // StochRSI — strong reversal signal
+  if (ta.stochRSI) {
+    const { k, d, cross, state } = ta.stochRSI
+    let s = 0
+    if (cross === 'bullish') s += 35
+    else if (cross === 'bearish') s -= 35
+    if (state === 'oversold') s += 20
+    else if (state === 'overbought') s -= 20
+    // Also use %K position
+    s += (k - 50) * 0.3
+    score += s; count++
+    notes.push(`StochRSI ${Math.round(k)}/${Math.round(d)}`)
+  }
+
+  // Williams %R
+  if (ta.williamsR != null) {
+    const wr = ta.williamsR
+    let s = 0
+    if (wr < -80) s += 30       // oversold — buy signal
+    else if (wr > -20) s -= 30  // overbought — sell signal
+    else s += wr * 0.3          // linear between
+    score += s; count++
+    notes.push(`W%R ${Math.round(wr)}`)
+  }
+
+  // ADX — trend strength (not direction, but amplifies directional signals)
+  if (ta.adx) {
+    const { adx: adxVal, trending } = ta.adx
+    // ADX itself doesn't give direction, but when trending it amplifies
+    // whatever the other signals say. We boost the note.
+    if (trending) notes.push(`ADX ${Math.round(adxVal)} trending`)
+    else notes.push(`ADX ${Math.round(adxVal)} ranging`)
+    // ADX as a confidence amplifier (applied in composite, not here)
+  }
+
+  // CCI — overbought/oversold + momentum
+  if (ta.cci != null) {
+    const c = ta.cci
+    let s = 0
+    if (c > 100) s -= 25       // overbought
+    else if (c < -100) s += 25 // oversold
+    else s += (c / 100) * 20   // proportional
+    score += s; count++
+    notes.push(`CCI ${Math.round(c)}`)
+  }
+
+  // MFI — volume-weighted RSI
+  if (ta.mfi != null) {
+    const m = ta.mfi
+    let s = 0
+    if (m > 80) s -= 20
+    else if (m < 20) s += 20
+    else s += ((m - 50) / 50) * 15
+    score += s; count++
+    notes.push(`MFI ${Math.round(m)}`)
+  }
+
+  // Ichimoku Cloud position
+  if (ta.ichimoku) {
+    const { aboveCloud, belowCloud, cloudColor, cross } = ta.ichimoku
+    let s = 0
+    if (aboveCloud) s += 20
+    else if (belowCloud) s -= 20
+    if (cross === 'bullish') s += 15
+    else if (cross === 'bearish') s -= 15
+    if (cloudColor === 'bullish') s += 10
+    else s -= 10
+    score += s; count++
+    notes.push(`Ichimoku ${cloudColor} cloud`)
+  }
+
+  // Parabolic SAR
+  if (ta.sar) {
+    const s = ta.sar.trend === 'long' ? 15 : -15
+    score += s; count++
+    notes.push(`SAR ${ta.sar.trend}`)
+  }
+
+  // OBV divergence
+  if (ta.obv) {
+    const { trend, divergence } = ta.obv
+    let s = trend === 'up' ? 10 : -10
+    if (divergence) { s = -s * 0.5; notes.push('OBV divergence ⚠') } // divergence = warning
+    score += s; count++
+    notes.push(`OBV ${trend}`)
+  }
+
+  if (count === 0) return { available: false }
+  const avg = score / count
+  // ADX amplifies when trending
+  const adxAmp = ta.adx?.trending ? 1.15 : 1.0
+  return {
+    available: true,
+    quality: 'live',
+    score: cr(clamp(avg * adxAmp)),
+    note: notes.slice(0, 3).join(' · ') || 'momentum analysis',
+  }
+}
+
+// ── Pillar 7: Sentiment (Fear & Greed + dominance) ────────────────────────
+// Uses Fear & Greed Index + BTC dominance change + market cap breadth.
+export function pillarSentiment(signals, fundamental) {
+  if (!signals && !fundamental) return { available: false }
+  let score = 0, count = 0, notes = []
+
+  // Fear & Greed Index (0 = extreme fear, 100 = extreme greed)
+  // Contrarian: extreme fear = buy, extreme greed = sell
+  if (signals && typeof signals.fearGreed === 'number') {
+    const fg = signals.fearGreed
+    let s = 0
+    if (fg <= 20) s += 40       // extreme fear — strong contrarian buy
+    else if (fg <= 35) s += 20  // fear
+    else if (fg >= 80) s -= 40  // extreme greed — strong contrarian sell
+    else if (fg >= 65) s -= 20  // greed
+    else s += (50 - fg) * 0.3   // moderate
+    score += s; count++
+    notes.push(`F&G ${Math.round(fg)}`)
+  }
+
+  // BTC dominance — rising dominance = altcoins underperforming
+  if (signals && typeof signals.btcDominance === 'number' && typeof signals.dominanceChange === 'number') {
+    const dc = signals.dominanceChange
+    // For altcoins: rising BTC dominance = bearish for alts
+    // For BTC: rising dominance = bullish for BTC
+    const isBTC = fundamental?.symbol?.toLowerCase() === 'btc'
+    if (isBTC) score += clamp(dc * 8, -20, 20)
+    else score += clamp(-dc * 8, -20, 20)
+    count++
+    notes.push(`BTC.D ${signals.btcDominance.toFixed(1)}%`)
+  }
+
+  // Social sentiment proxy (from CoinGecko community data)
+  if (signals && typeof signals.socialScore === 'number') {
+    score += clamp((signals.socialScore - 50) * 0.4, -20, 20)
+    count++
+    notes.push(`social ${Math.round(signals.socialScore)}`)
+  }
+
+  // Market breadth (% of coins above their 200-day SMA)
+  if (signals && typeof signals.marketBreadth === 'number') {
+    const mb = signals.marketBreadth
+    score += clamp((mb - 50) * 0.5, -25, 25)
+    count++
+    notes.push(`breadth ${Math.round(mb)}%`)
+  }
+
+  if (count === 0) return { available: false }
+  return {
+    available: true,
+    quality: count >= 2 ? 'live' : 'proxy',
+    score: cr(clamp(score / count)),
+    note: notes.join(' · ') || 'market sentiment',
+  }
+}
+
+// ── Pillar 8: Cycle Position (Bitcoin halving cycle + market phases) ──────
+// Uses Bitcoin halving cycle timing + Pi Cycle Top/Bottom indicators to
+// estimate where we are in the 4-year market cycle.
+export function pillarCycle(fundamental) {
+  if (!fundamental) return { available: false }
+  let score = 0, notes = []
+
+  // Pi Cycle Bottom/Top signals (from fundamental data if available)
+  if (fundamental.piCycleBottom) { score += 40; notes.push('Pi Cycle Bottom signal') }
+  if (fundamental.piCycleTop) { score -= 40; notes.push('Pi Cycle Top signal') }
+
+  // Bitcoin halving cycle position (approx every 4 years)
+  // Last halving: April 2024. Next: ~2028.
+  // Historically: 12-18 months after halving = bull market peak
+  if (fundamental.halvingCyclePosition != null) {
+    const pos = fundamental.halvingCyclePosition // 0..1 through the cycle
+    if (pos < 0.15) { score += 30; notes.push('early cycle accumulation') }
+    else if (pos < 0.4) { score += 20; notes.push('markup phase') }
+    else if (pos < 0.6) { score += 5; notes.push('mid-cycle') }
+    else if (pos < 0.8) { score -= 15; notes.push('late cycle') }
+    else { score -= 30; notes.push('distribution phase') }
+  }
+
+  // Distance from all-time high as a cycle proxy
+  if (typeof fundamental.athChange === 'number') {
+    const ath = fundamental.athChange
+    if (ath > -10) { score -= 20; notes.push('near ATH — late cycle') }
+    else if (ath < -75) { score += 25; notes.push('deep drawdown — early cycle') }
+    else if (ath < -50) { score += 15; notes.push('mid-recovery') }
+  }
+
+  // Market cap rank changes as a cycle proxy
+  if (fundamental.marketCapRank && fundamental.marketCapRank <= 10) {
+    // Blue chips tend to lead in late cycles
+    if (typeof fundamental.athChange === 'number' && fundamental.athChange > -30) {
+      score -= 5
+    }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return {
+    available: true,
+    quality: 'proxy',
+    score: cr(clamp(score / Math.max(notes.length, 1) * 1.5)),
+    note: notes.slice(0, 2).join(' · ') || 'cycle analysis',
+  }
+}
+
+// ── Pillar 9: Cross-Asset Correlation ────────────────────────────────────
+// Measures how correlated the asset is with BTC, SPY, gold, and DXY.
+// High BTC correlation = BTC regime matters more. Negative SPY correlation = hedge.
+export function pillarCorrelation(signals, fundamental) {
+  if (!signals) return { available: false }
+  let score = 0, notes = []
+
+  // BTC correlation (for altcoins)
+  if (typeof signals.btcCorrelation === 'number') {
+    const corr = signals.btcCorrelation
+    // When BTC is bullish, high correlation = bullish for alts
+    // When BTC is bearish, high correlation = bearish for alts
+    // We use BTC's own momentum to decide
+    const btcMomentum = signals.btcMomentum ?? 0
+    if (corr > 0.7) {
+      score += btcMomentum * corr * 0.5
+      notes.push(`BTC corr ${corr.toFixed(2)}`)
+    } else if (corr < 0.3) {
+      score += 10 // low correlation = diversification benefit = slightly positive
+      notes.push('low BTC corr — diversifier')
+    }
+  }
+
+  // SPY (S&P 500) correlation — risk-on/risk-off
+  if (typeof signals.spyCorrelation === 'number') {
+    const corr = signals.spyCorrelation
+    if (corr > 0.6) {
+      // High SPY correlation = macro-driven, check SPY trend
+      const spyTrend = signals.spyTrend ?? 0
+      score += spyTrend * 0.3
+      notes.push(`SPY corr ${corr.toFixed(2)}`)
+    }
+  }
+
+  // Gold correlation — hedge/diversification value
+  if (typeof signals.goldCorrelation === 'number') {
+    const corr = signals.goldCorrelation
+    if (corr < -0.3) {
+      score += 8 // negative gold correlation = good diversifier
+      notes.push('neg. gold corr — hedge')
+    } else if (corr > 0.6) {
+      notes.push('high gold corr')
+    }
+  }
+
+  // DXY (Dollar Index) — inverse correlation is bullish for crypto
+  if (typeof signals.dxyChange === 'number') {
+    const dxy = signals.dxyChange
+    score += clamp(-dxy * 5, -20, 20) // rising dollar = bearish for crypto
+    notes.push(`DXY ${dxy >= 0 ? '+' : ''}${(dxy * 100).toFixed(1)}%`)
+  }
+
+  if (notes.length === 0) return { available: false }
+  return {
+    available: true,
+    quality: 'proxy',
+    score: cr(clamp(score / Math.max(notes.length, 1) * 1.2)),
+    note: notes.slice(0, 2).join(' · ') || 'cross-asset analysis',
+  }
+}
+
 // Direction label / colour / icon for a composite score.
 export function directionMeta(score) {
   if (score >= 45) return { label: 'Strong Buy', stance: 'bullish', icon: 'arrow-ne', color: '#16a34a' }
@@ -209,11 +481,14 @@ export function directionMeta(score) {
 }
 
 const PILLAR_DEFS = [
-  { key: 'technical', label: 'Technical', weight: 0.30 },
-  { key: 'whales', label: 'Whales', weight: 0.20 },
-  { key: 'onchain', label: 'On-chain', weight: 0.20 },
-  { key: 'fundamental', label: 'Fundamental', weight: 0.18 },
-  { key: 'volume', label: 'Volume', weight: 0.12 },
+  { key: 'technical', label: 'Technical', weight: 0.20 },
+  { key: 'momentum', label: 'Momentum', weight: 0.18 },
+  { key: 'whales', label: 'Whales', weight: 0.12 },
+  { key: 'onchain', label: 'On-chain', weight: 0.12 },
+  { key: 'volume', label: 'Volume', weight: 0.10 },
+  { key: 'sentiment', label: 'Sentiment', weight: 0.12 },
+  { key: 'cycle', label: 'Cycle', weight: 0.08 },
+  { key: 'correlation', label: 'Correlation', weight: 0.08 },
 ]
 
 // Merge the pillars into a single direction.
@@ -224,9 +499,13 @@ const PILLAR_DEFS = [
 export function computeMagic({ ta, signals, fundamental } = {}) {
   const raw = {
     technical: pillarTechnical(ta, fundamental),
+    momentum: pillarMomentum(ta),
     volume: pillarVolume(signals, fundamental),
     whales: pillarWhales(signals, fundamental),
     onchain: pillarOnchain(signals, fundamental),
+    sentiment: pillarSentiment(signals, fundamental),
+    cycle: pillarCycle({ ...fundamental, ...signals }),
+    correlation: pillarCorrelation(signals, fundamental),
     fundamental: pillarFundamental(fundamental),
   }
 

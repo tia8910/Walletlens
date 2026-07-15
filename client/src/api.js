@@ -1056,6 +1056,35 @@ async function fetchStooqHistory(symbol, days = 30) {
   return [];
 }
 
+
+// Yahoo Finance v8 OHLCV fetch for stocks, ETFs, metals
+async function fetchYahooOHLCV(ticker, days = 180) {
+  const sym = (ticker || '').toUpperCase().replace(/\./g, '-')
+  const range = days <= 7 ? '5d' : days <= 60 ? '3mo' : days <= 180 ? '6mo' : '1y'
+  const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
+  for (const host of hosts) {
+    try {
+      const url = `https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`
+      const res = await fetchWithTimeout(url, 8000)
+      if (!res.ok) continue
+      const data = await res.json()
+      const result = data?.chart?.result?.[0]
+      if (!result?.indicators?.quote?.[0]) continue
+      const q = result.indicators.quote[0]
+      const ts = result.timestamp || []
+      const out = []
+      for (let i = 0; i < ts.length; i++) {
+        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i], v = q.volume?.[i]
+        if (isFinite(o) && isFinite(h) && isFinite(l) && isFinite(c) && o > 0 && h > 0 && l > 0 && c > 0) {
+          out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), open: o, high: h, low: l, close: c, volume: v || 0 })
+        }
+      }
+      if (out.length > 10) return out
+    } catch {}
+  }
+  return []
+}
+
 // Per-wallet holdings for QR snapshots — getPortfolio() aggregates across
 // wallets (no wallet_id on holdings), which previously collapsed multi-wallet
 // portfolios into the first wallet on restore.
@@ -1941,11 +1970,13 @@ export const api = {
     // Classify each id: 'crypto' → CoinGecko, 'stooq' → Stooq CSV, null → skip.
     const sourceFor = (id) => {
       if (!id) return null;
-      // Stocks, ETFs and metals all have a Stooq symbol mapping.
+      // Stocks, ETFs, metals — use Stooq/Yahoo for OHLCV data.
       if (stooqSymbolFor(id)) return 'stooq';
-      // Anything else without a daily price feed can't be analysed.
+      // Bonds, fiat, real estate, cash — no meaningful price series.
       if (id.startsWith(FIAT_PREFIX) || id.startsWith('bond:') ||
-          id.startsWith('other:') || id.startsWith('real:') || id.startsWith('cash:')) return null;
+          id.startsWith('real:') || id.startsWith('cash:')) return null;
+      // 'other:' assets (oil, watch, car) — skip unless we add data later.
+      if (id.startsWith('other:')) return null;
       return 'crypto';
     };
 
@@ -1969,9 +2000,18 @@ export const api = {
         try {
           let closes = [];
           if (src === 'stooq') {
-            // Stooq daily CSV — already one close per trading day, ascending.
-            const hist = await fetchStooqHistory(stooqSymbolFor(id), days);
-            closes = hist.map(r => r.price).filter(p => isFinite(p) && p > 0);
+            // Try Yahoo OHLCV first (gives highs/lows/volumes for advanced indicators).
+            // Falls back to Stooq CSV (closes only) if Yahoo fails.
+            const stooqSym = stooqSymbolFor(id)
+            const yahooData = await fetchYahooOHLCV(stooqSym, days)
+            if (yahooData.length > 20) {
+              closes = yahooData.map(r => r.close)
+              // Store full OHLCV on the out object for advanced indicators
+              out[id + ':ohlcv'] = yahooData
+            } else {
+              const hist = await fetchStooqHistory(stooqSym, days)
+              closes = hist.map(r => r.price).filter(p => isFinite(p) && p > 0)
+            }
           } else {
             const data = await fetchJSON(
               `${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`
@@ -1985,7 +2025,11 @@ export const api = {
               .map(([, p]) => p);
           }
           if (closes.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
-          const ta = analyzeTechnicals(closes, closes[closes.length - 1]);
+          // Pass OHLCV data for advanced indicators when available
+          const ohlcv = out[id + ':ohlcv'] || null
+          const ta = analyzeTechnicals(closes, closes[closes.length - 1], ohlcv)
+          // Clean up the temp OHLCV key
+          if (out[id + ':ohlcv']) delete out[id + ':ohlcv']
           out[id] = ta;
           cache[id] = { t: now, v: ta };
         } catch { out[id] = null; }

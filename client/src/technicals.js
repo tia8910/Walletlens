@@ -118,6 +118,185 @@ export function pivots(values, left = 3, right = 3) {
 }
 
 // Cluster nearby price levels (merge within 2%) and keep the closest `max`.
+
+// ── Advanced indicators ──────────────────────────────────────────────────
+
+// SMA series helper — full series of simple moving averages.
+function smaSeries(values, period) {
+  if (!values || values.length < period) return []
+  const out = []
+  for (let i = period - 1; i < values.length; i++) {
+    out.push(values.slice(i - period + 1, i + 1).reduce((s, v) => s + v, 0) / period)
+  }
+  return out
+}
+
+// Stochastic RSI — normalizes RSI to 0..100 over its recent range.
+export function stochRSI(values, rsiPeriod = 14, stochPeriod = 14, kPeriod = 3, dPeriod = 3) {
+  if (!values || values.length < rsiPeriod + stochPeriod + kPeriod + dPeriod) return null
+  const rsiSeries = []
+  let gains = 0, losses = 0
+  for (let i = 1; i <= rsiPeriod; i++) {
+    const d = values[i] - values[i - 1]
+    if (d >= 0) gains += d; else losses -= d
+  }
+  let avgGain = gains / rsiPeriod, avgLoss = losses / rsiPeriod
+  for (let i = rsiPeriod; i < values.length; i++) {
+    if (i > rsiPeriod) {
+      const d = values[i] - values[i - 1]
+      avgGain = (avgGain * (rsiPeriod - 1) + (d > 0 ? d : 0)) / rsiPeriod
+      avgLoss = (avgLoss * (rsiPeriod - 1) + (d < 0 ? -d : 0)) / rsiPeriod
+    }
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss
+    rsiSeries.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs))
+  }
+  if (rsiSeries.length < stochPeriod) return null
+  const stoch = []
+  for (let i = stochPeriod - 1; i < rsiSeries.length; i++) {
+    const window = rsiSeries.slice(i - stochPeriod + 1, i + 1)
+    const low = Math.min(...window), high = Math.max(...window)
+    stoch.push(high === low ? 50 : ((rsiSeries[i] - low) / (high - low)) * 100)
+  }
+  if (stoch.length < kPeriod) return null
+  const kSeries = smaSeries(stoch, kPeriod)
+  if (kSeries.length < dPeriod) return null
+  const dSeries = smaSeries(kSeries, dPeriod)
+  const k = kSeries[kSeries.length - 1], d = dSeries[dSeries.length - 1]
+  const prevK = kSeries.length >= 2 ? kSeries[kSeries.length - 2] : k
+  const prevD = dSeries.length >= 2 ? dSeries[dSeries.length - 2] : d
+  let cross = null
+  if (prevK <= prevD && k > d) cross = 'bullish'
+  else if (prevK >= prevD && k < d) cross = 'bearish'
+  return { k, d, cross, state: k > 80 ? 'overbought' : k < 20 ? 'oversold' : 'neutral' }
+}
+
+// Williams %R — momentum oscillator (-100 to 0).
+export function williamsR(values, period = 14) {
+  if (!values || values.length < period) return null
+  const slice = values.slice(-period)
+  const high = Math.max(...slice), low = Math.min(...slice)
+  return high === low ? -50 : ((high - values[values.length - 1]) / (high - low)) * -100
+}
+
+// ADX — Average Directional Index (trend strength 0..100).
+export function adx(highs, lows, closes, period = 14) {
+  if (!closes || closes.length < period * 3 || !highs || !lows) return null
+  const trArr = [], plusDM = [], minusDM = []
+  for (let i = 1; i < closes.length; i++) {
+    const tr = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]))
+    const up = highs[i] - highs[i - 1], down = lows[i - 1] - lows[i]
+    trArr.push(tr); plusDM.push(up > down && up > 0 ? up : 0); minusDM.push(down > up && down > 0 ? down : 0)
+  }
+  let atr = trArr.slice(0, period).reduce((s, v) => s + v, 0) / period
+  let plus = plusDM.slice(0, period).reduce((s, v) => s + v, 0) / period
+  let minus = minusDM.slice(0, period).reduce((s, v) => s + v, 0) / period
+  const dxArr = []
+  for (let i = period; i < trArr.length; i++) {
+    atr = (atr * (period - 1) + trArr[i]) / period
+    plus = (plus * (period - 1) + plusDM[i]) / period
+    minus = (minus * (period - 1) + minusDM[i]) / period
+    const diP = atr > 0 ? (plus / atr) * 100 : 0, diM = atr > 0 ? (minus / atr) * 100 : 0
+    dxArr.push(diP + diM > 0 ? Math.abs(diP - diM) / (diP + diM) * 100 : 0)
+  }
+  if (dxArr.length < period) return null
+  let adxVal = dxArr.slice(0, period).reduce((s, v) => s + v, 0) / period
+  for (let i = period; i < dxArr.length; i++) adxVal = (adxVal * (period - 1) + dxArr[i]) / period
+  return { adx: adxVal, trending: adxVal > 25 }
+}
+
+// CCI — Commodity Channel Index.
+export function cci(highs, lows, closes, period = 20) {
+  if (!closes || closes.length < period || !highs || !lows) return null
+  const tpArr = closes.map((c, i) => (highs[i] + lows[i] + c) / 3)
+  const slice = tpArr.slice(-period)
+  const mean = slice.reduce((s, v) => s + v, 0) / period
+  const meanDev = slice.reduce((s, v) => s + Math.abs(v - mean), 0) / period
+  return meanDev === 0 ? 0 : (tpArr[tpArr.length - 1] - mean) / (0.015 * meanDev)
+}
+
+// Ichimoku Cloud
+export function ichimoku(highs, lows, closes, tenkanP = 9, kijunP = 26, senkouP = 52) {
+  if (!closes || closes.length < senkouP || !highs || !lows) return null
+  const tenkan = (Math.max(...highs.slice(-tenkanP)) + Math.min(...lows.slice(-tenkanP))) / 2
+  const kijun = (Math.max(...highs.slice(-kijunP)) + Math.min(...lows.slice(-kijunP))) / 2
+  const spanA = (tenkan + kijun) / 2
+  const spanB = (Math.max(...highs.slice(-senkouP)) + Math.min(...lows.slice(-senkouP))) / 2
+  const cloudTop = Math.max(spanA, spanB), cloudBottom = Math.min(spanA, spanB)
+  const last = closes[closes.length - 1]
+  return {
+    tenkan, kijun, spanA, spanB, cloudTop, cloudBottom,
+    aboveCloud: last > cloudTop, belowCloud: last < cloudBottom,
+    cloudColor: spanA > spanB ? 'bullish' : 'bearish',
+    cross: tenkan > kijun ? 'bullish' : 'bearish',
+  }
+}
+
+// VWAP — Volume Weighted Average Price
+export function vwap(highs, lows, closes, volumes, period = 20) {
+  if (!closes || closes.length < period || !volumes || volumes.length < period) return null
+  let cumTPV = 0, cumV = 0
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const tp = (highs[i] + lows[i] + closes[i]) / 3
+    cumTPV += tp * volumes[i]; cumV += volumes[i]
+  }
+  return cumV > 0 ? cumTPV / cumV : null
+}
+
+// Fibonacci retracement levels
+export function fibonacciRetracement(swingHigh, swingLow) {
+  if (!swingHigh || !swingLow || swingHigh <= swingLow) return null
+  const diff = swingHigh - swingLow
+  return { '0%': swingLow, '23.6%': swingLow + diff * 0.236, '38.2%': swingLow + diff * 0.382,
+    '50%': swingLow + diff * 0.5, '61.8%': swingLow + diff * 0.618, '78.6%': swingLow + diff * 0.786, '100%': swingHigh }
+}
+
+// OBV — On Balance Volume with trend detection
+export function obv(closes, volumes) {
+  if (!closes || !volumes || closes.length < 5) return null
+  const series = [0]
+  for (let i = 1; i < closes.length; i++) {
+    if (closes[i] > closes[i - 1]) series.push(series[i - 1] + volumes[i])
+    else if (closes[i] < closes[i - 1]) series.push(series[i - 1] - volumes[i])
+    else series.push(series[i - 1])
+  }
+  const sma20 = smaSeries(series, Math.min(20, series.length))
+  const trend = sma20.length >= 2 ? (sma20[sma20.length - 1] > sma20[sma20.length - 2] ? 'up' : 'down') : 'flat'
+  return { value: series[series.length - 1], trend, divergence: closes[closes.length - 1] > closes[closes.length - 5] !== trend === 'up' }
+}
+
+// Money Flow Index (MFI) — volume-weighted RSI
+export function mfi(highs, lows, closes, volumes, period = 14) {
+  if (!closes || closes.length < period + 1 || !highs || !lows || !volumes) return null
+  let posMF = 0, negMF = 0
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const tp = (highs[i] + lows[i] + closes[i]) / 3
+    const prevTP = (highs[i - 1] + lows[i - 1] + closes[i - 1]) / 3
+    const mf = tp * volumes[i]
+    if (tp > prevTP) posMF += mf; else negMF += mf
+  }
+  return negMF === 0 ? 100 : 100 - 100 / (1 + posMF / negMF)
+}
+
+// Parabolic SAR
+export function parabolicSAR(highs, lows, step = 0.02, max = 0.2) {
+  if (!highs || !lows || highs.length < 3) return null
+  let isLong = highs[1] > highs[0], af = step, ep = isLong ? highs[0] : lows[0]
+  let sar = isLong ? lows[0] : highs[0]
+  for (let i = 1; i < highs.length; i++) {
+    sar = sar + af * (ep - sar)
+    if (isLong) {
+      sar = Math.min(sar, lows[i - 1], i >= 2 ? lows[i - 2] : lows[i - 1])
+      if (lows[i] < sar) { isLong = false; sar = ep; ep = lows[i]; af = step }
+      else if (highs[i] > ep) { ep = highs[i]; af = Math.min(af + step, max) }
+    } else {
+      sar = Math.max(sar, highs[i - 1], i >= 2 ? highs[i - 2] : highs[i - 1])
+      if (highs[i] > sar) { isLong = true; sar = ep; ep = highs[i]; af = step }
+      else if (lows[i] < ep) { ep = lows[i]; af = Math.min(af + step, max) }
+    }
+  }
+  return { value: sar, trend: isLong ? 'long' : 'short' }
+}
+
 function clusterLevels(levels, ascending, max = 3) {
   const sorted = [...new Set(levels.map((p) => +p))].sort((a, b) => (ascending ? a - b : b - a))
   const out = []
@@ -154,7 +333,9 @@ export function atrPct(values, period = 14) {
 
 // Consolidated technical posture for a series of daily closes.
 // Returns null if there isn't enough clean data to be meaningful (<20 pts).
-export function analyzeTechnicals(closes, currentPrice) {
+// analyzeTechnicals — computes all indicators from close prices and optionally
+// OHLCV arrays (for advanced indicators like ADX, CCI, Ichimoku, VWAP, SAR).
+export function analyzeTechnicals(closes, currentPrice, ohlcv = null) {
   const v = clean(closes)
   if (v.length < 20) return null
   const cur = currentPrice && isFinite(currentPrice) && currentPrice > 0 ? currentPrice : v[v.length - 1]
@@ -199,6 +380,24 @@ export function analyzeTechnicals(closes, currentPrice) {
   if (rsiState === 'overbought' || (_bb && _bb.pctB > 1) || _macd?.cross === 'bearish') signal = 'distribute'
   if (rsiState === 'oversold' || (_bb && _bb.pctB < 0)) signal = 'accumulate'
 
+  // ── Advanced indicators (require OHLCV data) ────────────────────────
+  let stochRSI = null, wr = null, adxVal = null, cciVal = null
+  let ichimokuVal = null, vwapVal = null, sarVal = null, obvVal = null, mfiVal = null
+  if (ohlcv && ohlcv.length > 30) {
+    const highs = ohlcv.map(r => r.high).filter(isFinite)
+    const lows = ohlcv.map(r => r.low).filter(isFinite)
+    const volumes = ohlcv.map(r => r.volume || 0)
+    stochRSI = stochRSI_calc(v, 14, 14, 3, 3)
+    wr = williamsR(v)
+    adxVal = adx(highs, lows, v)
+    cciVal = cci(highs, lows, v)
+    ichimokuVal = ichimoku(highs, lows, v)
+    vwapVal = vwap(highs, lows, v, volumes)
+    sarVal = parabolicSAR(highs, lows)
+    obvVal = obv(v, volumes)
+    mfiVal = mfi(highs, lows, v, volumes)
+  }
+
   return {
     rsi: _rsi,
     rsiState,
@@ -212,6 +411,15 @@ export function analyzeTechnicals(closes, currentPrice) {
     macd: _macd,
     bb: _bb,
     atrPct: _atr,
+    stochRSI,
+    williamsR: wr,
+    adx: adxVal,
+    cci: cciVal,
+    ichimoku: ichimokuVal,
+    vwap: vwapVal,
+    sar: sarVal,
+    obv: obvVal,
+    mfi: mfiVal,
     supports: sr.supports,
     resistances: sr.resistances,
     nearestSupport: sr.supports[0] ?? null,

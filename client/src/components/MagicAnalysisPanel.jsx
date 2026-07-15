@@ -10,19 +10,24 @@ import { isStablecoin } from '../stablecoins'
 import { getCachedCoinImage } from '../api'
 
 const PILLAR_INFO = {
-  technical:   'RSI, MACD, Bollinger Bands and trend from daily candles.',
-  whales:      'Accumulation vs distribution from volume-weighted flow.',
-  onchain:     'Flow + turnover (volume/market-cap) + supply dilution proxies.',
+  technical:   'RSI, MACD, Bollinger Bands, trend, Ichimoku Cloud, VWAP and Fibonacci levels.',
+  momentum:    'Stochastic RSI, Williams %R, ADX, CCI, MFI, Parabolic SAR, OBV — composite oscillator signal.',
+  whales:      'Accumulation vs distribution from volume-weighted flow + exchange transfers.',
+  onchain:     'NVT proxy, exchange flow, supply shock, turnover (volume/market-cap), dilution.',
+  volume:      'OBV divergence, volume profile, VWAP confirmation, turnover rate.',
+  sentiment:   'Fear & Greed Index (contrarian), BTC dominance shift, social buzz, market breadth.',
+  cycle:       'Bitcoin halving cycle position, Pi Cycle Top/Bottom, ATH drawdown phase.',
+  correlation: 'BTC/SPY/Gold/DXY correlation — regime detection and diversification value.',
   fundamental: 'Market-cap tier, FDV/MC dilution and distance from all-time high.',
-  volume:      'Whether volume is confirming the current price move.',
 }
 
-// Crypto holdings only — exclude other asset classes AND stablecoins
-// (stablecoins are cash, so technical/on-chain analysis is meaningless).
+// All holdings with price data are analyzable — except stablecoins and fiat/cash.
+// Stocks, metals, crypto all get full technical analysis.
 const isAnalyzable = (h) => {
   const id = h.coin_id
-  if (!id || /^(metal:|stock:|fiat:|bond:|other:|cash:|real:)/.test(id)) return false
+  if (!id) return false
   if (isStablecoin(id, h.coin_symbol)) return false
+  if (/^(fiat:|cash:|real:)/.test(id)) return false
   return true
 }
 
@@ -639,8 +644,8 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
         <div style={{ marginBottom: '0.4rem', display: 'flex', justifyContent: 'center' }}><Icon name="pulse" size={30} style={{ color: 'var(--g-ink)', fontWeight: 700 }} /></div>
         <p className="muted" style={{ margin: 0 }}>
-          Add a crypto holding to see the Magic Indicator — technicals, on-chain flow, volume,
-          whales and fundamentals merged into one direction.
+          Add a holding to see the Magic Indicator — technicals, momentum, volume, sentiment
+          and more merged into one direction. Works for crypto, stocks, gold and silver.
         </p>
       </div>
     )
@@ -679,7 +684,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       {nonCryptoCount > 0 && (
         <div className="glass-card" style={{ marginTop: '1rem', padding: '0.9rem 1.1rem' }}>
           <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
-            ℹ️ {nonCryptoCount} holding{nonCryptoCount === 1 ? '' : 's'} not shown — stablecoins and non-crypto assets (cash, metals, stocks) are excluded from technical & on-chain analysis.
+            ℹ️ {nonCryptoCount} holding{nonCryptoCount === 1 ? '' : 's'} excluded — stablecoins and cash/fiat have no meaningful price series to analyze.
           </p>
         </div>
       )}
