@@ -1074,26 +1074,50 @@ async function fetchYahooOHLCV(ticker, days = 180) {
   const sym = (ticker || '').toUpperCase().replace(/\./g, '-')
   const range = days <= 7 ? '5d' : days <= 60 ? '3mo' : days <= 180 ? '6mo' : '1y'
   const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
+
+  // Helper to parse Yahoo chart JSON into OHLCV rows
+  const parseYahoo = (data) => {
+    const result = data?.chart?.result?.[0]
+    if (!result?.indicators?.quote?.[0]) return []
+    const q = result.indicators.quote[0]
+    const ts = result.timestamp || []
+    const out = []
+    for (let i = 0; i < ts.length; i++) {
+      const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i], v = q.volume?.[i]
+      if (isFinite(o) && isFinite(h) && isFinite(l) && isFinite(c) && o > 0 && h > 0 && l > 0 && c > 0) {
+        out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), open: o, high: h, low: l, close: c, volume: v || 0 })
+      }
+    }
+    return out
+  }
+
+  // 1. Try direct Yahoo Finance hosts first
   for (const host of hosts) {
     try {
       const url = `https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`
       const res = await fetchWithTimeout(url, 8000)
       if (!res.ok) continue
       const data = await res.json()
-      const result = data?.chart?.result?.[0]
-      if (!result?.indicators?.quote?.[0]) continue
-      const q = result.indicators.quote[0]
-      const ts = result.timestamp || []
-      const out = []
-      for (let i = 0; i < ts.length; i++) {
-        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i], v = q.volume?.[i]
-        if (isFinite(o) && isFinite(h) && isFinite(l) && isFinite(c) && o > 0 && h > 0 && l > 0 && c > 0) {
-          out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), open: o, high: h, low: l, close: c, volume: v || 0 })
-        }
-      }
+      const out = parseYahoo(data)
       if (out.length > 10) return out
     } catch {}
   }
+
+  // 2. Fallback through CORS proxies (browser CORS blocks direct Yahoo)
+  for (const wrap of CORS_PROXIES) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`
+      const res = await fetchWithTimeout(wrap(url), 8000)
+      if (!res.ok) continue
+      const text = await res.text()
+      // allorigins returns raw JSON; corsproxy wraps differently
+      let data
+      try { data = JSON.parse(text) } catch { continue }
+      const out = parseYahoo(data)
+      if (out.length > 10) return out
+    } catch {}
+  }
+
   return []
 }
 
@@ -2064,7 +2088,8 @@ export const api = {
           // Pass OHLCV data for advanced indicators when available
           const ohlcv = out[id + ':ohlcv'] || null
           const ta = analyzeTechnicals(closes, closes[closes.length - 1], ohlcv)
-          // Clean up the temp OHLCV key
+          // Attach raw OHLCV to ta so synthesis functions can derive fundamentals for non-crypto
+          if (ohlcv && ohlcv.length > 0) ta.ohlcv = ohlcv
           if (out[id + ':ohlcv']) delete out[id + ':ohlcv']
           out[id] = ta;
           cache[id] = { t: now, v: ta };

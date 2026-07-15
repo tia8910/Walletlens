@@ -4,7 +4,7 @@ import { api } from '../api'
 import { track, trackAI } from '../analytics'
 import CoinLogo from './CoinLogo'
 import Icon from './Icon'
-import { computeMagic, aggregateMagic } from '../magicIndicator'
+import { computeMagic } from '../magicIndicator'
 import { getAiVerdict } from '../magicAi'
 import { isStablecoin } from '../stablecoins'
 import { assetClass } from '../data/assets'
@@ -488,35 +488,40 @@ function ShareCardButton({ item, verdict }) {
   )
 }
 
-// ── Diverging gauge (-100..100) — premium design ─────────────────────────
+// ── Diverging gauge (-100..100) — enhanced premium design ────────────────────
 function MagicGauge({ score, direction, confidence, big }) {
   const pos = ((score + 100) / 200) * 100
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: big ? '1.4rem' : '1.1rem', fontWeight: 800, color: direction.color, display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
-          <Icon name={direction.icon} size={big ? 24 : 20} /> {direction.label}
-        </span>
-        <span style={{ fontSize: big ? '1rem' : '0.85rem', fontWeight: 800, color: direction.color }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+          <div style={{ width: big ? '36px' : '28px', height: big ? '36px' : '28px', borderRadius: '10px', background: `${direction.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={direction.icon} size={big ? 20 : 16} style={{ color: direction.color }} />
+          </div>
+          <span style={{ fontSize: big ? '1.5rem' : '1.15rem', fontWeight: 800, color: direction.color, letterSpacing: '-0.01em' }}>
+            {direction.label}
+          </span>
+        </div>
+        <span style={{ fontSize: big ? '1.1rem' : '0.9rem', fontWeight: 800, color: direction.color, fontVariantNumeric: 'tabular-nums' }}>
           {score > 0 ? '+' : ''}{score}
         </span>
       </div>
       <div className="magic-track">
         <div className="magic-track-mid" />
-        <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 14px ${direction.color}, 0 0 28px ${direction.color}40` }} />
+        <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 16px ${direction.color}, 0 0 32px ${direction.color}35` }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.3rem' }}>
         <span>Distribute</span>
         <span>Neutral</span>
         <span>Accumulate</span>
       </div>
       {confidence != null && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text2)', marginTop: '0.45rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text2)', marginTop: '0.5rem' }}>
           <span>Confidence</span>
-          <div style={{ flex: 1, height: '4px', borderRadius: '3px', background: 'var(--bg3)', overflow: 'hidden', maxWidth: '120px' }}>
-            <div style={{ width: `${confidence}%`, height: '100%', borderRadius: '3px', background: `linear-gradient(90deg, ${direction.color}80, ${direction.color})`, transition: 'width 0.4s ease' }} />
+          <div style={{ flex: 1, height: '5px', borderRadius: '3px', background: 'var(--bg3)', overflow: 'hidden', maxWidth: '140px' }}>
+            <div style={{ width: `${confidence}%`, height: '100%', borderRadius: '3px', background: `linear-gradient(90deg, ${direction.color}70, ${direction.color})`, transition: 'width 0.5s ease' }} />
           </div>
-          <b style={{ color: 'var(--text)', fontSize: '0.78rem' }}>{confidence}%</b>
+          <b style={{ color: 'var(--text)', fontSize: '0.8rem' }}>{confidence}%</b>
         </div>
       )}
     </div>
@@ -626,7 +631,7 @@ function AiVerdict({ item, onVerdictReady }) {
   )
 }
 
-// ── Per-asset card ─────────────────────────────────────────────────────────
+// ── Per-asset card — enhanced premium design ────────────────────────────
 function AssetCard({ item, onOpen }) {
   const m = item.magic
   const chg = item.fundamental?.change24h
@@ -635,21 +640,21 @@ function AssetCard({ item, onOpen }) {
   return (
     <div className="glass-card magic-card">
       <div className="magic-card-head" onClick={onOpen} style={{ cursor: 'pointer' }}>
-        <CoinLogo image={item.coin_image} symbol={item.coin_symbol} coinId={item.coin_id} size={38} className="coin-logo" />
+        <CoinLogo image={item.coin_image} symbol={item.coin_symbol} coinId={item.coin_id} size={40} className="coin-logo" />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontWeight: 800 }}>{item.coin_symbol?.toUpperCase()}</span>
-            <span className="muted" style={{ fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.coin_name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{item.coin_symbol?.toUpperCase()}</span>
+            <span className="muted" style={{ fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.coin_name}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>
-            {money(item.price)}
-            {chg != null && <span style={{ marginLeft: '0.4rem', color: chg >= 0 ? 'var(--g-ink)' : '#ef4444' }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
-            <span style={{ marginLeft: '0.4rem' }}>· {item.weight.toFixed(1)}% of book</span>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text2)', marginTop: '0.1rem' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{money(item.price)}</span>
+            {chg != null && <span style={{ marginLeft: '0.5rem', color: chg >= 0 ? 'var(--g-ink)' : '#ef4444', fontWeight: 600 }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>}
+            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}> · {item.weight.toFixed(1)}%</span>
           </div>
         </div>
       </div>
 
-      <div style={{ margin: '0.85rem 0' }}>
+      <div style={{ margin: '0.9rem 0' }}>
         <MagicGauge score={m.score} direction={m.direction} confidence={m.confidence} />
       </div>
 
@@ -715,7 +720,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey])
 
-  const { cryptoItems, nonCryptoCount, compass } = useMemo(() => {
+  const { cryptoItems, nonCryptoCount } = useMemo(() => {
     const tv = totalValue || enriched.reduce((s, h) => s + (h.value || 0), 0)
     const cryptoItems = enriched
       .filter(isAnalyzable)
@@ -745,9 +750,8 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       })
       .filter(it => it.magic)
       .sort((a, b) => b.value - a.value)
-    const compass = aggregateMagic(cryptoItems.map(it => ({ value: it.value, magic: it.magic })))
     const nonCryptoCount = enriched.filter(h => !isAnalyzable(h)).length
-    return { cryptoItems, nonCryptoCount, compass }
+    return { cryptoItems, nonCryptoCount }
   }, [enriched, totalValue, ta, signals, fundamentals])
 
   // Category counts for tabs
@@ -797,17 +801,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
         </div>
       )}
 
-      {compass && (
-        <div className="glass-card magic-compass">
-          <div className="magic-compass-label">PORTFOLIO COMPASS · {compass.assets} asset{compass.assets === 1 ? '' : 's'}</div>
-          <MagicGauge score={compass.score} direction={compass.direction} confidence={compass.confidence} big />
-          <p className="muted" style={{ fontSize: '0.78rem', margin: '0.6rem 0 0' }}>
-            Value-weighted blend across your crypto book. Not financial advice.
-          </p>
-        </div>
-      )}
-
-      {analyzing && cryptoItems.length === 0 && (
+{analyzing && cryptoItems.length === 0 && (
         <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>Crunching indicators…</div>
       )}
 

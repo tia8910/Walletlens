@@ -10,7 +10,7 @@ import {
 describe('asset constants', () => {
   it('exports the canonical asset categories', () => {
     expect(Object.keys(ASSET_CATEGORIES).sort())
-      .toEqual(['bond', 'copper', 'crypto', 'fiat', 'gold', 'other', 'platinum', 'silver', 'stock'])
+      .toEqual(['bond', 'copper', 'crypto', 'fiat', 'gold', 'other', 'platinum', 'silver', 'stock', 'tstock'])
   })
   it('NON_CRYPTO_CATEGORIES omits crypto', () => {
     expect(NON_CRYPTO_CATEGORIES).not.toContain('crypto')

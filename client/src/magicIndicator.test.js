@@ -82,7 +82,7 @@ describe('computeMagic', () => {
     expect(m.score).toBeGreaterThan(20)
     expect(m.direction.stance).toBe('bullish')
     expect(m.confidence).toBeGreaterThan(60)         // aligned pillars → high confidence
-    expect(m.pillars.filter(p => p.available).length).toBe(5)
+    expect(m.pillars.filter(p => p.available).length).toBe(8)
   })
   it('produces a bearish composite when everything is negative', () => {
     const m = computeMagic({ ta: bearishTA, signals: bearishSignals, fundamental: dilutiveFundamental })
