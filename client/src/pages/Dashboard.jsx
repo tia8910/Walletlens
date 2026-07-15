@@ -2969,6 +2969,69 @@ function AlertsSection({ enriched, prices, isDemo }) {
   )
 }
 
+
+
+// ── Portfolio Brief Statement — natural language holding status ──────────
+const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, totalPnL, totalPnLPct }) {
+  const statement = useMemo(() => {
+    if (!enriched.length || totalValue <= 0) return null
+
+    const parts = []
+    const isUp = totalPnLPct >= 0
+
+    // Opening: total status
+    const pctStr = (totalPnLPct >= 0 ? '+' : '') + totalPnLPct.toFixed(1) + '%'
+    parts.push(`Your portfolio is ${isUp ? 'up' : 'down'} ${pctStr} today`)
+
+    // Winners / losers count
+    let winners = 0, losers = 0, flat = 0
+    let topSym = '', topChg = -Infinity
+    let worstSym = '', worstChg = Infinity
+    for (const h of enriched) {
+      const chg = h.pct24h ?? 0
+      if (chg > 0.01) winners++
+      else if (chg < -0.01) losers++
+      else flat++
+      if (chg > topChg) { topChg = chg; topSym = h.coin_symbol?.toUpperCase() }
+      if (chg < worstChg) { worstChg = chg; worstSym = h.coin_symbol?.toUpperCase() }
+    }
+
+    const countParts = []
+    if (winners) countParts.push(`${winners} winner${winners !== 1 ? 's' : ''}`)
+    if (losers) countParts.push(`${losers} loser${losers !== 1 ? 's' : ''}`)
+    if (countParts.length) parts.push(countParts.join(' and '))
+
+    // Top performer
+    if (topChg > 0.01) {
+      parts.push(`${topSym} leads at +${topChg.toFixed(1)}%`)
+    }
+
+    // Worst performer
+    if (worstChg < -0.01 && worstSym !== topSym) {
+      parts.push(`${worstSym} trails at ${worstChg.toFixed(1)}%`)
+    }
+
+    return parts.join('. ') + '.'
+  }, [enriched, totalValue, totalPnLPct])
+
+  if (!statement) return null
+
+  return (
+    <div style={{
+      padding: '0.6rem 0.8rem',
+      margin: '0.4rem 0 0.2rem',
+      fontSize: '0.82rem',
+      color: 'var(--text2)',
+      lineHeight: 1.5,
+      borderRadius: '12px',
+      background: 'rgba(255,255,255,0.03)',
+      borderLeft: '3px solid ' + (totalPnLPct >= 0 ? 'var(--g)' : '#f87171'),
+    }}>
+      {statement}
+    </div>
+  )
+})
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -3924,6 +3987,11 @@ export default function Dashboard() {
               </button>
             </div>
           )}
+
+          
+          
+          {/* Portfolio brief statement */}
+          {enriched.length > 0 && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={totalPnL} totalPnLPct={totalPnLPct} />}
 
           {/* Import options under Buy/Sell — only when the desktop tile grid is
               shown up top. On mobile web and in the native app the import
