@@ -1008,6 +1008,18 @@ async function fetchBatchStocks(tickers) {
   return _refreshBatchStocks(tickers);
 }
 // Map a WalletLens asset id to a Stooq symbol string for historical CSV downloads.
+// Yahoo Finance uses different symbols than Stooq for metals.
+// GC=F (gold), SI=F (silver), HG=F (copper), PL=F (platinum).
+function yahooTickerFor(id) {
+  if (id === GOLD_ID) return 'GC=F';
+  if (id === SILVER_ID) return 'SI=F';
+  if (id === COPPER_ID) return 'HG=F';
+  if (id === PLATINUM_ID) return 'PL=F';
+  if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id].replace(/\.us$/, '').toUpperCase();
+  if (id.startsWith(STOCK_PREFIX)) return id.slice(STOCK_PREFIX.length).toUpperCase();
+  return null;
+}
+
 function stooqSymbolFor(id) {
   if (id === GOLD_ID) return 'xauusd';
   if (id === SILVER_ID) return 'xagusd';
@@ -2000,9 +2012,10 @@ export const api = {
         try {
           let closes = [];
           if (src === 'stooq') {
+            const yahooSym = yahooTickerFor(id) || stooqSymbolFor(id)
             const stooqSym = stooqSymbolFor(id)
-            // Try Yahoo OHLCV first (gives highs/lows/volumes for advanced indicators).
-            const yahooData = await fetchYahooOHLCV(stooqSym, days)
+            // Try Yahoo OHLCV first with correct ticker (gives highs/lows/volumes for advanced indicators).
+            const yahooData = await fetchYahooOHLCV(yahooSym, days)
             if (yahooData.length > 20) {
               closes = yahooData.map(r => r.close)
               out[id + ':ohlcv'] = yahooData // stored for analyzeTechnicals
@@ -2010,9 +2023,15 @@ export const api = {
               // Fallback to Stooq CSV (closes only)
               const hist = await fetchStooqHistory(stooqSym, days)
               closes = hist.map(r => r.price).filter(p => isFinite(p) && p > 0)
-              // Try Yahoo again with longer range for OHLCV
-              const yahooLonger = await fetchYahooOHLCV(stooqSym, 365)
-              if (yahooLonger.length > 20) out[id + ':ohlcv'] = yahooLonger
+              // Try Yahoo again with longer range and also try Stooq symbol
+              const yahooLonger = await fetchYahooOHLCV(yahooSym, 365)
+              if (yahooLonger.length > 20) {
+                out[id + ':ohlcv'] = yahooLonger
+              } else {
+                // Last resort: try Stooq symbol on Yahoo
+                const yahooStooq = await fetchYahooOHLCV(stooqSym.toUpperCase(), 365)
+                if (yahooStooq.length > 20) out[id + ':ohlcv'] = yahooStooq
+              }
             }
           } else {
             const data = await fetchJSON(

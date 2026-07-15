@@ -531,6 +531,223 @@ export function pillarCorrelation(signals, fundamental) {
   }
 }
 
+
+// ── Stock-specific pillars ────────────────────────────────────────────────
+
+// Pillar: Stock Fundamental (earnings, P/E, revenue)
+function pillarStockFundamental(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // Market cap rank as proxy for stability
+  if (f.marketCapRank) {
+    if (f.marketCapRank <= 20) s += 25
+    else if (f.marketCapRank <= 50) s += 15
+    else if (f.marketCapRank <= 100) s += 5
+    else if (f.marketCapRank <= 300) s -= 10
+    else s -= 20
+    notes.push(`#${f.marketCapRank}`)
+  }
+
+  // ATH distance — recovery potential
+  if (typeof f.athChangePct === 'number') {
+    if (f.athChangePct > -10) s -= 10        // near ATH — limited upside
+    else if (f.athChangePct >= -50) s += 15   // healthy pullback
+    else if (f.athChangePct < -75) s -= 15    // broken trend
+    notes.push(`${Math.round(f.athChangePct)}% from ATH`)
+  }
+
+  // Volume/market cap as earnings interest proxy
+  if (f.marketCap > 0 && f.totalVolume > 0) {
+    const turnover = f.totalVolume / f.marketCap
+    if (turnover > 0.08) { s += 10; notes.push('high trading interest') }
+    else if (turnover < 0.01) { s -= 10; notes.push('low interest') }
+  }
+
+  // Price momentum as earnings proxy (stocks with strong trend = good earnings)
+  if (typeof f.change30d === 'number') {
+    s += clamp(f.change30d * 0.4, -20, 20)
+    if (Math.abs(f.change30d) > 10) notes.push(`30d ${f.change30d >= 0 ? '+' : ''}${Math.round(f.change30d)}%`)
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.slice(0, 2).join(' · ') || 'stock fundamentals' }
+}
+
+// Pillar: Sector performance
+function pillarSector(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // Use 30d change as sector momentum proxy
+  if (typeof f.change30d === 'number') {
+    s += clamp(f.change30d * 0.5, -25, 25)
+    notes.push(`sector mom ${f.change30d >= 0 ? '+' : ''}${Math.round(f.change30d)}%`)
+  }
+
+  // 7d vs 30d divergence = sector rotation
+  if (typeof f.change7d === 'number' && typeof f.change30d === 'number') {
+    const div = f.change7d - f.change30d / 4
+    if (div > 5) { s += 10; notes.push('accelerating') }
+    else if (div < -5) { s -= 10; notes.push('decelerating') }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
+// Pillar: Dividend yield (placeholder — estimated from sector)
+function pillarDividend(f) {
+  if (!f) return { available: false }
+  // No direct dividend data from free APIs — use market cap stability as proxy
+  if (typeof f.change30d === 'number' && Math.abs(f.change30d) < 15) {
+    const s = f.change30d > 0 ? 10 : -5
+    return { available: true, quality: 'proxy', score: cr(s), note: 'stable income proxy' }
+  }
+  return { available: false }
+}
+
+// Pillar: Market sentiment (VIX-like, derived from broad market)
+function pillarMarketSentiment(f, signals) {
+  if (!f && !signals) return { available: false }
+  let s = 0, notes = []
+
+  // Use BTC fear/greed as market proxy if available
+  if (signals && typeof signals.fearGreedIndex === 'number') {
+    const fg = signals.fearGreedIndex
+    s += clamp(-((fg - 50) * 0.6), -30, 30) // contrarian
+    notes.push(`F&G ${Math.round(fg)}`)
+  }
+
+  // Broad market momentum from 30d change
+  if (typeof f?.change30d === 'number') {
+    s += clamp(-f.change30d * 0.3, -20, 20) // contrarian
+    notes.push(`30d ${f.change30d >= 0 ? '+' : ''}${Math.round(f.change30d)}%`)
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') || 'market sentiment' }
+}
+
+// ── Metal-specific pillars ────────────────────────────────────────────────
+
+// Pillar: DXY (Dollar Index) correlation — inverse for metals
+function pillarDxyCorrelation(f, signals) {
+  let s = 0, notes = []
+
+  if (signals && typeof signals.dxyChange === 'number') {
+    // Strong inverse: dollar up = metals down
+    s += clamp(-signals.dxyChange * 400, -30, 30)
+    notes.push(`DXY ${signals.dxyChange >= 0 ? '+' : ''}${(signals.dxyChange * 100).toFixed(1)}%`)
+  }
+
+  // Fallback: use price momentum as DXY proxy (metals move inverse to dollar)
+  if (notes.length === 0 && typeof f?.change30d === 'number') {
+    s += clamp(f.change30d * 0.4, -20, 20)
+    notes.push(`price mom ${f.change30d >= 0 ? '+' : ''}${Math.round(f.change30d)}%`)
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: signals?.dxyChange != null ? 'live' : 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
+// Pillar: Inflation hedge value — gold/silver rise with inflation expectations
+function pillarInflationHedge(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // Rising metal = inflation fears rising = good for metals
+  if (typeof f.change30d === 'number') {
+    if (f.change30d > 15) { s += 25; notes.push('strong rally — inflation fears') }
+    else if (f.change30d > 5) { s += 15; notes.push('rising — hedge demand') }
+    else if (f.change30d < -15) { s -= 20; notes.push('falling — low inflation hedge demand') }
+    else if (f.change30d < -5) { s -= 10; notes.push('weakening') }
+    else { notes.push('stable — neutral inflation outlook') }
+  }
+
+  // ATH distance — metals near ATH = strong macro hedge
+  if (typeof f.athChangePct === 'number') {
+    if (f.athChangePct > -5) { s += 10; notes.push('near ATH') }
+    else if (f.athChangePct < -40) { s -= 10; notes.push('below trend') }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
+// Pillar: Safe haven demand — gold/silver rise in risk-off environments
+function pillarSafeHaven(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // 24h vs 30d divergence: if 24h is strong but 30d weak = flight to safety
+  if (typeof f.change24h === 'number' && typeof f.change30d === 'number') {
+    if (f.change24h > 2 && f.change30d < 0) {
+      s += 20; notes.push('flight to safety')
+    } else if (f.change24h < -2 && f.change30d > 0) {
+      s -= 15; notes.push('risk-on rotation')
+    } else if (f.change24h > 0) {
+      s += 8; notes.push('safe haven bid')
+    }
+  }
+
+  // Volume spike = risk event
+  if (f.marketCap > 0 && f.totalVolume > 0) {
+    const turnover = f.totalVolume / f.marketCap
+    if (turnover > 0.1) { s += 10; notes.push('elevated volume — risk event') }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
+// Pillar: Supply/Demand — for metals (mining supply constraints)
+function pillarSupplyDemand(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // Volume/market cap as supply constraint proxy
+  if (f.marketCap > 0 && f.totalVolume > 0) {
+    const turnover = f.totalVolume / f.marketCap
+    if (turnover > 0.05) { s += 10; notes.push('high demand') }
+    else if (turnover < 0.005) { s -= 10; notes.push('low demand') }
+  }
+
+  // Price trend as demand signal
+  if (typeof f.change7d === 'number' && typeof f.change30d === 'number') {
+    if (f.change7d > 0 && f.change30d > 0) { s += 15; notes.push('sustained demand') }
+    else if (f.change7d < 0 && f.change30d > 0) { s += 5; notes.push('pullback in uptrend') }
+    else if (f.change7d > 0 && f.change30d < 0) { s -= 5; notes.push('dead cat bounce') }
+    else { s -= 15; notes.push('weak demand') }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
+// Pillar: Industrial Demand (copper, platinum)
+function pillarIndustrialDemand(f) {
+  if (!f) return { available: false }
+  let s = 0, notes = []
+
+  // Strong 30d = industrial demand rising
+  if (typeof f.change30d === 'number') {
+    if (f.change30d > 10) { s += 25; notes.push('strong industrial demand') }
+    else if (f.change30d > 0) { s += 10; notes.push('moderate demand') }
+    else if (f.change30d < -10) { s -= 20; notes.push('weak industrial demand') }
+    else { s -= 5; notes.push('soft demand') }
+  }
+
+  // 7d acceleration = demand picking up
+  if (typeof f.change7d === 'number' && typeof f.change30d === 'number') {
+    if (f.change7d > f.change30d / 4 + 3) { s += 10; notes.push('demand accelerating') }
+    else if (f.change7d < f.change30d / 4 - 3) { s -= 10; notes.push('demand slowing') }
+  }
+
+  if (notes.length === 0) return { available: false }
+  return { available: true, quality: 'proxy', score: cr(s), note: notes.join(' · ') }
+}
+
 // Direction label / colour / icon for a composite score.
 export function directionMeta(score) {
   if (score >= 45) return { label: 'Strong Buy', stance: 'bullish', icon: 'arrow-ne', color: '#16a34a' }
@@ -540,36 +757,102 @@ export function directionMeta(score) {
   return { label: 'Distribute', stance: 'bearish', icon: 'arrow-down', color: '#ef4444' }
 }
 
-const PILLAR_DEFS = [
-  { key: 'technical', label: 'Technical', weight: 0.20 },
-  { key: 'momentum', label: 'Momentum', weight: 0.18 },
-  { key: 'whales', label: 'Whales', weight: 0.12 },
-  { key: 'onchain', label: 'On-chain', weight: 0.12 },
-  { key: 'volume', label: 'Volume', weight: 0.10 },
-  { key: 'sentiment', label: 'Sentiment', weight: 0.12 },
-  { key: 'cycle', label: 'Cycle', weight: 0.08 },
-  { key: 'correlation', label: 'Correlation', weight: 0.08 },
-]
+// Category-specific pillar definitions: crypto gets whales/on-chain/cycle,
+// stocks get fundamental/sector/dividend, metals get DXY/inflation/supply.
+const PILLAR_SETS = {
+  crypto: [
+    { key: 'technical', label: 'Technical', weight: 0.20 },
+    { key: 'momentum', label: 'Momentum', weight: 0.18 },
+    { key: 'whales', label: 'Whales', weight: 0.12 },
+    { key: 'onchain', label: 'On-chain', weight: 0.12 },
+    { key: 'volume', label: 'Volume', weight: 0.10 },
+    { key: 'sentiment', label: 'Sentiment', weight: 0.12 },
+    { key: 'cycle', label: 'Cycle', weight: 0.08 },
+    { key: 'correlation', label: 'Correlation', weight: 0.08 },
+  ],
+  stock: [
+    { key: 'technical', label: 'Technical', weight: 0.20 },
+    { key: 'momentum', label: 'Momentum', weight: 0.18 },
+    { key: 'volume', label: 'Volume', weight: 0.12 },
+    { key: 'stockFundamental', label: 'Earnings', weight: 0.20 },
+    { key: 'sector', label: 'Sector', weight: 0.12 },
+    { key: 'dividend', label: 'Dividend', weight: 0.08 },
+    { key: 'marketSentiment', label: 'Market', weight: 0.10 },
+  ],
+  metal: [
+    { key: 'technical', label: 'Technical', weight: 0.22 },
+    { key: 'momentum', label: 'Momentum', weight: 0.20 },
+    { key: 'volume', label: 'Volume', weight: 0.12 },
+    { key: 'dxyCorrelation', label: 'DXY', weight: 0.15 },
+    { key: 'inflationHedge', label: 'Inflation', weight: 0.12 },
+    { key: 'safeHaven', label: 'Safe Haven', weight: 0.10 },
+    { key: 'supplyDemand', label: 'Supply', weight: 0.09 },
+  ],
+  // Copper/platinum: industrial metals get supply+demand focus
+  industrialMetal: [
+    { key: 'technical', label: 'Technical', weight: 0.22 },
+    { key: 'momentum', label: 'Momentum', weight: 0.20 },
+    { key: 'volume', label: 'Volume', weight: 0.12 },
+    { key: 'dxyCorrelation', label: 'DXY', weight: 0.13 },
+    { key: 'industrialDemand', label: 'Demand', weight: 0.18 },
+    { key: 'supplyDemand', label: 'Supply', weight: 0.15 },
+  ],
+}
+
+function getPillarSet(cat) {
+  if (cat === 'stock') return PILLAR_SETS.stock
+  if (cat === 'gold' || cat === 'silver') return PILLAR_SETS.metal
+  if (cat === 'copper' || cat === 'platinum') return PILLAR_SETS.industrialMetal
+  return PILLAR_SETS.crypto
+}
 
 // Merge the pillars into a single direction.
-// Inputs: { ta, signals, fundamental } — any may be null/undefined.
+// Inputs: { ta, signals, fundamental, assetClass } — any may be null/undefined.
 // Every pillar always renders a value: when a feed is rate-limited we fall
 // back to data-backed proxies (see the pillar fns) and, as a last resort,
 // to a neutral 0 (flagged `estimated`) so nothing ever shows "n/a".
-export function computeMagic({ ta, signals, fundamental } = {}) {
-  const raw = {
-    technical: pillarTechnical(ta, fundamental),
-    momentum: pillarMomentum(ta),
-    volume: pillarVolume(signals, fundamental),
-    whales: pillarWhales(signals, fundamental),
-    onchain: pillarOnchain(signals, fundamental),
-    sentiment: pillarSentiment(signals, fundamental),
-    cycle: pillarCycle({ ...fundamental, ...signals }),
-    correlation: pillarCorrelation(signals, fundamental),
-    fundamental: pillarFundamental(fundamental),
+export function computeMagic({ ta, signals, fundamental, assetClass } = {}) {
+  const cat = assetClass || 'crypto'
+  const pillarDefs = getPillarSet(cat)
+
+  // Build category-specific pillar scores
+  const raw = {}
+  if (cat === 'stock') {
+    raw.technical = pillarTechnical(ta, fundamental)
+    raw.momentum = pillarMomentum(ta)
+    raw.volume = pillarVolume(signals, fundamental)
+    raw.stockFundamental = pillarStockFundamental(fundamental)
+    raw.sector = pillarSector(fundamental)
+    raw.dividend = pillarDividend(fundamental)
+    raw.marketSentiment = pillarMarketSentiment(fundamental, signals)
+  } else if (cat === 'gold' || cat === 'silver') {
+    raw.technical = pillarTechnical(ta, fundamental)
+    raw.momentum = pillarMomentum(ta)
+    raw.volume = pillarVolume(signals, fundamental)
+    raw.dxyCorrelation = pillarDxyCorrelation(fundamental, signals)
+    raw.inflationHedge = pillarInflationHedge(fundamental)
+    raw.safeHaven = pillarSafeHaven(fundamental)
+    raw.supplyDemand = pillarSupplyDemand(fundamental)
+  } else if (cat === 'copper' || cat === 'platinum') {
+    raw.technical = pillarTechnical(ta, fundamental)
+    raw.momentum = pillarMomentum(ta)
+    raw.volume = pillarVolume(signals, fundamental)
+    raw.dxyCorrelation = pillarDxyCorrelation(fundamental, signals)
+    raw.industrialDemand = pillarIndustrialDemand(fundamental)
+    raw.supplyDemand = pillarSupplyDemand(fundamental)
+  } else {
+    // Crypto — original pillars
+    raw.technical = pillarTechnical(ta, fundamental)
+    raw.momentum = pillarMomentum(ta)
+    raw.volume = pillarVolume(signals, fundamental)
+    raw.whales = pillarWhales(signals, fundamental)
+    raw.onchain = pillarOnchain(signals, fundamental)
+    raw.sentiment = pillarSentiment(signals, fundamental)
+    raw.cycle = pillarCycle({ ...fundamental, ...signals })
+    raw.correlation = pillarCorrelation(signals, fundamental)
   }
 
-  const pillars = PILLAR_DEFS.map((d) => {
+  const pillars = pillarDefs.map((d) => {
     const r = raw[d.key]
     if (r.available) {
       return { key: d.key, label: d.label, weight: d.weight, available: true, score: r.score, note: r.note, quality: r.quality || 'live', estimated: false }
@@ -597,7 +880,7 @@ export function computeMagic({ ta, signals, fundamental } = {}) {
   // Confidence: effective coverage of the model + how strongly the pillars
   // agree with the composite direction (both weighted by data quality, so
   // proxy-heavy reads report lower confidence).
-  const fullW = PILLAR_DEFS.reduce((s, d) => s + d.weight, 0)
+  const fullW = pillarDefs.reduce((s, d) => s + d.weight, 0)
   const coverage = ewsum / fullW
   const compSign = Math.sign(score) || 1
   let agreeW = 0

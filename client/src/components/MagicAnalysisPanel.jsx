@@ -7,6 +7,7 @@ import Icon from './Icon'
 import { computeMagic, aggregateMagic } from '../magicIndicator'
 import { getAiVerdict } from '../magicAi'
 import { isStablecoin } from '../stablecoins'
+import { assetClass } from '../data/assets'
 import { getCachedCoinImage } from '../api'
 
 const PILLAR_INFO = {
@@ -582,6 +583,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
   const [signals, setSignals] = useState({})
   const [fundamentals, setFundamentals] = useState({})
   const [analyzing, setAnalyzing] = useState(false)
+  const [catFilter, setCatFilter] = useState('all')
 
   const cryptoIds = useMemo(
     () => enriched.filter(isAnalyzable).map(h => h.coin_id),
@@ -621,6 +623,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
           ta: ta[h.coin_id] || null,
           signals: signals[h.coin_id] || null,
           fundamental: fundamentals[h.coin_id] || null,
+          assetClass: h._cat || 'crypto',
         })
         return {
           ...h,
@@ -636,8 +639,26 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       .sort((a, b) => b.value - a.value)
     const compass = aggregateMagic(cryptoItems.map(it => ({ value: it.value, magic: it.magic })))
     const nonCryptoCount = enriched.filter(h => !isAnalyzable(h)).length
-    return { cryptoItems, nonCryptoCount, compass }
+    // Add asset class category to each item
+    const withCategory = cryptoItems.map(it => ({ ...it, _cat: assetClass(it.coin_id) }))
+    return { cryptoItems: withCategory, nonCryptoCount, compass }
   }, [enriched, totalValue, ta, signals, fundamentals])
+
+  // Category counts for tabs
+  const catCounts = useMemo(() => {
+    const counts = { all: cryptoItems.length }
+    for (const it of cryptoItems) {
+      const c = it._cat || 'crypto'
+      counts[c] = (counts[c] || 0) + 1
+    }
+    return counts
+  }, [cryptoItems])
+
+  // Filtered items by category
+  const filteredItems = useMemo(() => {
+    if (catFilter === 'all') return cryptoItems
+    return cryptoItems.filter(it => it._cat === catFilter)
+  }, [cryptoItems, catFilter])
 
   if (!cryptoIds.length) {
     return (
@@ -653,9 +674,26 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
 
   return (
     <div>
+      {/* Category filter tabs */}
+      {Object.keys(catCounts).length > 2 && (
+        <div style={{ display: 'flex', gap: '0.4rem', margin: '0.6rem 0.75rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {[['all', 'All'], ['crypto', 'Crypto'], ['stock', 'Stocks'], ['gold', 'Gold'], ['silver', 'Silver']].filter(([k]) => catCounts[k] > 0).map(([key, label]) => (
+            <button key={key} onClick={() => setCatFilter(key)} style={{
+              padding: '0.4rem 0.8rem', borderRadius: '20px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.72rem', fontWeight: 700,
+              background: catFilter === key ? 'var(--g)' : 'var(--surface-1)',
+              color: catFilter === key ? '#fff' : 'var(--text-muted)',
+              boxShadow: catFilter === key ? '0 2px 8px rgba(var(--g-rgb),0.3)' : 'none',
+              transition: 'all 0.15s',
+            }}>
+              {label} ({catCounts[key] || 0})
+            </button>
+          ))}
+        </div>
+      )}
+
       {compass && (
         <div className="glass-card magic-compass">
-          <div className="magic-compass-label">PORTFOLIO COMPASS · {compass.assets} crypto asset{compass.assets === 1 ? '' : 's'}</div>
+          <div className="magic-compass-label">PORTFOLIO COMPASS · {compass.assets} asset{compass.assets === 1 ? '' : 's'}</div>
           <MagicGauge score={compass.score} direction={compass.direction} confidence={compass.confidence} big />
           <p className="muted" style={{ fontSize: '0.78rem', margin: '0.6rem 0 0' }}>
             Value-weighted blend across your crypto book. Not financial advice.
@@ -668,12 +706,12 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       )}
 
       <div className="magic-grid">
-        {cryptoItems.map(item => (
+        {filteredItems.map(item => (
           <AssetCard key={item.coin_id} item={item} onOpen={() => navigate(`/asset/${item.coin_id}`)} />
         ))}
       </div>
 
-      {cryptoItems.some(it => it.magic?.pillars?.some(p => p.estimated || p.quality === 'proxy')) && (
+      {filteredItems.some(it => it.magic?.pillars?.some(p => p.estimated || p.quality === 'proxy')) && (
         <p className="muted" style={{ fontSize: '0.72rem', margin: '0.6rem 0.2rem 0' }}>
           <b>~</b> estimated from related data and <b>*</b> shown neutral when a live feed is
           temporarily unavailable (rate-limited). These count at reduced or zero weight, so the
