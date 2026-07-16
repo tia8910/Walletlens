@@ -16,6 +16,7 @@ import MilestonePopup, { detectMilestone, dismissMilestone } from '../components
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
+import { LongPressMenu } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
@@ -3220,6 +3221,23 @@ export default function Dashboard() {
     catch { return DEFAULT_VIS }
   })
   const [showCardConfig, setShowCardConfig] = useState(false)
+  const [lpMenu, setLpMenu] = useState(null)
+  const closeLpMenu = useCallback(() => setLpMenu(null), [])
+  function showLp(cx, cy, items) {
+    const vw = window.innerWidth, vh = window.innerHeight
+    let x = cx, y = cy
+    if (x + 200 > vw - 8) x = vw - 208; if (y + 280 > vh - 8) y = y - 280
+    if (x < 8) x = 8; if (y < 8) y = 8
+    setLpMenu({ x, y, items }); track('longpress_menu', { area: items[0]?.label || 'unknown' })
+  }
+  const heroLpItems = useMemo(() => [
+    { icon: '📤', label: 'Export Portfolio', onClick: () => navigate('/dashboard', { state: { tab: 'manage' } }) },
+    { icon: '🔄', label: 'Refresh Prices', onClick: async () => { try { await refreshPrices() } catch {} } },
+    { icon: '📊', label: 'Allocation View', onClick: () => navigate('/dashboard', { state: { tab: 'overview' } }) },
+    { icon: '🎯', label: 'Set Portfolio Goal', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
+    { divider: true },
+    { icon: '📸', label: 'Screenshot & Share', onClick: () => {} },
+  ], [])
   // Academy "Spin & Learn" snapshot (spins left today + current IQ) for the
   // dashboard card. Read once on mount; the route remounts when returning from
   // /academy, so it stays current.
@@ -4107,7 +4125,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse">
+          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" onContextMenu={e => { e.preventDefault(); showLp(e.clientX, e.clientY, heroLpItems) }}>
             {!hidden && !isDemo && (() => {
               const dayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
               const dayBase = totalValue - dayPnLVal
@@ -4743,9 +4761,18 @@ export default function Dashboard() {
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
                                 const isSelected = selectedAssets.has(h.coin_id)
                                 const isDimmed   = selectedAssets.size > 0 && !isSelected
+                                const holdingLpItems = isDemo ? [] : [
+                                  { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
+                                  { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
+                                  { icon: '🔔', label: 'Set Price Alert', onClick: () => navigate('/dashboard', { state: { tab: 'alerts' } }) },
+                                  { icon: '📈', label: 'AI Analysis', onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }) },
+                                  { divider: true },
+                                  { icon: '📋', label: 'Copy Details', onClick: () => { try { navigator.clipboard?.writeText(h.coin_symbol?.toUpperCase() + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)'); } catch {} } },
+                                ]
                                 return (
                                   <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
                                     style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
+                                    onContextMenu={e => { if (holdingLpItems.length) { e.preventDefault(); e.stopPropagation(); showLp(e.clientX, e.clientY, holdingLpItems) } }}
                                     onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <input
                                       type="checkbox"
@@ -5381,6 +5408,8 @@ export default function Dashboard() {
       {loaded && !isDemo && transactions.length === 0 && obStep === 'balances' && (
         <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
       )}
+
+      {lpMenu && <LongPressMenu items={lpMenu.items} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}
     </div>
   )
 }
