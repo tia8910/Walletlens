@@ -3462,8 +3462,10 @@ tr:last-child td { border-bottom: none; }
   .magic-marker { width: 16px; height: 16px; }
   /* Pillar bars — compact */
   .pillar-list { gap: 0.35rem; }
-  .pillar-row { grid-template-columns: 60px 1fr 36px; gap: 0.3rem; padding: 0.15rem 0; }
-  .pillar-name { font-size: 0.62rem; letter-spacing: 0.02em; }
+  /* Wide enough for the longest label ("SAFE HAVEN") incl. its status dot, so
+     labels show in full instead of truncating on phones. */
+  .pillar-row { grid-template-columns: 90px 1fr 34px; gap: 0.3rem; padding: 0.15rem 0; }
+  .pillar-name { font-size: 0.6rem; letter-spacing: 0.01em; }
   .pillar-track { height: 9px; }
   .pillar-val { font-size: 0.68rem; }
   /* TA strip tags */
