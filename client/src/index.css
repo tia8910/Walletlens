@@ -3343,15 +3343,19 @@ tr:last-child td { border-bottom: none; }
 /* Pillar bars — enhanced premium design */
 .pillar-list { display: flex; flex-direction: column; gap: 0.45rem; }
 .pillar-row {
-  display: grid; grid-template-columns: 72px 1fr 44px;
+  display: grid; grid-template-columns: 88px 1fr 40px;
   align-items: center; gap: 0.45rem;
   padding: 0.3rem 0;
   border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 .pillar-row:last-child { border-bottom: none; }
 .pillar-name {
-  font-size: 0.7rem; font-weight: 700; color: var(--text2);
-  text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: clamp(0.58rem, 2.7vw, 0.7rem); font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.02em;
+  /* Keep each label on one line — never break mid-word ("TECHNIC AL"). Ellipsis
+     is a safety net on ultra-narrow screens. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  word-break: normal; overflow-wrap: normal; min-width: 0;
 }
 .pillar-track {
   position: relative; height: 12px; border-radius: 6px;
@@ -3396,7 +3400,12 @@ tr:last-child td { border-bottom: none; }
   border: 1px solid rgba(255,255,255,0.05);
 }
 .magic-card-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
-.magic-foot-actions { display: flex; align-items: center; gap: 0.65rem; margin-left: auto; }
+.magic-foot-actions { display: flex; align-items: center; gap: 0.65rem; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+/* On narrow phones, stack the foot so Share / Full chart never overflow the card. */
+@media (max-width: 420px) {
+  .magic-card-foot { flex-direction: column; align-items: stretch; }
+  .magic-foot-actions { margin-left: 0; justify-content: space-between; }
+}
 .magic-detail-link {
   background: none; border: none; color: var(--g-ink); font-weight: 700; font-size: 0.78rem; font-weight: 700;
   cursor: pointer; padding: 0.3rem 0;
