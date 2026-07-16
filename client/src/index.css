@@ -2504,6 +2504,12 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.7); }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--g-rgb),0.15); }
+/* Native toggles must never inherit the text-field sizing above — a full-width
+   padded checkbox/radio renders as a giant misaligned square. */
+input[type="checkbox"], input[type="radio"] {
+  width: 16px; height: 16px; padding: 0; margin: 0; flex-shrink: 0;
+  accent-color: var(--g); border-radius: 0;
+}
 select option { background: var(--bg3); color: var(--text); }
 
 .total-preview {
@@ -6598,6 +6604,24 @@ select.bs-input option { background: var(--bg3); }
 .wl-logo-animated .wl-logo-bar-1 { animation: logo-bar-grow 2.6s ease-in-out infinite 0s; }
 .wl-logo-animated .wl-logo-bar-2 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.26s; }
 .wl-logo-animated .wl-logo-bar-3 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.52s; }
+
+/* ── Shine glint: a short bright arc sweeps once around the lens ring every
+   ~7s — a subtle "polished glass" touch. Lives on the ring stroke itself
+   (no halo, per the no-green-disc rule above). Hidden on static logos. ── */
+.wl-logo .wl-logo-glint { opacity: 0; }
+.wl-logo-animated .wl-logo-glint {
+  transform-origin: 27px 25px;
+  animation: logo-glint 7s linear infinite;
+}
+@keyframes logo-glint {
+  0%, 70%   { transform: rotate(-90deg); opacity: 0; }
+  76%       { opacity: 0.85; }
+  90%       { opacity: 0.85; }
+  98%, 100% { transform: rotate(270deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-logo-animated .wl-logo-glint { animation: none; opacity: 0; }
+}
 @keyframes logo-bar-grow {
   0%     { transform: scaleY(0.15); opacity: 0.25; }
   30%    { transform: scaleY(1);    opacity: 1; }
@@ -8633,7 +8657,9 @@ input[type="date"] { color-scheme: dark; }
 
 /* ── Global touch targets ── */
 @media (max-width: 768px) {
-  button, a, select, input[type="checkbox"], input[type="radio"] {
+  /* Checkboxes/radios are excluded: their tap target is the wrapping label row,
+     and a 44px-tall full-width native toggle renders as a giant broken square. */
+  button, a, select {
     min-height: 44px;
   }
   /* No overflow restriction — avoids breaking scroll/sticky on Chrome mobile */
@@ -12528,31 +12554,36 @@ button:not(:disabled):active,
 .vp-add-first { margin-top: 0; width: auto; border-style: solid; }
 /* ── modal ── */
 .vp-modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 2000;
+  position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9500;
   display: flex; align-items: flex-end; justify-content: center;
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
 @media (min-width: 500px) { .vp-modal-backdrop { align-items: center; } }
 .vp-modal {
-  background: var(--panel-bg, var(--card-bg)); border-radius: 20px 20px 0 0; width: 100%;
+  /* Solid opaque surface — the page must never ghost through the sheet. */
+  background: var(--bg4); border-radius: 20px 20px 0 0; width: 100%;
   max-width: 480px; max-height: 90dvh; display: flex; flex-direction: column;
-  border: 1px solid rgba(255,255,255,.1);
+  border: 1px solid var(--border);
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.3);
 }
+[data-wl-light] .vp-modal { background: #ffffff; box-shadow: 0 -12px 40px rgba(0,0,0,0.18); }
 @media (min-width: 500px) { .vp-modal { border-radius: 20px; } }
 .vp-modal-sm { border-radius: 16px; padding: 1.25rem 1.25rem .75rem; max-width: 340px; }
 .vp-modal-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.1rem .5rem; border-bottom: 1px solid rgba(255,255,255,.07);
+  padding: 1rem 1.1rem .5rem; border-bottom: 1px solid var(--border);
 }
 .vp-modal-head h3 { margin: 0; font-size: 1rem; }
 .vp-modal-body { padding: .75rem 1.1rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: .75rem; }
 .vp-modal-foot {
   padding: .75rem 1.1rem 1rem; display: flex; gap: .5rem; justify-content: flex-end;
-  border-top: 1px solid rgba(255,255,255,.07);
+  border-top: 1px solid var(--border);
 }
-.vp-field { display: flex; flex-direction: column; gap: .3rem; font-size: .84rem; font-weight: 600; opacity: .85; }
+.vp-field { display: flex; flex-direction: column; gap: .3rem; font-size: .84rem; font-weight: 600; color: var(--text); }
+.vp-field > span { color: var(--text-muted); }
 .vp-input {
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
-  padding: .5rem .75rem; color: var(--fg); font-size: .88rem; outline: none; transition: border-color .15s;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 9px;
+  padding: .5rem .75rem; color: var(--text); font-size: .88rem; outline: none; transition: border-color .15s;
 }
 .vp-input:focus { border-color: var(--g-ink); }
 .vp-textarea { resize: vertical; min-height: 56px; }
@@ -12561,33 +12592,38 @@ button:not(:disabled):active,
   width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid transparent; cursor: pointer;
   transition: transform .15s, border-color .15s;
 }
-.vp-color-swatch.active { border-color: #fff; transform: scale(1.2); }
-.vp-radios { display: flex; flex-wrap: wrap; gap: .45rem; }
-.vp-radio { display: flex; align-items: center; gap: .3rem; font-weight: 400; font-size: .83rem; cursor: pointer; }
-.vp-assets-list { max-height: 160px; overflow-y: auto; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; }
+.vp-color-swatch.active {
+  border-color: var(--bg4); transform: scale(1.2);
+  box-shadow: 0 0 0 2px var(--text);
+}
+[data-wl-light] .vp-color-swatch.active { border-color: #fff; }
+.vp-radios { display: flex; flex-wrap: wrap; gap: .4rem .8rem; }
+.vp-radio {
+  display: inline-flex; align-items: center; gap: .4rem; font-weight: 500;
+  font-size: .83rem; cursor: pointer; color: var(--text); white-space: nowrap;
+}
+.vp-assets-list { max-height: 160px; overflow-y: auto; border: 1px solid var(--border); border-radius: 9px; }
 .vp-asset-check {
-  display: flex; align-items: center; gap: .5rem; padding: .45rem .7rem;
-  border-bottom: 1px solid rgba(255,255,255,.05); cursor: pointer; font-weight: 400; font-size: .84rem;
+  display: flex; align-items: center; gap: .55rem; padding: .45rem .7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  cursor: pointer; font-weight: 500; font-size: .84rem; color: var(--text);
 }
 .vp-asset-check:last-child { border-bottom: none; }
-.vp-asset-check:hover { background: rgba(255,255,255,.04); }
+.vp-asset-check:hover { background: var(--surface-1); }
 .vp-btn-primary {
-  background: var(--g); color: #000; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff;
+  border: none; border-radius: 10px;
   padding: .55rem 1.1rem; font-size: .88rem; font-weight: 700; cursor: pointer;
   box-shadow: 0 4px 14px rgba(var(--g-rgb), 0.32);
   transition: opacity .15s, filter .15s;
 }
-.vp-btn-primary:hover { opacity: .85; }
-/* In light mode --g flips to a deep, saturated accent, so on-accent text must be
-   white (matches the unified .dvx-btn-primary set). Previously this button used
-   --g-ink as its background, which is near-black in light mode → invisible text. */
-[data-wl-light] .vp-btn-primary { color: #fff; }
+.vp-btn-primary:hover { filter: brightness(1.06); }
 .vp-btn-ghost {
-  background: rgba(255,255,255,.07); color: var(--fg); border: 1px solid rgba(255,255,255,.12);
+  background: var(--surface-1); color: var(--text); border: 1px solid var(--border);
   border-radius: 10px; padding: .55rem 1.1rem; font-size: .88rem; font-weight: 600; cursor: pointer;
   transition: background .15s;
 }
-.vp-btn-ghost:hover { background: rgba(255,255,255,.12); }
+.vp-btn-ghost:hover { background: var(--surface-2); }
 .vp-btn-danger {
   background: #ef4444; color: #fff; border: none; border-radius: 10px;
   padding: .55rem 1.1rem; font-size: .88rem; font-weight: 700; cursor: pointer;
@@ -12600,11 +12636,11 @@ button:not(:disabled):active,
 .vp-cat-btn {
   display: inline-flex; align-items: center; gap: .3rem;
   padding: .28rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600;
-  border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05);
-  color: var(--fg); cursor: pointer; transition: border-color .15s, background .15s;
+  border: 1px solid var(--border); background: var(--surface-1);
+  color: var(--text); cursor: pointer; transition: border-color .15s, background .15s;
   position: relative;
 }
-.vp-cat-btn:hover { border-color: var(--cat-color, #888); background: rgba(255,255,255,.1); }
+.vp-cat-btn:hover { border-color: var(--cat-color, #888); background: var(--surface-2); }
 .vp-cat-btn.active { border-color: var(--cat-color, #888); background: color-mix(in srgb, var(--cat-color, #888) 18%, transparent); color: var(--cat-color, #888); }
 .vp-cat-btn.partial { border-color: color-mix(in srgb, var(--cat-color, #888) 50%, transparent); color: color-mix(in srgb, var(--cat-color, #888) 80%, var(--fg)); }
 .vp-cat-btn-dot { font-size: .65rem; vertical-align: middle; margin-left: .1rem; }
@@ -12692,11 +12728,13 @@ button:not(:disabled):active,
 .vp-ai-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
 .vp-ai-title { margin: 0; font-size: 1rem; }
 .vp-ai-btn {
-  background: var(--g-ink); color: #000; border: none; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff;
+  border: none; border-radius: 999px;
   padding: .45rem 1rem; font-size: .82rem; font-weight: 700; cursor: pointer;
-  transition: opacity .15s;
+  box-shadow: 0 3px 10px rgba(var(--g-rgb), 0.28);
+  transition: filter .15s, opacity .15s;
 }
-.vp-ai-btn:hover { opacity: .85; }
+.vp-ai-btn:hover { filter: brightness(1.06); }
 .vp-ai-btn:disabled { opacity: .55; cursor: default; }
 .vp-ai-empty { margin: .6rem 0 0; font-size: .82rem; opacity: .6; line-height: 1.45; }
 .vp-ai-err { color: #ef4444; opacity: .85; }
@@ -12749,13 +12787,15 @@ button:not(:disabled):active,
 .vp-autolink-tip span { flex: 1; opacity: .85; }
 .vp-autolink-btn { padding: .25rem .65rem; border-radius: 8px; border: 1px solid rgba(99,102,241,.4); background: rgba(99,102,241,.18); color: #a5b4fc; font-size: .75rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .vp-autolink-btn:hover { background: rgba(99,102,241,.32); }
+/* Light mode: pale indigo text washes out on the light pill — use a deep indigo. */
+[data-wl-light] .vp-autolink-btn { color: #4f46e5; }
 
 /* ── Empty-state tip ── */
 .vp-empty-tip { font-size: .84rem; opacity: .7; margin: .3rem 0 .8rem; line-height: 1.5; }
 
 /* ── Export PDF button ── */
-.vp-export-btn { display: flex; align-items: center; gap: .35rem; padding: .4rem .8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: var(--text-muted); font-size: .78rem; font-weight: 600; cursor: pointer; transition: background .15s; flex-shrink: 0; }
-.vp-export-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+.vp-export-btn { display: flex; align-items: center; gap: .35rem; padding: .4rem .8rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-muted); font-size: .78rem; font-weight: 600; cursor: pointer; transition: background .15s; flex-shrink: 0; }
+.vp-export-btn:hover { background: var(--surface-2); color: var(--text); }
 
 /* ── Dashboard holding action buttons ── */
 .dvx-holding { flex-wrap: wrap; }

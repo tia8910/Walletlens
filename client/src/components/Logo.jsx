@@ -24,6 +24,12 @@ function Logo({ size = 32, animated = false, className = '' }) {
       {/* Main ring — thick gradient stroke, no fill */}
       <circle cx="27" cy="25" r="19" stroke={`url(#${gId})`} strokeWidth="5.5" fill="none" />
 
+      {/* Shine glint — a short bright arc that periodically sweeps the ring
+          (animated via .wl-logo-animated CSS; invisible on static logos) */}
+      <circle className="wl-logo-glint" cx="27" cy="25" r="19"
+        stroke="rgba(255,255,255,0.9)" strokeWidth="5.5" fill="none"
+        strokeLinecap="round" strokeDasharray="12 108" />
+
       {/* Small dot at upper-right of ring (focus point) */}
       <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80" />
 
