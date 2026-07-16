@@ -6604,6 +6604,24 @@ select.bs-input option { background: var(--bg3); }
 .wl-logo-animated .wl-logo-bar-1 { animation: logo-bar-grow 2.6s ease-in-out infinite 0s; }
 .wl-logo-animated .wl-logo-bar-2 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.26s; }
 .wl-logo-animated .wl-logo-bar-3 { animation: logo-bar-grow 2.6s ease-in-out infinite 0.52s; }
+
+/* ── Shine glint: a short bright arc sweeps once around the lens ring every
+   ~7s — a subtle "polished glass" touch. Lives on the ring stroke itself
+   (no halo, per the no-green-disc rule above). Hidden on static logos. ── */
+.wl-logo .wl-logo-glint { opacity: 0; }
+.wl-logo-animated .wl-logo-glint {
+  transform-origin: 27px 25px;
+  animation: logo-glint 7s linear infinite;
+}
+@keyframes logo-glint {
+  0%, 70%   { transform: rotate(-90deg); opacity: 0; }
+  76%       { opacity: 0.85; }
+  90%       { opacity: 0.85; }
+  98%, 100% { transform: rotate(270deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-logo-animated .wl-logo-glint { animation: none; opacity: 0; }
+}
 @keyframes logo-bar-grow {
   0%     { transform: scaleY(0.15); opacity: 0.25; }
   30%    { transform: scaleY(1);    opacity: 1; }
