@@ -1343,6 +1343,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // Keyed by BCP-47 langCode (e.g. 'ar-SA', 'ar-EG', 'en-US').
   // Multiple Arabic recognizers compete; the best parse wins.
   const transcriptsRef = useRef({})
+  // Per-language n-best runner-up transcripts (what else each engine heard).
+  // Sent to Claude alongside the winners so it can triangulate mis-heard coins.
+  const altsRef = useRef({})
+  // Debounced live AI parse: fires after a pause in speech so Claude corrects
+  // the transcript WITHOUT the user having to tap stop first.
+  const aiDebounceRef = useRef(null)
+  const lastAiTextRef = useRef('')
   const listenTimerRef = useRef(null)
   const noSpeechTimerRef = useRef(null)
   const hasTranscriptRef = useRef(false)
@@ -1382,6 +1389,31 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     return segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
   }
 
+  // Everything every engine heard: per-language winners + their n-best
+  // runner-ups, deduped and capped. This is what Claude triangulates from.
+  const gatherCandidates = () => {
+    const seen = new Set()
+    const out = []
+    const push = (t) => {
+      const v = (t || '').trim()
+      const key = v.toLowerCase()
+      if (v && !seen.has(key)) { seen.add(key); out.push(v) }
+    }
+    Object.values(transcriptsRef.current).forEach(push)
+    Object.values(altsRef.current).forEach(list => (list || []).forEach(push))
+    return out.slice(0, 12)
+  }
+
+  // Highest-scoring candidate wins (tiebreak: length) — a transcript that
+  // parsed two clean trades beats a longer garbled one.
+  const pickBestTranscript = (candidates) =>
+    candidates.reduce((bestSoFar, t) => {
+      if (!bestSoFar) return t
+      const sT    = scoreParsed(parseVoiceCommand(t))
+      const sBest = scoreParsed(parseVoiceCommand(bestSoFar))
+      return sT > sBest || (sT === sBest && t.length > bestSoFar.length) ? t : bestSoFar
+    }, '')
+
   const startListening = () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
@@ -1391,6 +1423,9 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     recsRef.current = []
     transcriptsRef.current = {}
+    altsRef.current = {}
+    lastAiTextRef.current = ''
+    clearTimeout(aiDebounceRef.current)
 
     track('voice_listen_start', { lang })
     setError(''); setTranscript(''); setParsed(null); setReaction(null); setConfirmed(false); setAssetQueries({}); setNoSpeechHint(false)
@@ -1419,12 +1454,14 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // phonetic mis-hearings of Arabic words by English STT engines.
     // On iOS only one mic recognizer is allowed — use the selected language.
     // Run multiple language recognizers in parallel for maximum accent coverage.
-    // ar-SA = Gulf/MSA, ar-EG = Egyptian, en-US = English + phonetic Arabic,
-    // hi-IN = Hindi/Urdu, fr-FR = French, es-ES = Spanish, tr-TR = Turkish.
+    // ar-SA = Gulf/MSA, ar-EG = Egyptian; en-US / en-GB / en-IN = English tuned
+    // to American, British/African and South-Asian accents (the single biggest
+    // source of coin mis-hears); hi-IN = Hindi/Urdu, fr-FR = French,
+    // es-ES = Spanish, tr-TR = Turkish.
     // On iOS only one mic recognizer is allowed — use the selected language.
     const langCodes = IS_IOS
       ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : ['ar-SA', 'ar-EG', 'en-US', 'hi-IN', 'fr-FR', 'es-ES', 'tr-TR']
+      : ['ar-SA', 'ar-EG', 'en-US', 'en-GB', 'en-IN', 'hi-IN', 'fr-FR', 'es-ES', 'tr-TR']
 
     const createRec = (langCode) => {
       const isArabic = langCode.startsWith('ar')
@@ -1477,6 +1514,34 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         if (sessionRef.current !== sessionId) return
         const text = buildBestTranscript(e.results)
         transcriptsRef.current[langCode] = text
+
+        // Keep this engine's runner-up hearings of the latest utterance — a
+        // mis-heard coin often appears correctly in alternative #2 or #3.
+        const lastRes = e.results[e.results.length - 1]
+        if (lastRes) {
+          const vs = []
+          for (let k = 1; k < Math.min(lastRes.length, 4); k++) {
+            const alt = lastRes[k]?.transcript?.trim()
+            if (alt && alt.toLowerCase() !== text.toLowerCase()) vs.push(alt)
+          }
+          altsRef.current[langCode] = vs
+        }
+
+        // Smart live parse: once an utterance finalizes and the user pauses,
+        // ask Claude to reconcile ALL engines' hearings — no stop tap needed.
+        // Debounced so it fires once per pause, and skipped if nothing changed.
+        if (Array.from(e.results).some(r => r.isFinal)) {
+          clearTimeout(aiDebounceRef.current)
+          aiDebounceRef.current = setTimeout(() => {
+            if (sessionRef.current !== sessionId) return
+            const candidates = gatherCandidates()
+            const best = pickBestTranscript(candidates)
+            if (best && best.trim().length >= 3 && best !== lastAiTextRef.current) {
+              lastAiTextRef.current = best
+              tryAiFallback(best, 0, candidates)
+            }
+          }, 1400)
+        }
 
         // Multi-channel winner pick: parse every stored transcript and take
         // the one with the highest parse score. Ties break on transcript length
@@ -1634,25 +1699,24 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     // "complete", so relying on incompleteness alone silently drops trades.
     // Claude is authoritative for multi-trade + dialects; if it returns
     // nothing (no key / offline) we keep whatever the local parser found.
-    // Pick the highest-scoring transcript as primary (tiebreak: length).
-    // A transcript that parsed 2 clean trades beats a longer garbled one.
-    const candidates = Object.values(transcriptsRef.current).filter(Boolean)
-    const best = candidates.reduce((bestSoFar, t) => {
-      if (!bestSoFar) return t
-      const sT    = scoreParsed(parseVoiceCommand(t))
-      const sBest = scoreParsed(parseVoiceCommand(bestSoFar))
-      return sT > sBest || (sT === sBest && t.length > bestSoFar.length) ? t : bestSoFar
-    }, '') || transcript
+    clearTimeout(aiDebounceRef.current)
+    const candidates = gatherCandidates()
+    const best = pickBestTranscript(candidates) || transcript
     const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
-    // Pass EVERY recognizer's transcript so Claude can triangulate the true
-    // utterance — far more accurate than a single best-guess for accented or
-    // garbled speech.
-    if (best && best.trim().length >= 3) tryAiFallback(best, localComplete, candidates)
+    // Pass EVERY engine's hearing (winners + runner-ups) so Claude can
+    // triangulate the true utterance — far more accurate than a single
+    // best-guess for accented or garbled speech. Skip if the live debounced
+    // pass already reconciled this exact text.
+    if (best && best.trim().length >= 3 && best !== lastAiTextRef.current) {
+      lastAiTextRef.current = best
+      tryAiFallback(best, localComplete, candidates)
+    }
   }
 
   useEffect(() => () => {
     clearTimeout(listenTimerRef.current)
     clearTimeout(noSpeechTimerRef.current)
+    clearTimeout(aiDebounceRef.current)
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
   }, [])
