@@ -1729,7 +1729,7 @@ Rules:
         (body.alternatives as unknown[])
           .map((a) => (a || "").toString().trim().slice(0, 500))
           .filter((a) => a.length > 0),
-      )).slice(0, 8)
+      )).slice(0, 12)
     : []
   if (!alternatives.includes(transcript)) alternatives.unshift(transcript)
 

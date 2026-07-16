@@ -121,7 +121,7 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en', alterna
     ...(Array.isArray(alternatives) ? alternatives : [])
       .map(a => (a || '').toString().trim().slice(0, 500))
       .filter(Boolean),
-  ])).slice(0, 8)
+  ])).slice(0, 12)
 
   // 1) Owner-hosted endpoint with the secret key (works for everyone).
   try {
