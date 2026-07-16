@@ -41,7 +41,7 @@ const SLIDES = [
 ]
 
 const LOGO_SVGS = {
-  gold: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23f5c542' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23f5c542'/%3E%3C/svg%3E",
+  gold: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23e8b825' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23e8b825'/%3E%3C/svg%3E",
   silver: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23c0c8d8' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23c0c8d8'/%3E%3C/svg%3E",
   ethereum: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L12 9.5L18 12L12 2Z' fill='%23627eea'/%3E%3Cpath d='M12 9.5L12 17L18 12L12 9.5Z' fill='%23627eea' opacity='0.6'/%3E%3C/svg%3E",
   solana: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9L10 5H17L13 9H6Z' fill='%239945ff'/%3E%3Cpath d='M6 15L10 11H17L13 15H6Z' fill='%239945ff'/%3E%3C/svg%3E",

@@ -207,7 +207,7 @@ const CATEGORY_LABELS = {
 }
 // SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
 const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
-const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#f5c542', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
+const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
 
 function CatLabel({ cat, className, iconSize = 14 }) {
   return (

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 
-const GOLD_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23c49a08'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23f7d44a'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.18)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.55)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAu%3C/text%3E%3C/svg%3E`
+const GOLD_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23c49a1a'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23e8b825'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.18)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.55)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAu%3C/text%3E%3C/svg%3E`
 
 const SILVER_BAR_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23808898'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23e8ecf4'/%3E%3Crect x='7' y='18' width='26' height='7' rx='1' fill='none' stroke='rgba(0,0,0,0.14)' stroke-width='0.7'/%3E%3Ctext x='20' y='25' font-size='7' fill='rgba(0,0,0,0.5)' text-anchor='middle' font-family='Georgia,serif' font-weight='bold'%3EAg%3C/text%3E%3C/svg%3E`
 
@@ -12,7 +12,7 @@ const BTC_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vi
 
 export const THEMES = [
   { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: 'sparkles' },
-  { id: 'gold',     name: 'Gold',     swatch: '#f5c542', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG },
+  { id: 'gold',     name: 'Gold',     swatch: '#e8b825', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG },
   { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: 'award', logo: SILVER_BAR_SVG },
   { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿', logo: BTC_SVG },
   { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG },
@@ -65,8 +65,8 @@ const PALETTE = {
     light: variant(LIGHT_BASE, '#059669', '#047857', '5,150,105', '4,120,87'),
   },
   gold: {
-    dark:  variant(DARK_BASE,  '#f5c542', '#d4a017', '245,197,66', '212,160,23'),
-    light: variant(LIGHT_BASE, '#b45309', '#92400e', '180,83,9', '146,64,14'),
+    dark:  variant(DARK_BASE,  '#e8b825', '#c49a1a', '232,184,37', '196,154,26'),
+    light: variant(LIGHT_BASE, '#8b6914', '#705210', '139,105,20', '112,82,16'),
   },
   silver: {
     dark:  variant(DARK_BASE,  '#c0c8d8', '#8a96aa', '192,200,216', '138,150,170'),
