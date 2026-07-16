@@ -27,10 +27,42 @@ function swVersionPlugin() {
   }
 }
 
+// The app ships one global stylesheet (src/index.css) covering every route —
+// Dashboard, Technicals, Vision, the landing page, blog, etc. — because
+// cssCodeSplit only splits CSS that's imported per-component, and nearly every
+// page pulls its styles from that single shared file. That makes it render-
+// blocking on first paint everywhere, including the SEO-critical landing/blog
+// pages that only need a fraction of it. Rather than risk hand-splitting a
+// 14k+ line stylesheet blind, load it asynchronously instead: preload it (so
+// the fetch still starts immediately) and swap it to an active stylesheet
+// once it lands, with a <noscript> fallback for non-JS clients. Byte-for-byte
+// identical CSS, just off the blocking path — the boot splash's own inline
+// <style> covers the screen until React mounts anyway, so there's no FOUC risk.
+function asyncCssPlugin() {
+  return {
+    name: 'async-css-load',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        return html.replace(
+          /<link rel="stylesheet"([^>]*?)href="([^"]+\.css)"([^>]*)>/g,
+          (_match, before, href, after) => {
+            const attrs = `${before}${after}`
+            return `<link rel="preload" as="style"${attrs}href="${href}" onload="this.onload=null;this.rel='stylesheet'">`
+              + `<noscript><link rel="stylesheet"${attrs}href="${href}"></noscript>`
+          },
+        )
+      },
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
     swVersionPlugin(),
+    asyncCssPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
       filename: 'dist/stats.html',
