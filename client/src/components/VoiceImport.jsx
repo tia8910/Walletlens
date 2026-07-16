@@ -1871,9 +1871,10 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
       {open && (
         <div style={{
-          background: 'linear-gradient(135deg, rgba(5,150,105,0.06), rgba(16,185,129,0.06))',
-          border: '1px solid rgba(5,150,105,0.2)',
-          borderRadius: '16px', padding: '1.25rem', marginTop: '0.6rem',
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border)',
+          borderRadius: '20px', padding: '1.35rem', marginTop: '0.6rem',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
         }}>
@@ -1885,11 +1886,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             {isAr ? 'اختر لغتك ثم تحدث' : 'Choose your language then speak'}
           </div>
 
-          {/* Language selector — pick Arabic or English before speaking */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'0.6rem', marginBottom:'1rem' }}>
+          {/* Language selector — a clean segmented control */}
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:'1.1rem' }}>
+          <div style={{
+            display:'inline-flex', gap:2, padding:3,
+            background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:12,
+          }} className="vi-lang-seg">
             {[
-              { value:'ar', flags:'', label: isAr ? 'عربي' : 'Arabic', color:'#f59e0b', bg:'rgba(245,158,11,0.14)', border:'rgba(245,158,11,0.45)' },
-              { value:'en', flags:'',     label: isAr ? 'إنجليزي' : 'English', color:'#60a5fa', bg:'rgba(96,165,250,0.14)', border:'rgba(96,165,250,0.45)' },
+              { value:'ar', label: isAr ? 'عربي' : 'Arabic', color:'#f59e0b' },
+              { value:'en', label: isAr ? 'إنجليزي' : 'English', color:'#3b82f6' },
             ].map(m => {
               const active = voiceLang === m.value
               return (
@@ -1897,16 +1902,15 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   key={m.value}
                   onClick={() => { if (!listening) setVoiceLang(m.value) }}
                   style={{
-                    fontSize:'0.82rem', fontWeight:700, padding:'0.4rem 1.1rem',
-                    borderRadius:24, cursor: listening ? 'not-allowed' : 'pointer',
-                    border: `2px solid ${active ? m.color : 'rgba(255,255,255,0.1)'}`,
-                    background: active ? m.bg : 'transparent',
+                    fontSize:'0.82rem', fontWeight:800, padding:'0.4rem 1.15rem',
+                    borderRadius:9, cursor: listening ? 'not-allowed' : 'pointer', border:'none',
+                    background: active ? 'var(--card-bg)' : 'transparent',
                     color: active ? m.color : 'var(--text-muted)',
+                    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                     display:'flex', alignItems:'center', gap:'0.4rem',
-                    transition:'all 0.18s', opacity: listening && !active ? 0.4 : 1,
+                    transition:'color 0.18s, background 0.18s', opacity: listening && !active ? 0.45 : 1,
                   }}
                 >
-                  <span style={{ fontSize:'1rem', lineHeight:1 }}>{m.flags}</span>
                   {m.label}
                   {active && (
                     <span style={{
@@ -1919,6 +1923,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 </button>
               )
             })}
+          </div>
           </div>
 
           {/* Mic button — center */}
@@ -2098,7 +2103,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                   {['buy','sell'].map(t => (
                     <button key={t} onClick={() => updateTx(idx, { type: t, leg: t === 'buy' ? 'NONE' : 'REMOVE' })} style={{
                       flex:1, padding:'0.35rem 0', borderRadius:'8px', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
-                      border: tx.type === t ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
+                      border: tx.type === t ? 'none' : '1.5px solid var(--border)',
                       background: tx.type === t
                         ? (t === 'buy' ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)')
                         : 'transparent',
@@ -2123,7 +2128,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         )}
                       </span>
                       <button onClick={() => { updateTx(idx, { coin: null, suggestions: null }); setAssetQueries(q => ({...q, [idx]: ''})) }}
-                        style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.14)', borderRadius:'6px', color:'var(--text-muted)', cursor:'pointer', padding:'0.15rem 0.5rem', fontSize:'0.72rem' }}>
+                        style={{ background:'var(--surface-1)', border:'1px solid var(--border)', borderRadius:'6px', color:'var(--text-muted)', cursor:'pointer', padding:'0.15rem 0.5rem', fontSize:'0.72rem' }}>
                         {isAr ? 'تغيير' : 'Change'}
                       </button>
                     </div>
@@ -2152,7 +2157,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                         style={{
                           width:'100%', boxSizing:'border-box', padding:'0.45rem 0.7rem',
                           borderRadius:'8px', border:'1.5px solid rgba(52,211,153,0.35)',
-                          background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                          background:'var(--surface-1)', color:'var(--text)',
                           fontSize:'0.82rem', outline:'none',
                         }}
                       />
@@ -2188,8 +2193,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       placeholder={isAr ? 'أدخل الكمية' : 'Enter amount'}
                       style={{
                         width:'100%', boxSizing:'border-box', padding:'0.42rem 0.6rem',
-                        borderRadius:'8px', border: `1.5px solid ${tx.amount == null ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.12)'}`,
-                        background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                        borderRadius:'8px', border: `1.5px solid ${tx.amount == null ? 'rgba(245,158,11,0.5)' : 'var(--border)'}`,
+                        background:'var(--surface-1)', color:'var(--text)',
                         fontSize:'0.85rem', fontFamily:'monospace', outline:'none',
                       }}
                     />
@@ -2214,8 +2219,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                       placeholder={isAr ? 'جارٍ الجلب…' : 'Fetching…'}
                       style={{
                         width:'100%', boxSizing:'border-box', padding:'0.42rem 0.6rem',
-                        borderRadius:'8px', border:'1.5px solid rgba(255,255,255,0.12)',
-                        background:'rgba(255,255,255,0.05)', color:'var(--text)',
+                        borderRadius:'8px', border:'1.5px solid var(--border)',
+                        background:'var(--surface-1)', color:'var(--text)',
                         fontSize:'0.85rem', fontFamily:'monospace', outline:'none',
                       }}
                     />
@@ -2239,7 +2244,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                             <button key={o} onClick={() => updateTx(idx, { leg: o })} style={{
                               padding:'0.3rem 0.7rem', borderRadius:'16px', cursor:'pointer',
                               fontSize:'0.76rem', fontWeight:700, fontFamily:'inherit',
-                              border: `1.5px solid ${active ? 'rgba(52,211,153,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                              border: `1.5px solid ${active ? 'rgba(52,211,153,0.55)' : 'var(--border)'}`,
                               background: active ? 'rgba(52,211,153,0.16)' : 'transparent',
                               color: active ? 'var(--g-ink)' : 'var(--text-muted)',
                               transition:'all 0.15s',
@@ -2313,8 +2318,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {(isAr ? EXAMPLES_AR : EXAMPLES_EN).map((ex, i) => (
                   <div key={i} style={{
                     fontSize:'0.78rem', color:'var(--text-muted)', fontStyle:'italic',
-                    padding:'0.4rem 0.7rem', background:'rgba(255,255,255,0.03)',
-                    borderRadius:'8px', border:'1px solid rgba(255,255,255,0.06)',
+                    padding:'0.4rem 0.7rem', background:'var(--surface-1)',
+                    borderRadius:'8px', border:'1px solid var(--border)',
                   }}>
                     {ex}
                   </div>
