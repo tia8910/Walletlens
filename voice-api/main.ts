@@ -360,6 +360,36 @@ Rules:
 - A coin with no clear buy/sell intent or amount → still include it with "type": null and "amount": null; the user will fill in the details.`
 }
 
+// Structured-output schema — forces Claude to return valid, parseable trade
+// JSON every time. This REPLACES the old assistant-prefill "{" trick, which
+// returns HTTP 400 on Sonnet 5 (and every current Claude model) — the reason
+// the AI parse silently failed and only the first coin was ever detected.
+const TRADES_FORMAT = {
+  type: "json_schema",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["trades"],
+    properties: {
+      trades: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["type", "symbol", "name", "amount", "price"],
+          properties: {
+            type: { anyOf: [{ type: "string", enum: ["buy", "sell"] }, { type: "null" }] },
+            symbol: { type: "string" },
+            name: { type: "string" },
+            amount: { anyOf: [{ type: "number" }, { type: "null" }] },
+            price: { anyOf: [{ type: "number" }, { type: "null" }] },
+          },
+        },
+      },
+    },
+  },
+}
+
 // ── In-app assistant ──────────────────────────────────────────────────────
 // A lightweight feature-finder chat. Understands the app's feature map and
 // points users at the right page/tab via [[nav:/route|Label]] markers that the
@@ -1742,13 +1772,18 @@ Rules:
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-5",
         // Higher cap so long multi-trade JSON is never truncated (which would
-        // silently drop trades). Prefill "{" forces clean JSON with no preamble.
-        max_tokens: 1500,
+        // silently drop trades).
+        max_tokens: 2048,
+        // Thinking off: latency-sensitive extraction; the prompt already carries
+        // explicit rules + worked examples.
+        thinking: { type: "disabled" },
+        // Guaranteed valid JSON — replaces the old assistant-prefill trick,
+        // which 400s on Sonnet 5 and every current model.
+        output_config: { format: TRADES_FORMAT },
         messages: [
           { role: "user", content: buildPrompt(transcript, hintLang, alternatives) },
-          { role: "assistant", content: "{" },
         ],
       }),
     })
@@ -1760,8 +1795,7 @@ Rules:
     }
 
     const data = await resp.json()
-    // Re-attach the prefilled "{" so we parse the full JSON object.
-    const text = "{" + (data.content?.[0]?.text || "")
+    const text = data.content?.[0]?.text || ""
     const match = text.match(/\{[\s\S]*\}/)
     if (!match) throw new Error("no JSON in response")
     const trades = filterTrades(JSON.parse(match[0]).trades)
