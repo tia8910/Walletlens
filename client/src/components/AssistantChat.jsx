@@ -1,32 +1,49 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
-import { chatWithAssistant, parseAssistantReply } from '../assistantAi'
+import {
+  chatWithAssistant, parseAssistantReply,
+  loadChatHistory, saveChatHistory, addMessageToHistory,
+  createConversation, clearChatHistory,
+} from '../assistantAi'
 import { track } from '../analytics'
 
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
-// the user describes what they want to do, and Claude Haiku points them to the
-// right feature with one-tap navigation buttons.
+// the user describes what they want to do, and the AI points them to the right
+// feature with one-tap navigation buttons. Chat history persists across sessions.
 
 const SUGGESTIONS = {
   en: [
-    'Where do I add a trade?',
+    'How is my portfolio doing?',
     'Is my portfolio too risky?',
-    'How do I plan when to sell?',
+    'How do I set price alerts?',
     'How do I back up my data?',
+    'What should I buy next?',
+    'Explain technical analysis',
+    'How do I import from Excel?',
+    'How do I plan when to sell?',
+    'What are whale movements?',
+    'How do I use voice import?',
+    'What is the Fear & Greed Index?',
+    'How do I rebalance my portfolio?',
   ],
   ar: [
-    'أين أضيف صفقة؟',
+    'كيف أداء محفظتي؟',
     'هل محفظتي عالية المخاطر؟',
+    'كيف أضبط تنبيهات الأسعار؟',
+    'كيف أنسخ بياناتي؟',
+    'ماذا يجب أن أشتري؟',
+    'اشرح لي التحليل الفني',
+    'كيف أستورد من Excel؟',
     'كيف أخطط لوقت البيع؟',
-    'كيف أنسخ بياناتي احتياطياً؟',
+    'ما هي حركة الحيتان؟',
+    'كيف أستخدم الاستيراد الصوتي؟',
+    'ما هو مؤشر الخوف والطمع؟',
+    'كيف أعيد توزيع محفظتي؟',
   ],
 }
 
-// ── Minimal markdown rendering for assistant replies ────────────────────────
-// The model replies with light markdown (**bold**, *italic*, `code`, and "- "
-// bullet lists). We render a safe subset as React nodes — no dangerouslySet
-// HTML — so the chat doesn't show raw asterisks.
+// ── Minimal markdown rendering ─────────────────────────────────────────────
 function renderInline(text) {
   const nodes = []
   const re = /\*\*(.+?)\*\*|`(.+?)`|\*(.+?)\*|_(.+?)_/g
@@ -72,14 +89,16 @@ function go(navigate, route) {
   if (query) {
     const params = new URLSearchParams(query)
     const tab = params.get('tab')
+    const tool = params.get('tool')
     if (tab) state.tab = tab
+    if (tool) state.tool = tool
   }
   navigate(path, Object.keys(state).length ? { state } : undefined)
 }
 
 const FAB_SIZE = 56
 const POS_KEY = 'wl_assistant_fab_pos'
-const DRAG_THRESHOLD = 6 // px before a press counts as a drag (vs a tap)
+const DRAG_THRESHOLD = 6
 
 function loadPos() {
   try {
@@ -97,12 +116,11 @@ function clampPos(x, y) {
   return { x: Math.max(8, Math.min(maxX, x)), y: Math.max(8, Math.min(maxY, y)) }
 }
 
-// Position the panel near the fab, opening above/below and clamped on-screen.
 function panelStyleFor(pos) {
   const vw = window.innerWidth, vh = window.innerHeight
   const gap = 12
   const panelW = Math.min(380, vw - 16)
-  let left = pos.x + FAB_SIZE - panelW           // align right edges by default
+  let left = pos.x + FAB_SIZE - panelW
   left = Math.max(8, Math.min(vw - panelW - 8, left))
   const openAbove = pos.y > vh / 2
   const style = { left: `${left}px`, right: 'auto', width: `${panelW}px` }
@@ -123,11 +141,14 @@ export default function AssistantChat() {
   const navigate = useNavigate()
   const { lang } = useLanguage()
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([]) // { role, text, navs }
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [pos, setPos] = useState(loadPos) // null = default bottom-right (CSS)
+  const [pos, setPos] = useState(loadPos)
+  const [convId, setConvId] = useState(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [conversations, setConversations] = useState([])
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
   const fabRef = useRef(null)
@@ -135,86 +156,128 @@ export default function AssistantChat() {
 
   const isAr = lang === 'ar'
 
+  // Load saved history on mount
   useEffect(() => {
-    if (open) {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-      inputRef.current?.focus()
+    const saved = loadChatHistory()
+    setConversations(saved)
+    // Restore the last conversation
+    if (saved.length > 0) {
+      const last = saved[saved.length - 1]
+      setConvId(last.id)
+      setMessages(last.messages || [])
     }
-  }, [messages, open, loading])
+  }, [])
 
-  // Keep the fab inside the viewport on resize/orientation change.
+  // Auto-scroll
   useEffect(() => {
-    if (!pos) return
-    const onResize = () => setPos(p => (p ? clampPos(p.x, p.y) : p))
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [pos])
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [messages, loading, open])
 
+  // Sync conversations list when messages change
+  useEffect(() => {
+    setConversations(loadChatHistory())
+  }, [messages])
+
+  // ── Drag handling ──────────────────────────────────────────────────────
   function onFabPointerDown(e) {
-    const rect = fabRef.current.getBoundingClientRect()
-    drag.current = {
-      active: true, moved: false,
-      startX: e.clientX, startY: e.clientY,
-      offX: e.clientX - rect.left, offY: e.clientY - rect.top,
-    }
-    try { fabRef.current.setPointerCapture(e.pointerId) } catch {}
+    drag.current = { active: true, moved: false, startX: e.clientX, startY: e.clientY, offX: 0, offY: 0 }
+    if (pos) { drag.current.offX = e.clientX - pos.x; drag.current.offY = e.clientY - pos.y }
   }
   function onFabPointerMove(e) {
-    const d = drag.current
-    if (!d.active) return
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY
-    if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
-    d.moved = true
-    setPos(clampPos(e.clientX - d.offX, e.clientY - d.offY))
+    if (!drag.current.active) return
+    const dx = e.clientX - drag.current.startX, dy = e.clientY - drag.current.startY
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) drag.current.moved = true
+    if (!drag.current.moved) return
+    const x = (pos?.x ?? (window.innerWidth - FAB_SIZE - 16)) + (e.clientX - drag.current.startX - drag.current.offX + (drag.current.startX - (pos?.x ?? 0)))
+    const y = (pos?.y ?? (window.innerHeight - FAB_SIZE - 16)) + (e.clientY - drag.current.startY - drag.current.offY + (drag.current.startY - (pos?.y ?? 0)))
+    setPos(clampPos(e.clientX - drag.current.offX, e.clientY - drag.current.offY))
   }
-  function onFabPointerUp(e) {
-    const d = drag.current
-    if (!d.active) return
-    d.active = false
-    try { fabRef.current.releasePointerCapture(e.pointerId) } catch {}
-    if (d.moved) {
-      setPos(p => { if (p) { try { localStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {} } return p })
+  function onFabPointerUp() {
+    if (!drag.current.moved) { setOpen(o => !o); setShowHistory(false) }
+    else {
+      const p = clampPos(
+        parseInt(fabRef.current?.style?.left) || window.innerWidth - FAB_SIZE - 16,
+        parseInt(fabRef.current?.style?.top) || window.innerHeight - FAB_SIZE - 16,
+      )
+      setPos(p)
+      try { localStorage.setItem(POS_KEY, JSON.stringify(p)) } catch {}
     }
+    drag.current.active = false
   }
-  function onFabClick() {
-    // Suppress the click that follows a drag so dragging never toggles the panel.
-    if (drag.current.moved) { drag.current.moved = false; return }
-    setOpen(o => !o)
-    if (!open) track('assistant_open')
-  }
+  function onFabClick() { if (drag.current.moved) return }
 
+  // ── Send message ───────────────────────────────────────────────────────
   async function send(text) {
-    const trimmed = (text ?? input).trim()
-    if (!trimmed || loading) return
-    setError(null)
+    const msg = (text || input).trim()
+    if (!msg || loading) return
     setInput('')
+    setError(null)
 
-    const nextMsgs = [...messages, { role: 'user', text: trimmed }]
-    setMessages(nextMsgs)
+    // Create conversation if needed
+    let cid = convId
+    if (!cid) {
+      cid = `wc_${Date.now()}`
+      createConversation(cid)
+      setConvId(cid)
+    }
+
+    const userMsg = { role: 'user', text: msg }
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
+    addMessageToHistory(cid, { role: 'user', content: msg })
+
     setLoading(true)
-    track('assistant_message')
-
     try {
-      const history = nextMsgs.map(m => ({ role: m.role, content: m.text }))
-      const raw = await chatWithAssistant(history, { lang })
-      const { text: replyText, navs } = parseAssistantReply(raw)
-      setMessages(m => [...m, { role: 'assistant', text: replyText, navs }])
-    } catch (e) {
-      setError(e.code === 'unavailable' ? 'unavailable' : 'failed')
+      const apiMessages = newMessages.slice(-20).map(m => ({ role: m.role, content: m.text || m.content || '' }))
+      const rawReply = await chatWithAssistant(apiMessages, { lang })
+      const { text: replyText, navs } = parseAssistantReply(rawReply)
+      const assistantMsg = { role: 'assistant', text: replyText, navs }
+      setMessages(prev => [...prev, assistantMsg])
+      addMessageToHistory(cid, { role: 'assistant', content: replyText, navs })
+      track('assistant_reply', { msgLen: replyText.length, navCount: navs.length })
+    } catch (err) {
+      setError(err.code || 'failed')
+      track('assistant_error', { code: err.code })
     } finally {
       setLoading(false)
     }
   }
 
+  // ── Navigation ─────────────────────────────────────────────────────────
   function handleNav(route) {
-    track('assistant_nav', { route })
     go(navigate, route)
     setOpen(false)
   }
 
+  // ── Conversation management ────────────────────────────────────────────
+  function startNewChat() {
+    const cid = `wc_${Date.now()}`
+    createConversation(cid)
+    setConvId(cid)
+    setMessages([])
+    setShowHistory(false)
+    setConversations(loadChatHistory())
+    inputRef.current?.focus()
+  }
+
+  function selectConversation(id) {
+    const conv = conversations.find(c => c.id === id)
+    if (conv) {
+      setConvId(id)
+      setMessages(conv.messages || [])
+      setShowHistory(false)
+    }
+  }
+
+  function handleClearHistory() {
+    clearChatHistory()
+    setConversations([])
+    startNewChat()
+  }
+
   const greeting = isAr
     ? 'مرحباً! أنا مساعد WalletLens. أخبرني بما تريد فعله وسأوجهك للميزة المناسبة.'
-    : "Hi! I'm the WalletLens assistant. Tell me what you'd like to do and I'll point you to the right feature."
+    : "Hi! I'm the WalletLens assistant. Ask me anything about the app, your portfolio, or investing."
 
   return (
     <>
@@ -237,20 +300,56 @@ export default function AssistantChat() {
 
       {open && (
         <div className="wlc-panel" role="dialog" aria-label="WalletLens assistant" style={pos ? panelStyleFor(pos) : undefined}>
+          {/* ── Header ── */}
           <div className="wlc-header">
+            <button className="wlc-history-btn" onClick={() => { if (showHistory) setShowHistory(false); else setOpen(false); }} title={isAr ? 'رجوع' : 'Back'}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
             <div className="wlc-header-title">
               <span className="wlc-dot" />
               {isAr ? 'مساعد WalletLens' : 'WalletLens Assistant'}
             </div>
+            <button className="wlc-new-chat-btn" onClick={startNewChat} title={isAr ? 'محادثة جديدة' : 'New chat'}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
             <button className="wlc-close" onClick={() => setOpen(false)} aria-label="Close">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
             </button>
           </div>
 
+          {/* ── History panel ── */}
+          {showHistory && (
+            <div className="wlc-history-panel">
+              <div className="wlc-history-list">
+                {conversations.length === 0 && (
+                  <div className="wlc-history-empty">{isAr ? 'لا توجد محادثات' : 'No conversations yet'}</div>
+                )}
+                {[...conversations].reverse().map(conv => {
+                  const preview = conv.messages?.length > 0
+                    ? (conv.messages[conv.messages.length - 1].content || conv.messages[conv.messages.length - 1].text || '').slice(0, 50)
+                    : ''
+                  const time = new Date(conv.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  return (
+                    <button key={conv.id} className={`wlc-history-item${conv.id === convId ? ' active' : ''}`} onClick={() => selectConversation(conv.id)}>
+                      <div className="wlc-history-preview">{preview || (isAr ? 'محادثة جديدة' : 'New chat')}</div>
+                      <div className="wlc-history-time">{time}</div>
+                    </button>
+                  )
+                })}
+              </div>
+              {conversations.length > 0 && (
+                <button className="wlc-history-clear" onClick={handleClearHistory}>
+                  {isAr ? 'مسح السجل' : 'Clear History'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* ── Messages ── */}
           <div className="wlc-scroll" ref={scrollRef}>
             <div className="wlc-msg wlc-msg-assistant">{greeting}</div>
 
-            {messages.length === 0 && (
+            {messages.length === 0 && !showHistory && (
               <div className="wlc-suggestions">
                 {(SUGGESTIONS[lang] || SUGGESTIONS.en).map((s, i) => (
                   <button key={i} className="wlc-suggestion" onClick={() => send(s)}>{s}</button>
@@ -292,13 +391,14 @@ export default function AssistantChat() {
             )}
           </div>
 
+          {/* ── Input ── */}
           <form className="wlc-input-row" onSubmit={e => { e.preventDefault(); send() }}>
             <input
               ref={inputRef}
               className="wlc-input"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder={isAr ? 'بماذا يمكنني مساعدتك؟' : 'What can I help you find?'}
+              placeholder={isAr ? 'بماذا يمكنني مساعدتك؟' : 'Ask me anything...'}
               disabled={loading}
             />
             <button className="wlc-send" type="submit" disabled={loading || !input.trim()} aria-label="Send">

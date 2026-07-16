@@ -11756,6 +11756,26 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .wlc-suggestion { color: #1e293b; }
 [data-wl-light] .wlc-input { background: rgba(0,0,0,0.03); color: #1e293b; border-color: rgba(0,0,0,0.12); }
 
+/* ── Assistant history panel & buttons ── */
+.wlc-history-btn, .wlc-new-chat-btn { background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.5)); cursor: pointer; padding: 0.25rem; border-radius: 8px; display: flex; transition: color 0.15s, background 0.15s; }
+.wlc-history-btn:hover, .wlc-new-chat-btn:hover { color: var(--g); background: rgba(var(--g-rgb,16,185,129),0.1); }
+.wlc-header { gap: 0.4rem; }
+.wlc-history-panel { max-height: 200px; overflow-y: auto; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 0.5rem; }
+.wlc-history-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.wlc-history-empty { text-align: center; color: var(--text-muted, rgba(255,255,255,0.4)); font-size: 0.8rem; padding: 1rem; }
+.wlc-history-item { background: none; border: none; text-align: left; padding: 0.5rem 0.65rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; width: 100%; }
+.wlc-history-item:hover { background: rgba(255,255,255,0.05); }
+.wlc-history-item.active { background: rgba(var(--g-rgb,16,185,129),0.12); }
+.wlc-history-preview { font-size: 0.78rem; color: var(--text, rgba(255,255,255,0.85)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wlc-history-time { font-size: 0.65rem; color: var(--text-muted, rgba(255,255,255,0.35)); margin-top: 0.15rem; }
+.wlc-history-clear { display: block; width: 100%; margin-top: 0.5rem; padding: 0.4rem; background: none; border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; color: #f87171; font-size: 0.75rem; cursor: pointer; transition: background 0.15s; }
+.wlc-history-clear:hover { background: rgba(248,113,113,0.1); }
+[data-wl-light] .wlc-history-btn, [data-wl-light] .wlc-new-chat-btn { color: rgba(0,0,0,0.45); }
+[data-wl-light] .wlc-history-btn:hover, [data-wl-light] .wlc-new-chat-btn:hover { color: var(--g); }
+[data-wl-light] .wlc-history-item:hover { background: rgba(0,0,0,0.04); }
+[data-wl-light] .wlc-history-item.active { background: rgba(var(--g-rgb,16,185,129),0.08); }
+[data-wl-light] .wlc-history-panel { border-color: rgba(0,0,0,0.08); }
+
 /* ════════════════════════════════════════════════════════════════════════
    PREMIUM POLISH LAYER
    Cross-cutting refinements that lift the whole app to a premium feel:
