@@ -12,8 +12,40 @@ import { ANTHROPIC_KEY } from './anthropic'
 
 const KEY_STORAGE  = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-// Sonnet for maximum accuracy on garbled / accented / multi-trade speech.
-const MODEL = 'claude-sonnet-4-6'
+// Sonnet 5 — big multilingual accuracy jump over 4.6 on garbled / accented /
+// multi-trade speech (Arabic dialects + English), while staying fast enough
+// for an interactive voice UI.
+const MODEL = 'claude-sonnet-5'
+
+// Structured-output schema — forces Claude to return valid, parseable trade
+// JSON every time. This REPLACES the old assistant-prefill "{" trick, which
+// returns HTTP 400 on Sonnet 5 (and every current Claude model) — the reason
+// the AI parse silently failed and only the first coin was ever detected.
+const TRADES_FORMAT = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['trades'],
+    properties: {
+      trades: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['type', 'symbol', 'name', 'amount', 'price'],
+          properties: {
+            type: { anyOf: [{ type: 'string', enum: ['buy', 'sell'] }, { type: 'null' }] },
+            symbol: { type: 'string' },
+            name: { type: 'string' },
+            amount: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+            price: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+          },
+        },
+      },
+    },
+  },
+}
 
 // The owner-hosted voice-parse endpoint (Deno Deploy / Vercel) that holds the
 // ANTHROPIC_API_KEY secret. The site is static (GitHub Pages) so it can't host
@@ -71,6 +103,7 @@ Rules:
 - MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from start to finish — NEVER stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each. If you returned only 1 trade but the sentence contains multiple coin names, you missed trades — re-read and add them all.
 - Worked Arabic example: "اشتريت اثنين سولانا وثلاث ايثيريوم وبعت نص بيتكوين" → [{buy SOL 2},{buy ETH 3},{sell BTC 0.5}]. The verb switches to "بعت" (sell) for Bitcoin only.
 - A shared amount before a list applies to each unless a per-coin amount is given: "I bought 2 Solana and 3 Cardano" → [SOL × 2, ADA × 3]; "I bought 5 of Bitcoin and Ethereum" → [BTC × 5, ETH × 5].
+- Arabic "و" (and) — attached or standalone — separates assets: "بيتكوين وايثيريوم" / "بيتكوين و ايثيريوم" = two assets. A comma, "ثم" (then), or a pause also separates assets. English "and", "plus", "also", "then", commas, and "&" separate assets too.
 - If the transcript is too garbled to extract ANY trade, return { "trades": [] }.
 - Recognise Arabic phonetics English STT mis-rendered (e.g. "selena" = Solana, "street ultra"/"ash tara"/"ish tari" = اشتري = buy, "baat"/"bat"/"bait" = بعت = sold).
 - Arabic dialect intent verbs: اشتري/اشتريت/شريت/جبت/أخذت/خذيت/حطيت/كومت/جمعت/كسبت/استثمرت/دخلت/نزلت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت/طلعت/فشيت = SELL.
@@ -154,18 +187,21 @@ export async function parseTradesWithClaude(transcript, hintLang = 'en', alterna
         },
         body: JSON.stringify({
           model: MODEL,
-          // Higher cap so long multi-trade JSON is never truncated; prefill "{"
-          // forces clean JSON output with no preamble.
-          max_tokens: 1500,
+          // Higher cap so long multi-trade JSON is never truncated.
+          max_tokens: 2048,
+          // Thinking off: this is a latency-sensitive extraction task and the
+          // prompt already carries explicit rules + worked examples.
+          thinking: { type: 'disabled' },
+          // Guaranteed valid JSON — replaces the old assistant-prefill trick.
+          output_config: { format: TRADES_FORMAT },
           messages: [
             { role: 'user', content: buildPrompt(text, lang, alts) },
-            { role: 'assistant', content: '{' },
           ],
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        const out = '{' + (data.content?.[0]?.text || '')
+        const out = data.content?.[0]?.text || ''
         const m = out.match(/\{[\s\S]*\}/)
         if (m) return filterTrades(JSON.parse(m[0]).trades)
       }
