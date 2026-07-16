@@ -2928,6 +2928,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 }
 
 // ── Static card config — defined at module level to avoid recreating on every render ──
+// Dashboard bottom-nav tabs — used to validate a restored tab so a pull-to-refresh
+// (full page reload) returns to the same tab instead of resetting to the dashboard.
+const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage'])
+const ACTIVE_TAB_KEY = 'wl_active_tab'
+
 const CARD_CONFIG = [
   { id:'spin_learn',         label:'Spin & Learn' },
   { id:'pnl_chart',          label:'P&L by Asset' },
@@ -3056,8 +3061,19 @@ export default function Dashboard() {
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wl_pending_import')) {
       return 'manage'
     }
-    return location.state?.tab || 'overview'
+    // An explicit deep-link (location.state.tab) always wins.
+    if (location.state?.tab && DASH_TABS.has(location.state.tab)) return location.state.tab
+    // Otherwise restore the last tab so a pull-to-refresh reload stays put.
+    try {
+      const saved = sessionStorage.getItem(ACTIVE_TAB_KEY)
+      if (saved && DASH_TABS.has(saved)) return saved
+    } catch { /* sessionStorage unavailable */ }
+    return 'overview'
   })
+  // Persist the active tab so a native pull-to-refresh (full reload) returns to it.
+  useEffect(() => {
+    try { sessionStorage.setItem(ACTIVE_TAB_KEY, activeTab) } catch { /* ignore */ }
+  }, [activeTab])
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
 
