@@ -127,11 +127,13 @@ function filterTrades(arr) {
   return Array.isArray(arr)
     ? arr.filter(t => {
         if (!t || !t.symbol) return false
-        // Full trade: known type + positive amount
-        if ((t.type === 'buy' || t.type === 'sell') && typeof t.amount === 'number' && t.amount > 0) return true
-        // Partial: coin name only — user will fill in type + amount in the edit card
-        if (!t.type && t.amount == null) return true
-        return false
+        // Keep every well-formed trade, INCLUDING partials: "bought Bitcoin"
+        // (type but no amount) pre-fills the card as Buy+BTC and the user just
+        // types the amount; "2 Solana" (amount but no verb) pre-fills the rest.
+        // Dropping partials threw away most of what Claude understood.
+        if (t.type != null && t.type !== 'buy' && t.type !== 'sell') return false
+        if (t.amount != null && !(typeof t.amount === 'number' && t.amount > 0)) return false
+        return true
       })
     : []
 }
@@ -146,7 +148,9 @@ function filterTrades(arr) {
 export async function parseTradesWithClaude(transcript, hintLang = 'en', alternatives = []) {
   const text = (transcript || '').toString().trim().slice(0, 500)
   if (!text) return []
-  const lang = hintLang === 'ar' ? 'ar' : 'en'
+  // Pass the detected language through — collapsing everything to ar/en threw
+  // away the hint for Hindi/French/Spanish/Turkish transcripts.
+  const lang = ['ar', 'hi', 'fr', 'tr', 'es'].includes(hintLang) ? hintLang : 'en'
   // De-dupe candidate transcripts (from the parallel recognizers) and keep the
   // primary one first; these let Claude triangulate what was really said.
   const alts = Array.from(new Set([

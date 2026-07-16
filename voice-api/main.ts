@@ -447,10 +447,13 @@ function filterTrades(arr: any): any[] {
   return Array.isArray(arr)
     ? arr.filter((t) => {
       if (!t || !t.symbol) return false
-      if ((t.type === "buy" || t.type === "sell") && typeof t.amount === "number" && t.amount > 0) return true
-      // Partial: coin only — user fills in type + amount in the edit card
-      if (!t.type && t.amount == null) return true
-      return false
+      // Keep every well-formed trade, INCLUDING partials: "bought Bitcoin"
+      // (type but no amount) pre-fills the card as Buy+BTC; "2 Solana"
+      // (amount but no verb) pre-fills the rest. The user completes the
+      // missing field in the edit card instead of losing the whole trade.
+      if (t.type != null && t.type !== "buy" && t.type !== "sell") return false
+      if (t.amount != null && !(typeof t.amount === "number" && t.amount > 0)) return false
+      return true
     })
     : []
 }
@@ -1752,7 +1755,7 @@ Rules:
   if (!transcript) {
     return new Response(JSON.stringify({ error: "no_transcript" }), { status: 400, headers })
   }
-  const hintLang = body.hintLang === "ar" ? "ar" : "en"
+  const hintLang = ["ar", "hi", "fr", "tr", "es"].includes(String(body.hintLang)) ? String(body.hintLang) : "en"
   // Optional candidate transcripts from the other recognizers, de-duped.
   const alternatives = Array.isArray(body.alternatives)
     ? Array.from(new Set(

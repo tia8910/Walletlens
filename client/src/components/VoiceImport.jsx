@@ -981,6 +981,32 @@ function digitizeWordNumbers(text) {
   return out.slice(1, -1)
 }
 
+// ── Attached Arabic prefixes (و=and, ف=so, ب=with, ل=for) ──────────────────
+// Spoken Arabic joins these to the following word: "وايثيريوم" = "و ايثيريوم"
+// (and Ethereum), "وبعت" = "و بعت" (and sold). Joined forms hide coins and
+// intent verbs from the space-delimited matchers, which is why multi-trade
+// Arabic sentences used to collapse to a single trade. Split the prefix off
+// whenever the remainder is a known coin alias, intent verb, or number word.
+let KNOWN_PARSE_WORDS = null
+function splitArabicPrefixes(normalized) {
+  if (!KNOWN_PARSE_WORDS) {
+    KNOWN_PARSE_WORDS = new Set([
+      ...Object.keys(COIN_MAP),
+      ...BUY_WORDS.map(fullNormalize),
+      ...SELL_WORDS.map(fullNormalize),
+      ...Object.keys(AR_NUMBERS),
+    ])
+  }
+  const AR_PREFIXES = new Set(['و', 'ف', 'ب', 'ل'])
+  return normalized.split(' ').map(tok => {
+    if (tok.length < 4 || !/^[؀-ۿ]/.test(tok) || KNOWN_PARSE_WORDS.has(tok)) return tok
+    if (AR_PREFIXES.has(tok[0]) && KNOWN_PARSE_WORDS.has(tok.slice(1))) {
+      return tok[0] + ' ' + tok.slice(1)
+    }
+    return tok
+  }).join(' ')
+}
+
 // ── The brain: parse a transcript into one or more structured trades ───────
 // Returns { original, transactions: [...] } — one tx per intent verb, and
 // when a single intent governs multiple coins ("bought BTC and ETH") each
@@ -989,6 +1015,7 @@ function parseVoiceCommand(text) {
   const original = text
   let normalized = ' ' + text.toLowerCase().trim().replace(/[!?]/g, ' ') + ' '
   normalized = fullNormalize(normalized).replace(/\s+/g, ' ')
+  normalized = ' ' + splitArabicPrefixes(normalized.trim()) + ' '
   normalized = ' ' + digitizeWordNumbers(normalized.trim()) + ' '
 
   // Anchor 1: all intent verbs in the text
@@ -1296,15 +1323,15 @@ function fmtAmt(n) {
 const EXAMPLES_EN = [
   '"BTC" or "Bitcoin" — opens edit card to fill in details',
   '"I bought 0.5 Bitcoin at 60k"',
+  '"Bought 2 Solana and 3 Cardano, sold half a Bitcoin" — several trades at once',
   '"Sold 10 Apple shares at 220"',
-  '"Bought 100 Tesla at 280"',
   '"Bought 1 oz of gold"',
 ]
 const EXAMPLES_AR = [
   '"BTC" أو "بيتكوين" — يفتح بطاقة لتكملة التفاصيل',
   '"اشتريت بيتكوين 0.5 بسعر 60 ألف"',
+  '"اشتريت اتنين سولانا وتلاتة كاردانو وبعت نص بيتكوين" — عدة صفقات دفعة واحدة',
   '"اشتريت 10 ابل بسعر 220"',
-  '"اشتريت 100 تيسلا"',
   '"اشتريت 1 ذهب"',
 ]
 
@@ -1333,15 +1360,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
   // Per-transaction free-text asset search ({ [txIdx]: query })
   const [assetQueries, setAssetQueries] = useState({})
   const [noSpeechHint, setNoSpeechHint] = useState(false)
-  // BILINGUAL: we run TWO recognizers in parallel — one for Arabic (ar-SA,
-  // covering MSA + Gulf + Levantine + Egyptian dialects) and one for English.
-  // Whichever produces a higher-confidence parse wins on screen. This means
-  // the user can speak in either language regardless of which one the app UI
-  // is set to. On iOS (which only allows one mic recognizer at a time) we
-  // automatically degrade to a single recognizer matching the app's UI lang.
+  // ONE recognizer at a time, matched to the language toggle. Browsers only
+  // allow a single active speech session — parallel recognizers abort each
+  // other and shred the audio (the old design's biggest accuracy bug).
   const recsRef = useRef([])
-  // Keyed by BCP-47 langCode (e.g. 'ar-SA', 'ar-EG', 'en-US').
-  // Multiple Arabic recognizers compete; the best parse wins.
+  // Keyed by BCP-47 langCode (e.g. 'ar-SA', 'en-US').
   const transcriptsRef = useRef({})
   // Per-language n-best runner-up transcripts (what else each engine heard).
   // Sent to Claude alongside the winners so it can triangulate mis-heard coins.
@@ -1448,27 +1471,24 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       recsRef.current.forEach(r => { try { r.stop() } catch {} })
     }, 5 * 60 * 1000)
 
-    // Always run Arabic + English recognizers in parallel on non-iOS so the
-    // user can speak either language regardless of the UI language selector.
-    // ar-SA covers Gulf/MSA, ar-EG covers Egyptian, en-US handles English +
-    // phonetic mis-hearings of Arabic words by English STT engines.
-    // On iOS only one mic recognizer is allowed — use the selected language.
-    // Run multiple language recognizers in parallel for maximum accent coverage.
-    // ar-SA = Gulf/MSA, ar-EG = Egyptian; en-US / en-GB / en-IN = English tuned
-    // to American, British/African and South-Asian accents (the single biggest
-    // source of coin mis-hears); hi-IN = Hindi/Urdu, fr-FR = French,
-    // es-ES = Spanish, tr-TR = Turkish.
-    // On iOS only one mic recognizer is allowed — use the selected language.
-    const langCodes = IS_IOS
-      ? [isAppArabic ? 'ar-SA' : 'en-US']
-      : ['ar-SA', 'ar-EG', 'en-US', 'en-GB', 'en-IN', 'hi-IN', 'fr-FR', 'es-ES', 'tr-TR']
+    // ONE recognizer, matched to the user's language toggle. Browsers allow
+    // only ONE active speech-recognition session — every additional start()
+    // ABORTS the previous one, and our auto-restart in onend made the old
+    // 9-language pool perpetually steal the mic from each other. The result
+    // was chopped speech fragments transcribed by wrong-language engines
+    // (Arabic sentences "heard" by the Turkish/Hindi recognizer → garbage).
+    // A single engine hears the full utterance; its n-best alternatives plus
+    // Claude's reconciliation handle cross-language coin names ("بيتكوين"
+    // and "bitcoin" both resolve regardless of which engine transcribed it).
+    const langCodes = [isAppArabic ? 'ar-SA' : 'en-US']
 
     const createRec = (langCode) => {
-      const isArabic = langCode.startsWith('ar')
       const rec = new SR()
       rec.continuous = true
       rec.interimResults = true
-      rec.maxAlternatives = isArabic ? 8 : 5
+      // Max out n-best alternatives — with a single engine these runner-up
+      // hearings are what lets Claude recover mis-heard coin names.
+      rec.maxAlternatives = 10
       rec.lang = langCode
 
       rec.onstart = () => {
@@ -1528,8 +1548,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }
 
         // Smart live parse: once an utterance finalizes and the user pauses,
-        // ask Claude to reconcile ALL engines' hearings — no stop tap needed.
-        // Debounced so it fires once per pause, and skipped if nothing changed.
+        // ask Claude to reconcile the engine's hearings — no stop tap needed.
+        // Short debounce (700ms) so the order card appears fast after a pause.
         if (Array.from(e.results).some(r => r.isFinal)) {
           clearTimeout(aiDebounceRef.current)
           aiDebounceRef.current = setTimeout(() => {
@@ -1540,7 +1560,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               lastAiTextRef.current = best
               tryAiFallback(best, 0, candidates)
             }
-          }, 1400)
+          }, 700)
         }
 
         // Multi-channel winner pick: parse every stored transcript and take
@@ -1558,8 +1578,11 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
 
         if (winnerText) { hasTranscriptRef.current = true; clearTimeout(noSpeechTimerRef.current); setNoSpeechHint(false) }
         setTranscript(winnerText)
+        // Instant local feedback — but NEVER overwrite a Claude parse of this
+        // same text with the cruder local one. Only re-render cards when the
+        // transcript actually gained new speech since the last AI pass.
         const anyUseful = winnerParsed.transactions.some(t => t.type || t.coin || t.amount != null || t.suggestions?.length)
-        if (anyUseful) {
+        if (anyUseful && winnerText !== lastAiTextRef.current) {
           setParsed(winnerParsed)
           setReaction(getReaction(winnerText, winnerParsed.transactions[0] || {}))
         }
@@ -2055,6 +2078,18 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                 {isAr
                   ? 'لم أسمع شيئاً — تحدث بوضوح، أو تحقق من إذن الميكروفون والإنترنت'
                   : 'Not hearing you — speak clearly, or check mic permission and internet connection'}
+              </p>
+            </div>
+          )}
+
+          {/* Live transcript — show the user exactly what the engine heard */}
+          {transcript && (
+            <div style={{ marginBottom:'0.7rem', padding:'0.55rem 0.9rem', borderRadius:'10px', background:'var(--surface-1)', border:'1px solid var(--border)' }}>
+              <span style={{ fontSize:'0.64rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:'0.15rem' }}>
+                {isAr ? 'ما سمعته' : 'Heard'}
+              </span>
+              <p dir="auto" style={{ margin:0, fontSize:'0.88rem', color:'var(--text)', fontWeight:600, lineHeight:1.45 }}>
+                “{transcript}”
               </p>
             </div>
           )}
