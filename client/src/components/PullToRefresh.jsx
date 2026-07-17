@@ -35,6 +35,14 @@ export default function PullToRefresh({ children }) {
   const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0
 
   const onTouchStart = useCallback((e) => {
+    // Never hijack gestures that begin inside a modal/overlay/sheet. These sit
+    // on top of the page (which is still at scrollY 0), so without this guard a
+    // downward drag while tapping — e.g. an onboarding asset chip — would arm
+    // pull-to-refresh, preventDefault() the touch, and cancel the tap ("chip
+    // flashes but won't select"). Their own scrolling and taps must win.
+    if (e.target?.closest?.('[role="dialog"], .bs-sheet, .wlc-panel, .ip-overlay, .wls-overlay')) {
+      pulling.current = false; return
+    }
     if (refreshing || e.touches.length !== 1 || !atTop()) { pulling.current = false; return }
     startY.current = e.touches[0].clientY
     pulling.current = true
