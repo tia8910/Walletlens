@@ -981,6 +981,24 @@ function digitizeWordNumbers(text) {
   return out.slice(1, -1)
 }
 
+// Is the local (instant, offline) parse good enough to SKIP the slower Claude
+// round-trip? Only when every detected trade is fully resolved from an EXACT
+// alias match — coin + type + amount, and no pending fuzzy `suggestions`.
+// Ambiguous/garbled speech surfaces as suggestions or missing fields, which
+// stays "incomplete" so Claude still refines it. We also defer to Claude when
+// the sentence looks multi-asset ("and"/"و"/comma) but only one trade was
+// found, since the local parser may have missed a coin. This is what makes a
+// plain "I bought 1 Bitcoin" / "بعت نص بيتكوين" appear instantly with no wait.
+function localParseIsComplete(parsed, rawTranscript) {
+  const txs = parsed?.transactions || []
+  if (!txs.length) return false
+  if (!txs.every(t => t.coin && t.type && t.amount != null && !(t.suggestions && t.suggestions.length))) return false
+  const t = (rawTranscript || '').toLowerCase()
+  const multiHint = /\band\b|\bplus\b|\bthen\b|[,،]|(^|\s)و|ثم/.test(t)
+  if (txs.length === 1 && multiHint) return false
+  return true
+}
+
 // ── Attached Arabic prefixes (و=and, ف=so, ب=with, ل=for) ──────────────────
 // Spoken Arabic joins these to the following word: "وايثيريوم" = "و ايثيريوم"
 // (and Ethereum), "وبعت" = "و بعت" (and sold). Joined forms hide coins and
@@ -1388,28 +1406,22 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
       s + (t.type ? 2 : 0) + (t.coin ? 4 : 0) + (t.amount != null ? 3 : 0) + (t.suggestions?.length ? 1 : 0), 0)
 
   // Collapse Chrome-Android progressive snapshots into a single transcript.
+  // Cheap by design: take each segment's TOP hypothesis (result[0]) — do NOT
+  // re-parse every n-best alternative here. That scoring loop ran on every
+  // recognition frame (many times/sec) across hundreds of coin aliases and was
+  // the main source of mobile jank / lag. The n-best alternatives are still
+  // captured in altsRef and sent to Claude, which is where they actually help.
   const buildBestTranscript = (results) => {
     const segments = []
     for (let i = 0; i < results.length; i++) {
-      const result = results[i]
-      let best = result[0].transcript
-      let bestScore = -1
-      const baseline = segments.map(s => s.text).join(' ')
-      for (let k = 0; k < result.length; k++) {
-        const candidate = (baseline + ' ' + result[k].transcript).trim()
-        const score = scoreParsed(parseVoiceCommand(candidate))
-        if (score > bestScore) { bestScore = score; best = result[k].transcript }
-      }
+      const best = results[i][0].transcript
       const trimmed = best.trim()
       if (!trimmed) continue
       const last = segments[segments.length - 1]
-      if (last && trimmed.startsWith(last.text.trim())) {
-        last.text = best; last.isFinal = result.isFinal
-      } else {
-        segments.push({ text: best, isFinal: result.isFinal })
-      }
+      if (last && trimmed.startsWith(last.trim())) segments[segments.length - 1] = best
+      else segments.push(best)
     }
-    return segments.map(s => s.text).join(' ').replace(/\s+/g, ' ').trim()
+    return segments.join(' ').replace(/\s+/g, ' ').trim()
   }
 
   // Everything every engine heard: per-language winners + their n-best
@@ -1548,8 +1560,8 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
         }
 
         // Smart live parse: once an utterance finalizes and the user pauses,
-        // ask Claude to reconcile the engine's hearings — no stop tap needed.
-        // Short debounce (700ms) so the order card appears fast after a pause.
+        // reconcile the hearings — no stop tap needed. Short debounce so the
+        // order card appears fast after a pause.
         if (Array.from(e.results).some(r => r.isFinal)) {
           clearTimeout(aiDebounceRef.current)
           aiDebounceRef.current = setTimeout(() => {
@@ -1558,9 +1570,13 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
             const best = pickBestTranscript(candidates)
             if (best && best.trim().length >= 3 && best !== lastAiTextRef.current) {
               lastAiTextRef.current = best
+              // FAST PATH: if the local parser already fully resolved the
+              // trade(s), the card is on screen already — skip the network
+              // round-trip to Claude entirely (instant for simple trades).
+              if (localParseIsComplete(parseVoiceCommand(best), best)) return
               tryAiFallback(best, 0, candidates)
             }
-          }, 700)
+          }, 550)
         }
 
         // Multi-channel winner pick: parse every stored transcript and take
@@ -1716,22 +1732,21 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
     recsRef.current.forEach(r => { try { r.stop() } catch {} })
     track('voice_listen_stop', { lang, has_transcript: transcript ? 'yes' : 'no' })
 
-    // Always ask Claude to interpret the finalized transcript. The local
-    // regex parser frequently catches only the FIRST coin in a multi-trade
-    // sentence ("1 Bitcoin and 1 Ethereum" → just BTC) and reports it as
-    // "complete", so relying on incompleteness alone silently drops trades.
-    // Claude is authoritative for multi-trade + dialects; if it returns
-    // nothing (no key / offline) we keep whatever the local parser found.
+    // Interpret the finalized transcript. Local-complete single trades skip
+    // the network round-trip (their card is already on screen); everything
+    // else — multi-trade, dialects, garbled coins — goes to Claude, which is
+    // authoritative there. If Claude returns nothing (no key / offline) we
+    // keep whatever the local parser found.
     clearTimeout(aiDebounceRef.current)
     const candidates = gatherCandidates()
     const best = pickBestTranscript(candidates) || transcript
     const localComplete = (parsed?.transactions || []).filter(t => t.type && t.coin && t.amount != null).length
-    // Pass EVERY engine's hearing (winners + runner-ups) so Claude can
-    // triangulate the true utterance — far more accurate than a single
-    // best-guess for accented or garbled speech. Skip if the live debounced
-    // pass already reconciled this exact text.
     if (best && best.trim().length >= 3 && best !== lastAiTextRef.current) {
       lastAiTextRef.current = best
+      // Fast path: local parser already fully resolved it — no wait.
+      if (localParseIsComplete(parseVoiceCommand(best), best)) return
+      // Pass EVERY engine's hearing (winners + runner-ups) so Claude can
+      // triangulate the true utterance for accented / garbled speech.
       tryAiFallback(best, localComplete, candidates)
     }
   }
