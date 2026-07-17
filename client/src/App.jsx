@@ -1,5 +1,5 @@
 import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
 const Calculator    = lazy(() => import('./pages/Calculator'))
@@ -28,7 +28,6 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
-import { isTwa } from './twa'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -85,8 +84,6 @@ const MarketIndex      = lazy(() => import('./pages/MarketIndex'))
 const FearAndGreedIndex = lazy(() => import('./pages/FearAndGreedIndex'))
 const Rebalancing      = lazy(() => import('./pages/Rebalancing'))
 const FAQ              = lazy(() => import('./pages/FAQ'))
-const Lenz         = lazy(() => import('./pages/Lenz'))
-const Airdrop      = lazy(() => import('./pages/Airdrop'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
@@ -267,8 +264,6 @@ const Drawer = memo(function Drawer({ open, onClose }) {
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
-          {/* Earn $LENZ hidden until Google Play approval (crypto-token/earn features
-              can trip Play Store review). Restore this block once approved. */}
         </div>
 
         <div className="wl-drawer-section">
@@ -359,7 +354,6 @@ const AppFooter = memo(function AppFooter() {
         <span>WalletLens © {CURRENT_YEAR}</span>
       </div>
       <nav className="wl-app-footer-links">
-        {/* $LENZ on Sui hidden until Google Play approval. Restore once approved. */}
         <button onClick={() => navigate('/about')}>{t('about')}</button>
         <button onClick={() => navigate('/faq')}>FAQ</button>
         <button onClick={() => navigate('/blog')}>{t('blog')}</button>
@@ -543,10 +537,6 @@ export default function App() {
           <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
           <Route path="/rebalancing-calculator" element={<Rebalancing />} />
           <Route path="/faq" element={<FAQ />} />
-          {/* $LENZ pages are web-only: hidden in the Google Play (TWA) build
-              to stay clear of Play's financial-features/contest policies. */}
-          <Route path="/lenz" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Lenz />} />
-          <Route path="/airdrop" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Airdrop />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin/mail" element={<AdminMail />} />
@@ -634,10 +624,6 @@ export default function App() {
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
               <Route path="/faq" element={<FAQ />} />
-              {/* $LENZ pages are web-only: hidden in the Google Play (TWA) build
-                  to stay clear of Play's financial-features/contest policies. */}
-              <Route path="/lenz" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Lenz />} />
-              <Route path="/airdrop" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Airdrop />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />

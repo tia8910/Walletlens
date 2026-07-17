@@ -1,4 +1,10 @@
 # www → apex (eliminates "www.walletlens.live" from Search Console duplicate reports)
 https://www.walletlens.live/* https://walletlens.live/:splat 301
 
+# Retired $LENZ token pages → home (avoids soft-404s on previously indexed URLs)
+/lenz    /    301
+/lenz/   /    301
+/airdrop /    301
+/airdrop/ /   301
+
 /* /index.html 200
