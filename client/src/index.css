@@ -13296,6 +13296,9 @@ button:not(:disabled):active,
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
+  /* Keep the bottom-pinned CTA clear of the Android gesture / nav bar in the
+     TWA, so "Get started" / "Next" is always tappable. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px) !important;
 }
 .wm-sheet { box-shadow: none !important; overflow: visible !important; }
 .wm-sheet .wm-header { border-radius: 0 !important; }

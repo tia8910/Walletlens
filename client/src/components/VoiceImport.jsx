@@ -1361,7 +1361,7 @@ const SUPPORTED = !!SR
 const IS_IOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
 
 // ── Component ───────────────────────────────────────────────────────────────
-export default function VoiceImport({ hideTrigger = false, onImported }) {
+export default function VoiceImport({ hideTrigger = false, onImported, onClose }) {
   const [open, setOpen] = useState(hideTrigger)
   const { lang: appLang } = useLanguage()
   const lang = appLang === 'ar' ? 'ar-sa' : 'en'
@@ -1915,7 +1915,26 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
           boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
           backdropFilter: 'blur(12px)',
           direction: isAr ? 'rtl' : 'ltr',
+          position: 'relative',
         }}>
+          {/* Close (X) — always available so the panel can be dismissed even
+              when embedded (hideTrigger, e.g. the empty-portfolio import area).
+              Calls onClose when the parent controls visibility, otherwise
+              collapses its own open state as a fallback. */}
+          <button
+            onClick={() => { if (onClose) onClose(); else setOpen(false) }}
+            aria-label={isAr ? 'إغلاق' : 'Close'}
+            title={isAr ? 'إغلاق' : 'Close'}
+            style={{
+              position: 'absolute', top: '0.55rem', insetInlineEnd: '0.55rem',
+              width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '10px',
+              color: 'var(--text-muted)', cursor: 'pointer', padding: 0, zIndex: 3,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+          </button>
+
           {/* Language hint */}
           <div style={{
             textAlign: 'center', marginBottom: '0.6rem',
@@ -2038,7 +2057,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
               </div>
             </div>
 
-            <p style={{ fontSize:'0.82rem', color: listening ? '#a7f3d0' : 'var(--text)', margin:0, textAlign:'center', fontWeight: listening ? 700 : 500 }}>
+            <p style={{ fontSize:'0.82rem', color: listening ? 'var(--g-ink)' : 'var(--text)', margin:0, textAlign:'center', fontWeight: listening ? 700 : 500 }}>
               {listening
                 ? (isAr ? 'أتحدث الآن…' : 'Listening… speak now')
                 : (isAr ? 'اضغط الميكروفون وقل صفقتك' : 'Tap the mic and say your trade')}
@@ -2191,7 +2210,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                           {tx.suggestions.map(s => (
                             <button key={s.id} onClick={() => { updateTx(idx, { coin: s, suggestions: null }); fetchAndSetPrice(idx, s.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(52,211,153,0.15)', border:'1.5px solid rgba(52,211,153,0.4)',
-                              color:'#a7f3d0', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
+                              color:'var(--g-ink)', fontWeight:700, fontSize:'0.78rem', cursor:'pointer',
                             }}>
                               {s.symbol} <span style={{ opacity:0.7, fontWeight:400 }}>{s.name}</span>
                             </button>
@@ -2216,7 +2235,7 @@ export default function VoiceImport({ hideTrigger = false, onImported }) {
                           {assetResults.map(c => (
                             <button key={c.id} onClick={() => { updateTx(idx, { coin: c, suggestions: null }); setAssetQueries(prev => ({...prev, [idx]: ''})); fetchAndSetPrice(idx, c.id) }} style={{
                               padding:'0.28rem 0.65rem', borderRadius:'16px', background:'rgba(5,150,105,0.18)', border:'1.5px solid rgba(5,150,105,0.4)',
-                              color:'#a7f3d0', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
+                              color:'var(--g-ink)', fontWeight:600, fontSize:'0.78rem', cursor:'pointer',
                             }}>
                               {c.symbol} <span style={{ opacity:0.7 }}>{c.name}</span>
                             </button>
