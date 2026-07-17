@@ -23,10 +23,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="live.walletlens.twa">
 
-        <!-- Required for apps targeting Android 13+ that reference Advertising ID. -->
-        <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:remove="android:maxSdkVersion"/>
+        <!-- WalletLens shows no ads and must not collect the Advertising ID:
+             strip the AD_ID permission that Firebase Analytics merges in, so
+             the Play Data safety form can truthfully declare no ad identifiers. -->
+        <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
 
-    
+
         <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     
         <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
@@ -37,8 +39,9 @@
 
         <!-- Boot completed for notification re-schedule -->
         <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-        <!-- Required for exact alarm scheduling on Android 12+ (API 31) -->
-        <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+        <!-- SCHEDULE_EXACT_ALARM deliberately NOT requested: Play only approves
+             it for alarm-clock/calendar apps, and notifications here run on
+             WorkManager, which needs no exact alarms. -->
 
     
 
@@ -207,18 +210,7 @@
             <activity android:name="com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity" />
         
 
-        
-    
-        <!-- Firebase Cloud Messaging service for instant push notifications.
-             Messages arrive even when the app is closed or backgrounded. -->
-        <service
-            android:name=".WalletLensMessagingService"
-            android:exported="false"
-            android:directBootAware="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+
 
         <!-- Native biometric authentication activity.
              Launched from the web app via walletlens://biometric-auth URIs
@@ -281,14 +273,6 @@
                     android:host="export" />
             </intent-filter>
         </activity>
-
-        <!-- AlarmManager receiver for background notifications.
-             Fires every 30 min even when the app is closed. -->
-        <receiver
-            android:name=".NotificationAlarmReceiver"
-            android:exported="false"
-            android:enabled="true" />
-
 
         <!-- Top Movers widget -->
         <receiver

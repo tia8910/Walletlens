@@ -1,5 +1,5 @@
 import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
 const Calculator    = lazy(() => import('./pages/Calculator'))
@@ -28,6 +28,7 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
+import { isTwa } from './twa'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -542,8 +543,10 @@ export default function App() {
           <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
           <Route path="/rebalancing-calculator" element={<Rebalancing />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/lenz" element={<Lenz />} />
-          <Route path="/airdrop" element={<Airdrop />} />
+          {/* $LENZ pages are web-only: hidden in the Google Play (TWA) build
+              to stay clear of Play's financial-features/contest policies. */}
+          <Route path="/lenz" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Lenz />} />
+          <Route path="/airdrop" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Airdrop />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin/mail" element={<AdminMail />} />
@@ -631,8 +634,10 @@ export default function App() {
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/lenz" element={<Lenz />} />
-              <Route path="/airdrop" element={<Airdrop />} />
+              {/* $LENZ pages are web-only: hidden in the Google Play (TWA) build
+                  to stay clear of Play's financial-features/contest policies. */}
+              <Route path="/lenz" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Lenz />} />
+              <Route path="/airdrop" element={isTwa() ? <Navigate to="/dashboard" replace /> : <Airdrop />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />

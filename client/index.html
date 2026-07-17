@@ -87,6 +87,18 @@
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
 
+    <!-- TWA (Google Play app) detection — must run before any ad/marketing
+         pixel loads. The Play app launches with an android-app:// referrer on
+         the first navigation only, so the flag is persisted for later visits.
+         Read via client/src/twa.js. -->
+    <script>
+      try {
+        if (document.referrer.indexOf('android-app://live.walletlens.twa') === 0) {
+          localStorage.setItem('wl_twa', '1');
+        }
+      } catch (e) {}
+    </script>
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
     <script>
@@ -103,10 +115,16 @@
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
-    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority.
+         Skipped inside the Google Play (TWA) app: shipping an ads pixel there
+         would force an "Advertising or marketing" declaration in the Play
+         Data safety form. Web visitors are unaffected. -->
     <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-      twq('config','rc7yj');
+      (function () {
+        try { if (localStorage.getItem('wl_twa') === '1') return; } catch (e) {}
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','rc7yj');
+      })();
     </script>
 
     <!-- AdSense -->
@@ -126,7 +144,7 @@
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
       frame-src 'none';
       form-action 'self';
       object-src 'none';

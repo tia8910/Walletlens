@@ -1,8 +1,13 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "live.walletlens.twa",
-        "sha256_cert_fingerprints": ["06:B4:E3:8B:1D:E4:F1:30:53:8C:B7:76:2C:BD:75:36:5F:AD:A6:D9:9F:8B:9F:D7:62:DC:BF:BA:D2:3C:F2:E2"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "live.walletlens.twa",
+      "sha256_cert_fingerprints": [
+        "06:B4:E3:8B:1D:E4:F1:30:53:8C:B7:76:2C:BD:75:36:5F:AD:A6:D9:9F:8B:9F:D7:62:DC:BF:BA:D2:3C:F2:E2",
+        "28:71:C3:DF:E2:04:F1:AD:14:FF:9C:77:2E:0F:1C:15:73:35:BC:D0:75:D5:7F:D5:AC:D5:27:16:54:A7:39:66"
+      ]
+    }
+  }
+]
