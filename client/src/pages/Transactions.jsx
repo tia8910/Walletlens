@@ -250,7 +250,18 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     ])
     setTransactions(t)
     setWallets(w)
-    setHoldings(Array.isArray(p) ? p : [])
+    // Enrich with best-effort USD values (price cache; USD-pegged → $1) so the
+    // trade sheet's "Buy with" balance + % quick-fill have a value to work from.
+    const port = Array.isArray(p) ? p : []
+    try {
+      const cached = api.getCachedPrices(port.map(x => x.coin_id).join(',')) || {}
+      const STABLE = new Set(['tether', 'usd-coin', 'dai', 'binance-usd', 'true-usd', 'frax'])
+      setHoldings(port.map(x => {
+        let px = cached[x.coin_id]?.usd
+        if (px == null && (STABLE.has(x.coin_id) || x.coin_id === 'fiat:usd')) px = 1
+        return { ...x, value: px != null ? x.amount * px : (x.total_invested || x.amount || 0) }
+      }))
+    } catch { setHoldings(port) }
     if (w.length > 0 && !form.wallet_id) setForm(f => ({ ...f, wallet_id: w[0].id }))
   }
 

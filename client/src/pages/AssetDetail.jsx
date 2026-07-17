@@ -39,6 +39,9 @@ export default function AssetDetail() {
   const [chartDays, setChartDays] = useState(7)
   const [coin, setCoin] = useState(null)
   const [holdings, setHoldings] = useState(null)
+  // Full portfolio (this asset + everything else), so the trade sheet's
+  // "Buy with" balance lookup can find USDT/USDC/BTC/USD — not just this coin.
+  const [allHoldings, setAllHoldings] = useState([])
   const [loading, setLoading] = useState(false)
   const [targets, setTargets] = useState([])
   const [showAddTarget, setShowAddTarget] = useState(false)
@@ -82,6 +85,21 @@ export default function AssetDetail() {
     try { portfolio = (await api.getPortfolio()) || [] } catch {}
     const h = portfolio.find(p => p.coin_id === coinId)
     setHoldings(h || null)
+    // Enrich the whole portfolio with best-effort USD values (from the price
+    // cache; USD-pegged assets default to $1) and hand it to the trade sheet.
+    // Without this, buying from an asset page only saw THIS coin, so a "Buy
+    // with USDT" leg reported "No USDT balance found" and the % quick-fill
+    // (buy and sell) had no balance to work from.
+    try {
+      const cached = api.getCachedPrices(portfolio.map(p => p.coin_id).join(',')) || {}
+      const STABLE = new Set(['tether', 'usd-coin', 'dai', 'binance-usd', 'true-usd', 'frax'])
+      setAllHoldings(portfolio.map(p => {
+        let px = cached[p.coin_id]?.usd
+        if (px == null && (STABLE.has(p.coin_id) || p.coin_id === 'fiat:usd')) px = 1
+        const value = px != null ? p.amount * px : (p.total_invested || p.amount || 0)
+        return { ...p, value }
+      }))
+    } catch { setAllHoldings(portfolio) }
     try {
       const allTargets = await api.getCoinTargets()
       setTargets(allTargets[coinId]?.targets || [])
@@ -427,7 +445,7 @@ export default function AssetDetail() {
         onClose={() => setSheetOpen(false)}
         wallets={wallets}
         onDone={loadData}
-        holdings={holdings ? [{ ...holdings, coin_id: coinId, coin_symbol: coin?.symbol, amount }] : []}
+        holdings={allHoldings}
         prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
         variant="page"
       />
