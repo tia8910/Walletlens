@@ -9210,6 +9210,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .dvx-trc-badge {
   display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em;
   color: #fff; background: var(--trc); border-radius: 999px; padding: 0.2rem 0.6rem;
+  white-space: nowrap; /* never break the verdict word (e.g. "Ambi"/"tious") */
 }
 .dvx-trc-req { font-size: 0.78rem; font-weight: 700; color: var(--text); }
 .dvx-trc-line { font-size: 0.78rem; color: var(--text); line-height: 1.5; margin-top: 0.15rem; }
@@ -9230,10 +9231,11 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .dvx-trc-disclaimer { font-size: 0.68rem; color: var(--text-sub); }
 /* Compact variant on saved target rows */
 .dvx-trc-compact {
-  margin: 0.5rem 0 0; padding: 0.4rem 0.6rem; display: flex; align-items: center; gap: 0.5rem;
+  margin: 0.5rem 0 0; padding: 0.4rem 0.6rem; display: flex; align-items: flex-start; gap: 0.5rem;
 }
-.dvx-trc-compact .dvx-trc-badge { font-size: 0.68rem; padding: 0.15rem 0.5rem; }
-.dvx-trc-compact-tf { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+/* Keep the pill at its natural width; let the message take the rest and wrap. */
+.dvx-trc-compact .dvx-trc-badge { font-size: 0.68rem; padding: 0.15rem 0.5rem; flex-shrink: 0; }
+.dvx-trc-compact-tf { flex: 1; min-width: 0; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; line-height: 1.45; }
 
 /* ── Smart Import tree ─────────────────────────────────────────────────── */
 .wl-import-tree { position: relative; display: flex; flex-direction: column; gap: 0.6rem; padding-left: 1.15rem; }
