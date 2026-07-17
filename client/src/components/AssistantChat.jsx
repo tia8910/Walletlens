@@ -178,6 +178,35 @@ export default function AssistantChat() {
     setConversations(loadChatHistory())
   }, [messages])
 
+  // Keep the current showHistory value readable inside the popstate handler,
+  // whose closure is set up once (deps: [open]) and would otherwise go stale.
+  const showHistoryRef = useRef(false)
+  useEffect(() => { showHistoryRef.current = showHistory }, [showHistory])
+
+  // Hardware / browser Back button. Critical in the Android TWA: without this,
+  // pressing Back while the chat is open navigates the WebView away (or exits
+  // the app) instead of closing the panel. We push a history entry when the
+  // panel opens so Back has something to pop: the first Back closes the history
+  // sub-view (returning to the chat), the next closes the panel. Closing via the
+  // UI consumes the pushed entry so it doesn't swallow a later Back press.
+  useEffect(() => {
+    if (!open) return
+    window.history.pushState({ wlcAssistant: true }, '')
+    const onPop = () => {
+      if (showHistoryRef.current) {
+        setShowHistory(false)
+        window.history.pushState({ wlcAssistant: true }, '')
+      } else {
+        setOpen(false)
+      }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      if (window.history.state?.wlcAssistant) window.history.back()
+    }
+  }, [open])
+
   // ── Drag handling ──────────────────────────────────────────────────────
   function onFabPointerDown(e) {
     drag.current = { active: true, moved: false, startX: e.clientX, startY: e.clientY, offX: 0, offY: 0 }
@@ -302,8 +331,12 @@ export default function AssistantChat() {
         <div className="wlc-panel" role="dialog" aria-label="WalletLens assistant" style={pos ? panelStyleFor(pos) : undefined}>
           {/* ── Header ── */}
           <div className="wlc-header">
-            <button className="wlc-history-btn" onClick={() => { if (showHistory) setShowHistory(false); else setOpen(false); }} title={isAr ? 'رجوع' : 'Back'}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <button className="wlc-history-btn" onClick={() => setShowHistory(h => !h)} title={isAr ? (showHistory ? 'رجوع' : 'المحادثات') : (showHistory ? 'Back to chat' : 'Conversations')}>
+              {showHistory ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+              )}
             </button>
             <div className="wlc-header-title">
               <span className="wlc-dot" />
