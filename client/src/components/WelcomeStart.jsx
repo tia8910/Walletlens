@@ -148,12 +148,16 @@ export default function WelcomeStart({ onDone }) {
             <div className="wls-cell-head">
               <span className="wls-cell-ic"><Icon name="banknote" size={16} /></span>
               <span className="wls-cell-name">Cash</span>
-              <select
-                className="wls-cell-sel" value={currency}
-                onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
-              >
-                {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-              </select>
+              <span className="wls-cell-sel">
+                <span className="wls-cell-sel-val">{currency}</span>
+                <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <select
+                  className="wls-cell-sel-native" value={currency}
+                  onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
+                >
+                  {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
+                </select>
+              </span>
             </div>
             <div className="wls-cell-input">
               <span className="wls-cell-prefix">{sym}</span>
@@ -186,13 +190,17 @@ export default function WelcomeStart({ onDone }) {
             <div className="wls-cell-head">
               <span className="wls-cell-ic">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />}</span>
               <span className="wls-cell-name">Gold</span>
-              <select
-                className="wls-cell-sel" value={goldUnit}
-                onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
-              >
-                <option value="oz">oz</option>
-                <option value="g">gram</option>
-              </select>
+              <span className="wls-cell-sel">
+                <span className="wls-cell-sel-val">{goldUnit === 'g' ? 'gram' : 'oz'}</span>
+                <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <select
+                  className="wls-cell-sel-native" value={goldUnit}
+                  onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
+                >
+                  <option value="oz">oz</option>
+                  <option value="g">gram</option>
+                </select>
+              </span>
             </div>
             <div className="wls-cell-input">
               <input
