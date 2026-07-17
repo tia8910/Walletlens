@@ -16,7 +16,7 @@ import MilestonePopup, { detectMilestone, dismissMilestone } from '../components
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
-import { LongPressMenu } from '../components/LongPressMenu'
+import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
@@ -3224,11 +3224,10 @@ export default function Dashboard() {
   const [lpMenu, setLpMenu] = useState(null)
   const closeLpMenu = useCallback(() => setLpMenu(null), [])
   function showLp(cx, cy, items) {
-    const vw = window.innerWidth, vh = window.innerHeight
-    let x = cx, y = cy
-    if (x + 200 > vw - 8) x = vw - 208; if (y + 280 > vh - 8) y = y - 280
-    if (x < 8) x = 8; if (y < 8) y = 8
-    setLpMenu({ x, y, items }); track('longpress_menu', { area: items[0]?.label || 'unknown' })
+    // Clamping lives in <LongPressMenu>; just hand it the raw press point.
+    if (!items || !items.length) return
+    setLpMenu({ x: cx, y: cy, items })
+    track('longpress_menu', { area: items[0]?.label || 'unknown' })
   }
   const heroLpItems = useMemo(() => [
     { icon: '📤', label: 'Export Portfolio', onClick: () => navigate('/dashboard', { state: { tab: 'manage' } }) },
@@ -4125,7 +4124,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" onContextMenu={e => { e.preventDefault(); showLp(e.clientX, e.clientY, heroLpItems) }}>
+          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
             {!hidden && !isDemo && (() => {
               const dayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
               const dayBase = totalValue - dayPnLVal
@@ -4772,8 +4771,8 @@ export default function Dashboard() {
                                 return (
                                   <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
                                     style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
-                                    onContextMenu={e => { if (holdingLpItems.length) { e.preventDefault(); e.stopPropagation(); showLp(e.clientX, e.clientY, holdingLpItems) } }}
-                                    onClick={() => { if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    {...(holdingLpItems.length ? bindLongPress((x, y) => showLp(x, y, holdingLpItems)) : {})}
+                                    onClick={() => { if (consumeLongPress()) return; if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <input
                                       type="checkbox"
                                       checked={isSelected}

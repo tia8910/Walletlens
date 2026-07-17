@@ -14844,6 +14844,13 @@ input, select, textarea, .dvx-input {
 /* CTA button (second definition - overrides first) */
 
 /* ── Long-press context menu ────────────────────────────────────────────── */
+/* Long-press targets: stop iOS/Android from selecting text or popping the
+   native callout during the hold, so the custom context menu opens cleanly. */
+.dvx-hero, .dvx-holding {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 .lp-menu {
   background: var(--card-bg, rgba(18,18,28,0.96));
   border: 1px solid rgba(255,255,255,0.1);
