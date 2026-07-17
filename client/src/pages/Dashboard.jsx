@@ -4075,7 +4075,7 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showVoiceImport && (
-                  <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} /></Suspense>
+                  <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} onClose={() => setShowVoiceImport(false)} /></Suspense>
                 )}
                 {showScreenshot && (
                   <div className="dvx-excel-import-panel glass-card">
@@ -5130,7 +5130,7 @@ export default function Dashboard() {
               <Icon name="bar-chart" size={15} /> Import Excel
             </button>
           </div>
-          {showVoiceImport && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} /></Suspense>}
+          {showVoiceImport && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} onClose={() => setShowVoiceImport(false)} /></Suspense>}
           {showExcelImport && <Suspense fallback={null}><div className="dvx-excel-import-panel glass-card"><SmartImport wallets={wallets} onImported={() => { loadAll(); setShowExcelImport(false) }} /></div></Suspense>}
           {showBackupCode && <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />}
         </div>
