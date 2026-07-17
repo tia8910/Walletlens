@@ -13146,6 +13146,76 @@ button:not(:disabled):active,
   border: 1px solid rgba(var(--g-rgb), 0.3);
 }
 .wls-field { margin-bottom: 14px; }
+
+/* ── Premium 2×2 asset grid (WelcomeStart "build your dashboard") ─────────── */
+.wls-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px;
+}
+.wls-cell {
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 12px 12px 13px; border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+  border: 1.5px solid rgba(255,255,255,0.10);
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.wls-cell:focus-within {
+  border-color: rgba(var(--g-rgb),0.55);
+  background: rgba(var(--g-rgb),0.06);
+  box-shadow: 0 6px 20px rgba(var(--g-rgb),0.14);
+}
+[data-wl-light] .wls-cell { background: #f8fafc; border-color: #e8edf3; }
+[data-wl-light] .wls-cell:focus-within { border-color: rgba(var(--g-rgb),0.55); background: #fff; }
+.wls-cell-head { display: flex; align-items: center; gap: 8px; }
+.wls-cell-ic {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.07); color: var(--text);
+  font-size: 1.05rem; font-weight: 800; line-height: 1;
+}
+[data-wl-light] .wls-cell-ic { background: rgba(15,23,42,0.05); }
+.wls-cell-ic img { width: 19px; height: 19px; object-fit: contain; display: block; }
+.wls-cell-ic-btc { color: #f7931a; }
+.wls-cell-name {
+  flex: 1 1 auto; min-width: 0; font-size: 0.86rem; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wls-cell-unit {
+  flex: 0 0 auto; font-size: 0.66rem; font-weight: 800; color: var(--text-muted);
+  background: rgba(255,255,255,0.07); border-radius: 999px; padding: 3px 8px; letter-spacing: .03em;
+}
+[data-wl-light] .wls-cell-unit { background: rgba(15,23,42,0.05); }
+/* Currency / unit dropdown, styled to match the static .wls-cell-unit pill
+   (USDT/BTC): a small subtle pill showing the value + a chevron. The native
+   <select> is overlaid transparently so mobile can't override the sizing yet
+   the real dropdown still opens on tap. */
+.wls-cell-sel {
+  position: relative; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 3px;
+  background: rgba(255,255,255,0.07); border-radius: 999px;
+  padding: 3px 8px; cursor: pointer;
+}
+[data-wl-light] .wls-cell-sel { background: rgba(15,23,42,0.05); }
+.wls-cell-sel-val {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: .03em; color: var(--text-muted);
+  text-transform: uppercase; line-height: 1.5;
+}
+[data-wl-light] .wls-cell-sel-val { color: #475569; }
+.wls-cell-sel-caret { color: var(--text-muted); flex-shrink: 0; opacity: 0.8; }
+[data-wl-light] .wls-cell-sel-caret { color: #94a3b8; }
+.wls-cell-sel-native {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; padding: 0; border: none; opacity: 0; cursor: pointer;
+  -webkit-appearance: none; appearance: none; font-size: 16px; /* 16px avoids iOS focus-zoom */
+}
+.wls-cell-input {
+  display: flex; align-items: baseline; gap: 5px;
+  border-top: 1px solid rgba(255,255,255,0.07); padding-top: 8px;
+}
+[data-wl-light] .wls-cell-input { border-top-color: #eef2f6; }
+.wls-cell-prefix { flex-shrink: 0; font-weight: 800; color: var(--text-muted); font-size: 1rem; }
+.wls-cell .wls-input { padding: 0; font-size: 1.2rem; }
+/* Very narrow phones: fall back to a single column so cards never crush. */
+@media (max-width: 330px) { .wls-grid { grid-template-columns: 1fr; } }
 .wls-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .wls-opt { font-weight: 500; font-size: 0.72rem; color: var(--text-muted); }
 .wls-input-wrap {

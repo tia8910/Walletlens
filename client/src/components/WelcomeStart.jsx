@@ -141,66 +141,90 @@ export default function WelcomeStart({ onDone }) {
           instantly — all optional, and you can add stocks and more in a moment.
         </p>
 
-        {/* Cash — pick the currency */}
-        <div className="wls-field">
-          <label className="wls-label"><Icon name="banknote" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Cash balance</label>
-          <div className="wls-input-wrap">
-            <span className="wls-prefix">{sym}</span>
-            <input
-              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-              value={cash} onChange={e => setCash(e.target.value)} onKeyDown={onKeyDown} autoFocus
-            />
-            <select
-              className="wls-cur-select" value={currency}
-              onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
-            >
-              {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-            </select>
+        {/* Premium 2×2 asset grid — compact cards instead of full-width rows */}
+        <div className="wls-grid">
+          {/* Cash */}
+          <div className="wls-cell">
+            <div className="wls-cell-head">
+              <span className="wls-cell-ic"><Icon name="banknote" size={16} /></span>
+              <span className="wls-cell-name">Cash</span>
+              <span className="wls-cell-sel">
+                <span className="wls-cell-sel-val">{currency}</span>
+                <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <select
+                  className="wls-cell-sel-native" value={currency}
+                  onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
+                >
+                  {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
+                </select>
+              </span>
+            </div>
+            <div className="wls-cell-input">
+              <span className="wls-cell-prefix">{sym}</span>
+              <input
+                className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                value={cash} onChange={e => setCash(e.target.value)} onKeyDown={onKeyDown} autoFocus
+                aria-label="Cash balance"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* USDT */}
-        <div className="wls-field">
-          <label className="wls-label"><img className="wls-ic" src={USDT_LOGO} alt="" /> USDT balance</label>
-          <div className="wls-input-wrap">
-            <span className="wls-prefix"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
-            <input
-              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-              value={usdt} onChange={e => setUsdt(e.target.value)} onKeyDown={onKeyDown}
-            />
-            <span className="wls-suffix">USDT</span>
+          {/* USDT */}
+          <div className="wls-cell">
+            <div className="wls-cell-head">
+              <span className="wls-cell-ic"><img className="wls-ic" src={USDT_LOGO} alt="" /></span>
+              <span className="wls-cell-name">USDT</span>
+              <span className="wls-cell-unit">USDT</span>
+            </div>
+            <div className="wls-cell-input">
+              <input
+                className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                value={usdt} onChange={e => setUsdt(e.target.value)} onKeyDown={onKeyDown}
+                aria-label="USDT balance"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Gold */}
-        <div className="wls-field">
-          <label className="wls-label">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />} Gold</label>
-          <div className="wls-input-wrap">
-            <span className="wls-prefix">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />}</span>
-            <input
-              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-              value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
-            />
-            <select
-              className="wls-unit-select" value={goldUnit}
-              onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
-            >
-              <option value="oz">oz</option>
-              <option value="g">gram</option>
-            </select>
+          {/* Gold */}
+          <div className="wls-cell">
+            <div className="wls-cell-head">
+              <span className="wls-cell-ic">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />}</span>
+              <span className="wls-cell-name">Gold</span>
+              <span className="wls-cell-sel">
+                <span className="wls-cell-sel-val">{goldUnit === 'g' ? 'gram' : 'oz'}</span>
+                <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <select
+                  className="wls-cell-sel-native" value={goldUnit}
+                  onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
+                >
+                  <option value="oz">oz</option>
+                  <option value="g">gram</option>
+                </select>
+              </span>
+            </div>
+            <div className="wls-cell-input">
+              <input
+                className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
+                aria-label="Gold amount"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Bitcoin */}
-        <div className="wls-field">
-          <label className="wls-label">₿ Bitcoin</label>
-          <div className="wls-input-wrap">
-            <span className="wls-prefix wls-prefix-btc">₿</span>
-            <input
-              className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
-              value={btc} onChange={e => setBtc(e.target.value)} onKeyDown={onKeyDown}
-            />
-            <span className="wls-suffix">BTC</span>
+          {/* Bitcoin */}
+          <div className="wls-cell">
+            <div className="wls-cell-head">
+              <span className="wls-cell-ic wls-cell-ic-btc">₿</span>
+              <span className="wls-cell-name">Bitcoin</span>
+              <span className="wls-cell-unit">BTC</span>
+            </div>
+            <div className="wls-cell-input">
+              <input
+                className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
+                value={btc} onChange={e => setBtc(e.target.value)} onKeyDown={onKeyDown}
+                aria-label="Bitcoin amount"
+              />
+            </div>
           </div>
         </div>
 
