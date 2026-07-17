@@ -4,14 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'Version name (e.g. 1.3.0)'
+        description: 'Version name (e.g. 1.9.1)'
         required: true
-        default: '1.5.0'
         type: string
       version_code:
-        description: 'Version code (integer)'
+        description: 'Version code (integer, must be higher than the last Play upload)'
         required: true
-        default: '5'
         type: number
 
 jobs:
@@ -34,15 +32,31 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-      - name: Ensure keystore exists (fallback to checked-in copy)
+      # The keystore and its credentials live ONLY in GitHub secrets:
+      #   KEYSTORE_BASE64   – base64 of the upload keystore
+      #   KEYSTORE_PASSWORD – keystore password
+      #   KEY_ALIAS         – key alias
+      #   KEY_PASSWORD      – key password
+      # There is deliberately no checked-in fallback: a missing secret must
+      # fail the build rather than silently sign with a compromised key.
+      - name: Decode signing keystore from secret
         run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
-            echo "Decoded keystore from secret"
-          else
-            echo "Using checked-in keystore"
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is not set. Add the upload keystore as a base64 GitHub secret (never commit it)."
+            exit 1
           fi
-          ls -la walletlens_source/release_package/signingKey.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
+
+      # Optional: real Firebase config. Without it a stub is generated and
+      # Firebase Analytics stays inert (the app still builds and runs).
+      - name: Write google-services.json from secret (optional)
+        run: |
+          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > walletlens_source/release_package/app/google-services.json
+            echo "Wrote google-services.json from secret"
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON secret not set — building with stub config; Firebase Analytics will be inert."
+          fi
 
       - name: Create local.properties
         run: |
@@ -61,21 +75,29 @@ jobs:
 
       - name: Build signed release AAB
         working-directory: walletlens_source/release_package
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/signingKey.keystore \
-            -Pandroid.injected.signing.store.password=49ZMeqfsQMXH \
-            -Pandroid.injected.signing.key.alias=my-key-alias \
-            -Pandroid.injected.signing.key.password=49ZMeqfsQMXH
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Build signed release APK
         working-directory: walletlens_source/release_package
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/signingKey.keystore \
-            -Pandroid.injected.signing.store.password=49ZMeqfsQMXH \
-            -Pandroid.injected.signing.key.alias=my-key-alias \
-            -Pandroid.injected.signing.key.password=49ZMeqfsQMXH
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload signed AAB
         uses: actions/upload-artifact@v4
@@ -97,11 +119,3 @@ jobs:
           name: WalletLens-v${{ github.event.inputs.version_name }}-mapping.txt
           path: walletlens_source/release_package/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: ignore
-
-      - name: Generate keystore Base64 for GitHub secret
-        run: |
-          if [ -f "walletlens_source/release_package/signingKey.keystore" ]; then
-            echo "To add as GitHub secret, run:"
-            echo "  base64 -w0 walletlens_source/release_package/signingKey.keystore | pbcopy"
-            echo "Then add as KEYSTORE_BASE64 secret in GitHub repo settings."
-          fi

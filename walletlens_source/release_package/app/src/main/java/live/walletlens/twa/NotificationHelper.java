@@ -15,7 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 /**
- * Helper for native push notifications via Firebase Cloud Messaging.
+ * Helper for native local notifications (channels, deep-link intents).
  *
  * Creates notification channels (required for Android 8+), builds and displays
  * notifications, and handles tap actions to open the TWA at the relevant URL.

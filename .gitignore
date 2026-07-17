@@ -29,6 +29,12 @@ walletlens_source/release_package/app/build/
 walletlens_source/release_package/local.properties
 walletlens_source/release_package/signingKey.keystore
 walletlens_source/signing.keystore
+
+# Never commit signing material or Firebase config anywhere in the tree
+*.keystore
+*.jks
+signing-key-info.txt
+google-services.json
 walletlens_source/*.aab
 walletlens_source/*.apk
 keystore_base64.txt

@@ -12,7 +12,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.text.NumberFormat;
@@ -33,10 +32,6 @@ import java.util.Locale;
 public class PeriodicUpdateWorker extends Worker {
 
     private static final String TAG = "WalletLensWorker";
-
-    // FCM legacy API endpoint for self-push (disabled without server key)
-    private static final String FCM_SEND_URL = "https://fcm.googleapis.com/fcm/send";
-    private static final String FCM_SERVER_KEY = "REPLACE_WITH_YOUR_FIREBASE_SERVER_KEY";
 
     // ── APIs ──────────────────────────────────────────────────────────
     private static final String CRYPTO_IDS =
@@ -184,14 +179,12 @@ public class PeriodicUpdateWorker extends Worker {
                 }
             }
 
-            // Send push notification via FCM self-push
-            boolean sent = sendFcmPush(title, body, url);
-
-            if (!sent) {
-                // Fallback: show local notification with deep link
-                NotificationHelper h = new NotificationHelper(getApplicationContext());
-                h.showAlertNotification(title, body, url);
-            }
+            // Local notification with deep link. (A former FCM "self-push"
+            // path was removed: it targeted the legacy FCM HTTP API, which
+            // Google shut down, and a device pushing to itself gains nothing
+            // over a local notification.)
+            NotificationHelper h = new NotificationHelper(getApplicationContext());
+            h.showAlertNotification(title, body, url);
 
             Log.d(TAG, "Notification sent: " + title + " -> " + url);
 
@@ -200,65 +193,6 @@ public class PeriodicUpdateWorker extends Worker {
         }
 
         return Result.success();
-    }
-
-    // ── FCM self-push ─────────────────────────────────────────────────
-
-    private boolean sendFcmPush(String title, String body, String targetUrl) {
-        if (FCM_SERVER_KEY.equals("REPLACE_WITH_YOUR_FIREBASE_SERVER_KEY")) {
-            Log.d(TAG, "FCM server key not configured — using local notification");
-            return false;
-        }
-
-        String token = WalletLensMessagingService.getToken(getApplicationContext());
-        if (token == null || token.isEmpty()) {
-            Log.d(TAG, "FCM token not available — using local notification");
-            return false;
-        }
-
-        try {
-            JSONObject json = new JSONObject();
-            json.put("to", token);
-
-            JSONObject notification = new JSONObject();
-            notification.put("title", title);
-            notification.put("body", body);
-            json.put("notification", notification);
-
-            JSONObject data = new JSONObject();
-            data.put("title", title);
-            data.put("body", body);
-            data.put("targetUrl", targetUrl);
-            json.put("data", data);
-
-            URI uri = new URI(FCM_SEND_URL);
-            HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Authorization", "key=" + FCM_SERVER_KEY);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setConnectTimeout(10_000);
-            conn.setReadTimeout(10_000);
-            conn.setDoOutput(true);
-
-            OutputStream os = conn.getOutputStream();
-            os.write(json.toString().getBytes());
-            os.close();
-
-            int status = conn.getResponseCode();
-            conn.disconnect();
-
-            if (status == 200) {
-                Log.d(TAG, "FCM push sent successfully");
-                return true;
-            } else {
-                Log.w(TAG, "FCM push failed with status: " + status);
-                return false;
-            }
-
-        } catch (Exception e) {
-            Log.w(TAG, "FCM push error: " + e.getMessage());
-            return false;
-        }
     }
 
     // ── Price fetching ────────────────────────────────────────────────
