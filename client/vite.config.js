@@ -27,10 +27,38 @@ function swVersionPlugin() {
   }
 }
 
+// The entry stylesheet bundles CSS for every route (dashboard, blog,
+// technicals, academy, ...) into one file, but Chrome DevTools coverage on
+// the landing page shows only ~5% of it is actually used there — as a
+// default render-blocking <link>, the browser must still fetch and parse
+// the whole ~90 KB (gzip) file before First Contentful Paint, even though
+// index.html already paints an inline, CSS-independent boot screen. This
+// plugin rewrites the built stylesheet link(s) into the standard
+// preload+swap pattern so CSS loads in parallel with the JS bundle instead
+// of blocking paint, with a <noscript> fallback for non-JS clients.
+function asyncCssPlugin() {
+  return {
+    name: 'async-css',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        return html.replace(
+          /<link rel="stylesheet"([^>]*?)href="([^"]+\.css)"([^>]*)>/g,
+          (_match, before, href, after) =>
+            `<link rel="preload" as="style"${before}href="${href}"${after} onload="this.onload=null;this.rel='stylesheet'">` +
+            `<noscript><link rel="stylesheet"${before}href="${href}"${after}></noscript>`
+        )
+      },
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
     swVersionPlugin(),
+    asyncCssPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
       filename: 'dist/stats.html',
