@@ -3319,9 +3319,13 @@ export default function Dashboard() {
     } catch {}
   }
 
+  // Re-apply the requested tab on EVERY navigation that carries one (keyed on
+  // location.key, unique per navigation) — not just when the tab value changes.
+  // Otherwise tapping "Dashboard" in the drawer while already on /dashboard
+  // couldn't return you to the overview tab if state.tab was already 'overview'.
   useEffect(() => {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
-  }, [location.state?.tab])
+  }, [location.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open wallet creation panel when navigated here from landing "Create wallet"
   useEffect(() => {

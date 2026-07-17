@@ -247,7 +247,7 @@ const Drawer = memo(function Drawer({ open, onClose }) {
 
         <div className="wl-drawer-section">
           <div className="wl-drawer-label">Pages</div>
-          <button className={active('/dashboard')} onClick={() => go('/dashboard')}><IconHome /><span>{t('dashboard')}</span></button>
+          <button className={active('/dashboard')} onClick={() => go('/dashboard', { tab: 'overview' })}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/coach')} onClick={() => go('/coach')}>
             <IconCoach /><span>Coach</span>
           </button>
