@@ -255,7 +255,12 @@ export default function AssetDetail() {
               <XAxis dataKey="date" hide />
               <YAxis domain={['auto', 'auto']} hide />
               <Tooltip
-                contentStyle={{ background: 'rgba(15,23,20,0.95)', border: '1px solid rgba(var(--g-rgb),0.38)', borderRadius: 10, fontSize: '0.82rem' }}
+                // Theme-aware surface + readable text (was a hardcoded dark box:
+                // in light mode the label read dark-on-dark and clashed).
+                contentStyle={{ background: 'var(--tooltip-bg, var(--card-bg))', border: '1px solid var(--border)', borderRadius: 10, fontSize: '0.82rem', color: 'var(--text)', boxShadow: '0 6px 24px rgba(0,0,0,0.18)' }}
+                itemStyle={{ color: 'var(--text)', fontWeight: 700 }}
+                labelStyle={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.15rem' }}
+                cursor={{ stroke: 'var(--text-sub)', strokeWidth: 1, strokeDasharray: '4 3', opacity: 0.45 }}
                 formatter={(val) => ['$' + fmt(val), 'Price']}
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.time || ''}
               />

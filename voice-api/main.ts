@@ -984,6 +984,112 @@ Deno.cron("weekly-report", "0 13 * * 1", async () => {
   try { await runWeeklyCron() } catch (e) { console.error("Weekly cron failed:", e) }
 })
 
+// ── Subscribers viewer page ─────────────────────────────────────────────────
+// Token-gated HTML page (GET /subscribers?token=…) that lists newsletter
+// signups and weekly-digest subscribers so the owner can see them from a phone
+// without curl. Personal data — only ever reachable with SIGNUP_EXPORT_TOKEN.
+function subscribersPage(
+  signups: { email: string; source?: string; at?: string }[],
+  weekly: { email?: string; active?: boolean; createdAt?: string; lastSentAt?: string }[],
+): string {
+  const fmtDate = (s?: string) => {
+    if (!s) return "—"
+    const d = new Date(s)
+    return isNaN(d.getTime())
+      ? escapeHtml(s)
+      : d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+  }
+  const activeWeekly = weekly.filter((w) => w.email && w.active !== false).length
+  const allEmails = Array.from(new Set([
+    ...signups.map((s) => s.email),
+    ...weekly.map((w) => w.email || ""),
+  ].filter(Boolean))).join(", ")
+
+  const signupRows = signups.length
+    ? signups.map((s, i) =>
+        `<tr><td class="n">${i + 1}</td><td>${escapeHtml(s.email)}</td><td>${escapeHtml(s.source || "—")}</td><td>${fmtDate(s.at)}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="empty">No newsletter signups yet.</td></tr>`
+  const weeklyRows = weekly.length
+    ? weekly.map((w, i) =>
+        `<tr><td class="n">${i + 1}</td><td>${escapeHtml(w.email || "—")}</td><td>${w.active === false ? '<span class="pill paused">Paused</span>' : '<span class="pill active">Active</span>'}</td><td>${fmtDate(w.createdAt)}</td><td>${fmtDate(w.lastSentAt)}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">No weekly subscribers yet.</td></tr>`
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>WalletLens subscribers</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;padding:20px 14px 60px}
+  .wrap{max-width:920px;margin:0 auto}
+  .brand{font-size:20px;font-weight:800;color:#4ade80}
+  h1{font-size:19px;margin:18px 0 4px}
+  .sub{color:#8a93a0;font-size:13px;margin:0 0 18px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+  .stat{flex:1 1 140px;background:#11161d;border:1px solid #1f2730;border-radius:14px;padding:14px 16px}
+  .stat .v{font-size:26px;font-weight:800;color:#fff}
+  .stat .l{font-size:12px;color:#8a93a0}
+  h2{font-size:15px;margin:26px 0 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .copy{background:#132a1e;color:#4ade80;border:1px solid #1f4a3a;border-radius:9px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .copy:active{transform:scale(.96)}
+  .card{background:#11161d;border:1px solid #1f2730;border-radius:14px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:440px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid #1a212b;white-space:nowrap}
+  th{color:#8a93a0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  td.n{color:#5b6572;width:34px}
+  tr:last-child td{border-bottom:none}
+  .empty{color:#6b7480;text-align:center;font-style:italic}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .pill.active{background:#123024;color:#4ade80}
+  .pill.paused{background:#2a2410;color:#e7c14b}
+  .foot{color:#5b6572;font-size:12px;margin-top:26px;line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#132a1e;color:#4ade80;border:1px solid #1f4a3a;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style></head><body><div class="wrap">
+  <div class="brand">WalletLens</div>
+  <h1>Subscribers</h1>
+  <p class="sub">Live from Deno KV. Keep this URL private — it contains personal data.</p>
+  <div class="stats">
+    <div class="stat"><div class="v">${signups.length}</div><div class="l">Newsletter signups</div></div>
+    <div class="stat"><div class="v">${weekly.length}</div><div class="l">Weekly subscribers</div></div>
+    <div class="stat"><div class="v">${activeWeekly}</div><div class="l">Weekly · active</div></div>
+  </div>
+
+  <h2>Newsletter signups <button class="copy" onclick="copyCol('su')">Copy emails</button></h2>
+  <div class="card"><table id="su">
+    <tr><th>#</th><th>Email</th><th>Source</th><th>Joined</th></tr>
+    ${signupRows}
+  </table></div>
+
+  <h2>Weekly-digest subscribers <button class="copy" onclick="copyCol('wk')">Copy emails</button></h2>
+  <div class="card"><table id="wk">
+    <tr><th>#</th><th>Email</th><th>Status</th><th>Joined</th><th>Last sent</th></tr>
+    ${weeklyRows}
+  </table></div>
+
+  <p class="foot">All emails (deduped): tap <b>Copy all</b> below to grab every address.<br>
+    <button class="copy" style="margin-top:8px" onclick="copyAll()">Copy all emails</button>
+  </p>
+</div>
+<div class="toast" id="toast">Copied</div>
+<script>
+  var ALL = ${JSON.stringify(allEmails)};
+  function toast(){var t=document.getElementById('toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show')},1200)}
+  function doCopy(text){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(toast,function(){fallback(text)})}
+    else fallback(text);
+  }
+  function fallback(text){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast()}catch(e){}document.body.removeChild(ta)}
+  function copyCol(id){
+    var rows=document.querySelectorAll('#'+id+' tr');var out=[];
+    for(var i=1;i<rows.length;i++){var c=rows[i].children[1];if(c){var v=c.textContent.trim();if(v&&v!=='—')out.push(v)}}
+    doCopy(out.join(', '));
+  }
+  function copyAll(){doCopy(ALL)}
+</script>
+</body></html>`
+}
+
 // ── Per-IP rate limiting ────────────────────────────────────────────────────
 // The AI modes are unauthenticated (CORS only stops browsers, not scripts) and
 // each call spends real Anthropic API money. This in-memory limiter is per
@@ -1036,6 +1142,60 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: { "content-type": "text/html; charset=utf-8" },
       })
+    }
+    // Token-gated subscribers viewer — GET /subscribers?token=SIGNUP_EXPORT_TOKEN
+    // Lists newsletter signups + weekly-digest subscribers. &format=json for raw.
+    // Personal data, so a valid token is mandatory and results are never cached.
+    if (reqUrl.pathname === "/subscribers") {
+      if (rateLimited(ip, "subscribers", 30)) {
+        return new Response("Too many requests — try again in a minute.", {
+          status: 429, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+        })
+      }
+      const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+      const token = reqUrl.searchParams.get("token") || ""
+      if (!expected || token !== expected) {
+        return new Response(
+          "Unauthorized. Open this page as /subscribers?token=YOUR_SIGNUP_EXPORT_TOKEN" +
+          (expected ? "" : "\n\n(SIGNUP_EXPORT_TOKEN is not set on this deployment — set it in the Deno project's environment variables first.)"),
+          { status: 401, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } },
+        )
+      }
+      try {
+        const kv = await Deno.openKv()
+        const signups: { email: string; source?: string; at?: string }[] = []
+        for await (const e of kv.list<{ email: string; source?: string; at?: string }>({ prefix: ["signups"] })) {
+          if (e.value?.email) signups.push(e.value)
+        }
+        const weekly: { email?: string; active?: boolean; createdAt?: string; lastSentAt?: string }[] = []
+        for await (const e of kv.list<Record<string, unknown>>({ prefix: ["weekly"] })) {
+          const v = e.value || {}
+          weekly.push({
+            email: v.email as string | undefined,
+            active: v.active as boolean | undefined,
+            createdAt: v.createdAt as string | undefined,
+            lastSentAt: v.lastSentAt as string | undefined,
+          })
+        }
+        signups.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
+        weekly.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+
+        if (reqUrl.searchParams.get("format") === "json") {
+          return new Response(
+            JSON.stringify({ ok: true, counts: { signups: signups.length, weekly: weekly.length }, signups, weekly }, null, 2),
+            { status: 200, headers: { ...headers, "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } },
+          )
+        }
+        return new Response(subscribersPage(signups, weekly), {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" },
+        })
+      } catch (e) {
+        console.error("subscribers view error:", e)
+        return new Response("Storage error — could not read subscribers.", {
+          status: 500, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+        })
+      }
     }
     return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers })
   }
