@@ -13184,19 +13184,20 @@ button:not(:disabled):active,
   background: rgba(255,255,255,0.07); border-radius: 999px; padding: 3px 8px; letter-spacing: .03em;
 }
 [data-wl-light] .wls-cell-unit { background: rgba(15,23,42,0.05); }
+/* Matches the static .wls-cell-unit pill (USDT/BTC) — same small, subtle look,
+   just with a tiny chevron to signal it's a changeable dropdown. */
 .wls-cell-sel {
-  flex: 0 0 auto; width: 62px; box-sizing: border-box;
+  flex: 0 0 auto; width: auto; box-sizing: border-box;
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   background-color: rgba(255,255,255,0.07);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238b96a5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 7px center; background-size: 9px;
-  border: 1px solid rgba(255,255,255,0.16); border-radius: 999px;
-  color: var(--text); font-weight: 800; font-size: 0.72rem; font-family: inherit;
-  padding: 5px 18px 5px 10px; cursor: pointer; outline: none;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background-repeat: no-repeat; background-position: right 6px center; background-size: 8px;
+  border: none; border-radius: 999px;
+  color: var(--text-muted); font-weight: 800; font-size: 0.66rem; letter-spacing: .03em; font-family: inherit;
+  padding: 3px 17px 3px 8px; cursor: pointer; outline: none;
 }
-.wls-cell-sel:focus { border-color: rgba(var(--g-rgb),0.55); }
-[data-wl-light] .wls-cell-sel { background-color: #eef2f7; border-color: #e2e8f0; color: #0f172a; }
+.wls-cell-sel:focus { color: var(--text); }
+[data-wl-light] .wls-cell-sel { background-color: rgba(15,23,42,0.05); color: #475569; }
 .wls-cell-input {
   display: flex; align-items: baseline; gap: 5px;
   border-top: 1px solid rgba(255,255,255,0.07); padding-top: 8px;
