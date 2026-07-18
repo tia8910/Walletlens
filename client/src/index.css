@@ -13599,27 +13599,6 @@ button:not(:disabled):active,
 }
 
 /* ── Update-available banner ────────────────────────────────────────────── */
-.wl-update-bar {
-  position: fixed; z-index: 1400; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex; align-items: center; gap: 0.6rem;
-  max-width: calc(100% - 1.5rem); padding: 0.6rem 0.7rem 0.6rem 0.9rem;
-  border-radius: 14px; background: var(--card-bg); border: 1px solid rgba(var(--g-rgb),0.4);
-  box-shadow: 0 10px 34px rgba(0,0,0,0.45); backdrop-filter: blur(12px);
-  animation: wl-update-in 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
-@keyframes wl-update-in { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-.wl-update-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(16,185,129,0.6); animation: wl-update-pulse 1.6s ease-out infinite; }
-@keyframes wl-update-pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); } 70% { box-shadow: 0 0 0 7px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
-.wl-update-txt { font-size: 0.84rem; font-weight: 600; color: var(--text); white-space: nowrap; }
-.wl-update-btn {
-  flex-shrink: 0; padding: 0.4rem 0.9rem; border-radius: 10px; border: none; cursor: pointer;
-  font-size: 0.82rem; font-weight: 800; color: #fff;
-  background: linear-gradient(135deg, #047857, #10b981); box-shadow: 0 3px 12px rgba(5,150,105,0.35);
-}
-.wl-update-x { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.25rem; border-radius: 8px; display: inline-flex; }
-.wl-update-x:hover { color: var(--text); }
-
 /* ── Guided-tour launcher CTA (empty-state "Show me how") ────────────────── */
 .wl-guide-cta {
   position: relative; overflow: hidden;
