@@ -137,13 +137,13 @@ input, select, textarea {
   --mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --display: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Surface — neutral graphite, NO color undertone */
-  --bg: #0a0b0d;
-  --card-bg: rgba(20, 22, 26, 0.88);
-  --bg2: rgba(20, 22, 26, 0.88);
-  --bg3: #111316;
-  --bg4: #16181d;
-  --border: rgba(255, 255, 255, 0.08);
+  /* Surface — Binance-style charcoal (neutral, lifted off pure black) */
+  --bg: #181a20;
+  --card-bg: rgba(30, 35, 41, 0.92);
+  --bg2: rgba(30, 35, 41, 0.92);
+  --bg3: #1e2329;
+  --bg4: #2b3139;
+  --border: rgba(255, 255, 255, 0.09);
 
   /* Text — neutral white / gray hierarchy, tuned for solid legibility
      (metadata is NEVER tinted with the accent hue) */
@@ -13009,7 +13009,7 @@ button:not(:disabled):active,
   position: relative;
   width: 100%; max-width: 420px;
   max-height: calc(100dvh - 40px); overflow-y: auto;
-  background: linear-gradient(180deg, rgba(23,30,38,0.98), rgba(15,20,27,0.98));
+  background: linear-gradient(180deg, #1e2329, #181a20);
   border: 1px solid rgba(var(--g-rgb), 0.22);
   border-radius: 22px;
   padding: 26px 24px 22px;
