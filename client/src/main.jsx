@@ -109,26 +109,27 @@ if ('serviceWorker' in navigator && basename === '/') {
     window.location.reload()
   })
 
-  // Announce a ready-to-install update to the app (UpdateBanner listens). We
-  // stash the registration so a "Refresh" tap can tell the waiting worker to
-  // take over. Only fire when there's already a controller — i.e. it's a real
-  // update, not the first-ever install.
-  const announceUpdate = (reg) => {
-    if (!reg?.waiting || !navigator.serviceWorker.controller) return
-    window.__wlUpdateReg = reg
-    window.dispatchEvent(new CustomEvent('wl:sw-update'))
+  // Auto-apply a ready update — no banner. If a new worker is waiting (the SW
+  // also calls skipWaiting() itself, but a worker can still land in "waiting"
+  // on some browsers/timing), tell it to take over now; the controllerchange
+  // handler above then reloads the page onto the new build. Only for a real
+  // update (there's already a controller), never the first-ever install.
+  const applyUpdate = (reg) => {
+    if (reg?.waiting && navigator.serviceWorker.controller) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' })
+    }
   }
 
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(reg => {
       // A new worker may already be waiting from a previous visit.
-      announceUpdate(reg)
+      applyUpdate(reg)
       // Or one may finish installing while this tab is open.
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing
         if (!nw) return
         nw.addEventListener('statechange', () => {
-          if (nw.state === 'installed') announceUpdate(reg)
+          if (nw.state === 'installed') applyUpdate(reg)
         })
       })
       // Actively check for a new SW now and whenever the tab regains focus, so
