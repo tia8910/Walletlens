@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WalletLens - Free Net Worth & Portfolio Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--g:#10b981;--bg:#0a0b0d;--card:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.1);--text:#f5f6f7;--sub:rgba(255,255,255,0.6);--radius:20px}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ===== HERO ===== */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 24px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 50% 50%,rgba(16,185,129,0.06) 0%,transparent 50%);animation:bgPulse 8s ease-in-out infinite}
+@keyframes bgPulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.15);opacity:1}}
+.particles{position:absolute;inset:0;pointer-events:none}
+.particle{position:absolute;width:3px;height:3px;background:var(--g);border-radius:50%;opacity:0;animation:floatUp 5s ease-in-out infinite}
+@keyframes floatUp{0%{opacity:0;transform:translateY(100vh) scale(0)}40%{opacity:.7}100%{opacity:0;transform:translateY(-10vh) scale(1.5)}}
+.hero .badge{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:8px 20px;font-size:.82rem;color:var(--sub);margin-bottom:28px;position:relative;z-index:1}
+.badge .dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.hero h1{font-size:clamp(2.2rem,7vw,4rem);font-weight:800;line-height:1.08;margin-bottom:18px;position:relative;z-index:1}
+.hero h1 .green{color:var(--g)}
+.hero .sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--sub);max-width:520px;margin-bottom:36px;position:relative;z-index:1;line-height:1.55}
+.hero .cta{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;background:var(--g);color:#000;padding:18px 42px;border-radius:50px;font-weight:700;font-size:1.1rem;text-decoration:none;animation:glow 2.5s ease-in-out infinite alternate;transition:transform .3s}
+.hero .cta:hover{transform:scale(1.06)}
+@keyframes glow{0%{box-shadow:0 0 24px rgba(16,185,129,.25)}100%{box-shadow:0 0 50px rgba(16,185,129,.55),0 0 100px rgba(16,185,129,.15)}}
+
+/* ===== FEATURES ===== */
+.features{padding:80px 24px;max-width:1000px;margin:0 auto}
+.features h2{text-align:center;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;margin-bottom:8px}
+.features .sub{text-align:center;color:var(--sub);margin-bottom:52px;font-size:1rem}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.fcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;transition:all .4s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden;opacity:0;transform:translateY(28px)}
+.fcard.show{opacity:1;transform:translateY(0)}
+.fcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--g),transparent);opacity:0;transition:opacity .4s}
+.fcard:hover{transform:translateY(-6px);border-color:rgba(16,185,129,.3);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.fcard:hover::before{opacity:1}
+.fcard .ico{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:16px;background:rgba(16,185,129,.1)}
+.fcard h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.fcard p{font-size:.88rem;color:var(--sub);line-height:1.5}
+
+/* ===== PHONE DEMO ===== */
+.demo{padding:80px 24px;text-align:center}
+.demo h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;margin-bottom:8px}
+.demo .sub{color:var(--sub);margin-bottom:48px;font-size:1rem}
+.phone{width:320px;height:640px;margin:0 auto;border-radius:42px;border:3px solid rgba(255,255,255,.12);background:#000;overflow:hidden;position:relative;box-shadow:0 0 80px rgba(16,185,129,.12),0 30px 100px rgba(0,0,0,.6)}
+.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#000;border-radius:0 0 20px 20px;z-index:10}
+.screen{width:100%;height:100%;overflow:hidden;position:relative}
+
+/* Slides */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:42px 16px 16px;opacity:0;transform:translateX(100%);transition:all .55s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:auto}
+.slide.exit{opacity:0;transform:translateX(-100%)}
+.slide-hd{text-align:center;margin-bottom:14px}
+.slide-hd .tag{font-size:.65rem;color:var(--g);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+.slide-hd h3{font-size:1rem;font-weight:700;margin-top:2px}
+.slide-body{flex:1;overflow:hidden;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--border);padding:14px}
+
+/* Dashboard slide */
+.pval{font-size:1.8rem;font-weight:800;margin-bottom:2px}
+.pchange{font-size:.78rem;color:#ef4444;margin-bottom:12px}
+.tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.tab{padding:4px 9px;border-radius:8px;font-size:.62rem;font-weight:600;background:transparent;color:var(--sub);border:1px solid var(--border)}
+.tab.on{background:var(--g);color:#000;border-color:var(--g)}
+.chart-area{height:110px;margin-bottom:12px;position:relative}
+.chart-area svg{width:100%;height:100%}
+.holdings{overflow:auto;max-height:200px}
+.hrow{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);gap:10px}
+.hrow:last-child{border:none}
+.hicon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;color:#fff}
+.hinfo{flex:1;min-width:0}
+.hinfo .nm{font-size:.72rem;font-weight:600}
+.hinfo .sy{font-size:.58rem;color:var(--sub)}
+.hprice{text-align:right;flex-shrink:0}
+.hprice .vl{font-size:.72rem;font-weight:600}
+.hprice .ch{font-size:.58rem}
+.ch.up{color:var(--g)}.ch.dn{color:#ef4444}
+
+/* Gauge slide */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.gauge{width:160px;height:160px;position:relative}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.g-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:10}
+.g-fill{fill:none;stroke:var(--g);stroke-width:10;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1.8s ease}
+.gauge-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-num .n{font-size:2rem;font-weight:800;color:var(--g)}
+.gauge-num .l{font-size:.7rem;color:var(--sub)}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.pillar{text-align:center}
+.pbar-w{width:100%;height:52px;background:rgba(255,255,255,.06);border-radius:8px;position:relative;overflow:hidden;margin-bottom:3px}
+.pbar{position:absolute;bottom:0;width:100%;border-radius:8px;transition:height 1.4s ease}
+.plbl{font-size:.5rem;color:var(--sub)}
+
+/* Whale slide */
+.whale-svg{display:flex;justify-content:center;margin-bottom:10px}
+.wmetrics{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.wm{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+.wm .wml{font-size:.58rem;color:var(--sub);margin-bottom:2px}
+.wm .wmv{font-size:.88rem;font-weight:700;color:var(--g)}
+.wlegend{display:flex;justify-content:center;gap:14px;font-size:.68rem;margin-bottom:10px}
+.wlegend span{display:flex;align-items:center;gap:4px}
+
+/* AI slide */
+.ai-msgs{display:flex;flex-direction:column;gap:8px;padding:4px 0;overflow:auto;max-height:340px}
+.aimsg{max-width:88%;padding:10px 14px;border-radius:16px;font-size:.72rem;line-height:1.45}
+.aimsg.bot{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);align-self:flex-start;border-bottom-left-radius:4px}
+.aimsg.usr{background:rgba(255,255,255,.08);border:1px solid var(--border);align-self:flex-end;border-bottom-right-radius:4px}
+.ai-input{display:flex;gap:8px;padding-top:10px}
+.ai-input input{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:24px;padding:10px 16px;color:var(--text);font-size:.72rem;outline:none;font-family:inherit}
+.ai-input .send{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;color:#000;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Trading slide */
+.otypes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.otype{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:14px 10px;text-align:center;transition:all .3s}
+.otype:hover{border-color:rgba(16,185,129,.3)}
+.otype .oi{font-size:1.3rem;margin-bottom:4px}
+.otype .on{font-size:.68rem;font-weight:600}
+.otype .od{font-size:.56rem;color:var(--sub);margin-top:2px}
+
+/* Insights slide */
+.insight{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.18);border-radius:14px;padding:14px;margin-bottom:8px}
+.insight:last-child{margin-bottom:0}
+.insight .it{font-size:.72rem;font-weight:700;color:var(--g);margin-bottom:4px}
+.insight .ix{font-size:.68rem;color:var(--sub);line-height:1.45}
+.insight .is{font-size:.56rem;color:rgba(255,255,255,.35);margin-top:4px}
+
+/* Settings slide */
+.slist{display:flex;flex-direction:column;gap:2px}
+.sitem{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+.sitem:first-child{border-radius:12px 12px 4px 4px}
+.sitem:last-child{border-radius:4px 4px 12px 12px}
+.si-l{display:flex;align-items:center;gap:10px}
+.si-i{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;background:rgba(255,255,255,.06)}
+.si-n{font-size:.72rem;font-weight:600}
+.si-a{color:var(--sub);font-size:.78rem}
+
+/* Coach slide */
+.progress-wrap{text-align:center;margin-bottom:12px}
+.progress-wrap .pct{font-size:2rem;font-weight:800;color:var(--g)}
+.progress-wrap .pl{font-size:.68rem;color:var(--sub)}
+.prog-bar{background:rgba(255,255,255,.06);border-radius:8px;height:6px;margin-bottom:14px;overflow:hidden}
+.prog-fill{height:100%;background:var(--g);border-radius:8px;width:0%;transition:width 1.5s ease}
+.goals{display:flex;flex-direction:column;gap:6px}
+.goal{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.goal.pending{background:rgba(255,255,255,.03);border-color:var(--border)}
+.goal .gi{font-size:1.1rem;flex-shrink:0}
+.goal .gt{font-size:.72rem;font-weight:600}
+.goal .gd{font-size:.58rem;color:var(--sub)}
+
+/* Vision slide */
+.vision-center{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:14px}
+.vision-center .cam{font-size:3.5rem;animation:camPulse 2.5s infinite}
+@keyframes camPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.vision-center .vt{font-size:1rem;font-weight:700}
+.vision-center .vd{font-size:.78rem;color:var(--sub);max-width:200px;line-height:1.5}
+.tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.tags span{background:rgba(16,185,129,.12);color:var(--g);padding:5px 12px;border-radius:20px;font-size:.65rem}
+
+/* Dots */
+.dots{display:flex;justify-content:center;gap:8px;padding:18px 0}
+.dots .d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:all .3s}
+.dots .d.on{background:var(--g);width:24px;border-radius:4px}
+
+/* Stats */
+.stats{padding:80px 24px;max-width:800px;margin:0 auto;text-align:center}
+.stats h2{font-size:clamp(1.5rem,4vw,2.2rem);font-weight:800;margin-bottom:44px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px}
+.stat .sn{font-size:2.2rem;font-weight:800;color:var(--g);margin-bottom:4px}
+.stat .sl{font-size:.85rem;color:var(--sub)}
+
+/* Footer CTA */
+.ftcta{padding:80px 24px;text-align:center;position:relative;overflow:hidden}
+.ftcta::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(16,185,129,.08) 0%,transparent 70%);pointer-events:none}
+.ftcta h2{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;margin-bottom:14px;position:relative;z-index:1}
+.ftcta h2 .green{color:var(--g)}
+.ftcta .desc{color:var(--sub);font-size:1.05rem;margin-bottom:32px;position:relative;z-index:1}
+.ftcta .cta{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;background:var(--g);color:#000;padding:18px 44px;border-radius:50px;font-weight:700;font-size:1.15rem;text-decoration:none;animation:glow 2.5s ease-in-out infinite alternate;transition:transform .3s}
+.ftcta .cta:hover{transform:scale(1.06)}
+.ftlinks{display:flex;justify-content:center;gap:24px;margin-top:24px;position:relative;z-index:1}
+.ftlinks a{color:var(--sub);text-decoration:none;font-size:.88rem;transition:color .3s}
+.ftlinks a:hover{color:var(--g)}
+
+/* Auto-play toggle */
+.ap-toggle{position:fixed;bottom:20px;right:20px;z-index:100;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:.75rem;cursor:pointer;backdrop-filter:blur(10px)}
+.ap-toggle .apid{width:8px;height:8px;border-radius:50%;background:var(--g);animation:blink 1s infinite}
+.ap-toggle.paused .apid{background:#ef4444;animation:none}
+
+@media(max-width:400px){
+  .phone{width:280px;height:560px;border-radius:34px}
+  .pillars{grid-template-columns:repeat(4,1fr);gap:4px}
+  .pbar-w{height:40px}
+  .plbl{font-size:.45rem}
+  .sgrid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="particles" id="particles"></div>
+  <div class="badge"><span class="dot"></span> Now on Web, iOS & Android</div>
+  <h1>The Free<br><span class="green">Net Worth</span> &amp;<br>Portfolio Tracker</h1>
+  <p class="sub">Track crypto, stocks & gold in one beautiful app. AI-powered insights, whale tracking, and smart trading.</p>
+  <a href="https://walletlens.live" class="cta">Open WalletLens →</a>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <h2>Everything You Need</h2>
+  <p class="sub">15+ powerful features, all in one app</p>
+  <div class="fgrid" id="fgrid">
+    <div class="fcard" data-slide="0">
+      <div class="ico">📊</div><h3>Live Dashboard</h3>
+      <p>Real-time portfolio value with price charts, 24h changes, and instant buy/sell actions.</p>
+    </div>
+    <div class="fcard" data-slide="1">
+      <div class="ico">🔮</div><h3>Magic Indicator</h3>
+      <p>AI-powered technical analysis gauge with 8 pillars: Momentum, Technicals, Whales, Volume & more.</p>
+    </div>
+    <div class="fcard" data-slide="2">
+      <div class="ico">🐋</div><h3>Whale Tracking</h3>
+      <p>See whale vs retail holdings. Donut charts, average holdings, and live activity feeds.</p>
+    </div>
+    <div class="fcard" data-slide="3">
+      <div class="ico">🤖</div><h3>AI Assistant</h3>
+      <p>Chat with AI for instant portfolio advice, market analysis, and personalized recommendations.</p>
+    </div>
+    <div class="fcard" data-slide="4">
+      <div class="ico">📷</div><h3>AI Vision</h3>
+      <p>Scan your portfolio with your camera. Instant recognition and tracking with AI.</p>
+    </div>
+    <div class="fcard" data-slide="5">
+      <div class="ico">💡</div><h3>AI Insights</h3>
+      <p>Get daily AI-generated market insights, trends, and opportunities tailored to your portfolio.</p>
+    </div>
+    <div class="fcard" data-slide="6">
+      <div class="ico">🎯</div><h3>AI Coach</h3>
+      <p>Daily goals, progress tracking, and personalized coaching to optimize your investments.</p>
+    </div>
+    <div class="fcard" data-slide="7">
+      <div class="ico">📈</div><h3>Smart Trading</h3>
+      <p>Market, Limit, Stop Loss, Trailing Stop, Take Profit & DCA orders. Trade smarter, not harder.</p>
+    </div>
+    <div class="fcard" data-slide="8">
+      <div class="ico">🔒</div><h3>Privacy & Backup</h3>
+      <p>Encrypted cloud backup, local encryption, wallet export. Your data stays yours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PHONE DEMO -->
+<section class="demo">
+  <h2>See It In Action</h2>
+  <p class="sub">Swipe through the app's core features</p>
+  <div class="phone" id="phone">
+    <div class="phone-notch"></div>
+    <div class="screen" id="screen">
+
+      <!-- 0: Dashboard -->
+      <div class="slide active" id="s0">
+        <div class="slide-hd"><div class="tag">Dashboard</div><h3>Portfolio Overview</h3></div>
+        <div class="slide-body">
+          <div class="pval" id="pval">$0</div>
+          <div class="pchange">▼ -2.41% ($3,327.12) today</div>
+          <div class="tabs"><span class="tab">1D</span><span class="tab">1W</span><span class="tab on">1M</span><span class="tab">3M</span><span class="tab">6M</span><span class="tab">1Y</span><span class="tab">ALL</span></div>
+          <div class="chart-area">
+            <svg viewBox="0 0 280 110" preserveAspectRatio="none">
+              <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(16,185,129,.3)"/><stop offset="100%" stop-color="rgba(16,185,129,0)"/></linearGradient></defs>
+              <path d="M0,80 Q20,75 40,70 T80,65 T120,55 T160,60 T200,45 T240,35 T280,30 V110 H0Z" fill="url(#cg)"/>
+              <path d="M0,80 Q20,75 40,70 T80,65 T120,55 T160,60 T200,45 T240,35 T280,30" fill="none" stroke="#10b981" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="holdings">
+            <div class="hrow"><div class="hicon" style="background:#f7931a">₿</div><div class="hinfo"><div class="nm">Bitcoin</div><div class="sy">BTC</div></div><div class="hprice"><div class="vl">$107,841</div><div class="ch up">+1.85%</div></div></div>
+            <div class="hrow"><div class="hicon" style="background:#627eea">Ξ</div><div class="hinfo"><div class="nm">Ethereum</div><div class="sy">ETH</div></div><div class="hprice"><div class="vl">$3,263</div><div class="ch up">+3.38%</div></div></div>
+            <div class="hrow"><div class="hicon" style="background:#9945ff">◎</div><div class="hinfo"><div class="nm">Solana</div><div class="sy">SOL</div></div><div class="hprice"><div class="vl">$163</div><div class="ch dn">-1.37%</div></div></div>
+            <div class="hrow"><div class="hicon" style="background:#00aae4">✕</div><div class="hinfo"><div class="nm">XRP</div><div class="sy">XRP</div></div><div class="hprice"><div class="vl">$2.83</div><div class="ch up">+0.88%</div></div></div>
+            <div class="hrow"><div class="hicon" style="background:#2a5ada">⬡</div><div class="hinfo"><div class="nm">Chainlink</div><div class="sy">LINK</div></div><div class="hprice"><div class="vl">$14.89</div><div class="ch up">+4.67%</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1: Magic Indicator -->
+      <div class="slide" id="s1">
+        <div class="slide-hd"><div class="tag">Magic Indicator</div><h3>Technical Analysis</h3></div>
+        <div class="slide-body">
+          <div class="gauge-wrap">
+            <div class="gauge">
+              <svg viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="70" class="g-bg"/>
+                <circle cx="80" cy="80" r="70" class="g-fill" id="gCircle"/>
+              </svg>
+              <div class="gauge-num"><div class="n" id="gNum">0</div><div class="l">NEUTRAL</div></div>
+            </div>
+            <div class="pillars">
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:85%;background:var(--g)"></div></div><div class="plbl">Momentum</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:51%;background:#f59e0b"></div></div><div class="plbl">Technicals</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:50%;background:var(--g)"></div></div><div class="plbl">Whales</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:48%;background:#ef4444"></div></div><div class="plbl">Volume</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:51%;background:#f59e0b"></div></div><div class="plbl">Sentiment</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:45%;background:#ef4444"></div></div><div class="plbl">Cycle</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:50%;background:#f59e0b"></div></div><div class="plbl">Correlation</div></div>
+              <div class="pillar"><div class="pbar-w"><div class="pbar" style="height:51%;background:#f59e0b"></div></div><div class="plbl">Fundamentals</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2: Whale Tracking -->
+      <div class="slide" id="s2">
+        <div class="slide-hd"><div class="tag">Whales</div><h3>Whale Tracking</h3></div>
+        <div class="slide-body">
+          <div class="whale-svg">
+            <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
+              <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16"/>
+              <circle cx="65" cy="65" r="50" fill="none" stroke="#10b981" stroke-width="16" stroke-dasharray="314" stroke-dashoffset="78" stroke-linecap="round"/>
+              <circle cx="65" cy="65" r="50" fill="none" stroke="#f59e0b" stroke-width="16" stroke-dasharray="314" stroke-dashoffset="236" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="wlegend"><span style="color:#10b981">● Whales 75%</span><span style="color:#f59e0b">● Retail 25%</span></div>
+          <div class="wmetrics">
+            <div class="wm"><div class="wml">Total Holders</div><div class="wmv">933.42K</div></div>
+            <div class="wm"><div class="wml">Average</div><div class="wmv">31.24K</div></div>
+            <div class="wm"><div class="wml">Whale Holdings</div><div class="wmv">699.52K</div></div>
+            <div class="wm"><div class="wml">Retail Holdings</div><div class="wmv">197.72K</div></div>
+            <div class="wm"><div class="wml">Top 1%</div><div class="wmv">139.97K</div></div>
+            <div class="wm"><div class="wml">Active Whales</div><div class="wmv">42.8K</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3: AI Assistant -->
+      <div class="slide" id="s3">
+        <div class="slide-hd"><div class="tag">AI Assistant</div><h3>Your Smart Advisor</h3></div>
+        <div class="slide-body">
+          <div class="ai-msgs" id="aiMsgs">
+            <div class="aimsg bot">👋 Hi! I'm your AI portfolio assistant. I can analyze your holdings, suggest rebalancing, or predict market trends.</div>
+            <div class="aimsg usr">What's my portfolio outlook?</div>
+            <div class="aimsg bot">📊 Your portfolio is up 12.4% this month. BTC and ETH are your top performers. I'd recommend taking some profit on SOL if it crosses $180.</div>
+            <div class="aimsg usr">Should I buy more ETH?</div>
+            <div class="aimsg bot">✅ ETH shows strong momentum with the upcoming upgrade. Current sentiment is bullish. A small DCA position could work well.</div>
+          </div>
+          <div class="ai-input">
+            <input type="text" placeholder="Ask AI anything..." readonly>
+            <button class="send">→</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4: AI Vision -->
+      <div class="slide" id="s4">
+        <div class="slide-hd"><div class="tag">AI Vision</div><h3>Scan & Track</h3></div>
+        <div class="slide-body">
+          <div class="vision-center">
+            <div class="cam">📷</div>
+            <div class="vt">Point Your Camera</div>
+            <div class="vd">Instantly scan crypto wallets, tokens, and portfolio snapshots with AI-powered recognition</div>
+            <div class="tags">
+              <span>QR Codes</span><span>Screenshots</span><span>Wallets</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5: AI Insights -->
+      <div class="slide" id="s5">
+        <div class="slide-hd"><div class="tag">AI Insights</div><h3>Market Intelligence</h3></div>
+        <div class="slide-body" style="overflow:auto">
+          <div class="insight"><div class="it">🟢 BTC Breakout Signal</div><div class="ix">Bitcoin is approaching key resistance at $110K. Historical patterns suggest a 72% probability of breakout within 48 hours.</div><div class="is">AI Confidence: 87%</div></div>
+          <div class="insight"><div class="it">🐋 Whale Accumulation</div><div class="ix">Whales accumulated 12,400 BTC in the last 24 hours. This level of buying pressure historically precedes major rallies.</div><div class="is">AI Confidence: 91%</div></div>
+          <div class="insight"><div class="it">⚡ ETH Opportunity</div><div class="ix">ETH/BTC ratio at yearly low. This could signal a rotation opportunity for Ethereum in the coming weeks.</div><div class="is">AI Confidence: 78%</div></div>
+          <div class="insight"><div class="it">📊 Market Sentiment</div><div class="ix">Fear & Greed Index at 72 (Greed). Social sentiment metrics show elevated bullishness across major platforms.</div><div class="is">AI Confidence: 85%</div></div>
+        </div>
+      </div>
+
+      <!-- 6: AI Coach -->
+      <div class="slide" id="s6">
+        <div class="slide-hd"><div class="tag">AI Coach</div><h3>Your Daily Goals</h3></div>
+        <div class="slide-body">
+          <div class="progress-wrap"><div class="pct" id="pctNum">0%</div><div class="pl">Daily Progress</div></div>
+          <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+          <div class="goals">
+            <div class="goal"><span class="gi">✅</span><div><div class="gt">Review Portfolio</div><div class="gd">Check daily performance</div></div></div>
+            <div class="goal"><span class="gi">✅</span><div><div class="gt">Read AI Insights</div><div class="gd">3 new insights available</div></div></div>
+            <div class="goal pending"><span class="gi">⬜</span><div><div class="gt">Diversify Holdings</div><div class="gd">Add 1 new asset class</div></div></div>
+            <div class="goal pending"><span class="gi">⬜</span><div><div class="gt">Set Price Alerts</div><div class="gd">Protect your gains</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7: Smart Trading -->
+      <div class="slide" id="s7">
+        <div class="slide-hd"><div class="tag">Trading</div><h3>Smart Orders</h3></div>
+        <div class="slide-body">
+          <div class="otypes">
+            <div class="otype"><div class="oi">⚡</div><div class="on">Market</div><div class="od">Instant execution</div></div>
+            <div class="otype"><div class="oi">🎯</div><div class="on">Limit</div><div class="od">Set your price</div></div>
+            <div class="otype"><div class="oi">🛑</div><div class="on">Stop Loss</div><div class="od">Limit downside</div></div>
+            <div class="otype"><div class="oi">📈</div><div class="on">Trailing Stop</div><div class="od">Follow the trend</div></div>
+            <div class="otype"><div class="oi">💰</div><div class="on">Take Profit</div><div class="od">Lock in gains</div></div>
+            <div class="otype"><div class="oi">🔄</div><div class="on">DCA</div><div class="od">Dollar cost average</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8: Settings -->
+      <div class="slide" id="s8">
+        <div class="slide-hd"><div class="tag">Settings</div><h3>Customize Everything</h3></div>
+        <div class="slide-body">
+          <div class="slist">
+            <div class="sitem"><div class="si-l"><div class="si-i">🌙</div><div class="si-n">Theme</div></div><div class="si-a">Dark ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">💱</div><div class="si-n">Currency</div></div><div class="si-a">USD ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">🌐</div><div class="si-n">Language</div></div><div class="si-a">English ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">🔐</div><div class="si-n">Security</div></div><div class="si-a">Biometric ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">☁️</div><div class="si-n">Cloud Backup</div></div><div class="si-a">Encrypted ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">📤</div><div class="si-n">Export Wallets</div></div><div class="si-a">›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">🛡️</div><div class="si-n">Local Encryption</div></div><div class="si-a">ON ›</div></div>
+            <div class="sitem"><div class="si-l"><div class="si-i">🎓</div><div class="si-n">Academy</div></div><div class="si-a">Learn ›</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="dots" id="dots"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <h2>Trusted by Thousands</h2>
+  <div class="sgrid" id="sgrid">
+    <div class="stat"><div class="sn" data-target="50000">0</div><div class="sl">Active Users</div></div>
+    <div class="stat"><div class="sn" data-target="15">0</div><div class="sl">Powerful Features</div></div>
+    <div class="stat"><div class="sn" data-target="24">0</div><div class="sl">Market Support</div></div>
+    <div class="stat"><div class="sn" data-target="100">0</div><div class="sl">% Free Forever</div></div>
+  </div>
+</section>
+
+<!-- FOOTER CTA -->
+<section class="ftcta">
+  <h2>Start Tracking<br>Your <span class="green">Net Worth</span></h2>
+  <p class="desc">Join thousands managing their portfolio with AI-powered insights.</p>
+  <a href="https://walletlens.live" class="cta">🚀 Open WalletLens Free</a>
+  <div class="ftlinks"><a href="https://walletlens.live">Website</a><a href="https://walletlens.live/#features">Features</a><a href="https://walletlens.live/#academy">Academy</a></div>
+</section>
+
+<!-- AUTO-PLAY TOGGLE -->
+<div class="ap-toggle" id="apToggle" onclick="toggleAP()"><span class="apid"></span> Auto-play</div>
+
+<script>
+// ===== Particles =====
+(function(){
+  var el=document.getElementById('particles');
+  for(var i=0;i<35;i++){
+    var p=document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDelay=Math.random()*5+'s';
+    p.style.animationDuration=(4+Math.random()*4)+'s';
+    el.appendChild(p);
+  }
+})();
+
+// ===== Slides =====
+var cur=0, total=9, autoP=true, apTimer;
+var screen=document.getElementById('screen');
+var dotsWrap=document.getElementById('dots');
+
+// Build dots
+for(var i=0;i<total;i++){
+  var d=document.createElement('div');
+  d.className='d'+(i===0?' on':'');
+  d.setAttribute('data-i',i);
+  d.onclick=function(){goSlide(parseInt(this.getAttribute('data-i')))};
+  dotsWrap.appendChild(d);
+}
+
+function goSlide(n){
+  if(n===cur)return;
+  var slides=screen.querySelectorAll('.slide');
+  var ds=dotsWrap.querySelectorAll('.d');
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('exit');
+  ds[cur].classList.remove('on');
+  cur=n;
+  setTimeout(function(){
+    slides[cur].classList.add('active');
+    ds[cur].classList.add('on');
+  },50);
+  if(cur===1)animateGauge();
+  if(cur===0)animCount('pval',0,134684.91,'$',2);
+  if(cur===6)animateProgress();
+}
+
+function nextSlide(){goSlide((cur+1)%total)}
+function startAP(){apTimer=setInterval(nextSlide,3500)}
+function stopAP(){clearInterval(apTimer)}
+function toggleAP(){
+  autoP=!autoP;
+  var el=document.getElementById('apToggle');
+  if(autoP){startAP();el.classList.remove('paused')}else{stopAP();el.classList.add('paused')}
+}
+startAP();
+
+// Touch / mouse swipe
+var sx=0, swiping=false;
+screen.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;swiping=true;if(autoP)stopAP()});
+screen.addEventListener('touchend',function(e){if(!swiping)return;swiping=false;var d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50){d<0?nextSlide():goSlide((cur-1+total)%total)}if(autoP)setTimeout(startAP,500)});
+screen.addEventListener('mousedown',function(e){sx=e.clientX;swiping=true;if(autoP)stopAP()});
+screen.addEventListener('mouseup',function(e){if(!swiping)return;swiping=false;var d=e.clientX-sx;if(Math.abs(d)>40){d<0?nextSlide():goSlide((cur-1+total)%total)}if(autoP)setTimeout(startAP,500)});
+
+// Feature card click → slide + scroll to phone
+document.querySelectorAll('.fcard').forEach(function(c){
+  c.addEventListener('click',function(){
+    var idx=parseInt(this.getAttribute('data-slide'));
+    goSlide(idx);
+    document.getElementById('phone').scrollIntoView({behavior:'smooth',block:'center'});
+  });
+});
+
+// ===== Animations =====
+function animateGauge(){
+  var c=document.getElementById('gCircle');
+  var n=document.getElementById('gNum');
+  var circ=2*Math.PI*70;
+  c.style.strokeDasharray=circ;
+  c.style.strokeDashoffset=circ;
+  var target=50;
+  setTimeout(function(){
+    c.style.strokeDashoffset=circ*(1-target/100);
+    var cur=0;
+    var iv=setInterval(function(){cur++;n.textContent=cur;if(cur>=target)clearInterval(iv)},20);
+  },200);
+}
+
+function animCount(id,start,end,pre,dec){
+  var el=document.getElementById(id);
+  var dur=1500, st=performance.now();
+  function upd(now){
+    var p=Math.min((now-st)/dur,1);
+    var ease=1-Math.pow(1-p,3);
+    var val=start+(end-start)*ease;
+    el.textContent=pre+val.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    if(p<1)requestAnimationFrame(upd);
+  }
+  requestAnimationFrame(upd);
+}
+
+function animateProgress(){
+  setTimeout(function(){
+    document.getElementById('progFill').style.width='40%';
+    var el=document.getElementById('pctNum');
+    var cur=0;
+    var iv=setInterval(function(){cur+=2;el.textContent=cur+'%';if(cur>=40)clearInterval(iv)},30);
+  },200);
+}
+
+// Stats on scroll
+var statsObs=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if(entry.isIntersecting){
+      document.querySelectorAll('.sn').forEach(function(el){
+        var t=parseInt(el.getAttribute('data-target'));
+        var c=0, step=Math.max(1,Math.floor(t/60));
+        var iv=setInterval(function(){
+          c+=step;if(c>=t){c=t;clearInterval(iv)}
+          el.textContent=c.toLocaleString()+(t===100?'%':t>=1000?'+':'+'+t);
+        },30);
+      });
+      statsObs.disconnect();
+    }
+  });
+},{threshold:0.3});
+statsObs.observe(document.querySelector('.stats'));
+
+// Feature cards scroll-in
+var cardObs=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if(entry.isIntersecting)entry.target.classList.add('show');
+  });
+},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.fcard').forEach(function(c,i){
+  c.style.transition='all .6s cubic-bezier(.4,0,.2,1) '+i*0.08+'s';
+  cardObs.observe(c);
+});
+
+// Init
+setTimeout(function(){
+  animCount('pval',0,134684.91,'$',2);
+  animateGauge();
+},600);
+</script>
+</body>
+</html>
