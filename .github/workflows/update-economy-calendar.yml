@@ -1,0 +1,126 @@
+name: Update Economic Calendar
+
+on:
+  schedule:
+    # Refresh a few times a day so forecasts and released "actual" figures
+    # stay current. Served by Cloudflare Pages from main, so the file lives
+    # in client/public/ and each update commits without [skip ci] so it
+    # deploys, without burning the Pages build quota.
+    - cron: '15 6,12,18,23 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-calendar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch economic calendar from FairEconomy (ForexFactory feed)
+        run: |
+          python3 << 'EOF'
+          import urllib.request, json, time, datetime
+
+          # Keyless weekly macro-calendar feeds (title/country/impact/forecast/
+          # previous, plus "actual" once a print lands). This week + next week
+          # gives a rolling ~2-week horizon.
+          FEEDS = [
+            "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+            "https://nfs.faireconomy.media/ff_calendar_nextweek.json",
+          ]
+
+          # Only surface the majors that move markets, matching the
+          # MarketWatch-style US-centric calendar the app shows.
+          KEEP_COUNTRIES = {"USD", "EUR", "GBP", "JPY", "CNY", "CAD", "AUD", "CHF", "NZD"}
+
+          IMPACT_MAP = {
+            "High": "high", "Medium": "medium", "Low": "low",
+            "Holiday": "holiday", "Non-Economic": "low",
+          }
+
+          events = []
+          seen = set()
+
+          for url in FEEDS:
+            try:
+              req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                rows = json.loads(r.read().decode("utf-8"))
+            except Exception as e:
+              print(f"Feed failed {url}: {e}")
+              continue
+
+            for row in rows:
+              country = (row.get("country") or "").upper()
+              if country and country not in KEEP_COUNTRIES:
+                continue
+              raw_impact = row.get("impact") or ""
+              impact = IMPACT_MAP.get(raw_impact, "low")
+
+              iso = row.get("date") or ""
+              date_only = ""
+              time_only = ""
+              ts = None
+              try:
+                # Feed dates look like 2024-01-03T15:00:00-05:00
+                dt = datetime.datetime.fromisoformat(iso)
+                ts = int(dt.timestamp())
+                date_only = dt.strftime("%Y-%m-%d")
+                # All-day items come through at 00:00 with impact Holiday
+                if dt.hour == 0 and dt.minute == 0:
+                  time_only = ""
+                else:
+                  time_only = dt.strftime("%H:%M")
+              except Exception:
+                date_only = iso[:10]
+
+              title = (row.get("title") or "").strip()
+              if not title or not date_only:
+                continue
+
+              key = (date_only, time_only, country, title)
+              if key in seen:
+                continue
+              seen.add(key)
+
+              events.append({
+                "date": date_only,
+                "time": time_only,
+                "ts": ts,
+                "title": title,
+                "country": country,
+                "impact": impact,
+                "forecast": (row.get("forecast") or "").strip(),
+                "previous": (row.get("previous") or "").strip(),
+                "actual": (row.get("actual") or "").strip(),
+              })
+
+          # Sort chronologically; undated items sink to the end.
+          events.sort(key=lambda e: (e["ts"] is None, e["ts"] or 0))
+
+          output = {
+            "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "count": len(events),
+            "events": events,
+          }
+
+          with open("client/public/economic-calendar.json", "w") as f:
+            json.dump(output, f)
+
+          print(f"Wrote {len(events)} events")
+          for e in events[:5]:
+            print(f"  {e['date']} {e['time']} [{e['impact']}] {e['country']} {e['title']}")
+          EOF
+
+      - name: Commit updated calendar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add client/public/economic-calendar.json
+          git diff --staged --quiet || git commit -m "chore: update economic calendar"
+          git push

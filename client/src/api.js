@@ -2733,5 +2733,26 @@ export const api = {
     }))
   },
 
+  // ── Economic calendar ────────────────────────────────────────────────
+  // MarketWatch-style macro calendar (CPI, FOMC, jobs, GDP …). Served from
+  // /economic-calendar.json, refreshed a few times a day by a GitHub Actions
+  // cron off the keyless FairEconomy feed. Same-origin so it loads on any
+  // network that can reach the site. Returns { updated, events: [...] }.
+  getEconomicCalendar: async () => {
+    try {
+      const res = await fetchWithTimeout(
+        '/economic-calendar.json?t=' + Math.floor(Date.now() / 1_800_000),
+        5000
+      )
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data?.events)) {
+          return { updated: data.updated || '', events: data.events }
+        }
+      }
+    } catch {}
+    return { updated: '', events: [] }
+  },
+
   getFiatRates: fetchFiatRates,
 };
