@@ -47,17 +47,6 @@ jobs:
           fi
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
 
-      # Optional: real Firebase config. Without it a stub is generated and
-      # Firebase Analytics stays inert (the app still builds and runs).
-      - name: Write google-services.json from secret (optional)
-        run: |
-          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
-            printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > walletlens_source/release_package/app/google-services.json
-            echo "Wrote google-services.json from secret"
-          else
-            echo "::warning::GOOGLE_SERVICES_JSON secret not set — building with stub config; Firebase Analytics will be inert."
-          fi
-
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > walletlens_source/release_package/local.properties
