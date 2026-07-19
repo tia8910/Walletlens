@@ -73,6 +73,24 @@ const CORS_PROXIES = [
   (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 
+// Cap on simultaneous in-flight requests for the per-ticker Yahoo-via-proxy
+// fallback (used when fetching a whole watchlist at once). Keeps a ~130-symbol
+// pre-warm from bursting hundreds of parallel requests at free proxy hosts
+// if the upstream batch sources are down.
+const YAHOO_FALLBACK_CONCURRENCY = 6;
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 // Per-attempt timeout for any single fetch — without this, a slow proxy
 // can stall the whole pipeline for 30s+ before failing over.
 // Accepts an optional external AbortSignal so callers (e.g. fetchJSONFast)
@@ -892,9 +910,15 @@ async function fetchTwelveDataBatch(tickers) {
     }
   } catch {}
 
-  // ── 2. corsproxy → Yahoo Finance v8 chart for each ticker in parallel ──
+  // ── 2. corsproxy → Yahoo Finance v8 chart for each ticker, capped concurrency ──
+  // Only reached once both batch sources above have failed for every ticker
+  // (e.g. an outage), so `tickers` can be the full ~130-symbol watchlist.
+  // Firing all of them at once — each retrying up to CORS_PROXIES.length
+  // proxies — would burst hundreds of simultaneous cross-origin requests at
+  // free proxy services, tanking the page and likely getting the client
+  // rate-limited. Cap in-flight ticker fetches instead.
   try {
-    const results = await Promise.all(tickers.map(async sym => {
+    const results = await mapWithConcurrency(tickers, YAHOO_FALLBACK_CONCURRENCY, async sym => {
       for (const wrap of CORS_PROXIES) {
         try {
           const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
@@ -907,7 +931,7 @@ async function fetchTwelveDataBatch(tickers) {
         } catch {}
       }
       return null;
-    }));
+    });
     const out = {};
     for (const r of results) {
       if (r) out[r.sym] = { usd: r.usd, usd_24h_change: r.usd_24h_change, name: r.name, source: 'yahoo-proxy' };
