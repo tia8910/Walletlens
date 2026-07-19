@@ -21,7 +21,11 @@ public class WalletLensWidgetProvider extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
+            try {
+                updateAppWidget(context, appWidgetManager, appWidgetId);
+            } catch (Exception e) {
+                android.util.Log.w("WalletLensWidget", "widget update failed: " + e.getMessage());
+            }
         }
     }
 

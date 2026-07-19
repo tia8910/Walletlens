@@ -22,7 +22,10 @@ public class AllocationWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager mgr, int[] ids) {
-        for (int id : ids) updateWidget(context, mgr, id);
+        for (int id : ids) {
+            try { updateWidget(context, mgr, id); }
+            catch (Exception e) { android.util.Log.w("WalletLensWidget", "allocation update failed: " + e.getMessage()); }
+        }
     }
 
     public static void updateWidget(Context context, AppWidgetManager mgr, int id) {

@@ -22,7 +22,10 @@ public class TopMoversWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int id : appWidgetIds) updateWidget(context, appWidgetManager, id);
+        for (int id : appWidgetIds) {
+            try { updateWidget(context, appWidgetManager, id); }
+            catch (Exception e) { android.util.Log.w("WalletLensWidget", "top-movers update failed: " + e.getMessage()); }
+        }
     }
 
     public static void updateWidget(Context context, AppWidgetManager mgr, int id) {

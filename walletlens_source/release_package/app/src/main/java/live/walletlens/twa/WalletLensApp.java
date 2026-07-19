@@ -37,13 +37,21 @@ public class WalletLensApp extends android.app.Application {
                 @Override
                 public void onActivityResumed(@NonNull Activity activity) {
                     resumedActivityCount++;
-                    if (resumedActivityCount == 1) AnalyticsHelper.getInstance().startSession();
-                    AnalyticsHelper.getInstance().trackScreenView(activity);
+                    try {
+                        if (resumedActivityCount == 1) AnalyticsHelper.getInstance().startSession();
+                        AnalyticsHelper.getInstance().trackScreenView(activity);
+                    } catch (Exception e) {
+                        Log.w(TAG, "onActivityResumed analytics failed: " + e.getMessage());
+                    }
                 }
                 @Override
                 public void onActivityPaused(@NonNull Activity activity) {
                     resumedActivityCount--;
-                    if (resumedActivityCount == 0) AnalyticsHelper.getInstance().endSession();
+                    try {
+                        if (resumedActivityCount == 0) AnalyticsHelper.getInstance().endSession();
+                    } catch (Exception e) {
+                        Log.w(TAG, "onActivityPaused analytics failed: " + e.getMessage());
+                    }
                 }
                 @Override public void onActivityCreated(@NonNull Activity a, Bundle b) {}
                 @Override public void onActivityStarted(@NonNull Activity a) {}
