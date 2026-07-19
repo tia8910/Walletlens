@@ -1,0 +1,18 @@
+{
+  "updated": "2026-07-19T00:00:00Z",
+  "count": 12,
+  "events": [
+    {"date":"2026-07-20","time":"14:00","ts":1784556000,"title":"FOMC Member Speaks","country":"USD","impact":"medium","forecast":"","previous":"","actual":""},
+    {"date":"2026-07-21","time":"12:30","ts":1784636200,"title":"Building Permits","country":"USD","impact":"low","forecast":"1.40M","previous":"1.39M","actual":""},
+    {"date":"2026-07-22","time":"14:00","ts":1784728800,"title":"Existing Home Sales","country":"USD","impact":"medium","forecast":"4.05M","previous":"4.03M","actual":""},
+    {"date":"2026-07-23","time":"12:30","ts":1784810400,"title":"Unemployment Claims","country":"USD","impact":"medium","forecast":"232K","previous":"228K","actual":""},
+    {"date":"2026-07-23","time":"13:45","ts":1784815500,"title":"Flash Manufacturing PMI","country":"USD","impact":"medium","forecast":"51.8","previous":"52.0","actual":""},
+    {"date":"2026-07-23","time":"13:45","ts":1784815500,"title":"Flash Services PMI","country":"USD","impact":"medium","forecast":"52.9","previous":"53.1","actual":""},
+    {"date":"2026-07-24","time":"12:30","ts":1784896800,"title":"Core Durable Goods Orders m/m","country":"USD","impact":"medium","forecast":"0.2%","previous":"0.5%","actual":""},
+    {"date":"2026-07-28","time":"14:00","ts":1785247200,"title":"CB Consumer Confidence","country":"USD","impact":"high","forecast":"99.2","previous":"98.4","actual":""},
+    {"date":"2026-07-29","time":"18:00","ts":1785340800,"title":"FOMC Statement","country":"USD","impact":"high","forecast":"","previous":"","actual":""},
+    {"date":"2026-07-29","time":"18:00","ts":1785340800,"title":"Federal Funds Rate","country":"USD","impact":"high","forecast":"4.50%","previous":"4.50%","actual":""},
+    {"date":"2026-07-30","time":"12:30","ts":1785414600,"title":"Advance GDP q/q","country":"USD","impact":"high","forecast":"2.1%","previous":"2.4%","actual":""},
+    {"date":"2026-07-31","time":"12:30","ts":1785501000,"title":"Core PCE Price Index m/m","country":"USD","impact":"high","forecast":"0.2%","previous":"0.2%","actual":""}
+  ]
+}

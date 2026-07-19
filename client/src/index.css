@@ -1719,6 +1719,13 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 .tick-val  { color: rgba(255,255,255,0.8); }
 .tick-up   { color: var(--g-ink); font-weight: 700; }
 .tick-dn   { color: #ff6b6b; }
+/* Macro-event ticks riding the same marquee as the prices */
+.tick-cal-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.tick-cal-day {
+  color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.03em; font-size: 0.66rem;
+}
+[data-wl-light] .tick-cal-day { color: var(--text-muted); }
 /* Dark emerald radial wash — promoted to its own GPU layer so DOM changes
    elsewhere don't trigger a repaint of this expensive blur. */
 body::before {
@@ -3165,6 +3172,64 @@ tr:last-child td { border-bottom: none; }
 }
 .whale-tab.active { background: var(--g); color: #fff; border-color: var(--g); }
 .whale-window-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.85rem; }
+
+/* ── Economic calendar ── */
+.cal-filters { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.cal-filter {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  padding: 0.42rem 0.85rem; border-radius: 999px; font-weight: 600;
+  font-size: 0.78rem; cursor: pointer; white-space: nowrap;
+}
+.cal-filter.active { background: var(--g); color: #fff; border-color: var(--g); }
+.cal-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+.cal-day {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 0.9rem; overflow: hidden;
+  backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
+}
+.cal-day.today { border-color: rgba(var(--g-rgb), 0.55); }
+.cal-day-head {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+}
+.cal-day-main { font-weight: 700; font-size: 0.9rem; }
+.cal-day-tag {
+  font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text2);
+  padding: 0.14rem 0.5rem; border-radius: 999px; background: var(--border);
+}
+.cal-day-tag.now { background: var(--g); color: #fff; }
+
+.cal-rows { display: flex; flex-direction: column; }
+.cal-row {
+  display: grid;
+  grid-template-columns: 3.4rem 10px 1fr auto;
+  align-items: center; gap: 0.7rem;
+  padding: 0.7rem 1rem; border-top: 1px solid var(--border);
+}
+.cal-row:first-child { border-top: none; }
+.cal-time { font-size: 0.75rem; font-weight: 600; color: var(--text2); font-variant-numeric: tabular-nums; }
+.cal-imp { width: 10px; height: 10px; border-radius: 50%; }
+.cal-title-wrap { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.cal-flag { font-size: 0.95rem; line-height: 1; }
+.cal-title {
+  font-weight: 600; font-size: 0.84rem; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cal-nums { display: flex; gap: 0.85rem; }
+.cal-num { display: flex; flex-direction: column; align-items: flex-end; min-width: 2.6rem; }
+.cal-num-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text2); }
+.cal-num-val { font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.cal-num-val.live { color: var(--g-ink); }
+.cal-updated { font-size: 0.72rem; color: var(--text2); text-align: center; margin-top: 0.4rem; }
+
+@media (max-width: 560px) {
+  .cal-row { grid-template-columns: 3rem 8px 1fr; grid-template-rows: auto auto; row-gap: 0.5rem; }
+  .cal-nums { grid-column: 1 / -1; justify-content: flex-start; gap: 1.4rem; padding-left: 3.7rem; }
+  .cal-num { align-items: flex-start; }
+}
 
 .whale-split {
   display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;

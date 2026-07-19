@@ -73,6 +73,7 @@ function useCycleIdx() {
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Whales       = lazy(() => import('./pages/Whales'))
 const Alpha        = lazy(() => import('./pages/Alpha'))
+const EconomicCalendar = lazy(() => import('./pages/EconomicCalendar'))
 const Academy      = lazy(() => import('./pages/Academy'))
 const Coach        = lazy(() => import('./pages/Coach'))
 const Technicals   = lazy(() => import('./pages/Technicals'))
@@ -253,6 +254,10 @@ const Drawer = memo(function Drawer({ open, onClose }) {
           </button>
           <button className={active('/alpha')} onClick={() => go('/alpha')}>
             <IconAlpha /><span>Alpha</span>
+          </button>
+          <button className={active('/calendar')} onClick={() => go('/calendar')}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>Calendar</span>
           </button>
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
             <IconTechnicals /><span>Analysis</span>
@@ -610,6 +615,7 @@ export default function App() {
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/whales" element={<Whales />} />
               <Route path="/alpha" element={<Alpha />} />
+              <Route path="/calendar" element={<EconomicCalendar />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/coach" element={<Coach />} />
               <Route path="/technicals" element={<Technicals />} />
