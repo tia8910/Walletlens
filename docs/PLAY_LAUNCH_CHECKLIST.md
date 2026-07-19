@@ -36,7 +36,7 @@ them** and anyone who ever cloned the repo has the key.
 Declare exactly this (matches the app after this branch):
 
 - **Collected:** Analytics — app interactions (Google Analytics via the web
-  layer; Firebase Analytics only if `GOOGLE_SERVICES_JSON` is configured).
+  layer only; native Firebase Analytics has been removed).
 - **NOT collected:** Advertising ID (the `AD_ID` permission is stripped with
   `tools:node="remove"`; the X/Twitter ads pixel is skipped inside the TWA),
   financial info, personal info, location. Portfolio data stays on-device.
@@ -45,14 +45,16 @@ Declare exactly this (matches the app after this branch):
   functionality if asked.
 - Privacy policy URL: `https://walletlens.live/privacy`.
 
-## 3. ⚠️ Firebase (optional but recommended)
+## 3. Firebase — removed (no action)
 
-The build compiles with a **stub** `google-services.json` — Firebase Analytics
-is inert. For real native analytics: create the Firebase project, download
-`google-services.json` for `live.walletlens.twa`, and store the file's content
-in the `GOOGLE_SERVICES_JSON` GitHub secret. FCM messaging was removed
-(notifications use WorkManager locally + web push); don't re-add it without
-also re-declaring the service in the manifest.
+Firebase has been **removed entirely** (the `google-services` plugin,
+`firebase-analytics` dependency, and stub `google-services.json` generation).
+It was shipped with a stub config and had no real Firebase project, which made
+Firebase's `FirebaseInitProvider` throw at process start — crashing the app on
+first launch ("this app has a bug"). Native analytics is optional; the web
+layer still reports to Google Analytics. If you ever want native Firebase back,
+add a **real** `google-services.json` from a real project before re-adding the
+plugin/dependency — never ship the stub.
 
 ## 4. $LENZ / airdrop pages are web-only
 
