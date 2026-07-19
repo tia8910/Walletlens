@@ -2,11 +2,17 @@ name: Update Economic Calendar
 
 on:
   schedule:
-    # Refresh a few times a day so forecasts and released "actual" figures
-    # stay current. Served by Cloudflare Pages from main, so the file lives
-    # in client/public/ and each update commits without [skip ci] so it
-    # deploys, without burning the Pages build quota.
-    - cron: '15 6,12,18,23 * * 1-5'
+    # Keep forecasts and released "actual" figures current. Served by
+    # Cloudflare Pages from main, so the file lives in client/public/ and
+    # each update commits (no [skip ci]) so it deploys.
+    #   • hourly at :05 across the active US/EU session — every print lands
+    #     within ~1h no matter when it drops.
+    #   • plus :35 in the key windows (US 8:30 ET data, ECB, and the 2:00 ET
+    #     FOMC decision) so the big results appear within ~30 min.
+    #   • one overnight :15 refresh for Asia/Europe pre-market events.
+    - cron: '5 11-23 * * 1-5'
+    - cron: '35 12,13,14,18,19 * * 1-5'
+    - cron: '15 2,6 * * 1-5'
   workflow_dispatch:
 
 permissions:
