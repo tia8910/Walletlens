@@ -42,10 +42,10 @@ public final class AnalyticsHelper {
 
     // ── Singleton ────────────────────────────────────────────────────────
 
-    private AnalyticsHelper(@NonNull Context context) {
+    private AnalyticsHelper(@Nullable Context context) {
         FirebaseAnalytics instance = null;
         try {
-            instance = FirebaseAnalytics.getInstance(context);
+            if (context != null) instance = FirebaseAnalytics.getInstance(context);
         } catch (Exception e) {
             Log.w(TAG, "Firebase Analytics not available – tracking will be no-op", e);
         }
@@ -64,11 +64,17 @@ public final class AnalyticsHelper {
         }
     }
 
-    /** Returns the singleton (must call {@link #init(Context)} first). */
+    /**
+     * Returns the singleton. Never throws: if init() somehow hasn't run (e.g.
+     * Firebase failed to initialise on a device), this falls back to a silent
+     * no-op instance rather than crashing the app on the very first resume —
+     * which previously surfaced as "this app has a bug" on cold start.
+     */
     @NonNull
     public static synchronized AnalyticsHelper getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("AnalyticsHelper not initialised – call init() from Application.onCreate()");
+            Log.w(TAG, "getInstance() before init() — using no-op analytics");
+            instance = new AnalyticsHelper(null);
         }
         return instance;
     }

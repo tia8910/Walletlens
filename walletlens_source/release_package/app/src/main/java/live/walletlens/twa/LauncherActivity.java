@@ -94,20 +94,26 @@ public class LauncherActivity
         // Permission resolved — proceed with normal TWA lifecycle
         super.onResume();
 
-        if (savedLaunchUrl != null) {
-            AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
-        }
-
-        // Schedule background notifications if permission is granted
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                || ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            fireTestNotificationIfNeeded();
-            NotificationScheduler.schedule(this);
-            if (!askedPermission) {
-                // Permission was already granted before this session
-                NotificationScheduler.scheduleImmediate(this);
+        // Everything below is best-effort telemetry/notifications — never let it
+        // crash the launch (a throw here shows as "this app has a bug" on start).
+        try {
+            if (savedLaunchUrl != null) {
+                AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
             }
+
+            // Schedule background notifications if permission is granted
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    || ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                fireTestNotificationIfNeeded();
+                NotificationScheduler.schedule(this);
+                if (!askedPermission) {
+                    // Permission was already granted before this session
+                    NotificationScheduler.scheduleImmediate(this);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "post-launch setup failed: " + e.getMessage());
         }
     }
 
@@ -216,9 +222,13 @@ public class LauncherActivity
 
         if (granted) {
             Log.d(TAG, "Permission GRANTED — firing test notifications + scheduling worker");
-            fireTestNotificationIfNeeded();
-            NotificationScheduler.schedule(this);
-            NotificationScheduler.scheduleImmediate(this);
+            try {
+                fireTestNotificationIfNeeded();
+                NotificationScheduler.schedule(this);
+                NotificationScheduler.scheduleImmediate(this);
+            } catch (Exception e) {
+                Log.w(TAG, "post-permission setup failed: " + e.getMessage());
+            }
         } else {
             Log.w(TAG, "Permission DENIED — showing rationale");
             Toast.makeText(this,
