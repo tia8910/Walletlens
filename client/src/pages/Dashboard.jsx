@@ -3537,6 +3537,14 @@ export default function Dashboard() {
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
 
+  // Today's P&L from live 24h coin changes — used by milestone detection, mood
+  // tinting, the hero soul-greeting and the share/milestone cards. Computed
+  // once here instead of re-reducing `enriched` in each of those call sites.
+  const todayPnLVal = useMemo(
+    () => enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0),
+    [enriched]
+  )
+
   // Count-up animation — starts from current displayed value to avoid $0 flash
   const tickerValueRef = useRef(0)
   useEffect(() => {
@@ -3585,7 +3593,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded || totalValue === 0 || milestone) return
     // Use actual 24h coin price changes, not the chart timeframe % which can be all-time
-    const todayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
     const dayBase = totalValue - todayPnLVal
     const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
     const m = detectMilestone({ totalValue, totalPnL, prevTotalPnL: prevPnLRef.current, dayChangePct })
@@ -3596,10 +3603,9 @@ export default function Dashboard() {
   // ── Generative brand reactivity: let the day's P&L tint the whole app ──
   useEffect(() => {
     if (!loaded) return
-    const todayVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
-    const prevVal = totalValue - todayVal
-    applyMood(prevVal > 0 ? (todayVal / prevVal) * 100 : 0)
-  }, [loaded, totalValue, enriched])
+    const prevVal = totalValue - todayPnLVal
+    applyMood(prevVal > 0 ? (todayPnLVal / prevVal) * 100 : 0)
+  }, [loaded, totalValue, todayPnLVal])
 
   useEffect(() => {
     if (!loaded || !enriched.length) return
@@ -4130,9 +4136,8 @@ export default function Dashboard() {
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
             {!hidden && !isDemo && (() => {
-              const dayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
-              const dayBase = totalValue - dayPnLVal
-              const dayChangePct = dayBase > 0 ? (dayPnLVal / dayBase) * 100 : 0
+              const dayBase = totalValue - todayPnLVal
+              const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
               const soul = getSoulGreeting({ dayChangePct, lang })
               return (
                 <p className="dvx-soul" data-tone={soul.tone}>
@@ -5370,7 +5375,7 @@ export default function Dashboard() {
             totalPnL={totalPnL}
             totalPnLPct={totalPnLPct}
             topHoldings={enriched.slice(0, 4)}
-            todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+            todayPnL={todayPnLVal}
             perfSeries={perfSeries}
             onClose={() => setShareOpen(false)}
           />
@@ -5383,7 +5388,7 @@ export default function Dashboard() {
           totalPnL={totalPnL}
           totalPnLPct={totalPnLPct}
           topHoldings={enriched.slice(0, 4)}
-          todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+          todayPnL={todayPnLVal}
           onShare={() => { setMilestone(null); setShareOpen(true) }}
           onDismiss={() => setMilestone(null)}
           onCta={milestone.type === 'first_buy' ? () => { setActiveTab('targets'); track('first_buy_cta_targets') } : undefined}
