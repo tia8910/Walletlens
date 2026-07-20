@@ -410,9 +410,19 @@ async function _loadStaticMarket() {
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
+// In-memory mirror of the parsed localStorage blob. PriceTicker, Dashboard's
+// price poll and Whales all call _loadMarketSnapshot roughly every 60s; without
+// this, each call re-parses the same ~250-coin JSON blob from localStorage even
+// though the in-memory copy from seconds earlier is still valid. `cache` below
+// is this same object by reference, so mutations (new snapshots) stay in sync
+// with no extra bookkeeping.
+let _marketCacheMem = null;
 async function _loadMarketSnapshot(perPage = 250) {
-  let cache = {};
-  try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
+  let cache = _marketCacheMem;
+  if (!cache) {
+    try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch { cache = {}; }
+    _marketCacheMem = cache;
+  }
   const now = Date.now();
   // Reuse the larger snapshot for both 50 and 250 calls
   const fresh = cache[250] && (now - cache[250].t < MARKET_TTL) ? cache[250]
