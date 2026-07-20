@@ -37,6 +37,87 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-portfolio-multiple-brokers',
+    title: 'How to Track a Portfolio When You Have Multiple Brokers',
+    date: 'July 2026',
+    readTime: '7 min read',
+    summary: 'Juggling investments across several brokers and exchanges? Learn how to unify everything into one clear net-worth view without spreadsheet chaos.',
+    content: `
+Most investors don't keep everything in one place. You might hold index funds in a Fidelity account, a handful of tech stocks in Robinhood, Bitcoin and Ethereum on Coinbase, some gold in a self-directed IRA, and a bit of cash in a high-yield savings account. Each platform shows you its own slice of the picture — but none of them shows you the whole thing. That fragmented view is one of the most underrated problems in personal finance.
+
+The good news is that consolidating a multi-broker portfolio into a single dashboard is entirely achievable in 2026, without handing your login credentials to a third-party aggregator and without building a sprawling spreadsheet that breaks every time a stock splits.
+
+## Why Multiple Brokers Create Blind Spots
+
+When your assets live in separate silos, a few problems emerge that are easy to miss until they cause real damage.
+
+**You lose sight of your true allocation.** You might think you're 40% in equities, but if you add up your Robinhood positions, your 401(k), and your crypto holdings together, the real number could be 65%. That's a very different risk profile.
+
+**You double-count or miss overlap.** Owning QQQ in one account and heavy NVIDIA in another means you have far more tech concentration than either account shows individually.
+
+**Rebalancing becomes guesswork.** If you can only see one account at a time, you can't make a rational decision about where to add or trim. You end up optimising each bucket in isolation rather than the portfolio as a whole.
+
+**Unrealised P&L is invisible.** Your average cost basis per asset — a number that matters enormously for both strategy and tax purposes — only makes sense when calculated across all accounts combined, not per-broker.
+
+## The Three Main Approaches (and Their Trade-offs)
+
+### 1. Open Banking / API Aggregators
+
+Services that pull data automatically via broker APIs or screen-scraping sound convenient, but they require you to hand over credentials or grant OAuth access to every account. In 2026, most major brokers support read-only API tokens, which is safer than sharing a password, but you're still trusting a centralised server with a complete map of your wealth. If that company is breached, your financial fingerprint is exposed — even if they never stored your money.
+
+### 2. Spreadsheets
+
+A spreadsheet gives you total control and zero privacy risk. The problem is maintenance. Every trade, dividend reinvestment, or corporate action needs a manual entry. Price data goes stale the moment you close the tab. And the formulas required to track average cost basis across multiple lots in multiple brokers are non-trivial. Most people start enthusiastically and abandon the spreadsheet within three months.
+
+### 3. Manual + Import Tracking (The Sweet Spot)
+
+The approach that balances accuracy, privacy, and low maintenance is a dedicated tracker that lets you add positions manually or import them in bulk — and then keeps prices live automatically. You enter the data once per trade, and the tool handles everything else: current value, P&L, allocation percentages, and net-worth totals.
+
+This is exactly what [walletlens.live](https://walletlens.live) is designed for. It runs entirely in your browser with no account, no login, and no data sent to any server. Every position you add — whether it's a Fidelity ETF, a Coinbase Bitcoin holding, or a gold allocation from a precious-metals dealer — lives locally in your browser. You get a single unified view of your entire net worth without any of your data leaving your device.
+
+## How to Actually Consolidate Multiple Brokers Step by Step
+
+**Step 1: List every account you hold.** Include brokerage accounts, retirement accounts, crypto exchanges, self-custody wallets, savings accounts, and any real estate equity. Don't skip the ones you rarely look at — those are often where blind spots hide.
+
+**Step 2: Export a position summary from each broker.** Most brokers let you download a CSV of your current holdings. You don't need full trade history for a starting snapshot; you just need ticker, quantity, and your average cost basis if the broker shows it. If the broker doesn't provide cost basis, use your buy confirmations.
+
+**Step 3: Import or enter positions into your tracker.** WalletLens supports CSV/Excel import, so you can paste your broker exports in. For crypto, you can also add trades by voice ("I bought 0.5 ETH at $3,200") or by uploading a screenshot of your exchange's portfolio page. For assets like gold or real estate, you enter quantity and purchase price manually.
+
+**Step 4: Assign each position to the correct category.** A good tracker will separate stocks, ETFs, crypto, precious metals, real estate, and cash into distinct buckets. This matters because your allocation donut should reflect asset class risk, not just individual tickers.
+
+**Step 5: Review your true allocation.** Once everything is in, look at the combined picture. You may find that your "balanced" portfolio is actually 70% equity-correlated — or that your "crypto allocation" is mostly stablecoins sitting idle. This is the moment that makes the whole exercise worthwhile.
+
+## What to Do With the Unified View
+
+Once you can see your whole portfolio in one place, several things become straightforward.
+
+**Spot concentration risk immediately.** If a single asset or sector is more than 20–25% of your total net worth, that's worth examining. It might be intentional — or it might be drift that crept in unnoticed.
+
+**Set sell targets by asset.** WalletLens lets you define up to five price targets per asset, each with a progress bar and projected proceeds. When you're looking at all your assets together, you can set targets that make sense for the whole portfolio rather than optimising each holding in isolation.
+
+**Use the health score and rebalance planner.** The AI analysis features compute a portfolio health score and suggest rebalancing moves based on your current allocations — all on-device, so your data never leaves the browser.
+
+**Track P&L across the full portfolio.** Unrealised gains and losses are shown per asset and in aggregate. When every position is in one place, you can see at a glance whether your winners are genuinely outpacing your losers, or whether headline gains in one account are masking losses in another.
+
+## Keeping the Consolidated View Current
+
+The main maintenance burden of a multi-broker setup is keeping position quantities up to date as you trade. A few habits make this manageable:
+
+- **Trade log as you go.** Add each new trade immediately — by voice if you're on mobile — rather than batch-updating monthly.
+- **Reconcile quarterly.** Every three months, compare your tracker's quantities against each broker's actual statement. Dividends, automatic reinvestments, and fees can cause small discrepancies.
+- **Back up your data.** WalletLens generates a compact WLZ export code that captures your entire portfolio. Save it to a secure note after any significant change, and you can restore your full dashboard on any device in seconds.
+
+*Note: This article is for educational purposes only and does not constitute financial or tax advice. Consult a qualified professional for guidance specific to your situation.*
+
+## Conclusion
+
+Tracking a portfolio spread across multiple brokers isn't inherently complicated — it just requires one deliberate step: bringing all the pieces into a single view. The fragmented approach, where you check each platform separately and try to hold the combined picture in your head, reliably produces blind spots around allocation, concentration, and true P&L.
+
+Whether you use a dedicated tracker like WalletLens, a carefully maintained spreadsheet, or some other method, the goal is the same: one dashboard, all assets, live prices, and a clear allocation breakdown. Once you have that, most portfolio decisions become significantly easier — and the surprises become significantly rarer.
+    `
+  },
+
+  {
     slug: 'how-to-track-average-cost-basis-across-multiple-buys',
     title: 'How to Track Average Cost Basis Across Multiple Buys',
     date: 'July 2026',
