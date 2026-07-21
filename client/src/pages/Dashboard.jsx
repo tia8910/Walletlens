@@ -418,7 +418,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
 
 // ── AI Analysis panel ─────────────────────────────────────────────────────
 function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoading }) {
-  // AISellPlan is rendered at the bottom of the AI tab
+  // Smart Sell Plan (AISellPlan) now lives in the Targets tab.
   const { t } = useLanguage()
   const ai = useMemo(
     () => computeAI(enriched, prices, transactions, totalValue),
@@ -629,8 +629,6 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           ))}
         </div>
       </div>
-
-      <Suspense fallback={<TabFallback />}><AISellPlan enriched={enriched} prices={prices} /></Suspense>
     </div>
   )
 }
@@ -2924,6 +2922,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
           )
         })
       )}
+
+      {/* Smart Sell Plan — technical-analysis exit strategy (moved here from Analysis) */}
+      <Suspense fallback={<TabFallback />}>
+        <AISellPlan enriched={enriched} prices={prices} />
+      </Suspense>
     </div>
   )
 }
