@@ -317,7 +317,7 @@ export default function Landing() {
           <FeatureCard delay={160} accent="248,113,113"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>}
             title="🔓 Token Unlock Alarms"
-            desc="20 major tokens tracked for upcoming unlock cliffs. See severity, monthly unlock %, and exact date right on your holding card — no nasty surprises on unlock day."
+            desc="20 major tokens tracked for upcoming unlock cliffs. See severity, monthly unlock %, and exact date right on your holding card — no surprises on unlock day."
           />
           <FeatureCard delay={0} accent="167,139,250"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
