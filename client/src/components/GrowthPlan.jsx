@@ -85,7 +85,7 @@ const PRESET_MIXES = {
 }
 
 /* ── Monte-Carlo simulation ─────────────────────────────────────────────── */
-function simulate({ start, monthly, months, mu, sig, goal, paths = 400, seed = 42 }) {
+function simulate({ start, monthly, months, mu, sig, goal, paths = 300, seed = 42 }) {
   const rnd = mulberry32(seed)
   // mu is a geometric CAGR (historical stated returns already embed volatility
   // drag), so the median path compounds at mu and P10/P90 fan around it.
@@ -258,9 +258,15 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   const [preset, setPreset] = useState('current')
   const [ai, setAi] = useState({ state: 'idle' })
 
+  // Key the (heavy) profile on stable primitives, not the array identities of
+  // `enriched`/`transactions` — Coach re-renders (price polls, etc.) hand us new
+  // array refs each time, which otherwise re-ran the whole Monte-Carlo every
+  // render and made the panel flash. Recomputes only when the data meaningfully
+  // changes.
   const profile = useMemo(
     () => (open && enriched.length ? buildProfile(enriched, totalValue, totalInvested, transactions) : null),
-    [open, enriched, totalValue, totalInvested, transactions]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, Math.round(totalValue), Math.round(totalInvested), enriched.length, transactions.length]
   )
 
   const inputs = profile && {
@@ -282,22 +288,23 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   // lever, not Monte-Carlo noise between different random sequences.
   const levers = useMemo(() => {
     if (!profile || !sim || !inputs) return []
-    const baseline = simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7 })
+    const LP = 160 // lighter path count for the lever what-ifs (mobile-friendly)
+    const baseline = simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP })
     const base = baseline.p50Terminal
     const runs = [
       { id: 'contrib', label: `Add $100/mo (→ $${fmtN(inputs.monthly + 100)})`,
-        sim: simulate({ start: totalValue, monthly: inputs.monthly + 100, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7 }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly + 100, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP }) },
       { id: 'time', label: 'Stay invested 2 more years',
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months + 24, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7 }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months + 24, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP }) },
       { id: 'derisk', label: 'Rebalance to a balanced mix',
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(PRESET_MIXES.balanced), goal: profile.goal, seed: 7 }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(PRESET_MIXES.balanced), goal: profile.goal, seed: 7, paths: LP }) },
     ]
     if ((profile.weights.cash || 0) > 0.25) {
       const w = { ...profile.weights }
       const move = Math.min(w.cash - 0.10, 0.5)
       w.cash -= move; w.stocks = (w.stocks || 0) + move * 0.6; w.crypto_large = (w.crypto_large || 0) + move * 0.4
       runs.push({ id: 'deploy', label: `Deploy idle cash (${Math.round((profile.weights.cash) * 100)}% → 10%)`,
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(w), goal: profile.goal, seed: 7 }) })
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(w), goal: profile.goal, seed: 7, paths: LP }) })
     }
     return runs
       .map(r => {

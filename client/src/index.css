@@ -4335,8 +4335,14 @@ tr:last-child td { border-bottom: none; }
 /* ═══ AI Decision Engine ═══ */
 /* ── Grow My Net Worth (GrowthPlan) ───────────────────────────────────── */
 .gp-trigger { margin-top: 0.85rem; }
-.gp-panel { max-width: 640px; }
-.gp-body { padding: 1rem 1.15rem 1.25rem; overflow-y: auto; }
+/* Bottom-sheet like the Decision Engine panel: full width, centered on wide
+   screens (the base .ade-overlay is a bottom-flex row, so cap width + auto
+   margins instead of a bare max-width that left-aligns and leaks the backdrop). */
+.gp-panel { width: 100%; max-width: 720px; margin: 0 auto; }
+/* The shared .ade-panel-header is always dark, so keep the title light in both
+   themes (var(--g-ink) is dark in light mode → unreadable on the dark header). */
+.gp-panel .ade-panel-title { color: #eafff5; }
+.gp-body { padding: 1rem 1.15rem 1.5rem; }
 .gp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }
 .gp-chip {
   font-size: 0.72rem; color: var(--text2);
