@@ -1,36 +1,48 @@
 package live.walletlens.twa;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 
 /**
- * Pre-launch permission gate.
+ * Pre-launch permission gate — the app's launcher entry point.
  *
- * This is the app's launcher entry point. It asks for POST_NOTIFICATIONS and
- * only then forwards to the TWA {@link LauncherActivity}.
+ * Requests POST_NOTIFICATIONS and only then forwards to the TWA
+ * {@link LauncherActivity}. A dedicated activity is used because the
+ * AndroidBrowserHelper LauncherActivity finishes itself the moment it launches
+ * the browser, which dismisses any permission dialog requested there before the
+ * user can respond — that's why the app "never asked".
  *
- * Why a dedicated activity? The AndroidBrowserHelper LauncherActivity finishes
- * itself the moment it launches the browser (Custom Tab), which dismisses any
- * permission dialog requested there before the user can respond — that's why
- * the app "never asked" for notification permission. This activity does nothing
- * but show the dialog, wait for the result, then start the TWA, so the dialog
- * is never torn down early. It also cannot crash the TWA launch.
+ * Extends {@link ComponentActivity} so it can use the modern
+ * {@code registerForActivityResult} permission API (more reliable than the old
+ * onRequestPermissionsResult callback) without needing a Theme.AppCompat theme.
  *
- * Uses a plain {@link Activity} (not AppCompat) so it can carry the app's
- * translucent theme without a Theme.AppCompat requirement.
+ * The handoff launches {@link LauncherActivity} as a fresh task root
+ * ({@code NEW_TASK | CLEAR_TASK}). This matters: if LauncherActivity is started
+ * inside this gate's task it is NOT the task root, and the AndroidBrowserHelper
+ * base class then relaunches/bails instead of opening the TWA — which showed up
+ * as "granted the permission but the app didn't open".
  */
-public class NotificationPermissionActivity extends Activity {
+public class NotificationPermissionActivity extends ComponentActivity {
 
     private static final String TAG = "WalletLensPermGate";
-    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 4200;
+
+    private final ActivityResultLauncher<String> requestPermission =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestPermission(),
+                    granted -> {
+                        Log.d(TAG, "POST_NOTIFICATIONS granted=" + granted);
+                        proceed();
+                    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +57,7 @@ public class NotificationPermissionActivity extends Activity {
         if (needsRequest) {
             Log.d(TAG, "Requesting POST_NOTIFICATIONS before launching TWA");
             try {
-                requestPermissions(
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_CODE_POST_NOTIFICATIONS);
+                requestPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
             } catch (Exception e) {
                 Log.w(TAG, "permission request failed: " + e.getMessage());
                 proceed();
@@ -57,23 +67,15 @@ public class NotificationPermissionActivity extends Activity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        // Proceed regardless of grant/deny — the TWA must always launch.
-        proceed();
-    }
-
-    /** Hand off to the TWA launcher and finish this gate. */
+    /** Hand off to the TWA launcher as a fresh task root, then finish. */
     private void proceed() {
         Intent i = new Intent(this, LauncherActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        // Carry through any data/extras from a deep link that landed here.
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // Carry through any deep-link data that landed on the gate.
         Intent source = getIntent();
         if (source != null && source.getData() != null) {
-            i.setData(source.getData());
+            Uri data = source.getData();
+            i.setData(data);
         }
         startActivity(i);
         finish();
