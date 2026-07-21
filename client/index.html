@@ -80,9 +80,6 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
@@ -168,9 +165,6 @@
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
     <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
 
-    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
-         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
@@ -193,7 +187,8 @@
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
 
     <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
+         stock price proxy; also the first CORS fallback tried for every
+         price/API fetch. This is one of the highest-latency origins because
          Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
          the first AI or proxied fetch. crossorigin because all requests are CORS. -->
     <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
