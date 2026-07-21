@@ -91,6 +91,19 @@
             </activity>
         
 
+        <!-- Permission gate: the launcher entry point. Requests notification
+             permission, then forwards to LauncherActivity (the TWA). See
+             NotificationPermissionActivity for why this is a separate activity. -->
+        <activity android:name=".NotificationPermissionActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity android:name="LauncherActivity"
             android:alwaysRetainTaskState="true"
             android:label="@string/launcherName"
@@ -153,11 +166,6 @@
             
 
             
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>

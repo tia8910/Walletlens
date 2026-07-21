@@ -88,20 +88,32 @@ uploaded to the Play testing track was `versionCode 32` / `versionName 1.9.1`
 override the gradle values. The current fix train:
 
 - `1.9.4` / `35` — first-launch crash fix (`super.onResume()`).
-- `1.9.5` / `36` — notification-permission + background-notifications fix
-  (below). **Upload this one** to the closed-test track.
+- `1.9.5` / `36` — background-notifications scheduling fix.
+- `1.9.6` / `37` — notification permission dialog now shown via a dedicated
+  pre-launch gate activity (below). **Upload this one** to the closed-test track.
 
 ## 5a. Notification permission & background alerts
 
-The custom "request the permission ourselves in `LauncherActivity`" logic was
-removed. It raced with the base class finishing the activity to launch the
-TWA, so the permission dialog flashed and never appeared. `POST_NOTIFICATIONS`
-is now requested by the AndroidBrowserHelper base class at launch (via its
-`NotificationPermissionRequestActivity`), which correctly defers the TWA launch
-until the user responds. Background alerts (`NotificationScheduler` →
-`PeriodicUpdateWorker` on WorkManager) are now scheduled **unconditionally** —
-enqueuing needs no permission, and the worker delivers once permission exists,
-so price alerts arrive while the app is closed.
+Requesting `POST_NOTIFICATIONS` from inside `LauncherActivity` never worked:
+that activity finishes itself the instant it launches the browser, which
+dismisses the permission dialog before the user can respond (and the
+AndroidBrowserHelper base class does **not** reliably auto-request it). The app
+therefore "never asked".
+
+Fix: a dedicated **`NotificationPermissionActivity`** is now the launcher entry
+point (`MAIN`/`LAUNCHER` in the manifest). It does nothing but request the
+permission, wait for the result, then forward to `LauncherActivity` (the TWA) —
+so the dialog is shown reliably and is never torn down early. `LauncherActivity`
+keeps its verified `https` deep-link filter and remains the TWA target.
+
+Background alerts (`NotificationScheduler` → `PeriodicUpdateWorker` on
+WorkManager) are scheduled **unconditionally** — enqueuing needs no permission,
+and the worker delivers once permission exists, so price alerts arrive while the
+app is closed.
+
+Note: if a device was tested repeatedly and the permission was denied twice
+**without a full uninstall**, Android suppresses the dialog for that install
+("don't ask again"). Fully uninstall before re-testing to reset that state.
 
 ## 6. Pre-submission smoke test
 
