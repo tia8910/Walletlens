@@ -7,6 +7,7 @@ import Icon from '../components/Icon'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
+const GrowthPlan       = lazy(() => import('../components/GrowthPlan'))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
 // The wallet evaluation adapts to what's actually in the portfolio: a stock
@@ -295,6 +296,13 @@ export default function Coach() {
           )}
           <Suspense fallback={<div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>Loading engine…</div>}>
             <AIDecisionEngine
+              enriched={enriched}
+              prices={prices}
+              transactions={transactions}
+              totalValue={totalValue}
+              totalInvested={totalInvested}
+            />
+            <GrowthPlan
               enriched={enriched}
               prices={prices}
               transactions={transactions}

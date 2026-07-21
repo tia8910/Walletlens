@@ -4333,6 +4333,71 @@ tr:last-child td { border-bottom: none; }
 }
 
 /* ═══ AI Decision Engine ═══ */
+/* ── Grow My Net Worth (GrowthPlan) ───────────────────────────────────── */
+.gp-trigger { margin-top: 0.85rem; }
+.gp-panel { max-width: 640px; }
+.gp-body { padding: 1rem 1.15rem 1.25rem; overflow-y: auto; }
+.gp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }
+.gp-chip {
+  font-size: 0.72rem; color: var(--text2);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 0.28rem 0.6rem; border-radius: 999px; white-space: nowrap;
+}
+.gp-chip b { color: var(--text); text-transform: capitalize; }
+.gp-chart { width: 100%; height: 200px; display: block; border-radius: 12px; background: rgba(var(--g-rgb),0.04); }
+.gp-legend { display: flex; gap: 0.9rem; flex-wrap: wrap; margin: 0.45rem 0 0.9rem; font-size: 0.68rem; color: var(--text2); }
+.gp-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 0.3em; vertical-align: -1px; }
+.gp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; margin-bottom: 0.95rem; }
+.gp-stat {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.6rem 0.7rem; display: flex; flex-direction: column; gap: 0.15rem;
+}
+.gp-stat-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text2); }
+.gp-stat-val { font-size: 1.02rem; font-weight: 800; }
+.gp-controls { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.gp-slider { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: var(--text2); }
+.gp-slider b { color: var(--text); }
+.gp-slider input[type="range"] { width: 100%; accent-color: var(--g); }
+.gp-presets { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.gp-preset {
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.74rem;
+  font-weight: 600; cursor: pointer; text-transform: capitalize;
+}
+.gp-preset.active { background: var(--g); border-color: var(--g); color: #fff; }
+.gp-section { margin-bottom: 1rem; }
+.gp-h { margin: 0 0 0.5rem; font-size: 0.85rem; }
+.gp-lever { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.45rem 0; border-top: 1px solid var(--border); }
+.gp-lever:first-of-type { border-top: none; }
+.gp-lever-rank {
+  width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%;
+  background: rgba(var(--g-rgb),0.15); color: var(--g-ink);
+  font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.gp-lever-txt { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.8rem; }
+.gp-lever-txt span { color: var(--text2); font-size: 0.72rem; }
+.gp-stones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.gp-stone {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.55rem 0.6rem; display: flex; flex-direction: column; gap: 0.1rem;
+  font-size: 0.86rem; text-align: center;
+}
+.gp-stone span { font-size: 0.68rem; color: var(--text2); }
+.gp-headline { font-weight: 700; font-size: 0.9rem; margin: 0 0 0.4rem; }
+.gp-narrative { font-size: 0.8rem; color: var(--text2); margin: 0 0 0.6rem; }
+.gp-action { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.8rem; padding: 0.3rem 0; }
+.gp-action-n {
+  width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; margin-top: 1px;
+  background: rgba(var(--g-rgb),0.15); color: var(--g-ink);
+  font-size: 0.66rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.gp-disclaimer { font-size: 0.64rem; color: var(--text-sub); margin: 0.25rem 0 0; }
+@media (max-width: 480px) {
+  .gp-stats, .gp-stones { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+  .gp-stat-val { font-size: 0.9rem; }
+}
+
 /* ── AI Decision Engine — dynamic design ─────────────────────────────── */
 .ade-trigger {
   width: 100%; display: flex; align-items: center; gap: 0.85rem;
