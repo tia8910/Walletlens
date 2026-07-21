@@ -45,16 +45,31 @@ Declare exactly this (matches the app after this branch):
   functionality if asked.
 - Privacy policy URL: `https://walletlens.live/privacy`.
 
-## 3. Firebase — removed (no action)
+## 3. First-launch crash — FIXED (the real root cause)
 
-Firebase has been **removed entirely** (the `google-services` plugin,
-`firebase-analytics` dependency, and stub `google-services.json` generation).
-It was shipped with a stub config and had no real Firebase project, which made
-Firebase's `FirebaseInitProvider` throw at process start — crashing the app on
-first launch ("this app has a bug"). Native analytics is optional; the web
-layer still reports to Google Analytics. If you ever want native Firebase back,
-add a **real** `google-services.json` from a real project before re-adding the
-plugin/dependency — never ship the stub.
+The Play Console **Crashes & ANRs** report identified the actual first-run
+crash: `android.util.SuperNotCalledException` in `Activity.performResume`
+(affected 1.9.1 / 1.8.17 / 1.8.0 / 1.7.6). `LauncherActivity.onResume()`
+returned **without calling `super.onResume()`** while the notification-permission
+dialog was up ("deferring the TWA launch"). Android's framework requires every
+`onResume()` to call through to super, so on a first run — before the
+notification permission was granted — it threw and showed "this app has a bug".
+It only reproduced pre-grant, which is why it looked like a cold-start/cache
+issue. A second crash was a `NullPointerException` from calling
+`getLaunchingUrl()` too early in `onCreate`.
+
+Both are fixed in `LauncherActivity.java`: `super.onResume()` is now always
+called, the permission request no longer gates the launch, and the launch URL
+is read defensively from the intent. **This must ship as a new build (see §5)
+to the testing track — the tracks were still on 1.9.1, which is why testers
+kept crashing.**
+
+Firebase was also removed earlier (the `google-services` plugin,
+`firebase-analytics` dependency, and stub `google-services.json`). That was a
+real cleanup — a stub config is a latent init risk — but it was **not** the
+cause of this crash. If you ever want native Firebase back, add a **real**
+`google-services.json` before re-adding the plugin/dependency; never ship the
+stub.
 
 ## 4. $LENZ / airdrop pages are web-only
 
@@ -67,10 +82,12 @@ no token sales.
 
 ## 5. Versioning
 
-`versionCode` must strictly increase with every Play upload. Current gradle
-value: `versionCode 31` / `versionName 1.9.0`. The `build-aab.yml` workflow
-inputs override both — always pass the next code (32, 33, …). There are no
-misleading defaults anymore; the workflow requires explicit values.
+`versionCode` must strictly increase with every Play upload. The last build
+uploaded to the Play testing track was `versionCode 32` / `versionName 1.9.1`
+(which still had the `onResume` crash). The `build-aab.yml` workflow inputs
+override the gradle values — the next build carrying the crash fix must use
+**`versionCode 35` / `versionName 1.9.4`** (or higher) and be uploaded to the
+closed-test track so testers actually receive it.
 
 ## 6. Pre-submission smoke test
 

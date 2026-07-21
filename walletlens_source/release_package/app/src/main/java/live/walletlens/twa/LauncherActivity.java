@@ -20,12 +20,21 @@ import androidx.core.content.ContextCompat;
 /**
  * WalletLens TWA LauncherActivity.
  *
- * Notification permission is ALWAYS requested FIRST (before the TWA can launch Chrome).
- * The TWA launch (super.onResume) is DEFERRED until the user responds to the
- * permission dialog. This guarantees the permission dialog is never swallowed
- * by Chrome opening and finishing the activity.
+ * Requests the notification permission on first launch and runs the cold-start
+ * biometric gate, then lets the AndroidBrowserHelper base class launch the TWA
+ * normally.
  *
- * After permission is resolved, the TWA launch proceeds and biometric check runs.
+ * IMPORTANT — first-run crash history: an earlier version tried to "defer" the
+ * TWA launch by returning from {@link #onResume()} WITHOUT calling
+ * {@code super.onResume()} while the notification-permission dialog was up.
+ * Android's framework requires every {@code onResume()} to call through to
+ * super; skipping it throws {@link android.util.SuperNotCalledException} in
+ * {@code Activity.performResume()} and crashed the app on first launch with
+ * "this app has a bug" (it only reproduced before the permission was granted,
+ * which is why it looked like a cold-start / cache issue). super.onResume() is
+ * now ALWAYS called. Notification permission no longer gates the launch — the
+ * system dialog coexists with the launching TWA, and the library also handles
+ * POST_NOTIFICATIONS on its own.
  */
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
@@ -35,7 +44,7 @@ public class LauncherActivity
     private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
 
     private boolean askedPermission = false;
-    private boolean permissionResolved = false;
+    private boolean postLaunchDone = false;
     private String savedLaunchUrl = null;
 
     @Override
@@ -48,51 +57,54 @@ public class LauncherActivity
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         }
 
-        // Save launch URL early
-        Uri launchUri = getLaunchingUrl();
-        if (launchUri != null) {
-            savedLaunchUrl = launchUri.toString();
-            Log.d(TAG, "Saved launch URL: " + savedLaunchUrl);
+        // Record the launch URL for analytics / biometric redirect. Read it
+        // defensively from the intent — calling getLaunchingUrl() here (before
+        // the base class has finished initialising) previously threw an NPE.
+        try {
+            Intent intent = getIntent();
+            Uri data = intent != null ? intent.getData() : null;
+            if (data != null) {
+                savedLaunchUrl = data.toString();
+                Log.d(TAG, "Saved launch URL: " + savedLaunchUrl);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "could not read launch URL: " + e.getMessage());
         }
 
-        // Handle web app intents
+        // Handle custom walletlens:// intents (biometric enable/disable/unlock).
         handleWebAppIntent(getIntent());
 
-        // ── REQUEST NOTIFICATION PERMISSION FIRST ──────────────────────
-        // We request BEFORE the TWA launches Chrome, so the dialog
-        // is guaranteed to appear on this activity.
+        // Ask for the notification permission on first launch. This does NOT
+        // gate the TWA launch — the base class proceeds normally and the system
+        // dialog appears alongside it.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
                 askedPermission = true;
-                permissionResolved = false;
-                requestPermissions(
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_CODE_POST_NOTIFICATIONS);
-                // Don't proceed further — TWA launch is deferred to onRequestPermissionsResult
-                return;
+                try {
+                    requestPermissions(
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            REQUEST_CODE_POST_NOTIFICATIONS);
+                } catch (Exception e) {
+                    Log.w(TAG, "permission request failed: " + e.getMessage());
+                }
             }
         }
 
-        // Permission already granted (or pre-Android 13)
-        permissionResolved = true;
+        // Cold-start biometric gate. If a lock is required this redirects to
+        // BiometricActivity and finishes, so the TWA is not shown underneath.
         handleColdStartBiometric();
     }
 
     @Override
     protected void onResume() {
-        // If permission was asked but not yet resolved, DEFER the TWA launch.
-        // Calling super.onResume() would make the TWA launch Chrome and
-        // finish this activity, hiding the permission dialog.
-        if (askedPermission && !permissionResolved) {
-            Log.d(TAG, "Deferring TWA launch — waiting for permission response");
-            return; // NOT calling super.onResume()
-        }
-
-        // Permission resolved — proceed with normal TWA lifecycle
+        // ALWAYS call through to super — the framework enforces this, and the
+        // base class uses it to launch the TWA. (See the class comment above.)
         super.onResume();
+
+        if (postLaunchDone) return;
+        postLaunchDone = true;
 
         // Everything below is best-effort telemetry/notifications — never let it
         // crash the launch (a throw here shows as "this app has a bug" on start).
@@ -101,14 +113,14 @@ public class LauncherActivity
                 AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
             }
 
-            // Schedule background notifications if permission is granted
+            // Schedule background notifications if permission is granted.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                     || ContextCompat.checkSelfPermission(this,
                         Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                 fireTestNotificationIfNeeded();
                 NotificationScheduler.schedule(this);
                 if (!askedPermission) {
-                    // Permission was already granted before this session
+                    // Permission was already granted before this session.
                     NotificationScheduler.scheduleImmediate(this);
                 }
             }
@@ -216,7 +228,6 @@ public class LauncherActivity
 
         if (requestCode != REQUEST_CODE_POST_NOTIFICATIONS) return;
 
-        permissionResolved = true;
         boolean granted = grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
 
@@ -236,17 +247,5 @@ public class LauncherActivity
                     "Enable in: Settings > Apps > WalletLens > Notifications",
                     Toast.LENGTH_LONG).show();
         }
-
-        // ── Resume TWA launch now that permission is resolved ──────────
-        // The Handler ensures this runs after the callback returns.
-        new Handler(Looper.getMainLooper()).post(() -> {
-            handleColdStartBiometric();
-            onResume(); // permissionResolved=true → super.onResume() runs → TWA launches
-        });
-    }
-
-    @Override
-    protected Uri getLaunchingUrl() {
-        return super.getLaunchingUrl();
     }
 }
