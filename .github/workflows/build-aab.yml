@@ -88,6 +88,26 @@ jobs:
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
+      # Print the signing certificate's SHA-256 so it can be compared against
+      # client/public/.well-known/assetlinks.json. If this fingerprint is not
+      # in that file, TWA verification fails for this build: the app shows a
+      # URL bar and web notifications are attributed to Chrome instead of the
+      # app (notification delegation requires verification).
+      - name: Print signing cert SHA-256 (must be in assetlinks.json)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        working-directory: walletlens_source/release_package
+        run: |
+          echo "── keystore certificate ──"
+          keytool -list -v -keystore signingKey.keystore \
+            -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" \
+            | grep -E "SHA256:|Alias" || true
+          echo "── APK signer (authoritative) ──"
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+            | grep -i "SHA-256" || true
+
       - name: Upload signed AAB
         uses: actions/upload-artifact@v4
         with:
