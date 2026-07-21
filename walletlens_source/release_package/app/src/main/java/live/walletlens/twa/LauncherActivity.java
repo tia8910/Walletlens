@@ -1,6 +1,5 @@
 package live.walletlens.twa;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,36 +13,38 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 /**
  * WalletLens TWA LauncherActivity.
  *
- * Requests the notification permission on first launch and runs the cold-start
- * biometric gate, then lets the AndroidBrowserHelper base class launch the TWA
- * normally.
+ * Notification-permission handling is delegated to the AndroidBrowserHelper
+ * base class. Because {@code enableNotifications} is on, the base
+ * {@link com.google.androidbrowserhelper.trusted.LauncherActivity} requests
+ * {@code POST_NOTIFICATIONS} at launch via its own
+ * {@code NotificationPermissionRequestActivity} and defers launching the TWA
+ * until the user responds — so the permission dialog is shown reliably and is
+ * never killed by the browser launch.
  *
- * IMPORTANT — first-run crash history: an earlier version tried to "defer" the
- * TWA launch by returning from {@link #onResume()} WITHOUT calling
- * {@code super.onResume()} while the notification-permission dialog was up.
- * Android's framework requires every {@code onResume()} to call through to
- * super; skipping it throws {@link android.util.SuperNotCalledException} in
- * {@code Activity.performResume()} and crashed the app on first launch with
- * "this app has a bug" (it only reproduced before the permission was granted,
- * which is why it looked like a cold-start / cache issue). super.onResume() is
- * now ALWAYS called. Notification permission no longer gates the launch — the
- * system dialog coexists with the launching TWA, and the library also handles
- * POST_NOTIFICATIONS on its own.
+ * History / gotchas:
+ *  - Requesting the permission manually here (the previous approach) races with
+ *    the base class finishing this activity to launch the TWA, so the dialog
+ *    flashed and disappeared ("app doesn't ask for permission"). Removed.
+ *  - An even earlier version returned from onResume() WITHOUT calling
+ *    super.onResume() to "defer" the launch, which threw
+ *    android.util.SuperNotCalledException and crashed the app on first launch.
+ *    super.onResume() is ALWAYS called now.
+ *  - Background notifications are scheduled UNCONDITIONALLY (WorkManager needs
+ *    no permission to enqueue work). The worker simply won't display anything
+ *    until the permission is granted — which is why price alerts now arrive
+ *    even when the app is closed, without the user hunting through settings.
  */
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
 
     private static final String TAG = "WalletLensLauncher";
-    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
     private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
 
-    private boolean askedPermission = false;
     private boolean postLaunchDone = false;
     private String savedLaunchUrl = null;
 
@@ -74,24 +75,6 @@ public class LauncherActivity
         // Handle custom walletlens:// intents (biometric enable/disable/unlock).
         handleWebAppIntent(getIntent());
 
-        // Ask for the notification permission on first launch. This does NOT
-        // gate the TWA launch — the base class proceeds normally and the system
-        // dialog appears alongside it.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                askedPermission = true;
-                try {
-                    requestPermissions(
-                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                            REQUEST_CODE_POST_NOTIFICATIONS);
-                } catch (Exception e) {
-                    Log.w(TAG, "permission request failed: " + e.getMessage());
-                }
-            }
-        }
-
         // Cold-start biometric gate. If a lock is required this redirects to
         // BiometricActivity and finishes, so the TWA is not shown underneath.
         handleColdStartBiometric();
@@ -100,30 +83,31 @@ public class LauncherActivity
     @Override
     protected void onResume() {
         // ALWAYS call through to super — the framework enforces this, and the
-        // base class uses it to launch the TWA. (See the class comment above.)
+        // base class uses it to request the notification permission and then
+        // launch the TWA. (See the class comment above.)
         super.onResume();
 
         if (postLaunchDone) return;
         postLaunchDone = true;
 
-        // Everything below is best-effort telemetry/notifications — never let it
-        // crash the launch (a throw here shows as "this app has a bug" on start).
+        // Best-effort telemetry + notification scheduling — never let it crash
+        // the launch (a throw here shows as "this app has a bug" on start).
         try {
             if (savedLaunchUrl != null) {
                 AnalyticsHelper.getInstance().trackAppLaunchUrl(savedLaunchUrl);
             }
 
-            // Schedule background notifications if permission is granted.
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                    || ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                fireTestNotificationIfNeeded();
-                NotificationScheduler.schedule(this);
-                if (!askedPermission) {
-                    // Permission was already granted before this session.
-                    NotificationScheduler.scheduleImmediate(this);
-                }
-            }
+            // Schedule the background price-alert worker UNCONDITIONALLY.
+            // Enqueuing WorkManager work needs no runtime permission; the worker
+            // only displays a notification once POST_NOTIFICATIONS is granted
+            // (which the base class requests at launch). This is what makes
+            // alerts arrive while the app is closed.
+            NotificationScheduler.schedule(this);
+            NotificationScheduler.scheduleImmediate(this);
+
+            // Welcome/test notification — harmlessly dropped by the OS if the
+            // permission hasn't been granted yet.
+            fireTestNotificationIfNeeded();
         } catch (Exception e) {
             Log.w(TAG, "post-launch setup failed: " + e.getMessage());
         }
@@ -196,6 +180,16 @@ public class LauncherActivity
         int launches = prefs.getInt("launches", 0);
         if (launches >= TEST_NOTIF_MAX_LAUNCHES) return;
 
+        // Don't fire (or burn a launch slot) until the permission actually
+        // exists — otherwise the welcome notifications are silently consumed on
+        // the very first launches before the user has granted permission.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this,
+                    android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
         prefs.edit().putInt("launches", launches + 1).apply();
         new NotificationHelper(this).createChannels();
 
@@ -215,37 +209,6 @@ public class LauncherActivity
                     "Your portfolio is being monitored.",
                     "https://walletlens.live/dashboard");
             }, 2000);
-        }
-    }
-
-    // ── Permission result ────────────────────────────────────────────────
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode != REQUEST_CODE_POST_NOTIFICATIONS) return;
-
-        boolean granted = grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-
-        if (granted) {
-            Log.d(TAG, "Permission GRANTED — firing test notifications + scheduling worker");
-            try {
-                fireTestNotificationIfNeeded();
-                NotificationScheduler.schedule(this);
-                NotificationScheduler.scheduleImmediate(this);
-            } catch (Exception e) {
-                Log.w(TAG, "post-permission setup failed: " + e.getMessage());
-            }
-        } else {
-            Log.w(TAG, "Permission DENIED — showing rationale");
-            Toast.makeText(this,
-                    "⚠️ Notification permission is needed for price alerts and updates.\n" +
-                    "Enable in: Settings > Apps > WalletLens > Notifications",
-                    Toast.LENGTH_LONG).show();
         }
     }
 }

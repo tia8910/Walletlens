@@ -85,9 +85,23 @@ no token sales.
 `versionCode` must strictly increase with every Play upload. The last build
 uploaded to the Play testing track was `versionCode 32` / `versionName 1.9.1`
 (which still had the `onResume` crash). The `build-aab.yml` workflow inputs
-override the gradle values — the next build carrying the crash fix must use
-**`versionCode 35` / `versionName 1.9.4`** (or higher) and be uploaded to the
-closed-test track so testers actually receive it.
+override the gradle values. The current fix train:
+
+- `1.9.4` / `35` — first-launch crash fix (`super.onResume()`).
+- `1.9.5` / `36` — notification-permission + background-notifications fix
+  (below). **Upload this one** to the closed-test track.
+
+## 5a. Notification permission & background alerts
+
+The custom "request the permission ourselves in `LauncherActivity`" logic was
+removed. It raced with the base class finishing the activity to launch the
+TWA, so the permission dialog flashed and never appeared. `POST_NOTIFICATIONS`
+is now requested by the AndroidBrowserHelper base class at launch (via its
+`NotificationPermissionRequestActivity`), which correctly defers the TWA launch
+until the user responds. Background alerts (`NotificationScheduler` →
+`PeriodicUpdateWorker` on WorkManager) are now scheduled **unconditionally** —
+enqueuing needs no permission, and the worker delivers once permission exists,
+so price alerts arrive while the app is closed.
 
 ## 6. Pre-submission smoke test
 
