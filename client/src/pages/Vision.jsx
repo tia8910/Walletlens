@@ -785,6 +785,46 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────
+// ── "How Goals work" explainer (dismissible, remembered on-device) ────────
+function VisionExplainer() {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem('wl_vision_explained') !== '1' } catch { return true }
+  })
+  if (!open) return null
+  const dismiss = () => {
+    setOpen(false)
+    try { localStorage.setItem('wl_vision_explained', '1') } catch {}
+  }
+  const STEPS = [
+    { icon: 'folder', title: 'Buckets = purposes', desc: 'Split your net worth into goals — emergency fund, growth, a house deposit — instead of one undifferentiated pile.' },
+    { icon: 'target', title: 'Set a target & timeframe', desc: 'Give a bucket a dollar or % goal and a deadline; WalletLens shows how far off you are and the pace needed.' },
+    { icon: 'banknote', title: 'Runway & income', desc: 'Add monthly contributions or withdrawals to see funding progress and how many months a bucket can pay out.' },
+    { icon: 'sparkles', title: 'Auto-generate', desc: 'Tap Auto-plan and WalletLens builds a starter plan grouped by what you actually hold — then you fine-tune.' },
+  ]
+  return (
+    <div className="vp-explain">
+      <button className="vp-explain-x" onClick={dismiss} aria-label="Dismiss">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+      </button>
+      <div className="vp-explain-head">
+        <Icon name="map" size={16} />
+        <b>How Goals work</b>
+      </div>
+      <div className="vp-explain-grid">
+        {STEPS.map((s, i) => (
+          <div key={i} className="vp-explain-step">
+            <span className="vp-explain-ico"><Icon name={s.icon} size={15} /></span>
+            <div>
+              <span className="vp-explain-t">{s.title}</span>
+              <span className="vp-explain-d">{s.desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Vision() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -899,6 +939,64 @@ export default function Vision() {
       : b))
   }
 
+  // ── Auto-generate a starter plan from the user's real portfolio ──────────
+  // Groups holdings by asset class, creates a linked bucket per class present
+  // (plus an emergency fund and an "everything else" bucket), so a one-tap plan
+  // reflects what they actually own. Falls back to a generic 3-bucket plan when
+  // there are no holdings yet.
+  function autoGeneratePlan() {
+    const cat = { crypto: [], stocks: [], metals: [], cash: [], stable: [] }
+    for (const h of holdings) {
+      if (!h.coin_id) continue
+      if (isStablecoin(h.coin_id, h.coin_symbol)) { cat.stable.push(h.coin_id); continue }
+      const c = holdingCategory(h)
+      ;(cat[c] || cat.crypto).push(h.coin_id)
+    }
+
+    const existingNames = new Set(buckets.map(b => (b.name || '').toLowerCase()))
+    const hasRest = buckets.some(b => b.isRest)
+    const generated = []
+    const add = (o) => {
+      if (existingNames.has((o.name || '').toLowerCase())) return
+      generated.push(newBucket(o))
+    }
+
+    const safe = [...cat.cash, ...cat.stable]
+    if (safe.length) add({
+      name: 'Emergency Fund', type: 'emergency', targetPct: 10,
+      categories: ['cash', 'stablecoins'], linkedAssets: safe,
+      notes: 'Keep 3–6 months of expenses liquid so a crisis never forces you to sell investments at the wrong time.',
+    })
+    if (cat.crypto.length) add({
+      name: 'Crypto Growth', type: 'invest', targetPct: 40,
+      categories: ['crypto'], linkedAssets: cat.crypto,
+      notes: 'Your long-term crypto upside. Set sell targets in the Targets tab and take profits into strength.',
+    })
+    if (cat.stocks.length) add({
+      name: 'Stocks', type: 'hold',
+      categories: ['stocks'], linkedAssets: cat.stocks,
+      notes: 'Equity compounding — hold through volatility and rebalance about once a year.',
+    })
+    if (cat.metals.length) add({
+      name: 'Gold & Metals', type: 'hold',
+      categories: ['metals'], linkedAssets: cat.metals,
+      notes: 'Inflation hedge and ballast that steadies the portfolio when risk assets fall.',
+    })
+
+    // Generic starter plan when the user has no holdings to link yet.
+    if (generated.length === 0 && buckets.length === 0) {
+      add({ name: 'Emergency Fund', type: 'emergency', targetPct: 10, categories: ['cash', 'stablecoins'], notes: '3–6 months of expenses kept liquid.' })
+      add({ name: 'Growth Fund', type: 'invest', targetPct: 40, categories: ['crypto', 'stocks', 'metals'], notes: 'Your long-term wealth engine — where most compounding happens.' })
+      add({ name: 'Long-term Hold', type: 'hold', categories: ['crypto', 'stocks'], notes: "Core positions you won't touch for years." })
+    }
+
+    if (!hasRest) add({ name: 'Everything Else', type: 'rest', isRest: true, notes: 'Anything not yet assigned to a plan above shows up here automatically.' })
+
+    if (!generated.length) return
+    save([...buckets, ...generated])
+    track('vision_autogen', { created: generated.length, had: buckets.length })
+  }
+
   const totalMonthly = buckets.reduce((s, b) => s + (b.monthlyWithdrawal || 0), 0)
   const totalRunwayMonths = totalMonthly > 0 ? Math.floor(totalNW / totalMonthly) : null
 
@@ -970,10 +1068,18 @@ export default function Vision() {
           <h1 style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="map" size={22} />Goals</h1>
           <p>Plan every dollar — buckets, goals, and withdrawal runway in one view.</p>
         </div>
-        <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Export PDF
-        </button>
+        <div className="vp-header-actions">
+          {buckets.length > 0 && (
+            <button className="vp-autogen-btn" onClick={autoGeneratePlan} title="Fill in any missing buckets from your portfolio">
+              <Icon name="sparkles" size={14} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />
+              Auto-plan
+            </button>
+          )}
+          <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -1024,23 +1130,32 @@ export default function Vision() {
             </div>
           )}
 
+          {/* ── How it works explainer ── */}
+          <VisionExplainer />
+
           {/* ── Category breakdown ── */}
           {holdings.length > 0 && <CategoryBreakdown holdings={holdings} prices={prices} />}
 
           {/* ── Chart + buckets ── */}
           {buckets.length === 0 ? (
             <div className="vp-empty">
-              <div className="vp-empty-icon"><Icon name="folder" size={30} /></div>
-              <h2>No buckets yet</h2>
-              <p>Create your first bucket to start planning your portfolio vision.</p>
+              <div className="vp-empty-icon"><Icon name="map" size={30} /></div>
+              <h2>Build your plan in one tap</h2>
+              <p>Buckets split your net worth into purposes — an emergency fund, long-term growth, a house deposit — so you can see if every dollar is pulling its weight.</p>
               {holdings.length > 0 && (
                 <p className="vp-empty-tip">
-                  You have {holdings.length} holding{holdings.length !== 1 ? 's' : ''} worth {fmt(totalNW)} — create buckets to plan how each dollar is working for you.
+                  You have {holdings.length} holding{holdings.length !== 1 ? 's' : ''} worth {fmt(totalNW)}. Auto-generate a starter plan grouped by what you actually own, then fine-tune it.
                 </p>
               )}
-              <button className="vp-btn-primary vp-add-first" onClick={() => setEditTarget('new')}>
-                + Add First Bucket
-              </button>
+              <div className="vp-empty-actions">
+                <button className="vp-btn-primary vp-autogen-primary" onClick={autoGeneratePlan}>
+                  <Icon name="sparkles" size={15} style={{ verticalAlign: '-2px', marginRight: '0.4em' }} />
+                  Auto-generate my plan
+                </button>
+                <button className="vp-btn-ghost vp-add-first" onClick={() => setEditTarget('new')}>
+                  + Add manually
+                </button>
+              </div>
             </div>
           ) : (
             <>

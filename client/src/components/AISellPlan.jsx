@@ -218,7 +218,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
         <div>
           <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Smart Sell Plan</h3>
           <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>
-            Technical-analysis exit strategy — targets from real support/resistance, RSI, MACD &amp; trend. No API key needed.
+            A technical-analysis exit strategy — sell targets derived from live support and resistance, RSI, MACD, and trend.
           </p>
         </div>
         {!open && (

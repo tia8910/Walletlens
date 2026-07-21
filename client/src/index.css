@@ -4335,8 +4335,14 @@ tr:last-child td { border-bottom: none; }
 /* ═══ AI Decision Engine ═══ */
 /* ── Grow My Net Worth (GrowthPlan) ───────────────────────────────────── */
 .gp-trigger { margin-top: 0.85rem; }
-.gp-panel { max-width: 640px; }
-.gp-body { padding: 1rem 1.15rem 1.25rem; overflow-y: auto; }
+/* Bottom-sheet like the Decision Engine panel: full width, centered on wide
+   screens (the base .ade-overlay is a bottom-flex row, so cap width + auto
+   margins instead of a bare max-width that left-aligns and leaks the backdrop). */
+.gp-panel { width: 100%; max-width: 720px; margin: 0 auto; }
+/* The shared .ade-panel-header is always dark, so keep the title light in both
+   themes (var(--g-ink) is dark in light mode → unreadable on the dark header). */
+.gp-panel .ade-panel-title { color: #eafff5; }
+.gp-body { padding: 1rem 1.15rem 1.5rem; }
 .gp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }
 .gp-chip {
   font-size: 0.72rem; color: var(--text2);
@@ -6014,34 +6020,56 @@ tr:last-child td { border-bottom: none; }
 /* ── Sell Targets Tab ── */
 .dvx-targets-page { display: flex; flex-direction: column; gap: 1.25rem; padding-top: 0.25rem; }
 
-/* Sell targets table — Asset × Target 1, 2, 3… */
-.dvx-tgt-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.dvx-tgt-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 100%; }
-.dvx-tgt-table th {
-  text-align: left; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em;
+/* Sell targets table — Asset × Target 1, 2, 3…  (premium) */
+.dvx-tgt-table-wrap {
+  width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border-radius: 14px; border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(var(--g-rgb),0.05), transparent 60%);
+}
+.dvx-tgt-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; min-width: 100%; }
+.dvx-tgt-table thead th {
+  text-align: left; font-size: 0.63rem; font-weight: 800; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--text-sub);
-  padding: 0 0.7rem 0.55rem; white-space: nowrap;
+  padding: 0.7rem 0.8rem; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(var(--g-rgb),0.08), rgba(var(--g-rgb),0.02));
 }
-.dvx-tgt-th-asset { position: sticky; left: 0; background: var(--card-bg); z-index: 1; }
+.dvx-tgt-th-asset { position: sticky; left: 0; z-index: 2;
+  background: linear-gradient(180deg, rgba(var(--g-rgb),0.08), rgba(var(--g-rgb),0.02)), var(--card-bg); }
+.dvx-tgt-table tbody tr { transition: background 0.15s; }
+.dvx-tgt-table tbody tr:hover { background: rgba(var(--g-rgb),0.05); }
+.dvx-tgt-table tbody tr:hover .dvx-tgt-td-asset { background: rgba(var(--g-rgb),0.05), var(--card-bg); }
 .dvx-tgt-table td {
-  padding: 0.6rem 0.7rem; border-top: 1px solid rgba(255,255,255,0.06);
-  vertical-align: top; white-space: nowrap;
+  padding: 0.7rem 0.8rem; border-top: 1px solid var(--border);
+  vertical-align: middle; white-space: nowrap;
 }
-[data-wl-light] .dvx-tgt-table td { border-top-color: rgba(0,0,0,0.7); }
 .dvx-tgt-td-asset {
   position: sticky; left: 0; background: var(--card-bg); z-index: 1;
-  display: flex; flex-direction: column; gap: 0.1rem;
 }
-.dvx-tgt-td-asset strong { color: var(--text); font-weight: 700; }
-.dvx-tgt-now { font-size: 0.68rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.dvx-tgt-td-asset strong {
+  color: var(--text); font-weight: 800; font-size: 0.9rem; letter-spacing: 0.01em;
+  display: inline-block;
+}
+.dvx-tgt-now { font-size: 0.68rem; color: var(--text-sub); font-variant-numeric: tabular-nums; display: block; margin-top: 0.1rem; }
 .dvx-tgt-table td span { display: block; }
-.dvx-tgt-price { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
-.dvx-tgt-meta { font-size: 0.66rem; color: var(--text-muted); margin-top: 0.1rem; }
-.dvx-tgt-cell-reached .dvx-tgt-price { color: var(--g-ink); font-weight: 700; }
+/* Each target rendered as a soft tinted chip */
+.dvx-tgt-price {
+  display: inline-block; color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums;
+  background: rgba(var(--g-rgb),0.08); border: 1px solid rgba(var(--g-rgb),0.18);
+  padding: 0.16rem 0.5rem; border-radius: 8px; line-height: 1.35;
+}
+.dvx-tgt-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.28rem; }
+.dvx-tgt-cell-reached .dvx-tgt-price {
+  color: #fff; background: linear-gradient(135deg, var(--g), #0ea5e9); border-color: transparent;
+  box-shadow: 0 3px 10px rgba(var(--g-rgb),0.3);
+}
 .dvx-tgt-cell-reached .dvx-tgt-meta { color: var(--g-ink); font-weight: 700; }
-.dvx-tgt-empty { color: var(--text-sub); opacity: 0.4; }
+.dvx-tgt-empty { color: var(--text-sub); opacity: 0.45; font-style: italic; }
 .dvx-tgt-th-total { text-align: right !important; }
-.dvx-tgt-td-total { text-align: right; font-weight: 800; color: var(--g-ink); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dvx-tgt-td-total {
+  text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;
+  color: var(--g-ink); font-size: 0.9rem;
+}
 
 /* Add-target form with % selector */
 .dvx-tgt-form { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 0.75rem; }
@@ -12502,6 +12530,61 @@ button:not(:disabled):active,
 }
 .vp-btn-add:hover { border-color: var(--g-ink); background: rgba(var(--g-rgb), .06); }
 .vp-add-first { margin-top: 0; width: auto; border-style: solid; }
+.vp-empty-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 0.5rem; }
+.vp-btn-ghost {
+  padding: 0.7rem 1.1rem; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-muted); font-size: 0.88rem;
+  font-weight: 600; cursor: pointer; transition: background .15s, color .15s;
+}
+.vp-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+/* ── Auto-generate buttons (premium gradient) ── */
+.vp-autogen-primary,
+.vp-autogen-btn {
+  position: relative; overflow: hidden;
+  background: linear-gradient(120deg, #10b981 0%, #0ea5e9 55%, #8b5cf6 100%);
+  background-size: 180% 180%;
+  color: #fff; border: none; font-weight: 700; cursor: pointer;
+  animation: vp-gen-shift 5s ease-in-out infinite;
+  box-shadow: 0 6px 18px rgba(16,185,129,0.28);
+}
+.vp-autogen-primary { padding: 0.75rem 1.3rem; border-radius: 12px; font-size: 0.9rem; }
+.vp-autogen-btn { padding: 0.42rem 0.85rem; border-radius: 10px; font-size: 0.78rem; box-shadow: 0 4px 12px rgba(16,185,129,0.25); flex-shrink: 0; }
+.vp-autogen-primary::after,
+.vp-autogen-btn::after {
+  content: ''; position: absolute; inset: 0; left: -60%; width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  animation: vp-gen-shine 3.2s ease-in-out infinite; pointer-events: none;
+}
+.vp-autogen-primary:hover, .vp-autogen-btn:hover { filter: brightness(1.05); }
+@keyframes vp-gen-shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes vp-gen-shine { 0% { left: -60%; } 60%,100% { left: 130%; } }
+.vp-header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* ── "How Goals work" explainer ── */
+.vp-explain {
+  position: relative; margin-bottom: 1.25rem; padding: 1rem 1.1rem 1.1rem;
+  border-radius: 16px; border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(139,92,246,0.06));
+}
+.vp-explain-x {
+  position: absolute; top: 0.6rem; right: 0.6rem; background: none; border: none;
+  color: var(--text-muted); cursor: pointer; padding: 4px; line-height: 0; border-radius: 8px;
+}
+.vp-explain-x:hover { background: var(--surface-2); color: var(--text); }
+.vp-explain-head { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.75rem; font-size: 0.92rem; }
+.vp-explain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 1rem; }
+.vp-explain-step { display: flex; gap: 0.6rem; align-items: flex-start; }
+.vp-explain-ico {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(var(--g-rgb),0.14); color: var(--g-ink);
+}
+.vp-explain-step > div { display: flex; flex-direction: column; gap: 0.1rem; }
+.vp-explain-t { font-size: 0.8rem; font-weight: 700; }
+.vp-explain-d { font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; }
+@media (max-width: 560px) { .vp-explain-grid { grid-template-columns: 1fr; } }
+
 /* ── modal ── */
 .vp-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9500;
