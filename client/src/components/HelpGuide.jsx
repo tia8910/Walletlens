@@ -13,19 +13,19 @@ import { track } from '../analytics'
 const SECTIONS = [
   {
     icon: 'home', title: 'Dashboard', path: '/dashboard',
-    desc: 'Your home base. Total net worth, every holding, AI analysis, risk scores and alerts — all in one glance.',
+    desc: 'Your home base. Total net worth, every holding, portfolio analysis, risk scores and alerts — all in one glance.',
   },
   {
     icon: 'trend-up', title: 'Trades', path: '/transactions',
     desc: 'Log your buys & sells. WalletLens auto-tracks profit/loss, average cost and overall performance for you.',
   },
   {
-    icon: 'sparkles', title: 'Tools & AI Analysis', path: '/dashboard',
-    desc: 'Risk Scanner flags scams & rug-pulls, the AI Advisor grades your portfolio A–F, and the Sell-Plan builder maps how to hit your target.',
+    icon: 'sparkles', title: 'Tools & Portfolio Analysis', path: '/dashboard',
+    desc: 'Risk Scanner flags scams & rug-pulls, the Advisor grades your portfolio A–F, and the Sell-Plan builder maps how to hit your target.',
   },
   {
     icon: 'zap', title: 'Alpha', path: '/alpha',
-    desc: 'AI Alpha score, hidden gems and smart-money signals — tuned to the coins you actually hold.',
+    desc: 'Alpha score, hidden gems and smart-money signals — tuned to the coins you actually hold.',
   },
   {
     icon: 'whale', title: 'Whales', path: '/whales',

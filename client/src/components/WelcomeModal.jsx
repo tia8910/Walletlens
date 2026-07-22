@@ -29,7 +29,7 @@ const STEPS = [
     features: [
       { icon: '🔒', label: '100% Private' },
       { icon: '📊', label: 'Live P&L' },
-      { icon: '🤖', label: 'AI Insights' },
+      { icon: '🤖', label: 'Insights' },
       { icon: '🆓', label: 'Free Forever' },
     ],
     cta: 'Show me around',
@@ -69,9 +69,9 @@ const STEPS = [
     ring: 'rgba(96,165,250,0.5)',
     particles: ['🤖', '⚡', '🎯', '📡', '🔮', '🧠'],
     icon: '⚡',
-    eyebrow: 'AI POWERED',
+    eyebrow: 'SMART',
     title: 'Trade Smarter',
-    desc: 'Buy/sell signals, whale tracking, risk scanner, and AI portfolio advice — all built in, free.',
+    desc: 'Buy/sell signals, whale tracking, risk scanner, and portfolio advice — all built in, free.',
     cta: 'Love it →',
   },
   {

@@ -274,7 +274,7 @@ const Drawer = memo(function Drawer({ open, onClose }) {
           <div className="wl-drawer-label">Tools</div>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'ai' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
-            <span>AI Analysis</span>
+            <span>Portfolio Analysis</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'targets' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>

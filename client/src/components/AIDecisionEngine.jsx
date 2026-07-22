@@ -188,7 +188,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
         <span className="ade-trigger-brain">◈</span>
         <span className="ade-trigger-text">
           What Should I Do Right Now?
-          <span className="ade-trigger-sub">AI analyses your portfolio and gives you a verdict</span>
+          <span className="ade-trigger-sub">Analyses your portfolio and gives you a verdict</span>
         </span>
         <span className="ade-trigger-arrow">→</span>
       </button>
@@ -198,7 +198,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
           <div className="ade-panel" onClick={e => e.stopPropagation()}>
             <div className="ade-panel-header">
               <div className="ade-panel-title">
-                <span className="ade-title-icon">◈</span> AI Decision Engine
+                <span className="ade-title-icon">◈</span> Decision Engine
                 {result?.source === 'ai' && (
                   <span className="ade-ai-badge"><Icon name="sparkles" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude AI</span>
                 )}

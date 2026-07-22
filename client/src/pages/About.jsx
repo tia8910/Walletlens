@@ -61,7 +61,7 @@ export default function About() {
         <h2>Key Features</h2>
         <ul>
           <li><strong>Multi-asset tracking</strong> — Crypto (10,000+ coins via CoinGecko), US stocks (Stooq), gold and silver (live XAU/USD, XAG/USD), fiat currencies, and bonds.</li>
-          <li><strong>AI Portfolio Analysis</strong> — On-device intelligence that scores your portfolio health, runs stress tests, analyses entry quality, plans rebalancing, and displays a Fear &amp; Greed gauge — all computed from your own data.</li>
+          <li><strong>Portfolio Analysis</strong> — On-device intelligence that scores your portfolio health, runs stress tests, analyses entry quality, plans rebalancing, and displays a Fear &amp; Greed gauge — all computed from your own data.</li>
           <li><strong>Multi-target sell plans</strong> — Set up to five price targets per asset with progress bars and projected proceeds, so you always know when to take profit.</li>
           <li><strong>Whale Tracker</strong> — Monitor large Bitcoin transactions from the mempool, market movers, volume anomalies, and CoinGecko trending searches.</li>
           <li><strong>Smart trade entry</strong> — A bottom sheet with coin search, live price auto-fill, "Buy With" and "Sell For" counter-legs, and wallet tagging.</li>

@@ -223,7 +223,7 @@ export default function Coach() {
   const SECTIONS = [
     { id: 'engine',  label: 'Decision Engine', icon: 'zap' },
     { id: 'eval',    label: 'Wallet Score',    icon: 'search' },
-    { id: 'actions', label: 'AI Analysis',     icon: 'cpu' },
+    { id: 'actions', label: 'Portfolio Analysis',     icon: 'cpu' },
     { id: 'alpha',   label: 'Alpha',           icon: 'α' },
   ]
 
@@ -243,7 +243,7 @@ export default function Coach() {
             </svg>
           </div>
           <div>
-            <h1 className="coach-hero-title">AI Coach</h1>
+            <h1 className="coach-hero-title">Coach</h1>
             <p className="coach-hero-sub">Decision engine · wallet health · portfolio advice</p>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function Coach() {
         <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem', margin:'1rem 1rem' }}>
           <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="brain" size={40} /></div>
           <h3 style={{ marginBottom:'0.5rem' }}>Nothing to Coach Yet</h3>
-          <p className="muted" style={{ marginBottom:'1.25rem' }}>Add your first trade so the AI can analyse your portfolio and give personalised advice.</p>
+          <p className="muted" style={{ marginBottom:'1.25rem' }}>Add your first trade to get a full analysis of your portfolio with personalised advice.</p>
           <button className="coach-cta-btn" onClick={() => navigate('/transactions')}>
             + Add First Trade
           </button>
@@ -373,7 +373,7 @@ export default function Coach() {
         </div>
       )}
 
-      {/* ── AI Analysis ── */}
+      {/* ── Portfolio Analysis ── */}
       {activeSection === 'actions' && (
         <div style={{ padding: '1rem' }}>
           <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
@@ -381,7 +381,7 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Full AI Portfolio Analysis</div>
+              <div className="coach-action-title">Full Portfolio Analysis</div>
               <div className="coach-action-sub">Deep-dive analysis of your holdings, risk profile, and personalized recommendations powered by Claude AI</div>
             </div>
             <span className="coach-action-arrow">→</span>

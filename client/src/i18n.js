@@ -63,9 +63,9 @@ export const translations = {
     feat3Desc: 'Set a target, walk away. The moment price hits your level — audio alarm fires, your phone buzzes, a notification lands. No more sleeping on opportunities.',
     feat4Title: 'Break-Even Calculator',
     feat4Desc: 'Know exactly what price each holding needs to reach for you to be whole again. Your actual cost basis, per asset, right now.',
-    feat5Title: 'AI Decision Engine',
+    feat5Title: 'Decision Engine',
     feat5Desc: '"What Should I Do Right Now?" — one click gives you a HOLD/TRIM/ADD/SELL verdict for every position, with reasoning based on your real data.',
-    feat6Title: 'AI Portfolio Analysis',
+    feat6Title: 'Portfolio Analysis',
     feat6Desc: 'Health grade, stress tests (Bear/Sideways/Bull), top risks, rebalancing plan — seven analytical engines running on your actual data, not generic advice.',
     feat7Title: 'Sell Targets Planner',
     feat7Desc: 'Map out every exit before emotions take over. Set multiple price targets, see how close you are, and know exactly how much you will pocket at each level.',
@@ -80,7 +80,7 @@ export const translations = {
     feat12Title: '100% Private by Design',
     feat12Desc: 'Zero account. Zero cloud sync. Every byte stays on your device. Not even we can see your portfolio.',
     feat13Title: 'WalletLens Alpha',
-    feat13Desc: 'Deep-dive analytics for your crypto holdings. Live price enrichment, P&L per coin, momentum signals, and AI-powered HOLD/ADD/TRIM/SELL verdicts — all from your real portfolio data.',
+    feat13Desc: 'Deep-dive analytics for your crypto holdings. Live price enrichment, P&L per coin, momentum signals, and smart HOLD/ADD/TRIM/SELL verdicts — all from your real portfolio data.',
     feat14Title: '💡 Investment Hacks',
     feat14Desc: '18 expert tips across Entry, Risk, Strategy, Portfolio, Profit, Psychology, and Research — each expandable and shareable to X as a branded image with one tap.',
     feat15Title: '🎮 Crypto Guessr Game',
@@ -89,7 +89,7 @@ export const translations = {
     feat16Desc: 'Switch your performance chart between 4H, 1D, 7D, and 30D. Each timeframe shows a distinct volatile wave shape — sharp peaks and dips like a real crypto chart.',
 
     // ── Landing — AI showcase ────────────────────────────────────────────────
-    aiLabel: 'AI INTELLIGENCE',
+    aiLabel: 'MARKET INTELLIGENCE',
     aiH2: 'The analyst you never had — and never paid for',
     aiSub: 'Seven analytical engines run entirely on your device. No API keys, no subscriptions, no data sharing. Just deep maths on your real numbers.',
     aiFeat1Title: 'Portfolio Health Grade',
@@ -106,7 +106,7 @@ export const translations = {
     aiFeat6Desc: 'Mega, Large, Mid, Small, Micro — see how exposed you are to risk tiers and whether you are truly diversified or not.',
     aiFeat7Title: "Today's P&L Tracker",
     aiFeat7Desc: '24-hour gain or loss calculated from live prices against your cost basis. Know exactly how today treated you.',
-    aiFeat8Title: 'AI Decision Engine',
+    aiFeat8Title: 'Decision Engine',
     aiFeat8Desc: 'One button: "What Should I Do Right Now?" — scores momentum, concentration, P&L, and 24h moves to give you a HOLD / TRIM / ADD / SELL verdict per position.',
 
     // ── Landing — how it works ───────────────────────────────────────────────
@@ -138,7 +138,7 @@ export const translations = {
     // ── Landing — final CTA ──────────────────────────────────────────────────
     finalH2a: 'Stop guessing.',
     finalH2b: 'Start knowing.',
-    finalSub: 'Your portfolio deserves more than a spreadsheet and a prayer. WalletLens gives you the full picture — risks, opportunities, alerts, and AI analysis — all free, all private, all yours.',
+    finalSub: 'Your portfolio deserves more than a spreadsheet and a prayer. WalletLens gives you the full picture — risks, opportunities, alerts, and smart analysis — all free, all private, all yours.',
     finalBtn: 'Start for Free — No Account Needed',
 
     // ── Landing — footer & nav ───────────────────────────────────────────────
@@ -199,11 +199,11 @@ export const translations = {
     momentum: 'Momentum',
     pnlHealth: 'P&L Health',
     capSpread: 'Cap Spread',
-    aiInsights: 'AI Insights',
+    aiInsights: 'Insights',
     stressTest: 'Stress Test Scenarios',
     entryQuality: 'Entry Quality Analysis',
     rebalancePlanner: 'Rebalance Planner',
-    addHoldingsAI: 'Add holdings to unlock AI portfolio analysis.',
+    addHoldingsAI: 'Add holdings to unlock portfolio analysis.',
     allocation: 'Allocation',
     allocationInvested: 'Allocation (invested)',
     recentTransactions: 'Recent Transactions',
@@ -217,7 +217,7 @@ export const translations = {
     backupTitle: 'Backup & Restore',
     back: '← Back',
     demoData: 'DEMO DATA',
-    loadingAI: 'Loading AI analysis…',
+    loadingAI: 'Loading analysis…',
     generateBackup: 'Generate Backup Code',
 
     // Legacy keys kept for backward compat

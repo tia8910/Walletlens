@@ -484,7 +484,7 @@ export default function Landing() {
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </div>
             <h3 className="lp-feat-title">Voice Import</h3>
-            <p className="lp-feat-desc">Say "I bought 0.5 BTC at 65K" and the trade is logged. Works in English and Arabic. The only free tracker with AI voice input.</p>
+            <p className="lp-feat-desc">Say "I bought 0.5 BTC at 65K" and the trade is logged. Works in English and Arabic. The only free tracker with voice input.</p>
             <Link to="/add-holdings-by-voice" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
           </div>
           <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(96,165,250,0.18)' }}>
@@ -492,7 +492,7 @@ export default function Landing() {
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
             <h3 className="lp-feat-title">Screenshot Import</h3>
-            <p className="lp-feat-desc">Screenshot any exchange, broker, or wallet. AI reads the image and extracts every holding automatically. Works with Binance, Coinbase, Robinhood, and more.</p>
+            <p className="lp-feat-desc">Screenshot any exchange, broker, or wallet. Instantly reads the image and extracts every holding. Works with Binance, Coinbase, Robinhood, and more.</p>
             <Link to="/import-portfolio-from-screenshot" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
           </div>
           <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(251,146,60,0.18)' }}>
@@ -679,7 +679,7 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/academy')}>Academy</button>
           <span>·</span>
-          <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>AI Advisor</button>
+          <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>Advisor</button>
         </div>
       </section>
 

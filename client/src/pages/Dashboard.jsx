@@ -416,7 +416,7 @@ function computeAI(enriched, prices, transactions, totalValue) {
   }
 }
 
-// ── AI Analysis panel ─────────────────────────────────────────────────────
+// ── Portfolio Analysis panel ─────────────────────────────────────────────────────
 function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoading }) {
   // Smart Sell Plan (AISellPlan) now lives in the Targets tab.
   const { t } = useLanguage()
@@ -531,7 +531,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         </div>
       </div>
 
-      {/* AI Insights */}
+      {/* Insights */}
       <div className="glass-card ai-insights-card">
         <h4 className="ai-section-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aiInsights')}</h4>
         <div className="ai-insights-list">
@@ -1848,11 +1848,11 @@ const FEATURE_SLIDES = [
   { tag:'STOCKS & ETFs', icon:'trend-up', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
   { tag:'METALS',        icon:'diamond', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
   { tag:'CASH',          icon:'banknote', color:'var(--g-ink)', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
-  { tag:'AI ADVISOR',    icon:'sparkles',   color:'#818cf8', title:'AI Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
+  { tag:'ADVISOR',    icon:'sparkles',   color:'#818cf8', title:'Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
   { tag:'RISK SCANNER',  icon:'warning', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
   { tag:'RISK BUDGET',   icon:'sliders', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
   { tag:'SET TARGETS',   icon:'target', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
-  { tag:'SELL PLAN',     icon:'clipboard', color:'var(--g-ink)', title:'AI Sell Plan Generator',            desc:'Tell the AI your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
+  { tag:'SELL PLAN',     icon:'clipboard', color:'var(--g-ink)', title:'Sell Plan Generator',            desc:'Tell us your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
   { tag:'BUY/SELL TIMING',icon:'gauge',color:'var(--g-ink)', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
   { tag:'WHALE ALERTS',  icon:'flow', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
   { tag:'PRICE ALERTS',  icon:'bell', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
@@ -1863,7 +1863,7 @@ const FEATURE_SLIDES = [
   { tag:'ACADEMY',       icon:'graduation', color:'var(--g-ink)', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
   { tag:'INVESTMENT HACKS',icon:'lightbulb',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
   { tag:'VOICE',         icon:'mic', color:'var(--g-ink)', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. Crypto, stocks, gold & more. Multiple trades at once.' },
-  { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — AI reads every holding and logs your trades. No typing.' },
+  { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — it reads every holding and logs your trades. No typing.' },
   { tag:'PRIVACY',       icon:'lock', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
   { tag:'FREE',          icon:'award', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
 ]
@@ -2029,7 +2029,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
     { key:'wallet', icon:'banknote', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
     { key:'trade',  icon:'mic', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
     { key:'track',  icon:'bar-chart', label:'Track your net worth', desc:'Live prices, P&L and allocation across crypto, stocks, metals & cash.', done: enriched.length > 0, cta:{ label:'View dashboard', fn:onViewDashboard } },
-    { key:'ai',     icon:'sparkles',  label:'Get AI insights', desc:'Risk scanner, price targets and your personal AI advisor.', done: !!aiSeen, cta:{ label:'Open AI Analysis', fn:onOpenAI } },
+    { key:'ai',     icon:'sparkles',  label:'Get insights', desc:'Risk scanner, price targets and your personal portfolio advisor.', done: !!aiSeen, cta:{ label:'Open Portfolio Analysis', fn:onOpenAI } },
   ]
   const total = steps.length
   const doneCount = steps.filter(s => s.done).length
@@ -2404,7 +2404,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         Start your first trade
       </div>
       <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'1.1rem', lineHeight:1.65 }}>
-        Track crypto, stocks &amp; metals.<br/>Unlock AI signals, risk scores &amp; live charts.
+        Track crypto, stocks &amp; metals.<br/>Unlock smart signals, risk scores &amp; live charts.
       </div>
 
       {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
@@ -2511,7 +2511,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
   const [tool, setTool] = useState(initialTool || 'ai')
   const subTabs = [
-    { id: 'ai',     label: 'AI Analysis' },
+    { id: 'ai',     label: 'Portfolio Analysis' },
     { id: 'ta',     label: 'Technicals' },
     { id: 'risk',   label: 'Risk Scanner' },
   ]
@@ -4771,7 +4771,7 @@ export default function Dashboard() {
                                   { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
                                   { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
                                   { icon: '🔔', label: 'Set Price Alert', onClick: () => navigate('/dashboard', { state: { tab: 'alerts' } }) },
-                                  { icon: '📈', label: 'AI Analysis', onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }) },
+                                  { icon: '📈', label: 'Portfolio Analysis', onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }) },
                                   { divider: true },
                                   { icon: '📋', label: 'Copy Details', onClick: () => { try { navigator.clipboard?.writeText(h.coin_symbol?.toUpperCase() + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)'); } catch {} } },
                                 ]
@@ -5056,7 +5056,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* AI Decision Engine */}
+          {/* Decision Engine */}
           {enriched.length > 0 && (
             <Suspense fallback={<TabFallback />}><AIDecisionEngine
               enriched={enriched}
@@ -5265,7 +5265,7 @@ export default function Dashboard() {
                   {[
                     { icon:'notes', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
                     { icon:'mic', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
-                    { icon:'camera', label:'Screenshot', desc:'AI reads it', color:'244,114,182', fn:() => setImportMode('screenshot') },
+                    { icon:'camera', label:'Screenshot', desc:'Reads it for you', color:'244,114,182', fn:() => setImportMode('screenshot') },
                     { icon:'bar-chart', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
                     { icon:'folder', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
                   ].map(o => (

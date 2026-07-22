@@ -256,7 +256,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
     return (
       <div className="ai-adv-setup glass-card">
         <div className="ai-adv-setup-icon"><Icon name="sparkles" size={26} /></div>
-        <h3 className="ai-adv-setup-title">AI Portfolio Advisor</h3>
+        <h3 className="ai-adv-setup-title">Portfolio Advisor</h3>
         <p className="ai-adv-setup-sub">
           Powered by Claude — enter your Anthropic API key to get a CFA-level analysis of your portfolio.<br/>
           Your key is stored locally in your browser and sent only to Anthropic's API.
@@ -299,7 +299,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           className={`ai-adv-mode-btn ${mode === 'chat' ? 'active' : ''}`}
           onClick={() => setMode('chat')}
         >
-          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />AI Chat
+          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Chat
         </button>
         <button className="ai-adv-key-remove" onClick={removeKey} title="Remove API key">
           <Icon name="key" size={16} />

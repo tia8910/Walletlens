@@ -1,4 +1,4 @@
-// AI Portfolio Analysis card. Lifted out of Dashboard.jsx — receives the
+// Portfolio Analysis card. Lifted out of Dashboard.jsx — receives the
 // pre-computed `analysis` object as a prop and owns the local "expanded"
 // + "show stress test" state. No data fetching here, no recharts deps,
 // pure presentation.

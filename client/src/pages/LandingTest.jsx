@@ -100,8 +100,8 @@ const FEATURES = [
   { emoji: '🔍', title: 'Scam Catcher',          desc: 'Paste any contract address or token name. Instantly check for honeypots, hidden sell taxes, freeze authority, mint traps, and whale concentration.', color: '#dc2626', bg: '#fee2e2' },
   { emoji: '🔔', title: 'Smart Price Alerts',    desc: 'Set a target, walk away. The moment price hits — audio alarm fires, your phone buzzes, a notification lands. No more sleeping on opportunities.', color: '#ea580c', bg: '#ffedd5' },
   { emoji: '💰', title: 'Break-Even Calculator', desc: 'Know exactly what price each holding needs to reach for you to be whole again. Your actual cost basis, per asset, right now.', color: '#0284c7', bg: '#dbeafe' },
-  { emoji: '🧠', title: 'AI Decision Engine',    desc: '"What Should I Do Right Now?" — one click gives you a HOLD/TRIM/ADD/SELL verdict for every position, with reasoning from your real data.', color: '#7c3aed', bg: '#ede9fe' },
-  { emoji: '📊', title: 'AI Portfolio Analysis', desc: 'Health grade, stress tests (Bear/Sideways/Bull), top risks, rebalancing plan — seven analytical engines running on your actual data.', color: '#059669', bg: '#d1fae5' },
+  { emoji: '🧠', title: 'Decision Engine',    desc: '"What Should I Do Right Now?" — one click gives you a HOLD/TRIM/ADD/SELL verdict for every position, with reasoning from your real data.', color: '#7c3aed', bg: '#ede9fe' },
+  { emoji: '📊', title: 'Portfolio Analysis', desc: 'Health grade, stress tests (Bear/Sideways/Bull), top risks, rebalancing plan — seven analytical engines running on your actual data.', color: '#059669', bg: '#d1fae5' },
   { emoji: '🎯', title: 'Sell Targets Planner',  desc: 'Map out every exit before emotions take over. Set multiple price targets, see how close you are, know exactly how much you will pocket.', color: '#10b981', bg: '#d1fae5' },
   { emoji: '🐋', title: 'Whale Signal Tracker',  desc: 'See what the big money is doing. Accumulation signals, unusual volume, momentum shifts — the intel that usually costs thousands per month.', color: '#db2777', bg: '#fce7f3' },
   { emoji: '👛', title: 'Multi-Wallet Support',  desc: 'Track every wallet you own across exchanges and self-custody. See the complete picture, not just one slice.', color: '#d97706', bg: '#fef3c7' },
@@ -151,7 +151,7 @@ const AI_ITEMS = [
   { icon: '📊', title: 'Entry Quality Score',     desc: 'For every holding: how good was your entry vs the current price? Ranked and visualized so you know who is carrying the team.' },
   { icon: '💵', title: 'Market Cap Tier Map',     desc: 'Mega, Large, Mid, Small, Micro — see how exposed you are to risk tiers and whether you are truly diversified or not.' },
   { icon: '📅', title: 'Today\'s P&L Tracker',    desc: '24-hour gain or loss calculated from live prices against your cost basis. Know exactly how today treated you.' },
-  { icon: '🧭', title: 'AI Decision Engine',      desc: 'One button: "What Should I Do Right Now?" — scores momentum, concentration, P&L, and 24h moves into HOLD / TRIM / ADD / SELL.' },
+  { icon: '🧭', title: 'Decision Engine',      desc: 'One button: "What Should I Do Right Now?" — scores momentum, concentration, P&L, and 24h moves into HOLD / TRIM / ADD / SELL.' },
 ]
 
 const MOCK_ROWS = [
@@ -165,7 +165,7 @@ const FOOTER_NAV = [
   { label: 'Whale Tracker',  href: '/whales' },
   { label: 'Alpha',          href: '/alpha' },
   { label: 'Academy',        href: '/academy' },
-  { label: 'AI Advisor',     href: '/coach' },
+  { label: 'Advisor',     href: '/coach' },
 ]
 
 const FOOTER_LINKS = [

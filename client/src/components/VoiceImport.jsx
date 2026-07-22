@@ -2133,7 +2133,7 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'0.6rem', padding:'0.5rem 0.9rem', borderRadius:'10px', background:'rgba(129,140,248,0.1)', border:'1px solid rgba(129,140,248,0.3)' }}>
               <span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(129,140,248,0.35)', borderTopColor:'#818cf8', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
               <span style={{ fontSize:'0.8rem', color:'#818cf8', fontWeight:700 }}>
-                {isAr ? 'الذكاء الاصطناعي يحلل كلامك…' : 'AI is interpreting your trade…'}
+                {isAr ? 'الذكاء الاصطناعي يحلل كلامك…' : 'Reading your trade…'}
               </span>
             </div>
           )}

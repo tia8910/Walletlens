@@ -58,8 +58,8 @@ export default function TrackCoin() {
     : `Private by design — your holdings never leave your device; no exchange API keys required.`
 
   const aiBullet = isCrypto
-    ? `AI analysis — a health score, risk scan and the Magic Indicator direction for ${coin.symbol}.`
-    : `AI portfolio health score — see how your ${coin.symbol} position affects your overall portfolio.`
+    ? `Portfolio analysis — a health score, risk scan and the Magic Indicator direction for ${coin.symbol}.`
+    : `Portfolio health score — see how your ${coin.symbol} position affects your overall portfolio.`
 
   return (
     <div className="wl-app wl-app-landing">
@@ -97,7 +97,7 @@ export default function TrackCoin() {
             <li><strong>Live {coin.symbol} price</strong> and automatic profit/loss on every {tradeWord} you log.</li>
             <li><strong>All in one place</strong> — {sideByBullet}</li>
             <li><strong>{isStock ? 'No brokerage login needed' : isMetal ? 'No dealer login needed' : 'Private by design'}</strong> — {isStock ? 'enter holdings manually; your data stays on your device.' : isMetal ? 'enter your holdings manually; your data stays on your device.' : 'your holdings never leave your device; no exchange API keys required.'}</li>
-            <li><strong>{isCrypto ? 'AI analysis' : 'AI portfolio health score'}</strong> — {isCrypto ? `a health score, risk scan and the Magic Indicator direction for ${coin.symbol}.` : `see how your ${coin.symbol} position affects your overall portfolio.`}</li>
+            <li><strong>{isCrypto ? 'Portfolio analysis' : 'Portfolio health score'}</strong> — {isCrypto ? `a health score, risk scan and the Magic Indicator direction for ${coin.symbol}.` : `see how your ${coin.symbol} position affects your overall portfolio.`}</li>
           </ul>
         </section>
 

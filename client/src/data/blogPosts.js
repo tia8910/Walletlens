@@ -745,7 +745,7 @@ This is exactly how WalletLens works.
 
 5. **Check your P&L.** The Dashboard shows your total portfolio value (live), all-time P&L in dollars and percentage, and a breakdown by asset.
 
-## Reading the AI Analysis
+## Reading the Portfolio Analysis
 
 Once you have at least two or three holdings, tap the **AI** tab on the Dashboard. WalletLens runs seven analyses entirely on your device:
 
@@ -1902,7 +1902,7 @@ For a clean net-worth snapshot, public address tracking is a low-risk option. Fo
 
 ## Putting It All Together
 
-The safest portfolio tracker is one that never touches your exchange credentials in the first place. If a tool can give you live prices, P&L, allocation breakdowns, and AI-powered analysis — all computed locally, with no server involved — the API connection question becomes largely moot.
+The safest portfolio tracker is one that never touches your exchange credentials in the first place. If a tool can give you live prices, P&L, allocation breakdowns, and smart analysis — all computed locally, with no server involved — the API connection question becomes largely moot.
 
 WalletLens takes this approach across every asset class it covers: crypto, stocks, ETFs, gold, silver, real estate, and cash all land in a single net-worth view, with unrealized P&L and allocation charts computed on your device. Features like sell targets, a health score, a stress test, and a rebalance planner run locally too. Your data never leaves the browser.
 
@@ -3958,7 +3958,7 @@ When you open an allocation chart, four figures matter most:
 3. **Target vs actual** — How far is each slice from your intended allocation?
 4. **Concentration risk** — Is any single asset or category dangerously oversized?
 
-Many trackers show the first two but not the last two. If you're using [walletlens.live](https://walletlens.live), the allocation donut breaks down by category in real time and sits alongside the AI-powered rebalance planner, so you can see both the current state and the suggested action in the same view.
+Many trackers show the first two but not the last two. If you're using [walletlens.live](https://walletlens.live), the allocation donut breaks down by category in real time and sits alongside the smart rebalance planner, so you can see both the current state and the suggested action in the same view.
 
 ## How to Interpret Common Allocation Patterns
 

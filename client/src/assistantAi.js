@@ -70,7 +70,7 @@ export const FEATURES = [
   { route: '/dashboard?tab=watchlist',       label: 'Watchlist',            desc: 'Track assets you\'re interested in but don\'t own yet' },
 
   // Analysis & Intelligence
-  { route: '/dashboard?tab=tools&tool=ai',   label: 'AI Analysis',          desc: 'Deep AI-powered analysis of your portfolio with personalized recommendations' },
+  { route: '/dashboard?tab=tools&tool=ai',   label: 'Portfolio Analysis',          desc: 'Deep smart analysis of your portfolio with personalized recommendations' },
   { route: '/dashboard?tab=tools&tool=ta',   label: 'Technical Analysis',   desc: 'Technical indicators, momentum, RSI, MACD for your holdings' },
   { route: '/dashboard?tab=tools&tool=risk', label: 'Risk Scanner',         desc: 'Scan for concentration risk, liquidity risk, and volatility exposure' },
   { route: '/technicals',                    label: 'Technicals Page',      desc: 'Full technical analysis dashboard with multi-timeframe indicators' },
@@ -87,7 +87,7 @@ export const FEATURES = [
 
   // Learning & Community
   { route: '/academy',                       label: 'Academy',              desc: 'Learn about crypto, investing, and portfolio management' },
-  { route: '/coach',                         label: 'AI Coach',             desc: 'Get personalized portfolio advice and wallet health score' },
+  { route: '/coach',                         label: 'Coach',             desc: 'Get personalized portfolio advice and wallet health score' },
 
   // Tools & Calculators
   { route: '/rebalancing-calculator',        label: 'Rebalancing Tool',     desc: 'Calculate how to rebalance your portfolio for optimal allocation' },

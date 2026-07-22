@@ -82,7 +82,7 @@ export const FAQ_SECTIONS = [
     faqs: [
       {
         q: 'What does the AI analysis do?',
-        a: 'The AI Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice.',
+        a: 'The Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice.',
       },
       {
         q: 'Can I set price alerts?',
