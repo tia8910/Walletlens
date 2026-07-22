@@ -1076,29 +1076,46 @@ const TIMEFRAMES = [
   { id: '1Y',  label: '1Y',  pts: 64 },
   { id: 'ALL', label: 'All', pts: 64 },
 ]
-// Days covered by each timeframe (0 = intraday 4-hour window; ALL = 10 years,
-// effectively "everything we have").
-const TF_DAYS = { '4H': 0, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
+// Exact window covered by each timeframe, in HOURS. Using hours (not days)
+// keeps intraday frames honest: 4H is a real 4-hour window, not a rounded-up
+// day. ALL ≈ 10 years, effectively "everything we have".
+const TF_HOURS = { '4H': 4, '1D': 24, '7D': 168, '30D': 720, '90D': 2160, '1Y': 8760, 'ALL': 87600 }
+// Back-compat: some callers still read days per timeframe.
+const TF_DAYS = { '4H': 4 / 24, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
 const TF_PTS  = { '4H': 48, '1D': 48, '7D': 56, '30D': 60, '90D': 60, '1Y': 64, 'ALL': 64 }
 
-function buildPerfSeries(base, tf = '30D', transactions = []) {
-  const days = TF_DAYS[tf] ?? 30
+function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true) {
+  const hours = TF_HOURS[tf] ?? 720
+  const days = hours / 24
   const pts = TF_PTS[tf] ?? 60
   const b = Math.max(base || 10000, 1)
+  const now = Date.now()
+  const windowMs = hours * 60 * 60 * 1000
+  const startTime = now - windowMs
 
-  // ── Level 1: real snapshots (most accurate) ──────────────────────────────
-  if (days > 0) {
-    const snaps = getSnapshotsForDays(days)
+  // ── Level 1: real snapshots inside the selected window ────────────────────
+  // Only snapshots within [now-window, now] so the x-axis matches the frame.
+  // Anchor the series to span the full window and end at "now" = current value,
+  // so 4H really shows the last 4 hours (not a stretched sub-slice).
+  // Skipped when filtering by category — snapshots are whole-portfolio only.
+  if (useSnapshots) {
+    const snaps = getSnapshotsForDays(days).filter(s => s.ts >= startTime)
     if (snaps.length >= 2) {
-      const first = snaps[0], last = snaps[snaps.length - 1]
+      const pts0 = snaps.slice()
+      // Pin the right edge to the live value at "now".
+      if (now - pts0[pts0.length - 1].ts > 60_000) pts0.push({ ts: now, v: b })
+      // Pin the left edge to the window start (hold the earliest known value
+      // for any gap before the first snapshot) so the frame is full-width.
+      if (pts0[0].ts > startTime) pts0.unshift({ ts: startTime, v: pts0[0].v })
+      const first = pts0[0], last = pts0[pts0.length - 1]
       const timeRange = last.ts - first.ts || 1
       return Array.from({ length: pts }, (_, i) => {
         const t = i / (pts - 1)
         const targetTs = first.ts + t * timeRange
-        let lo = snaps[0], hi = snaps[snaps.length - 1]
-        for (let j = 0; j < snaps.length - 1; j++) {
-          if (snaps[j].ts <= targetTs && snaps[j + 1].ts >= targetTs) {
-            lo = snaps[j]; hi = snaps[j + 1]; break
+        let lo = pts0[0], hi = pts0[pts0.length - 1]
+        for (let j = 0; j < pts0.length - 1; j++) {
+          if (pts0[j].ts <= targetTs && pts0[j + 1].ts >= targetTs) {
+            lo = pts0[j]; hi = pts0[j + 1]; break
           }
         }
         const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
@@ -1115,9 +1132,6 @@ function buildPerfSeries(base, tf = '30D', transactions = []) {
     .sort((a, b) => new Date(a.date) - new Date(b.date))
 
   if (validTxs.length >= 1) {
-    const now = Date.now()
-    const windowMs = Math.max(days, 1) * 24 * 60 * 60 * 1000
-    const startTime = now - windowMs
 
     // Total current cost basis across all transactions
     const currentCostBasis = validTxs.reduce((s, tx) => {
@@ -3637,13 +3651,28 @@ export default function Dashboard() {
     } catch {}
     track('perf_chart_type_switch', { type })
   }, [])
-  const perfSeries = useMemo(() => buildPerfSeries(totalValue, perfTf, transactions), [totalValue, perfTf, transactions])
+  // ── Category filter for the net-worth chart ──────────────────────────────
+  const [perfCat, setPerfCat] = useState('all')
+  const perfCatValue = useMemo(() => {
+    if (perfCat === 'all') return totalValue
+    return enriched
+      .filter(h => categorizeAsset(h) === perfCat)
+      .reduce((s, h) => s + (h.value > 0 ? h.value : h.total_invested), 0)
+  }, [perfCat, enriched, totalValue])
+  const perfCatTxs = useMemo(() => {
+    if (perfCat === 'all') return transactions
+    return transactions.filter(tx => categorizeAsset({ coin_id: tx.coin_id, coin_symbol: tx.coin_symbol }) === perfCat)
+  }, [perfCat, transactions])
+  const perfSeries = useMemo(
+    () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, perfCat === 'all'),
+    [perfCatValue, perfTf, perfCatTxs, perfCat]
+  )
   // OHLC candles: bucket the raw perf series into ~22 candles (open/close = first/last
   // value in each bucket, high/low = min/max). Recharts has no native candlestick, so a
   // custom Bar shape draws the wick + body from the [low, high] range dataKey below.
   const perfCandles = useMemo(() => {
     if (chartType !== 'candles' || perfSeries.length < 2) return []
-    const target = Math.min(22, perfSeries.length)
+    const target = Math.min(16, perfSeries.length)
     const size = Math.ceil(perfSeries.length / target)
     const out = []
     for (let i = 0; i < perfSeries.length; i += size) {
@@ -4182,8 +4211,13 @@ export default function Dashboard() {
               <GuardianBadge />
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''}`}>
-              {hidden ? '••••••' : cv(loaded ? tickerValue : 0)}
+              {hidden ? '••••••' : cv(loaded ? (perfCat === 'all' ? tickerValue : perfCatValue) : 0)}
             </h2>
+            {perfCat !== 'all' && !hidden && (
+              <p className="dvx-hero-catlabel">
+                {CATEGORY_LABELS[perfCat]} · {totalValue > 0 ? ((perfCatValue / totalValue) * 100).toFixed(0) : 0}% of net worth
+              </p>
+            )}
             {wallets.length > 1 && (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginBottom:'0.6rem' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
@@ -4307,6 +4341,21 @@ export default function Dashboard() {
                 {perfHasRealData ? '● live' : '○ simulated'}
               </span>
             </div>
+            {/* Category filter — scope the chart + value to one asset class */}
+            {catBreakdown.length > 1 && (
+              <div className="dvx-catfilter">
+                {[{ cat: 'all', label: 'All', value: totalValue }, ...catBreakdown.map(c => ({ cat: c.cat, label: c.label, value: c.value }))].map(({ cat, label, value }) => (
+                  <button
+                    key={cat}
+                    className={`dvx-catchip${perfCat === cat ? ' active' : ''}`}
+                    onClick={() => { setPerfCat(cat); track('perf_category_filter', { category: cat }) }}
+                  >
+                    <span className="dvx-catchip-label">{label}</span>
+                    <span className="dvx-catchip-val">{cvN(value)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {/* Chart-type picker — Area (default) · Line · Candles */}
             <div className="dvx-charttype-seg" role="tablist" aria-label="Chart type">
               {[
@@ -4354,12 +4403,12 @@ export default function Dashboard() {
                 const span = high - low
                 const pp = span > 0 ? height / span : 0
                 const bodyY = span > 0 ? y + (high - Math.max(open, close)) * pp : y
-                const bodyH = Math.max(1.5, span > 0 ? Math.abs(close - open) * pp : height)
+                const bodyH = Math.max(3, span > 0 ? Math.abs(close - open) * pp : height)
                 const cx = x + width / 2
-                const bw = Math.min(Math.max(width * 0.6, 3), 11)
+                const bw = Math.min(Math.max(width * 0.82, 8), 26)
                 return (
                   <g>
-                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.25} strokeOpacity={0.85} />
+                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.5} strokeOpacity={0.9} />
                     <rect x={cx - bw / 2} y={bodyY} width={bw} height={bodyH} rx={1} fill={color} />
                   </g>
                 )
