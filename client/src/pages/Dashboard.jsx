@@ -1084,7 +1084,7 @@ const TF_HOURS = { '4H': 4, '1D': 24, '7D': 168, '30D': 720, '90D': 2160, '1Y': 
 const TF_DAYS = { '4H': 4 / 24, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
 const TF_PTS  = { '4H': 48, '1D': 48, '7D': 56, '30D': 60, '90D': 60, '1Y': 64, 'ALL': 64 }
 
-function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true) {
+function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true, snapScale = 1) {
   const hours = TF_HOURS[tf] ?? 720
   const days = hours / 24
   const pts = TF_PTS[tf] ?? 60
@@ -1101,7 +1101,9 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
   if (useSnapshots) {
     const snaps = getSnapshotsForDays(days).filter(s => s.ts >= startTime)
     if (snaps.length >= 2) {
-      const pts0 = snaps.slice()
+      // Scale whole-portfolio snapshot values to the selected slice (1 = full
+      // portfolio). The right edge is still pinned to the live category value.
+      const pts0 = snaps.map(s => ({ ts: s.ts, v: s.v * snapScale }))
       // Pin the right edge to the live value at "now".
       if (now - pts0[pts0.length - 1].ts > 60_000) pts0.push({ ts: now, v: b })
       // Pin the left edge to the window start (hold the earliest known value
@@ -3663,9 +3665,24 @@ export default function Dashboard() {
     if (perfCat === 'all') return transactions
     return transactions.filter(tx => categorizeAsset({ coin_id: tx.coin_id, coin_symbol: tx.coin_symbol }) === perfCat)
   }, [perfCat, transactions])
+  const perfCatInvested = useMemo(() => {
+    if (perfCat === 'all') return totalInvested
+    return enriched
+      .filter(h => categorizeAsset(h) === perfCat)
+      .reduce((s, h) => s + (h.total_invested || 0), 0)
+  }, [perfCat, enriched, totalInvested])
+  // We have no per-category snapshot history (snapshots store whole-portfolio
+  // value only), so for a category view we reuse the real net-worth curve
+  // shape scaled to that category's share of the portfolio. This keeps every
+  // timeframe (4H/1D/…) populated and ending exactly at the category value,
+  // instead of the flat transaction-replay line that short windows produced.
+  const perfCatShare = useMemo(() => {
+    if (perfCat === 'all') return 1
+    return totalValue > 0 ? perfCatValue / totalValue : 1
+  }, [perfCat, perfCatValue, totalValue])
   const perfSeries = useMemo(
-    () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, perfCat === 'all'),
-    [perfCatValue, perfTf, perfCatTxs, perfCat]
+    () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, true, perfCatShare),
+    [perfCatValue, perfTf, perfCatTxs, perfCatShare]
   )
   // OHLC candles: bucket the raw perf series into ~22 candles (open/close = first/last
   // value in each bucket, high/low = min/max). Recharts has no native candlestick, so a
@@ -4379,7 +4396,7 @@ export default function Dashboard() {
               // green above it (profit zone) and red below it (loss zone). The
               // split point of the vertical gradient is where the baseline sits
               // within the chart's y-domain, which we pin exactly via YAxis.
-              const inv = !hidden && totalInvested > 0 ? totalInvested : 0
+              const inv = !hidden && perfCatInvested > 0 ? perfCatInvested : 0
               let invStop = null
               if (inv > 0 && perfSeries.length) {
                 let min = inv, max = inv
