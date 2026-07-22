@@ -1082,7 +1082,13 @@ const TIMEFRAMES = [
 const TF_HOURS = { '4H': 4, '1D': 24, '7D': 168, '30D': 720, '90D': 2160, '1Y': 8760, 'ALL': 87600 }
 // Back-compat: some callers still read days per timeframe.
 const TF_DAYS = { '4H': 4 / 24, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
-const TF_PTS  = { '4H': 48, '1D': 48, '7D': 56, '30D': 60, '90D': 60, '1Y': 64, 'ALL': 64 }
+const TF_PTS  = { '4H': 96, '1D': 96, '7D': 84, '30D': 90, '90D': 90, '1Y': 96, 'ALL': 96 }
+// Candlestick bucket width per timeframe. Buckets are snapped to clean
+// multiples of these intervals (floor(ts/interval)*interval) so every candle
+// opens on a round boundary — top of the hour for 4H/1D, midnight for daily
+// buckets, etc. — exactly like a real trading chart.
+const MIN = 60e3, HR = 60 * MIN, DAY = 24 * HR
+const TF_CANDLE_MS = { '4H': 15 * MIN, '1D': HR, '7D': 6 * HR, '30D': DAY, '90D': 3 * DAY, '1Y': 7 * DAY, 'ALL': 30 * DAY }
 
 function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true, snapScale = 1) {
   const hours = TF_HOURS[tf] ?? 720
@@ -3684,31 +3690,25 @@ export default function Dashboard() {
     () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, true, perfCatShare),
     [perfCatValue, perfTf, perfCatTxs, perfCatShare]
   )
-  // OHLC candles: bucket the raw perf series into ~22 candles (open/close = first/last
-  // value in each bucket, high/low = min/max). Recharts has no native candlestick, so a
-  // custom Bar shape draws the wick + body from the [low, high] range dataKey below.
+  // OHLC candles, bucketed by clean time boundaries (top of the hour, midnight,
+  // etc.) rather than by array index, so every candle opens on a round interval
+  // like a real trading chart. open/close = first/last value in the bucket,
+  // high/low = min/max. Recharts has no native candlestick, so a custom Bar
+  // shape draws the wick + body from the [low, high] range dataKey below.
   const perfCandles = useMemo(() => {
     if (chartType !== 'candles' || perfSeries.length < 2) return []
-    const target = Math.min(16, perfSeries.length)
-    const size = Math.ceil(perfSeries.length / target)
-    const out = []
-    for (let i = 0; i < perfSeries.length; i += size) {
-      const bucket = perfSeries.slice(i, i + size)
-      if (!bucket.length) continue
-      let hi = bucket[0].v, lo = bucket[0].v
-      for (const p of bucket) { if (p.v > hi) hi = p.v; if (p.v < lo) lo = p.v }
-      out.push({
-        i: out.length,
-        ts: bucket[0].ts,
-        open: bucket[0].v,
-        close: bucket[bucket.length - 1].v,
-        high: hi,
-        low: lo,
-        range: [lo, hi],
-      })
+    const interval = TF_CANDLE_MS[perfTf] ?? DAY
+    const buckets = new Map()
+    for (const p of perfSeries) {
+      const key = Math.floor(p.ts / interval) * interval
+      const bk = buckets.get(key)
+      if (!bk) buckets.set(key, { ts: key, open: p.v, close: p.v, high: p.v, low: p.v })
+      else { bk.close = p.v; if (p.v > bk.high) bk.high = p.v; if (p.v < bk.low) bk.low = p.v }
     }
-    return out
-  }, [chartType, perfSeries])
+    return [...buckets.values()]
+      .sort((a, b) => a.ts - b.ts)
+      .map((b, i) => ({ ...b, i, range: [b.low, b.high] }))
+  }, [chartType, perfSeries, perfTf])
   const perfHasRealData = useMemo(() => {
     const days = TF_DAYS[perfTf] ?? 30
     return hasRealData(days) || transactions.some(tx => tx.date && tx.price_per_unit > 0)
@@ -4447,6 +4447,18 @@ export default function Dashboard() {
                 )
               }
               const isCandles = chartType === 'candles'
+              // Candles get their own y-domain fitted to the candle high/low range
+              // (with headroom) instead of being forced to include the far-away
+              // invested baseline — otherwise a small intraday range collapses every
+              // candle into a thin band at the top of the frame, all the same size.
+              let candleDomain = ['auto', 'auto']
+              if (isCandles && perfCandles.length) {
+                let lo = perfCandles[0].low, hi = perfCandles[0].high
+                for (const c of perfCandles) { if (c.low < lo) lo = c.low; if (c.high > hi) hi = c.high }
+                const span = hi - lo
+                const pad = span > 0 ? span * 0.18 : (hi * 0.004 || 1)
+                candleDomain = [lo - pad, hi + pad]
+              }
               // Driven directly by the real perfSeries values (snapshots → transaction
               // replay → simulation), so the curve is accurate across all chart types.
               return (
@@ -4468,9 +4480,11 @@ export default function Dashboard() {
                       )}
                     </defs>
                     <XAxis hide dataKey="i" />
-                    <YAxis hide domain={inv > 0
-                      ? [dMin => Math.min(dMin, inv), dMax => Math.max(dMax, inv)]
-                      : ['auto', 'auto']} />
+                    <YAxis hide domain={isCandles
+                      ? candleDomain
+                      : (inv > 0
+                        ? [dMin => Math.min(dMin, inv), dMax => Math.max(dMax, inv)]
+                        : ['auto', 'auto'])} />
                     {isCandles ? (
                       <Tooltip content={candleTip} cursor={{ stroke: 'var(--text-sub)', strokeWidth:1, strokeDasharray:'4 3', opacity:0.4 }} />
                     ) : (
