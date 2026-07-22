@@ -13915,6 +13915,32 @@ button:not(:disabled):active,
   box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 
+/* Net-worth category filter — chips that scope the chart + value to one class */
+.dvx-catfilter {
+  display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.1rem 0 0.4rem;
+  margin: 0 0 0.35rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.dvx-catfilter::-webkit-scrollbar { display: none; }
+.dvx-catchip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.05rem;
+  padding: 0.34rem 0.7rem; border-radius: 12px; cursor: pointer; flex-shrink: 0;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+  font-family: inherit; line-height: 1.1; transition: background .15s, color .15s, border-color .15s;
+}
+.dvx-catchip:hover { color: var(--text); }
+.dvx-catchip-label { font-size: 0.72rem; font-weight: 700; }
+.dvx-catchip-val { font-size: 0.66rem; font-weight: 600; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.dvx-catchip.active {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.dvx-catchip.active .dvx-catchip-val { opacity: 0.9; }
+.dvx-hero-catlabel {
+  text-align: center; margin: -0.35rem 0 0.5rem; font-size: 0.75rem;
+  font-weight: 600; color: var(--text-muted);
+}
+
 /* Chart-type segmented control — Area · Line · Candles. Compact inset track. */
 .dvx-charttype-seg {
   display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 0.6rem;
