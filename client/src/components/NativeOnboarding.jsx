@@ -15,7 +15,7 @@ const SLIDES = [
     eyebrow: 'WELCOME TO', title: 'WalletLens',
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
     desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
-    features: ['Private', 'Live P&L', 'AI Insights', 'Free'],
+    features: ['Private', 'Live P&L', 'Insights', 'Free'],
   },
   {
     id: 'theme',

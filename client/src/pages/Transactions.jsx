@@ -750,7 +750,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 </>
               )}
 
-              {/* AI Analysis Panel — crypto only */}
+              {/* Portfolio Analysis Panel — crypto only */}
               {form.category === 'crypto' && loadingAnalysis && form.coin_id && (
                 <div className="ai-panel">
                   <div className="ai-header">

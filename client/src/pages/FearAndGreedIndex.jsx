@@ -55,7 +55,7 @@ const FAQS = [
   },
   {
     q: 'Where can I track the live score?',
-    a: 'The live WalletLens fear and greed index is on the Market Index page (walletlens.live/market-index). You can also see it inside the WalletLens app under AI Analysis, where it is overlaid against your own portfolio to help you interpret your exposure at current sentiment.',
+    a: 'The live WalletLens fear and greed index is on the Market Index page (walletlens.live/market-index). You can also see it inside the WalletLens app under Portfolio Analysis, where it is overlaid against your own portfolio to help you interpret your exposure at current sentiment.',
   },
   {
     q: 'How often does the score update?',
@@ -161,7 +161,7 @@ export default function FearAndGreedIndex() {
             your DCA schedule and position sizes.</li>
         </ul>
         <p>
-          Inside WalletLens, the AI Analysis tab shows the live fear and greed reading overlaid against
+          Inside WalletLens, the Portfolio Analysis tab shows the live fear and greed reading overlaid against
           your own portfolio — so you can see how your current exposure compares to market sentiment in
           one view. <Link to="/">Open WalletLens free →</Link>
         </p>

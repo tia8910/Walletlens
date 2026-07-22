@@ -1214,11 +1214,11 @@ export default function Vision() {
             + Add Bucket
           </button>
 
-          {/* ── AI Advisor ── */}
+          {/* ── Advisor ── */}
           {buckets.length > 0 && (
             <div className="vp-ai">
               <div className="vp-ai-head">
-                <h3 className="vp-ai-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />AI Plan Advisor</h3>
+                <h3 className="vp-ai-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Plan Advisor</h3>
                 <button className="vp-ai-btn" onClick={requestAdvice} disabled={adviceLoading}>
                   {adviceLoading ? 'Analyzing…' : advice ? 'Refresh advice' : 'Get AI advice'}
                 </button>
@@ -1228,7 +1228,7 @@ export default function Vision() {
                 <p className="vp-ai-empty">Get personalized advice on your goals, diversification, emergency cover, and funding pace — based on your actual buckets and asset mix.</p>
               )}
               {adviceError && (
-                <p className="vp-ai-empty vp-ai-err">Couldn't reach the AI advisor right now. Please try again in a moment.</p>
+                <p className="vp-ai-empty vp-ai-err">Couldn't reach the advisor right now. Please try again in a moment.</p>
               )}
 
               {advice && (
