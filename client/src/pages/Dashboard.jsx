@@ -3672,7 +3672,7 @@ export default function Dashboard() {
   // custom Bar shape draws the wick + body from the [low, high] range dataKey below.
   const perfCandles = useMemo(() => {
     if (chartType !== 'candles' || perfSeries.length < 2) return []
-    const target = Math.min(22, perfSeries.length)
+    const target = Math.min(16, perfSeries.length)
     const size = Math.ceil(perfSeries.length / target)
     const out = []
     for (let i = 0; i < perfSeries.length; i += size) {
@@ -4403,12 +4403,12 @@ export default function Dashboard() {
                 const span = high - low
                 const pp = span > 0 ? height / span : 0
                 const bodyY = span > 0 ? y + (high - Math.max(open, close)) * pp : y
-                const bodyH = Math.max(1.5, span > 0 ? Math.abs(close - open) * pp : height)
+                const bodyH = Math.max(3, span > 0 ? Math.abs(close - open) * pp : height)
                 const cx = x + width / 2
-                const bw = Math.min(Math.max(width * 0.6, 3), 11)
+                const bw = Math.min(Math.max(width * 0.82, 8), 26)
                 return (
                   <g>
-                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.25} strokeOpacity={0.85} />
+                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.5} strokeOpacity={0.9} />
                     <rect x={cx - bw / 2} y={bodyY} width={bw} height={bodyH} rx={1} fill={color} />
                   </g>
                 )
