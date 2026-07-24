@@ -561,9 +561,20 @@ export default function App() {
           <div className="wl-topbar-brand">
             <button
               className="wl-logo-btn"
-              onClick={() => navigate('/dashboard')}
+              onClick={(e) => {
+                // "Scan pulse": spring pop + shockwave ring + fast glint + bar
+                // bounce, then navigate. Reflow-restart so rapid taps replay it.
+                const btn = e.currentTarget
+                btn.classList.remove('wl-logo-scanning')
+                void btn.offsetWidth
+                btn.classList.add('wl-logo-scanning')
+                try { navigator.vibrate && navigator.vibrate(8) } catch {}
+                window.setTimeout(() => btn.classList.remove('wl-logo-scanning'), 650)
+                navigate('/dashboard')
+              }}
               aria-label="WalletLens home"
             >
+              <span className="wl-logo-scan-ring" aria-hidden="true" />
               <Logo size={36} animated />
             </button>
             <div className="wl-topbar-brand-text">
