@@ -20,7 +20,7 @@ import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/Lo
 import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
-import { saveSnapshot, getSnapshotsForDays, hasRealData } from '../snapshots'
+import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
 import { getWeeklySub, isWeeklySubscribed, subscribeWeekly, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
 import { analyzeTarget, fetchTargetData } from '../targetAnalysis'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
@@ -1092,14 +1092,18 @@ const TF_HOURS = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, TF_CA
 const TF_DAYS  = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, TF_CANDLE_MS[k] * TF_CANDLE_N[k] / DAY]))
 const TF_PTS   = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, Math.max(72, TF_CANDLE_N[k] * 4)]))
 
-function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true, snapScale = 1) {
+function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true, snapScale = 1, genesisTs = 0) {
   const hours = TF_HOURS[tf] ?? 720
   const days = hours / 24
   const pts = TF_PTS[tf] ?? 60
   const b = Math.max(base || 10000, 1)
   const now = Date.now()
   const windowMs = hours * 60 * 60 * 1000
-  const startTime = now - windowMs
+  // Never draw before the profile started tracking — clamp the window start to
+  // the genesis timestamp so long frames don't fabricate candles for dates
+  // before the account existed. (Leave a tiny floor so we always have a range.)
+  const rawStart = now - windowMs
+  const startTime = genesisTs > 0 ? Math.min(Math.max(rawStart, genesisTs), now - 60_000) : rawStart
 
   // ── Level 1: real snapshots inside the selected window ────────────────────
   // The series always spans the FULL window [startTime, now] evenly, so the
@@ -3697,9 +3701,19 @@ export default function Dashboard() {
     if (perfCat === 'all') return 1
     return totalValue > 0 ? perfCatValue / totalValue : 1
   }, [perfCat, perfCatValue, totalValue])
+  // When the profile started: the earliest snapshot, or the earliest recorded
+  // transaction if that's older. The chart never draws candles before this.
+  const genesisTs = useMemo(() => {
+    let g = getGenesisTs()
+    for (const tx of transactions) {
+      const t = tx.created_at ? new Date(tx.created_at).getTime() : (tx.date ? new Date(tx.date).getTime() : 0)
+      if (t > 0 && (g === 0 || t < g)) g = t
+    }
+    return g
+  }, [transactions])
   const perfSeries = useMemo(
-    () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, true, perfCatShare),
-    [perfCatValue, perfTf, perfCatTxs, perfCatShare]
+    () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, true, perfCatShare, genesisTs),
+    [perfCatValue, perfTf, perfCatTxs, perfCatShare, genesisTs]
   )
   // OHLC candles, bucketed by clean time boundaries (top of the hour, midnight,
   // etc.) rather than by array index, so every candle opens on a round interval
