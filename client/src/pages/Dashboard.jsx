@@ -1115,7 +1115,17 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
   // collapsed every early candle into an invisible doji bunched at the right.
   // Skipped when filtering by category — snapshots are whole-portfolio only.
   if (useSnapshots) {
-    const snaps = getSnapshotsForDays(days).filter(s => s.ts >= startTime)
+    let snaps = getSnapshotsForDays(days).filter(s => s.ts >= startTime)
+    // Outlier guard: a single corrupt snapshot (e.g. a transient price/holding
+    // glitch that recorded an impossible total) must not blow up the chart's
+    // scale. Drop any snapshot whose value is wildly inconsistent with the live
+    // value — more than 4× above or below it — but only if enough clean points
+    // remain, so we never wipe out a genuinely volatile history.
+    if (snaps.length >= 2) {
+      const hiBound = b * 4, loBound = b * 0.1
+      const clean = snaps.filter(s => { const v = s.v * snapScale; return v >= loBound && v <= hiBound })
+      if (clean.length >= 2) snaps = clean
+    }
     if (snaps.length >= 2) {
       // Scale whole-portfolio snapshot values to the selected slice (1 = full
       // portfolio). The right edge is still pinned to the live category value.
