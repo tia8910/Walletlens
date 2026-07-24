@@ -381,15 +381,15 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
       {open && profile && sim && (
         <div className="ade-overlay gp-overlay" onClick={closePage}>
           <div className="ade-panel gp-panel gp-page" onClick={e => e.stopPropagation()}>
-            <div className="ade-panel-header gp-page-header">
-              <button className="gp-back" onClick={closePage} aria-label="Back">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
+            <div className="ade-panel-header">
               <div className="ade-panel-title">
                 <Icon name="trend-up" size={16} style={{ marginRight: '0.4em', verticalAlign: '-2px' }} />
                 Grow My Net Worth
                 {ai.plan?.source === 'ai' && <span className="ade-ai-badge"><Icon name="sparkles" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude AI</span>}
               </div>
+              <button className="qs-close" onClick={closePage} aria-label="Close">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+              </button>
             </div>
 
             <div className="gp-body">
