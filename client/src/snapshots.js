@@ -45,6 +45,13 @@ export function getSnapshotsForDays(days) {
   return snaps.filter(s => s.ts >= cutoff)
 }
 
+// Timestamp of the earliest snapshot we hold (≈ when the profile started
+// tracking). Returns 0 when there are no snapshots yet.
+export function getGenesisTs() {
+  const snaps = loadSnapshots()
+  return snaps.length ? snaps[0].ts : 0
+}
+
 // Returns true if we have enough real data points for the given timeframe
 export function hasRealData(days) {
   const needed = days === 0 ? 2 : days <= 1 ? 2 : 3
