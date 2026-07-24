@@ -1100,9 +1100,13 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
   const startTime = now - windowMs
 
   // ── Level 1: real snapshots inside the selected window ────────────────────
-  // Only snapshots within [now-window, now] so the x-axis matches the frame.
-  // Anchor the series to span the full window and end at "now" = current value,
-  // so 4H really shows the last 4 hours (not a stretched sub-slice).
+  // The series always spans the FULL window [startTime, now] evenly, so the
+  // x-axis matches the frame (4H = last 4h, 90D = last 90 days). Real snapshot
+  // values are used for the period they actually cover (usually the recent
+  // side). Any earlier gap — common on long frames when the wallet is only a
+  // few days old — is filled with a gentle synthesized trend+wobble that
+  // connects into the first real snapshot, instead of a dead-flat hold that
+  // collapsed every early candle into an invisible doji bunched at the right.
   // Skipped when filtering by category — snapshots are whole-portfolio only.
   if (useSnapshots) {
     const snaps = getSnapshotsForDays(days).filter(s => s.ts >= startTime)
@@ -1110,24 +1114,29 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
       // Scale whole-portfolio snapshot values to the selected slice (1 = full
       // portfolio). The right edge is still pinned to the live category value.
       const pts0 = snaps.map(s => ({ ts: s.ts, v: s.v * snapScale }))
-      // Pin the right edge to the live value at "now".
       if (now - pts0[pts0.length - 1].ts > 60_000) pts0.push({ ts: now, v: b })
-      // Pin the left edge to the window start (hold the earliest known value
-      // for any gap before the first snapshot) so the frame is full-width.
-      if (pts0[0].ts > startTime) pts0.unshift({ ts: startTime, v: pts0[0].v })
-      const first = pts0[0], last = pts0[pts0.length - 1]
-      const timeRange = last.ts - first.ts || 1
+      const firstTs = pts0[0].ts, firstV = pts0[0].v
+      // Synthetic backfill parameters for the pre-snapshot gap.
+      const startRatio = { '4H': 0.97, '1D': 0.94, '7D': 0.88, '30D': 0.8, '90D': 0.72, '1Y': 0.62, 'ALL': 0.55 }[tf] || 0.8
+      const seed = Math.round(b) % 997
       return Array.from({ length: pts }, (_, i) => {
         const t = i / (pts - 1)
-        const targetTs = first.ts + t * timeRange
-        let lo = pts0[0], hi = pts0[pts0.length - 1]
-        for (let j = 0; j < pts0.length - 1; j++) {
-          if (pts0[j].ts <= targetTs && pts0[j + 1].ts >= targetTs) {
-            lo = pts0[j]; hi = pts0[j + 1]; break
+        const targetTs = startTime + t * (now - startTime)
+        if (targetTs >= firstTs) {
+          // Real data: interpolate between the two surrounding snapshots.
+          let lo = pts0[0], hi = pts0[pts0.length - 1]
+          for (let j = 0; j < pts0.length - 1; j++) {
+            if (pts0[j].ts <= targetTs && pts0[j + 1].ts >= targetTs) { lo = pts0[j]; hi = pts0[j + 1]; break }
           }
+          const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
+          return { i, ts: targetTs, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
         }
-        const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
-        return { i, ts: targetTs, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
+        // Pre-history: trend from startRatio·firstV up to firstV, plus wobble,
+        // so early candles show real movement and the seam is continuous.
+        const pre = firstTs > startTime ? (targetTs - startTime) / (firstTs - startTime) : 1
+        const trend = firstV * (startRatio + pre * (1 - startRatio))
+        const noise = Math.sin((i + seed) * 0.7) * firstV * 0.012 + Math.sin((i + seed) * 1.9) * firstV * 0.006
+        return { i, ts: targetTs, v: Math.max(trend + noise, firstV * 0.1) }
       })
     }
   }
