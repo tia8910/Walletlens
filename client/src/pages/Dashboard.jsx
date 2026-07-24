@@ -3701,16 +3701,13 @@ export default function Dashboard() {
     if (perfCat === 'all') return 1
     return totalValue > 0 ? perfCatValue / totalValue : 1
   }, [perfCat, perfCatValue, totalValue])
-  // When the profile started: the earliest snapshot, or the earliest recorded
-  // transaction if that's older. The chart never draws candles before this.
-  const genesisTs = useMemo(() => {
-    let g = getGenesisTs()
-    for (const tx of transactions) {
-      const t = tx.created_at ? new Date(tx.created_at).getTime() : (tx.date ? new Date(tx.date).getTime() : 0)
-      if (t > 0 && (g === 0 || t < g)) g = t
-    }
-    return g
-  }, [transactions])
+  // When the profile started TRACKING = the earliest net-worth snapshot. We
+  // deliberately do NOT use transaction dates here: a user can back-date a
+  // purchase (e.g. "bought BTC in 2022"), and that is not when the profile was
+  // created — using it would drag the window back years and fabricate candles
+  // for a past that was never tracked. Clamping to the first snapshot means the
+  // chart shows only real tracked history, with no synthetic pre-history.
+  const genesisTs = useMemo(() => getGenesisTs(), [transactions, totalValue])
   const perfSeries = useMemo(
     () => buildPerfSeries(perfCatValue, perfTf, perfCatTxs, true, perfCatShare, genesisTs),
     [perfCatValue, perfTf, perfCatTxs, perfCatShare, genesisTs]
