@@ -1387,6 +1387,11 @@ Deno.serve(async (req: Request) => {
     // POST { mode, deviceId, email?, stats } — keep the stored snapshot current so
     // the cron sends fresh numbers. Merges: holdings are only replaced when the
     // client actually sends them (a snapshot-only refresh keeps the last list).
+    //
+    // Also acts as a resilient catch-up: if a weekly report is overdue (the cron
+    // didn't fire, e.g. the deployment restarted), this sends it on the next app
+    // open. The same ~6.4-day guard + lastSentAt stamp prevent double sends, so
+    // the cron and this path never both fire for the same week.
     const deviceId = String(body.deviceId || "")
     if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
       return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers })
@@ -1397,14 +1402,25 @@ Deno.serve(async (req: Request) => {
       if (!entry.value || !entry.value.active) {
         return new Response(JSON.stringify({ ok: false, reason: "not_subscribed" }), { status: 200, headers })
       }
+      const prev = (entry.value.stats || {}) as WeeklyStats
       const fresh = sanitizeWeeklyStats(body.stats)
-      if (fresh) {
-        const prev = (entry.value.stats || {}) as WeeklyStats
-        // Keep prior holdings if this refresh didn't include any.
-        const merged: WeeklyStats = { ...fresh, holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []) }
-        await kv.set(["weekly", deviceId], { ...entry.value, stats: merged })
+      // Keep prior holdings if this refresh didn't include any.
+      const stats: WeeklyStats = fresh
+        ? { ...fresh, holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []) }
+        : prev
+
+      let lastSentAt = (entry.value.lastSentAt as string | null) ?? null
+      let sent = false
+      const last = lastSentAt ? new Date(lastSentAt).getTime() : 0
+      const email = String(entry.value.email || "")
+      if (email && stats && (stats as { totalUsd?: number }).totalUsd != null &&
+          Date.now() - last >= WEEKLY_MIN_GAP_MS) {
+        const { subject, html } = weeklyReportContent(stats)
+        const ok = await sendEmail(email, subject, html, WEEKLY_FROM)
+        if (ok) { lastSentAt = new Date().toISOString(); sent = true }
       }
-      return new Response(JSON.stringify({ ok: true }), { status: 200, headers })
+      await kv.set(["weekly", deviceId], { ...entry.value, stats, lastSentAt })
+      return new Response(JSON.stringify({ ok: true, sent }), { status: 200, headers })
     } catch (e) {
       console.error("Weekly refresh error:", e)
       return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
