@@ -14068,6 +14068,118 @@ button:not(:disabled):active,
 .wl-topbar-stats:active { transform: scale(0.94); }
 @media (max-width: 380px) { .wl-topbar-stats span { display: none; } .wl-topbar-stats { padding: 0.32rem 0.42rem; } }
 
+/* ============================================================
+   Premium header polish (scoped to .wl-topbar so nothing else
+   in the app is affected). Purely additive styling — the lens
+   SVG and its glint/bar animations are untouched.
+   ============================================================ */
+/* Bar: soft emerald wash + top accent hairline + layered depth */
+.wl-topbar {
+  background:
+    radial-gradient(120% 150% at 12% -30%, rgba(16,185,129,0.14), transparent 55%),
+    rgba(8,15,12,0.92);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.30);
+}
+.wl-topbar::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #34d399 22%, #10b981 50%, #34d399 78%, transparent);
+  opacity: 0.9; z-index: 2; pointer-events: none;
+}
+[data-wl-light] .wl-topbar {
+  background:
+    radial-gradient(120% 150% at 12% -30%, rgba(16,185,129,0.12), transparent 55%),
+    rgba(255,255,255,0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 26px rgba(20,60,40,0.10);
+}
+
+/* Logo — polished halo tile behind the animated lens */
+.wl-topbar .wl-logo-btn {
+  position: relative;
+  width: 46px; height: 46px;
+  border-radius: 14px;
+}
+.wl-topbar .wl-logo-btn::before {
+  content: ''; position: absolute; inset: 0; border-radius: 14px; z-index: 0;
+  background: linear-gradient(145deg, rgba(74,222,128,0.22), rgba(16,185,129,0.06));
+}
+.wl-topbar .wl-logo-btn::after {
+  content: ''; position: absolute; inset: 0; border-radius: 14px; z-index: 0; pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 6px 16px rgba(16,185,129,0.28);
+}
+[data-wl-light] .wl-topbar .wl-logo-btn::before {
+  background: linear-gradient(145deg, rgba(74,222,128,0.28), rgba(16,185,129,0.10));
+}
+.wl-topbar .wl-logo-btn .wl-logo { position: relative; z-index: 1; }
+
+/* Wordmark — subtle metallic gradient on "WalletLens" */
+.wl-topbar .wl-brand-wl {
+  background: linear-gradient(180deg, #ffffff, #c8d4ce);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+[data-wl-light] .wl-topbar .wl-brand-wl {
+  background: linear-gradient(180deg, #0f1f17, #2f5244);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* ".live" — the dot becomes a glowing round "live" indicator */
+.wl-topbar .wl-live-dot {
+  font-size: 0; position: relative; display: inline-block;
+  width: 6px; height: 6px; margin: 0 2px 1px 0; vertical-align: middle;
+  -webkit-text-fill-color: transparent;
+}
+.wl-topbar .wl-live-dot::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: #34d399; box-shadow: 0 0 8px #34d399;
+}
+
+/* Tagline — diamond separators + sliding gradient underline on active word */
+.wl-topbar .wl-topbar-brand-action { position: relative; padding-bottom: 3px; }
+.wl-topbar .wl-topbar-brand-action.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+.wl-topbar .wl-topbar-brand-sep {
+  font-size: 0; display: inline-block;
+  width: 4px; height: 4px; border-radius: 1px; transform: rotate(45deg);
+  background: rgba(255,255,255,0.35);
+}
+[data-wl-light] .wl-topbar .wl-topbar-brand-sep { background: rgba(20,40,30,0.4); }
+
+/* Right controls — consistent circular ghost buttons */
+.wl-topbar .wl-topbar-x {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+}
+[data-wl-light] .wl-topbar .wl-topbar-x {
+  border-color: rgba(0,0,0,0.09);
+  background: rgba(255,255,255,0.6);
+  color: rgba(20,40,30,0.72);
+}
+button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(255,255,255,0.04); }
+
+/* Stats — premium gradient pill with a live dot */
+.wl-topbar .wl-topbar-stats {
+  color: #fff; border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 6px 16px rgba(16,185,129,0.40), inset 0 1px 0 rgba(255,255,255,0.28);
+  padding: 0.42rem 0.85rem;
+}
+.wl-topbar .wl-topbar-stats:hover {
+  background: linear-gradient(135deg, #14c98d, #059669);
+  transform: translateY(-1px);
+}
+.wl-stats-live {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #eafff5; box-shadow: 0 0 8px rgba(209,250,229,0.9);
+  flex-shrink: 0;
+}
+@media (max-width: 380px) { .wl-stats-live { display: none; } }
+
 /* ── Premium dashboard, pass 3 ──────────────────────────────────────────── */
 
 /* Hero P&L card: faint trend sparkline behind the value + a sign-tinted edge. */
