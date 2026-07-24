@@ -7,6 +7,7 @@ import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
+import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -155,6 +156,12 @@ export default function Settings() {
             <Icon name="edit" size={14} /> Edit
           </button>
         </div>
+      </div>
+
+      {/* ── Weekly Report ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="mail" size={16} />Weekly Report</h3>
+        <WeeklyEmailSignup source="settings" />
       </div>
 
       {/* ── Security ── */}
