@@ -14081,9 +14081,18 @@ button:not(:disabled):active,
   box-shadow: 0 8px 28px rgba(0,0,0,0.30);
 }
 .wl-topbar::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, #34d399 22%, #10b981 50%, #34d399 78%, transparent);
-  opacity: 0.9; z-index: 2; pointer-events: none;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px;
+  /* Colorful, continuously flowing accent — emerald→teal→cyan→sky→lime, looped */
+  background: linear-gradient(90deg,
+    #10b981, #14b8a6, #22d3ee, #38bdf8, #a3e635, #34d399, #10b981);
+  background-size: 300% 100%;
+  animation: wl-topline-flow 7s linear infinite;
+  opacity: 0.95; z-index: 2; pointer-events: none;
+  box-shadow: 0 0 10px rgba(34,211,238,0.35);
+}
+@keyframes wl-topline-flow { to { background-position: -300% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .wl-topbar::before { animation: none; }
 }
 [data-wl-light] .wl-topbar {
   background:
