@@ -52,11 +52,11 @@ public class LauncherActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        }
+        // Do not lock orientation. Android 16 ignores orientation/resizability
+        // restrictions on large-screen devices (foldables, tablets), and forcing
+        // portrait here only degrades the experience on those form factors. Let
+        // the activity follow the device/sensor orientation.
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
         // Record the launch URL for analytics / biometric redirect. Read it
         // defensively from the intent — calling getLaunchingUrl() here (before

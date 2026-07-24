@@ -47,7 +47,10 @@ def twaManifest = [
     // 'customtabs' and 'webview'.
     fallbackType: 'customtabs',
     enableSiteSettingsShortcut: 'true',
-    orientation: 'portrait-primary',
+    // 'any' lets the app follow the device orientation. Android 16 ignores
+    // orientation/resizability restrictions on large-screen devices, so locking
+    // to portrait no longer works there and only hurts foldables/tablets.
+    orientation: 'any',
 ]
 
 
@@ -209,7 +212,7 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.2'
 
     implementation "androidx.work:work-runtime:2.10.0"
     implementation "androidx.biometric:biometric:1.2.0-alpha05"
