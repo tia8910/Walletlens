@@ -1079,16 +1079,18 @@ const TIMEFRAMES = [
 // Exact window covered by each timeframe, in HOURS. Using hours (not days)
 // keeps intraday frames honest: 4H is a real 4-hour window, not a rounded-up
 // day. ALL ≈ 10 years, effectively "everything we have".
-const TF_HOURS = { '4H': 4, '1D': 24, '7D': 168, '30D': 720, '90D': 2160, '1Y': 8760, 'ALL': 87600 }
-// Back-compat: some callers still read days per timeframe.
-const TF_DAYS = { '4H': 4 / 24, '1D': 1, '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 3650 }
-const TF_PTS  = { '4H': 96, '1D': 96, '7D': 84, '30D': 90, '90D': 90, '1Y': 96, 'ALL': 96 }
-// Candlestick bucket width per timeframe. Buckets are snapped to clean
-// multiples of these intervals (floor(ts/interval)*interval) so every candle
-// opens on a round boundary — top of the hour for 4H/1D, midnight for daily
-// buckets, etc. — exactly like a real trading chart.
 const MIN = 60e3, HR = 60 * MIN, DAY = 24 * HR
-const TF_CANDLE_MS = { '4H': 15 * MIN, '1D': HR, '7D': 6 * HR, '30D': DAY, '90D': 3 * DAY, '1Y': 7 * DAY, 'ALL': 30 * DAY }
+// The selector value IS the candle width: 4H → 4-hour candles, 1D → daily,
+// 7D → weekly, 30D → monthly, 90D → quarterly, 1Y → yearly. Each frame shows a
+// run of those candles (TF_CANDLE_N of them), and the lookback window is simply
+// interval × count. Buckets are snapped to clean multiples of the interval
+// (floor(ts/interval)*interval) so every candle opens on a round boundary.
+const TF_CANDLE_MS = { '4H': 4 * HR, '1D': DAY, '7D': 7 * DAY, '30D': 30 * DAY, '90D': 90 * DAY, '1Y': 365 * DAY, 'ALL': 30 * DAY }
+const TF_CANDLE_N  = { '4H': 30, '1D': 30, '7D': 26, '30D': 24, '90D': 16, '1Y': 10, 'ALL': 36 }
+// Derived from interval × count so every consumer stays in sync.
+const TF_HOURS = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, TF_CANDLE_MS[k] * TF_CANDLE_N[k] / HR]))
+const TF_DAYS  = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, TF_CANDLE_MS[k] * TF_CANDLE_N[k] / DAY]))
+const TF_PTS   = Object.fromEntries(Object.keys(TF_CANDLE_MS).map(k => [k, Math.max(72, TF_CANDLE_N[k] * 4)]))
 
 function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = true, snapScale = 1) {
   const hours = TF_HOURS[tf] ?? 720
@@ -4412,13 +4414,15 @@ export default function Dashboard() {
                 for (const p of perfSeries) { if (p.v < min) min = p.v; if (p.v > max) max = p.v }
                 invStop = max === min ? 0.5 : Math.min(Math.max((max - inv) / (max - min), 0), 1)
               }
-              // Tooltip label: intraday ranges show the time, longer ranges the date.
+              // Tooltip label matches the candle interval: sub-day → date + time,
+              // day/week → date, month+ → month & year.
               const fmtTs = ts => {
                 if (!ts) return ''
                 const d = new Date(ts)
-                if (perfTf === '4H' || perfTf === '1D') return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
-                if (perfTf === '1Y' || perfTf === 'ALL') return d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
-                return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
+                const iv = TF_CANDLE_MS[perfTf] ?? DAY
+                if (iv < DAY) return d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                if (iv < 30 * DAY) return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
+                return d.toLocaleDateString('en', { month: 'short', year: 'numeric' })
               }
               // Candlestick shape — recharts has no native candle, so we draw the
               // wick (high→low) and body (open↔close) from the [low, high] range bar.
