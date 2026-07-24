@@ -4018,7 +4018,14 @@ export default function Dashboard() {
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0.2rem' }}>×</button>
           </div>
           {weeklyStatus === 'ok' ? (
-            <p style={{ fontSize: '0.78rem', color: 'var(--g-ink)', fontWeight: 600, margin: 0 }}>✅ Check your inbox — your first report is on the way!</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--g-ink)', fontWeight: 700, margin: 0 }}>✅ You’re subscribed — your first report is on the way!</p>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>📅 A fresh report arrives <strong style={{ color: 'var(--text)' }}>every week</strong>.</li>
+                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>✉️ Sent from <strong style={{ color: 'var(--text)' }}>noreply@walletlens.live</strong> — add it to contacts so it skips spam.</li>
+                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>🔒 Privacy-first — only a rounded summary is stored, never exact amounts.</li>
+              </ul>
+            </div>
           ) : (
             <>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>

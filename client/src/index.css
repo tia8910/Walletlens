@@ -14094,6 +14094,53 @@ button:not(:disabled):active,
 @media (prefers-reduced-motion: reduce) {
   .wl-topbar::before { animation: none; }
 }
+
+/* ── Weekly-report email signup (Settings + reusable) ── */
+.wk-signup { display: flex; flex-direction: column; gap: 0.6rem; }
+.wk-lead { margin: 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-muted); }
+.wk-row { display: flex; gap: 0.5rem; }
+.wk-input {
+  flex: 1; min-width: 0; border-radius: 10px; padding: 0.6rem 0.8rem;
+  font-size: 0.85rem; background: var(--surface-1); border: 1px solid var(--border);
+  color: var(--text); outline: none;
+}
+.wk-input:focus { border-color: var(--g); }
+.wk-btn {
+  padding: 0.6rem 1.1rem; border-radius: 10px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #047857, #10b981); color: #fff;
+  font-weight: 700; font-size: 0.82rem; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+  transition: transform 0.14s ease, box-shadow 0.2s ease;
+}
+.wk-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16,185,129,0.42); }
+.wk-btn:disabled { opacity: 0.7; cursor: default; }
+.wk-err { margin: 0; font-size: 0.76rem; color: #f87171; }
+.wk-note { margin: 0; font-size: 0.72rem; color: var(--text-sub); }
+
+.wk-signup--done { gap: 0.5rem; }
+.wk-done-title {
+  margin: 0; display: inline-flex; align-items: center; gap: 0.4em;
+  font-weight: 800; font-size: 0.9rem; color: var(--g-ink);
+}
+.wk-done-email { color: var(--text); font-weight: 700; }
+.wk-done-lead { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+.wk-how-title {
+  margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-sub);
+}
+.wk-how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.wk-how li {
+  display: flex; align-items: flex-start; gap: 0.5em;
+  font-size: 0.8rem; line-height: 1.45; color: var(--text-muted);
+}
+.wk-how li svg { flex-shrink: 0; margin-top: 0.15em; color: var(--g); }
+.wk-how strong { color: var(--text); font-weight: 700; }
+.wk-off {
+  align-self: flex-start; margin-top: 0.35rem; background: none; border: none;
+  color: var(--text-sub); font-size: 0.76rem; text-decoration: underline;
+  cursor: pointer; padding: 0.2rem 0;
+}
+.wk-off:hover { color: #f87171; }
 [data-wl-light] .wl-topbar {
   background:
     radial-gradient(120% 150% at 12% -30%, rgba(16,185,129,0.12), transparent 55%),
