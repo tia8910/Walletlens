@@ -14128,13 +14128,52 @@ button:not(:disabled):active,
   margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--text-sub);
 }
-.wk-how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.wk-how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .wk-how li {
-  display: flex; align-items: flex-start; gap: 0.5em;
+  display: flex; align-items: flex-start; gap: 0.55em;
   font-size: 0.8rem; line-height: 1.45; color: var(--text-muted);
 }
-.wk-how li svg { flex-shrink: 0; margin-top: 0.15em; color: var(--g); }
-.wk-how strong { color: var(--text); font-weight: 700; }
+.wk-how li > svg { flex: 0 0 auto; margin-top: 0.15em; color: var(--g); }
+.wk-how li > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.wk-how strong { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
+
+/* Subscribe confirmation popup */
+.wk-modal-overlay {
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; align-items: center; justify-content: center; padding: 1.1rem;
+  background: rgba(4,10,7,0.62); backdrop-filter: blur(6px);
+  animation: wk-modal-fade 0.18s ease-out;
+}
+.wk-modal {
+  width: 100%; max-width: 400px; border-radius: 20px; padding: 1.4rem 1.3rem 1.2rem;
+  background: var(--bg4, #0d1f14); border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5); text-align: center;
+  animation: wk-modal-pop 0.24s cubic-bezier(0.34,1.56,0.64,1);
+}
+.wk-modal-badge {
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 0.85rem;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 8px 20px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.wk-modal-title { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 900; color: var(--text); }
+.wk-modal-sub { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
+.wk-modal-sub strong { color: var(--text); }
+.wk-modal-how { text-align: left; margin: 0 0 1.1rem; }
+.wk-modal-how .wk-how-title { margin-top: 0; }
+.wk-modal-btn {
+  width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #047857, #10b981); color: #fff;
+  font-weight: 800; font-size: 0.9rem;
+  box-shadow: 0 6px 16px rgba(16,185,129,0.4);
+  transition: transform 0.14s ease;
+}
+.wk-modal-btn:hover { transform: translateY(-1px); }
+@keyframes wk-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wk-modal-pop { from { opacity: 0; transform: scale(0.92) translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .wk-modal-overlay, .wk-modal { animation: none; }
+}
 .wk-off {
   align-self: flex-start; margin-top: 0.35rem; background: none; border: none;
   color: var(--text-sub); font-size: 0.76rem; text-decoration: underline;
