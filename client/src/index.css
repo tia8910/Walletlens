@@ -4344,24 +4344,23 @@ tr:last-child td { border-bottom: none; }
 .gp-panel .ade-panel-title { color: #eafff5; }
 .gp-body { padding: 1rem 1.15rem 1.5rem; }
 
-/* Full-page presentation: opens like a dedicated page with a back button
-   (wired to the device/browser back button) instead of a bottom-sheet modal. */
-.ade-overlay.gp-overlay { align-items: stretch; background: #080d0a; backdrop-filter: none; }
+/* Full-page presentation: opens like a dedicated page (covering the bottom nav
+   so content can't scroll under it) with an X close wired to the device/browser
+   back button, instead of a bottom-sheet modal. */
+.ade-overlay.gp-overlay {
+  align-items: stretch; background: #080d0a; backdrop-filter: none;
+  z-index: 400; /* above the bottom nav (200) so it's a true full page */
+}
 .ade-panel.gp-page {
   max-width: 100%; width: 100%; margin: 0;
   height: 100vh; height: 100dvh; max-height: none;
   border: none; border-radius: 0;
   animation: gp-page-in 0.24s ease;
 }
-.gp-page-header { justify-content: flex-start; gap: 0.55rem; padding-top: calc(env(safe-area-inset-top, 0px) + 1rem); }
-.gp-back {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
-  color: #eafff5; cursor: pointer; transition: background 0.15s ease, transform 0.15s ease;
-}
-.gp-back:hover { background: rgba(255,255,255,0.12); }
-.gp-back:active { transform: scale(0.92); }
+.gp-page .ade-panel-header { padding-top: calc(env(safe-area-inset-top, 0px) + 1.1rem); }
+/* Give the scroll content room at the bottom so nothing sits under the safe
+   area / floating chat button on a full page. */
+.gp-page .gp-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2.5rem); }
 @keyframes gp-page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ade-panel.gp-page { animation: none; } }
 .gp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }
