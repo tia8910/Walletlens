@@ -4,6 +4,13 @@ import crypto from 'crypto';
 
 const router = Router();
 
+// Every upstream CoinGecko call below is guarded by this. Without it, a
+// hung upstream response would leave `pendingFetch`/`pendingMarketFetch`/a
+// `pendingSearches` entry unresolved forever — since those are the dedup
+// locks all concurrent requests attach to, one stalled upstream call would
+// wedge the endpoint for every user until the process restarts.
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
 let priceCache = {};
 let lastFetch = 0;
 const CACHE_DURATION = 60_000; // 1 minute
@@ -51,7 +58,8 @@ function searchCacheSet(key, value) {
 async function refreshPrices(ids) {
   if (pendingFetch) return pendingFetch;
   pendingFetch = fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`,
+    { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
   )
     .then(async (response) => {
       const data = await response.json();
@@ -122,7 +130,8 @@ router.get('/search', async (req, res) => {
   }
 
   const fetchPromise = fetch(
-    `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`
+    `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`,
+    { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
   )
     .then(async (response) => {
       const data = await response.json();
@@ -166,7 +175,8 @@ router.get('/market', async (req, res) => {
   // Deduplicate concurrent upstream fetches
   if (!pendingMarketFetch) {
     pendingMarketFetch = fetch(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h'
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h',
+      { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
     )
       .then(r => r.json())
       .then(data => { marketCache = data; marketCacheTime = Date.now(); return data; })

@@ -5,6 +5,10 @@ import fetch from 'node-fetch';
 
 const router = Router();
 
+// Guards against a hung Binance/Coinbase response leaving a sync request
+// (and the Express connection handling it) open indefinitely.
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
 router.get('/', (req, res) => {
   const exchanges = db.prepare('SELECT id, name, is_connected, created_at FROM exchanges ORDER BY created_at DESC').all();
   res.set('Cache-Control', 'private, no-cache');
@@ -60,7 +64,7 @@ async function fetchBinanceBalances(apiKey, apiSecret) {
 
   const response = await fetch(
     `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`,
-    { headers: { 'X-MBX-APIKEY': apiKey } }
+    { headers: { 'X-MBX-APIKEY': apiKey }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
   );
 
   if (!response.ok) throw new Error('Binance API error: ' + response.statusText);
@@ -90,6 +94,7 @@ async function fetchCoinbaseBalances(apiKey, apiSecret) {
       'CB-ACCESS-TIMESTAMP': timestamp.toString(),
       'CB-VERSION': '2024-01-01',
     },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
 
   if (!response.ok) throw new Error('Coinbase API error: ' + response.statusText);
