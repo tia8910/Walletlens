@@ -90,6 +90,7 @@ const Settings     = lazy(() => import('./pages/Settings'))
 const Guardian     = lazy(() => import('./pages/Guardian'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const Vision       = lazy(() => import('./pages/Vision'))
+const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
 
 function PageFallback() {
   return (
@@ -630,6 +631,7 @@ export default function App() {
               <Route path="/calendar" element={<EconomicCalendar />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/coach" element={<Coach />} />
+              <Route path="/grow" element={<GrowNetWorth />} />
               <Route path="/technicals" element={<Technicals />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />

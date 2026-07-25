@@ -251,8 +251,10 @@ function FanChart({ band, goal, months }) {
 }
 
 /* ── component ──────────────────────────────────────────────────────────── */
-export default function GrowthPlan({ enriched = [], prices = {}, transactions = [], totalValue = 0, totalInvested = 0 }) {
-  const [open, setOpen] = useState(false)
+export default function GrowthPlan({ enriched = [], prices = {}, transactions = [], totalValue = 0, totalInvested = 0, asPage = false }) {
+  // As a page (route /grow) the content is always "open" and rendered inline —
+  // no trigger button, no overlay, no history juggling.
+  const [open, setOpen] = useState(asPage)
   const [monthly, setMonthly] = useState(null)   // null = from profile
   const [years, setYears] = useState(null)
   const [preset, setPreset] = useState('current')
@@ -289,7 +291,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   // otherwise the page could open mid-content with the chart/stats cut off.
   const pageRef = useRef(null)
   useEffect(() => {
-    if (!open) return
+    if (!open || asPage) return
     window.history.pushState({ gpOpen: true }, '')
     const onPop = () => setOpen(false)
     window.addEventListener('popstate', onPop)
@@ -300,7 +302,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
       window.removeEventListener('popstate', onPop)
       document.body.style.overflow = prevOverflow
     }
-  }, [open])
+  }, [open, asPage])
   // The panel mounts only once profile+sim are ready, so pin it to the top then
   // too (the effect above can run before the scroll container exists).
   useEffect(() => {
@@ -379,7 +381,127 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
     return () => { alive = false }
   }, [open, profile, sim])   // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The full growth-plan body, shared by the inline page (/grow) and the
+  // legacy overlay presentation.
+  const growthBody = () => (
+    <>
+            {/* profile chips */}
+            <div className="gp-chips">
+              <span className="gp-chip">Risk: <b>{profile.risk}</b></span>
+              <span className="gp-chip">Investing <b>${fmtN(inputs.monthly)}/mo</b></span>
+              <span className="gp-chip">Goal <b>${fmtN(profile.goal)}</b></span>
+              <span className="gp-chip">Mix return ~<b>{(inputs.params.mu * 100).toFixed(1)}%/yr</b></span>
+            </div>
+
+            {/* fan chart */}
+            <FanChart band={sim.band} goal={profile.goal} months={inputs.months} />
+            <div className="gp-legend">
+              <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> median path</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> optimistic (P90)</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> pessimistic (P10)</span>
+            </div>
+
+            {/* headline stats */}
+            <div className="gp-stats">
+              <div className="gp-stat">
+                <span className="gp-stat-lbl">Median @ {Math.round(inputs.months / 12)}y</span>
+                <span className="gp-stat-val">${fmtN(sim.p50Terminal)}</span>
+              </div>
+              <div className="gp-stat">
+                <span className="gp-stat-lbl">Goal odds</span>
+                <span className="gp-stat-val" style={{ color: sim.probGoal >= 0.7 ? 'var(--g-ink)' : sim.probGoal >= 0.4 ? '#fbbf24' : '#f87171' }}>
+                  {Math.round((sim.probGoal || 0) * 100)}%
+                </span>
+              </div>
+              <div className="gp-stat">
+                <span className="gp-stat-lbl">Goal ETA (median)</span>
+                <span className="gp-stat-val">{sim.medianGoalMonth ? `${(sim.medianGoalMonth / 12).toFixed(1)}y` : '—'}</span>
+              </div>
+            </div>
+
+            {/* what-if controls */}
+            <div className="gp-controls">
+              <label className="gp-slider">
+                <span>Monthly invest <b>${fmtN(inputs.monthly)}</b></span>
+                <input type="range" min="0" max={Math.max(2000, profile.monthly * 4)} step="25"
+                  value={inputs.monthly} onChange={e => setMonthly(Number(e.target.value))} />
+              </label>
+              <label className="gp-slider">
+                <span>Horizon <b>{Math.round(inputs.months / 12)} years</b></span>
+                <input type="range" min="1" max="30" step="1"
+                  value={Math.round(inputs.months / 12)} onChange={e => setYears(Number(e.target.value))} />
+              </label>
+              <div className="gp-presets">
+                {['current', 'conservative', 'balanced', 'aggressive'].map(p => (
+                  <button key={p} className={`gp-preset ${preset === p ? 'active' : ''}`} onClick={() => setPreset(p)}>
+                    {p === 'current' ? 'My mix' : p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* levers */}
+            {levers.length > 0 && (
+              <div className="gp-section">
+                <h4 className="gp-h">What moves the needle most</h4>
+                {levers.map((l, i) => (
+                  <div key={l.id} className="gp-lever">
+                    <span className="gp-lever-rank">{i + 1}</span>
+                    <div className="gp-lever-txt">
+                      <b>{l.label}</b>
+                      <span>{l.detail}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* milestones */}
+            {stones.length > 0 && (
+              <div className="gp-section">
+                <h4 className="gp-h">Next milestones (median path)</h4>
+                <div className="gp-stones">
+                  {stones.map(s => (
+                    <div key={s.target} className="gp-stone">
+                      <b>${fmtN(s.target)}</b>
+                      <span>{s.months ? `~${(s.months / 12).toFixed(1)}y` : 'beyond horizon'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI strategist */}
+            <div className="gp-section">
+              <h4 className="gp-h">Your growth plan</h4>
+              {ai.state === 'loading' && <p className="muted" style={{ fontSize: '0.82rem' }}>Building your personalized plan…</p>}
+              {ai.state === 'done' && ai.plan && (
+                <>
+                  <p className="gp-headline">{ai.plan.headline}</p>
+                  {ai.plan.narrative && <p className="gp-narrative">{ai.plan.narrative}</p>}
+                  {(ai.plan.actions || []).map((a, i) => (
+                    <div key={i} className="gp-action"><span className="gp-action-n">{i + 1}</span><span>{a}</span></div>
+                  ))}
+                </>
+              )}
+            </div>
+
+            <p className="gp-disclaimer">Simulation of historical-style returns — not financial advice or a guarantee. Assumptions: {(inputs.params.mu * 100).toFixed(1)}%/yr expected return, {(inputs.params.sig * 100).toFixed(0)}% volatility for your mix.</p>
+    </>
+  )
+
   if (!enriched.length) return null
+
+  // On the /grow route the parent page supplies the header + back button, so we
+  // render the body inline with no trigger and no overlay chrome.
+  if (asPage) {
+    if (!(profile && sim)) return <p className="gnw-msg">Building your growth model…</p>
+    return (
+      <div className="gp-body gp-body--page">
+        {growthBody()}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -407,108 +529,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             </div>
 
             <div className="gp-body">
-              {/* profile chips */}
-              <div className="gp-chips">
-                <span className="gp-chip">Risk: <b>{profile.risk}</b></span>
-                <span className="gp-chip">Investing <b>${fmtN(inputs.monthly)}/mo</b></span>
-                <span className="gp-chip">Goal <b>${fmtN(profile.goal)}</b></span>
-                <span className="gp-chip">Mix return ~<b>{(inputs.params.mu * 100).toFixed(1)}%/yr</b></span>
-              </div>
-
-              {/* fan chart */}
-              <FanChart band={sim.band} goal={profile.goal} months={inputs.months} />
-              <div className="gp-legend">
-                <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> median path</span>
-                <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> optimistic (P90)</span>
-                <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> pessimistic (P10)</span>
-              </div>
-
-              {/* headline stats */}
-              <div className="gp-stats">
-                <div className="gp-stat">
-                  <span className="gp-stat-lbl">Median @ {Math.round(inputs.months / 12)}y</span>
-                  <span className="gp-stat-val">${fmtN(sim.p50Terminal)}</span>
-                </div>
-                <div className="gp-stat">
-                  <span className="gp-stat-lbl">Goal odds</span>
-                  <span className="gp-stat-val" style={{ color: sim.probGoal >= 0.7 ? 'var(--g-ink)' : sim.probGoal >= 0.4 ? '#fbbf24' : '#f87171' }}>
-                    {Math.round((sim.probGoal || 0) * 100)}%
-                  </span>
-                </div>
-                <div className="gp-stat">
-                  <span className="gp-stat-lbl">Goal ETA (median)</span>
-                  <span className="gp-stat-val">{sim.medianGoalMonth ? `${(sim.medianGoalMonth / 12).toFixed(1)}y` : '—'}</span>
-                </div>
-              </div>
-
-              {/* what-if controls */}
-              <div className="gp-controls">
-                <label className="gp-slider">
-                  <span>Monthly invest <b>${fmtN(inputs.monthly)}</b></span>
-                  <input type="range" min="0" max={Math.max(2000, profile.monthly * 4)} step="25"
-                    value={inputs.monthly} onChange={e => setMonthly(Number(e.target.value))} />
-                </label>
-                <label className="gp-slider">
-                  <span>Horizon <b>{Math.round(inputs.months / 12)} years</b></span>
-                  <input type="range" min="1" max="30" step="1"
-                    value={Math.round(inputs.months / 12)} onChange={e => setYears(Number(e.target.value))} />
-                </label>
-                <div className="gp-presets">
-                  {['current', 'conservative', 'balanced', 'aggressive'].map(p => (
-                    <button key={p} className={`gp-preset ${preset === p ? 'active' : ''}`} onClick={() => setPreset(p)}>
-                      {p === 'current' ? 'My mix' : p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* levers */}
-              {levers.length > 0 && (
-                <div className="gp-section">
-                  <h4 className="gp-h">What moves the needle most</h4>
-                  {levers.map((l, i) => (
-                    <div key={l.id} className="gp-lever">
-                      <span className="gp-lever-rank">{i + 1}</span>
-                      <div className="gp-lever-txt">
-                        <b>{l.label}</b>
-                        <span>{l.detail}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* milestones */}
-              {stones.length > 0 && (
-                <div className="gp-section">
-                  <h4 className="gp-h">Next milestones (median path)</h4>
-                  <div className="gp-stones">
-                    {stones.map(s => (
-                      <div key={s.target} className="gp-stone">
-                        <b>${fmtN(s.target)}</b>
-                        <span>{s.months ? `~${(s.months / 12).toFixed(1)}y` : 'beyond horizon'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* AI strategist */}
-              <div className="gp-section">
-                <h4 className="gp-h">Your growth plan</h4>
-                {ai.state === 'loading' && <p className="muted" style={{ fontSize: '0.82rem' }}>Building your personalized plan…</p>}
-                {ai.state === 'done' && ai.plan && (
-                  <>
-                    <p className="gp-headline">{ai.plan.headline}</p>
-                    {ai.plan.narrative && <p className="gp-narrative">{ai.plan.narrative}</p>}
-                    {(ai.plan.actions || []).map((a, i) => (
-                      <div key={i} className="gp-action"><span className="gp-action-n">{i + 1}</span><span>{a}</span></div>
-                    ))}
-                  </>
-                )}
-              </div>
-
-              <p className="gp-disclaimer">Simulation of historical-style returns — not financial advice or a guarantee. Assumptions: {(inputs.params.mu * 100).toFixed(1)}%/yr expected return, {(inputs.params.sig * 100).toFixed(0)}% volatility for your mix.</p>
+              {growthBody()}
             </div>
           </div>
         </div>
