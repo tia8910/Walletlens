@@ -6,7 +6,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack } from './analytics'
-import { initVitals } from './vitals'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -77,8 +76,6 @@ const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' 
 
 // Auto-track every click / selection across the app in GA.
 initAutoTrack()
-// Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
-initVitals()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -93,6 +90,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>
 )
+
+// Load and report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) after first
+// paint so this doesn't block or add parse cost to the initial render.
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => import('./vitals').then(m => m.initVitals()))
+} else {
+  setTimeout(() => import('./vitals').then(m => m.initVitals()), 0)
+}
 
 // Register the service worker after first paint. Skipped on the
 // /Walletlens/ subpath since GitHub Pages doesn't serve it from there
