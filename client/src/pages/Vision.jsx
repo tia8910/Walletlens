@@ -327,7 +327,7 @@ function CategoryBreakdown({ holdings, prices }) {
 }
 
 // ── Bucket card ───────────────────────────────────────────────────────
-function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete, onToggleComplete }) {
+function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete, onToggleComplete, onSimulate }) {
   const type = BUCKET_TYPES[bucket.type] || BUCKET_TYPES.hold
   const target = bucket.isRest
     ? (totalNW - currentValue)
@@ -415,6 +415,15 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
           )}
           {eta && <span className="vp-eta">{eta}</span>}
         </div>
+      )}
+
+      {/* Deep-link this goal into the growth simulator so the user can see
+          whether it's reachable and what monthly amount it would take. */}
+      {target != null && target > 0 && !bucket.completed && onSimulate && (
+        <button className="vp-simulate" onClick={() => onSimulate(target, bucket.name || type.label)}>
+          <Icon name="trend-up" size={13} />
+          Can I reach this?
+        </button>
       )}
 
       {catBreakdown.length > 0 ? (
@@ -939,6 +948,15 @@ export default function Vision() {
       : b))
   }
 
+  // Open the growth simulator pre-loaded with this goal's target, so the user
+  // can see whether it's reachable and what monthly saving it would take.
+  function simulateGoal(target, name) {
+    track('vision_simulate_goal', { target: Math.round(target || 0) })
+    const q = new URLSearchParams({ goal: String(Math.round(target || 0)) })
+    if (name) q.set('name', name)
+    navigate(`/grow?${q.toString()}`)
+  }
+
   // ── Auto-generate a starter plan from the user's real portfolio ──────────
   // Groups holdings by asset class, creates a linked bucket per class present
   // (plus an emergency fund and an "everything else" bucket), so a one-tap plan
@@ -1202,6 +1220,7 @@ export default function Vision() {
                         onEdit={setEditTarget}
                         onDelete={setDeleteId}
                         onToggleComplete={handleToggleComplete}
+                        onSimulate={simulateGoal}
                       />
                     </div>
                   ))}

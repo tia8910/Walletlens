@@ -251,13 +251,15 @@ function FanChart({ band, goal, months }) {
 }
 
 /* ── component ──────────────────────────────────────────────────────────── */
-export default function GrowthPlan({ enriched = [], prices = {}, transactions = [], totalValue = 0, totalInvested = 0, asPage = false }) {
+export default function GrowthPlan({ enriched = [], prices = {}, transactions = [], totalValue = 0, totalInvested = 0, asPage = false, initialGoal = null }) {
   // As a page (route /grow) the content is always "open" and rendered inline —
   // no trigger button, no overlay, no history juggling.
   const [open, setOpen] = useState(asPage)
   const [monthly, setMonthly] = useState(null)   // null = from profile
   const [years, setYears] = useState(null)
+  const [goal, setGoal] = useState(initialGoal)  // null = auto-guessed from profile
   const [preset, setPreset] = useState('current')
+  const [showDetails, setShowDetails] = useState(false)
   const [ai, setAi] = useState({ state: 'idle' })
 
   // Key the (heavy) profile on stable primitives, not the array identities of
@@ -274,6 +276,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   const inputs = profile && {
     monthly: monthly ?? profile.monthly,
     months: (years ?? Math.round(profile.horizonM / 12)) * 12,
+    goal: goal ?? profile.goal,
     params: preset === 'current' ? profile.params : mixParams(PRESET_MIXES[preset]),
   }
 
@@ -281,9 +284,9 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
     if (!profile || !inputs) return null
     return simulate({
       start: totalValue, monthly: inputs.monthly, months: inputs.months,
-      mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal,
+      mu: inputs.params.mu, sig: inputs.params.sig, goal: inputs.goal,
     })
-  }, [profile, totalValue, inputs?.monthly, inputs?.months, inputs?.params.mu, inputs?.params.sig])
+  }, [profile, totalValue, inputs?.monthly, inputs?.months, inputs?.goal, inputs?.params.mu, inputs?.params.sig])
 
   // Open as a full page: push a history entry so the device/browser back button
   // (and the in-header X) closes it like a real page navigation. Also lock the
@@ -319,22 +322,22 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   const levers = useMemo(() => {
     if (!profile || !sim || !inputs) return []
     const LP = 160 // lighter path count for the lever what-ifs (mobile-friendly)
-    const baseline = simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP })
+    const baseline = simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: inputs.goal, seed: 7, paths: LP })
     const base = baseline.p50Terminal
     const runs = [
       { id: 'contrib', label: `Add $100/mo (→ $${fmtN(inputs.monthly + 100)})`,
-        sim: simulate({ start: totalValue, monthly: inputs.monthly + 100, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly + 100, months: inputs.months, mu: inputs.params.mu, sig: inputs.params.sig, goal: inputs.goal, seed: 7, paths: LP }) },
       { id: 'time', label: 'Stay invested 2 more years',
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months + 24, mu: inputs.params.mu, sig: inputs.params.sig, goal: profile.goal, seed: 7, paths: LP }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months + 24, mu: inputs.params.mu, sig: inputs.params.sig, goal: inputs.goal, seed: 7, paths: LP }) },
       { id: 'derisk', label: 'Rebalance to a balanced mix',
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(PRESET_MIXES.balanced), goal: profile.goal, seed: 7, paths: LP }) },
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(PRESET_MIXES.balanced), goal: inputs.goal, seed: 7, paths: LP }) },
     ]
     if ((profile.weights.cash || 0) > 0.25) {
       const w = { ...profile.weights }
       const move = Math.min(w.cash - 0.10, 0.5)
       w.cash -= move; w.stocks = (w.stocks || 0) + move * 0.6; w.crypto_large = (w.crypto_large || 0) + move * 0.4
       runs.push({ id: 'deploy', label: `Deploy idle cash (${Math.round((profile.weights.cash) * 100)}% → 10%)`,
-        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(w), goal: profile.goal, seed: 7, paths: LP }) })
+        sim: simulate({ start: totalValue, monthly: inputs.monthly, months: inputs.months, ...mixParams(w), goal: inputs.goal, seed: 7, paths: LP }) })
     }
     return runs
       .map(r => {
@@ -347,9 +350,55 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
       })
       .filter(r => r.detail)
       .sort((a, b) => (b.deltaProb - a.deltaProb) || (b.delta - a.delta))
-  }, [profile, sim, totalValue, inputs?.monthly, inputs?.months, inputs?.params.mu, inputs?.params.sig])
+  }, [profile, sim, totalValue, inputs?.monthly, inputs?.months, inputs?.goal, inputs?.params.mu, inputs?.params.sig])
 
   const stones = useMemo(() => (sim ? milestones(totalValue, sim.band) : []), [sim, totalValue])
+
+  // ── Plain-English summary ────────────────────────────────────────────────
+  // Everything below turns the simulation into sentences a non-technical user
+  // can act on: what they'll likely have, whether the goal is reachable, and
+  // exactly how much per month it would take if it isn't.
+  //
+  // Monthly contribution needed to reach the goal within the horizon, solved
+  // from the compound-growth formula (median growth, no volatility):
+  //   FV = start(1+r)^n + m((1+r)^n − 1)/r
+  const needMonthly = useMemo(() => {
+    if (!inputs || !sim) return null
+    const n = inputs.months
+    const r = Math.pow(1 + inputs.params.mu, 1 / 12) - 1
+    const growth = Math.pow(1 + r, n)
+    const fromNow = totalValue * growth
+    if (fromNow >= inputs.goal) return 0            // already gets there with $0/mo
+    const factor = r > 0 ? (growth - 1) / r : n
+    return Math.max(0, Math.ceil((inputs.goal - fromNow) / factor / 10) * 10)
+  }, [inputs?.goal, inputs?.months, inputs?.params.mu, totalValue, sim])
+
+  // When the goal is reached, taken from the SAME median line drawn on the
+  // chart (first point where it crosses the goal, interpolated). The raw sim's
+  // medianGoalMonth averages only the paths that happened to hit, so it could
+  // promise 5.7 years while the visible line never reaches the goal — telling
+  // the user two different stories. Null means "not within this horizon", and
+  // the "save $X/month" tip takes over.
+  const likelyYears = useMemo(() => {
+    if (!sim?.band?.length || !inputs?.goal) return null
+    let prev = { m: 0, p50: totalValue }
+    for (const pt of sim.band) {
+      if (pt.p50 >= inputs.goal) {
+        const span = pt.p50 - prev.p50
+        const t = span > 0 ? (inputs.goal - prev.p50) / span : 0
+        return (prev.m + t * (pt.m - prev.m)) / 12
+      }
+      prev = pt
+    }
+    return null
+  }, [sim, inputs?.goal, totalValue])
+
+  const yearsLabel = inputs ? `${Math.round(inputs.months / 12)} ${Math.round(inputs.months / 12) === 1 ? 'year' : 'years'}` : ''
+  const odds = Math.round((sim?.probGoal ?? 0) * 100)
+  const oddsWord = odds >= 90 ? 'almost certain' : odds >= 70 ? 'very likely' : odds >= 40 ? 'possible' : 'unlikely'
+  // Percentages confuse; "7 in 10" reads instantly.
+  const oddsChance = Math.max(1, Math.round(odds / 10))
+  const oddsColor = odds >= 70 ? 'var(--g-ink)' : odds >= 40 ? '#fbbf24' : '#f87171'
 
   // AI strategist — fire once per open with the synthesized profile + sim.
   useEffect(() => {
@@ -365,7 +414,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             totalValue, pnlPct: profile.pnlPct,
             weights: profile.weights, risk: profile.risk, behaviour: profile.behaviour,
             topShare: profile.top, dryPowder: profile.dryPowder,
-            monthly: inputs.monthly, goal: profile.goal, months: inputs.months,
+            monthly: inputs.monthly, goal: inputs.goal, months: inputs.months,
             expReturn: inputs.params.mu, vol: inputs.params.sig,
             p10: sim.p10Terminal, p50: sim.p50Terminal, p90: sim.p90Terminal,
             probGoal: sim.probGoal, levers: levers.map(l => ({ label: l.label, detail: l.detail })),
@@ -385,52 +434,92 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   // legacy overlay presentation.
   const growthBody = () => (
     <>
-            {/* profile chips */}
-            <div className="gp-chips">
-              <span className="gp-chip">Risk: <b>{profile.risk}</b></span>
-              <span className="gp-chip">Investing <b>${fmtN(inputs.monthly)}/mo</b></span>
-              <span className="gp-chip">Goal <b>${fmtN(profile.goal)}</b></span>
-              <span className="gp-chip">Mix return ~<b>{(inputs.params.mu * 100).toFixed(1)}%/yr</b></span>
+            {/* ── The answer, in one sentence ── */}
+            <div className="gp-answer">
+              <p className="gp-answer-lead">
+                If you keep saving <b>${fmtN(inputs.monthly)}</b> a month, in <b>{yearsLabel}</b> you'll
+                probably have about
+              </p>
+              <p className="gp-answer-big">${fmtN(sim.p50Terminal)}</p>
+              <p className="gp-answer-sub">
+                Could be as low as <b>${fmtN(sim.p10Terminal)}</b> or as high
+                as <b>${fmtN(sim.p90Terminal)}</b>, depending on the markets.
+              </p>
             </div>
 
-            {/* fan chart */}
-            <FanChart band={sim.band} goal={profile.goal} months={inputs.months} />
-            <div className="gp-legend">
-              <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> median path</span>
-              <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> optimistic (P90)</span>
-              <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> pessimistic (P10)</span>
-            </div>
-
-            {/* headline stats */}
-            <div className="gp-stats">
-              <div className="gp-stat">
-                <span className="gp-stat-lbl">Median @ {Math.round(inputs.months / 12)}y</span>
-                <span className="gp-stat-val">${fmtN(sim.p50Terminal)}</span>
-              </div>
-              <div className="gp-stat">
-                <span className="gp-stat-lbl">Goal odds</span>
-                <span className="gp-stat-val" style={{ color: sim.probGoal >= 0.7 ? 'var(--g-ink)' : sim.probGoal >= 0.4 ? '#fbbf24' : '#f87171' }}>
-                  {Math.round((sim.probGoal || 0) * 100)}%
+            {/* ── Your goal — editable ── */}
+            <div className="gp-goalcard">
+              <label className="gp-goal-row">
+                <span className="gp-goal-lbl">My goal</span>
+                <span className="gp-goal-input">
+                  <span>$</span>
+                  <input
+                    type="number" inputMode="numeric" min="0" step="1000"
+                    value={Math.round(inputs.goal)}
+                    onChange={e => setGoal(Math.max(0, Number(e.target.value) || 0))}
+                    aria-label="Goal amount"
+                  />
                 </span>
-              </div>
-              <div className="gp-stat">
-                <span className="gp-stat-lbl">Goal ETA (median)</span>
-                <span className="gp-stat-val">{sim.medianGoalMonth ? `${(sim.medianGoalMonth / 12).toFixed(1)}y` : '—'}</span>
-              </div>
+              </label>
+              <p className="gp-goal-verdict" style={{ color: oddsColor }}>
+                {odds < 40 ? (
+                  <>At <b>${fmtN(inputs.monthly)}</b> a month, you probably <b>won't</b> reach this
+                    within {yearsLabel} — only about <b>{oddsChance} in 10</b> chance.</>
+                ) : likelyYears ? (
+                  <>You'd probably reach it in about <b>{likelyYears < 1 ? 'under a year' : `${likelyYears.toFixed(1)} years`}</b> — {oddsWord}.</>
+                ) : (
+                  <>Reaching this within {yearsLabel} looks <b>{oddsWord}</b> — about <b>{oddsChance} in 10</b> chance.</>
+                )}
+              </p>
+              {needMonthly != null && needMonthly > inputs.monthly && (
+                <p className="gp-goal-fix">
+                  <Icon name="lightbulb" size={14} />
+                  <span>To get there in {yearsLabel}, save about <b>${fmtN(needMonthly)}/month</b>.
+                    <button type="button" className="gp-goal-apply" onClick={() => setMonthly(needMonthly)}>Use this</button>
+                  </span>
+                </p>
+              )}
             </div>
 
-            {/* what-if controls */}
+            {/* ── Chart, with a plain caption ── */}
+            <FanChart band={sim.band} goal={inputs.goal} months={inputs.months} />
+            <div className="gp-legend">
+              <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> Likely</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> If markets do well</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> If markets do poorly</span>
+            </div>
+            <p className="gp-caption">
+              The solid line is the most likely path. The shaded band is the realistic range —
+              your money could end up anywhere inside it. The dashed line is your goal.
+            </p>
+
+            {/* ── Two simple dials ── */}
             <div className="gp-controls">
               <label className="gp-slider">
-                <span>Monthly invest <b>${fmtN(inputs.monthly)}</b></span>
+                <span>I save <b>${fmtN(inputs.monthly)}</b> a month</span>
                 <input type="range" min="0" max={Math.max(2000, profile.monthly * 4)} step="25"
                   value={inputs.monthly} onChange={e => setMonthly(Number(e.target.value))} />
               </label>
               <label className="gp-slider">
-                <span>Horizon <b>{Math.round(inputs.months / 12)} years</b></span>
+                <span>For <b>{yearsLabel}</b></span>
                 <input type="range" min="1" max="30" step="1"
                   value={Math.round(inputs.months / 12)} onChange={e => setYears(Number(e.target.value))} />
               </label>
+            </div>
+
+            {/* ── Everything advanced lives behind one toggle ── */}
+            <button type="button" className="gp-more" onClick={() => setShowDetails(v => !v)}>
+              {showDetails ? 'Hide details' : 'Show more details'}
+              <span className={`gp-more-arrow${showDetails ? ' open' : ''}`}>›</span>
+            </button>
+
+            {showDetails && (<>
+            <div className="gp-section">
+              <h4 className="gp-h">Try a different mix</h4>
+              <p className="gp-caption gp-caption--tight">
+                Your own mix grows about <b>{(inputs.params.mu * 100).toFixed(1)}% a year</b> on average.
+                Tap another to see how a safer or bolder mix would change the picture.
+              </p>
               <div className="gp-presets">
                 {['current', 'conservative', 'balanced', 'aggressive'].map(p => (
                   <button key={p} className={`gp-preset ${preset === p ? 'active' : ''}`} onClick={() => setPreset(p)}>
@@ -486,7 +575,8 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
               )}
             </div>
 
-            <p className="gp-disclaimer">Simulation of historical-style returns — not financial advice or a guarantee. Assumptions: {(inputs.params.mu * 100).toFixed(1)}%/yr expected return, {(inputs.params.sig * 100).toFixed(0)}% volatility for your mix.</p>
+            <p className="gp-disclaimer">These are simulations based on historical-style returns — not financial advice, and not a guarantee. Assumes about {(inputs.params.mu * 100).toFixed(1)}% growth a year with {(inputs.params.sig * 100).toFixed(0)}% ups and downs for your mix.</p>
+            </>)}
     </>
   )
 
