@@ -7,7 +7,6 @@ import Icon from '../components/Icon'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
-const GrowthPlan       = lazy(() => import('../components/GrowthPlan'))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
 // The wallet evaluation adapts to what's actually in the portfolio: a stock
@@ -302,13 +301,20 @@ export default function Coach() {
               totalValue={totalValue}
               totalInvested={totalInvested}
             />
-            <GrowthPlan
-              enriched={enriched}
-              prices={prices}
-              transactions={transactions}
-              totalValue={totalValue}
-              totalInvested={totalInvested}
-            />
+            {/* Grow My Net Worth lives on its own page (/grow) */}
+            {enriched.length > 0 && (
+              <button
+                className="ade-trigger gp-trigger"
+                onClick={() => { track('growth_plan_open', { nw: Math.round(totalValue) }); navigate('/grow') }}
+              >
+                <span className="ade-trigger-brain"><Icon name="trend-up" size={20} /></span>
+                <span className="ade-trigger-text">
+                  Grow My Net Worth
+                  <span className="ade-trigger-sub">Personal growth path — simulated on your real portfolio</span>
+                </span>
+                <span className="ade-trigger-arrow">→</span>
+              </button>
+            )}
           </Suspense>
         </div>
       )}
