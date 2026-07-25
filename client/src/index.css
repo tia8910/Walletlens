@@ -4356,11 +4356,14 @@ tr:last-child td { border-bottom: none; }
   height: 100vh; height: 100dvh; max-height: none;
   border: none; border-radius: 0;
   animation: gp-page-in 0.24s ease;
+  /* Keep scrolling inside the page: no chaining to the page behind it. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .gp-page .ade-panel-header { padding-top: calc(env(safe-area-inset-top, 0px) + 1.1rem); }
-/* Give the scroll content room at the bottom so nothing sits under the safe
-   area / floating chat button on a full page. */
-.gp-page .gp-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2.5rem); }
+/* Real clearance at the end of the scroll so the disclaimer never sits flush
+   against the bottom edge (or under the floating chat button). */
+.gp-page .gp-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem); }
 @keyframes gp-page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ade-panel.gp-page { animation: none; } }
 .gp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }

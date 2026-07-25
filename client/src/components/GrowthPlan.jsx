@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
@@ -284,14 +284,28 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   }, [profile, totalValue, inputs?.monthly, inputs?.months, inputs?.params.mu, inputs?.params.sig])
 
   // Open as a full page: push a history entry so the device/browser back button
-  // (and the in-header back arrow) closes it like a real page navigation.
+  // (and the in-header X) closes it like a real page navigation. Also lock the
+  // background page from scrolling underneath, and always start at the top —
+  // otherwise the page could open mid-content with the chart/stats cut off.
+  const pageRef = useRef(null)
   useEffect(() => {
     if (!open) return
     window.history.pushState({ gpOpen: true }, '')
     const onPop = () => setOpen(false)
     window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    if (pageRef.current) pageRef.current.scrollTop = 0
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      document.body.style.overflow = prevOverflow
+    }
   }, [open])
+  // The panel mounts only once profile+sim are ready, so pin it to the top then
+  // too (the effect above can run before the scroll container exists).
+  useEffect(() => {
+    if (open && pageRef.current) pageRef.current.scrollTop = 0
+  }, [open, !!(profile && sim)])
   const closePage = () => {
     if (window.history.state?.gpOpen) window.history.back()
     else setOpen(false)
@@ -380,7 +394,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
 
       {open && profile && sim && (
         <div className="ade-overlay gp-overlay" onClick={closePage}>
-          <div className="ade-panel gp-panel gp-page" onClick={e => e.stopPropagation()}>
+          <div ref={pageRef} className="ade-panel gp-panel gp-page" onClick={e => e.stopPropagation()}>
             <div className="ade-panel-header">
               <div className="ade-panel-title">
                 <Icon name="trend-up" size={16} style={{ marginRight: '0.4em', verticalAlign: '-2px' }} />
