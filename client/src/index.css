@@ -4424,9 +4424,14 @@ tr:last-child td { border-bottom: none; }
   padding: 0.4rem 0.6rem; font-weight: 800; color: var(--text);
 }
 .gp-goal-input input {
-  width: 6.5rem; border: none; background: none; outline: none;
+  /* Wide enough for 7-digit goals ($1,000,000+) without clipping. */
+  width: 8.5rem; min-width: 0; border: none; background: none; outline: none;
   font: inherit; color: inherit; text-align: right;
 }
+/* Hide the number spinners — the value is typed, not stepped. */
+.gp-goal-input input::-webkit-outer-spin-button,
+.gp-goal-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.gp-goal-input input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .gp-goal-verdict { margin: 0; font-size: 0.82rem; line-height: 1.5; font-weight: 600; }
 .gp-goal-fix {
   margin: 0; display: flex; align-items: flex-start; gap: 0.5em;
@@ -4446,6 +4451,45 @@ tr:last-child td { border-bottom: none; }
   color: var(--g-ink); font: inherit; font-weight: 800; text-decoration: underline;
 }
 .gp-goal-fix button.gp-goal-apply:hover { opacity: 0.8; }
+
+/* ── "How to reach it" — concrete routes to the goal ── */
+.gp-how {
+  background: var(--surface-1); border: 1px solid rgba(var(--g-rgb),0.28);
+  border-radius: 16px; padding: 0.95rem 1rem; margin-bottom: 1rem;
+}
+.gp-how-h {
+  margin: 0 0 0.2rem; font-size: 0.95rem; font-weight: 800; color: var(--text);
+  display: inline-flex; align-items: center; gap: 0.4em;
+}
+.gp-how-h > svg { flex: 0 0 auto; color: var(--g); }
+.gp-how-lead { margin: 0 0 0.75rem; font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+.gp-how-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; }
+.gp-how-list > li { display: flex; align-items: flex-start; gap: 0.65rem; }
+.gp-how-list > li > div { flex: 1 1 auto; min-width: 0; font-size: 0.86rem; line-height: 1.45; color: var(--text); }
+.gp-how-n {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; margin-top: 0.1rem;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(var(--g-rgb),0.15); color: var(--g-ink);
+  font-size: 0.72rem; font-weight: 800;
+}
+.gp-how-note { display: block; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+/* Restate background/padding for both states — the global `button:hover
+   { background: var(--accent2) }` skin would otherwise fill this pill. */
+.gp-how button.gp-how-apply,
+.gp-how button.gp-how-apply:hover,
+.gp-how button.gp-how-apply:focus {
+  /* width:auto + nowrap so the global button skin can't squash it into a circle */
+  display: inline-block; width: auto; height: auto; margin-top: 0.45rem;
+  padding: 0.34rem 0.85rem; border-radius: 10px; outline: none; box-shadow: none;
+  white-space: nowrap; line-height: 1.25;
+  background: rgba(var(--g-rgb),0.12); border: 1px solid rgba(var(--g-rgb),0.32);
+  color: var(--g-ink); font-size: 0.74rem; font-weight: 800; cursor: pointer;
+}
+.gp-how button.gp-how-apply:hover { background: rgba(var(--g-rgb),0.22); }
+.gp-how-foot {
+  margin: 0.85rem 0 0; padding-top: 0.7rem; border-top: 1px solid var(--border);
+  font-size: 0.76rem; line-height: 1.5; color: var(--text-sub);
+}
 
 /* Caption that explains the chart in ordinary words. */
 .gp-caption { margin: 0 0 1rem; font-size: 0.76rem; line-height: 1.55; color: var(--text-sub); }

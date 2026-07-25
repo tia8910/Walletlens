@@ -92,8 +92,10 @@ function simulate({ start, monthly, months, mu, sig, goal, paths = 300, seed = 4
   const mDrift = Math.log(1 + mu) / 12
   const mSig = sig / Math.sqrt(12)
   const terminal = new Array(paths)
-  // per-month sorted snapshots for percentiles — sample every 3 months to keep it light
-  const step = months > 120 ? 6 : 3
+  // Per-month sorted snapshots for percentiles. Short horizons sample monthly so
+  // a 1-year view isn't a 4-point straight line and the "when do I cross my
+  // goal" estimate is accurate to the month; long ones coarsen to stay light.
+  const step = months > 120 ? 6 : months > 36 ? 3 : 1
   const sampleMonths = []
   for (let m = step; m <= months; m += step) sampleMonths.push(m)
   if (sampleMonths[sampleMonths.length - 1] !== months) sampleMonths.push(months)
@@ -373,6 +375,34 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
     return Math.max(0, Math.ceil((inputs.goal - fromNow) / factor / 10) * 10)
   }, [inputs?.goal, inputs?.months, inputs?.params.mu, totalValue, sim])
 
+  // How long the goal takes at the CURRENT monthly amount (the "just be
+  // patient" route). Solved from the same formula for n:
+  //   n = ln((goal + m/r) / (start + m/r)) / ln(1+r)
+  const yearsAtCurrent = useMemo(() => {
+    if (!inputs) return null
+    if (totalValue >= inputs.goal) return 0
+    const r = Math.pow(1 + inputs.params.mu, 1 / 12) - 1
+    const m = inputs.monthly
+    if (r <= 0) return m > 0 ? (inputs.goal - totalValue) / m / 12 : null
+    const num = inputs.goal + m / r, den = totalValue + m / r
+    if (num <= 0 || den <= 0) return null
+    const n = Math.log(num / den) / Math.log(1 + r)
+    return n > 0 && isFinite(n) ? n / 12 : null
+  }, [inputs?.goal, inputs?.monthly, inputs?.params.mu, totalValue])
+
+  // A one-off top-up today that gets there within the chosen horizon — the
+  // "I have some cash spare" route.
+  const lumpNow = useMemo(() => {
+    if (!inputs) return null
+    const n = inputs.months
+    const r = Math.pow(1 + inputs.params.mu, 1 / 12) - 1
+    const growth = Math.pow(1 + r, n)
+    const factor = r > 0 ? (growth - 1) / r : n
+    const needStart = (inputs.goal - inputs.monthly * factor) / growth
+    const gap = needStart - totalValue
+    return gap > 0 ? Math.ceil(gap / 10) * 10 : 0
+  }, [inputs?.goal, inputs?.months, inputs?.monthly, inputs?.params.mu, totalValue])
+
   // When the goal is reached, taken from the SAME median line drawn on the
   // chart (first point where it crosses the goal, interpolated). The raw sim's
   // medianGoalMonth averages only the paths that happened to hit, so it could
@@ -466,20 +496,79 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                   <>At <b>${fmtN(inputs.monthly)}</b> a month, you probably <b>won't</b> reach this
                     within {yearsLabel} — only about <b>{oddsChance} in 10</b> chance.</>
                 ) : likelyYears ? (
-                  <>You'd probably reach it in about <b>{likelyYears < 1 ? 'under a year' : `${likelyYears.toFixed(1)} years`}</b> — {oddsWord}.</>
+                  <>You'd probably reach it in about <b>{likelyYears < 1
+                    ? `${Math.max(1, Math.round(likelyYears * 12))} ${Math.max(1, Math.round(likelyYears * 12)) === 1 ? 'month' : 'months'}`
+                    : `${likelyYears.toFixed(1)} years`}</b> — {oddsWord}.
+                    {inputs.goal > totalValue && <> You're <b>${fmtN(inputs.goal - totalValue)}</b> away.</>}</>
                 ) : (
                   <>Reaching this within {yearsLabel} looks <b>{oddsWord}</b> — about <b>{oddsChance} in 10</b> chance.</>
                 )}
               </p>
-              {needMonthly != null && needMonthly > inputs.monthly && (
-                <p className="gp-goal-fix">
-                  <Icon name="lightbulb" size={14} />
-                  <span>To get there in {yearsLabel}, save about <b>${fmtN(needMonthly)}/month</b>.
-                    <button type="button" className="gp-goal-apply" onClick={() => setMonthly(needMonthly)}>Use this</button>
-                  </span>
-                </p>
-              )}
             </div>
+
+            {/* ── How to actually get there ──
+                Concrete routes, not just one number: save more, wait longer,
+                add a lump sum, or lower the target. Each is one tap to apply. */}
+            {(needMonthly > inputs.monthly || (yearsAtCurrent && yearsAtCurrent > inputs.months / 12)) && (
+              <div className="gp-how">
+                <h4 className="gp-how-h"><Icon name="lightbulb" size={15} />How to reach it</h4>
+                <p className="gp-how-lead">Any one of these gets you there — pick whichever fits your life.</p>
+                <ol className="gp-how-list">
+                  {needMonthly > inputs.monthly && (
+                    <li>
+                      <span className="gp-how-n">1</span>
+                      <div>
+                        <b>Save ${fmtN(needMonthly)} a month</b> instead of ${fmtN(inputs.monthly)}
+                        <span className="gp-how-note">
+                          That's ${fmtN(needMonthly - inputs.monthly)} more a month — about
+                          ${fmtN(Math.round((needMonthly - inputs.monthly) / 30))} a day.
+                        </span>
+                        <button type="button" className="gp-how-apply" onClick={() => setMonthly(needMonthly)}>Try it</button>
+                      </div>
+                    </li>
+                  )}
+                  {yearsAtCurrent && yearsAtCurrent > inputs.months / 12 && yearsAtCurrent <= 30 && (
+                    <li>
+                      <span className="gp-how-n">{needMonthly > inputs.monthly ? 2 : 1}</span>
+                      <div>
+                        <b>Give it {Math.ceil(yearsAtCurrent)} years</b> instead of {yearsLabel}
+                        <span className="gp-how-note">
+                          Keep saving ${fmtN(inputs.monthly)} a month and just wait longer — no extra money needed.
+                        </span>
+                        <button type="button" className="gp-how-apply" onClick={() => setYears(Math.min(30, Math.ceil(yearsAtCurrent)))}>Try it</button>
+                      </div>
+                    </li>
+                  )}
+                  {lumpNow > 0 && (
+                    <li>
+                      <span className="gp-how-n">{1 + (needMonthly > inputs.monthly ? 1 : 0) + (yearsAtCurrent && yearsAtCurrent > inputs.months / 12 && yearsAtCurrent <= 30 ? 1 : 0)}</span>
+                      <div>
+                        <b>Add ${fmtN(lumpNow)} now</b> as a one-off
+                        <span className="gp-how-note">
+                          A single top-up today — a bonus, savings, or selling something you don't need —
+                          then carry on at ${fmtN(inputs.monthly)} a month.
+                        </span>
+                      </div>
+                    </li>
+                  )}
+                  {sim.p50Terminal < inputs.goal && (
+                    <li>
+                      <span className="gp-how-n">{1 + (needMonthly > inputs.monthly ? 1 : 0) + (yearsAtCurrent && yearsAtCurrent > inputs.months / 12 && yearsAtCurrent <= 30 ? 1 : 0) + (lumpNow > 0 ? 1 : 0)}</span>
+                      <div>
+                        <b>Aim for ${fmtN(sim.p50Terminal)}</b> instead
+                        <span className="gp-how-note">
+                          A smaller target you're already on track for. You can always raise it later.
+                        </span>
+                        <button type="button" className="gp-how-apply" onClick={() => setGoal(Math.round(sim.p50Terminal))}>Try it</button>
+                      </div>
+                    </li>
+                  )}
+                </ol>
+                <p className="gp-how-foot">
+                  Saving more is the one thing fully in your control — market returns aren't.
+                </p>
+              </div>
+            )}
 
             {/* ── Chart, with a plain caption ── */}
             <FanChart band={sim.band} goal={inputs.goal} months={inputs.months} />
