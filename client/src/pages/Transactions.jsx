@@ -197,6 +197,8 @@ function generateAnalysis(detail, type) {
 export default function Transactions({ showAdd, onCloseAdd }) {
   const location = useLocation()
   const [transactions, setTransactions] = useState([])
+  const TX_PAGE_SIZE = 50
+  const [visibleTxCount, setVisibleTxCount] = useState(TX_PAGE_SIZE)
   const [wallets, setWallets] = useState([])
   const [holdings, setHoldings] = useState([])
   const [showForm, setShowForm] = useState(false)
@@ -249,6 +251,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       api.getPortfolio().catch(() => []),
     ])
     setTransactions(t)
+    setVisibleTxCount(TX_PAGE_SIZE)
     setWallets(w)
     // Enrich with best-effort USD values (price cache; USD-pegged → $1) so the
     // trade sheet's "Buy with" balance + % quick-fill have a value to work from.
@@ -1062,7 +1065,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleTxCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1096,6 +1099,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {visibleTxCount < transactions.length && (
+            <button className="pill" style={{ width: '100%', margin: '12px 0' }}
+              onClick={() => setVisibleTxCount(c => c + TX_PAGE_SIZE)}>
+              Load more ({transactions.length - visibleTxCount} remaining)
+            </button>
+          )}
         </div>
       )}
 
