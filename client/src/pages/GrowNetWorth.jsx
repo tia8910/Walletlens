@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
@@ -10,6 +10,10 @@ const GrowthPlan = lazy(() => import('../components/GrowthPlan'))
 // its own page, its own scroll, and the browser/device back button for free.
 export default function GrowNetWorth() {
   const navigate = useNavigate()
+  // Goals can deep-link a specific target, e.g. /grow?goal=50000&name=House
+  const [params] = useSearchParams()
+  const goalParam = Number(params.get('goal')) || null
+  const goalName = params.get('name') || ''
   const [portfolio, setPortfolio] = useState([])
   const [prices, setPrices] = useState({})
   const [transactions, setTransactions] = useState([])
@@ -55,7 +59,7 @@ export default function GrowNetWorth() {
           Back
         </button>
         <h1 className="gnw-title">
-          <Icon name="trend-up" size={17} /> Grow My Net Worth
+          <Icon name="trend-up" size={17} /> {goalName ? `Reaching “${goalName}”` : 'Grow My Net Worth'}
         </h1>
       </div>
 
@@ -67,6 +71,7 @@ export default function GrowNetWorth() {
         <Suspense fallback={<p className="gnw-msg">Loading engine…</p>}>
           <GrowthPlan
             asPage
+            initialGoal={goalParam}
             enriched={enriched}
             prices={prices}
             transactions={transactions}
