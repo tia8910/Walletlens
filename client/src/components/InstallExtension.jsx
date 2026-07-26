@@ -26,7 +26,7 @@ function detectBrowser() {
   return { canInstall, label, store: 'Chrome Web Store', isChrome }
 }
 
-const ChromeIcon = ({ size = 18 }) => (
+export const ChromeIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
     <circle cx="24" cy="24" r="11" fill="#fff" />
     <path fill="#4caf50" d="M24 13h17.6A23.9 23.9 0 0 0 24 0 24 24 0 0 0 3.4 11.8L12 26.7A12 12 0 0 1 24 13z" />

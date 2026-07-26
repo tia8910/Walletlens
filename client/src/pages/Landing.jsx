@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
-import InstallExtension from '../components/InstallExtension'
+import InstallExtension, { EXTENSION_URL, ChromeIcon } from '../components/InstallExtension'
+import StoreBadges, { PLAY_STORE_URL, PlayMark } from '../components/StoreBadges'
 import EmailOptIn from '../components/EmailOptIn'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
@@ -105,6 +106,17 @@ export default function Landing() {
   const [accentIdx, setAccentIdx] = useState(0)
   const [accentIn, setAccentIn] = useState(true)
   const [actionIdx, setActionIdx] = useState(0)
+  // Inside the installed Android app (TWA) a "Get it on Google Play" badge is
+  // noise — the user is already there. Same for the PWA on desktop/iOS.
+  const [isApp, setIsApp] = useState(false)
+
+  useEffect(() => {
+    setIsApp(
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.startsWith('android-app://')
+    )
+  }, [])
 
   useEffect(() => {
     track('landing_view')
@@ -166,6 +178,20 @@ export default function Landing() {
             </div>
           </div>
 
+          {!isApp && (
+            <a
+              className="lp-launch-pill"
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('launch_pill_click', { store: 'google_play' })}
+            >
+              <span className="lp-launch-dot" />
+              Now on Google Play
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
+            </a>
+          )}
+
           <h1 className="lp-hero-h1">
             {t('heroH1a')}<br />
             <span className={`lp-h1-accent lp-h1-accent-dynamic${accentIn ? ' lp-h1-accent-in' : ' lp-h1-accent-out'}`}>
@@ -190,10 +216,10 @@ export default function Landing() {
             </button>
           </div>
 
-          <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-muted, #94a3b8)' }}>
-            <span>or</span>
-            <InstallExtension variant="link" source="landing_hero" />
-            <span>— free Chrome &amp; Edge extension, no signup</span>
+          <div className="lp-store-block">
+            <div className="lp-store-or">or get the app</div>
+            <StoreBadges source="landing_hero" hidePlay={isApp} />
+            <div className="lp-store-note">Free on every platform · no account, no signup</div>
           </div>
 
           <div className="lp-trust-strip">
@@ -542,40 +568,115 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══ BROWSER EXTENSION ══════════════════════════════════════════ */}
-      <section className="lp-section lp-section-alt" id="browser-extension">
-        <div className="lp-section-label">Browser Extension</div>
+      {/* ══ PLATFORMS ══════════════════════════════════════════════════ */}
+      {/* Keeps the #browser-extension anchor — older links and blog posts
+          point at it — while widening the section to all three platforms. */}
+      <section className="lp-section lp-section-alt" id="platforms">
+        <span id="browser-extension" className="lp-anchor" aria-hidden="true" />
+        <div className="lp-section-label">One WalletLens, three ways to use it</div>
         <h2 className="lp-section-h2">
-          Your whole portfolio,<br />
-          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>one click from your toolbar</span>
+          On your phone, in your browser,<br />
+          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>or straight from the web</span>
         </h2>
-        <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
-          The free WalletLens extension for Chrome, Edge &amp; Brave shows your total value,
-          24h change, holdings, market movers and buy/sell signals — right from your browser,
-          without opening the site. It syncs automatically and your data stays on your device.
+        <p className="lp-section-sub" style={{ maxWidth: 620, margin: '0 auto 2.5rem' }}>
+          Same portfolio, same privacy model — pick whichever fits the moment. Everything
+          stays on your device, so there's no account to keep in sync.
         </p>
 
-        <div className="lp-ext-feat-grid">
-          {[
-            { e: '⚡', t: 'Instant glance', d: 'Total value & 24h change the moment you click the icon — no page load.' },
-            { e: '🔄', t: 'Auto-sync', d: 'Open WalletLens once and the extension stays up to date on its own.' },
-            { e: '📊', t: 'Holdings & signals', d: 'Per-coin holdings, market movers, news and buy/sell/hold signals.' },
-            { e: '🔒', t: 'Private by design', d: 'No wallet connection, no accounts — your data never leaves your device.' },
-          ].map((b, i) => (
-            <div key={i} className="lp-ext-feat">
-              <div className="lp-ext-feat-icon">{b.e}</div>
-              <div className="lp-ext-feat-title">{b.t}</div>
-              <div className="lp-ext-feat-desc">{b.d}</div>
+        <div className="lp-plat-grid">
+          {/* ── Android app ───────────────────────────────────────────── */}
+          <div className="lp-plat-card">
+            <div className="lp-plat-head">
+              <div className="lp-plat-mark"><PlayMark size={26} /></div>
+              <div>
+                <h3 className="lp-plat-name">Android app</h3>
+                <div className="lp-plat-tag">On Google Play</div>
+              </div>
             </div>
-          ))}
+            <p className="lp-plat-desc">
+              The full tracker as a real app on your home screen — no browser tab, no address bar.
+            </p>
+            <ul className="lp-plat-list">
+              <li>Opens fullscreen like any native app</li>
+              <li>Fingerprint &amp; face unlock with App Lock</li>
+              <li>Price alerts as phone notifications</li>
+              <li>Works offline — your data is stored locally</li>
+            </ul>
+            <a
+              className="lp-plat-cta"
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('platform_cta_click', { platform: 'android' })}
+            >
+              Get it on Google Play
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </a>
+          </div>
+
+          {/* ── Chrome extension ─────────────────────────────────────── */}
+          <div className="lp-plat-card">
+            <div className="lp-plat-head">
+              <div className="lp-plat-mark"><ChromeIcon size={26} /></div>
+              <div>
+                <h3 className="lp-plat-name">Browser extension</h3>
+                <div className="lp-plat-tag">Chrome · Edge · Brave · Opera</div>
+              </div>
+            </div>
+            <p className="lp-plat-desc">
+              Your total value and 24h change one click from the toolbar, without opening the site.
+            </p>
+            <ul className="lp-plat-list">
+              <li>Instant glance — no page load</li>
+              <li>Auto-syncs after you open WalletLens once</li>
+              <li>Per-coin holdings, movers and buy/sell signals</li>
+              <li>No wallet connection, no account</li>
+            </ul>
+            <a
+              className="lp-plat-cta"
+              href={EXTENSION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('platform_cta_click', { platform: 'extension' })}
+            >
+              Add to your browser
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </a>
+          </div>
+
+          {/* ── Web app ──────────────────────────────────────────────── */}
+          <div className="lp-plat-card">
+            <div className="lp-plat-head">
+              <div className="lp-plat-mark lp-plat-mark-web">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9.5" /><path d="M2.5 12h19M12 2.5c2.6 2.6 2.6 16.4 0 19M12 2.5c-2.6 2.6-2.6 16.4 0 19" /></svg>
+              </div>
+              <div>
+                <h3 className="lp-plat-name">Web app</h3>
+                <div className="lp-plat-tag">walletlens.live</div>
+              </div>
+            </div>
+            <p className="lp-plat-desc">
+              Nothing to install. Open it on any device and start tracking in seconds.
+            </p>
+            <ul className="lp-plat-list">
+              <li>Every feature, no download needed</li>
+              <li>Installs to the home screen on iPhone &amp; desktop</li>
+              <li>Import by voice, screenshot or CSV</li>
+              <li>Works the same on phone, tablet and laptop</li>
+            </ul>
+            <button
+              className="lp-plat-cta"
+              onMouseEnter={prefetchDashboard}
+              onClick={() => { track('platform_cta_click', { platform: 'web' }); navigate('/dashboard') }}
+            >
+              Open the web app
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-          <InstallExtension variant="button" source="landing_extension_section" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }} />
-          <InstallExtension variant="link" source="landing_extension_section_store" style={{ fontSize: '0.8rem', opacity: 0.8 }} />
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
-            Free · Works in Chrome, Edge, Brave &amp; Opera
-          </span>
+        <div className="lp-plat-foot">
+          Free on all three · Your holdings never leave the device you entered them on
         </div>
       </section>
 
@@ -699,6 +800,28 @@ export default function Landing() {
       </section>
 
       <footer className="lp-footer">
+        <div className="lp-footer-products">
+          <span className="lp-footer-products-label">Get WalletLens</span>
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('landing_footer_nav', { to: 'google_play' })}
+          >
+            <PlayMark size={14} /> Android app
+          </a>
+          <a
+            href={EXTENSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('landing_footer_nav', { to: 'chrome_web_store' })}
+          >
+            <ChromeIcon size={14} /> Chrome extension
+          </a>
+          <Link to="/dashboard" onClick={() => track('landing_footer_nav', { to: 'web_app' })}>
+            Web app
+          </Link>
+        </div>
         <div className="lp-footer-brand">
           <Logo size={24} />
           <span>WalletLens © {new Date().getFullYear()}</span>

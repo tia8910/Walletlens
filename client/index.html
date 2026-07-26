@@ -249,6 +249,36 @@
     }
     </script>
 
+    <!-- Structured data — MobileApplication. WalletLens now ships as a real
+         Android app on Google Play alongside the web app and the Chrome
+         extension; this is the entity Search uses to link the domain to the
+         Play listing (app rich results, "official app" attribution). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android 8.0+",
+      "installUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
     <!-- Structured data — WebSite. This is the entity Google reads to attribute
          the canonical site name + domain (prevents wrong-domain attribution in
          Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
@@ -281,6 +311,8 @@
       "slogan": "Zoom in your wealth",
       "foundingDate": "2024",
       "sameAs": [
+        "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+        "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
         "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
