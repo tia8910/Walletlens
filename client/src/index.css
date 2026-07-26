@@ -12007,10 +12007,11 @@ button:not(:disabled):active,
 
 /* ── Landing: asset-class icons ── */
 .lp-asset-icon[data-asset="btc"]    { background: rgba(247,147,26,0.12);  color: #f7931a; }
-.lp-asset-icon[data-asset="gold"]   { background: rgba(232,184,37,0.12);   color: #e8b825; }
-.lp-asset-icon[data-asset="silver"] { background: rgba(192,192,192,0.12); color: #c0c0c0; }
 .lp-asset-icon[data-asset="stocks"] { background: rgba(59,130,246,0.12);  color: #3b82f6; }
 .lp-asset-icon[data-asset="cash"]   { background: rgba(52,211,153,0.12);  color: #34d399; }
+/* Gold/silver are drawn by AssetIconBadge (the same mark the app uses), so
+   they only need the layout the tinted .lp-asset-icon discs get. */
+.lp-asset-logo { display: block; margin: 0 auto 0.75rem; }
 
 /* ══ Landing: platforms (Android app / extension / web app) ══════════════
    WalletLens ships on three surfaces now, so the old extension-only section
