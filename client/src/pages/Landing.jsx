@@ -5,7 +5,7 @@ import LandingBackground from '../components/LandingBackground'
 import InstallExtension, { EXTENSION_URL, ChromeIcon } from '../components/InstallExtension'
 import StoreBadges, { PLAY_STORE_URL, PlayMark } from '../components/StoreBadges'
 import EmailOptIn from '../components/EmailOptIn'
-import { AssetIconBadge } from '../data/assetIcons'
+import { MetalBar } from '../data/assetIcons'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -591,16 +591,16 @@ export default function Landing() {
             <div className="lp-asset-name">{t('assetCrypto')}</div>
             <div className="lp-asset-desc">{t('assetCryptoDesc')}</div>
           </div>
-          {/* Gold and silver use the same badge the app renders for
-              metal:xau / metal:xag, so the landing matches what you see
-              on your holdings. */}
+          {/* Gold and silver show the same ingot the trade sheet uses for the
+              Gold / Silver categories, so the landing matches what you see
+              when you actually add them. */}
           <div className="lp-asset-card">
-            <AssetIconBadge coinId="metal:xau" size={52} className="lp-asset-logo" />
+            <div className="lp-asset-icon" data-asset="gold"><MetalBar metal="gold" width={30} /></div>
             <div className="lp-asset-name">{t('assetGold')}</div>
             <div className="lp-asset-desc">{t('assetGoldDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <AssetIconBadge coinId="metal:xag" size={52} className="lp-asset-logo" />
+            <div className="lp-asset-icon" data-asset="silver"><MetalBar metal="silver" width={30} /></div>
             <div className="lp-asset-name">{t('assetSilver')}</div>
             <div className="lp-asset-desc">{t('assetSilverDesc')}</div>
           </div>

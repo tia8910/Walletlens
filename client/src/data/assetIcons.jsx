@@ -11,9 +11,39 @@ export const ASSET_ICONS = {
   'metal:xcu': { label: 'XCU', color1: '#c2410c', color2: '#92400e' },
 }
 
-// The badge CoinLogo draws for the ids above: a radial-gradient disc with the
-// metal's ISO code. Exported so the landing page renders the identical mark
-// without importing CoinLogo's whole fallback chain.
+// ── Metal bars ────────────────────────────────────────────────────────────
+// The ingot marks the trade sheet shows for the Gold / Silver categories.
+// Shared so the landing page's asset-class cards use the same artwork the
+// user sees when they actually add gold or silver.
+const BARS = {
+  gold:   { shadow: '#b45309', body: '#f59e0b', face: '#fcd34d', ink: '#78350f', label: 'Au' },
+  silver: { shadow: '#475569', body: '#94a3b8', face: '#e2e8f0', ink: '#1e293b', label: 'Ag' },
+}
+
+export function MetalBar({ metal = 'gold', width = 20, style }) {
+  const c = BARS[metal] || BARS.gold
+  return (
+    <svg
+      width={width} height={Math.round((width * 20) / 32)} viewBox="0 0 32 20"
+      style={{ display: 'inline-block', verticalAlign: 'middle', ...style }}
+      aria-hidden="true"
+    >
+      <rect x="1" y="5" width="30" height="12" rx="2" fill={c.shadow} />
+      <rect x="3" y="3" width="26" height="14" rx="2" fill={c.body} />
+      <rect x="5" y="5" width="22" height="10" rx="1" fill={c.face} />
+      <text
+        x="16" y="13" textAnchor="middle" fontSize="7" fontWeight="800"
+        fontFamily="monospace,sans-serif" fill={c.ink} letterSpacing="0.5"
+      >
+        {c.label}
+      </text>
+    </svg>
+  )
+}
+
+// The badge CoinLogo draws for the metal ids above: a radial-gradient disc with
+// the metal's ISO code. Used on holdings rows, where a round logo slot is
+// expected alongside the crypto icons.
 export function AssetIconBadge({ coinId, size = 32, className = '', style }) {
   const known = ASSET_ICONS[coinId]
   if (!known) return null
