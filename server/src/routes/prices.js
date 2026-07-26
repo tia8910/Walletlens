@@ -51,7 +51,8 @@ function searchCacheSet(key, value) {
 async function refreshPrices(ids) {
   if (pendingFetch) return pendingFetch;
   pendingFetch = fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`,
+    { signal: AbortSignal.timeout(10_000) }
   )
     .then(async (response) => {
       const data = await response.json();
@@ -122,7 +123,8 @@ router.get('/search', async (req, res) => {
   }
 
   const fetchPromise = fetch(
-    `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`
+    `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`,
+    { signal: AbortSignal.timeout(10_000) }
   )
     .then(async (response) => {
       const data = await response.json();
@@ -166,7 +168,8 @@ router.get('/market', async (req, res) => {
   // Deduplicate concurrent upstream fetches
   if (!pendingMarketFetch) {
     pendingMarketFetch = fetch(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h'
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h',
+      { signal: AbortSignal.timeout(10_000) }
     )
       .then(r => r.json())
       .then(data => { marketCache = data; marketCacheTime = Date.now(); return data; })
