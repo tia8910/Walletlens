@@ -225,8 +225,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
+  // Trade history can grow to hundreds/thousands of rows; rendering every one
+  // at once bloats the DOM on every load/filter change. Render a capped page
+  // and let the user reveal more on demand.
+  const VISIBLE_STEP = 50
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(VISIBLE_STEP) }, [filterWallet, transactions.length])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1062,7 +1068,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1097,6 +1103,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             )
           })}
         </div>
+      )}
+
+      {transactions.length > visibleCount && (
+        <button className="tx-load-more" onClick={() => setVisibleCount(c => c + VISIBLE_STEP)}>
+          Load more ({transactions.length - visibleCount} remaining)
+        </button>
       )}
 
       <Suspense fallback={null}>
