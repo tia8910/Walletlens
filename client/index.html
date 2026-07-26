@@ -346,9 +346,25 @@
 
  </head>
   <body>
-    <!-- Earliest-possible dark background: set before any CSS or JS runs so
-         first-paint matches the app theme on all browsers/OSes. -->
-    <style>html,body{background:#081209;margin:0}</style>
+    <!-- Earliest-possible background: set before any CSS or JS runs so
+         first-paint matches the theme on all browsers/OSes. The app is dark,
+         but the marketing landing is light, so the handful of routes that
+         render Landing get the light value — otherwise they flash dark green
+         before the stylesheet arrives. Keep this list in sync with the
+         Landing routes in App.jsx. -->
+    <style id="wl-first-paint">html,body{background:#081209;margin:0}</style>
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/'
+        var landing = ['/', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
+          '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+          '/add-holdings-by-voice', '/ar/free-net-worth-tracker',
+          '/ar/import-portfolio-from-screenshot', '/ar/add-holdings-by-voice']
+        if (landing.indexOf(p) !== -1) {
+          document.getElementById('wl-first-paint').textContent = 'html,body{background:#eef6f1;margin:0}'
+        }
+      })()
+    </script>
     <div id="root">
       <!-- Brand-matching loading splash. React replaces #root on mount; this
            keeps the screen on-theme until then instead of flashing a white

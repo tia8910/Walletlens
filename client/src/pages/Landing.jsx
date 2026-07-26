@@ -145,8 +145,8 @@ export default function Landing() {
   }, [])
 
   return (
-    <div className="lp">
-      <LandingBackground />
+    <div className="lp lp-light">
+      <LandingBackground light />
 
       {/* ══ HERO ══════════════════════════════════════════════════════ */}
       <section className="lp-hero" ref={heroRef}>
@@ -236,6 +236,15 @@ export default function Landing() {
           </div>
         </div>
 
+        <div className="lp-hero-shot">
+          <img
+            src="/shots/app-phone.webp"
+            width="752" height="1400"
+            alt="WalletLens on a phone: total portfolio value, currency switcher, timeframe selector and a candlestick chart of net worth"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
       </section>
 
       {/* ══ STATS ══════════════════════════════════════════════════════ */}
@@ -259,6 +268,37 @@ export default function Landing() {
           <div className="lp-stat-val"><Counter to={4} /></div>
           <div className="lp-stat-lbl">{t('statClassesLbl')}</div>
         </div>
+      </section>
+
+      {/* ══ SCREENS ════════════════════════════════════════════════════ */}
+      <section className="lp-section" id="screens">
+        <div className="lp-section-label">See it in action</div>
+        <h2 className="lp-section-h2">
+          The whole picture,<br />
+          <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>on every screen you own</span>
+        </h2>
+
+        <figure className="lp-shot lp-shot-wide">
+          <img
+            src="/shots/app-desktop.webp"
+            width="1304" height="888"
+            alt="WalletLens dashboard on desktop: total net worth, portfolio score, 24h change, asset allocation donut and a top-assets table"
+            loading="lazy"
+            decoding="async"
+          />
+          <figcaption>Net worth, portfolio score, allocation and every holding — one dashboard.</figcaption>
+        </figure>
+
+        <figure className="lp-shot">
+          <img
+            src="/shots/app-phones.webp"
+            width="1031" height="877"
+            alt="WalletLens on three phones: portfolio analysis with wallet evaluation score, the dashboard with a candlestick chart, and the Goals planner"
+            loading="lazy"
+            decoding="async"
+          />
+          <figcaption>Analysis, live candles and goal planning — the same portfolio in your pocket.</figcaption>
+        </figure>
       </section>
 
       {/* ══ FEATURES ═══════════════════════════════════════════════════ */}
@@ -731,7 +771,7 @@ export default function Landing() {
         <p className="lp-compare-note">
           *Empower (formerly Personal Capital) is free to use but markets paid wealth-management services. Comparison reflects publicly documented features and is for general guidance, not endorsement.
         </p>
-        <div style={{ textAlign: 'center', marginTop: '1.6rem' }}>
+        <div className="lp-cta-center" style={{ marginTop: '1.6rem' }}>
           <button className="lp-cta-primary" onMouseEnter={prefetchDashboard} onClick={() => { track('landing_cta_compare'); navigate('/dashboard') }}>
             Track your net worth free
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>

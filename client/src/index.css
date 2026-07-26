@@ -7627,7 +7627,10 @@ select.bs-input option { background: var(--bg3); }
   color: #0f172a;
   --text: #0f172a;
   --text2: rgba(15,23,42,0.85);
-  --g-ink: #0f172a; /* accent text reads bold black on the light landing */
+  /* Accent green, dark enough to pass AA on white (~5.3:1). Headings that
+     must stay slate set their own colour below, so this only tints the
+     accent runs, icons and links — matching the brand's green accents. */
+  --g-ink: #047857;
   --text-muted: rgba(15,23,42,0.88);
   --text-sub: rgba(15,23,42,0.75);
 }
@@ -12216,6 +12219,118 @@ button:not(:disabled):active,
   .lp-plat-grid { grid-template-columns: 1fr; }
   .lp-store-row { flex-direction: column; align-items: stretch; }
   .lp-store-badge { justify-content: flex-start; }
+}
+
+/* ══ Landing: product screenshots ════════════════════════════════════════ */
+.lp-hero-shot {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 300px;
+  margin: 2.2rem auto 0;
+}
+.lp-hero-shot img {
+  display: block; width: 100%; height: auto;
+  filter: drop-shadow(0 22px 45px rgba(6,40,24,0.28));
+}
+
+.lp-shot {
+  margin: 0 auto 3rem;
+  max-width: 900px;
+  text-align: center;
+}
+.lp-shot:last-child { margin-bottom: 0; }
+.lp-shot img {
+  display: block; width: 100%; height: auto;
+  border-radius: 16px;
+  filter: drop-shadow(0 18px 40px rgba(6,40,24,0.16));
+}
+/* The phone-cluster render already carries its own device shadow and a soft
+   backdrop, so a card frame around it would read as a double border. */
+.lp-shot:not(.lp-shot-wide) img {
+  border-radius: 0;
+  filter: drop-shadow(0 14px 32px rgba(6,40,24,0.14));
+}
+.lp-shot-wide img {
+  border: 1px solid rgba(15,23,42,0.09);
+}
+.lp-shot figcaption {
+  margin-top: 0.9rem;
+  font-size: 0.83rem; font-weight: 600;
+  color: rgba(15,23,42,0.66);
+}
+
+/* ══ Landing light theme: the sections added for the multi-platform
+      redesign. The base rules above are written for the dark palette, so
+      each one needs a light counterpart. ═══════════════════════════════ */
+.lp-light .lp-plat-card {
+  background: #fff;
+  border-color: rgba(15,23,42,0.1);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.lp-light .lp-plat-card:hover {
+  border-color: rgba(var(--g-rgb),0.4);
+  box-shadow: 0 14px 36px rgba(15,23,42,0.1);
+}
+.lp-light .lp-plat-mark {
+  background: #f4f8f6;
+  border-color: rgba(15,23,42,0.08);
+}
+.lp-light .lp-plat-name  { color: #0f172a; }
+.lp-light .lp-plat-desc  { color: rgba(15,23,42,0.78); }
+.lp-light .lp-plat-list li { color: rgba(15,23,42,0.72); }
+.lp-light .lp-plat-foot  { color: rgba(15,23,42,0.62); }
+.lp-light .lp-plat-card a.lp-plat-cta,
+.lp-light .lp-plat-card button.lp-plat-cta {
+  background: rgba(var(--g-rgb),0.1);
+  border-color: rgba(var(--g-rgb),0.32);
+}
+.lp-light .lp-plat-card a.lp-plat-cta:hover,
+.lp-light .lp-plat-card button.lp-plat-cta:hover {
+  background: rgba(var(--g-rgb),0.17);
+}
+
+.lp-light .lp-store-or   { color: rgba(15,23,42,0.6); }
+.lp-light .lp-store-note { color: rgba(15,23,42,0.6); }
+.lp-light .lp-store-badge {
+  background: #fff;
+  border-color: rgba(15,23,42,0.14);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+}
+.lp-light .lp-store-badge:hover {
+  background: #fff;
+  border-color: rgba(var(--g-rgb),0.45);
+  box-shadow: 0 8px 22px rgba(15,23,42,0.1);
+}
+.lp-light .lp-store-badge-sub  { color: rgba(15,23,42,0.6); }
+.lp-light .lp-store-badge-main { color: #0f172a; }
+
+.lp-light .lp-footer-products a { color: rgba(15,23,42,0.78); }
+.lp-light .lp-footer-products a:hover { color: var(--g-ink); }
+
+/* The shared bar-grow animation dips to opacity 0.25, which on the light
+   landing reads as three washed-out grey pills instead of green bars. Same
+   motion, higher floor. */
+.lp-light .wl-logo-animated .wl-logo-bar-1 { animation-name: logo-bar-grow-light; }
+.lp-light .wl-logo-animated .wl-logo-bar-2 { animation-name: logo-bar-grow-light; }
+.lp-light .wl-logo-animated .wl-logo-bar-3 { animation-name: logo-bar-grow-light; }
+@keyframes logo-bar-grow-light {
+  0%     { transform: scaleY(0.15); opacity: 0.6; }
+  30%    { transform: scaleY(1);    opacity: 1; }
+  60%    { transform: scaleY(1);    opacity: 1; }
+  80%    { transform: scaleY(0.15); opacity: 0.6; }
+  100%   { transform: scaleY(0.15); opacity: 0.6; }
+}
+
+/* Centres a block-level .lp-cta-primary (it's display:flex, so a parent's
+   text-align does nothing to it). */
+.lp-cta-center { display: flex; justify-content: center; }
+
+/* The ".live" suffix shimmers between #4ade80 and #22d3ee — bright enough on
+   the dark theme, but barely visible on white. Darker stops, same shimmer. */
+.lp-light .wl-live-tld {
+  background: linear-gradient(90deg, #059669, #0891b2, #059669);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* ── Coach: action card icon colours via data-action ── */
