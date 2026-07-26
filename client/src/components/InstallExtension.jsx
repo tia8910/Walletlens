@@ -67,14 +67,11 @@ export default function InstallExtension({ variant = 'button', source = 'unknown
   }
 
   if (variant === 'badge') {
+    // Colours live in CSS (.wl-ext-badge) rather than inline, so the light
+    // landing can restyle it — inline styles would outrank the theme override.
     return (
-      <a {...common} style={{
-        display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-        background: '#0b1f12', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '10px',
-        padding: '0.5rem 0.9rem', textDecoration: 'none', color: '#e2f5ea', fontWeight: 600,
-        fontSize: '0.85rem', ...style,
-      }}>
-        <ChromeIcon /> <span style={{ opacity: 0.7, fontSize: '0.72rem' }}>Available in the</span> {store}
+      <a {...common} className="wl-ext-badge" style={style}>
+        <ChromeIcon /> <span className="wl-ext-badge-sub">Available in the</span> {store}
       </a>
     )
   }

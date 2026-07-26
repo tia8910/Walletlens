@@ -825,12 +825,13 @@ export default function Landing() {
       </section>
 
       <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
-        <div className="lp-section-label">Stay ahead</div>
+        <div className="lp-section-label">Newsletter</div>
         <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
-          Get market insights &<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>new features first</span>
+          Market insights,<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>straight to your inbox</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
-          Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
+          Market sentiment, portfolio tips and new WalletLens features — free, no spam,
+          unsubscribe anytime. You'll get a welcome email the moment you subscribe.
         </p>
         <EmailOptIn source="landing_newsletter" />
       </section>
