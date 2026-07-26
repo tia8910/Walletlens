@@ -5,6 +5,7 @@ import LandingBackground from '../components/LandingBackground'
 import InstallExtension, { EXTENSION_URL, ChromeIcon } from '../components/InstallExtension'
 import StoreBadges, { PLAY_STORE_URL, PlayMark } from '../components/StoreBadges'
 import EmailOptIn from '../components/EmailOptIn'
+import { MetalBar } from '../data/assetIcons'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
@@ -590,13 +591,16 @@ export default function Landing() {
             <div className="lp-asset-name">{t('assetCrypto')}</div>
             <div className="lp-asset-desc">{t('assetCryptoDesc')}</div>
           </div>
+          {/* Gold and silver show the same ingot the trade sheet uses for the
+              Gold / Silver categories, so the landing matches what you see
+              when you actually add them. */}
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" data-asset="gold">Au</div>
+            <div className="lp-asset-icon" data-asset="gold"><MetalBar metal="gold" width={30} /></div>
             <div className="lp-asset-name">{t('assetGold')}</div>
             <div className="lp-asset-desc">{t('assetGoldDesc')}</div>
           </div>
           <div className="lp-asset-card">
-            <div className="lp-asset-icon" data-asset="silver">Ag</div>
+            <div className="lp-asset-icon" data-asset="silver"><MetalBar metal="silver" width={30} /></div>
             <div className="lp-asset-name">{t('assetSilver')}</div>
             <div className="lp-asset-desc">{t('assetSilverDesc')}</div>
           </div>
@@ -825,12 +829,13 @@ export default function Landing() {
       </section>
 
       <section className="lp-section" style={{ textAlign:'center', paddingTop:'2.5rem', paddingBottom:'2.5rem' }}>
-        <div className="lp-section-label">Stay ahead</div>
+        <div className="lp-section-label">Newsletter</div>
         <h2 className="lp-section-h2" style={{ marginBottom:'0.75rem' }}>
-          Get market insights &<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>new features first</span>
+          Market insights,<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>straight to your inbox</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth:480, margin:'0 auto 1.5rem' }}>
-          Join the list for a weekly sentiment digest, portfolio tips, and early access to what's next — free, no spam.
+          Market sentiment, portfolio tips and new WalletLens features — free, no spam,
+          unsubscribe anytime. You'll get a welcome email the moment you subscribe.
         </p>
         <EmailOptIn source="landing_newsletter" />
       </section>

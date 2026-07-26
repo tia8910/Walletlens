@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import { getCachedCoinImage } from '../api'
-
-// Known non-crypto asset icons rendered inline — no CDN needed
-const ASSET_ICONS = {
-  'metal:xau': { label: 'XAU', color1: '#f59e0b', color2: '#b45309' },
-  'metal:xag': { label: 'XAG', color1: '#94a3b8', color2: '#475569' },
-  'metal:xpt': { label: 'XPT', color1: '#cbd5e1', color2: '#94a3b8' },
-  'metal:xcu': { label: 'XCU', color1: '#c2410c', color2: '#92400e' },
-}
+// Shared with the landing page's asset-class cards so both render the same
+// metal badges. See client/src/data/assetIcons.js.
+import { ASSET_ICONS } from '../data/assetIcons'
 function isNonCrypto(coinId) {
   if (!coinId) return false
   return coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||

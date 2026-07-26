@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
+import { MetalBar } from '../data/assetIcons'
 
 // Category/payment icons come in three shapes: a line-icon name string
 // (e.g. 'trend-up'), a typographic currency glyph (₿, $, €, ₮, ⊘), or a
@@ -71,22 +72,9 @@ const POPULAR_COINS = [
   { id: 'uniswap',      symbol: 'UNI',  name: 'Uniswap' },
 ]
 
-const IcoGoldBar = (
-  <svg width="20" height="13" viewBox="0 0 32 20" style={{ display:'inline-block', verticalAlign:'middle' }}>
-    <rect x="1" y="5" width="30" height="12" rx="2" fill="#b45309"/>
-    <rect x="3" y="3" width="26" height="14" rx="2" fill="#f59e0b"/>
-    <rect x="5" y="5" width="22" height="10" rx="1" fill="#fcd34d"/>
-    <text x="16" y="13" textAnchor="middle" fontSize="7" fontWeight="800" fontFamily="monospace,sans-serif" fill="#78350f" letterSpacing="0.5">Au</text>
-  </svg>
-)
-const IcoSilverBar = (
-  <svg width="20" height="13" viewBox="0 0 32 20" style={{ display:'inline-block', verticalAlign:'middle' }}>
-    <rect x="1" y="5" width="30" height="12" rx="2" fill="#475569"/>
-    <rect x="3" y="3" width="26" height="14" rx="2" fill="#94a3b8"/>
-    <rect x="5" y="5" width="22" height="10" rx="1" fill="#e2e8f0"/>
-    <text x="16" y="13" textAnchor="middle" fontSize="7" fontWeight="800" fontFamily="monospace,sans-serif" fill="#1e293b" letterSpacing="0.5">Ag</text>
-  </svg>
-)
+// Shared with the landing page's asset-class cards — see data/assetIcons.jsx.
+const IcoGoldBar   = <MetalBar metal="gold" />
+const IcoSilverBar = <MetalBar metal="silver" />
 
 const IcoOther = (
   <Icon name="package" size={16} />
