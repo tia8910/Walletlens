@@ -249,6 +249,36 @@
     }
     </script>
 
+    <!-- Structured data — MobileApplication. WalletLens now ships as a real
+         Android app on Google Play alongside the web app and the Chrome
+         extension; this is the entity Search uses to link the domain to the
+         Play listing (app rich results, "official app" attribution). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android 8.0+",
+      "installUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
     <!-- Structured data — WebSite. This is the entity Google reads to attribute
          the canonical site name + domain (prevents wrong-domain attribution in
          Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
@@ -281,6 +311,8 @@
       "slogan": "Zoom in your wealth",
       "foundingDate": "2024",
       "sameAs": [
+        "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+        "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
         "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
@@ -314,9 +346,25 @@
 
  </head>
   <body>
-    <!-- Earliest-possible dark background: set before any CSS or JS runs so
-         first-paint matches the app theme on all browsers/OSes. -->
-    <style>html,body{background:#081209;margin:0}</style>
+    <!-- Earliest-possible background: set before any CSS or JS runs so
+         first-paint matches the theme on all browsers/OSes. The app is dark,
+         but the marketing landing is light, so the handful of routes that
+         render Landing get the light value — otherwise they flash dark green
+         before the stylesheet arrives. Keep this list in sync with the
+         Landing routes in App.jsx. -->
+    <style id="wl-first-paint">html,body{background:#081209;margin:0}</style>
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/'
+        var landing = ['/', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
+          '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+          '/add-holdings-by-voice', '/ar/free-net-worth-tracker',
+          '/ar/import-portfolio-from-screenshot', '/ar/add-holdings-by-voice']
+        if (landing.indexOf(p) !== -1) {
+          document.getElementById('wl-first-paint').textContent = 'html,body{background:#eef6f1;margin:0}'
+        }
+      })()
+    </script>
     <div id="root">
       <!-- Brand-matching loading splash. React replaces #root on mount; this
            keeps the screen on-theme until then instead of flashing a white
