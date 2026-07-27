@@ -156,7 +156,14 @@ android {
     }
     buildTypes {
         release {
+            // R8 was already stripping unused code, but with no proguardFiles it
+            // ran in its non-optimising mode — which is what Play's "Optimization
+            // isn't enabled" advice is detecting. proguard-android-optimize.txt
+            // turns the optimisation passes on; proguard-rules.pro holds the keep
+            // rules that make that safe for this app.
             minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {

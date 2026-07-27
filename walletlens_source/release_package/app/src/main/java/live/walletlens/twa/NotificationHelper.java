@@ -149,7 +149,15 @@ public final class NotificationHelper {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                // CATEGORY_ALARM is reserved for alarm clocks and timers: it lets a
+                // notification punch through Do Not Disturb and sort above genuinely
+                // urgent things. A price alert or a feature tip is neither, and
+                // mislabelling every notification as an alarm is exactly the kind of
+                // thing Play's notification-quality checks flag. Price alerts are
+                // reminders; everything else is promotional/social.
+                .setCategory(channelId.equals(CHANNEL_ALERTS_ID)
+                        ? NotificationCompat.CATEGORY_REMINDER
+                        : NotificationCompat.CATEGORY_PROMO)
                 .setPriority(channelId.equals(CHANNEL_ALERTS_ID)
                         ? NotificationCompat.PRIORITY_HIGH
                         : NotificationCompat.PRIORITY_DEFAULT)

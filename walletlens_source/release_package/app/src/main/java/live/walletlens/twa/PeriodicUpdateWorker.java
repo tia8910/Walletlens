@@ -99,25 +99,31 @@ public class PeriodicUpdateWorker extends Worker {
         {"📜 Whitepaper Reading", "Always read the whitepaper — understand what you invest in", "https://walletlens.live/academy"}
     };
 
+    // Feature notifications lead with the four things no other free tracker
+    // does. The worker walks this array in order, so the exclusives are first
+    // and the list is kept short — a user sees them within their first few
+    // feature notifications instead of buried behind generic ones.
+    //
+    // Deep links point at where the feature actually lives: import and backup
+    // are surfaces inside /dashboard, Guardian has its own route.
     private static final String[][] FEATURES = {
-        {"📊 Live Dashboard", "Real-time net worth, P&L and allocation charts in one view", "https://walletlens.live/dashboard"},
-        {"🤖 AI Advisor", "Get personalized portfolio recommendations powered by AI", "https://walletlens.live/dashboard"},
-        {"📈 Market Index", "Track 12+ crypto coins, gold, silver and stocks with live data", "https://walletlens.live/market-index"},
-        {"😱 Fear & Greed", "Daily sentiment index with historical trends", "https://walletlens.live/fear-and-greed-index"},
-        {"📱 Smart Alerts", "Price and portfolio alerts with customizable thresholds", "https://walletlens.live/dashboard"},
-        {"🔗 Exchange Connect", "Import holdings from Binance, Coinbase and more", "https://walletlens.live/dashboard"},
-        {"🎓 Academy", "Learn investing — 20+ articles from beginner to advanced", "https://walletlens.live/academy"},
-        {"📤 Data Export", "Export holdings to JSON or CSV — completely private", "https://walletlens.live/dashboard"},
-        {"🔒 Biometric Lock", "Fingerprint or face unlock for extra security", "https://walletlens.live/settings"},
-        {"🔄 Rebalancing", "Optimal portfolio allocation calculator", "https://walletlens.live/dashboard"},
-        {"🐋 Whale Alerts", "Track large crypto transactions in real time", "https://walletlens.live/market-index"},
-        {"📈 Portfolio Snapshot", "Net worth, P&L, allocation charts at a glance", "https://walletlens.live/dashboard"},
-        {"🌍 Multi-Language", "English, Arabic and more languages supported", "https://walletlens.live/settings"},
-        {"🔒 Privacy First", "No account required — data stays on your device", "https://walletlens.live/dashboard"},
-        {"🆓 100% Free", "No premium tiers, every feature is free forever", "https://walletlens.live/dashboard"},
-        {"📊 QR Backup", "Export holdings as a QR code for easy backup", "https://walletlens.live/dashboard"},
-        {"💡 Investment Tips", "Smart hacks and strategies delivered to your device", "https://walletlens.live/academy"},
-        {"📰 News Feed", "Latest crypto and market news curated for your portfolio", "https://walletlens.live/market-index"}
+        // ── The four exclusives ────────────────────────────────────────────
+        {"🛡️ Portfolio Guardian", "Set a check-in. If you ever stop responding, your holdings reach the people you chose", "https://walletlens.live/guardian"},
+        {"📸 Screenshot Import", "Screenshot your exchange app — WalletLens reads every holding straight off the image", "https://walletlens.live/dashboard"},
+        {"🎙️ Voice Import", "Just say it: 'I bought 0.5 BTC at 60k' and the trade is logged", "https://walletlens.live/dashboard"},
+        {"📲 Move to a New Phone", "Scan one QR code to carry your whole portfolio across — no account, no cloud", "https://walletlens.live/dashboard"},
+
+        // ── Second pass on the same four, different angle ──────────────────
+        {"🛡️ Your Dead-Man's Switch", "Portfolio Guardian makes sure your crypto isn't lost if you can't reach it", "https://walletlens.live/guardian"},
+        {"📸 Skip the Typing", "Import a whole exchange balance from one screenshot — Binance, Coinbase, anything", "https://walletlens.live/dashboard"},
+        {"🎙️ Log Trades Hands-Free", "Speak several trades in one sentence — English or Arabic", "https://walletlens.live/dashboard"},
+        {"📲 Portfolio in a QR Code", "Your entire portfolio as a scannable code. Move devices in seconds", "https://walletlens.live/dashboard"},
+
+        // ── Supporting features ────────────────────────────────────────────
+        {"🤖 AI Advisor", "Health score, diversification grade and a stress test on your real holdings", "https://walletlens.live/dashboard"},
+        {"🔒 Biometric Lock", "Fingerprint or face unlock before your net worth is visible", "https://walletlens.live/settings"},
+        {"😱 Fear & Greed", "Know the market's mood before you trade", "https://walletlens.live/fear-and-greed-index"},
+        {"🐋 Whale Alerts", "Track large crypto transactions in real time", "https://walletlens.live/market-index"}
     };
 
     public PeriodicUpdateWorker(@NonNull Context context, @NonNull WorkerParameters params) {
