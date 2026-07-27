@@ -55,12 +55,12 @@ def twaManifest = [
 
 
 android {
-    compileSdkVersion 36
+    compileSdk 36
     namespace "live.walletlens.twa"
     defaultConfig {
         applicationId "live.walletlens.twa"
-        minSdkVersion 23
-        targetSdkVersion 36
+        minSdk 23
+        targetSdk 36
         versionCode 41
         versionName "2"
 
@@ -154,6 +154,14 @@ android {
 
         
     }
+    buildFeatures {
+        // AGP 9 turns resValue support off by default. This project generates
+        // nearly all of its resources that way — launchUrl, every theme colour,
+        // the shortcut labels, enableNotification — so it has to be switched
+        // back on or configuration fails with "defaultConfig contains custom
+        // resource values, but the feature is disabled".
+        resValues = true
+    }
     buildTypes {
         release {
             // R8 was already stripping unused code, but with no proguardFiles it
@@ -167,11 +175,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
-    lintOptions {
-        checkReleaseBuilds false
+    lint {
+        checkReleaseBuilds = false
     }
 }
 
