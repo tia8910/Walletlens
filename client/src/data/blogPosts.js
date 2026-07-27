@@ -37,6 +37,120 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-crypto-portfolio-performance-over-time',
+    title: 'How to Track Crypto Portfolio Performance Over Time',
+    date: 'July 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to measure, record, and improve your crypto portfolio performance over time — without spreadsheets or giving up your privacy.',
+    content: `
+Most investors check their portfolio balance daily but almost never measure how well it is actually performing over time. Knowing your current total value is not the same as understanding whether your decisions — which coins you bought, when you bought them, and how much you allocated — are paying off. Tracking performance over time turns a snapshot into a story, and that story tells you whether to stay the course or change strategy.
+
+This guide explains exactly how to think about crypto portfolio performance, which metrics actually matter, and how to build a simple system to track them consistently in 2026.
+
+## What "Performance" Actually Means
+
+Performance is not just whether your portfolio went up. A portfolio that gained 20% while Bitcoin gained 80% in the same period actually underperformed. Meaningful performance tracking compares your portfolio against a relevant benchmark, accounts for when you added or withdrew money, and separates skill (picking good assets) from luck (holding during a bull run).
+
+The three core performance metrics every investor should track are:
+
+- **Absolute return**: Your profit or loss in dollar terms from your original investment.
+- **Percentage return (ROI)**: Your gain or loss as a percentage of what you put in.
+- **Time-weighted return (TWR)**: Your return adjusted for cash flows — the most accurate measure when you add or withdraw funds at different points.
+
+Most tools only show you absolute return or a rough percentage. That is fine for a quick glance, but it hides information if you have been dollar-cost averaging or making irregular deposits.
+
+## The Metrics That Tell the Full Story
+
+Here are the key numbers worth recording on a regular basis — monthly is a practical cadence for most investors:
+
+| Metric | What It Tells You |
+|---|---|
+| Total portfolio value | Your net position at a point in time |
+| Unrealized P&L | Gains or losses not yet locked in by a sale |
+| Average cost basis | What you actually paid, blended across all buys |
+| Allocation by asset | Whether your portfolio has drifted from your plan |
+| Best and worst performers | Which bets are working and which are not |
+| Portfolio vs BTC return | Whether you are beating or lagging the benchmark |
+
+The hardest of these to track manually is cost basis — especially if you have bought the same coin multiple times at different prices. Every new purchase changes your blended average, and errors compound quickly in a spreadsheet.
+
+## Why Snapshots Alone Are Not Enough
+
+A single number — "my portfolio is worth $42,000 today" — is almost meaningless without context. You need to know:
+
+- What was it worth when you first invested?
+- How much capital have you added since then?
+- Has the mix of assets shifted compared to your original plan?
+- Are your unrealized gains concentrated in one asset that you have never rebalanced?
+
+Performance tracking is really about answering these questions repeatedly over time. The investors who do this consistently tend to make calmer, better-informed decisions — because they are reacting to data, not to how they feel on any given Tuesday.
+
+## Building a Practical Tracking Routine
+
+You do not need a sophisticated system. What you need is consistency. Here is a simple monthly routine that works:
+
+1. **Record your total portfolio value** on the same day each month — the first of the month is easy to remember.
+2. **Note your unrealized P&L** for your largest five holdings.
+3. **Check your allocation percentages** — if one asset has grown to dominate, flag it for review.
+4. **Compare to your benchmark** — how did BTC or a broad crypto index move in the same period?
+5. **Note any trades you made** and whether they improved or hurt your cost basis.
+
+Keeping this in a simple log — even a notes app — gives you a 12-month trail within a year. Over two or three years, that trail becomes genuinely valuable.
+
+## The Problem With Exchange Apps for Performance Tracking
+
+Most exchange apps show you your current balance and recent trade history, but they are designed for trading, not portfolio analysis. They have blind spots:
+
+- They only show assets held on that exchange — not your cold wallet, another exchange, or your ETF holdings.
+- They rarely show blended average cost basis if you bought the same coin across multiple sessions.
+- They almost never compare your performance against a benchmark.
+- If you transfer assets off the exchange, those coins disappear from the performance view entirely.
+
+For anyone holding assets in more than one place, or holding a mix of crypto, stocks, and other asset classes, a dedicated portfolio tracker gives a much cleaner picture.
+
+## How WalletLens Approaches Performance Tracking
+
+[walletlens.live](https://walletlens.live) is built around the idea that you should see your full financial picture — including unrealized P&L, average cost basis, and allocation breakdown — in one place, without handing your data to anyone. Everything runs locally in your browser. There is no account, no login, and nothing is sent to a server.
+
+When you log a trade — whether you type it, use the voice input ("I bought 0.5 ETH at $3,200"), or import from a CSV — WalletLens calculates your blended average cost basis automatically across every buy. The allocation donut chart updates in real time, so you can see at a glance whether your portfolio has drifted from your intended split.
+
+The **Sell Targets** feature is particularly useful for performance planning: you can set up to five price targets per asset with progress bars and projected proceeds, so you are not making sell decisions emotionally when prices spike.
+
+## Tracking Performance Across a Mixed Portfolio
+
+Crypto is volatile enough that it can easily distort your perception of how your whole portfolio is doing. If Bitcoin doubles while your stocks are flat, you might feel like a genius — but your overall net worth picture depends on how much of each you actually hold.
+
+A complete performance view should include:
+
+- **Crypto** (coins, tokens, stablecoins)
+- **Stocks and ETFs** (including index funds)
+- **Precious metals** (gold, silver, platinum)
+- **Real estate** (estimated market value)
+- **Cash** (emergency fund, savings)
+
+When you track all of these together, you can see your true overall return and understand whether your crypto allocation is helping or hurting your broader financial position. WalletLens supports all five categories in a single net-worth dashboard, which makes cross-asset performance comparison straightforward.
+
+## Common Mistakes That Distort Your Performance Picture
+
+**Ignoring deposits and withdrawals.** If you added $10,000 to your portfolio last month and it grew by $10,000, your "return" might look fantastic — but $10,000 of that is new capital, not investment gains. Strip out cash flows to see your real return.
+
+**Comparing to the wrong benchmark.** A diversified portfolio of crypto, stocks, and gold should not be benchmarked against Bitcoin alone. Use a benchmark that matches your actual mix.
+
+**Only checking during bull markets.** Investors who stop tracking during downturns lose the most valuable data — how their portfolio behaved under stress, and how long it took to recover.
+
+**Forgetting fees and taxes.** Trading fees and tax events reduce your actual return. Track them as part of the picture rather than ignoring them until year-end.
+
+*(Note: This article is educational only and does not constitute financial or tax advice. Consult a qualified professional for advice specific to your situation.)*
+
+## Conclusion
+
+Tracking crypto portfolio performance over time is less about obsessing over daily prices and more about building a clear, honest record of your decisions and their outcomes. The investors who do this consistently tend to outperform their own past behaviour — not because they have better information, but because they have accountability.
+
+Start with three numbers: your total value, your unrealized P&L, and your allocation split. Record them once a month. After six months, you will have more useful insight into your investing than most people gather in years of casual checking.
+    `
+  },
+
+  {
     slug: 'how-to-track-portfolio-multiple-brokers',
     title: 'How to Track a Portfolio When You Have Multiple Brokers',
     date: 'July 2026',
