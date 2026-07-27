@@ -36,6 +36,7 @@ import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
+import { syncWidgets } from '../nativeWidgets'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3586,6 +3587,14 @@ export default function Dashboard() {
       isDemo: false, pricesFailed: hasPortfolio && !hasPrices && loaded && !pricesLoading,
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
+
+  // Feed the Android home-screen widgets. They are native and cannot read this
+  // page's localStorage, so the numbers are handed over through a local intent.
+  // No-op outside the installed Android app, and throttled internally.
+  useEffect(() => {
+    if (!loaded || !enriched.length || totalValue <= 0) return
+    syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
+  }, [loaded, enriched, totalValue])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash
   const tickerValueRef = useRef(0)

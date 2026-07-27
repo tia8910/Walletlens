@@ -295,8 +295,21 @@ public class PeriodicUpdateWorker extends Worker {
                 }
             }
 
-            // Update net worth widget
             double dailyPct = tracked > 0 ? totalPnl / tracked : 0;
+
+            // Once the web app has pushed the real portfolio through
+            // WidgetSyncActivity, this worker must not touch the widgets again:
+            // it only knows public market prices and would overwrite the user's
+            // net worth, P&L and allocation with the zeros below. Market-only
+            // values are a placeholder for the window before the first sync,
+            // not a substitute for it.
+            if (ctx.getSharedPreferences("walletlens_widget", Context.MODE_PRIVATE)
+                   .getBoolean("portfolio_synced", false)) {
+                android.util.Log.d(TAG, "Portfolio already synced from the web app — leaving widgets alone");
+                return;
+            }
+
+            // Update net worth widget
             WalletLensWidgetProvider.saveWidgetData(ctx, 0, 0, dailyPct, tracked, topName);
 
             // Update top movers widget
