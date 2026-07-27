@@ -154,6 +154,14 @@ android {
 
         
     }
+    buildFeatures {
+        // AGP 9 turns resValue support off by default. This project generates
+        // nearly all of its resources that way — launchUrl, every theme colour,
+        // the shortcut labels, enableNotification — so it has to be switched
+        // back on or configuration fails with "defaultConfig contains custom
+        // resource values, but the feature is disabled".
+        resValues = true
+    }
     buildTypes {
         release {
             // R8 was already stripping unused code, but with no proguardFiles it
