@@ -304,16 +304,46 @@ self.addEventListener('push', e => {
   )
 })
 
-// Tapping a notification focuses an open tab (navigating it) or opens a new one.
+// Tapping a notification deep-links into the app.
+//
+// Two things this has to get right:
+//  • Payloads carry either a path ("/alerts") or an absolute URL
+//    ("https://walletlens.live/alerts"). The old code compared a *pathname*
+//    against whatever came in, so an absolute URL never matched an open window
+//    and every tap opened a duplicate.
+//  • Inside the installed Android app there is exactly one window. Calling
+//    openWindow() there launches a browser tab *outside* the app instead of
+//    deep-linking it, which is the "notification opens the website, not the
+//    app" complaint. So navigate the window we already have whenever there is
+//    one, and only open a new one as a last resort.
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  const target = (e.notification.data && e.notification.data.url) || '/'
+  const raw = (e.notification.data && e.notification.data.url) || '/'
+  let target
+  try { target = new URL(raw, self.location.origin).href }
+  catch { target = new URL('/', self.location.origin).href }
+
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // Prefer a tab already showing the target; otherwise open a new one
-      // rather than yanking an unrelated tab away from what the user had open.
-      const existing = list.find(c => { try { return new URL(c.url).pathname === target } catch { return false } })
-      if (existing && 'focus' in existing) return existing.focus()
+      const mine = list.filter(c => {
+        try { return new URL(c.url).origin === self.location.origin } catch { return false }
+      })
+      // Already on the exact page — just bring it forward.
+      const exact = mine.find(c => c.url === target)
+      if (exact) return 'focus' in exact ? exact.focus() : undefined
+
+      const open = mine[0]
+      if (open) {
+        // navigate() is only allowed on clients this worker controls; fall back
+        // to focusing the window if it refuses rather than losing the tap.
+        const nav = 'navigate' in open
+          ? open.navigate(target).catch(() => open)
+          : Promise.resolve(open)
+        return nav.then(c => {
+          const win = c || open
+          return win && 'focus' in win ? win.focus() : undefined
+        })
+      }
       return self.clients.openWindow(target)
     })
   )

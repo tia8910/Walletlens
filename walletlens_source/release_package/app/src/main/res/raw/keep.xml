@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resource-shrinker protection.
+
+  shrinkResources removes resources it cannot see a reference to. Two things in
+  this app are referenced only by *name at runtime*, which the shrinker has no
+  way to trace:
+
+    • TopMoversWidgetProvider resolves its row views with
+      Resources.getIdentifier("mover1_name", "id", pkg) and friends.
+    • NotificationHelper resolves its small icon with
+      Resources.getIdentifier("ic_notification_chart", "drawable", pkg).
+
+  The shrinker does switch to a conservative mode when it detects getIdentifier
+  usage, but that heuristic is not something a release build should depend on —
+  a stripped widget id crashes the widget, and a stripped icon downgrades every
+  notification to the generic system icon.
+
+  shrinkMode stays "safe" (the default) deliberately: "strict" would ignore the
+  heuristic entirely and rely solely on this list.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:shrinkMode="safe"
+    tools:keep="@layout/widget_*,@drawable/ic_notification_chart,@drawable/splash,@drawable/shortcut_*,@raw/web_app_manifest" />
