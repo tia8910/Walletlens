@@ -44,6 +44,13 @@ const PALETTES = {
   },
 }
 
+// Low-power devices (mobile or < 4 logical CPUs) get the glow (shadowBlur)
+// dropped and fewer orbs — mirrors the same check in DynamicBackground,
+// where shadowBlur was measured to be the single most expensive per-frame
+// canvas op on constrained CPUs.
+const _lowPower = typeof navigator !== 'undefined'
+  && navigator.hardwareConcurrency != null && navigator.hardwareConcurrency < 4
+
 export default function LandingBackground({ light = false }) {
   const canvasRef = useRef(null)
   const reduceMotion =
@@ -57,31 +64,46 @@ export default function LandingBackground({ light = false }) {
     const ctx = canvas.getContext('2d')
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     let w = 0, h = 0, raf = 0, t = 0, mobile = false
+    // Base + top-glow gradients only depend on canvas size and palette, not
+    // on the animated time value — building them once per resize instead of
+    // once per frame removes 2 of ~9 gradient constructions from every tick
+    // of a background that runs continuously for as long as the landing
+    // page is open.
+    let baseGrad = null, topGlowGrad = null, scrimGrad = null
+    let useGlow = P.glow
 
     function resize() {
       w = window.innerWidth
       h = window.innerHeight
       mobile = w < 640
+      useGlow = P.glow && !mobile && !_lowPower
       canvas.width  = Math.floor(w * dpr)
       canvas.height = Math.floor(h * dpr)
       canvas.style.width  = w + 'px'
       canvas.style.height = h + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+      baseGrad = ctx.createLinearGradient(0, 0, w * 0.4, h)
+      baseGrad.addColorStop(0,   P.base[0])
+      baseGrad.addColorStop(0.5, P.base[1])
+      baseGrad.addColorStop(1,   P.base[2])
+
+      topGlowGrad = ctx.createRadialGradient(w * 0.5, h * 0.06, 0, w * 0.5, h * 0.06, h * 0.75)
+      topGlowGrad.addColorStop(0, P.topGlow)
+      topGlowGrad.addColorStop(1, 'rgba(16,185,129,0)')
+
+      scrimGrad = ctx.createRadialGradient(w * 0.5, h * 0.40, h * 0.08, w * 0.5, h * 0.45, h * 0.95)
+      scrimGrad.addColorStop(0,   P.scrim[0])
+      scrimGrad.addColorStop(0.7, P.scrim[1])
+      scrimGrad.addColorStop(1,   P.scrim[2])
     }
 
     // ── Brand base ──────────────────────────────────────────────────────────
     function paintBase() {
-      const g = ctx.createLinearGradient(0, 0, w * 0.4, h)
-      g.addColorStop(0,   P.base[0])
-      g.addColorStop(0.5, P.base[1])
-      g.addColorStop(1,   P.base[2])
-      ctx.fillStyle = g
+      ctx.fillStyle = baseGrad
       ctx.fillRect(0, 0, w, h)
       // Emerald glow from the top
-      const rg = ctx.createRadialGradient(w * 0.5, h * 0.06, 0, w * 0.5, h * 0.06, h * 0.75)
-      rg.addColorStop(0, P.topGlow)
-      rg.addColorStop(1, 'rgba(16,185,129,0)')
-      ctx.fillStyle = rg
+      ctx.fillStyle = topGlowGrad
       ctx.fillRect(0, 0, w, h)
     }
 
@@ -94,7 +116,7 @@ export default function LandingBackground({ light = false }) {
     ]
     let orbs = []
     function makeOrbs() {
-      const count = mobile ? 3 : 5
+      const count = (mobile || _lowPower) ? 3 : 5
       orbs = Array.from({ length: count }, (_, i) => ({
         x: Math.random() * w,
         y: Math.random() * h * 0.9,
@@ -155,7 +177,7 @@ export default function LandingBackground({ light = false }) {
       pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
       ctx.strokeStyle = layer === 0 ? P.stroke[0] : P.stroke[1]
       ctx.lineWidth = layer === 0 ? (mobile ? 2.2 : 3) : 1.6
-      if (P.glow) {
+      if (useGlow) {
         ctx.shadowColor = layer === 0 ? '#10b981' : '#2dd4bf'
         ctx.shadowBlur = layer === 0 ? (mobile ? 10 : 16) : 7
       }
@@ -199,11 +221,7 @@ export default function LandingBackground({ light = false }) {
 
     // ── Soft vignette so body text stays crisp ──────────────────────────────
     function drawScrim() {
-      const s = ctx.createRadialGradient(w * 0.5, h * 0.40, h * 0.08, w * 0.5, h * 0.45, h * 0.95)
-      s.addColorStop(0,   P.scrim[0])
-      s.addColorStop(0.7, P.scrim[1])
-      s.addColorStop(1,   P.scrim[2])
-      ctx.fillStyle = s
+      ctx.fillStyle = scrimGrad
       ctx.fillRect(0, 0, w, h)
     }
 
@@ -224,7 +242,7 @@ export default function LandingBackground({ light = false }) {
         ctx.beginPath()
         ctx.arc(tip[0], tip[1], pr, 0, Math.PI * 2)
         ctx.fillStyle = P.tip
-        if (P.glow) { ctx.shadowColor = '#10b981'; ctx.shadowBlur = 18 }
+        if (useGlow) { ctx.shadowColor = '#10b981'; ctx.shadowBlur = 18 }
         ctx.fill()
         ctx.shadowBlur = 0
       }
