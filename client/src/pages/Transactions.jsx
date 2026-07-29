@@ -225,8 +225,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
+  // The list renders every logged transaction unbounded — fine for a handful
+  // of trades, but unbounded DOM growth for long trading histories. Cap the
+  // initial render and let the user page in more.
+  const TX_PAGE_SIZE = 50
+  const [visibleCount, setVisibleCount] = useState(TX_PAGE_SIZE)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(TX_PAGE_SIZE) }, [filterWallet, transactions.length])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1062,7 +1068,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1096,6 +1102,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {transactions.length > visibleCount && (
+            <button className="pill" style={{ width: '100%', marginTop: '0.75rem' }}
+              onClick={() => setVisibleCount(c => c + TX_PAGE_SIZE)}>
+              Load more ({transactions.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
 

@@ -1,6 +1,5 @@
 // Core backup logic shared by the Backup panel and the weekly email-backup
 // subscription. Pure functions — no React — so they can run on app open too.
-import QRCode from 'qrcode'
 
 export const BACKUP_KEYS = [
   'crypto_tracker_transactions',
@@ -156,6 +155,11 @@ export async function applyBackupCode(raw) {
 export const QR_CHUNK = 1200
 
 export async function makeQrDataUrl(data) {
+  // Dynamically imported — only the QR export / weekly-backup-resend path
+  // needs it, but this module is reachable from every page load via
+  // backupSubscription.js, so a static import here shipped ~56KB gzip of
+  // qrcode+jsqr to every visitor regardless of whether they ever use it.
+  const { default: QRCode } = await import('qrcode')
   return QRCode.toDataURL(data, {
     errorCorrectionLevel: 'L', margin: 2, scale: 5,
     color: { dark: '#000000', light: '#ffffff' },

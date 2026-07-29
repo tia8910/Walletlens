@@ -6,7 +6,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack } from './analytics'
-import { initVitals } from './vitals'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -77,8 +76,13 @@ const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' 
 
 // Auto-track every click / selection across the app in GA.
 initAutoTrack()
-// Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
-initVitals()
+
+// Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4. Deferred off the
+// critical render path — it's pure telemetry, not needed before first paint —
+// and dynamically imported so `web-vitals` ships as its own async chunk
+// instead of inflating the entry bundle every visitor pays for.
+const scheduleVitals = window.requestIdleCallback || (cb => setTimeout(cb, 200))
+scheduleVitals(() => { import('./vitals').then(m => m.initVitals()) })
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
