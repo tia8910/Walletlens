@@ -1369,8 +1369,18 @@ export const api = {
     if (metalIds.length > 0) {
       tasks.push(fetchMetalsLive().then(metals => {
         for (const id of metalIds) {
-          if (metals[id]) result[id] = metals[id];
+          if (metals[id]) { result[id] = metals[id]; priceCache[id] = metals[id]; }
           else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+          // Last known price beats $0. Crypto has always done this via
+          // priceCache; metals, stocks and fiat did not, so a single blip in
+          // their upstream showed the holding as worthless.
+          else if (priceCache[id]?.usd > 0) result[id] = { ...priceCache[id], stale: true };
+        }
+        _saveCache(PRICE_CACHE_KEY, priceCache);
+      }).catch(() => {
+        for (const id of metalIds) {
+          if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+          else if (priceCache[id]?.usd > 0) result[id] = { ...priceCache[id], stale: true };
         }
       }));
     }
@@ -1385,9 +1395,18 @@ export const api = {
           const perUsd = rates[code];
           if (typeof perUsd === 'number' && perUsd > 0) {
             result[id] = { usd: 1 / perUsd, usd_24h_change: 0, source: 'er-api', name: code };
+            priceCache[id] = result[id];
           } else if (manual[id]) {
             result[id] = { ...manual[id], source: 'manual' };
+          } else if (priceCache[id]?.usd > 0) {
+            result[id] = { ...priceCache[id], stale: true };
           }
+        }
+        _saveCache(PRICE_CACHE_KEY, priceCache);
+      }).catch(() => {
+        for (const id of fiatIds) {
+          if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+          else if (priceCache[id]?.usd > 0) result[id] = { ...priceCache[id], stale: true };
         }
       }));
     }
@@ -1401,14 +1420,24 @@ export const api = {
           const ticker = id.slice(STOCK_PREFIX.length).toUpperCase();
           if (batchStockCache[ticker]) {
             result[id] = batchStockCache[ticker];
+            priceCache[id] = batchStockCache[ticker];
           } else {
             // Individual fallback for tickers batch missed
             const live = await fetchStockLive(id);
-            if (live) result[id] = { ...live, source: 'stooq' };
+            if (live) { result[id] = { ...live, source: 'stooq' }; priceCache[id] = result[id]; }
             else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+            // Markets close and stooq rate-limits; a stale quote is far more
+            // useful than pricing the position at zero.
+            else if (priceCache[id]?.usd > 0) result[id] = { ...priceCache[id], stale: true };
           }
         }));
-      })());
+        _saveCache(PRICE_CACHE_KEY, priceCache);
+      })().catch(() => {
+        for (const id of stockIds) {
+          if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+          else if (priceCache[id]?.usd > 0) result[id] = { ...priceCache[id], stale: true };
+        }
+      }));
     }
 
     // Tokenized stocks (xStocks) — priced from CoinGecko. Each xStock is a token
