@@ -10,11 +10,62 @@
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 
 const SYNC_KEY = 'wl_widget_sync_at'
+const PAYLOAD_KEY = 'wl_widget_payload'
+const DIAG_KEY = 'wl_widget_diag'
 const MIN_GAP_MS = 5 * 60 * 1000 // don't fire on every render
 
 function pct(part, whole) {
   if (!whole || whole <= 0) return 0
   return Math.round((part / whole) * 1000) / 10
+}
+
+/**
+ * Record why the last sync attempt did or didn't fire.
+ *
+ * There is no logcat on a user's phone and the intent fails silently by design,
+ * so without this the only symptom of a broken sync is a widget stuck at zero —
+ * which looks identical whether the app wasn't detected, the portfolio was
+ * empty, or the throttle was still holding. Settings reads this back.
+ */
+function note(result, extra = {}) {
+  try {
+    localStorage.setItem(DIAG_KEY, JSON.stringify({
+      at: Date.now(),
+      result,
+      referrer: (typeof document !== 'undefined' && document.referrer) || '',
+      ua: (typeof navigator !== 'undefined' && navigator.userAgent) || '',
+      ...extra,
+    }))
+  } catch { /* diagnostics are never worth throwing over */ }
+  return result === 'fired'
+}
+
+/** What the last attempt concluded, for the Settings readout. */
+export function widgetSyncDiagnostics() {
+  let diag = null
+  let hasPayload = false
+  try { diag = JSON.parse(localStorage.getItem(DIAG_KEY) || 'null') } catch { /* corrupt */ }
+  try { hasPayload = !!localStorage.getItem(PAYLOAD_KEY) } catch { /* blocked */ }
+  let lastSync = 0
+  try { lastSync = Number(localStorage.getItem(SYNC_KEY) || 0) } catch { /* blocked */ }
+  return { diag, hasPayload, lastSync, twa: isAndroidTWA() }
+}
+
+/**
+ * Re-send the most recent summary, ignoring both the throttle and the TWA
+ * check. Wired to a button, so the user has already told us this is the app —
+ * and if detection is what's broken, this is the way round it.
+ */
+export function forceSyncWidgets() {
+  try {
+    const raw = localStorage.getItem(PAYLOAD_KEY)
+    if (!raw) return note('no-payload')
+    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw))
+    localStorage.setItem(SYNC_KEY, String(Date.now()))
+    return note('fired', { manual: true })
+  } catch {
+    return note('threw')
+  }
 }
 
 /**
@@ -29,13 +80,7 @@ function pct(part, whole) {
  */
 export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, force = false } = {}) {
   try {
-    if (!isAndroidTWA()) return false
-    if (!enriched.length) return false
-
-    if (!force) {
-      const last = Number(localStorage.getItem(SYNC_KEY) || 0)
-      if (Date.now() - last < MIN_GAP_MS) return false
-    }
+    if (!enriched.length) return note('no-holdings')
 
     // Day's move, weighted by position size rather than a flat average — a 5%
     // move on a $10 bag shouldn't read the same as 5% on half the portfolio.
@@ -93,12 +138,26 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
       movers,
     }
 
-    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(JSON.stringify(payload)))
+    // Stash it before deciding whether to send. If we don't fire — wrong
+    // context, throttled, detection wrong — the Settings "Sync now" button can
+    // still push this exact summary, and the stored copy is proof the dashboard
+    // computed something sane.
+    const json = JSON.stringify(payload)
+    try { localStorage.setItem(PAYLOAD_KEY, json) } catch { /* quota; carry on */ }
+
+    if (!isAndroidTWA()) return note('not-twa', { nw: payload.nw, tracked: payload.tracked })
+
+    if (!force) {
+      const last = Number(localStorage.getItem(SYNC_KEY) || 0)
+      if (Date.now() - last < MIN_GAP_MS) return note('throttled')
+    }
+
+    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))
 
     localStorage.setItem(SYNC_KEY, String(Date.now()))
-    return true
-  } catch {
+    return note('fired', { nw: payload.nw, tracked: payload.tracked })
+  } catch (e) {
     // Widgets are a nice-to-have; never let this break the dashboard.
-    return false
+    return note('threw', { message: String(e && e.message) })
   }
 }
