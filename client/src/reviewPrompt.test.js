@@ -1,19 +1,17 @@
-// Note on the stderr noise from this file: the bridge fires intents by pointing
-// a hidden iframe at walletlens://…, and happy-dom tries to actually fetch that
-// URL, then prints a NotSupportedError trace. It is emulator behaviour, not a
-// failure — a real browser hands the scheme to Android — and it does not reach
-// the page, which is why fireNativeIntent still returns true.
+// These tests cover the *rules* — when WalletLens decides someone has used it
+// enough to be worth asking. The transport is nativeBridge's problem and has
+// its own tests, so it is mocked here: that keeps this file from caring whether
+// an intent travels by iframe, top-frame navigation or anything else.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-const TWA_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7; wv) AppleWebKit/537.36 Chrome/126.0.0.0 Mobile Safari/537.36'
-const DESKTOP_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36'
+const bridge = vi.hoisted(() => ({ fired: [], twa: true }))
+vi.mock('./nativeBridge', () => ({
+  isAndroidTWA: () => bridge.twa,
+  fireNativeIntent: (url) => { bridge.fired.push(url); return true },
+}))
 
 const DAY = 24 * 60 * 60 * 1000
 const T0 = new Date('2026-03-01T12:00:00Z').getTime()
-
-function setUA(ua) {
-  Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true })
-}
 
 /** Fresh import, so the module's session-start clock is the current fake time. */
 async function loadModule() {
@@ -21,9 +19,9 @@ async function loadModule() {
   return import('./reviewPrompt')
 }
 
-/** URLs the module pushed into hidden iframes. */
+/** URLs handed to the native bridge. */
 function firedIntents() {
-  return [...document.querySelectorAll('iframe')].map(f => f.getAttribute('src'))
+  return bridge.fired
 }
 
 function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0 } = {}) {
@@ -42,8 +40,8 @@ beforeEach(() => {
   vi.setSystemTime(T0)
   localStorage.clear()
   sessionStorage.clear()
-  document.body.innerHTML = ''
-  setUA(TWA_UA)
+  bridge.fired = []
+  bridge.twa = true
 })
 
 afterEach(() => {
@@ -69,7 +67,7 @@ describe('noteAppOpen', () => {
   })
 
   it('does nothing outside the Android app', async () => {
-    setUA(DESKTOP_UA)
+    bridge.twa = false
     const { noteAppOpen } = await loadModule()
     noteAppOpen()
     expect(localStorage.getItem('wl_review_state_v1')).toBeNull()
@@ -141,7 +139,7 @@ describe('maybeAskForReview', () => {
   })
 
   it('does nothing outside the Android app', async () => {
-    setUA(DESKTOP_UA)
+    bridge.twa = false
     const { maybeAskForReview } = await loadModule()
     seed()
     vi.setSystemTime(T0 + 60 * 1000)
@@ -160,7 +158,7 @@ describe('requestReviewNow', () => {
   })
 
   it('does nothing outside the Android app', async () => {
-    setUA(DESKTOP_UA)
+    bridge.twa = false
     const { requestReviewNow } = await loadModule()
     expect(requestReviewNow('settings')).toBe(false)
     expect(firedIntents()).toEqual([])
