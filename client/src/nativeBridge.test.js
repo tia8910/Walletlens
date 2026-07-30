@@ -90,16 +90,51 @@ describe('isAndroidTWA', () => {
 })
 
 describe('fireNativeIntent', () => {
-  it('opens the URL in a hidden iframe rather than navigating', async () => {
+  beforeEach(() => {
+    localStorage.clear()
+    // Default to "the user just tapped something" so the immediate path runs.
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { isActive: true, hasBeenActive: true }, configurable: true,
+    })
+  })
+
+  it('targets the app by package via an intent:// URL', async () => {
+    const { fireNativeIntent, lastIntentAttempt } = await load()
+
+    expect(fireNativeIntent('walletlens://widget-sync?data=%7B%22nw%22%3A1%7D')).toBe(true)
+
+    const attempt = lastIntentAttempt()
+    expect(attempt.how).toBe('immediate')
+    expect(attempt.url).toBe(
+      'intent://widget-sync?data=%7B%22nw%22%3A1%7D#Intent;scheme=walletlens;package=live.walletlens.twa;end'
+    )
+  })
+
+  // The regression: a hidden iframe cannot launch an external protocol in
+  // Chrome, and a TWA is Chrome. Every intent sent this way was dropped.
+  it('does not use an iframe', async () => {
     const { fireNativeIntent } = await load()
-    const before = window.location.href
+    fireNativeIntent('walletlens://review')
+    expect(document.querySelectorAll('iframe')).toHaveLength(0)
+  })
+
+  it('carries the query string through untouched', async () => {
+    const { fireNativeIntent, lastIntentAttempt } = await load()
+    const payload = encodeURIComponent(JSON.stringify({ nw: 76436.88, tracked: 12 }))
+    fireNativeIntent('walletlens://widget-sync?data=' + payload)
+    expect(lastIntentAttempt().url).toContain('data=' + payload)
+    // Semicolons would terminate the #Intent block early; encodeURIComponent
+    // escapes them, so none should survive in the path portion.
+    expect(lastIntentAttempt().url.split('#Intent;')[0]).not.toContain(';')
+  })
+
+  it('waits for a tap when there is no user activation', async () => {
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { isActive: false, hasBeenActive: false }, configurable: true,
+    })
+    const { fireNativeIntent, lastIntentAttempt } = await load()
 
     expect(fireNativeIntent('walletlens://widget-sync?data=%7B%7D')).toBe(true)
-
-    const frames = [...document.querySelectorAll('iframe')]
-    expect(frames).toHaveLength(1)
-    expect(frames[0].getAttribute('src')).toBe('walletlens://widget-sync?data=%7B%7D')
-    expect(frames[0].style.display).toBe('none')
-    expect(window.location.href).toBe(before)
+    expect(lastIntentAttempt().how).toBe('deferred')
   })
 })
