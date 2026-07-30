@@ -36,6 +36,7 @@ import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
+import { syncWidgets } from '../nativeWidgets'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3543,7 +3544,7 @@ export default function Dashboard() {
     }).catch(() => { failToManualImport() })
   }, [])
 
-  const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed } = useMemo(() => {
+  const { enriched, totalValue, totalInvested, totalPnL, totalPnLPct, isDemo, pricesFailed, unpriced } = useMemo(() => {
     const raw = portfolio.map(h => {
       const price   = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
       const value   = h.amount * price
@@ -3560,7 +3561,7 @@ export default function Dashboard() {
 
     if (!hasPortfolio && loaded) {
       return { enriched: [], totalValue: 0, totalInvested: 0,
-        totalPnL: 0, totalPnLPct: 0, isDemo: false, pricesFailed: false }
+        totalPnL: 0, totalPnLPct: 0, isDemo: false, pricesFailed: false, unpriced: [] }
     }
 
     // Holdings with a failed quote count at cost so the total isn't understated.
@@ -3584,8 +3585,24 @@ export default function Dashboard() {
       enriched: raw, totalValue: tv, totalInvested: ti,
       totalPnL: pnl, totalPnLPct: hasPrices && pricedTi > 0 ? (pnl / pricedTi) * 100 : 0,
       isDemo: false, pricesFailed: hasPortfolio && !hasPrices && loaded && !pricesLoading,
+      // Holdings we hold a real amount of but could not put a price on. This is
+      // deliberately separate from `pricesFailed`, which only fires when EVERY
+      // price fails: if metals price fine but the crypto sources are all down,
+      // hasPrices stays true and the whole crypto allocation silently reads $0
+      // with no warning anywhere.
+      unpriced: loaded && !pricesLoading
+        ? raw.filter(h => Number(h.amount) > 0 && !(h.price > 0))
+        : [],
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
+
+  // Feed the Android home-screen widgets. They are native and cannot read this
+  // page's localStorage, so the numbers are handed over through a local intent.
+  // No-op outside the installed Android app, and throttled internally.
+  useEffect(() => {
+    if (!loaded || !enriched.length || totalValue <= 0) return
+    syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
+  }, [loaded, enriched, totalValue])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash
   const tickerValueRef = useRef(0)
@@ -3775,7 +3792,12 @@ export default function Dashboard() {
         pnls[cat] = (pnls[cat] || 0) + (h.pnl || 0)
       }
     })
-    return CATEGORY_ORDER.filter(cat => totals[cat] > 0).map(cat => {
+    // Show a category whenever it holds something, even if it currently totals
+    // zero. A holding with no live price AND no cost basis (common for wallet-
+    // address and screenshot imports) used to make its entire category vanish
+    // from the allocation — the user's crypto simply disappeared rather than
+    // showing as unpriced.
+    return CATEGORY_ORDER.filter(cat => totals[cat] > 0 || (assetsByCat[cat] || []).length > 0).map(cat => {
       const invested = investeds[cat] || 0
       const pnl = pnls[cat] || 0
       const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
@@ -4233,6 +4255,16 @@ export default function Dashboard() {
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
+              {/* Partial failure: some asset classes priced, others didn't. Without
+                  this the unpriced ones just read $0 and look like they're gone. */}
+              {!pricesFailed && unpriced.length > 0 && (
+                <span
+                  className="dvx-badge-warn"
+                  title={'No price for: ' + unpriced.map(h => (h.coin_symbol || h.coin_id || '?').toUpperCase()).join(', ')}
+                >
+                  {unpriced.length} UNPRICED
+                </span>
+              )}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
               <button className="dvx-refresh-btn" title="Refresh prices" disabled={refreshing} onClick={async () => {
                 setRefreshing(true)

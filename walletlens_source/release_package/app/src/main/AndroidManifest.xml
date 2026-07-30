@@ -226,7 +226,7 @@
              or from LauncherActivity on cold start. -->
         <activity
             android:name=".BiometricActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true">
             <intent-filter>
@@ -271,7 +271,7 @@
         <!-- Native data export activity – saves portfolio to Downloads -->
         <activity
             android:name=".DataExportActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -280,6 +280,28 @@
                 <data
                     android:scheme="walletlens"
                     android:host="export" />
+            </intent-filter>
+        </activity>
+
+        <!-- Receives the portfolio summary from the web app and repaints the
+             widgets. Invisible and finishes immediately. Must be exported: the
+             page that posts to it runs in Chrome's process, so the launch is a
+             cross-app start. It only ever WRITES display values — it returns
+             nothing and exposes no data. -->
+        <activity
+            android:name=".WidgetSyncActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="widget-sync" />
             </intent-filter>
         </activity>
 
