@@ -164,14 +164,26 @@ android {
     }
     buildTypes {
         release {
-            // R8 was already stripping unused code, but with no proguardFiles it
-            // ran in its non-optimising mode — which is what Play's "Optimization
-            // isn't enabled" advice is detecting. proguard-android-optimize.txt
-            // turns the optimisation passes on; proguard-rules.pro holds the keep
-            // rules that make that safe for this app.
+            // R8 optimisation and resource shrinking are OFF pending a device-
+            // verified build.
+            //
+            // v2.7 (versionCode 48) was the first artifact to actually install on
+            // a phone, and it crashes on launch. Four untested changes landed
+            // between it and the release Play is serving: R8 optimisation
+            // (proguard-android-optimize.txt + proguard-rules.pro), resource
+            // shrinking, optimized resource shrinking, and the AGP 9 migration.
+            // This puts the R8 layer back to exactly what production runs and
+            // leaves AGP 9 plus all the new features in place, so the next build
+            // isolates which half is at fault.
+            //
+            // minifyEnabled stays on: that is what production has. Without
+            // proguardFiles R8 runs in its non-optimising mode, which is the
+            // configuration Play flagged but is also the one known to boot.
+            //
+            // Re-enable in stages once a build is confirmed good on-device —
+            // proguard-rules.pro is kept in the tree for that.
             minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            shrinkResources false
         }
     }
     compileOptions {
