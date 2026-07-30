@@ -165,6 +165,10 @@ try { runSchemaMigrations(); } catch (err) { console.warn('Schema migration fail
 // the background.
 const PRICE_CACHE_KEY = 'crypto_tracker_price_cache_v1';
 const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v2';
+// Maps a holding's coin_id to the real CoinGecko id when they differ — voice
+// and screenshot import guess ids, and coins get renamed. Persisted so the
+// symbol lookup that discovers the mapping only ever runs once per coin.
+const ID_ALIAS_CACHE_KEY = 'crypto_tracker_id_alias_v1';
 function _loadCache(key) {
   try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
@@ -182,6 +186,7 @@ let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
+const _idAliasCache = _loadCache(ID_ALIAS_CACHE_KEY);
 
 // Pre-warm Binance prices for the most-traded coins in the background
 // so the trade sheet gets an instant cache hit instead of waiting on fetch.
@@ -1667,6 +1672,64 @@ export const api = {
             }
           }
         }
+          // Nothing recognised the id itself. Every source above keys off a
+          // canonical CoinGecko-style slug or a tradeable ticker, so an id that
+          // came from voice/screenshot import — where it is an AI's guess — or
+          // from a renamed coin misses all of them and the holding prices at $0.
+          //
+          // Resolve it by symbol instead: ask CoinGecko which coin actually has
+          // that ticker, then price the real id and file the answer under the
+          // id the user's holding uses. The mapping is persisted, so this costs
+          // one extra request per unknown coin, ever.
+          const unresolved = cryptoIds.filter(id => !priceCache[id]);
+          if (unresolved.length > 0) {
+            const _txs3 = loadData('transactions');
+            const resolvedPairs = [];
+            await Promise.all(unresolved.map(async id => {
+              const sym = _symbolForId(id, _txs3);
+              if (!sym) return;
+              let realId = _idAliasCache[id];
+              if (!realId) {
+                try {
+                  const s = await fetchJSONFast(`${COINGECKO_BASE}/search?query=${encodeURIComponent(sym)}`);
+                  const hit = Array.isArray(s?.coins)
+                    ? s.coins.find(c => String(c?.symbol || '').toUpperCase() === sym)
+                    : null;
+                  if (hit?.id) {
+                    realId = hit.id;
+                    _idAliasCache[id] = realId;
+                    _saveCache(ID_ALIAS_CACHE_KEY, _idAliasCache);
+                  }
+                } catch { /* leave unresolved */ }
+              }
+              if (realId && realId !== id) resolvedPairs.push([id, realId]);
+            }));
+
+            if (resolvedPairs.length > 0) {
+              const realIds = [...new Set(resolvedPairs.map(([, r]) => r))];
+              const md = await fetchJSONFast(
+                `${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${realIds.join(',')}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
+              );
+              if (Array.isArray(md) && md.length > 0) {
+                const byReal = new Map(md.map(c => [c.id, c]));
+                for (const [origId, realId] of resolvedPairs) {
+                  const c = byReal.get(realId);
+                  if (!c || !(c.current_price > 0)) continue;
+                  priceCache[origId] = {
+                    usd: c.current_price,
+                    usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
+                    usd_market_cap: c.market_cap || 0,
+                    name: c.name,
+                    symbol: c.symbol,
+                    source: 'coingecko-resolved',
+                  };
+                  if (c.image) coinImageCache[origId] = c.image;
+                }
+                _saveCache(PRICE_CACHE_KEY, priceCache);
+                _saveCache(IMAGE_CACHE_KEY, coinImageCache);
+              }
+            }
+          }
         for (const id of cryptoIds) {
           if (priceCache[id]) result[id] = { ...priceCache[id], source: priceCache[id].source || 'coingecko' };
         }
