@@ -28,9 +28,13 @@
 -dontwarn com.google.androidbrowserhelper.**
 
 # ── Widgets ────────────────────────────────────────────────────────────────
-# TopMoversWidgetProvider resolves its row views with
-# Resources.getIdentifier(name, "id", pkg). R8 cannot see those references, so
-# the provider and its helpers stay whole.
+# The providers are declared in AndroidManifest.xml, so AGP already keeps the
+# classes themselves. This keeps their static update() helpers, which are
+# called from WidgetSyncActivity rather than from the framework.
+#
+# TopMoversWidgetProvider used to resolve its row views with
+# Resources.getIdentifier(name, "id", pkg), which R8 could not see through.
+# It now uses R.id constants directly, so that hazard is gone.
 -keep class live.walletlens.twa.*WidgetProvider { *; }
 
 # ── Biometric / AndroidX ───────────────────────────────────────────────────
