@@ -43,6 +43,14 @@
 -keep class com.google.zxing.** { *; }
 -dontwarn com.google.zxing.**
 
+# ── Play In-App Review ─────────────────────────────────────────────────────
+# The review card is rendered by the Play Store app across a binder boundary;
+# the library's callbacks and ReviewInfo parcelable are resolved by name on the
+# other side, so the optimiser must not rename or inline them.
+-keep class com.google.android.play.core.review.** { *; }
+-keep class com.google.android.play.core.common.** { *; }
+-dontwarn com.google.android.play.core.**
+
 # ── Crash readability ──────────────────────────────────────────────────────
 # Keep line numbers so the uploaded mapping.txt produces useful stack traces in
 # Play Console, and hide the original source file name.

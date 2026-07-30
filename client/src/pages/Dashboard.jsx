@@ -37,6 +37,7 @@ import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
+import { noteAppOpen, maybeAskForReview } from '../reviewPrompt'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3603,6 +3604,22 @@ export default function Dashboard() {
     if (!loaded || !enriched.length || totalValue <= 0) return
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
+
+  // Play in-app review. reviewPrompt owns the "has this person used WalletLens
+  // enough to have an opinion?" rules; all this does is count the launch and
+  // give it a chance to fire. Held behind a timer so the card can never land on
+  // the dashboard's first paint, and read through a ref so the timer doesn't
+  // restart every time a price ticks.
+  const reviewSnapshot = useRef({ holdingsCount: 0, totalValue: 0 })
+  useEffect(() => {
+    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue }
+  }, [enriched, totalValue])
+  useEffect(() => {
+    if (!loaded) return
+    noteAppOpen()
+    const t = setTimeout(() => maybeAskForReview(reviewSnapshot.current), 50000)
+    return () => clearTimeout(t)
+  }, [loaded])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash
   const tickerValueRef = useRef(0)
