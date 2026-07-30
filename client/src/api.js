@@ -410,7 +410,19 @@ async function _loadStaticMarket() {
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
-async function _loadMarketSnapshot(perPage = 250) {
+const _loadMarketSnapshot = (() => {
+  // In-flight cache: concurrent callers requesting the same perPage (e.g.
+  // Dashboard + PriceTicker + Watchlist all mounting at once on a cold cache)
+  // share one fetch instead of each firing an independent CoinGecko request.
+  const _inFlight = new Map();
+  return async function (perPage = 250) {
+    if (_inFlight.has(perPage)) return _inFlight.get(perPage);
+    const promise = _loadMarketSnapshotUncached(perPage).finally(() => _inFlight.delete(perPage));
+    _inFlight.set(perPage, promise);
+    return promise;
+  };
+})();
+async function _loadMarketSnapshotUncached(perPage = 250) {
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
   const now = Date.now();
@@ -428,7 +440,7 @@ async function _loadMarketSnapshot(perPage = 250) {
   );
   if (Array.isArray(data) && data.length > 0) {
     cache[perPage] = { t: now, v: data };
-    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    _saveCache(MARKET_CACHE_KEY, cache);
     return data;
   }
 
@@ -436,7 +448,7 @@ async function _loadMarketSnapshot(perPage = 250) {
   const staticMkt = await _loadStaticMarket();
   if (staticMkt) {
     cache[perPage] = { t: now, v: staticMkt };
-    try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+    _saveCache(MARKET_CACHE_KEY, cache);
     return staticMkt.slice(0, perPage);
   }
 
@@ -460,7 +472,7 @@ async function _loadMarketSnapshot(perPage = 250) {
         price_change_percentage_7d_in_currency: 0,
       }));
       cache[perPage] = { t: now, v: mapped };
-      try { localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify(cache)); } catch {}
+      _saveCache(MARKET_CACHE_KEY, cache);
       return mapped;
     }
   } catch {}
