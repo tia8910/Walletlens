@@ -201,7 +201,7 @@ export default function Settings() {
           <div className="settings-row">
             <div className="settings-label">
               <span>Leave a review</span>
-              <span className="settings-hint">Opens Play&apos;s rating card — you stay in the app</span>
+              <span className="settings-hint">Play&apos;s rating card, or the store listing if it can&apos;t show</span>
             </div>
             <button className="settings-chip"
               onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}
