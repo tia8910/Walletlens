@@ -20,6 +20,23 @@ public class TopMoversWidgetProvider extends AppWidgetProvider {
 
     private static final String PREFS_WIDGET = "walletlens_widget";
 
+    // The five rows, resolved at compile time. These used to be looked up with
+    // Resources.getIdentifier("mover1_name", "id", pkg), which returns 0 for
+    // anything it can't find — and setTextViewText(0, …) does not fail here, it
+    // fails later inside the launcher when the RemoteViews is applied, showing
+    // "Problem loading widget" with nothing in our own logs. Direct R.id
+    // references cannot go wrong, and they are what lets the R8 keep rule for
+    // this class go away.
+    private static final int[] ROW_NAME = {
+            R.id.mover1_name, R.id.mover2_name, R.id.mover3_name,
+            R.id.mover4_name, R.id.mover5_name };
+    private static final int[] ROW_PRICE = {
+            R.id.mover1_price, R.id.mover2_price, R.id.mover3_price,
+            R.id.mover4_price, R.id.mover5_price };
+    private static final int[] ROW_CHANGE = {
+            R.id.mover1_change, R.id.mover2_change, R.id.mover3_change,
+            R.id.mover4_change, R.id.mover5_change };
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int id : appWidgetIds) {
@@ -35,25 +52,18 @@ public class TopMoversWidgetProvider extends AppWidgetProvider {
         long lastUpdate = prefs.getLong("last_update", 0);
         views.setTextViewText(R.id.widget_tm_update, formatAgo(lastUpdate));
 
-        String[] names = {"mover1_name","mover2_name","mover3_name","mover4_name","mover5_name"};
-        String[] prices = {"mover1_price","mover2_price","mover3_price","mover4_price","mover5_price"};
-        String[] changes = {"mover1_change","mover2_change","mover3_change","mover4_change","mover5_change"};
-
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < ROW_NAME.length; i++) {
             String name = prefs.getString("tm_name_" + i, "—");
             String price = prefs.getString("tm_price_" + i, "");
             double change = prefs.getFloat("tm_change_" + i, 0);
             String arrow = change >= 0 ? "▲" : "▼";
-            String color = change >= 0 ? "#10b981" : "#ef4444";
+            int color = change >= 0 ? 0xFF10B981 : 0xFFEF4444;
 
-            int nameId = context.getResources().getIdentifier(names[i], "id", context.getPackageName());
-            int priceId = context.getResources().getIdentifier(prices[i], "id", context.getPackageName());
-            int changeId = context.getResources().getIdentifier(changes[i], "id", context.getPackageName());
-
-            views.setTextViewText(nameId, name);
-            views.setTextViewText(priceId, price);
-            views.setTextViewText(changeId, arrow + " " + String.format(Locale.US, "%.1f%%", Math.abs(change)));
-            views.setTextColor(changeId, android.graphics.Color.parseColor(color));
+            views.setTextViewText(ROW_NAME[i], name);
+            views.setTextViewText(ROW_PRICE[i], price);
+            views.setTextViewText(ROW_CHANGE[i],
+                    arrow + " " + String.format(Locale.US, "%.1f%%", Math.abs(change)));
+            views.setTextColor(ROW_CHANGE[i], color);
         }
 
         Intent tap = new Intent(context, LauncherActivity.class);
