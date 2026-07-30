@@ -16,11 +16,18 @@
         android:gravity="center_vertical"
         android:layout_marginBottom="4dp">
 
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="6dp"
+            android:src="@drawable/ic_widget_brand"
+            android:contentDescription="@null" />
+
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="💰 WalletLens"
+            android:text="WalletLens"
             android:textColor="#10b981"
             android:textSize="13sp"
             android:textStyle="bold" />
