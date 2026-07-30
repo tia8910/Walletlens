@@ -8,6 +8,8 @@ import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
+import { isAndroidTWA } from '../nativeBridge'
+import { requestReviewNow } from '../reviewPrompt'
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -169,6 +171,25 @@ export default function Settings() {
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />Security</h3>
         <BiometricToggle />
       </div>
+
+      {/* ── Rate the app ── Android only: this opens Play's own review card,
+           which does not exist on the web. */}
+      {isAndroidTWA() && (
+        <div className="settings-section glass-card">
+          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="star" size={16} />Rate WalletLens</h3>
+          <div className="settings-row">
+            <div className="settings-label">
+              <span>Leave a review</span>
+              <span className="settings-hint">Opens Play&apos;s rating card — you stay in the app</span>
+            </div>
+            <button className="settings-chip"
+              onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}
+              style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+              <Icon name="star" size={14} /> Rate
+            </button>
+          </div>
+        </div>
+      )}
 
       {editInterests && (
         <InterestPicker

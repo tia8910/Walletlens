@@ -7,16 +7,10 @@
 // This is a device-local handoff — no network call, nothing leaves the phone.
 // It is a no-op everywhere except inside the installed Android app.
 
+import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
+
 const SYNC_KEY = 'wl_widget_sync_at'
 const MIN_GAP_MS = 5 * 60 * 1000 // don't fire on every render
-
-// Same detection the biometric bridge uses: the TWA renders in a Chromium
-// Custom Tab, which reports itself as an Android webview.
-function isAndroidTWA() {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent || ''
-  return /android/i.test(ua) && (/wv\)/.test(ua) || /; wv/.test(ua))
-}
 
 function pct(part, whole) {
   if (!whole || whole <= 0) return 0
@@ -99,16 +93,7 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
       movers,
     }
 
-    const url = 'walletlens://widget-sync?data=' + encodeURIComponent(JSON.stringify(payload))
-
-    // A hidden iframe rather than location.href: this is a background sync and
-    // must never navigate the page the user is looking at, or leave them on an
-    // error page if the handler is missing.
-    const frame = document.createElement('iframe')
-    frame.style.display = 'none'
-    frame.src = url
-    document.body.appendChild(frame)
-    setTimeout(() => { try { frame.remove() } catch { /* already gone */ } }, 1500)
+    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(JSON.stringify(payload)))
 
     localStorage.setItem(SYNC_KEY, String(Date.now()))
     return true

@@ -305,6 +305,28 @@
             </intent-filter>
         </activity>
 
+        <!-- Google Play in-app review card. The web app decides when the user
+             has used WalletLens enough to be worth asking, then opens
+             walletlens://review. Exported for the same reason WidgetSync is:
+             the page that opens it runs in Chrome's process, so the launch is
+             a cross-app start. It accepts no data and returns none.
+             No noHistory here — the Play card is drawn inside this activity,
+             so it has to survive until the flow reports back. -->
+        <activity
+            android:name=".ReviewActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="review" />
+            </intent-filter>
+        </activity>
+
         <!-- Top Movers widget -->
         <receiver
             android:name=".TopMoversWidgetProvider"

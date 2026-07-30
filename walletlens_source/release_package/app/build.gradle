@@ -235,4 +235,8 @@ dependencies {
 
     // QR code generation for export
     implementation 'com.google.zxing:core:3.5.3'
+
+    // Google Play In-App Review — shows the native rating card inside the app
+    // instead of throwing the user out to the Play listing.
+    implementation 'com.google.android.play:review:2.0.2'
 }
