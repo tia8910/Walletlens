@@ -10,6 +10,26 @@ import InterestPicker from '../components/InterestPicker'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow } from '../reviewPrompt'
+import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
+
+const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
+
+/** Plain-English version of the last sync attempt, for the Settings row. */
+function widgetStatusText({ diag, hasPayload, lastSync }) {
+  if (lastSync) {
+    const mins = Math.round((Date.now() - lastSync) / 60000)
+    return mins < 1 ? 'Updated just now' : `Updated ${mins} min ago`
+  }
+  if (!diag) return hasPayload ? 'Ready — not sent yet' : 'Open the dashboard first'
+  switch (diag.result) {
+    case 'no-holdings': return 'No holdings to show yet'
+    case 'not-twa':     return 'Not recognised as the app — tap Sync now'
+    case 'no-payload':  return 'Open the dashboard first'
+    case 'throttled':   return 'Waiting for the next update'
+    case 'threw':       return 'Last attempt failed'
+    default:            return 'Not sent yet'
+  }
+}
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -45,6 +65,7 @@ export default function Settings() {
   const fontSize = settings.fontSize || 'md'
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
+  const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
 
   return (
     <div className="page settings-page">
@@ -187,6 +208,42 @@ export default function Settings() {
               style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
               <Icon name="star" size={14} /> Rate
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Home screen widgets ── Android only, and deliberately NOT gated on
+           isAndroidTWA(): if detection is what's broken, hiding the panel
+           behind it would hide the one readout that says so. There is no
+           logcat on a user's phone and the sync intent fails silently by
+           design, so this is how a stuck widget gets explained. */}
+      {isAndroid && (
+        <div className="settings-section glass-card">
+          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} />Home screen widgets</h3>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              <span>Status</span>
+              <span className="settings-hint">{widgetStatusText(wdiag)}</span>
+            </div>
+            <button className="settings-chip"
+              onClick={() => {
+                track('widget_sync_manual', { source: 'settings' })
+                forceSyncWidgets()
+                setWdiag(widgetSyncDiagnostics())
+              }}
+              style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+              <Icon name="refresh" size={14} /> Sync now
+            </button>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              <span>Running as the app</span>
+              <span className="settings-hint">
+                {wdiag.twa ? 'Yes' : 'No — widgets only update from the installed app'}
+              </span>
+            </div>
           </div>
         </div>
       )}
