@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -56,6 +57,9 @@ public class ReviewActivity extends Activity {
     /** Set once the flow has actually run, so the web side can stop asking. */
     private static final String KEY_COMPLETED_AT = "review_flow_completed_at";
 
+    /** Below this, the rating card cannot have been on screen. */
+    private static final long NO_CARD_THRESHOLD_MS = 1200L;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,21 +89,43 @@ public class ReviewActivity extends Activity {
                     return;
                 }
                 try {
+                    final long startedAt = SystemClock.elapsedRealtime();
                     manager.launchReviewFlow(ReviewActivity.this, task.getResult())
                             .addOnCompleteListener(flow -> {
-                                // Always successful — Play never reports back
-                                // whether the card was shown or reviewed.
+                                // Play never reports whether the card was shown,
+                                // and returns success either way — including for
+                                // a build the user did not install from Play,
+                                // where it silently shows nothing at all.
+                                //
+                                // Elapsed time is the only signal available. A
+                                // real card cannot be dismissed in under a
+                                // second, so anything faster means nothing was
+                                // displayed. Only the explicit "Rate" button
+                                // acts on that: it asked for something to
+                                // happen, so it gets the store listing. The
+                                // automatic prompt stays silent, because
+                                // second-guessing the API there is exactly what
+                                // Play's policy forbids.
+                                long shownFor = SystemClock.elapsedRealtime() - startedAt;
+                                boolean looksUnshown = shownFor < NO_CARD_THRESHOLD_MS;
+                                Log.d(TAG, "review flow returned after " + shownFor + "ms");
+                                if (looksUnshown && openStoreOnFailure) {
+                                    finishFlow(true);
+                                    return;
+                                }
                                 markCompleted();
                                 finish();
                             });
-                } catch (Exception e) {
-                    Log.w(TAG, "launchReviewFlow threw: " + e.getMessage());
+                } catch (Throwable t) {
+                    Log.w(TAG, "launchReviewFlow threw: " + t);
                     finishFlow(openStoreOnFailure);
                 }
             });
-        } catch (Exception e) {
-            // Play Core missing entirely (e.g. a non-GMS device).
-            Log.w(TAG, "Play review unavailable: " + e.getMessage());
+        } catch (Throwable t) {
+            // Throwable, not Exception: if R8 ever strips the Play review
+            // classes this arrives as NoClassDefFoundError, which is an Error
+            // and would otherwise sail straight past and crash the activity.
+            Log.w(TAG, "Play review unavailable: " + t);
             finishFlow(openStoreOnFailure);
         }
     }

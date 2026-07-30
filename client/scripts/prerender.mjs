@@ -2109,6 +2109,13 @@ const APP_ROUTES = [
   { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
   { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
   { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
+  // /guardian belongs here because the Android notifications link straight to
+  // it. Tapping a notification is a cold navigation to the host, not a
+  // client-side route change, so a path with no prerendered shell 404s no
+  // matter that React Router knows about it. Every other notification target
+  // — dashboard, academy, settings, market-index, fear-and-greed-index —
+  // already had one; this was the only gap, and it was the only 404.
+  { path: '/guardian',     title: 'Portfolio Guardian — WalletLens', description: 'Dead-man switch for your portfolio. Runs on your device.' },
 ]
 for (const r of APP_ROUTES) {
   write(r.path, buildPage({
