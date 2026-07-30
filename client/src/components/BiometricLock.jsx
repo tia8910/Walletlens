@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
+import { isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
 const SESSION_KEY  = 'wl_biometric_unlocked'
@@ -19,18 +20,16 @@ let authInProgress = false
 
 // ── Android TWA detection ─────────────────────────────────────────────────
 //
-// Checks whether the web app is running inside the Android TWA (Trusted Web
-// Activity) by looking for the Chromium Custom Tab user-agent token and the
-// Android package name. When inside the TWA we can use native intent URLs
+// Inside the Android TWA we can use native intent URLs
 // (walletlens://biometric-auth) to trigger the platform BiometricPrompt
 // instead of WebAuthn, giving a true native app feel.
-const isAndroidTWA = (() => {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent || ''
-  const isAndroid = /android/i.test(ua)
-  const isWebView = /wv\)/.test(ua) || /; wv/.test(ua)
-  return isAndroid && isWebView
-})()
+//
+// This used to sniff the user agent for `wv` here, described as "the Chromium
+// Custom Tab token". It isn't — `wv` marks an Android WebView, and a TWA is a
+// Custom Tab running real Chrome, so the check was always false in the app and
+// this component silently fell back to WebAuthn. Detection now lives in
+// nativeBridge, which uses the android-app:// launch referrer.
+const isAndroidTWA = detectAndroidTWA()
 
 /**
  * Launch the native BiometricActivity via a custom scheme intent URL.

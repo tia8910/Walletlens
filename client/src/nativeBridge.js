@@ -7,16 +7,47 @@
 //
 // Everything here is a no-op outside the installed Android app.
 
+// Remembers a positive detection for the rest of the browsing context.
+// sessionStorage rather than localStorage on purpose: the TWA's Custom Tab
+// shares Chrome's profile, so a persisted flag would leak into ordinary
+// browser tabs on the same device and make the site think it was the app.
+const TWA_FLAG = 'wl_is_twa'
+
 /**
  * True inside the WalletLens TWA.
  *
- * The Custom Tab that renders the app reports itself as an Android webview,
- * which is what separates it from plain Chrome on the same device.
+ * DO NOT sniff for the `wv` user-agent token here. That token marks an Android
+ * *WebView*, and a TWA is not a WebView — it renders in a Chrome Custom Tab,
+ * which sends an ordinary Chrome mobile UA. Testing for `wv` is what made this
+ * function return false inside the real app, silently disabling the widget
+ * sync, the review prompt and the native biometric path all at once.
+ *
+ * The reliable signal is the referrer: a Trusted Web Activity launches its
+ * start URL with `document.referrer` set to `android-app://<package>`. That
+ * only holds for the launch navigation, so a positive result is remembered —
+ * client-side routing never changes the referrer, but a reload can.
+ *
+ * The `wv` check is kept as a secondary signal, for the webview fallback the
+ * TWA drops to when no Custom Tab provider is available.
  */
 export function isAndroidTWA() {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent || ''
-  return /android/i.test(ua) && (/wv\)/.test(ua) || /; wv/.test(ua))
+  if (!/android/i.test(ua)) return false
+
+  try {
+    if (sessionStorage.getItem(TWA_FLAG) === '1') return true
+  } catch { /* storage blocked; fall through to the live checks */ }
+
+  const referrer = (typeof document !== 'undefined' && document.referrer) || ''
+  const launchedByApp = referrer.startsWith('android-app://')
+  const webViewFallback = /wv\)/.test(ua) || /; wv/.test(ua)
+
+  if (launchedByApp || webViewFallback) {
+    try { sessionStorage.setItem(TWA_FLAG, '1') } catch { /* fine, re-detect */ }
+    return true
+  }
+  return false
 }
 
 /**
