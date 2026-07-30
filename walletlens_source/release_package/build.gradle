@@ -7,7 +7,17 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:9.0.0'
+        // Back on 8.9.1 — the toolchain the release Play is serving was built
+        // with. AGP 9.0.0 is the largest and least necessary change sitting
+        // between that release and the build that crashes on launch, and it
+        // also ships a newer R8, so reverting it tests the toolchain and the
+        // shrinker together.
+        //
+        // Everything the AGP 9 migration touched stays: `compileSdk`/`minSdk`/
+        // `targetSdk` (the non-deprecated spellings), the `lint {}` block,
+        // `layout.buildDirectory`, and `buildFeatures.resValues` are all valid
+        // on 8.9.1 — only the plugin version goes back.
+        classpath 'com.android.tools.build:gradle:8.9.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
