@@ -244,6 +244,7 @@ export default function Landing() {
             alt="WalletLens on a phone: total portfolio value, currency switcher, timeframe selector and a candlestick chart of net worth"
             loading="eager"
             decoding="async"
+            fetchPriority="high"
           />
         </div>
       </section>
