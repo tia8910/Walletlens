@@ -26,6 +26,24 @@ export default function PullToRefresh({ children }) {
   const setDist = useCallback((d) => { distanceRef.current = d; setDistance(d) }, [])
 
   const springBack = useCallback(() => {
+    // Nothing was pulled, so there is nothing to animate back from — skip the
+    // settling window entirely.
+    //
+    // This matters far more than it looks. `settling` exists only so the spring
+    // transition can play, but it also switches the wrapper's transform on, and
+    // translateY(0px) is still a transform: it makes this div the containing
+    // block for every position:fixed descendant. On a plain tap the sequence is
+    // touchend → springBack → re-render → any open fixed overlay is suddenly
+    // sized to this container instead of the viewport and jumps down the page —
+    // all before the browser dispatches the click it synthesises from that tap.
+    // The click then hit-tests at the original coordinates, lands on whatever
+    // moved under them, and the tap goes to the wrong element.
+    if (distanceRef.current <= 0) {
+      setDist(0)
+      setSettling(false)
+      clearTimeout(settleTimer.current)
+      return
+    }
     setDist(0)
     setSettling(true)
     clearTimeout(settleTimer.current)
@@ -40,7 +58,15 @@ export default function PullToRefresh({ children }) {
     // downward drag while tapping — e.g. an onboarding asset chip — would arm
     // pull-to-refresh, preventDefault() the touch, and cancel the tap ("chip
     // flashes but won't select"). Their own scrolling and taps must win.
-    if (e.target?.closest?.('[role="dialog"], .bs-sheet, .wlc-panel, .ip-overlay, .wls-overlay')) {
+    // The trailing [class*="overlay"], [class*="modal"] matter: this list was
+    // previously spelled out one component at a time and went stale — the news
+    // modal wasn't on it, so tapping its category tabs armed a pull. Matching
+    // the naming convention catches the next one too, without reaching for
+    // getComputedStyle on every ancestor of every touch.
+    if (e.target?.closest?.(
+      '[role="dialog"], .bs-sheet, .wlc-panel, .ip-overlay, .wls-overlay,' +
+      '[class*="overlay"], [class*="modal"]'
+    )) {
       pulling.current = false; return
     }
     if (refreshing || e.touches.length !== 1 || !atTop()) { pulling.current = false; return }
