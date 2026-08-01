@@ -7,7 +7,12 @@ const Learn         = lazy(() => import('./pages/Learn'))
 const Compare       = lazy(() => import('./pages/Compare'))
 const PricePage     = lazy(() => import('./pages/PricePage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
-import PriceTicker from './components/PriceTicker'
+// Lazy: PriceTicker statically imports api.js (which pulls in technicals.js and
+// data/assets.js), and it's only ever rendered on non-landing routes. A static
+// import here would force those chunks into the shared App.jsx graph, making
+// the landing page and every SEO content page (blog, about, FAQ, ...) load
+// price/technicals code they never use.
+const PriceTicker = lazy(() => import('./components/PriceTicker'))
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
@@ -615,7 +620,9 @@ export default function App() {
         </div>
       </header>
 
-      <PriceTicker />
+      <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '34px' }} aria-hidden="true" />}>
+        <PriceTicker />
+      </Suspense>
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
 
