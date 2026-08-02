@@ -183,9 +183,16 @@ export function isSignedIn() {
   return haveValidToken()
 }
 
+/** Thrown when Drive work needs a sign-in that only a user gesture may start. */
+export const NEEDS_SIGNIN = 'NEEDS_SIGNIN'
+
 async function driveFetch(url, init = {}) {
+  // Silent only, deliberately. Escalating to interactive here would navigate
+  // the page to Google in the middle of a backup, losing the passphrase the
+  // user just typed and completing nothing. Sign-in belongs to Connect, which
+  // is a button press with nothing else in flight.
   const token = await getAccessToken({ interactive: false })
-    .catch(() => getAccessToken({ interactive: true }))
+    .catch(() => { throw new Error(NEEDS_SIGNIN) })
   const res = await fetch(url, {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { connect, backupNow, restoreNow, driveState, setAutoBackup } from '../driveSync'
+import { connect, backupNow, restoreNow, driveState, setAutoBackup, previouslyConnected } from '../driveSync'
+import { NEEDS_SIGNIN } from '../googleDrive'
 
 // Google Drive backup panel.
 //
@@ -39,8 +40,14 @@ export default function DriveBackup() {
   const [state, setState] = useState(() => driveState())
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
-  const [found, setFound] = useState(null)   // remote file, once we've looked
-  const [action, setAction] = useState(null) // what decideAction concluded
+  // Both seeded from what survived the reload. 'known' means "connected before,
+  // haven't re-checked Drive yet this session" — enough to show the controls
+  // without pretending we know the remote state.
+  const [found, setFound] = useState(() => {
+    const s = driveState()
+    return s.fileId ? { id: s.fileId } : null
+  })
+  const [action, setAction] = useState(() => (previouslyConnected() ? 'known' : null))
   const [msg, setMsg] = useState(null)       // { kind: 'ok'|'err', text }
 
   const resumed = useRef(false)
@@ -60,6 +67,13 @@ export default function DriveBackup() {
   const refresh = () => setState(driveState())
   const say = (kind, text) => setMsg({ kind, text })
 
+  // The access token never survives a reload by design, so an action taken
+  // after one needs a sign-in first. Say that plainly rather than reporting the
+  // internal marker.
+  const explain = (e) => (e?.message === NEEDS_SIGNIN
+    ? 'Your Google session expired. Tap Recheck to sign in again.'
+    : null)
+
   async function onConnect() {
     setBusy(true); setMsg(null)
     try {
@@ -76,7 +90,7 @@ export default function DriveBackup() {
         say('ok', 'Backup found, and this device already has a portfolio. Choose which to keep.')
       }
     } catch (e) {
-      say('err', e.message || 'Could not connect to Google Drive')
+      say('err', explain(e) || e.message || 'Could not connect to Google Drive')
     } finally { setBusy(false) }
   }
 
@@ -87,7 +101,7 @@ export default function DriveBackup() {
       track('drive_backup', { txCount })
       refresh(); say('ok', `Backed up ${txCount} transactions to your Drive.`)
     } catch (e) {
-      say('err', e.message || 'Backup failed')
+      say('err', explain(e) || e.message || 'Backup failed')
     } finally { setBusy(false) }
   }
 
@@ -99,7 +113,7 @@ export default function DriveBackup() {
       say('ok', `Restored ${restored} items. Reloading…`)
       setTimeout(() => window.location.reload(), 1200)
     } catch (e) {
-      say('err', e.message || 'Restore failed')
+      say('err', explain(e) || e.message || 'Restore failed')
     } finally { setBusy(false) }
   }
 
@@ -115,8 +129,9 @@ export default function DriveBackup() {
         <div className="settings-label">
           <span>Encrypted backup in your own Drive</span>
           <span className="settings-hint">
-            {action ? `Last backup: ${fmt(state.lastBackupAt)}`
-                    : 'WalletLens can only see the file it creates, and cannot read it'}
+            {action
+              ? `Last backup: ${fmt(state.lastBackupAt)}`
+              : 'WalletLens can only see the file it creates, and cannot read it'}
           </span>
         </div>
         <button className="settings-chip" onClick={onConnect} disabled={busy}
