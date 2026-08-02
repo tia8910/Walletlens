@@ -8,6 +8,7 @@ import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
+import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow } from '../reviewPrompt'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
@@ -211,6 +212,8 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      <DriveBackup />
 
       {/* ── Home screen widgets ── Android only, and deliberately NOT gated on
            isAndroidTWA(): if detection is what's broken, hiding the panel
