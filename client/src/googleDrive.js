@@ -1,0 +1,160 @@
+// Google Drive backup: auth and the three Drive calls we need.
+//
+// Scope is drive.file — "only the files this app creates". WalletLens cannot
+// see anything else in the user's Drive, and Google's own consent screen says
+// so, which matters for an app whose pitch is that it doesn't touch your data.
+//
+// The backup lands in the user's Drive, encrypted (see backupEncryption.js).
+// We run no server, store nothing, and never see the contents.
+
+const CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID
+  // Web OAuth client IDs are public by design: they appear in the page source of
+  // every site that uses Google sign-in. There is no client secret in the token
+  // flow. What actually guards this is the authorized JavaScript origin list in
+  // the Cloud console, which is why the ID being visible here is not a leak.
+  || '630094688874-rilioqqic8004hk57skqi6oi2bs0g078.apps.googleusercontent.com'
+
+const SCOPE = 'https://www.googleapis.com/auth/drive.file'
+const GIS_SRC = 'https://accounts.google.com/gsi/client'
+const FILE_NAME = 'walletlens-backup.wl3'
+const API = 'https://www.googleapis.com/drive/v3/files'
+const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
+
+/** Feature switch: without a client ID the whole thing stays invisible. */
+export function isDriveConfigured() {
+  return typeof CLIENT_ID === 'string' && CLIENT_ID.endsWith('.apps.googleusercontent.com')
+}
+
+// Access token lives in memory only. Putting it in localStorage would leave a
+// Drive-capable credential sitting on disk long after the tab closed, for no
+// gain: Google hands out a fresh one silently while the session is alive.
+let accessToken = null
+let tokenExpiry = 0
+let tokenClient = null
+
+let gisPromise = null
+function loadGis() {
+  if (gisPromise) return gisPromise
+  gisPromise = new Promise((resolve, reject) => {
+    if (window.google?.accounts?.oauth2) return resolve()
+    const s = document.createElement('script')
+    s.src = GIS_SRC
+    s.async = true
+    s.defer = true
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Could not reach Google sign-in'))
+    document.head.appendChild(s)
+  })
+  return gisPromise
+}
+
+function haveValidToken() {
+  return accessToken && Date.now() < tokenExpiry - 60_000
+}
+
+/**
+ * Get an access token, prompting the user only when necessary.
+ *
+ * @param {boolean} interactive false to attempt a silent refresh and give up
+ *                              quietly, which is what a background auto-backup
+ *                              wants: it must never throw a consent popup at
+ *                              someone who didn't tap anything.
+ */
+export async function getAccessToken({ interactive = true } = {}) {
+  if (haveValidToken()) return accessToken
+  if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
+  await loadGis()
+
+  return new Promise((resolve, reject) => {
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      callback: (res) => {
+        if (res.error) return reject(new Error(res.error_description || res.error))
+        accessToken = res.access_token
+        tokenExpiry = Date.now() + (Number(res.expires_in || 3600) * 1000)
+        resolve(accessToken)
+      },
+      error_callback: (err) => reject(new Error(err?.message || 'Sign-in was cancelled')),
+    })
+    // prompt:'' reuses an existing grant without showing anything. On the very
+    // first run there is no grant, so a non-interactive call correctly fails
+    // instead of silently doing nothing the caller can detect.
+    tokenClient.requestAccessToken({ prompt: interactive ? '' : 'none' })
+  })
+}
+
+export function signOut() {
+  const t = accessToken
+  accessToken = null
+  tokenExpiry = 0
+  try { if (t) window.google?.accounts?.oauth2?.revoke(t, () => {}) } catch { /* already gone */ }
+}
+
+export function isSignedIn() {
+  return haveValidToken()
+}
+
+async function driveFetch(url, init = {}) {
+  const token = await getAccessToken({ interactive: false })
+    .catch(() => getAccessToken({ interactive: true }))
+  const res = await fetch(url, {
+    ...init,
+    headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 401) {
+    accessToken = null
+    throw new Error('Google sign-in expired, please connect again')
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Drive error ${res.status}: ${body.slice(0, 200)}`)
+  }
+  return res
+}
+
+/**
+ * Find the backup this app previously wrote.
+ *
+ * With drive.file the listing only ever contains files WalletLens created, so
+ * this cannot see or match anything else the user owns. The grant is recorded
+ * per user and app rather than per device, which is what makes the file
+ * visible after signing in on a new phone.
+ */
+export async function findBackup() {
+  const q = encodeURIComponent(`name='${FILE_NAME}' and trashed=false`)
+  const fields = encodeURIComponent('files(id,name,modifiedTime,size)')
+  const res = await driveFetch(`${API}?q=${q}&spaces=drive&fields=${fields}&orderBy=modifiedTime desc`)
+  const data = await res.json()
+  return data.files?.[0] || null
+}
+
+/** Create or overwrite the backup. Returns the file id. */
+export async function uploadBackup(content, existingFileId = null) {
+  const boundary = 'wl' + Math.random().toString(36).slice(2)
+  const metadata = existingFileId
+    ? { name: FILE_NAME }
+    : { name: FILE_NAME, description: 'Encrypted WalletLens portfolio backup' }
+
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+    `${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: text/plain\r\n\r\n` +
+    `${content}\r\n--${boundary}--`
+
+  const url = existingFileId
+    ? `${UPLOAD}/${existingFileId}?uploadType=multipart&fields=id`
+    : `${UPLOAD}?uploadType=multipart&fields=id`
+
+  const res = await driveFetch(url, {
+    method: existingFileId ? 'PATCH' : 'POST',
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body,
+  })
+  return (await res.json()).id
+}
+
+export async function downloadBackup(fileId) {
+  const res = await driveFetch(`${API}/${fileId}?alt=media`)
+  return res.text()
+}

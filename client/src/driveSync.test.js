@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { decideAction, hasLocalPortfolio } from './driveSync'
+import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncryption'
+
+// Drive I/O is mocked away; what matters here is the one decision that can
+// destroy data, and that the encryption round trips.
+vi.mock('./googleDrive', () => ({
+  isDriveConfigured: () => true,
+  getAccessToken: vi.fn(),
+  findBackup: vi.fn(),
+  uploadBackup: vi.fn(),
+  downloadBackup: vi.fn(),
+}))
+
+const remote = (iso) => ({ id: 'f1', modifiedTime: iso })
+
+beforeEach(() => localStorage.clear())
+
+describe('decideAction', () => {
+  it('auto-restores only onto a device with no portfolio', () => {
+    expect(decideAction({ hasLocal: false, remote: remote('2026-08-01T00:00:00Z') }))
+      .toBe('auto-restore')
+  })
+
+  it('never auto-restores over existing data', () => {
+    // The whole point: silently replacing a populated device would destroy a
+    // portfolio, and there is no undo.
+    const action = decideAction({ hasLocal: true, remote: remote('2026-08-01T00:00:00Z') })
+    expect(action).not.toBe('auto-restore')
+    expect(action).toBe('ask')
+  })
+
+  it('offers a first backup when Drive is empty', () => {
+    expect(decideAction({ hasLocal: true, remote: null })).toBe('first-backup')
+    expect(decideAction({ hasLocal: false, remote: null })).toBe('first-backup')
+  })
+
+  it('says nothing to do when this device wrote the newest copy', () => {
+    const lastBackupAt = Date.parse('2026-08-02T00:00:00Z')
+    expect(decideAction({ hasLocal: true, remote: remote('2026-08-01T00:00:00Z'), lastBackupAt }))
+      .toBe('up-to-date')
+  })
+
+  it('asks when the remote copy is newer than our last upload', () => {
+    const lastBackupAt = Date.parse('2026-08-01T00:00:00Z')
+    expect(decideAction({ hasLocal: true, remote: remote('2026-08-02T00:00:00Z'), lastBackupAt }))
+      .toBe('ask')
+  })
+})
+
+describe('hasLocalPortfolio', () => {
+  it('is false on a fresh install', () => {
+    expect(hasLocalPortfolio()).toBe(false)
+    localStorage.setItem('crypto_tracker_transactions', '[]')
+    expect(hasLocalPortfolio()).toBe(false)
+  })
+
+  it('is true once there are transactions', () => {
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([{ id: 1 }]))
+    expect(hasLocalPortfolio()).toBe(true)
+  })
+
+  it('treats unreadable data as present, not absent', () => {
+    // Failing to parse is not evidence the device is empty. Guessing "empty"
+    // here would hand decideAction an auto-restore over real data.
+    localStorage.setItem('crypto_tracker_transactions', '{ this is not json')
+    expect(hasLocalPortfolio()).toBe(true)
+  })
+})
+
+describe('backup encryption', () => {
+  it('round trips', async () => {
+    const secret = 'WL3-abc123-a-portfolio'
+    const blob = await encryptBackup(secret, 'correct horse battery staple')
+    expect(blob).not.toContain(secret)
+    expect(isEncryptedBackup(blob)).toBe(true)
+    expect(await decryptBackup(blob, 'correct horse battery staple')).toBe(secret)
+  })
+
+  it('refuses the wrong passphrase instead of returning rubbish', async () => {
+    const blob = await encryptBackup('WL3-payload', 'right')
+    await expect(decryptBackup(blob, 'wrong')).rejects.toThrow(/passphrase|damaged/i)
+  })
+
+  it('detects tampering', async () => {
+    // GCM is authenticated, so a flipped byte fails loudly rather than
+    // restoring corrupted transactions over a real portfolio.
+    const blob = await encryptBackup('WL3-payload', 'pw')
+    const parts = blob.split('.')
+    const ct = [...atob(parts[3])]
+    ct[0] = String.fromCharCode(ct[0].charCodeAt(0) ^ 0xff)
+    parts[3] = btoa(ct.join(''))
+    await expect(decryptBackup(parts.join('.'), 'pw')).rejects.toThrow()
+  })
+
+  it('uses a fresh salt and IV every time', async () => {
+    // Reusing an IV under the same key breaks GCM badly.
+    const a = await encryptBackup('same', 'pw')
+    const b = await encryptBackup('same', 'pw')
+    expect(a.split('.')[1]).not.toBe(b.split('.')[1])
+    expect(a.split('.')[2]).not.toBe(b.split('.')[2])
+    expect(a).not.toBe(b)
+  })
+
+  it('rejects a blob that is not ours', async () => {
+    await expect(decryptBackup('not-a-backup', 'pw')).rejects.toThrow(/WalletLens encrypted backup/)
+    expect(isEncryptedBackup('WL3-plain-code')).toBe(false)
+  })
+})
