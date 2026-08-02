@@ -1,8 +1,16 @@
 // ── Weekly report email subscription ─────────────────────────────────────────
 // Thin client for the voice-api "weekly_*" modes. The user opts in with their
-// email; the server stores a small rounded stats snapshot (no exact amounts,
-// no transactions) and emails a branded report every week from
-// noreply@walletlens.live. We keep only the email + opt-in time locally.
+// email; the server stores a stats snapshot and emails a branded report every
+// week from noreply@walletlens.live. We keep only the email + opt-in time
+// locally.
+//
+// What actually leaves the device, since this needs to match the privacy
+// policy: email address, an anonymous device id, the exact total value, the
+// week's change, and the top six holdings with symbol, exact value and pnl%.
+// Individual transactions are not sent. An earlier version of this comment
+// claimed the snapshot was rounded and carried "no exact amounts" — it never
+// was and it never did; snapshots.js stores the raw value and it is sent as
+// stored. Do not restore that wording without also making it true.
 import { loadSnapshots } from './snapshots'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
