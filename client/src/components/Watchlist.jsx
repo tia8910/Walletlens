@@ -103,7 +103,9 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const [notifPerm, setNotifPerm] = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
+  const portfolioPricesRef = useRef(portfolioPrices)
   alertsRef.current = alerts
+  portfolioPricesRef.current = portfolioPrices
 
   // Persist locally and mirror rules to the push server (no-op if push is off)
   // so price targets can fire even when the app is closed.
@@ -111,10 +113,16 @@ export default function Watchlist({ portfolioPrices = {} }) {
 
   const fetchPrices = useCallback(async () => {
     if (!items.length) return
-    const ids = items.map(i => i.coin_id).join(',')
+    // Skip coins the dashboard already polled for the portfolio — avoids
+    // duplicate, unsynced requests for the same coin ids.
+    const missing = items
+      .map(i => i.coin_id)
+      .filter(id => portfolioPricesRef.current[id]?.usd == null && portfolioPricesRef.current[id]?.price == null)
+    if (!missing.length) return
+    const ids = missing.join(',')
     try {
       const px = await api.getPrices(ids)
-      if (px) setPrices(px)
+      if (px) setPrices(prev => ({ ...prev, ...px }))
     } catch {}
   }, [items])
 
