@@ -88,6 +88,9 @@ const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
 const Settings     = lazy(() => import('./pages/Settings'))
 const Guardian     = lazy(() => import('./pages/Guardian'))
+// OAuth return leg for Google Drive backup. Must exist as a route because
+// Google navigates here from outside the app.
+const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const Vision       = lazy(() => import('./pages/Vision'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
@@ -645,6 +648,7 @@ export default function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/guardian" element={<Guardian />} />
+              <Route path="/drive-callback" element={<DriveCallback />} />
               <Route path="/vision" element={<Vision />} />
             </Routes>
           </Suspense>

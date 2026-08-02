@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { connect, backupNow, restoreNow, driveState, setAutoBackup } from '../driveSync'
@@ -19,12 +20,25 @@ function fmt(ts) {
 }
 
 export default function DriveBackup() {
+  const location = useLocation()
   const [state, setState] = useState(() => driveState())
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
   const [found, setFound] = useState(null)   // remote file, once we've looked
   const [action, setAction] = useState(null) // what decideAction concluded
   const [msg, setMsg] = useState(null)       // { kind: 'ok'|'err', text }
+
+  const resumed = useRef(false)
+
+  // The redirect flow lands on /drive-callback, which stores the token and
+  // navigates back here with this flag. Pick the conversation back up where it
+  // left off instead of making the user press Connect a second time.
+  useEffect(() => {
+    if (resumed.current || !location.state?.driveConnected) return
+    resumed.current = true
+    onConnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   if (!state.configured) return null
 
