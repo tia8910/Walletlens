@@ -2116,6 +2116,10 @@ const APP_ROUTES = [
   // — dashboard, academy, settings, market-index, fear-and-greed-index —
   // already had one; this was the only gap, and it was the only 404.
   { path: '/guardian',     title: 'Portfolio Guardian — WalletLens', description: 'Dead-man switch for your portfolio. Runs on your device.' },
+  // Google redirects the browser here after Drive sign-in. That is a cold
+  // navigation straight to the host, so without a shell it 404s and the token
+  // never reaches the app — the same way /guardian broke for notifications.
+  { path: '/drive-callback', title: 'Connecting Google Drive — WalletLens', description: 'Completing your Google Drive connection.' },
 ]
 for (const r of APP_ROUTES) {
   write(r.path, buildPage({

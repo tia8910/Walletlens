@@ -52,6 +52,78 @@ function haveValidToken() {
   return accessToken && Date.now() < tokenExpiry - 60_000
 }
 
+// ── Redirect flow ───────────────────────────────────────────────────────────
+// Google's identity library completes its popup flow with a postMessage back
+// to the window that opened it. Mobile browsers routinely open the "popup" as
+// a full tab and drop the opener, at which point the token has nowhere to
+// return and the library reports "Popup window closed" — which is exactly what
+// happened on the first real device test. A TWA Custom Tab has the same shape.
+//
+// So on touch devices the interactive sign-in is a full-page navigation to
+// Google and back to /drive-callback (the redirect URI registered on the OAuth
+// client). No popup, no opener, nothing for the browser to lose.
+
+const REDIRECT_PATH = '/drive-callback'
+const STATE_KEY = 'wl_drive_oauth_state'
+const RETURN_KEY = 'wl_drive_return'
+
+function isLikelyMobile() {
+  if (typeof navigator === 'undefined') return false
+  return /android|iphone|ipad|mobile/i.test(navigator.userAgent || '')
+}
+
+/** Exported for tests; beginRedirectSignIn is just this plus a navigation. */
+export function buildAuthUrl(state) {
+  const p = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: window.location.origin + REDIRECT_PATH,
+    response_type: 'token',
+    scope: SCOPE,
+    state,
+    include_granted_scopes: 'true',
+  })
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + p.toString()
+}
+
+export function beginRedirectSignIn() {
+  // The state parameter round-trips through Google and is checked on return,
+  // so a token fragment planted by someone else's page is rejected.
+  const state = (crypto.randomUUID && crypto.randomUUID()) || Math.random().toString(36).slice(2)
+  try {
+    sessionStorage.setItem(STATE_KEY, state)
+    sessionStorage.setItem(RETURN_KEY, window.location.pathname || '/settings')
+  } catch { /* private mode: state check will fail closed on return */ }
+  window.location.assign(buildAuthUrl(state))
+}
+
+/**
+ * Called by the /drive-callback route with location.hash. Validates state,
+ * stores the token in memory, and says where to send the user back to.
+ * The caller must scrub the hash from the URL and history immediately.
+ */
+export function completeRedirectSignIn(hash) {
+  const params = new URLSearchParams(String(hash || '').replace(/^#/, ''))
+  let expected = null
+  let returnTo = '/settings'
+  try {
+    expected = sessionStorage.getItem(STATE_KEY)
+    returnTo = sessionStorage.getItem(RETURN_KEY) || '/settings'
+    sessionStorage.removeItem(STATE_KEY)
+    sessionStorage.removeItem(RETURN_KEY)
+  } catch { /* fall through: no stored state means the check below fails */ }
+
+  const err = params.get('error')
+  if (err) throw new Error(err === 'access_denied' ? 'Sign-in was cancelled' : `Google sign-in failed: ${err}`)
+  if (!expected || params.get('state') !== expected) {
+    throw new Error('Sign-in state mismatch — please try connecting again')
+  }
+  const token = params.get('access_token')
+  if (!token) throw new Error('Google did not return a token')
+  accessToken = token
+  tokenExpiry = Date.now() + Number(params.get('expires_in') || 3600) * 1000
+  return { returnTo }
+}
+
 /**
  * Get an access token, prompting the user only when necessary.
  *
@@ -63,6 +135,14 @@ function haveValidToken() {
 export async function getAccessToken({ interactive = true } = {}) {
   if (haveValidToken()) return accessToken
   if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
+
+  // Interactive sign-in on a touch device: navigate, don't pop up. The
+  // returned promise never settles because the page is about to unload.
+  if (interactive && isLikelyMobile()) {
+    beginRedirectSignIn()
+    return new Promise(() => {})
+  }
+
   await loadGis()
 
   return new Promise((resolve, reject) => {
@@ -75,7 +155,15 @@ export async function getAccessToken({ interactive = true } = {}) {
         tokenExpiry = Date.now() + (Number(res.expires_in || 3600) * 1000)
         resolve(accessToken)
       },
-      error_callback: (err) => reject(new Error(err?.message || 'Sign-in was cancelled')),
+      error_callback: (err) => {
+        // Desktop popup blocked or torn down: fall back to the redirect flow
+        // rather than surfacing "Popup window closed" at the user.
+        if (interactive && /popup/i.test(err?.type || err?.message || '')) {
+          beginRedirectSignIn()
+          return // navigating away; leave the promise pending
+        }
+        reject(new Error(err?.message || 'Sign-in was cancelled'))
+      },
     })
     // prompt:'' reuses an existing grant without showing anything. On the very
     // first run there is no grant, so a non-interactive call correctly fails
