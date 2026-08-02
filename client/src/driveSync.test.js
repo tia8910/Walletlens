@@ -107,3 +107,19 @@ describe('backup encryption', () => {
     expect(isEncryptedBackup('WL3-plain-code')).toBe(false)
   })
 })
+
+describe('previouslyConnected', () => {
+  it('is false on a device that has never connected', async () => {
+    const { previouslyConnected } = await import('./driveSync')
+    expect(previouslyConnected({ fileId: null, lastBackupAt: 0 })).toBe(false)
+  })
+
+  it('is true from either surviving marker', async () => {
+    // The access token is memory-only and always gone after a reload, so it
+    // cannot be the signal. These two persist and are what "already connected"
+    // actually means.
+    const { previouslyConnected } = await import('./driveSync')
+    expect(previouslyConnected({ fileId: 'abc', lastBackupAt: 0 })).toBe(true)
+    expect(previouslyConnected({ fileId: null, lastBackupAt: 1754000000000 })).toBe(true)
+  })
+})

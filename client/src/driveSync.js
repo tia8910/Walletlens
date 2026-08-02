@@ -49,6 +49,19 @@ export function decideAction({ hasLocal, remote, lastBackupAt = 0 }) {
   return 'ask'
 }
 
+/**
+ * Has this device connected to Drive before?
+ *
+ * Distinct from "is there a valid access token right now". The token is
+ * deliberately memory-only, so it is always absent after a reload — but the
+ * file id and last-backup time persist, and they are what tell us the user has
+ * already answered the Connect question. Treating a missing token as "never
+ * connected" collapsed the panel on every refresh and asked again.
+ */
+export function previouslyConnected(state = driveState()) {
+  return Boolean(state.fileId || state.lastBackupAt)
+}
+
 export function driveState() {
   const read = (k) => { try { return localStorage.getItem(k) } catch { return null } }
   return {
