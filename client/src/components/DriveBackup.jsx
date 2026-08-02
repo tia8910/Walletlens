@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { connect, backupNow, restoreNow, driveState, previouslyConnected } from '../driveSync'
+import {
+  connect, backupNow, restoreNow, driveState, previouslyConnected,
+  latestBackupAt, knownBackup, hasLocalPortfolio,
+} from '../driveSync'
 import { NEEDS_SIGNIN } from '../googleDrive'
 
 // Google Drive backup panel.
@@ -57,15 +60,13 @@ export default function DriveBackup() {
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
   const [connected, setConnected] = useState(() => previouslyConnected())
-  const [found, setFound] = useState(() => {
-    const s = driveState()
-    return s.fileId ? { id: s.fileId } : null
-  })
+  const [found, setFound] = useState(() => knownBackup())
   const [action, setAction] = useState(null)   // what the last check concluded
   const [prompt, setPrompt] = useState(null)   // 'backup' | 'restore' | null
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [empty] = useState(() => !hasLocalPortfolio())
 
   const resumed = useRef(false)
   useEffect(() => {
@@ -99,7 +100,13 @@ export default function DriveBackup() {
       track('drive_connect')
       const { remote, action: next } = await connect()
       setFound(remote); setAction(next); setConnected(true); refresh()
-      if (next === 'auto-restore') say('ok', 'Backup found. Restore it to load your profile.')
+      if (next === 'auto-restore') {
+        // Nothing here to lose and a backup waiting: go straight to the one
+        // thing missing, which is the passphrase. Making them find Restore
+        // themselves is how this got reported as "didn't load my portfolio".
+        ask('restore')
+        say('ok', 'Backup found. Enter your passphrase to load your portfolio.')
+      }
       else if (next === 'first-backup') say('ok', 'Connected. No backup in Drive yet.')
       else if (next === 'ask') say('ok', 'Backup found, and this device already has a portfolio.')
       else say('ok', 'Connected. Your backup is up to date.')
@@ -130,11 +137,20 @@ export default function DriveBackup() {
     } finally { setBusy(false) }
   }
 
-  const lastBackup = fmt(state.lastBackupAt)
-  const statusText = connected
-    ? (lastBackup ? `Connected · last backup ${lastBackup}` : 'Connected · no backup yet')
-    : 'Not connected'
+  // "no backup yet" must mean Drive is empty, not merely that this device has
+  // never uploaded. Getting that wrong told someone signing in on a second
+  // browser that their portfolio wasn't there, next to the button that would
+  // have brought it back.
+  const backupAge = fmt(latestBackupAt(state))
+  const statusText = !connected
+    ? 'Not connected'
+    : found
+      ? (backupAge ? `Connected · backup from ${backupAge}` : 'Connected · backup found')
+      : 'Connected · no backup yet'
   const replaces = prompt === 'restore' && action === 'ask'
+  // A device with nothing on it and a backup waiting is the case this feature
+  // exists for. Say so plainly rather than leaving Restore to be guessed at.
+  const waiting = connected && found && empty
 
   return (
     <div className="settings-section glass-card">
@@ -160,8 +176,23 @@ export default function DriveBackup() {
         </button>
       </div>
 
+      {/* A new device with a backup waiting: lead with the restore, since
+          that is the only reason to have signed in here. */}
+      {waiting && !prompt && (
+        <div className="settings-row" style={{ display:'block' }}>
+          <p style={{ margin:'0 0 0.6rem', fontSize:'0.9rem' }}>
+            There's a backup in your Drive and nothing on this device yet.
+            Restore it to load your portfolio here.
+          </p>
+          <button className="settings-chip" onClick={() => ask('restore')} disabled={busy}
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+            <Icon name="download" size={14} /> Restore my portfolio
+          </button>
+        </div>
+      )}
+
       {/* Actions, only once there is a connection to act on. */}
-      {connected && !prompt && (
+      {connected && !prompt && !waiting && (
         <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
           <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>
             Back up now

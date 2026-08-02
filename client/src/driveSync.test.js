@@ -108,6 +108,45 @@ describe('backup encryption', () => {
   })
 })
 
+describe('latestBackupAt', () => {
+  it('describes the Drive copy, not this device history', async () => {
+    // The bug this replaces: a second browser has never uploaded, so
+    // lastBackupAt is 0 and the panel announced "no backup yet" while the
+    // Restore button for that very backup sat next to the sentence.
+    const { latestBackupAt } = await import('./driveSync')
+    const remoteAt = Date.parse('2026-07-30T00:00:00Z')
+    expect(latestBackupAt({ remoteAt, lastBackupAt: 0 })).toBe(remoteAt)
+  })
+
+  it('prefers the remote time over a local restore stamp', async () => {
+    // restoreNow() also writes lastBackupAt. Taking the newer of the two would
+    // report "backup just now" on a device that just pulled down a week-old
+    // one, which is the opposite of true.
+    const { latestBackupAt } = await import('./driveSync')
+    const remoteAt = Date.parse('2026-07-26T00:00:00Z')
+    expect(latestBackupAt({ remoteAt, lastBackupAt: Date.now() })).toBe(remoteAt)
+  })
+
+  it('falls back to a local upload from before remote times were stored', async () => {
+    const { latestBackupAt } = await import('./driveSync')
+    expect(latestBackupAt({ remoteAt: 0, lastBackupAt: 1754000000000 })).toBe(1754000000000)
+    expect(latestBackupAt({ remoteAt: 0, lastBackupAt: 0 })).toBe(0)
+  })
+})
+
+describe('knownBackup', () => {
+  it('is null until a file id is known', async () => {
+    const { knownBackup } = await import('./driveSync')
+    expect(knownBackup({ fileId: null, remoteAt: 0, lastBackupAt: 0 })).toBe(null)
+  })
+
+  it('survives a reload so the panel does not forget the backup exists', async () => {
+    const { knownBackup } = await import('./driveSync')
+    const at = Date.parse('2026-07-30T00:00:00Z')
+    expect(knownBackup({ fileId: 'f1', remoteAt: at, lastBackupAt: 0 })).toEqual({ id: 'f1', at })
+  })
+})
+
 describe('previouslyConnected', () => {
   it('is false on a device that has never connected', async () => {
     const { previouslyConnected } = await import('./driveSync')
