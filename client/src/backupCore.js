@@ -2,23 +2,108 @@
 // subscription. Pure functions — no React — so they can run on app open too.
 import QRCode from 'qrcode'
 
-export const BACKUP_KEYS = [
+// Everything that makes up someone's profile, as a single alias -> key table.
+//
+// This is the ONE list. It used to be three: BACKUP_KEYS (used only by the
+// legacy restore path) plus an `OPT` map written out by hand in both
+// generateBackupCode and applyBackupCode. Three lists that had to agree, so of
+// course they drifted, and Goals, the watchlist, risk budgets and the P&L
+// baseline were being dropped on every restore with no error and no warning.
+// Both paths now iterate this table, so a field added here is automatically
+// written and read.
+//
+// The short aliases keep the QR payload small. EXISTING ALIASES MUST NEVER
+// CHANGE MEANING: codes already in the wild are decoded with this table.
+export const BACKUP_FIELDS = {
+  // ── Portfolio ────────────────────────────────────────────────────────────
+  // Note: one transactions store holds every asset class, not just coins.
+  // Stocks, metals, cash and real estate are all rows in it. The key is legacy.
+  ct: 'crypto_tracker_coin_targets',
+  cn: 'crypto_tracker_coin_notes',
+  mp: 'crypto_tracker_manual_prices',
+  ex: 'crypto_tracker_exchanges',
+  // Migrations key off this. Restoring data without it can leave a newer
+  // snapshot being re-migrated by an older device.
+  sv: 'crypto_tracker_schema_version',
+
+  // ── Goals and planning ───────────────────────────────────────────────────
+  gl: 'wl_goals',
+  vb: 'vision_buckets',
+  vi: 'crypto_tracker_next_vision_id',
+  rb: 'wl_risk_budgets',
+  // Baseline the daily P&L is measured against. Lose it and the new device
+  // reports a fictional gain on first open.
+  pb: 'wl_portfolio_baseline',
+
+  // ── Watchlist and alerts ─────────────────────────────────────────────────
+  wt: 'wl_watchlist',
+  wa: 'wl_watchlist_alerts',
+  // Id counters travel with the records they number, or restored alerts
+  // collide with ones created later on the new device.
+  ai: 'wl_alert_id',
+  aq: 'wl_wl_alert_seq',
+
+  // ── Preferences ──────────────────────────────────────────────────────────
+  st: 'wl_settings',
+  cv: 'wl_card_vis',
+  th: 'wl_theme',
+  md: 'wl_mode',
+  lg: 'wl_lang',
+  hv: 'crypto_tracker_hide_values',
+  it: 'wl_interests',
+  iu: 'wl_interests_done',
+  na: 'wl_native_assets',
+
+  // ── Subscriptions the user opted into ────────────────────────────────────
+  we: 'wl_weekly_email',
+  bs: 'wl_backup_sub',
+
+  // ── Portfolio Guardian ───────────────────────────────────────────────────
+  // Including these means restoring a backup on a new device recovers the SAME
+  // Guardian registration, so a lost phone doesn't leave the dead-man's switch
+  // stranded (it can be reset/cancelled again).
+  gd: 'wl_guardian',
+  gi: 'wl_guardian_device_id',
+}
+
+// The transactions, wallets and their id counters travel in dedicated payload
+// slots rather than the alias table, because the v3 format compacts them.
+const CORE_KEYS = [
   'crypto_tracker_transactions',
   'crypto_tracker_wallets',
-  'crypto_tracker_coin_targets',
-  'crypto_tracker_exchanges',
-  'crypto_tracker_coin_notes',
-  'crypto_tracker_manual_prices',
   'crypto_tracker_next_tx_id',
   'crypto_tracker_next_wallet_id',
   'crypto_tracker_next_ex_id',
-  'wl_settings',
-  'wl_card_vis',
-  // Portfolio Guardian identity — including these means restoring a backup on a
-  // new device recovers the SAME Guardian registration, so a lost phone doesn't
-  // leave the dead-man's switch stranded (it can be reset/cancelled again).
-  'wl_guardian',
-  'wl_guardian_device_id',
+]
+
+/** Every key a restore may write. Also the allowlist for legacy WL1/WL2 codes. */
+export const BACKUP_KEYS = [...CORE_KEYS, ...Object.values(BACKUP_FIELDS)]
+
+// Deliberately excluded, with the reason. Kept as a list rather than a comment
+// so it can be asserted against in tests: a new key must be classified one way
+// or the other, not forgotten.
+export const DEVICE_ONLY_KEYS = [
+  // A WebAuthn credential is bound to the device that created it. Restoring it
+  // elsewhere gives a credential that cannot authenticate, and restoring the
+  // "enabled" flag without a usable credential can lock someone out of their
+  // own portfolio. Both stay put; the new device enrolls its own.
+  'wl_biometric_cred',
+  'wl_biometric_enabled',
+  'wl_biometric_unlocked',
+  // Operator secret, never user data.
+  'wl_admin_mail_token',
+  // Rollback buffer for the last import. Restoring it would offer to undo an
+  // import that happened on a different device.
+  'crypto_tracker_pre_import_snapshot',
+  // UI, session and scheduling state. Harmless to lose, noise to carry.
+  'wl_active_tab', 'wl_assistant_fab_pos', 'wl_assistant_history',
+  'wl_tour_done_v2', 'wl_vision_explained', 'wl_vision_visited',
+  'wl_last_visit', 'wl_streak', 'wl_engagement_ts', 'wl_daily_notif_date',
+  'wl_guessr_hs', 'wl_sfx_enabled', 'wl_chunk_retry',
+  'wl_target_reached_fired', 'wl_portfolio_notify_ts', 'wl_guardian_remind_ts',
+  // Marks THIS install as running inside the Android app. Carrying it to a
+  // browser would make the site think it was the app.
+  'wl_native',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────
@@ -79,13 +164,7 @@ export async function generateBackupCode() {
   const eId = localStorage.getItem('crypto_tracker_next_ex_id')
   if (wId || tId || eId) payload.ids = { w: wId || '1', t: tId || '1', e: eId || '1' }
 
-  const OPT = {
-    ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
-    mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
-    cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
-    gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
-  }
-  for (const [alias, key] of Object.entries(OPT)) {
+  for (const [alias, key] of Object.entries(BACKUP_FIELDS)) {
     const raw = localStorage.getItem(key)
     // Most blobs are JSON; wl_guardian_device_id is a plain string — keep it raw.
     if (raw != null) { try { payload[alias] = JSON.parse(raw) } catch { payload[alias] = raw } }
@@ -124,14 +203,8 @@ export async function applyBackupCode(raw) {
       if (parsed.ids.t) localStorage.setItem('crypto_tracker_next_tx_id', String(parsed.ids.t))
       if (parsed.ids.e) localStorage.setItem('crypto_tracker_next_ex_id', String(parsed.ids.e))
     }
-    const OPT = {
-      ct: 'crypto_tracker_coin_targets', cn: 'crypto_tracker_coin_notes',
-      mp: 'crypto_tracker_manual_prices', st: 'wl_settings',
-      cv: 'wl_card_vis',                  ex: 'crypto_tracker_exchanges',
-      gd: 'wl_guardian',                  gi: 'wl_guardian_device_id',
-    }
     let restored = 2
-    for (const [alias, key] of Object.entries(OPT)) {
+    for (const [alias, key] of Object.entries(BACKUP_FIELDS)) {
       if (parsed[alias] != null) {
         const v = parsed[alias]
         localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v))
