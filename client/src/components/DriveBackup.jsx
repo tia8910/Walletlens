@@ -19,6 +19,21 @@ function fmt(ts) {
   return new Date(ts).toLocaleString()
 }
 
+function Msg({ msg }) {
+  if (!msg) return null
+  const ok = msg.kind === 'ok'
+  return (
+    <p style={{
+      margin: '0.5rem 0 0',
+      fontSize: '0.85rem',
+      fontWeight: 600,
+      color: ok ? 'var(--g, #10b981)' : 'var(--r, #ef4444)',
+    }}>
+      {ok ? '✓ ' : ''}{msg.text}
+    </p>
+  )
+}
+
 export default function DriveBackup() {
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
@@ -110,6 +125,8 @@ export default function DriveBackup() {
         </button>
       </div>
 
+      {!action && <Msg msg={msg} />}
+
       {action && (
         <>
           <div className="settings-row" style={{ display:'block' }}>
@@ -131,7 +148,7 @@ export default function DriveBackup() {
             />
           </div>
 
-          <div className="settings-row" style={{ gap:'0.5rem' }}>
+          <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
             <button className="settings-chip" onClick={onBackup} disabled={!canAct}>
               {busy ? 'Working…' : 'Back up now'}
             </button>
@@ -141,6 +158,12 @@ export default function DriveBackup() {
               </button>
             )}
           </div>
+
+          {/* Directly under the buttons, not in the card footer. Placed at the
+              bottom it sat below an unrelated toggle and read as that row's
+              description, so a successful backup looked like nothing had
+              happened. */}
+          <Msg msg={msg} />
 
           {action === 'ask' && (
             <p className="settings-hint" style={{ marginTop:'0.25rem' }}>
@@ -162,11 +185,6 @@ export default function DriveBackup() {
         </>
       )}
 
-      {msg && (
-        <p className="settings-hint" style={{ color: msg.kind === 'err' ? 'var(--r, #ef4444)' : undefined }}>
-          {msg.text}
-        </p>
-      )}
     </div>
   )
 }
