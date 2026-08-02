@@ -5,7 +5,7 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
-import { initAutoTrack } from './analytics'
+import { initAutoTrack, initErrorTracking, initHumanSignal } from './analytics'
 import { initVitals } from './vitals'
 import './index.css'
 
@@ -77,6 +77,10 @@ const basename = window.location.hostname.endsWith('github.io') ? '/Walletlens' 
 
 // Auto-track every click / selection across the app in GA.
 initAutoTrack()
+// Report uncaught exceptions and failed asset loads.
+initErrorTracking()
+// Flag sessions that actually interacted, so crawler traffic can be segmented out.
+initHumanSignal()
 // Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
 initVitals()
 

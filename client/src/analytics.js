@@ -78,6 +78,104 @@ export function initAutoTrack() {
   }, { capture: true, passive: true })
 }
 
+// ── Telling humans from crawlers ─────────────────────────────────────────────
+// GA4 filters the IAB known-bot list, which does not include headless Chrome.
+// A scraper loads the page, fires session_start / first_visit / page_view and
+// the load-time vitals, then dies — indistinguishable in reports from a real
+// visitor who bounced, and it inflates every user count you might make a
+// decision from.
+//
+// The one thing those crawlers reliably do not do is interact. So the first
+// genuine pointer or key input sets a user property, which gives you a segment
+// ("interacted = yes") that excludes them. It is a heuristic, not proof: a
+// determined bot can synthesise a pointer event. It filters the ordinary ones.
+// State lives on window, not in module scope. Code splitting can evaluate a
+// module twice, and two copies each with their own "already marked" flag would
+// each report the same interaction.
+export function initHumanSignal() {
+  if (typeof window === 'undefined' || window.__wlHumanInit) return
+  window.__wlHumanInit = true
+
+  const mark = () => {
+    if (window.__wlHumanMarked) return
+    window.__wlHumanMarked = true
+    try {
+      if (typeof window.gtag === 'function') {
+        gtag('set', 'user_properties', { interacted: 'yes' })
+      }
+      track('human_interaction')
+    } catch { /* analytics must never break the app */ }
+  }
+  // Left attached rather than { once: true }: after the flag is set these are
+  // three predicate checks on the first tap and nothing after, and keeping them
+  // means the flag alone decides, with no removal handshake to get wrong.
+  window.addEventListener('pointerdown', mark, { capture: true, passive: true })
+  window.addEventListener('keydown', mark, { capture: true })
+  window.addEventListener('touchstart', mark, { capture: true, passive: true })
+}
+
+// ── Error reporting ──────────────────────────────────────────────────────────
+// Individual features report their own failures (assistant_error and friends),
+// but nothing reported an uncaught exception, so a crash that broke a page for
+// every user looked identical in GA to a page nobody visited.
+//
+// Messages are redacted and truncated on the way out: an exception thrown from
+// portfolio code can easily carry an amount or a symbol in its text, and the
+// privacy contract at the top of this file applies to error strings too.
+const MAX_ERRORS = 8
+
+// On window for the same reason as the human flag: two module copies must
+// share one budget, or a duplicated bundle doubles the cap.
+function errState() {
+  if (!window.__wlErrState) window.__wlErrState = { sent: 0, seen: new Set() }
+  return window.__wlErrState
+}
+
+function reportError(kind, message, extra = {}) {
+  const st = errState()
+  if (st.sent >= MAX_ERRORS) return
+  const msg = redactNumbers(String(message || 'unknown')).slice(0, 150)
+  const key = kind + '|' + msg
+  if (st.seen.has(key)) return   // one report per distinct fault per load
+  st.seen.add(key)
+  st.sent++
+  track('js_error', { error_kind: kind, error_message: msg, ...extra })
+}
+
+export function initErrorTracking() {
+  if (typeof window === 'undefined' || window.__wlErrTrack) return
+  window.__wlErrTrack = true
+
+  window.addEventListener('error', (e) => {
+    try {
+      // A failed <img>/<script> load surfaces here with no message and the
+      // element as the target. Worth knowing about — a dead asset is usually a
+      // broken deploy — but it is a different fault from a thrown exception.
+      if (e.target && e.target !== window && e.target.tagName) {
+        const src = e.target.src || e.target.href || ''
+        return reportError('resource', e.target.tagName.toLowerCase(), {
+          // Host only: query strings on proxied asset URLs can carry lookups.
+          error_source: (() => { try { return new URL(src, location.href).host } catch { return 'unknown' } })(),
+        })
+      }
+      reportError('exception', e.message, {
+        error_source: (e.filename || '').split('/').pop().slice(0, 60),
+        error_line: e.lineno || 0,
+      })
+    } catch { /* never let the reporter throw */ }
+  }, true)
+
+  window.addEventListener('unhandledrejection', (e) => {
+    try {
+      const msg = e.reason?.message || e.reason || ''
+      // Chunk-load failures already trigger a reload in main.jsx; reporting
+      // them here would just measure our own deploy cache-busting.
+      if (/loading chunk|dynamically imported module|Importing a module script failed/i.test(String(msg))) return
+      reportError('rejection', msg)
+    } catch { /* never let the reporter throw */ }
+  })
+}
+
 // ── Portfolio-level tracking ─────────────────────────────────────────────────
 // Deliberately parameter-free: fires so funnels show the dashboard loaded with
 // data, but transmits nothing about size, value, profit, or composition.
