@@ -2,22 +2,42 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { connect, backupNow, restoreNow, driveState, setAutoBackup, previouslyConnected } from '../driveSync'
+import { connect, backupNow, restoreNow, driveState, previouslyConnected } from '../driveSync'
 import { NEEDS_SIGNIN } from '../googleDrive'
 
 // Google Drive backup panel.
 //
-// The passphrase is deliberately never stored. It is typed to back up and typed
-// again to restore on a new device. Keeping it would mean a key to the backup
-// sitting on the same disk as the data it protects, which defeats encrypting
-// it in the first place.
+// Two rules shape the layout:
+//
+// 1. Connection status is stated outright, at the top, in words. It was
+//    previously only inferable from whether the button read Connect or
+//    Recheck, which is not a status.
+//
+// 2. The passphrase field appears only when something is about to use it.
+//    Leaving it on screen permanently asked for a secret with no pending
+//    action, which is both confusing and a bad habit to teach.
+//
+// The passphrase is never stored. Typed to back up, typed again to restore on
+// a new device. Keeping it would put the key on the same disk as the data it
+// protects.
 
 function fmt(ts) {
-  if (!ts) return 'never'
+  if (!ts) return null
   const mins = Math.round((Date.now() - ts) / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins} min ago`
-  return new Date(ts).toLocaleString()
+  if (mins < 60 * 24) return `${Math.round(mins / 60)} h ago`
+  return new Date(ts).toLocaleDateString()
+}
+
+function Dot({ on }) {
+  return (
+    <span style={{
+      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+      background: on ? 'var(--g, #10b981)' : 'rgba(128,128,128,0.5)',
+      boxShadow: on ? '0 0 0 3px rgba(16,185,129,0.18)' : 'none',
+    }} />
+  )
 }
 
 function Msg({ msg }) {
@@ -25,9 +45,7 @@ function Msg({ msg }) {
   const ok = msg.kind === 'ok'
   return (
     <p style={{
-      margin: '0.5rem 0 0',
-      fontSize: '0.85rem',
-      fontWeight: 600,
+      margin: '0.5rem 0 0', fontSize: '0.85rem', fontWeight: 600,
       color: ok ? 'var(--g, #10b981)' : 'var(--r, #ef4444)',
     }}>
       {ok ? '✓ ' : ''}{msg.text}
@@ -38,23 +56,18 @@ function Msg({ msg }) {
 export default function DriveBackup() {
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
-  const [pass, setPass] = useState('')
-  const [busy, setBusy] = useState(false)
-  // Both seeded from what survived the reload. 'known' means "connected before,
-  // haven't re-checked Drive yet this session" — enough to show the controls
-  // without pretending we know the remote state.
+  const [connected, setConnected] = useState(() => previouslyConnected())
   const [found, setFound] = useState(() => {
     const s = driveState()
     return s.fileId ? { id: s.fileId } : null
   })
-  const [action, setAction] = useState(() => (previouslyConnected() ? 'known' : null))
-  const [msg, setMsg] = useState(null)       // { kind: 'ok'|'err', text }
+  const [action, setAction] = useState(null)   // what the last check concluded
+  const [prompt, setPrompt] = useState(null)   // 'backup' | 'restore' | null
+  const [pass, setPass] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
 
   const resumed = useRef(false)
-
-  // The redirect flow lands on /drive-callback, which stores the token and
-  // navigates back here with this flag. Pick the conversation back up where it
-  // left off instead of making the user press Connect a second time.
   useEffect(() => {
     if (resumed.current || !location.state?.driveConnected) return
     resumed.current = true
@@ -66,58 +79,62 @@ export default function DriveBackup() {
 
   const refresh = () => setState(driveState())
   const say = (kind, text) => setMsg({ kind, text })
-
-  // The access token never survives a reload by design, so an action taken
-  // after one needs a sign-in first. Say that plainly rather than reporting the
-  // internal marker.
   const explain = (e) => (e?.message === NEEDS_SIGNIN
-    ? 'Your Google session expired. Tap Recheck to sign in again.'
+    ? 'Your Google session expired. Tap Reconnect to sign in again.'
     : null)
+
+  function ask(which) {
+    setPrompt(which)
+    setPass('')
+    setMsg(null)
+  }
+  function cancel() {
+    setPrompt(null)
+    setPass('')
+  }
 
   async function onConnect() {
     setBusy(true); setMsg(null)
     try {
       track('drive_connect')
       const { remote, action: next } = await connect()
-      setFound(remote); setAction(next); refresh()
-      if (next === 'auto-restore') {
-        say('ok', 'Backup found. Enter your passphrase to load your profile.')
-      } else if (next === 'first-backup') {
-        say('ok', 'Connected. No backup yet — choose a passphrase and back up.')
-      } else if (next === 'up-to-date') {
-        say('ok', 'Connected. Your Drive backup is already current.')
-      } else {
-        say('ok', 'Backup found, and this device already has a portfolio. Choose which to keep.')
-      }
+      setFound(remote); setAction(next); setConnected(true); refresh()
+      if (next === 'auto-restore') say('ok', 'Backup found. Restore it to load your profile.')
+      else if (next === 'first-backup') say('ok', 'Connected. No backup in Drive yet.')
+      else if (next === 'ask') say('ok', 'Backup found, and this device already has a portfolio.')
+      else say('ok', 'Connected. Your backup is up to date.')
     } catch (e) {
       say('err', explain(e) || e.message || 'Could not connect to Google Drive')
     } finally { setBusy(false) }
   }
 
-  async function onBackup() {
+  async function onSubmit() {
     setBusy(true); setMsg(null)
+    const which = prompt
     try {
-      const { txCount } = await backupNow(pass)
-      track('drive_backup', { txCount })
-      refresh(); say('ok', `Backed up ${txCount} transactions to your Drive.`)
+      if (which === 'backup') {
+        const { txCount } = await backupNow(pass)
+        track('drive_backup', { txCount })
+        refresh(); setConnected(true)
+        setFound(f => f || { id: driveState().fileId })
+        say('ok', `Backed up ${txCount} transactions to your Drive.`)
+        cancel()
+      } else {
+        const { restored } = await restoreNow(pass)
+        track('drive_restore')
+        say('ok', `Restored ${restored} items. Reloading…`)
+        setTimeout(() => window.location.reload(), 1200)
+      }
     } catch (e) {
-      say('err', explain(e) || e.message || 'Backup failed')
+      say('err', explain(e) || e.message || (which === 'backup' ? 'Backup failed' : 'Restore failed'))
     } finally { setBusy(false) }
   }
 
-  async function onRestore() {
-    setBusy(true); setMsg(null)
-    try {
-      const { restored } = await restoreNow(pass)
-      track('drive_restore')
-      say('ok', `Restored ${restored} items. Reloading…`)
-      setTimeout(() => window.location.reload(), 1200)
-    } catch (e) {
-      say('err', explain(e) || e.message || 'Restore failed')
-    } finally { setBusy(false) }
-  }
-
-  const canAct = pass.length >= 8 && !busy
+  const lastBackup = fmt(state.lastBackupAt)
+  const statusText = connected
+    ? (lastBackup ? `Connected · last backup ${lastBackup}` : 'Connected · no backup yet')
+    : 'Not connected'
+  const replaces = prompt === 'restore' && action === 'ask'
 
   return (
     <div className="settings-section glass-card">
@@ -125,81 +142,79 @@ export default function DriveBackup() {
         <Icon name="upload" size={16} />Google Drive backup
       </h3>
 
+      {/* Status, stated rather than implied by a button label. */}
       <div className="settings-row">
         <div className="settings-label">
-          <span>Encrypted backup in your own Drive</span>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem' }}>
+            <Dot on={connected} />{statusText}
+          </span>
           <span className="settings-hint">
-            {action
-              ? `Last backup: ${fmt(state.lastBackupAt)}`
-              : 'WalletLens can only see the file it creates, and cannot read it'}
+            {connected
+              ? 'Encrypted in your own Drive. WalletLens cannot read it.'
+              : 'Sign in to keep an encrypted copy in your own Google Drive.'}
           </span>
         </div>
         <button className="settings-chip" onClick={onConnect} disabled={busy}
           style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-          <Icon name="link" size={14} /> {action ? 'Recheck' : 'Connect'}
+          <Icon name="link" size={14} /> {connected ? 'Reconnect' : 'Connect'}
         </button>
       </div>
 
-      {!action && <Msg msg={msg} />}
-
-      {action && (
-        <>
-          <div className="settings-row" style={{ display:'block' }}>
-            <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
-              <span>Passphrase</span>
-              <span className="settings-hint">
-                At least 8 characters. It is never stored or sent anywhere, so if
-                you lose it the backup cannot be recovered by anyone, including us.
-              </span>
-            </div>
-            <input
-              type="password"
-              className="bs-input"
-              value={pass}
-              onChange={e => setPass(e.target.value)}
-              placeholder="Your backup passphrase"
-              autoComplete="off"
-              style={{ width:'100%' }}
-            />
-          </div>
-
-          <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
-            <button className="settings-chip" onClick={onBackup} disabled={!canAct}>
-              {busy ? 'Working…' : 'Back up now'}
+      {/* Actions, only once there is a connection to act on. */}
+      {connected && !prompt && (
+        <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
+          <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>
+            Back up now
+          </button>
+          {found && (
+            <button className="settings-chip" onClick={() => ask('restore')} disabled={busy}>
+              Restore
             </button>
-            {found && (
-              <button className="settings-chip" onClick={onRestore} disabled={!canAct}>
-                {action === 'ask' ? 'Replace this device' : 'Restore'}
-              </button>
-            )}
+          )}
+        </div>
+      )}
+
+      {/* The passphrase is asked for at the moment it is needed, for a named
+          purpose, rather than sitting on screen waiting. */}
+      {prompt && (
+        <div className="settings-row" style={{ display:'block' }}>
+          <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
+            <span>{prompt === 'backup' ? 'Passphrase to encrypt this backup' : 'Passphrase for this backup'}</span>
+            <span className="settings-hint">
+              {prompt === 'backup'
+                ? 'At least 8 characters. Never stored or sent anywhere, so if you lose it nobody can recover the backup, including us.'
+                : 'The passphrase you chose when you made this backup.'}
+            </span>
           </div>
+          <input
+            type="password"
+            className="bs-input"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && pass.length >= 8 && !busy) onSubmit() }}
+            placeholder="Your backup passphrase"
+            autoComplete="off"
+            autoFocus
+            style={{ width:'100%' }}
+          />
 
-          {/* Directly under the buttons, not in the card footer. Placed at the
-              bottom it sat below an unrelated toggle and read as that row's
-              description, so a successful backup looked like nothing had
-              happened. */}
-          <Msg msg={msg} />
-
-          {action === 'ask' && (
-            <p className="settings-hint" style={{ marginTop:'0.25rem' }}>
-              This device already has a portfolio. Restoring replaces it with the
-              Drive copy, and that cannot be undone.
+          {replaces && (
+            <p className="settings-hint" style={{ margin:'0.5rem 0 0', color:'var(--r, #ef4444)' }}>
+              This device already has a portfolio. Restoring replaces it, and that
+              cannot be undone.
             </p>
           )}
 
-          <div className="settings-row">
-            <div className="settings-label">
-              <span>Back up automatically</span>
-              <span className="settings-hint">After changes, while you stay signed in</span>
-            </div>
-            <button
-              className={`settings-toggle ${state.autoBackup ? 'on' : ''}`}
-              onClick={() => { setAutoBackup(!state.autoBackup); refresh() }}
-            />
+          <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.6rem' }}>
+            <button className="settings-chip" onClick={onSubmit} disabled={pass.length < 8 || busy}>
+              {busy ? 'Working…' : prompt === 'backup' ? 'Back up' : replaces ? 'Replace this device' : 'Restore'}
+            </button>
+            <button className="settings-chip" onClick={cancel} disabled={busy}>Cancel</button>
           </div>
-        </>
+        </div>
       )}
 
+      <Msg msg={msg} />
     </div>
   )
 }
