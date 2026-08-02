@@ -11,6 +11,11 @@ import { findBackup, uploadBackup, downloadBackup, getAccessToken, isDriveConfig
 
 const LAST_BACKUP_AT = 'wl_drive_backup_at'
 const FILE_ID = 'wl_drive_file_id'
+// When the backup in Drive was last written, by any device. Distinct from
+// LAST_BACKUP_AT, which only records uploads from this one — on a second
+// device that is zero forever, so using it to describe the backup told people
+// there wasn't one while the Restore button sat right next to the sentence.
+const REMOTE_AT = 'wl_drive_remote_at'
 
 /** Does this device hold a portfolio worth protecting? */
 export function hasLocalPortfolio() {
@@ -58,7 +63,12 @@ export function decideAction({ hasLocal, remote, lastBackupAt = 0 }) {
  * connected" collapsed the panel on every refresh and asked again.
  */
 export function previouslyConnected(state = driveState()) {
-  return Boolean(state.fileId || state.lastBackupAt)
+  return Boolean(state.fileId || state.lastBackupAt || state.remoteAt)
+}
+
+/** Is there a backup in Drive we already know about, without asking again? */
+export function knownBackup(state = driveState()) {
+  return state.fileId ? { id: state.fileId, at: latestBackupAt(state) } : null
 }
 
 export function driveState() {
@@ -66,8 +76,31 @@ export function driveState() {
   return {
     configured: isDriveConfigured(),
     lastBackupAt: Number(read(LAST_BACKUP_AT) || 0),
+    remoteAt: Number(read(REMOTE_AT) || 0),
     fileId: read(FILE_ID),
   }
+}
+
+/**
+ * When the backup in Drive was written — the one number the UI should show.
+ *
+ * remoteAt is what Drive reported and is therefore the truth about the file.
+ * lastBackupAt is only a fallback for devices that uploaded before remoteAt
+ * existed. It cannot be preferred: restoreNow() also stamps it, so on a device
+ * that just restored a week-old backup it would read "backup just now".
+ */
+export function latestBackupAt(state = driveState()) {
+  return state.remoteAt || state.lastBackupAt || 0
+}
+
+/** Remember what Drive told us about the backup, so a reload still knows. */
+function rememberRemote(remote) {
+  if (!remote?.id) return
+  try {
+    localStorage.setItem(FILE_ID, remote.id)
+    const at = remote.modifiedTime ? Date.parse(remote.modifiedTime) : 0
+    if (at) localStorage.setItem(REMOTE_AT, String(at))
+  } catch { /* private mode */ }
 }
 
 /**
@@ -77,7 +110,7 @@ export function driveState() {
 export async function connect() {
   await getAccessToken({ interactive: true })
   const remote = await findBackup()
-  if (remote?.id) { try { localStorage.setItem(FILE_ID, remote.id) } catch { /* ignore */ } }
+  rememberRemote(remote)
   const action = decideAction({
     hasLocal: hasLocalPortfolio(),
     remote,
@@ -96,6 +129,7 @@ export async function backupNow(passphrase) {
   try {
     localStorage.setItem(FILE_ID, id)
     localStorage.setItem(LAST_BACKUP_AT, String(Date.now()))
+    localStorage.setItem(REMOTE_AT, String(Date.now()))
   } catch { /* private mode */ }
   return { txCount, fileId: id }
 }
