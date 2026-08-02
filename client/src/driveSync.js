@@ -11,7 +11,6 @@ import { findBackup, uploadBackup, downloadBackup, getAccessToken, isDriveConfig
 
 const LAST_BACKUP_AT = 'wl_drive_backup_at'
 const FILE_ID = 'wl_drive_file_id'
-const AUTO = 'wl_drive_auto'
 
 /** Does this device hold a portfolio worth protecting? */
 export function hasLocalPortfolio() {
@@ -68,12 +67,7 @@ export function driveState() {
     configured: isDriveConfigured(),
     lastBackupAt: Number(read(LAST_BACKUP_AT) || 0),
     fileId: read(FILE_ID),
-    autoBackup: read(AUTO) === '1',
   }
-}
-
-export function setAutoBackup(on) {
-  try { localStorage.setItem(AUTO, on ? '1' : '0') } catch { /* private mode */ }
 }
 
 /**
@@ -124,18 +118,15 @@ export async function restoreNow(passphrase) {
   return result
 }
 
-// Auto-backup is debounced hard. Portfolio edits arrive in bursts — adding a
-// transaction touches several keys — and each upload is a network round trip
-// against a quota.
-let pending = null
-export function scheduleAutoBackup(passphrase, delayMs = 30_000) {
-  if (!driveState().autoBackup || !passphrase) return false
-  clearTimeout(pending)
-  pending = setTimeout(() => {
-    // Never interactive: a background save must not raise a consent popup.
-    getAccessToken({ interactive: false })
-      .then(() => backupNow(passphrase))
-      .catch(() => { /* try again after the next edit */ })
-  }, delayMs)
-  return true
-}
+// Deliberately no auto-backup.
+//
+// There was a scheduleAutoBackup() here and a toggle in the UI, and neither
+// could ever have worked: an unattended upload needs the passphrase, and the
+// passphrase is never stored — that is the whole basis of the encryption. The
+// toggle wrote a preference nothing read, promising a guarantee the design
+// cannot make.
+//
+// Making it real means holding the passphrase somewhere. In memory it only
+// covers the current tab, which is not what "automatic" implies to anyone. On
+// disk it puts the key beside the ciphertext and the encryption stops meaning
+// anything. Neither is worth a switch, so backups are explicit.
