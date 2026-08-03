@@ -2326,6 +2326,7 @@ function ConstellationMap() {
           {n.logo
             ? <img src={n.logo} alt={n.symbol} width={24} height={24}
                 style={{ borderRadius:'50%', objectFit:'contain' }}
+                loading="lazy" decoding="async"
                 onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }}
               />
             : null}

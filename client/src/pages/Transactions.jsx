@@ -225,8 +225,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
+  // Transaction list can grow into the thousands for active traders/imports —
+  // render a page at a time instead of the whole history at once.
+  const TX_PAGE_SIZE = 50
+  const [visibleTxCount, setVisibleTxCount] = useState(TX_PAGE_SIZE)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleTxCount(TX_PAGE_SIZE) }, [filterWallet])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -642,7 +647,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <div className="dropdown">
                       {coinResults.map(c => (
                         <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                          {c.thumb && <img src={c.thumb} alt={(c.symbol || "coin") + " logo"} width={24} height={24} style={{ borderRadius: '50%' }} />}
+                          {c.thumb && <img src={c.thumb} alt={(c.symbol || "coin") + " logo"} width={24} height={24} style={{ borderRadius: '50%' }} loading="lazy" decoding="async" />}
                           <span>{c.name}</span>
                           <small>{c.symbol.toUpperCase()}</small>
                         </div>
@@ -1062,7 +1067,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleTxCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1096,6 +1101,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {transactions.length > visibleTxCount && (
+            <button
+              className="dvx-btn dvx-btn-full"
+              onClick={() => setVisibleTxCount(c => c + TX_PAGE_SIZE)}
+            >
+              Load more ({transactions.length - visibleTxCount} remaining)
+            </button>
+          )}
         </div>
       )}
 
