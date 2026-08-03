@@ -37,6 +37,99 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-portfolio-health-score',
+    title: 'How to Track Your Portfolio Health Score (And What It Means)',
+    date: 'August 2026',
+    readTime: '7 min read',
+    summary: 'Learn what a portfolio health score measures, why it matters for investors in 2026, and how to use it to make smarter decisions about risk and allocation.',
+    content: `
+Most investors have a rough sense of whether their portfolio is "doing well" — they check the green or red numbers, maybe glance at total return, and move on. But a single percentage gain tells you almost nothing about whether your portfolio is actually healthy. Are you dangerously concentrated in one asset? Is your risk exposure appropriate for your timeline? Are you sitting on entries that leave you vulnerable to a 30% drawdown? These are the questions a portfolio health score is designed to answer.
+
+The concept of a health score borrows from personal finance and insurance: instead of one metric, it synthesises several dimensions of portfolio quality into a single actionable number. Think of it like a credit score, but for your investment strategy rather than your borrowing history.
+
+## What Does a Portfolio Health Score Actually Measure?
+
+A health score is not just about returns. A portfolio that doubled last year could still score poorly if it achieved that return by concentrating 90% of capital into a single volatile asset. Conversely, a diversified, well-balanced portfolio with modest gains might score very highly because its structure is sound.
+
+Typical dimensions a health score evaluates include:
+
+- **Diversification** — Are assets spread across uncorrelated categories (crypto, equities, gold, cash)?
+- **Concentration risk** — Does any single asset or sector dominate the allocation to a dangerous degree?
+- **Entry quality** — Were positions entered at reasonable prices relative to current levels, or are they deeply underwater in ways that suggest poor risk management?
+- **Volatility exposure** — Is the overall portfolio volatility appropriate given the investor's apparent time horizon?
+- **Liquidity** — Can positions be exited quickly if needed, or is capital locked into illiquid assets?
+- **Rebalancing drift** — Has the portfolio drifted far from its intended allocation due to price movements?
+
+No single score can perfectly capture all of this, but a well-designed system can flag the most urgent issues and give you a useful starting point for improvement.
+
+## Why a Health Score Matters More in 2026
+
+The investment landscape in 2026 is notably more complex than it was even five years ago. Retail investors now routinely hold assets across half a dozen categories — Bitcoin and altcoins, individual stocks and ETFs, gold and silver, real estate holdings, and cash positions in multiple currencies. The old approach of checking each account in isolation simply does not work when your net worth is spread this widely.
+
+A health score that spans all of these asset classes gives you a single answer to the most important question: **"Is my overall financial position sensible right now?"** Without it, you might have a beautifully diversified equity portfolio sitting alongside a crypto allocation that completely dominates your actual risk exposure — and you would never notice because you were looking at each account in a separate app.
+
+## The Five Components Worth Understanding
+
+### 1. Concentration Score
+
+The classic rule of thumb is that no single position should exceed 5–10% of total portfolio value for most investors. A health score will typically penalise heavy concentration, especially when that concentration is in a high-volatility asset. If Bitcoin alone represents 60% of your net worth, that is not necessarily wrong — but a good tool will make sure you know it, rather than letting it hide in plain sight.
+
+### 2. Fear & Greed Gauge
+
+Many health scoring systems incorporate a sentiment dimension. If the broader market is in extreme greed territory and your portfolio has drifted heavily toward high-risk assets, your health score may fall even if your returns look good. This is a leading indicator of vulnerability, not just a lagging measure of performance.
+
+### 3. Entry Quality
+
+This dimension looks at your average cost basis relative to the current price for each position. Positions where you are significantly underwater — especially in assets with poor fundamentals — drag down entry quality. Conversely, holding assets with strong unrealised gains at a reasonable cost basis is a positive signal. This is different from simply measuring profit: it is measuring whether your entries suggest disciplined decision-making.
+
+### 4. Stress Test Score
+
+A stress test simulates what would happen to your portfolio under adverse market conditions: a 40% crypto drawdown, a 20% equity correction, a spike in interest rates that hits real estate values. If a realistic stress scenario would wipe out a large portion of your net worth, that is a significant health concern, even if conditions today look calm. (Note: stress test outcomes are educational illustrations, not predictions — always consult a qualified financial adviser before making allocation decisions based on simulated scenarios.)
+
+### 5. Rebalance Readiness
+
+Over time, winning assets grow to represent a larger share of the portfolio than you intended. This is not always a problem, but extreme drift can mean your actual risk exposure is very different from your intended allocation. A health score that flags rebalance readiness tells you when it is worth revisiting your targets.
+
+## How to Use a Health Score Practically
+
+A health score is most useful as a **regular check-in tool**, not a one-time assessment. Here is a practical routine:
+
+1. **Check monthly** — Major drift and concentration changes tend to happen over weeks, not days.
+2. **Act on the lowest-scoring dimension first** — If concentration is the biggest problem, address that before worrying about entry quality.
+3. **Compare across time** — A score of 72 is less meaningful than knowing your score was 81 three months ago and understanding why it fell.
+4. **Do not chase a perfect score** — An aggressive growth portfolio might legitimately score lower on volatility exposure than a conservative one. The goal is fitness for your strategy, not a universal maximum.
+
+## Tracking a Health Score Without Sharing Your Data
+
+One of the obstacles that has historically prevented retail investors from using tools like this is the data-sharing requirement. Sophisticated portfolio analysis has traditionally meant either paying for premium software or handing your holdings data to a third party — sometimes both.
+
+[walletlens.live](https://walletlens.live) takes a different approach. The AI analysis suite — including the health score, fear & greed gauge, stress test, entry quality assessment, and rebalance planner — runs entirely on-device. No data is sent to a server. There is no account, no login, and no email address required. Your holdings stay in your browser, and the analysis happens locally.
+
+This matters because a health score is only useful if it reflects your real portfolio. If privacy concerns lead you to enter dummy data or leave out sensitive positions, the score becomes meaningless. WalletLens removes that friction by making privacy the default.
+
+The tool tracks 10,000+ crypto assets alongside stocks, ETFs, precious metals, real estate, and cash — so a health score computed on WalletLens actually reflects your complete financial picture, not just one account in isolation.
+
+## What a Good Score Range Looks Like
+
+While every scoring system uses different scales, here is a general framework for interpretation:
+
+| Score Range | Interpretation | Common Issues |
+|-------------|---------------|---------------|
+| 85–100 | Strong | Minor drift, well-diversified |
+| 70–84 | Good | Some concentration, small rebalance needed |
+| 55–69 | Fair | Notable concentration or high volatility exposure |
+| 40–54 | Weak | Significant risk, poor diversification |
+| Below 40 | Critical | Major structural issues requiring attention |
+
+A score in the 70s is perfectly reasonable for an aggressive growth investor — the goal is not perfection, but awareness.
+
+## Conclusion
+
+A portfolio health score gives you something that raw returns simply cannot: a multi-dimensional view of whether your investment structure is sound. By synthesising diversification, concentration risk, entry quality, stress resilience, and rebalancing drift into a single measure, it transforms portfolio management from a reactive activity into a proactive one. In an era when most investors hold assets across many categories and platforms, this kind of unified health check is no longer a luxury — it is a baseline requirement for informed decision-making. The best part is that in 2026, you can access this kind of analysis for free, privately, without signing up for anything.
+    `
+  },
+
+  {
     slug: 'how-to-track-crypto-portfolio-performance-over-time',
     title: 'How to Track Crypto Portfolio Performance Over Time',
     date: 'July 2026',
