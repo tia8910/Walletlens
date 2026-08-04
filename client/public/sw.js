@@ -46,10 +46,17 @@ const PRICE_API_PATTERNS = [
   'stooq.com',
   'min-api.cryptocompare.com',
   'blockchain.info',
+  'query1.finance.yahoo.com',
+  'query2.finance.yahoo.com',
   // Deno proxy — first CORS proxy tried for every external price fetch;
   // caching its responses means the SW serves repeat requests from cache
   // rather than round-tripping through the proxy on every price poll.
   'walletlens-voice-parse.tia8910.deno.net',
+  // Generic CORS proxies (corsProxies in client/src/api.js) — used to relay
+  // Stooq/other no-CORS price sources when the direct/Deno paths fail.
+  'corsproxy.io',
+  'api.allorigins.win',
+  'api.codetabs.com',
 ]
 
 // Static CDN assets (coin icons, images) — cached indefinitely in version-independent
@@ -152,7 +159,11 @@ self.addEventListener('fetch', e => {
   // ── HTML: always network-first, offline fallback to cached shell
   if (req.headers.get('accept')?.includes('text/html') || url.pathname === '/' || url.pathname.endsWith('.html')) {
     e.respondWith(
-      fetch(req)
+      // A bare fetch() has no time limit — on a slow/hanging connection it
+      // would leave the tab blank far longer than the cached-shell fallback
+      // below is meant to allow. Cap it so a stalled network falls through
+      // to the cache almost as fast as an outright network error would.
+      fetch(req, { signal: AbortSignal.timeout(10000) })
         .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
         .catch(() =>
           caches.match(req)
