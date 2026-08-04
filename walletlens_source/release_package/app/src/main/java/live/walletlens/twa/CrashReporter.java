@@ -51,7 +51,11 @@ public final class CrashReporter {
                 PrintWriter pw = new PrintWriter(sw);
 
                 pw.println("WalletLens crash");
-                pw.println("version : " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+                // From PackageManager rather than BuildConfig: this module only
+                // turns on the resValues build feature, so BuildConfig is not
+                // generated, and asking the package manager needs no build
+                // setting to be remembered later.
+                pw.println("version : " + versionLabel(context));
                 pw.println("android : " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
                 pw.println("device  : " + Build.MANUFACTURER + " " + Build.MODEL);
                 pw.println("thread  : " + thread.getName());
@@ -114,5 +118,19 @@ public final class CrashReporter {
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    /** "3.6 (57)", or "unknown" if even this fails mid-crash. */
+    private static String versionLabel(Context context) {
+        try {
+            android.content.pm.PackageInfo info = context.getPackageManager()
+                    .getPackageInfo(context.getPackageName(), 0);
+            long code = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? info.getLongVersionCode()
+                    : info.versionCode;
+            return info.versionName + " (" + code + ")";
+        } catch (Throwable e) {
+            return "unknown";
+        }
     }
 }
