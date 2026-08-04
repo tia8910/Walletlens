@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
-import { subscribeWeekly, unsubscribeWeekly, buildWeeklyPayload, getWeeklySub } from '../weeklyEmail'
+import { getWeeklySub } from '../weeklyEmail'
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '$0'
@@ -259,42 +259,9 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
   const [sharing, setSharing] = useState(false)
   const stats = computeWeeklyStats()
 
-  // Weekly email subscription state
-  const existingSub = getWeeklySub()
-  const [subEmail, setSubEmail] = useState('')
-  const [subState, setSubState] = useState(existingSub?.email ? 'subscribed' : 'idle') // idle | sending | subscribed | error
-  const [subMsg, setSubMsg] = useState('')
-  const [subbedEmail, setSubbedEmail] = useState(existingSub?.email || '')
-
-  async function subscribe(e) {
-    e.preventDefault()
-    const value = subEmail.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setSubState('error'); setSubMsg('Please enter a valid email address.')
-      return
-    }
-    setSubState('sending'); setSubMsg('')
-    track('weekly_email_subscribe', {})
-    try {
-      const payload = buildWeeklyPayload({ enriched, currency: 'USD' })
-      const data = await subscribeWeekly(value, payload)
-      setSubbedEmail(value)
-      setSubState('subscribed')
-      setSubMsg(data.sent ? "Subscribed — your first report is on its way." : "Subscribed — your first report arrives next Monday.")
-      track('weekly_email_subscribe_ok', { sent: data.sent ? 'yes' : 'no' })
-    } catch (err) {
-      setSubState('error')
-      setSubMsg('Something went wrong — please try again.')
-      track('weekly_email_subscribe_error', { error_code: String(err?.message || 'unknown') })
-    }
-  }
-
-  async function unsubscribe() {
-    setSubState('sending')
-    track('weekly_email_unsubscribe', {})
-    await unsubscribeWeekly()
-    setSubbedEmail(''); setSubEmail(''); setSubState('idle'); setSubMsg('')
-  }
+  // Read-only here: whether the weekly email is on decides which sentence to
+  // show. Changing it is Settings' job.
+  const subscribed = Boolean(getWeeklySub()?.email)
 
   useEffect(() => {
     if (canvasRef.current && stats) {
@@ -369,31 +336,21 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
           </button>
         </div>
         <p className="share-hint"><Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />On mobile the image attaches directly to your post.</p>
+        {/* Subscribing lives in Settings, so there is one place to turn the
+            weekly email on and one place to turn it off. This panel is the
+            report itself; it says where the switch is rather than being a
+            third copy of it. */}
         <div className="wr-email-section">
-          <p className="wr-email-label"><Icon name="mail" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Get this report in your inbox every week</p>
-          {subState === 'subscribed' ? (
-            <div className="wr-sub-active">
-              <p className="wr-sub-ok"><Icon name="check" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />
-                {subMsg || 'You’re subscribed.'} <span className="wr-sub-email">{subbedEmail}</span>
-              </p>
-              <button type="button" className="wr-sub-off" onClick={unsubscribe}>Turn off weekly emails</button>
-            </div>
+          {subscribed ? (
+            <p className="wr-sub-ok">
+              <Icon name="check" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />
+              This report is emailed to you weekly. Manage it in Settings.
+            </p>
           ) : (
-            <form onSubmit={subscribe} className="wr-sub-form">
-              <div className="wr-sub-row">
-                <input
-                  type="email" inputMode="email" autoComplete="email"
-                  placeholder="your@email.com" value={subEmail}
-                  onChange={e => { setSubEmail(e.target.value); if (subState === 'error') { setSubState('idle'); setSubMsg('') } }}
-                  aria-label="Email address" className="wr-sub-input"
-                />
-                <button type="submit" className="wr-sub-btn" disabled={subState === 'sending'}>
-                  {subState === 'sending' ? 'Sending…' : 'Email it weekly'}
-                </button>
-              </div>
-              {subState === 'error' && <p className="wr-sub-err">{subMsg}</p>}
-              <p className="wr-sub-note">Sent from noreply@walletlens.live. Only a rounded summary is stored — never your exact holdings or transactions. Unsubscribe anytime.</p>
-            </form>
+            <p className="wr-email-label">
+              <Icon name="mail" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />
+              Want this in your inbox every week? Turn on the weekly report in Settings.
+            </p>
           )}
         </div>
       </div>

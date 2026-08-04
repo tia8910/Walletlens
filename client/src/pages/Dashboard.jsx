@@ -21,7 +21,10 @@ import { useLanguage } from '../LanguageContext'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
-import { getWeeklySub, isWeeklySubscribed, subscribeWeekly, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
+// Subscribing lives in Settings. The dashboard only keeps the stored snapshot
+// fresh for people who already subscribed, so the weekly email carries current
+// numbers rather than whatever was true on the day they signed up.
+import { isWeeklySubscribed, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
 import { analyzeTarget, fetchTargetData } from '../targetAnalysis'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
@@ -3201,12 +3204,6 @@ export default function Dashboard() {
   }, [])
   const [shareOpen, setShareOpen]         = useState(false)
   const [weeklyOpen, setWeeklyOpen]       = useState(false)
-  const [weeklyEmail, setWeeklyEmail]     = useState('')
-  const [weeklyStatus, setWeeklyStatus]   = useState('idle')
-  const [weeklyMsg, setWeeklyMsg]         = useState('')
-  const [weeklyBannerDismissed, setWeeklyBannerDismissed] = useState(() => {
-    try { return localStorage.getItem('wl_weekly_banner_dismissed') === '1' } catch { return false }
-  })
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
   const [milestone, setMilestone]         = useState(null)
   const prevPnLRef                        = useRef(null)
@@ -4038,78 +4035,6 @@ export default function Dashboard() {
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
-      {/* Weekly Report Email subscribe banner — shown at top until subscribed or dismissed */}
-      {!isWeeklySubscribed() && !weeklyBannerDismissed && !isDemo && enriched.length > 0 && (
-        <div style={{
-          margin: '0.5rem 0.75rem', padding: '0.7rem 0.9rem', borderRadius: '14px',
-          background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.12), rgba(var(--g-rgb),0.04))',
-          boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.2)',
-          display: 'flex', flexDirection: 'column', gap: '0.5rem',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 7l-10 6L2 7"/>
-              </svg>
-              <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--g-ink)' }}>Weekly Report</span>
-            </div>
-            <button onClick={() => { try { localStorage.setItem('wl_weekly_banner_dismissed', '1') } catch {} setWeeklyBannerDismissed(true) }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0.2rem' }}>×</button>
-          </div>
-          {weeklyStatus === 'ok' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--g-ink)', fontWeight: 700, margin: 0 }}>✅ You’re subscribed — your first report is on the way!</p>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>📅 A fresh report arrives <strong style={{ color: 'var(--text)' }}>every week</strong>.</li>
-                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>✉️ Sent from <strong style={{ color: 'var(--text)' }}>noreply@walletlens.live</strong> — add it to contacts so it skips spam.</li>
-                <li style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>🔒 Privacy-first — only a rounded summary is stored, never exact amounts.</li>
-              </ul>
-            </div>
-          ) : (
-            <>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                Get a branded weekly portfolio report delivered to your inbox every Sunday — no exact amounts shared, privacy-first.
-              </p>
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                const val = weeklyEmail.trim()
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { setWeeklyStatus('error'); setWeeklyMsg('Enter a valid email.'); return }
-                setWeeklyStatus('sending'); setWeeklyMsg('')
-                try {
-                  const payload = buildWeeklyPayload({ enriched, currency: 'USD' })
-                  await subscribeWeekly(val, payload)
-                  setWeeklyStatus('ok'); setWeeklyMsg('')
-                  track('weekly_email_subscribe', { source: 'dashboard_banner' })
-                } catch {
-                  setWeeklyStatus('error'); setWeeklyMsg('Network error — try again.')
-                }
-              }} style={{ display: 'flex', gap: '0.45rem' }}>
-                <input
-                  type="email" inputMode="email" autoComplete="email"
-                  placeholder="your@email.com"
-                  value={weeklyEmail}
-                  onChange={e => { setWeeklyEmail(e.target.value); if (weeklyStatus === 'error') { setWeeklyStatus('idle'); setWeeklyMsg('') } }}
-                  style={{
-                    flex: 1, minWidth: 0, borderRadius: '10px',
-                    padding: '0.55rem 0.75rem', fontSize: '0.8rem',
-                    background: 'var(--surface-1)', border: '1px solid var(--border)',
-                    color: 'var(--text)', outline: 'none',
-                  }}
-                />
-                <button type="submit" disabled={weeklyStatus === 'sending'} style={{
-                  padding: '0.55rem 1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #047857, #10b981)', color: '#fff',
-                  fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap',
-                  opacity: weeklyStatus === 'sending' ? 0.7 : 1,
-                }}>
-                  {weeklyStatus === 'sending' ? 'Joining…' : 'Subscribe'}
-                </button>
-              </form>
-              {weeklyStatus === 'error' && <p style={{ fontSize: '0.72rem', color: '#f87171', margin: 0 }}>{weeklyMsg}</p>}
-            </>
-          )}
-        </div>
-      )}
 
       {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
           grid is redundant with the native bottom nav, so we replace it with the

@@ -19,16 +19,21 @@ public class WalletLensApp extends android.app.Application {
     public void onCreate() {
         super.onCreate();
 
+        // Throwable, not Exception. A missing class after a shrinker pass
+        // arrives as NoClassDefFoundError, which is an Error — it slips past a
+        // catch of Exception and kills the process before any UI exists. That
+        // is exactly how ReviewActivity failed, and Application.onCreate is the
+        // worst place for it because nothing at all can start.
         try {
             AnalyticsHelper.init(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Analytics init failed: " + e.getMessage());
         }
 
         try {
             new NotificationHelper(this).createChannels();
             NotificationScheduler.schedule(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Notification init failed: " + e.getMessage());
         }
 
@@ -40,7 +45,7 @@ public class WalletLensApp extends android.app.Application {
                     try {
                         if (resumedActivityCount == 1) AnalyticsHelper.getInstance().startSession();
                         AnalyticsHelper.getInstance().trackScreenView(activity);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         Log.w(TAG, "onActivityResumed analytics failed: " + e.getMessage());
                     }
                 }
@@ -49,7 +54,7 @@ public class WalletLensApp extends android.app.Application {
                     resumedActivityCount--;
                     try {
                         if (resumedActivityCount == 0) AnalyticsHelper.getInstance().endSession();
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         Log.w(TAG, "onActivityPaused analytics failed: " + e.getMessage());
                     }
                 }
@@ -59,7 +64,7 @@ public class WalletLensApp extends android.app.Application {
                 @Override public void onActivitySaveInstanceState(@NonNull Activity a, @NonNull Bundle b) {}
                 @Override public void onActivityDestroyed(@NonNull Activity a) {}
             });
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Lifecycle callbacks failed: " + e.getMessage());
         }
 

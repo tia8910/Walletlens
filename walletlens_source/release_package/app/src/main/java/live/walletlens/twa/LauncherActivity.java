@@ -68,16 +68,33 @@ public class LauncherActivity
                 savedLaunchUrl = data.toString();
                 Log.d(TAG, "Saved launch URL: " + savedLaunchUrl);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.w(TAG, "could not read launch URL: " + e.getMessage());
         }
 
-        // Handle custom walletlens:// intents (biometric enable/disable/unlock).
-        handleWebAppIntent(getIntent());
+        // Both of these were unguarded, which made them the only paths in
+        // onCreate that could stop the app opening at all. Neither is load
+        // bearing for showing the site: a malformed deep link or a biometric
+        // stack that misbehaves on some OEM build should cost you the lock
+        // screen, not the app. Throwable rather than Exception for the same
+        // reason as WalletLensApp — a shrunk-away class arrives as an Error.
+        try {
+            // Handle custom walletlens:// intents (biometric enable/disable/unlock).
+            handleWebAppIntent(getIntent());
+        } catch (Throwable e) {
+            Log.w(TAG, "intent handling failed: " + e);
+        }
 
-        // Cold-start biometric gate. If a lock is required this redirects to
-        // BiometricActivity and finishes, so the TWA is not shown underneath.
-        handleColdStartBiometric();
+        try {
+            // Cold-start biometric gate. If a lock is required this redirects to
+            // BiometricActivity and finishes, so the TWA is not shown underneath.
+            handleColdStartBiometric();
+        } catch (Throwable e) {
+            // Failing open is deliberate. The alternative is an app that cannot
+            // be opened, and the data behind the gate is already on a device
+            // the user has unlocked.
+            Log.w(TAG, "cold-start biometric gate failed, continuing: " + e);
+        }
     }
 
     @Override
@@ -108,7 +125,7 @@ public class LauncherActivity
             // Welcome/test notification — harmlessly dropped by the OS if the
             // permission hasn't been granted yet.
             fireTestNotificationIfNeeded();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.w(TAG, "post-launch setup failed: " + e.getMessage());
         }
     }
