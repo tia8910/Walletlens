@@ -21,7 +21,11 @@ function HowItWorks() {
         </li>
         <li>
           <Icon name="lock" size={13} />
-          <span><strong>Privacy-first:</strong> only a rounded summary is stored — never your exact holdings or transactions.</span>
+          {/* Says what is actually sent. weeklyEmail.js transmits the exact
+              total and the top six holdings with their values; only the
+              transaction history stays behind. Claiming "rounded" here was
+              never true of the payload. */}
+          <span><strong>What we store:</strong> your email, your portfolio total and your largest holdings — enough to write the report. Your transaction history never leaves the device.</span>
         </li>
         <li>
           <Icon name="refresh" size={13} />
@@ -84,7 +88,7 @@ export default function WeeklyEmailSignup({ enriched, source = 'settings' }) {
       ) : (
         <form className="wk-signup" onSubmit={submit}>
           <p className="wk-lead">
-            Get a branded weekly portfolio report in your inbox — no exact amounts shared, privacy-first.
+            Get a branded weekly portfolio report in your inbox. Your transactions stay on your device.
           </p>
           <div className="wk-row">
             <input
