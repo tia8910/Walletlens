@@ -44,6 +44,8 @@ public class LauncherActivity
 
     private static final String TAG = "WalletLensLauncher";
     private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
+    /** Only offer the crash log for a crash the user has just lived through. */
+    private static final long CRASH_NOTICE_WINDOW_MS = 15 * 60 * 1000L;
 
     private boolean postLaunchDone = false;
     private String savedLaunchUrl = null;
@@ -70,6 +72,20 @@ public class LauncherActivity
             }
         } catch (Throwable e) {
             Log.w(TAG, "could not read launch URL: " + e.getMessage());
+        }
+
+        // If the app died recently, show what happened instead of launching
+        // straight back into it. Gated on recency so this cannot ambush someone
+        // weeks after a one-off, and marked seen when shown so it appears once.
+        try {
+            if (CrashReporter.hasUnseenCrash(this)
+                    && System.currentTimeMillis() - CrashReporter.lastCrashTime(this) < CRASH_NOTICE_WINDOW_MS) {
+                startActivity(new Intent(this, CrashLogActivity.class));
+                finish();
+                return;
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "crash notice failed: " + e);
         }
 
         // Both of these were unguarded, which made them the only paths in
@@ -145,6 +161,12 @@ public class LauncherActivity
             case "biometric":
             case "biometrics":
                 handleBiometricIntent(data);
+                break;
+            case "crashlog":
+                // Deliberate route in, for when the app is working and someone
+                // wants the record of the last time it was not.
+                startActivity(new Intent(this, CrashLogActivity.class));
+                finish();
                 break;
             default:
                 Log.w(TAG, "Unknown intent host: " + host);

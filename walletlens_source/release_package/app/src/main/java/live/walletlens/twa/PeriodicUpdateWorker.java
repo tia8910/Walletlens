@@ -194,7 +194,7 @@ public class PeriodicUpdateWorker extends Worker {
 
             Log.d(TAG, "Notification sent: " + title + " -> " + url);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e(TAG, "Worker error: " + e.getMessage(), e);
         }
 
@@ -236,11 +236,11 @@ public class PeriodicUpdateWorker extends Worker {
                     if (sb.length() > 0) sb.append("\n");
                     sb.append("🥇 Gold $").append(String.format(Locale.US, "%.0f", goldPrice));
                 }
-            } catch (Exception ignored) {}
+            } catch (Throwable ignored) {}
 
             if (sb.length() > 0) return sb.toString();
             return "Check market index for latest prices";
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return "Prices loading — check market index";
         }
     }
@@ -345,7 +345,7 @@ public class PeriodicUpdateWorker extends Worker {
             float cryptoPct = 100f; // Default: all crypto until portfolio data is available
             AllocationWidgetProvider.saveAllocation(ctx, cryptoPct, 0, 0, 0, 0);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             android.util.Log.w(TAG, "Widget update failed: " + e.getMessage());
         }
     }

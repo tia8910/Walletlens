@@ -19,6 +19,14 @@ public class WalletLensApp extends android.app.Application {
     public void onCreate() {
         super.onCreate();
 
+        // First statement, before anything that could throw. A crash handler
+        // installed after the thing that crashes records nothing.
+        try {
+            CrashReporter.install(this);
+        } catch (Throwable e) {
+            Log.e(TAG, "Crash reporter install failed: " + e);
+        }
+
         // Throwable, not Exception. A missing class after a shrinker pass
         // arrives as NoClassDefFoundError, which is an Error — it slips past a
         // catch of Exception and kills the process before any UI exists. That

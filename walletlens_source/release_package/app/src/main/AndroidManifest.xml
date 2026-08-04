@@ -312,6 +312,16 @@
              a cross-app start. It accepts no data and returns none.
              No noHistory here — the Play card is drawn inside this activity,
              so it has to survive until the flow reports back. -->
+        <!-- Crash log viewer. exported=false: it can hold a stack trace, which
+             is diagnostic detail no other app has any business reading. It is
+             reached from LauncherActivity after a crash, or via
+             walletlens://crashlog, both of which are in-process. -->
+        <activity
+            android:name=".CrashLogActivity"
+            android:exported="false"
+            android:label="WalletLens crash log"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
         <activity
             android:name=".ReviewActivity"
             android:exported="true"
