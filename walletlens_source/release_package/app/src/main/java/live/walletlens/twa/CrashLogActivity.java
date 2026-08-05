@@ -104,14 +104,43 @@ public class CrashLogActivity extends Activity {
             buttons.addView(button("Clear", v -> {
                 CrashReporter.clear(this);
                 Toast.makeText(this, "Cleared", Toast.LENGTH_SHORT).show();
-                finish();
+                continueToApp();
             }));
         }
 
-        buttons.addView(button("Close", v -> finish()));
+        buttons.addView(button("Close", v -> continueToApp()));
         root.addView(buttons);
 
         setContentView(root);
+    }
+
+    /**
+     * Leaving this screen has to go on into the app, not out of it.
+     *
+     * LauncherActivity finishes itself when it hands over to here, so a plain
+     * finish() left nothing behind and the app simply vanished — which is
+     * indistinguishable, from the outside, from the crash this screen exists to
+     * explain. Reported as "started but closed by itself".
+     *
+     * The crash is marked seen as soon as it is displayed, so going back to
+     * LauncherActivity cannot bounce straight back here.
+     */
+    private void continueToApp() {
+        try {
+            Intent go = new Intent(this, LauncherActivity.class);
+            go.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(go);
+        } catch (Throwable ignored) {
+            // Better to close than to strand the user on this screen.
+        }
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Same destination as Close: back out of a diagnostic screen and you
+        // should be in the app, not on the home screen.
+        continueToApp();
     }
 
     private Button button(String label, View.OnClickListener onClick) {
