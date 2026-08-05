@@ -58,6 +58,11 @@ public class BiometricActivity extends AppCompatActivity {
     /** Intent extra: URL to return to after successful auth. */
     public static final String EXTRA_REDIRECT_URL = "redirect_url";
 
+    /** Values for the biometric_auth query parameter LauncherActivity reads. */
+    public static final String STATUS_SUCCESS     = "success";
+    public static final String STATUS_CANCEL      = "cancel";
+    public static final String STATUS_UNAVAILABLE = "unavailable";
+
     private BiometricPrompt biometricPrompt;
     private BiometricPrompt.PromptInfo promptInfo;
 
@@ -99,7 +104,10 @@ public class BiometricActivity extends AppCompatActivity {
             Toast.makeText(this,
                     "Biometric authentication is not available on this device: " + errorMsg,
                     Toast.LENGTH_LONG).show();
-            redirectBack(false);
+            // Not a refusal — the device cannot ask. Reported separately so the
+            // launcher lets the user in and turns the lock off, rather than
+            // barring them from an app whose data lives only on this device.
+            redirectBack(STATUS_UNAVAILABLE);
             return;
         }
 
@@ -184,17 +192,28 @@ public class BiometricActivity extends AppCompatActivity {
      * the web app or the main TWA activity.
      */
     private void redirectBack(boolean success) {
+        redirectBack(success ? STATUS_SUCCESS : STATUS_CANCEL);
+    }
+
+    /**
+     * @param status one of STATUS_SUCCESS, STATUS_CANCEL, STATUS_UNAVAILABLE.
+     *               LauncherActivity reads it back off the URL and must act on
+     *               all three differently — passing a bare boolean is what let
+     *               "cancelled" and "no biometric hardware" collapse into the
+     *               same answer, and neither could be told apart from "never
+     *               asked", which is what produced the relaunch loop.
+     */
+    private void redirectBack(String status) {
         String redirectUrl = getIntent().getStringExtra(EXTRA_REDIRECT_URL);
 
         if (redirectUrl != null && !redirectUrl.isEmpty()) {
             // Append result parameter
             Uri.Builder builder = Uri.parse(redirectUrl).buildUpon();
-            builder.appendQueryParameter("biometric_auth", success ? "success" : "cancel");
+            builder.appendQueryParameter("biometric_auth", status);
             redirectUrl = builder.build().toString();
         } else {
             // Default: go to TWA dashboard
-            redirectUrl = "https://walletlens.live/dashboard?biometric_auth="
-                    + (success ? "success" : "cancel");
+            redirectUrl = "https://walletlens.live/dashboard?biometric_auth=" + status;
         }
 
         Intent intent = new Intent(this, LauncherActivity.class);
