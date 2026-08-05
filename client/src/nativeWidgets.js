@@ -12,6 +12,7 @@ import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 const SYNC_KEY = 'wl_widget_sync_at'
 const PAYLOAD_KEY = 'wl_widget_payload'
 const DIAG_KEY = 'wl_widget_diag'
+const FRESH_KEY = 'wl_widget_session_synced'
 const MIN_GAP_MS = 5 * 60 * 1000 // don't fire on every render
 
 function pct(part, whole) {
@@ -147,7 +148,23 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
 
     if (!isAndroidTWA()) return note('not-twa', { nw: payload.nw, tracked: payload.tracked })
 
-    if (!force) {
+    // The throttle lives here, in localStorage; the widget data it is throttling
+    // lives in Android SharedPreferences. They are separate stores with separate
+    // lifetimes, and only one of them can be wiped: clearing the app's data
+    // empties the widgets while this side carries on believing it synced
+    // recently, so the widgets sit at "Not yet updated" until the gap expires
+    // and the dashboard happens to be open again.
+    //
+    // A cold start is exactly when that reset may have happened, and it is
+    // cheap to cover: force the first sync of each app session. sessionStorage
+    // is per document, so this is once per launch, not once per navigation.
+    let firstThisSession = false
+    try {
+      firstThisSession = sessionStorage.getItem(FRESH_KEY) !== '1'
+      if (firstThisSession) sessionStorage.setItem(FRESH_KEY, '1')
+    } catch { /* private mode: fall back to the throttle */ }
+
+    if (!force && !firstThisSession) {
       const last = Number(localStorage.getItem(SYNC_KEY) || 0)
       if (Date.now() - last < MIN_GAP_MS) return note('throttled')
     }
