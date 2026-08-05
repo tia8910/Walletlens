@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A translucent theme that is also an AppCompat descendant.
+
+  BiometricActivity and DataExportActivity extend AppCompatActivity, and both
+  were declared with @android:style/Theme.Translucent.NoTitleBar — a framework
+  theme, not an AppCompat one. AppCompatDelegateImpl.createSubDecor throws
+  IllegalStateException("You need to use a Theme.AppCompat theme (or
+  descendant) with this activity.") the moment such an activity reaches
+  onPostCreate, which killed the app on every cold start once App Lock was
+  turned on and LauncherActivity started routing through BiometricActivity.
+
+  The transparency matters and is not cosmetic: both activities are invisible
+  shells that prompt and finish, so anything with a solid window background
+  would flash an empty screen over the app. This keeps every translucency
+  attribute the framework theme set and only changes the parent.
+-->
+<resources>
+
+    <style name="Theme.WalletLens.Translucent" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <!-- No enter/exit animation: these activities are not a destination,
+             and animating an invisible window reads as a stutter on launch. -->
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+</resources>
