@@ -15,6 +15,22 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS })
 }
 
+// The client gives this whole function a 6s budget before falling back to a
+// slower path (see fetchTwelveDataBatch in client/src/api.js). Without a cap
+// here, a single hung upstream (Stooq or Yahoo) blocks past that budget and
+// the entire response — including data already fetched successfully — gets
+// discarded by the caller. Keeping Stooq + Yahoo's worst case within ~6s
+// means we always return whatever we have in time instead of timing out.
+async function fetchWithTimeout(url, ms, options) {
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(t)
+  }
+}
+
 export async function onRequestGet({ request }) {
   const url = new URL(request.url)
   const raw = (url.searchParams.get('symbols') || url.searchParams.get('symbol') || '').toUpperCase().trim()
@@ -31,8 +47,9 @@ export async function onRequestGet({ request }) {
   //       path that fills most symbols in a single fetch. ────────────────────
   try {
     const s = symbols.map(x => `${x.toLowerCase()}.us`).join(';')
-    const res = await fetch(
-      `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`
+    const res = await fetchWithTimeout(
+      `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`,
+      3000
     )
     if (res.ok) {
       const text = await res.text()
@@ -68,8 +85,9 @@ export async function onRequestGet({ request }) {
     await Promise.all(missing.map(async sym => {
       for (const host of ['query1', 'query2']) {
         try {
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+            1500,
             { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' } }
           )
           if (!res.ok) continue
