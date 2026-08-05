@@ -167,7 +167,7 @@ export default function Whales() {
             {volumeAnomalies.map(c => (
               <div key={c.id} className="whale-row">
                 <Link to={`/asset/${c.id}`} className="whale-coin">
-                  <img src={c.image} alt="coin logo" width={26} height={26}  onError={e => { e.currentTarget.style.display = 'none' }} />
+                  <img src={c.image} alt="coin logo" width={26} height={26} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} />
                   <div>
                     <div className="whale-name">{c.name}</div>
                     <div className="whale-sym">{c.symbol?.toUpperCase()}</div>
@@ -190,7 +190,7 @@ export default function Whales() {
             {volumeLeaders.map(c => (
               <div key={c.id} className="whale-row">
                 <Link to={`/asset/${c.id}`} className="whale-coin">
-                  <img src={c.image} alt="coin logo" width={26} height={26}  onError={e => { e.currentTarget.style.display = 'none' }} />
+                  <img src={c.image} alt="coin logo" width={26} height={26} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} />
                   <div>
                     <div className="whale-name">{c.name}</div>
                     <div className="whale-sym">{c.symbol?.toUpperCase()}</div>
@@ -218,7 +218,7 @@ export default function Whales() {
             {trending.map((t, i) => (
               <Link key={t.id || i} to={`/asset/${t.id}`} className="trending-card">
                 <div className="trending-rank">#{i + 1}</div>
-                <img src={t.thumb} alt="coin logo" width={32} height={32}  onError={e => { e.currentTarget.style.display = 'none' }} />
+                <img src={t.thumb} alt="coin logo" width={32} height={32} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} />
                 <div className="trending-info">
                   <div className="whale-name">{t.name}</div>
                   <div className="whale-sym">{t.symbol}</div>
@@ -301,7 +301,7 @@ export default function Whales() {
             <div key={ex.id} className="exchange-row">
               <div className="exchange-rank">#{i + 1}</div>
               <div className="exchange-logo">
-                {ex.image ? <img src={ex.image} alt="coin logo" width={28} height={28}  onError={e => { e.currentTarget.style.display = 'none' }} /> : <span className="exchange-logo-placeholder"><Icon name="bank" size={18} /></span>}
+                {ex.image ? <img src={ex.image} alt="coin logo" width={28} height={28} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} /> : <span className="exchange-logo-placeholder"><Icon name="bank" size={18} /></span>}
               </div>
               <div className="exchange-info">
                 <div className="whale-name">{ex.name}</div>
@@ -338,7 +338,7 @@ function MoverRow({ c, pctKey }) {
   return (
     <div className="whale-row">
       <Link to={`/asset/${c.id}`} className="whale-coin">
-        <img src={c.image} alt="coin logo" width={26} height={26}  onError={e => { e.currentTarget.style.display = 'none' }} />
+        <img src={c.image} alt="coin logo" width={26} height={26} loading="lazy" decoding="async" onError={e => { e.currentTarget.style.display = 'none' }} />
         <div>
           <div className="whale-name">{c.name}</div>
           <div className="whale-sym">{c.symbol?.toUpperCase()}</div>

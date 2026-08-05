@@ -104,6 +104,10 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
   alertsRef.current = alerts
+  // Read via ref (not a fetchPrices dependency) so the Dashboard's own poll
+  // updating this prop doesn't reset our interval timer below.
+  const portfolioPricesRef = useRef(portfolioPrices)
+  portfolioPricesRef.current = portfolioPrices
 
   // Persist locally and mirror rules to the push server (no-op if push is off)
   // so price targets can fire even when the app is closed.
@@ -111,10 +115,14 @@ export default function Watchlist({ portfolioPrices = {} }) {
 
   const fetchPrices = useCallback(async () => {
     if (!items.length) return
-    const ids = items.map(i => i.coin_id).join(',')
+    // Skip ids the Dashboard's own 60s poll already covers (portfolioPrices) —
+    // avoids a redundant duplicate request for overlapping holdings, fetching
+    // only what's actually missing.
+    const missing = items.filter(i => !portfolioPricesRef.current[i.coin_id]).map(i => i.coin_id)
+    if (!missing.length) return
     try {
-      const px = await api.getPrices(ids)
-      if (px) setPrices(px)
+      const px = await api.getPrices(missing.join(','))
+      if (px) setPrices(prev => ({ ...prev, ...px }))
     } catch {}
   }, [items])
 
