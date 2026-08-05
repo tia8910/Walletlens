@@ -24,7 +24,7 @@ public class AllocationWidgetProvider extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager mgr, int[] ids) {
         for (int id : ids) {
             try { updateWidget(context, mgr, id); }
-            catch (Exception e) { android.util.Log.w("WalletLensWidget", "allocation update failed: " + e.getMessage()); }
+            catch (Throwable e) { android.util.Log.w("WalletLensWidget", "allocation update failed: " + e.getMessage()); }
         }
     }
 
@@ -67,7 +67,7 @@ public class AllocationWidgetProvider extends AppWidgetProvider {
         try {
             int widthDp = Math.max(4, (int) (pct * 2));
             views.setViewLayoutWidth(viewId, widthDp, android.util.TypedValue.COMPLEX_UNIT_DIP);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // Fallback: just show the percentage text
         }
     }

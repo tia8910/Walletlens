@@ -21,13 +21,22 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Log.d(TAG, "Device rebooted — restoring notification schedule");
 
-            // Re-create notification channels
-            new NotificationHelper(context).createChannels();
+            // Unguarded until now. A receiver that throws takes the process
+            // with it, and this one runs at boot with no user watching and no
+            // UI to fail into — the crash would surface as a bare "this app
+            // has a bug" dialog over the launcher, with nothing to connect it
+            // to WalletLens having started at all.
+            try {
+                // Re-create notification channels
+                new NotificationHelper(context).createChannels();
 
-            // Restore the periodic schedule silently. Posting a "restored
-            // after reboot" notification here would ping users on every boot
-            // and reads as notification spam in Play review.
-            NotificationScheduler.schedule(context);
+                // Restore the periodic schedule silently. Posting a "restored
+                // after reboot" notification here would ping users on every boot
+                // and reads as notification spam in Play review.
+                NotificationScheduler.schedule(context);
+            } catch (Throwable e) {
+                Log.w(TAG, "boot restore failed: " + e);
+            }
         }
     }
 }

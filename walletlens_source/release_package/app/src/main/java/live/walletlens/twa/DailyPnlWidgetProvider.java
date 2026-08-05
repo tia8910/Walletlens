@@ -22,7 +22,7 @@ public class DailyPnlWidgetProvider extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager mgr, int[] ids) {
         for (int id : ids) {
             try { updateWidget(context, mgr, id); }
-            catch (Exception e) { android.util.Log.w("WalletLensWidget", "daily-pnl update failed: " + e.getMessage()); }
+            catch (Throwable e) { android.util.Log.w("WalletLensWidget", "daily-pnl update failed: " + e.getMessage()); }
         }
     }
 

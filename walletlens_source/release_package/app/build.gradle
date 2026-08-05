@@ -176,14 +176,36 @@ android {
             // leaves AGP 9 plus all the new features in place, so the next build
             // isolates which half is at fault.
             //
-            // minifyEnabled stays on: that is what production has. Without
-            // proguardFiles R8 runs in its non-optimising mode, which is the
-            // configuration Play flagged but is also the one known to boot.
+            // R8 is OFF while a launch crash is unexplained. This is a bisect
+            // step, not a preference.
             //
-            // Re-enable in stages once a build is confirmed good on-device —
-            // proguard-rules.pro is kept in the tree for that.
-            minifyEnabled true
+            // 6ff0b43 dropped the proguardFiles line but left minifyEnabled
+            // true. That combination is worse than either extreme: R8 kept
+            // shrinking AND obfuscating, with none of the keep rules in
+            // proguard-rules.pro applied. Every build from v2.8 onward has
+            // renamed classes with no rule protecting anything resolved by
+            // name, and — because -keepattributes SourceFile,LineNumberTable
+            // lives in that same unapplied file — has produced stack traces
+            // with no line numbers, which is a large part of why the crash has
+            // been hard to place.
+            //
+            // Turning R8 off answers the question outright. If the crash stops,
+            // it was R8 stripping or renaming something; the next build turns
+            // minify back on with the keep rules genuinely applied and narrows
+            // down which. If the crash persists, R8 is exonerated and the trace
+            // — now with line numbers — says where to look instead.
+            //
+            // Cost is roughly a megabyte of APK. That is nothing against an app
+            // that will not open.
+            minifyEnabled false
             shrinkResources false
+            // Restored deliberately. It is inert while minifyEnabled is false,
+            // and it means switching minify back on cannot silently ship
+            // without the keep rules a second time. proguard-android.txt rather
+            // than -optimize.txt: the optimising passes were implicated in an
+            // earlier crash and are a separate decision from having keep rules
+            // at all.
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
