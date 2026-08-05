@@ -44,8 +44,6 @@ public class LauncherActivity
 
     private static final String TAG = "WalletLensLauncher";
     private static final int TEST_NOTIF_MAX_LAUNCHES = 5;
-    /** Only offer the crash log for a crash the user has just lived through. */
-    private static final long CRASH_NOTICE_WINDOW_MS = 15 * 60 * 1000L;
 
     private boolean postLaunchDone = false;
     private String savedLaunchUrl = null;
@@ -74,12 +72,16 @@ public class LauncherActivity
             Log.w(TAG, "could not read launch URL: " + e.getMessage());
         }
 
-        // If the app died recently, show what happened instead of launching
-        // straight back into it. Gated on recency so this cannot ambush someone
-        // weeks after a one-off, and marked seen when shown so it appears once.
+        // Show the crash whenever one has not been seen yet, however long ago.
+        //
+        // This was gated to fifteen minutes, which was wrong for the crash it
+        // was built to catch: the fault fires from the background worker while
+        // nobody is holding the phone, so by the time the app is next opened
+        // the window has always expired and the trace is never shown. A record
+        // only exists if the app actually crashed, and it is marked seen once
+        // displayed, so "unseen" is the whole condition worth having.
         try {
-            if (CrashReporter.hasUnseenCrash(this)
-                    && System.currentTimeMillis() - CrashReporter.lastCrashTime(this) < CRASH_NOTICE_WINDOW_MS) {
+            if (CrashReporter.hasUnseenCrash(this)) {
                 startActivity(new Intent(this, CrashLogActivity.class));
                 finish();
                 return;
