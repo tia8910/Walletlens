@@ -148,6 +148,26 @@ public class LauncherActivity
         }
     }
 
+    /**
+     * The biometric_auth value on the launch URL, or null if there isn't one.
+     *
+     * Read off the intent rather than remembered in a field: BiometricActivity
+     * starts a fresh LauncherActivity, so there is no instance state to carry
+     * the answer across.
+     */
+    private String biometricOutcome() {
+        try {
+            Intent intent = getIntent();
+            Uri data = intent != null ? intent.getData() : null;
+            if (data == null || data.getQuery() == null) return null;
+            return data.getQueryParameter("biometric_auth");
+        } catch (Throwable e) {
+            // A malformed URL must not decide whether the app opens.
+            Log.w(TAG, "could not read biometric outcome: " + e);
+            return null;
+        }
+    }
+
     // ── Intent handling ─────────────────────────────────────────────────
 
     private void handleWebAppIntent(Intent intent) {
@@ -203,6 +223,42 @@ public class LauncherActivity
 
     private void handleColdStartBiometric() {
         if (!BiometricActivity.isEnabled(this)) return;
+
+        // Are we arriving back from the gate rather than approaching it?
+        //
+        // BiometricActivity finishes by starting this activity again with the
+        // outcome on the URL. Without reading it, every non-success outcome
+        // came back to a session that was still invalid, so the gate opened
+        // again immediately: launcher → prompt → cancel → launcher → prompt,
+        // until the task collapsed and the app vanished. That is the "starts
+        // and then closes by itself" report, and it only became reachable once
+        // the theme crash was fixed and BiometricActivity could actually run.
+        String outcome = biometricOutcome();
+        if (outcome != null) {
+            switch (outcome) {
+                case BiometricActivity.STATUS_UNAVAILABLE:
+                    // The device cannot ask — no hardware, or enrolments were
+                    // removed after the lock was turned on. Refusing entry here
+                    // would strand someone permanently in front of data that
+                    // exists nowhere but this phone. Let them in and turn the
+                    // lock off, so it does not happen again next launch.
+                    Log.w(TAG, "Biometrics unavailable — disabling app lock and continuing");
+                    BiometricActivity.setEnabled(this, false);
+                    return;
+
+                case BiometricActivity.STATUS_CANCEL:
+                    // A deliberate refusal. Closing is correct — showing the
+                    // portfolio anyway would make the lock decorative — but it
+                    // has to be one clean finish, not another trip round.
+                    Log.d(TAG, "Unlock cancelled — closing");
+                    finish();
+                    return;
+
+                default: // success
+                    return;
+            }
+        }
+
         if (BiometricActivity.isSessionValid(this)) return;
 
         Log.d(TAG, "Cold-start biometric required");
