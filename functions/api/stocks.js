@@ -15,7 +15,7 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS })
 }
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, waitUntil }) {
   const url = new URL(request.url)
   const raw = (url.searchParams.get('symbols') || url.searchParams.get('symbol') || '').toUpperCase().trim()
   if (!raw) {
@@ -23,6 +23,15 @@ export async function onRequestGet({ request }) {
   }
 
   const symbols = raw.split(',').map(s => s.trim()).filter(Boolean)
+
+  // Edge-cache the response per symbol set so concurrent/rapid requests share
+  // one round-trip to Stooq/Yahoo instead of each fanning out its own — the
+  // upstream calls below don't scale with traffic otherwise.
+  const cache = caches.default
+  const cacheKey = new Request(`${url.origin}${url.pathname}?symbols=${symbols.join(',')}`, { method: 'GET' })
+  const cached = await cache.match(cacheKey)
+  if (cached) return cached
+
   const result = {}
 
   // ── 1. Stooq BATCH — one request for ALL symbols. Server-side (no CORS),
@@ -88,7 +97,11 @@ export async function onRequestGet({ request }) {
     }))
   }
 
-  return new Response(JSON.stringify(result), {
+  const response = new Response(JSON.stringify(result), {
     headers: { ...CORS, 'Cache-Control': 'public, max-age=60' },
   })
+  if (Object.keys(result).length > 0) {
+    waitUntil(cache.put(cacheKey, response.clone()))
+  }
+  return response
 }
