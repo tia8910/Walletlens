@@ -30,15 +30,12 @@ import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '
 import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
 import MarketMood from '../components/MarketMood'
-import GoalTracker from '../components/GoalTracker'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
-import InstallExtension from '../components/InstallExtension'
 import { BiometricToggle } from '../components/BiometricLock'
 import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
-import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview } from '../reviewPrompt'
 
@@ -66,6 +63,8 @@ const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 const Watchlist      = lazy(() => import('../components/Watchlist'))
+const InstallExtension = lazy(() => import('../components/InstallExtension'))
+const RebalancePanel = lazy(() => import('../components/RebalancePanel'))
 
 function TabFallback() {
   return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>Loading…</div>
@@ -5290,7 +5289,9 @@ export default function Dashboard() {
             <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>
               Track your portfolio from the toolbar in Chrome, Edge or Brave — it syncs automatically whenever this page is open.
             </p>
-            <InstallExtension variant="badge" source="dashboard_data_tab" />
+            <Suspense fallback={null}>
+              <InstallExtension variant="badge" source="dashboard_data_tab" />
+            </Suspense>
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Smart Import</h3>
@@ -5488,17 +5489,19 @@ export default function Dashboard() {
         />
       )}
       {rebalanceOpen && (
-        <RebalancePanel
-          open={rebalanceOpen}
-          onClose={() => setRebalanceOpen(false)}
-          holdings={enriched.map(h => ({
-            id: h.coin_id || h.coin_symbol,
-            sym: (h.coin_symbol || h.coin_id || '').toUpperCase(),
-            value: h.value || 0,
-            bucket: rebalBucket(h),
-          }))}
-          cv={cv}
-        />
+        <Suspense fallback={null}>
+          <RebalancePanel
+            open={rebalanceOpen}
+            onClose={() => setRebalanceOpen(false)}
+            holdings={enriched.map(h => ({
+              id: h.coin_id || h.coin_symbol,
+              sym: (h.coin_symbol || h.coin_id || '').toUpperCase(),
+              value: h.value || 0,
+              bucket: rebalBucket(h),
+            }))}
+            cv={cv}
+          />
+        </Suspense>
       )}
 
       {/* First-run flow for a brand-new user: interests → cash/USDT balances.
