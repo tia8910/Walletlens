@@ -149,11 +149,20 @@ export function initErrorTracking() {
   window.addEventListener('error', (e) => {
     try {
       // A failed <img>/<script> load surfaces here with no message and the
-      // element as the target. Worth knowing about — a dead asset is usually a
-      // broken deploy — but it is a different fault from a thrown exception.
+      // element as the target.
       if (e.target && e.target !== window && e.target.tagName) {
+        const tag = e.target.tagName.toLowerCase()
+        // Images are excluded on purpose. CoinLogo walks a six-stage fallback
+        // chain — jsdelivr, coincap, lcw, cryptoicons, our proxy, then a drawn
+        // icon — and advances on each onError. Those failures are the design
+        // working, not a fault, and reporting them buried the real exceptions
+        // under noise in the one place we can see them.
+        //
+        // Scripts and stylesheets are different: nothing retries those, and one
+        // failing means a broken deploy.
+        if (tag !== 'script' && tag !== 'link') return
         const src = e.target.src || e.target.href || ''
-        return reportError('resource', e.target.tagName.toLowerCase(), {
+        return reportError('resource', tag, {
           // Host only: query strings on proxied asset URLs can carry lookups.
           error_source: (() => { try { return new URL(src, location.href).host } catch { return 'unknown' } })(),
         })
