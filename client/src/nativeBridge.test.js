@@ -128,13 +128,32 @@ describe('fireNativeIntent', () => {
     expect(lastIntentAttempt().url.split('#Intent;')[0]).not.toContain(';')
   })
 
-  it('waits for a tap when there is no user activation', async () => {
+  it('does not fire without user activation, and does not queue for later', async () => {
+    // The bug this replaces: the intent was held and fired on the next
+    // pointerdown. Inside the TWA that navigation ends the Custom Tab session,
+    // and the first touch after a load is the user starting to scroll — so the
+    // app vanished under their finger with no crash and nothing in any log.
     Object.defineProperty(navigator, 'userActivation', {
       value: { isActive: false, hasBeenActive: false }, configurable: true,
     })
     const { fireNativeIntent, lastIntentAttempt } = await load()
 
-    expect(fireNativeIntent('walletlens://widget-sync?data=%7B%7D')).toBe(true)
-    expect(lastIntentAttempt().how).toBe('deferred')
+    expect(fireNativeIntent('walletlens://widget-sync?data=%7B%7D')).toBe(false)
+    expect(lastIntentAttempt().how).toBe('skipped-no-activation')
+  })
+
+  it('stays silent through a later tap', async () => {
+    // The regression guard. A pointerdown arriving after a skipped intent must
+    // navigate nowhere.
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { isActive: false, hasBeenActive: false }, configurable: true,
+    })
+    const { fireNativeIntent } = await load()
+    fireNativeIntent('walletlens://widget-sync?data=%7B%7D')
+
+    const before = window.location.href
+    window.dispatchEvent(new Event('pointerdown'))
+    window.dispatchEvent(new Event('keydown'))
+    expect(window.location.href).toBe(before)
   })
 })

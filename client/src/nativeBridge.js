@@ -82,17 +82,6 @@ function record(url, how) {
   } catch { /* diagnostics only */ }
 }
 
-// At most one deferred intent waits for a tap; a newer one replaces it.
-let pendingIntent = null
-let listening = false
-
-function firePending() {
-  const target = pendingIntent
-  pendingIntent = null
-  if (!target) return
-  try { window.location.href = target } catch { /* scheme rejected */ }
-}
-
 /**
  * Hand a walletlens:// URL to the native app.
  *
@@ -118,25 +107,30 @@ export function fireNativeIntent(url) {
     // navigator.userActivation is Chrome 72+; when it's missing, assume we're
     // allowed and let the navigation itself be the test.
     const activation = typeof navigator !== 'undefined' ? navigator.userActivation : null
-    if (!activation || activation.isActive) {
-      record(target, 'immediate')
-      try { window.location.href = target } catch { /* scheme rejected */ }
-      return true
+    if (activation && !activation.isActive) {
+      // Do not fire, and above all do not queue this for the next tap.
+      //
+      // Firing an intent means navigating the top frame to intent://, which
+      // takes the Custom Tab off its own origin. Inside the TWA that ends the
+      // session and the app disappears — no crash, nothing in any log, because
+      // nothing crashed.
+      //
+      // This used to wait for the next pointerdown and fire then. The first
+      // touch after a page load is almost always the user starting to scroll,
+      // so a sync requested during load detonated under their finger a second
+      // later. It read exactly like "the app closes when I scroll", and it was
+      // invisible on the web, where isAndroidTWA() is false and none of this
+      // runs at all.
+      //
+      // A navigation this disruptive may only happen in the same gesture the
+      // user actually made. If there is no activation, the caller's payload is
+      // already stored; Settings → Sync now can push it deliberately.
+      record(target, 'skipped-no-activation')
+      return false
     }
 
-    record(target, 'deferred')
-    pendingIntent = target
-    if (!listening) {
-      listening = true
-      const once = () => {
-        window.removeEventListener('pointerdown', once, true)
-        window.removeEventListener('keydown', once, true)
-        listening = false
-        firePending()
-      }
-      window.addEventListener('pointerdown', once, true)
-      window.addEventListener('keydown', once, true)
-    }
+    record(target, 'immediate')
+    try { window.location.href = target } catch { /* scheme rejected */ }
     return true
   } catch {
     return false
