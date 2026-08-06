@@ -5560,10 +5560,13 @@ tr:last-child td { border-bottom: none; }
   white-space: nowrap;
 }
 .wl-topbar-brand-actions {
-  display: flex; align-items: center; gap: 0.22rem;
+  /* 0.18rem and 0.07em, not 0.22/0.08: TRACK · ANALYZE · GROW measured 4px
+     wider than the space the brand gets at 393px, and clipping the W off GROW
+     to save four pixels is a worse trade than tightening the tracking. */
+  display: flex; align-items: center; gap: 0.18rem;
 }
 .wl-topbar-brand-action {
-  font-size: 0.55rem; font-weight: 800; letter-spacing: 0.08em;
+  font-size: 0.55rem; font-weight: 800; letter-spacing: 0.07em;
   color: rgba(255,255,255,0.5); transition: color 0.35s;
 }
 .wl-topbar-brand-action.active { color: var(--g-ink); font-weight: 700; }
@@ -5573,9 +5576,24 @@ tr:last-child td { border-bottom: none; }
 [data-wl-light] .wl-topbar-brand-sep { color: rgba(0,0,0,0.7); }
 .wl-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 /* Let the brand shrink so the right-side controls always keep their space and
-   never overlap the Stats pill on narrow screens. */
+   never overlap the Stats pill on narrow screens.
+   
+   min-width: 0 alone was not enough. It lets the flex item's *box* shrink, but
+   the wordmark is white-space: nowrap, so the text carried on rendering past
+   the edge of that box and slid underneath the header buttons — measured at
+   112px of text in a 78px box on a 393px screen, which put ".live" and "GROW"
+   directly under the help icon. overflow: hidden is what actually stops it. */
 .wl-topbar-brand { min-width: 0; }
-.wl-topbar-brand-text { min-width: 0; }
+.wl-topbar-brand-text { min-width: 0; overflow: hidden; }
+.wl-topbar-brand-name { overflow: hidden; text-overflow: ellipsis; }
+/* The ellipsis above is a backstop, not a design. On phone widths the wordmark
+   still measured 4px wider than its box, which would have shipped as
+   "WalletLens.liv…" — so the type comes down a notch to make it genuinely fit
+   rather than be cut off politely. */
+@media (max-width: 480px) {
+  .wl-topbar-brand-name { font-size: 1.02rem; letter-spacing: -0.025em; }
+}
+.wl-topbar-brand-actions { overflow: hidden; }
 .wl-live-badge {
   display: flex;
   align-items: center;
