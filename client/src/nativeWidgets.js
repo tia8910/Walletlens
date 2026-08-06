@@ -61,7 +61,13 @@ export function forceSyncWidgets() {
   try {
     const raw = localStorage.getItem(PAYLOAD_KEY)
     if (!raw) return note('no-payload')
-    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw))
+    // Same rule as syncWidgets: only stamp a sync that actually left. This
+    // path runs from a button, so activation is normally present — but if the
+    // tap has already expired by the time we get here, saying "fired" would be
+    // a lie the Settings readout then repeats back to the user.
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw))) {
+      return note('no-activation', { manual: true })
+    }
     localStorage.setItem(SYNC_KEY, String(Date.now()))
     return note('fired', { manual: true })
   } catch {
@@ -169,7 +175,13 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
       if (Date.now() - last < MIN_GAP_MS) return note('throttled')
     }
 
-    fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))
+    // fireNativeIntent refuses without user activation, because the navigation
+    // it performs would end the TWA session. Record the timestamp only when it
+    // actually went — stamping a sync that never happened would start the
+    // throttle against a widget that was never updated.
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))) {
+      return note('no-activation', { nw: payload.nw, tracked: payload.tracked })
+    }
 
     localStorage.setItem(SYNC_KEY, String(Date.now()))
     return note('fired', { nw: payload.nw, tracked: payload.tracked })

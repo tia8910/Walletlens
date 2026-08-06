@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 const fired = []
 vi.mock('./nativeBridge', () => ({
   isAndroidTWA: () => true,
-  fireNativeIntent: (url) => { fired.push(url) },
+  fireNativeIntent: (url) => { fired.push(url); return true },
 }))
 
 const HOLDINGS = [
