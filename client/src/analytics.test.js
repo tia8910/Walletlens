@@ -37,6 +37,29 @@ describe('error reporting', () => {
     expect(params.error_kind).toBe('exception')
   })
 
+  it('ignores failed images, which are CoinLogo walking its fallback chain', async () => {
+    const { events } = await freshAnalytics()
+    const img = document.createElement('img')
+    document.body.appendChild(img)
+    const ev = new Event('error')
+    Object.defineProperty(ev, 'target', { value: img })
+    window.dispatchEvent(ev)
+    expect(eventsNamed(events, 'js_error')).toHaveLength(0)
+  })
+
+  it('still reports a failed script, which means a broken deploy', async () => {
+    const { events } = await freshAnalytics()
+    const sc = document.createElement('script')
+    sc.src = 'https://walletlens.live/assets/index-abc.js'
+    const ev = new Event('error')
+    Object.defineProperty(ev, 'target', { value: sc })
+    window.dispatchEvent(ev)
+    const [p] = eventsNamed(events, 'js_error')
+    expect(p.error_kind).toBe('resource')
+    expect(p.error_message).toBe('script')
+    expect(p.error_source).toBe('walletlens.live')
+  })
+
   it('sends only the filename, never the full URL', async () => {
     // Proxied asset URLs carry the original lookup in a query string.
     const { events } = await freshAnalytics()
