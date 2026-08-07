@@ -2567,6 +2567,10 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
     { id: 'ta',     label: 'Technicals' },
     { id: 'risk',   label: 'Risk Scanner' },
   ]
+  const riskHoldings = useMemo(
+    () => (isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value })),
+    [isDemo, enriched]
+  )
   return (
     <div>
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'var(--surface-1)', borderRadius:'12px', padding:'0.3rem' }}>
@@ -2581,7 +2585,7 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
       </div>
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
       {tool === 'ta'     && <Suspense fallback={<TabFallback />}><MagicAnalysisPanel enriched={isDemo ? [] : enriched} totalValue={totalValue} /></Suspense>}
-      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={(isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value }))} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
+      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={riskHoldings} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
     </div>
   )
 }

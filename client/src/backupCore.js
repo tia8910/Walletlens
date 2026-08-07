@@ -1,6 +1,12 @@
 // Core backup logic shared by the Backup panel and the weekly email-backup
 // subscription. Pure functions — no React — so they can run on app open too.
-import QRCode from 'qrcode'
+//
+// 'qrcode' is dynamically imported (not a top-level import) below: this file
+// is reachable from Dashboard.jsx's static import of backupSubscription.js on
+// every app open, so a static import here would pull the QR encoder into the
+// main bundle for everyone — defeating the `qr-libs` manualChunks split and
+// Dashboard's own _loadQrBackup() lazy-load, which exist specifically to keep
+// it out of the common path.
 
 // Everything that makes up someone's profile, as a single alias -> key table.
 //
@@ -229,6 +235,7 @@ export async function applyBackupCode(raw) {
 export const QR_CHUNK = 1200
 
 export async function makeQrDataUrl(data) {
+  const { default: QRCode } = await import('qrcode')
   return QRCode.toDataURL(data, {
     errorCorrectionLevel: 'L', margin: 2, scale: 5,
     color: { dark: '#000000', light: '#ffffff' },
