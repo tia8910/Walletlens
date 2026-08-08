@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { track } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 function timeAgo(pubDate) {
   if (!pubDate) return ''
@@ -112,6 +113,7 @@ async function fetchFeed(feed) {
 }
 
 export default function NewsTicker() {
+  const { t } = useLanguage()
   const [items, setItems]     = useState([])
   const [paused, setPaused]   = useState(false)
   const [category, setCategory] = useState('crypto')
@@ -189,7 +191,7 @@ export default function NewsTicker() {
                 <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
                 <path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/>
               </svg>
-              {catLabel} News{items.length ? ` · ${items.length} articles` : ''}
+              {catLabel} {t('news')}{items.length ? ` · ${t('articleCount')(items.length)}` : ''}
             </span>
             <button className="news-modal-close" onClick={() => setModalOpen(false)} aria-label="Close">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
@@ -307,7 +309,7 @@ export default function NewsTicker() {
               <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
               <path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/>
             </svg>
-            Show all {items.length} articles
+            {t('showAllArticles')(items.length)}
           </>
         )}
       </button>

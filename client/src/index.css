@@ -1,3 +1,48 @@
+/* IBM Plex Sans Arabic — self-hosted, Arabic subset only.
+ *
+ * The stylesheet used to name 'Cairo' and 'Noto Sans Arabic' without either
+ * being loaded, so Arabic silently fell back to whatever the OS shipped —
+ * Noto Naskh on Android, which is why the Arabic UI read as a default system
+ * font next to a carefully chosen Latin one. IBM Plex Sans Arabic is a real
+ * companion to a geometric sans: it has matching weights, low contrast, and
+ * open counters that hold up at the small sizes this UI uses.
+ *
+ * Only the Arabic unicode-range is hosted. Latin glyphs keep coming from Plus
+ * Jakarta Sans, so a mixed line (an English ticker inside an Arabic sentence)
+ * stays in the app's own typeface instead of switching mid-sentence. */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-arabic-400-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-arabic-500-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-arabic-600-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-arabic-700-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
 /* ── Self-hosted fonts (replaces Google Fonts remote load) ── */
 @font-face {
   font-family: 'DM Mono';
@@ -8460,13 +8505,67 @@ input[type="date"] { color-scheme: dark; }
 }
 
 /* ── RTL / Arabic support ──────────────────────────────────────────────── */
+
+/* Punctuation belongs to the sentence it sits in, not to the page.
+ *
+ * Under dir="rtl" the bidi algorithm treats a trailing "?" or "." as neutral
+ * and hands it to the paragraph direction, so an English string renders as
+ * "?What do you want to track" with the mark on the wrong end. Any string the
+ * app has not translated yet hits this, and so does deliberately untranslated
+ * content: ticker symbols, exchange names, a coin called "Sui (SUI)".
+ *
+ * unicode-bidi: plaintext resolves direction per paragraph from its first
+ * strong character, so Arabic text still lays out RTL while a Latin string
+ * inside the same RTL page keeps its own punctuation. text-align: start then
+ * follows the resolved direction rather than pinning every line to the right.
+ *
+ * This is a safety net, not a substitute for translating the string. */
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4,
+[dir="rtl"] h5, [dir="rtl"] h6, [dir="rtl"] p, [dir="rtl"] li,
+[dir="rtl"] label, [dir="rtl"] button, [dir="rtl"] figcaption,
+[dir="rtl"] td, [dir="rtl"] th, [dir="rtl"] option {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+/* Inputs need it too: a placeholder in one language and a value in another
+ * otherwise fight over which end the caret sits at. */
+[dir="rtl"] input, [dir="rtl"] textarea { unicode-bidi: plaintext; }
+
+/* div/span/a get plaintext but deliberately NOT text-align: start — alignment
+ * is inherited, so setting it here would override every centred parent and
+ * left-align headings that are meant to sit in the middle. */
+[dir="rtl"] div, [dir="rtl"] span, [dir="rtl"] a { unicode-bidi: plaintext; }
+
+/* Amounts and prices are Latin-script runs that must never be reordered —
+ * "$1,500.00" reads the same in every language, and a neutral "$" adjacent to
+ * Arabic text would otherwise migrate to the far side of the number. */
+[dir="rtl"] .dvx-hero-value, [dir="rtl"] .wl-amount,
+[dir="rtl"] .mono, [dir="rtl"] code, [dir="rtl"] time {
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
 [dir="rtl"] .wl-drawer { left: auto; right: 0; transform: translateX(100%); }
 [dir="rtl"] .wl-drawer-open { transform: translateX(0); }
 [dir="rtl"] .wl-topbar-inner { flex-direction: row-reverse; }
 [dir="rtl"] .wl-topbar-brand { flex-direction: row-reverse; }
 [dir="rtl"] .wl-topbar-right { flex-direction: row-reverse; }
+/* The wordmark is Latin, so under RTL its overflow lands on the leading edge
+   and clips the "W" off the front — "…alletLens". Forcing the brand column
+   back to LTR keeps the ellipsis on the tail where it belongs, and the brand
+   line is the one part of the header that should not mirror anyway. */
+[dir="rtl"] .wl-topbar-brand-text,
+[dir="rtl"] .wl-drawer-brand-text { direction: ltr; text-align: right; }
+[dir="rtl"] .wl-topbar-brand-actions,
+[dir="rtl"] .wl-drawer-brand-actions { direction: rtl; }
 [dir="rtl"] .wl-bottom-nav { direction: rtl; }
-[dir="rtl"] .page-header { flex-direction: row-reverse; }
+/* No row-reverse here: the container is already dir="rtl", so the flex main
+ * axis starts on the right. Reversing it again is a double negative that put
+ * the page title back on the left, where a long word then overflowed off the
+ * edge of the screen. Letting it lay out naturally is the fix; min-width
+ * keeps a long title shrinking instead of pushing the action button away. */
+[dir="rtl"] .page-header > h2 { min-width: 0; overflow-wrap: anywhere; }
 [dir="rtl"] .dvx-hero { text-align: right; }
 [dir="rtl"] .dvx-hero-label { text-align: right; }
 [dir="rtl"] .dvx-hero-value { text-align: right; }
@@ -8495,9 +8594,26 @@ input[type="date"] { color-scheme: dark; }
 [dir="rtl"] body,
 [dir="rtl"] button,
 [dir="rtl"] input,
-[dir="rtl"] select {
-  font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', system-ui, sans-serif;
+[dir="rtl"] select,
+[dir="rtl"] textarea,
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4 {
+  /* Plus Jakarta Sans first: it has no Arabic glyphs, so Latin runs inside an
+     Arabic page keep the app's own typeface and only Arabic falls through to
+     Plex. Cairo and Noto stay as fallbacks for devices that have them. */
+  font-family: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+  /* Arabic sits lower and needs more leading than Latin at the same size, and
+     letter-spacing must be zero — it breaks the cursive joins. */
+  letter-spacing: 0;
 }
+/* Arabic needs more leading than Latin, but this must not be set on the root:
+ * it inherits into tightly-packed components (the stacked guided-tour CTA,
+ * chips, badges) whose height is designed around the Latin metrics, and the
+ * two lines then collide. Body copy only. */
+[dir="rtl"] p, [dir="rtl"] li, [dir="rtl"] .no-desc,
+[dir="rtl"] .wm-desc, [dir="rtl"] .settings-hint { line-height: 1.85; }
+/* The wordmark is Latin and keeps its own face and tracking. */
+[dir="rtl"] .wl-topbar-brand-name,
+[dir="rtl"] .wl-drawer-name { font-family: var(--brand-font); letter-spacing: -0.02em; }
 
 /* Language toggle button */
 .wl-lang-btn {

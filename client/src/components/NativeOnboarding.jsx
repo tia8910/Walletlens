@@ -13,31 +13,31 @@ const SLIDES = [
     id: 'welcome',
     gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
     accent: '#00c853', glow: 'rgba(0,200,83,0.28)',
-    eyebrow: 'WELCOME TO', title: 'WalletLens',
+    eyebrowKey: 'obWelcomeEyebrow', title: 'WalletLens',
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    desc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
-    features: ['Private', 'Live P&L', 'Insights', 'Free'],
+    descKey: 'obWelcomeDesc',
+    featureKeys: ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree'],
   },
   {
     id: 'theme',
     gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
-    eyebrow: 'PERSONALISE', title: 'Make it yours',
-    desc: 'Language, light or dark, and a colour. Change anytime in Settings.', isTheme: true,
+    eyebrowKey: 'obThemeEyebrow', titleKey: 'obThemeTitle',
+    descKey: 'obThemeDesc', isTheme: true,
   },
   {
     id: 'security',
     gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.3)',
-    eyebrow: 'SECURITY', title: 'Lock with fingerprint',
-    desc: 'Keep your portfolio for your eyes only.', isSecurity: true,
+    eyebrowKey: 'obSecurityEyebrow', titleKey: 'obSecurityTitle',
+    descKey: 'obSecurityDesc', isSecurity: true,
   },
   {
     id: 'go',
     gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
     accent: '#22c55e', glow: 'rgba(34,197,94,0.35)',
-    eyebrow: 'ALL SET', title: 'Ready to grow',
-    desc: 'Your dashboard awaits.', final: true,
+    eyebrowKey: 'obGoEyebrow', titleKey: 'obGoTitle',
+    descKey: 'obGoDesc', final: true,
   },
 ]
 
@@ -53,7 +53,7 @@ export default function NativeOnboarding({ onDone }) {
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, setTheme, mode, setMode } = useTheme()
-  const { lang, setLang } = useLanguage()
+  const { lang, setLang, t } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -123,8 +123,8 @@ export default function NativeOnboarding({ onDone }) {
     try {
       const ok = await enableBio()
       if (ok) { try { track('biometric_enabled_onboarding') } catch {}; goNext() }
-      else setBioError("Couldn't set up fingerprint. Make sure it's enrolled in device settings.")
-    } catch (e) { setBioError('Biometric setup failed. You can enable it later in Settings.') }
+      else setBioError(t('obBioSetupFailed'))
+    } catch (e) { setBioError(t('obBioSetupError')) }
     finally { setBioBusy(false) }
   }
 
@@ -150,19 +150,19 @@ export default function NativeOnboarding({ onDone }) {
       <div className="no-slide" key={step}
         style={swiping ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' } : {}}>
 
-        <div className="no-eyebrow" style={{ color: s.accent }}>{s.eyebrow}</div>
+        <div className="no-eyebrow" style={{ color: s.accent }}>{s.eyebrowKey ? t(s.eyebrowKey) : s.eyebrow}</div>
 
         {s.titleGrad ? (
-          <h1 className="no-title" style={{ backgroundImage: s.titleGrad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{s.title}</h1>
+          <h1 className="no-title" style={{ backgroundImage: s.titleGrad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{s.titleKey ? t(s.titleKey) : s.title}</h1>
         ) : (
-          <h1 className="no-title">{s.title}</h1>
+          <h1 className="no-title">{s.titleKey ? t(s.titleKey) : s.title}</h1>
         )}
 
-        <p className="no-desc">{s.desc}</p>
+        <p className="no-desc">{t(s.descKey)}</p>
 
-        {s.features && (
+        {s.featureKeys && (
           <div className="no-features">
-            {s.features.map((f, i) => <div key={i} className="no-feature">{f}</div>)}
+            {s.featureKeys.map(k => <div key={k} className="no-feature">{t(k)}</div>)}
           </div>
         )}
 
@@ -186,8 +186,8 @@ export default function NativeOnboarding({ onDone }) {
         {s.isTheme && (
           <div className="no-mode-row">
             {[
-              { id: 'dark',  label: 'Dark',  icon: 'moon' },
-              { id: 'light', label: 'Light', icon: 'sun' },
+              { id: 'dark',  labelKey: 'modeDark',  icon: 'moon' },
+              { id: 'light', labelKey: 'modeLight', icon: 'sun' },
             ].map(m => (
               <button
                 key={m.id}
@@ -195,7 +195,7 @@ export default function NativeOnboarding({ onDone }) {
                 onClick={() => { try { setMode(m.id) } catch {}; try { track('mode_changed', { mode: m.id, source: 'onboarding' }) } catch {} }}
               >
                 <Icon name={m.icon} size={16} />
-                <span>{m.label}</span>
+                <span>{t(m.labelKey)}</span>
               </button>
             ))}
           </div>
@@ -228,12 +228,12 @@ export default function NativeOnboarding({ onDone }) {
         {s.isSecurity && (
           <div className="no-security">
             {!bioAvailable ? (
-              <div className="no-bio-unavailable">Fingerprint not available on this device</div>
+              <div className="no-bio-unavailable">{t('obBioUnavailable')}</div>
             ) : bioEnabled ? (
-              <div className="no-bio-enabled">Fingerprint enabled</div>
+              <div className="no-bio-enabled">{t('obBioEnabled')}</div>
             ) : (
               <button className="no-bio-btn" onClick={enableBiometric} disabled={bioBusy}>
-                {bioBusy ? 'Setting up…' : 'Enable fingerprint lock'}
+                {bioBusy ? t('obSettingUp') : t('obBioEnable')}
               </button>
             )}
             {bioError && <div className="no-bio-error">{bioError}</div>}
@@ -267,7 +267,7 @@ export default function NativeOnboarding({ onDone }) {
         <div className="no-trend-segs">
           {SLIDES.map((_, i) => (
             <button key={i} className="no-trend-seg" onClick={() => goTo(i)}
-              aria-label={`Slide ${i + 1}`} />
+              aria-label={t('obSlide')(i + 1)} />
           ))}
         </div>
       </div>
@@ -280,7 +280,7 @@ export default function NativeOnboarding({ onDone }) {
             <div className="no-launch-ring" style={{ borderColor: s.accent }} />
             <div className="no-launch-core" style={{ background: `linear-gradient(135deg, ${s.accent}, #4ade80)` }} />
           </button>
-          <div className="no-launch-hint" style={{ color: s.accent }}>Tap to start</div>
+          <div className="no-launch-hint" style={{ color: s.accent }}>{t('obTapToStart')}</div>
         </div>
       )}
     </div>

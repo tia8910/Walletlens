@@ -68,7 +68,7 @@ const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 const Watchlist      = lazy(() => import('../components/Watchlist'))
 
 function TabFallback() {
-  return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>Loading…</div>
+  return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>{t('dsLoading')}</div>
 }
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? 'var(--g-ink)' : '#f87171'}}>
             {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
           </div>
-          <div className="ai-ind-sub">weighted avg</div>
+          <div className="ai-ind-sub">{t('dsWeightedAvg')}</div>
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">{t('sentiment')}</div>
@@ -507,7 +507,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           <div className="ai-ind-sub">{ai.buyCount}B · {ai.sellCount}S</div>
         </div>
         <div className="ai-ind-card glass-card">
-          <div className="ai-ind-label">Assets</div>
+          <div className="ai-ind-label">{t('assets')}</div>
           <div className="ai-ind-val" style={{color:'var(--text)'}}>{enriched.length}</div>
           <div className="ai-ind-sub">{ai.mcBreakdown.length} cap tier{ai.mcBreakdown.length !== 1 ? 's' : ''}</div>
         </div>
@@ -547,7 +547,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
             </div>
           ))}
           {ai.insights.length === 0 && (
-            <p className="muted" style={{fontSize:'0.83rem'}}>Looking good — no critical signals detected.</p>
+            <p className="muted" style={{fontSize:'0.83rem'}}>{t('dsLookingGood')}</p>
           )}
         </div>
       </div>
@@ -608,7 +608,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
       {/* ── Entry Quality ── */}
       <div className="glass-card ai-entry-card">
         <h4 className="ai-section-title">{t('entryQuality')}<Tip text="How good your entry was for each asset — your average buy price versus the current price. Green means you're up on your entry; red means underwater." /></h4>
-        <p className="ai-entry-sub muted">Avg buy price vs current price per asset</p>
+        <p className="ai-entry-sub muted">{t('dsAvgVsCurrent')}</p>
         <div className="ai-entry-list">
           {ai.entryQuality.map(h => (
             <div key={h.coin_id} className="ai-entry-row">
@@ -1006,8 +1006,8 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
     <div className="dvx-form-page">
       <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem' }}>
         <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="search" size={38} style={{ color:'var(--text-sub)' }} /></div>
-        <h3 style={{ marginBottom:'0.5rem' }}>No Holdings to Evaluate</h3>
-        <p className="muted">Add some crypto holdings first and we'll tell you what your wallet is missing.</p>
+        <h3 style={{ marginBottom:'0.5rem' }}>{t('dsNoHoldingsEval')}</h3>
+        <p className="muted">{t('dsAddCryptoFirst')}</p>
       </div>
     </div>
   )
@@ -1019,10 +1019,8 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
       {/* Header score */}
       <div className="glass-card eval-header-card">
         <div className="eval-header-left">
-          <h2 style={{ margin:0, fontSize:'1.25rem' }}>Wallet Evaluation</h2>
-          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>
-            What your portfolio is missing vs best practices
-          </p>
+          <h2 style={{ margin:0, fontSize:'1.25rem' }}>{t('dsWalletEvaluation')}</h2>
+          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>{t('dsWhatMissing')}</p>
           {missing.length > 0 && (
             <div className="eval-missing-count">
               <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
@@ -1030,8 +1028,7 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
           )}
           {missing.length === 0 && (
             <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
-              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>All checks passed — excellent wallet health!
-            </div>
+              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>{t('dsAllChecksPassed')}</div>
           )}
         </div>
         <EvalScoreRing score={overall} />
@@ -1261,7 +1258,7 @@ function WalletPanel({ wallets, onRefresh, onCreated }) {
             <button className="dvx-btn-ghost dvx-btn-danger" onClick={() => del(w.id)}>{Ico.trash}</button>
           </li>
         ))}
-        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0', listStyle:'none' }}>No wallets yet. Add one above.</li>}
+        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0', listStyle:'none' }}>{t('dsNoWallets')}</li>}
       </ul>
     </div>
   )
@@ -1322,7 +1319,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
       </div>
       <div className="dvx-form-grid">
         <select className="dvx-input" value={walletId} onChange={e => setWalletId(e.target.value)}>
-          {wallets.length === 0 && <option value="">Create a wallet first</option>}
+          {wallets.length === 0 && <option value="">{t('dsCreateWalletFirst')}</option>}
           {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
         </select>
         <input className="dvx-input" placeholder="Coin name (e.g. Bitcoin)" value={coin} onChange={e => setCoin(e.target.value)} />
@@ -1395,8 +1392,7 @@ function EmailBackupPanel() {
   return (
     <div className="dvx-email-backup" style={{ marginTop:'1.1rem', paddingTop:'1.1rem', borderTop:'1px solid var(--border, rgba(128,128,128,0.18))' }}>
       <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', color:'var(--text)', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-        <Icon name="mail" size={15} /> Weekly email backup
-      </div>
+        <Icon name="mail" size={15} />{t('bcWeeklyEmail')}</div>
 
       {!sub ? (
         <>
@@ -1419,7 +1415,7 @@ function EmailBackupPanel() {
               fontWeight:700, opacity: status === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
               display:'inline-flex', alignItems:'center', gap:'0.35rem',
             })}>
-              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} />{t('bcSubscribe')}</>}
             </button>
           </div>
         </>
@@ -1445,20 +1441,19 @@ function EmailBackupPanel() {
               color:'#3b82f6', fontWeight:700, opacity: status === 'sending' ? 0.7 : 1,
               display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
             })}>
-              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} />{t('bcSendNow')}</>}
             </button>
             <button onClick={unsubscribe} style={btn({
               background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
               color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
-            })}>Unsubscribe</button>
+            })}>{t('bcUnsubscribe')}</button>
           </div>
         </>
       )}
 
       {status === 'sent' && (
         <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-          <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
-        </p>
+          <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('dsSentCheckInbox')}</p>
       )}
       {err && <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{err}</p>}
     </div>
@@ -1555,9 +1550,7 @@ function DataPanel({ onRefresh, onImported }) {
   return (
     <div className="dvx-panel">
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>
-          Security
-        </div>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>{t('setSecurity')}</div>
         <BiometricToggle />
       </div>
 
@@ -1612,7 +1605,7 @@ function DataPanel({ onRefresh, onImported }) {
         </div>
       )}
 
-      <div className="dvx-divider">or restore from code</div>
+      <div className="dvx-divider">{t('dsOrRestoreFromCode')}</div>
 
       <textarea className="dvx-input dvx-textarea"
         placeholder="Paste your WLZ backup code here…"
@@ -1621,12 +1614,12 @@ function DataPanel({ onRefresh, onImported }) {
 
       {preview && (
         <div className="dvx-preview-box">
-          <div className="dvx-preview-title">Preview</div>
+          <div className="dvx-preview-title">{t('dsPreview')}</div>
           <div className="dvx-preview-row">
-            <span>Wallets</span><strong>{preview.summary.wallets}</strong>
+            <span>{t('wallets')}</span><strong>{preview.summary.wallets}</strong>
           </div>
           <div className="dvx-preview-row">
-            <span>Transactions</span><strong>{preview.summary.transactions}</strong>
+            <span>{t('transactions')}</span><strong>{preview.summary.transactions}</strong>
           </div>
           {Object.entries(preview.summary.byCategory || {}).map(([cat, n]) => (
             <div key={cat} className="dvx-preview-row">
@@ -1740,7 +1733,7 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
 
   return (
     <div className="glass-card heatmap-card">
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Portfolio Heatmap</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
       <div className="heatmap-grid">
         {cells.map((c, i) => {
           const minSize = 60
@@ -1766,7 +1759,7 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
       </div>
       <div className="heatmap-legend">
         <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
-        <span style={{ color:'var(--text-sub)' }}>Darker = bigger move</span>
+        <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
         <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ Gaining</span>
       </div>
     </div>
@@ -1853,9 +1846,7 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
   return (
     <div className="glass-card" style={{ marginTop:'0.75rem' }}>
       <h3 style={{ margin:'0 0 1rem', display:'inline-flex', alignItems:'center', gap:'0.4em', fontSize:'0.95rem', fontWeight:700 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Risk Profile
-      </h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>{t('dsRiskProfile')}</h3>
 
       {/* Trader type hero */}
       <div style={{
@@ -1886,43 +1877,42 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
         <RiskGauge pct={highPct} color="#60a5fa" label="High-risk products" />
       </div>
 
-      <p style={{ fontSize:'0.7rem', color:'var(--text-sub)', textAlign:'center', margin:'0.75rem 0 0', lineHeight:1.5 }}>
-        Based on asset type and market capitalization
-      </p>
+      <p style={{ fontSize:'0.7rem', color:'var(--text-sub)', textAlign:'center', margin:'0.75rem 0 0', lineHeight:1.5 }}>{t('dsBasedOnType')}</p>
     </div>
   )
 })
 
 // ── Empty portfolio state ─────────────────────────────────────────────────
 const FEATURE_SLIDES = [
-  { tag:'ALL ASSETS',    icon:'globe', color:'var(--g-ink)', title:'One Dashboard — All Assets',       desc:'Crypto, stocks, ETFs, precious metals & cash. Your complete net worth, updated live, in one view.' },
-  { tag:'CRYPTO',        icon:'₿',  color:'#f7931a', title:'10,000+ Coins Tracked',             desc:'Real-time prices, P&L, and allocation for any cryptocurrency — from Bitcoin to micro-cap altcoins.' },
-  { tag:'STOCKS & ETFs', icon:'trend-up', color:'#60a5fa', title:'Stocks & ETFs Side by Side',        desc:'Track AAPL, NVDA, TSLA, and any ticker alongside your crypto in one net worth view.' },
-  { tag:'METALS',        icon:'diamond', color:'#ffd700', title:'Precious Metals by Weight',         desc:'Gold, silver & platinum tracked by oz or gram with live spot prices — a true asset class.' },
-  { tag:'CASH',          icon:'banknote', color:'var(--g-ink)', title:'Cash & Stablecoins',                desc:'USDT, USDC, and fiat count toward net worth but are excluded from P&L — honest numbers.' },
-  { tag:'ADVISOR',    icon:'sparkles',   color:'#818cf8', title:'Portfolio Advisor',              desc:'Portfolio health score A–F, diversification grade, momentum analysis & personalised action tips.' },
-  { tag:'RISK SCANNER',  icon:'warning', color:'#f59e0b', title:'Risk Scanner',                     desc:'Concentration risk, volatility exposure, liquidity flags — spot every risk before the market moves.' },
-  { tag:'RISK BUDGET',   icon:'sliders', color:'#a78bfa', title:'Risk Budget Planner',               desc:'Allocate risk like a pro. See how much of your total portfolio risk each holding is consuming.' },
-  { tag:'SET TARGETS',   icon:'target', color:'#f87171', title:'Price Targets per Holding',         desc:'Set exact exit prices for every asset. Track how far away each target is in real time.' },
-  { tag:'SELL PLAN',     icon:'clipboard', color:'var(--g-ink)', title:'Sell Plan Generator',            desc:'Tell us your goal — it builds a staged sell-down plan across your holdings to hit your number.' },
-  { tag:'BUY/SELL TIMING',icon:'gauge',color:'var(--g-ink)', title:'Buy & Sell Timing Signal',         desc:'Before you trade, see momentum, price vs 30-day avg, and distance from ATH — get a clear verdict.' },
-  { tag:'WHALE ALERTS',  icon:'flow', color:'#22d3ee', title:'Whale & Smart-Money Alerts',        desc:'Live alerts when large wallets move the coins you hold — know what smart money is doing first.' },
-  { tag:'PRICE ALERTS',  icon:'bell', color:'#fb923c', title:'Price Alerts',                     desc:'Set a price level, get notified the instant it\'s crossed — no exchange account needed.' },
-  { tag:'GOALS',         icon:'award', color:'#fbbf24', title:'Goal-Based Portfolio Tracker',      desc:'Set a target (e.g. $50K by Dec 2026) — track progress with a live ring, DCA calc & probability badge.' },
-  { tag:'MARKET MOOD',   icon:'thermometer', color:'#f87171', title:'Fear & Greed Gauge',               desc:'Real-time market sentiment scored from live crypto headlines — know the crowd\'s emotion before you trade.' },
-  { tag:'SECTOR MAP',    icon:'map', color:'#818cf8', title:'Sector Rotation Heatmap',          desc:'L1, L2, DeFi, AI, Gaming, Meme — each sector colour-coded by 7-day performance so you follow the money.' },
-  { tag:'CORRELATION',   icon:'grid', color:'#60a5fa', title:'30-Day Correlation Matrix',         desc:'See which holdings move together. If BTC and ETH are 0.97 correlated you are less diversified than you think.' },
-  { tag:'ACADEMY',       icon:'graduation', color:'var(--g-ink)', title:'WalletLens Academy',                desc:'Free lessons on investing, risk, and reading the market — go from beginner to confident at your own pace.' },
-  { tag:'INVESTMENT HACKS',icon:'lightbulb',color:'#fbbf24', title:'Investment Hacks & Tips',          desc:'Bite-sized, actionable tips — DCA, rebalancing, tax-lot thinking & risk control — to invest smarter.' },
-  { tag:'VOICE',         icon:'mic', color:'var(--g-ink)', title:'Voice Trade Import',               desc:'Say "I bought 0.5 BTC at 60K" and WalletLens logs it. Crypto, stocks, gold & more. Multiple trades at once.' },
-  { tag:'SCREENSHOT',    icon:'camera', color:'#f472b6', title:'Screenshot Import',                desc:'Snap your exchange or wallet screen — it reads every holding and logs your trades. No typing.' },
-  { tag:'PRIVACY',       icon:'lock', color:'#3b82f6', title:'100% Private — No Server',         desc:'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.' },
-  { tag:'FREE',          icon:'award', color:'#fb923c', title:'Free Forever — No Catch',          desc:'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.' },
+  { id:'allAssets', icon:'globe', color:'var(--g-ink)', tagKey:'fsAllAssetsTag', titleKey:'fsAllAssetsTitle', descKey:'fsAllAssetsDesc' },
+  { id:'crypto', icon:'₿', color:'#f7931a', tagKey:'fsCryptoTag', titleKey:'fsCryptoTitle', descKey:'fsCryptoDesc' },
+  { id:'stocks', icon:'trend-up', color:'#60a5fa', tagKey:'fsStocksTag', titleKey:'fsStocksTitle', descKey:'fsStocksDesc' },
+  { id:'metals', icon:'diamond', color:'#ffd700', tagKey:'fsMetalsTag', titleKey:'fsMetalsTitle', descKey:'fsMetalsDesc' },
+  { id:'cash', icon:'banknote', color:'var(--g-ink)', tagKey:'fsCashTag', titleKey:'fsCashTitle', descKey:'fsCashDesc' },
+  { id:'advisor', icon:'sparkles', color:'#818cf8', tagKey:'fsAdvisorTag', titleKey:'fsAdvisorTitle', descKey:'fsAdvisorDesc' },
+  { id:'risk', icon:'warning', color:'#f59e0b', tagKey:'fsRiskTag', titleKey:'fsRiskTitle', descKey:'fsRiskDesc' },
+  { id:'riskBudget', icon:'sliders', color:'#a78bfa', tagKey:'fsRiskBudgetTag', titleKey:'fsRiskBudgetTitle', descKey:'fsRiskBudgetDesc' },
+  { id:'targets', icon:'target', color:'#f87171', tagKey:'fsTargetsTag', titleKey:'fsTargetsTitle', descKey:'fsTargetsDesc' },
+  { id:'sellPlan', icon:'clipboard', color:'var(--g-ink)', tagKey:'fsSellPlanTag', titleKey:'fsSellPlanTitle', descKey:'fsSellPlanDesc' },
+  { id:'timing', icon:'gauge', color:'var(--g-ink)', tagKey:'fsTimingTag', titleKey:'fsTimingTitle', descKey:'fsTimingDesc' },
+  { id:'whales', icon:'flow', color:'#22d3ee', tagKey:'fsWhalesTag', titleKey:'fsWhalesTitle', descKey:'fsWhalesDesc' },
+  { id:'priceAlerts', icon:'bell', color:'#fb923c', tagKey:'fsPriceAlertsTag', titleKey:'fsPriceAlertsTitle', descKey:'fsPriceAlertsDesc' },
+  { id:'goals', icon:'award', color:'#fbbf24', tagKey:'fsGoalsTag', titleKey:'fsGoalsTitle', descKey:'fsGoalsDesc' },
+  { id:'mood', icon:'thermometer', color:'#f87171', tagKey:'fsMoodTag', titleKey:'fsMoodTitle', descKey:'fsMoodDesc' },
+  { id:'sector', icon:'map', color:'#818cf8', tagKey:'fsSectorTag', titleKey:'fsSectorTitle', descKey:'fsSectorDesc' },
+  { id:'correlation', icon:'grid', color:'#60a5fa', tagKey:'fsCorrelationTag', titleKey:'fsCorrelationTitle', descKey:'fsCorrelationDesc' },
+  { id:'academy', icon:'graduation', color:'var(--g-ink)', tagKey:'fsAcademyTag', titleKey:'fsAcademyTitle', descKey:'fsAcademyDesc' },
+  { id:'hacks', icon:'lightbulb', color:'#fbbf24', tagKey:'fsHacksTag', titleKey:'fsHacksTitle', descKey:'fsHacksDesc' },
+  { id:'voice', icon:'mic', color:'var(--g-ink)', tagKey:'fsVoiceTag', titleKey:'fsVoiceTitle', descKey:'fsVoiceDesc' },
+  { id:'screenshot', icon:'camera', color:'#f472b6', tagKey:'fsScreenshotTag', titleKey:'fsScreenshotTitle', descKey:'fsScreenshotDesc' },
+  { id:'privacy', icon:'lock', color:'#3b82f6', tagKey:'fsPrivacyTag', titleKey:'fsPrivacyTitle', descKey:'fsPrivacyDesc' },
+  { id:'free', icon:'award', color:'#fb923c', tagKey:'fsFreeTag', titleKey:'fsFreeTitle', descKey:'fsFreeDesc' },
 ]
 
 const FS_SLIDE_MS = 4500
 
 const FeatureSlideshow = memo(function FeatureSlideshow() {
+  const { t } = useLanguage()
   const [idx, setIdx]         = useState(0)
   const [dir, setDir]         = useState(1)
   const [animKey, setAnimKey] = useState(0)
@@ -2004,10 +1994,10 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
             border:`1px solid ${slide.color}40`, overflow:'hidden',
             background:`linear-gradient(100deg, ${slide.color}14 30%, ${slide.color}40 50%, ${slide.color}14 70%)`,
             backgroundSize:'250% 100%', animation:'fs-tag-shine 2.6s linear infinite',
-          }}>{slide.tag}</span>
+          }}>{t(slide.tagKey)}</span>
 
-          <div style={{ fontWeight:800, fontSize:'0.98rem', color:'var(--text)', marginBottom:'0.4rem', lineHeight:1.3, animation:'fs-rise 0.5s 0.05s ease both' }}>{slide.title}</div>
-          <div style={{ fontSize:'0.77rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:290, animation:'fs-rise 0.5s 0.12s ease both' }}>{slide.desc}</div>
+          <div style={{ fontWeight:800, fontSize:'0.98rem', color:'var(--text)', marginBottom:'0.4rem', lineHeight:1.3, animation:'fs-rise 0.5s 0.05s ease both' }}>{t(slide.titleKey)}</div>
+          <div style={{ fontSize:'0.77rem', color:'var(--text-muted)', lineHeight:1.6, maxWidth:290, animation:'fs-rise 0.5s 0.12s ease both' }}>{t(slide.descKey)}</div>
 
           {/* Auto-advance progress bar */}
           <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:`${slide.color}18` }}>
@@ -2019,7 +2009,7 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
           </div>
         </div>
 
-        <button onClick={next} aria-label="Next" style={{
+        <button onClick={next} aria-label={t('wsNext')} style={{
           position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', zIndex:3,
           width:30, height:30, borderRadius:'50%', border:`1px solid ${slide.color}40`,
           cursor:'pointer', background:'var(--surface-1)', color:slide.color,
@@ -2064,7 +2054,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   ]
   return (
     <div className="fn-strip">
-      <span className="fn-strip-label"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Try</span>
+      <span className="fn-strip-label"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('dsTry')}</span>
       {items.map((item, i) => (
         <button key={i} className="fn-strip-btn" onClick={() => { track('feature_nudge_click', { feature: item.label }); item.action() }}>
           <Icon name={item.emoji} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{item.label}
@@ -2114,7 +2104,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
           {allDone ? "You're all set!" : 'Welcome to WalletLens'}
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color: 'var(--g-ink)', fontWeight: 700, marginBottom:'0.9rem' }}>
-          <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>ANALYZE</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
+          <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>{t('dsAnalyze')}</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
         </div>
         {/* Progress bar + counter */}
         <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', maxWidth:300, margin:'0 auto' }}>
@@ -2173,7 +2163,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
               }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
                   <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', textDecoration: s.done ? 'line-through' : 'none', textDecorationColor:'rgba(var(--g-rgb),0.5)' }}>{s.label}</span>
-                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Done</span>}
+                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('rbDone')}</span>}
                 </div>
                 <div style={{ fontSize:'0.74rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.45 }}>{s.desc}</div>
                 {isCurrent && s.cta && (
@@ -2197,8 +2187,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
       {/* Footer */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'1.1rem', paddingTop:'0.85rem', borderTop:'1px solid rgba(var(--g-rgb),0.1)' }}>
         <span style={{ fontSize:'0.68rem', color:'var(--text-sub)', display:'inline-flex', alignItems:'center', gap:'0.3rem' }}>
-          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Your data stays on your device
-        </span>
+          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('dsDataStaysLocal')}</span>
         <button onClick={onDismiss} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.74rem', fontWeight:700, color:'var(--text-muted)' }}>
           {allDone ? 'Dismiss' : 'Skip tour'}
         </button>
@@ -2443,6 +2432,7 @@ function GuardianBadge() {
 }
 
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
+  const { t } = useLanguage()
   if (!loaded) return null
 
   return (
@@ -2453,10 +2443,10 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 
       {/* Headline */}
       <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
-        Start your first trade
+        {t('emptyHeadline')}
       </div>
       <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'1.1rem', lineHeight:1.65 }}>
-        Track crypto, stocks &amp; metals.<br/>Unlock smart signals, risk scores &amp; live charts.
+        {t('emptySubA')}<br/>{t('emptySubB')}
       </div>
 
       {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
@@ -2470,10 +2460,10 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
           </svg>
         </span>
         <span className="wl-guide-cta-text">
-          <strong>Show me how</strong>
-          <span>Step-by-step guided tour</span>
+          <strong>{t('guideCta')}</strong>
+          <span>{t('guideSub')}</span>
         </span>
-        <span className="wl-guide-cta-badge" aria-hidden="true">GUIDED</span>
+        <span className="wl-guide-cta-badge" aria-hidden="true">{t('guideBadge')}</span>
         <span className="wl-guide-cta-arrow" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </span>
@@ -2495,19 +2485,19 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         marginBottom: '1.25rem',
       }}>
         <button data-tour="add-asset" onClick={onAddTrade} style={boxStyle}>
-          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> Start adding assets
+          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> {t('startAddingAssets')}
         </button>
         <button onClick={() => onImportAction('screenshot')} style={boxStyle}>
-          <Icon name="camera" size={15} /> Import from screenshot
+          <Icon name="camera" size={15} /> {t('importScreenshot')}
         </button>
         <button onClick={() => onImportAction('excel')} style={boxStyle}>
-          <Icon name="bar-chart" size={15} /> Import Excel
+          <Icon name="bar-chart" size={15} /> {t('importExcel')}
         </button>
         <button onClick={() => onImportAction('voice')} style={boxStyle}>
-          <Icon name="mic" size={15} /> Voice import
+          <Icon name="mic" size={15} /> {t('importVoice')}
         </button>
         <button onClick={() => onImportAction('backup')} style={boxStyle}>
-          <Icon name="folder" size={15} /> Import backup
+          <Icon name="folder" size={15} /> {t('importBackup')}
         </button>
       </div>
         )
@@ -2518,7 +2508,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 
       {/* Quick-add chips */}
       <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
-        Or quickly add
+        {t('orQuicklyAdd')}
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
         {orderQuickAdd(QUICK_ADD_ASSETS).map(a => {
@@ -2552,20 +2542,19 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         })}
       </div>
 
-      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>
-        Your data stays on your device — no account needed
-      </div>
+      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{t('dsDataStaysLocalNoAccount')}</div>
     </div>
   )
 }
 
 // ── Tools Tab (AI + Risk Scanner + Wallet Eval) ──────────────────────────
 function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
+  const { t } = useLanguage()
   const [tool, setTool] = useState(initialTool || 'ai')
   const subTabs = [
-    { id: 'ai',     label: 'Portfolio Analysis' },
-    { id: 'ta',     label: 'Technicals' },
-    { id: 'risk',   label: 'Risk Scanner' },
+    { id: 'ai',     label: t('portfolioAnalysisNav') },
+    { id: 'ta',     label: t('dashTechnicals') },
+    { id: 'risk',   label: t('riskScanner') },
   ]
   return (
     <div>
@@ -2780,7 +2769,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
       {targetable.length === 0 ? (
         <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
-          <p style={{ color:'var(--text-muted)', marginBottom:'1rem' }}>Add holdings first to set price targets.</p>
+          <p style={{ color:'var(--text-muted)', marginBottom:'1rem' }}>{t('targetsNeedHoldings')}</p>
           <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>Add Trade</button>
         </div>
       ) : (
@@ -3010,7 +2999,7 @@ function AlertsSection({ enriched, prices, isDemo }) {
     <div>
       <div className="sa-alert-tabs">
         <button className={`sa-alert-tab ${alertTab === 'smart' ? 'active' : ''}`} onClick={() => setAlertTab('smart')}>
-          <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Smart Alerts
+          <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{t('smartAlerts')}
         </button>
         <button className={`sa-alert-tab ${alertTab === 'price' ? 'active' : ''}`} onClick={() => setAlertTab('price')}>
           <Icon name="bell" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Price Alerts
@@ -4579,7 +4568,7 @@ export default function Dashboard() {
           {/* Portfolio breakdown by asset category */}
           {catBreakdown.length > 0 && (
             <div className="glass-card dvx-cat-breakdown">
-              <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>Portfolio Breakdown</h3>
+              <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>{t('portfolioBreakdown')}</h3>
               <div className="dvx-cat-list">
                 {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct, invested, assets }) => (
                   <div key={cat} className="dvx-cat-row" style={{ '--bar-col': CATEGORY_COLOR[cat] || 'var(--g)' }}>
@@ -4958,7 +4947,7 @@ export default function Dashboard() {
                                         {isCryptoOnly && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/technicals')}>
-                                            <Icon name="ruler" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Technicals
+                                            <Icon name="ruler" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.4em' }} />{t('dashTechnicals')}
                                           </button>
                                         )}
                                         {isCryptoOnly && (
@@ -4987,7 +4976,7 @@ export default function Dashboard() {
                     </div>
                     {!isHoldingsFiltered && filteredHoldings.length > 6 && (
                       <button className="dvx-show-more" onClick={() => setShowAllHoldings(v => !v)}>
-                        {showAllHoldings ? '▲ Show less' : `▼ Show all ${filteredHoldings.length} assets`}
+                        {showAllHoldings ? `▲ ${t('showLess')}` : `▼ ${t('showAllAssets')(filteredHoldings.length)}`}
                       </button>
                     )}
                   </>
@@ -5216,16 +5205,16 @@ export default function Dashboard() {
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
-              <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> Start adding assets
+              <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> {t('startAddingAssets')}
             </button>
             <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
-              <Icon name="folder" size={15} /> Import backup
+              <Icon name="folder" size={15} /> {t('importBackup')}
             </button>
             <button onClick={() => { setShowVoiceImport(v => !v); setShowExcelImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
-              <Icon name="mic" size={15} /> Voice import
+              <Icon name="mic" size={15} /> {t('importVoice')}
             </button>
             <button onClick={() => { setShowExcelImport(v => !v); setShowVoiceImport(false); setShowBackupCode(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
-              <Icon name="bar-chart" size={15} /> Import Excel
+              <Icon name="bar-chart" size={15} /> {t('importExcel')}
             </button>
           </div>
           {showVoiceImport && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} onClose={() => setShowVoiceImport(false)} /></Suspense>}
@@ -5359,7 +5348,7 @@ export default function Dashboard() {
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
                   {[
                     { icon:'notes', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
-                    { icon:'mic', label:'Voice import', desc:'Just say it', color:'16,185,129', fn:() => setImportMode('voice') },
+                    { icon:'mic', label:t('importVoice'), desc:t('voiceJustSay'), color:'16,185,129', fn:() => setImportMode('voice') },
                     { icon:'camera', label:'Screenshot', desc:'Reads it for you', color:'244,114,182', fn:() => setImportMode('screenshot') },
                     { icon:'bar-chart', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
                     { icon:'folder', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },

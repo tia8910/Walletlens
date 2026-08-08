@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 const TradeSheet = lazy(() => import('../components/TradeSheet'))
 
@@ -195,6 +196,7 @@ function generateAnalysis(detail, type) {
 }
 
 export default function Transactions({ showAdd, onCloseAdd }) {
+  const { t } = useLanguage()
   const location = useLocation()
   const [transactions, setTransactions] = useState([])
   const [wallets, setWallets] = useState([])
@@ -578,8 +580,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Transactions</h2>
-        <button onClick={() => { setTradeType('buy'); setTradePrefill(null); setTradeOpen(true); track('trade_sheet_open', { type: 'buy', source: 'transactions' }) }} aria-label="Add trade" style={{
+        <h2>{t('transactions')}</h2>
+        <button onClick={() => { setTradeType('buy'); setTradePrefill(null); setTradeOpen(true); track('trade_sheet_open', { type: 'buy', source: 'transactions' }) }} aria-label={t('addTrade')} style={{
           background: 'rgba(var(--g-rgb),0.15)',
           color: 'var(--g-ink)',
           border: '1px solid rgba(var(--g-rgb),0.3)',
@@ -587,7 +589,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.35rem',
         }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> {t('txAdd')}
         </button>
       </div>
 
@@ -596,7 +598,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         <div className="modal-overlay" onClick={() => { setShowForm(false); setCoinAnalysis(null) }}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="sheet-handle" />
-            <h3>Add Transaction</h3>
+            <h3>{t('txAddTransaction')}</h3>
 
             {/* Asset category selector */}
             <div className="category-tabs">
@@ -637,7 +639,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               {form.category === 'crypto' ? (
                 <div className="form-field" style={{ position: 'relative' }}>
                   <label>Coin</label>
-                  <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder="Search Bitcoin, Ethereum..." autoFocus />
+                  <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder={t('txSearchCoin')} autoFocus />
                   {coinResults.length > 0 && (
                     <div className="dropdown">
                       {coinResults.map(c => (
@@ -755,7 +757,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <div className="ai-panel">
                   <div className="ai-header">
                     <span className="ai-badge">AI</span>
-                    <span>Analyzing market data...</span>
+                    <span>{t('txAnalyzing')}</span>
                   </div>
                   <div className="ai-loading">
                     <div className="ai-pulse" />
@@ -766,7 +768,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <div className="ai-panel">
                   <div className="ai-header">
                     <span className="ai-badge">AI</span>
-                    <span className="ai-title">Market Analysis</span>
+                    <span className="ai-title">{t('txMarketAnalysis')}</span>
                     <span className="ai-sentiment" style={{ color: coinAnalysis.sentimentColor }}>
                       <Icon name={coinAnalysis.sentimentEmoji} size={15} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{coinAnalysis.sentiment}
                     </span>
@@ -775,9 +777,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   {/* Sentiment meter */}
                   <div className="ai-meter">
                     <div className="ai-meter-labels">
-                      <span>Bearish</span>
+                      <span>{t('txBearish')}</span>
                       <span>Score: {coinAnalysis.score}</span>
-                      <span>Bullish</span>
+                      <span>{t('txBullish')}</span>
                     </div>
                     <div className="ai-meter-track">
                       <div className="ai-meter-fill" style={{
@@ -842,7 +844,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               {form.type === 'sell' && form.coin_id && sellHoldings && (
                 <div className="sell-picker">
                   <div className="sell-balance-row">
-                    <span className="sell-balance-label">Available Balance</span>
+                    <span className="sell-balance-label">{t('txAvailableBalance')}</span>
                     <span className="sell-balance-value">{sellHoldings.amount.toFixed(6)} {(form.coin_symbol || '').toUpperCase()}</span>
                   </div>
                   <div className="sell-pct-btns">
@@ -857,7 +859,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   </div>
                   {form.amount && parseFloat(form.amount) > 0 && sellHoldings.amount > 0 && (
                     <p className="bs-pct-live" style={{ marginTop: '0.5rem' }}>
-                      You're selling <strong>{(() => { const p = parseFloat(form.amount) / sellHoldings.amount * 100; return p >= 99.5 ? '100' : parseFloat(p.toFixed(p < 10 ? 1 : 0)) })()}%</strong> of your {(form.coin_symbol || '').toUpperCase()} position
+                      {t('txSellingPct')((() => { const p = parseFloat(form.amount) / sellHoldings.amount * 100; return p >= 99.5 ? '100' : parseFloat(p.toFixed(p < 10 ? 1 : 0)) })(), (form.coin_symbol || '').toUpperCase())}
                     </p>
                   )}
                 </div>
@@ -869,7 +871,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   <input type="number" step="any" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" required />
                 </div>
                 <div className="form-field">
-                  <label>Price per unit ($)</label>
+                  <label>{t('txPricePerUnit')}</label>
                   <div className="price-input-wrap">
                     <input type="number" step="any" value={form.price_per_unit} onChange={e => setForm(f => ({ ...f, price_per_unit: e.target.value }))} placeholder="0.00" required />
                     {form.coin_id && form.category === 'crypto' && (
@@ -922,19 +924,19 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
 
               <div className="form-field">
-                <label>Notes (optional)</label>
-                <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="DCA, dip buy, etc." />
+                <label>{t('txNotes')}</label>
+                <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t('txNotesPlaceholder')} />
               </div>
 
               {form.type === 'buy' && (
                 <div className="form-field">
-                  <label>Buy with (cost deducted from this asset)</label>
+                  <label>{t('txBuyWithHint')}</label>
                   <div className="sell-for-row">
                     <select
                       value={form.buy_with}
                       onChange={e => setForm(f => ({ ...f, buy_with: e.target.value }))}
                     >
-                      <option value="NONE">None (don't deduct)</option>
+                      <option value="NONE">{t('txNoneNoDeduct')}</option>
                       <option value="USDT">USDT</option>
                       <option value="USDC">USDC</option>
                       <option value="BTC">BTC</option>
@@ -947,7 +949,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                         type="text"
                         value={form.buy_with_custom}
                         onChange={e => setForm(f => ({ ...f, buy_with_custom: e.target.value }))}
-                        placeholder="Ticker (e.g. SOL, DAI)"
+                        placeholder={t('txTicker')}
                       />
                     )}
                   </div>
@@ -962,7 +964,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
               {form.type === 'sell' && (
                 <div className="form-field">
-                  <label>Sell for (proceeds credited to this asset)</label>
+                  <label>{t('txSellForHint')}</label>
                   <div className="sell-for-row">
                     <select
                       value={form.sell_for}
@@ -974,20 +976,20 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       <option value="BTC">BTC</option>
                       <option value="EUR">EUR</option>
                       <option value="CUSTOM">Other…</option>
-                      <option value="REMOVE">Remove (don't credit anywhere)</option>
+                      <option value="REMOVE">{t('txRemoveNoCredit')}</option>
                     </select>
                     {form.sell_for === 'CUSTOM' && (
                       <input
                         type="text"
                         value={form.sell_for_custom}
                         onChange={e => setForm(f => ({ ...f, sell_for_custom: e.target.value }))}
-                        placeholder="Ticker (e.g. SOL, DAI)"
+                        placeholder={t('txTicker')}
                       />
                     )}
                   </div>
                   <p className="form-hint">
                     {form.sell_for === 'REMOVE'
-                      ? <>The amount will be deducted from your <strong>{form.coin_symbol?.toUpperCase?.() || 'asset'}</strong> holdings only — no other balance is credited.</>
+                      ? t('txDeductedOnly')(form.coin_symbol?.toUpperCase?.() || t('tsAsset'))
                       : <>Total proceeds{totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be credited to your{' '}
                         <strong>{form.sell_for === 'CUSTOM' ? (form.sell_for_custom.trim().toUpperCase() || '…') : form.sell_for}</strong> balance automatically.</>}
                   </p>
@@ -1013,21 +1015,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             </div>
             {form.type === 'buy' ? (
               <>
-                <h4 className="bs-confirm-title">Buy without spending anything?</h4>
-                <p className="bs-confirm-text">
-                  You chose <strong>None</strong>, so this just adds <strong>{(form.coin_symbol || '').toUpperCase()}</strong> to
-                  your holdings — no balance will be deducted. If you actually paid with cash or a coin you
-                  own, pick it so your other balances stay accurate.
-                </p>
+                <h4 className="bs-confirm-title">{t('txBuyNothing')}</h4>
+                <p className="bs-confirm-text">{t('txChoseNone')((form.coin_symbol || '').toUpperCase())}</p>
               </>
             ) : (
               <>
-                <h4 className="bs-confirm-title">Sell without receiving anything?</h4>
-                <p className="bs-confirm-text">
-                  You chose <strong>Remove</strong>, so this just takes <strong>{(form.coin_symbol || '').toUpperCase()}</strong> out
-                  of your holdings — nothing will be credited back. If you got cash or another asset in
-                  return, pick it so it lands in your portfolio.
-                </p>
+                <h4 className="bs-confirm-title">{t('txSellNothing')}</h4>
+                <p className="bs-confirm-text">{t('txChoseRemove')((form.coin_symbol || '').toUpperCase())}</p>
               </>
             )}
             <div className="bs-confirm-actions">
@@ -1057,8 +1051,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       {transactions.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">&#9670;</div>
-          <p>No transactions yet</p>
-          <p className="muted">Tap + to add your first trade</p>
+          <p>{t('noTransactions')}</p>
+          <p className="muted">{t('txTapPlus')}</p>
         </div>
       ) : (
         <div className="tx-list">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import Icon from './Icon'
+import { useLanguage } from '../LanguageContext'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -83,6 +84,7 @@ function AlertProgress({ currentPrice, alert }) {
 }
 
 export default function PriceAlerts({ enriched, prices }) {
+  const { t } = useLanguage()
   const [alerts, setAlerts]         = useState(loadAlerts)
   const [showForm, setShowForm]     = useState(false)
   const [coinId, setCoinId]         = useState('')
@@ -186,7 +188,7 @@ export default function PriceAlerts({ enriched, prices }) {
         <div className="pal-notif-banner glass-card">
           <div className="pal-notif-icon"><Icon name="bell" size={18} /></div>
           <div>
-            <strong>Enable notifications</strong>
+            <strong>{t('paEnableNotifications')}</strong>
             <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.82rem' }}>
               Get alerted even when you're on a different tab.
             </p>
@@ -200,7 +202,7 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Header */}
       <div className="pal-header">
         <div>
-          <h3 className="pal-title">Price Alerts</h3>
+          <h3 className="pal-title">{t('priceAlerts')}</h3>
           <p className="muted pal-sub">{active.length} active · {triggered.length} triggered</p>
         </div>
         <button className="dvx-btn dvx-btn-primary pal-add-btn" onClick={() => setShowForm(v => !v)}>
@@ -211,9 +213,9 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Add alert form */}
       {showForm && (
         <form className="glass-card pal-form" onSubmit={addAlert}>
-          <h4 className="pal-form-title">Set a Price Alert</h4>
+          <h4 className="pal-form-title">{t('paSetPriceAlert')}</h4>
           <div className="pal-form-row">
-            <label className="pal-label">Asset</label>
+            <label className="pal-label">{t('tsAsset')}</label>
             <select className="pal-select" value={coinId} onChange={e => setCoinId(e.target.value)} required>
               <option value="">— Select —</option>
               {enriched.map(h => {
@@ -227,7 +229,7 @@ export default function PriceAlerts({ enriched, prices }) {
             </select>
           </div>
           <div className="pal-form-row">
-            <label className="pal-label">Condition</label>
+            <label className="pal-label">{t('paCondition')}</label>
             <div className="pal-cond-toggle">
               <button type="button" className={`pal-cond-btn ${condition === 'above' ? 'active' : ''}`} onClick={() => setCondition('above')}>
                 ↑ Rises above
@@ -238,7 +240,7 @@ export default function PriceAlerts({ enriched, prices }) {
             </div>
           </div>
           <div className="pal-form-row">
-            <label className="pal-label">Target Price (USD)</label>
+            <label className="pal-label">{t('paTargetPrice')}</label>
             <div className="pal-price-row">
               <span className="pal-dollar">$</span>
               <input
@@ -276,7 +278,7 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Active alerts */}
       {active.length > 0 && (
         <div className="pal-section">
-          <p className="pal-section-label">ACTIVE</p>
+          <p className="pal-section-label">{t('paActive')}</p>
           {active.map(a => {
             const cur = prices[a.coin_id]?.usd ?? prices[a.coin_id]?.price ?? 0
             return (
@@ -290,7 +292,7 @@ export default function PriceAlerts({ enriched, prices }) {
                   </div>
                   <div className="pal-card-right">
                     {cur > 0 && <span className="pal-cur-price muted">${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>}
-                    <button className="pal-del-btn" onClick={() => deleteAlert(a.id)} title="Delete">✕</button>
+                    <button className="pal-del-btn" onClick={() => deleteAlert(a.id)} title={t('vsDelete')}>✕</button>
                   </div>
                 </div>
                 <AlertProgress currentPrice={cur} alert={a} />
@@ -303,7 +305,7 @@ export default function PriceAlerts({ enriched, prices }) {
       {/* Triggered alerts */}
       {triggered.length > 0 && (
         <div className="pal-section">
-          <p className="pal-section-label">TRIGGERED</p>
+          <p className="pal-section-label">{t('paTriggered')}</p>
           {triggered.map(a => (
             <div key={a.id} className="glass-card pal-card pal-card-triggered">
               <div className="pal-card-top">
@@ -314,8 +316,8 @@ export default function PriceAlerts({ enriched, prices }) {
                   </span>
                 </div>
                 <div className="pal-card-right">
-                  <button className="pal-reset-btn" onClick={() => resetAlert(a.id)} title="Reset alert">↺ Reset</button>
-                  <button className="pal-del-btn" onClick={() => deleteAlert(a.id)} title="Delete">✕</button>
+                  <button className="pal-reset-btn" onClick={() => resetAlert(a.id)} title={t('paResetAlert')}>↺ Reset</button>
+                  <button className="pal-del-btn" onClick={() => deleteAlert(a.id)} title={t('vsDelete')}>✕</button>
                 </div>
               </div>
               {a.triggeredAt && (
@@ -332,9 +334,9 @@ export default function PriceAlerts({ enriched, prices }) {
       {alerts.length === 0 && !showForm && (
         <div className="glass-card pal-empty">
           <div className="pal-empty-icon"><Icon name="bell" size={28} /></div>
-          <p className="pal-empty-title">No alerts yet</p>
+          <p className="pal-empty-title">{t('paNoAlerts')}</p>
           <p className="muted pal-empty-sub">Set a price target on any of your holdings and get notified the moment it's hit.</p>
-          <button className="dvx-btn dvx-btn-primary" onClick={() => setShowForm(true)}>Create First Alert</button>
+          <button className="dvx-btn dvx-btn-primary" onClick={() => setShowForm(true)}>{t('paCreateFirst')}</button>
         </div>
       )}
     </div>

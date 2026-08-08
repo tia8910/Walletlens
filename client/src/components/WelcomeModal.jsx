@@ -22,18 +22,18 @@ const STEPS = [
     particles: ['₿', 'Ξ', '◎', '₳', '📈', '💎'],
     icon: <WalletLensLogo />,
     scanLine: true,
-    eyebrow: 'WELCOME TO',
+    eyebrowKey: 'obWelcomeEyebrow',
     title: 'WalletLens',
     gradTitle: true,
     titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    desc: 'Your private net-worth tracker & investment manager — crypto, stocks, gold, cash & more, all in one place. No account, no server; your data stays on your device forever.',
+    descKey: 'wmWelcomeDesc',
     features: [
-      { icon: '🔒', label: '100% Private' },
-      { icon: '📊', label: 'Live P&L' },
-      { icon: '🤖', label: 'Insights' },
-      { icon: '🆓', label: 'Free Forever' },
+      { icon: '🔒', labelKey: 'wmFeatPrivate' },
+      { icon: '📊', labelKey: 'obFeatLivePnl' },
+      { icon: '🤖', labelKey: 'obFeatInsights' },
+      { icon: '🆓', labelKey: 'statFree' },
     ],
-    cta: 'Show me around',
+    ctaKey: 'wmWelcomeCta',
   },
   {
     id: 'theme',
@@ -43,10 +43,10 @@ const STEPS = [
     ring: 'rgba(0,230,118,0.45)',
     particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'],
     icon: '🎨',
-    eyebrow: 'PERSONALISE',
-    title: 'Make it yours',
-    desc: 'Pick your look. You can always change this in Settings.',
-    cta: 'Looks great →',
+    eyebrowKey: 'obThemeEyebrow',
+    titleKey: 'obThemeTitle',
+    descKey: 'wmThemeDesc',
+    ctaKey: 'wmThemeCta',
     isThemeStep: true,
   },
   {
@@ -57,10 +57,10 @@ const STEPS = [
     ring: 'rgba(52,211,153,0.5)',
     particles: ['📈', '💰', '💎', '🚀', '📊', '💹'],
     icon: '💼',
-    eyebrow: 'PORTFOLIO',
-    title: 'Track Every Trade',
-    desc: 'Log buys & sells. WalletLens auto-calculates your P&L, average cost, and total performance in real-time.',
-    cta: 'Got it →',
+    eyebrowKey: 'wmPortfolioEyebrow',
+    titleKey: 'wmPortfolioTitle',
+    descKey: 'wmPortfolioDesc',
+    ctaKey: 'wmPortfolioCta',
   },
   {
     id: 'ai',
@@ -70,10 +70,10 @@ const STEPS = [
     ring: 'rgba(96,165,250,0.5)',
     particles: ['🤖', '⚡', '🎯', '📡', '🔮', '🧠'],
     icon: '⚡',
-    eyebrow: 'SMART',
-    title: 'Trade Smarter',
-    desc: 'Buy/sell signals, whale tracking, risk scanner, and portfolio advice — all built in, free.',
-    cta: 'Love it →',
+    eyebrowKey: 'wmSmartEyebrow',
+    titleKey: 'wmSmartTitle',
+    descKey: 'wmSmartDesc',
+    ctaKey: 'wmSmartCta',
   },
   {
     id: 'security',
@@ -83,10 +83,10 @@ const STEPS = [
     ring: 'rgba(0,230,118,0.55)',
     particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'],
     icon: '🔐',
-    eyebrow: 'PRIVATE & SECURE',
-    title: 'Lock with your fingerprint',
-    desc: 'Require your fingerprint or face each time WalletLens opens. Your data already stays on your device — this keeps it for your eyes only.',
-    cta: 'Maybe later',
+    eyebrowKey: 'wmSecEyebrow',
+    titleKey: 'wmSecTitle',
+    descKey: 'wmSecDesc',
+    ctaKey: 'wmSecCta',
     isSecurityStep: true,
   },
   {
@@ -97,10 +97,10 @@ const STEPS = [
     ring: 'rgba(34,197,94,0.55)',
     particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'],
     icon: '🚀',
-    eyebrow: 'LAST STEP',
-    title: 'Set up your portfolio',
-    desc: "Now pick what you track and pop in your balances — your net worth fills in instantly. Takes just seconds.",
-    cta: "Let's set it up →",
+    eyebrowKey: 'wmGoEyebrow',
+    titleKey: 'wmGoTitle',
+    descKey: 'wmGoDesc',
+    ctaKey: 'wmGoCta',
     final: true,
   },
 ]
@@ -122,7 +122,7 @@ export default function WelcomeModal() {
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, mode, setTheme, setMode } = useTheme()
-  const { lang, setLang } = useLanguage()
+  const { lang, setLang, t } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
 
   async function enableBiometric() {
@@ -132,7 +132,7 @@ export default function WelcomeModal() {
     try {
       const ok = await enableBio()
       if (ok) { track('biometric_enabled_onboarding'); next() }
-      else setBioError('Couldn’t set up fingerprint lock. Make sure a fingerprint or face is enrolled in your device settings, then try again.')
+      else setBioError(t('obBioSetupFailed'))
     } finally {
       setBioBusy(false)
     }
@@ -214,22 +214,22 @@ export default function WelcomeModal() {
           </div>
 
           {/* Eyebrow + Title */}
-          <div className="wm-eyebrow" style={{ color: s.accent }}>{s.eyebrow}</div>
+          <div className="wm-eyebrow" style={{ color: s.accent }}>{t(s.eyebrowKey)}</div>
           {s.gradTitle
-            ? <div className="wm-title wm-title-grad" style={{ backgroundImage: s.titleGrad }}>{s.title}</div>
-            : <div className="wm-title" style={{ color: '#fff' }}>{s.title}</div>
+            ? <div className="wm-title wm-title-grad" style={{ backgroundImage: s.titleGrad }}>{s.titleKey ? t(s.titleKey) : s.title}</div>
+            : <div className="wm-title" style={{ color: '#fff' }}>{s.titleKey ? t(s.titleKey) : s.title}</div>
           }
         </div>
 
         {/* ── Body ── */}
         <div className="wm-body" key={animKey}>
-          <p className="wm-desc">{s.desc}</p>
+          <p className="wm-desc">{t(s.descKey)}</p>
 
           {s.features && (
             <div className="wm-features">
               {s.features.map((f, i) => (
                 <div key={i} className="wm-pill" style={{ animationDelay: `${i * 0.06}s`, borderColor: `${s.accent}33` }}>
-                  <span>{f.icon}</span>{f.label}
+                  <span>{f.icon}</span>{t(f.labelKey)}
                 </div>
               ))}
             </div>
@@ -351,7 +351,7 @@ export default function WelcomeModal() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                  {bioBusy ? 'Setting up…' : 'Enable fingerprint lock'}
+                  {bioBusy ? t('obSettingUp') : t('wmEnableBio')}
                 </button>
               )}
               {bioError && (
@@ -385,7 +385,7 @@ export default function WelcomeModal() {
             }}
             onClick={next}
           >
-            {s.isSecurityStep && bioEnabled ? 'Continue →' : s.cta}
+            {s.isSecurityStep && bioEnabled ? t('wsNext') : t(s.ctaKey)}
           </button>
         </div>
       </div>

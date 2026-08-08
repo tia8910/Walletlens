@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import sfx from '../sfx'
 import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
+import { useLanguage } from '../LanguageContext'
 
 // Metal bar logos ("Au" / "Ag") so gold & silver match the trade category.
 const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
@@ -24,19 +25,20 @@ const DONE_KEY = 'wl_interests_done'
 const C = ASSET_CATEGORIES
 // id must line up with INTEREST_TO_CAT in the dashboard quick-add ordering.
 const OPTIONS = [
-  { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, label: 'Crypto' },
-  { id: 'stablecoins', img: USDT_LOGO, label: 'Stablecoins' },
-  { id: 'stocks',      emoji: C.stock.icon, label: 'Stocks' },
-  { id: 'etfs',        emoji: 'package', label: 'ETFs' },
-  { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, label: 'Gold' },
-  { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, label: 'Silver' },
-  { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, label: 'Cash' },
-  { id: 'realestate',  emoji: 'home', label: 'Real estate' },
-  { id: 'bonds',       emoji: C.bond.icon, label: 'Bonds' },
-  { id: 'commodities', emoji: 'droplet', label: 'Commodities' },
+  { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, labelKey: 'catCrypto' },
+  { id: 'stablecoins', img: USDT_LOGO, labelKey: 'catStablecoins' },
+  { id: 'stocks',      emoji: C.stock.icon, labelKey: 'catStocks' },
+  { id: 'etfs',        emoji: 'package', labelKey: 'catEtfs' },
+  { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, labelKey: 'catGold' },
+  { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, labelKey: 'catSilver' },
+  { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, labelKey: 'catCash' },
+  { id: 'realestate',  emoji: 'home', labelKey: 'catRealEstate' },
+  { id: 'bonds',       emoji: C.bond.icon, labelKey: 'catBonds' },
+  { id: 'commodities', emoji: 'droplet', labelKey: 'catCommodities' },
 ]
 
 export default function InterestPicker({ onDone, onClose, editMode = false }) {
+  const { t } = useLanguage()
   // Pre-load any existing choice so re-opening (e.g. from Settings) shows the
   // current selection. New users have nothing stored → empty, as before.
   const [selected, setSelected] = useState(() => {
@@ -87,18 +89,18 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
   const count = selected.size
 
   return (
-    <div className="ip-overlay" role="dialog" aria-modal="true" aria-label="Select what you track">
+    <div className="ip-overlay" role="dialog" aria-modal="true" aria-label={t('ipTitle')}>
       <div className="ip-card">
-        <button className="wlm-close" onClick={editMode ? (onClose || skip) : skip} aria-label="Close" title="Close">
+        <button className="wlm-close" onClick={editMode ? (onClose || skip) : skip} aria-label={t('close')} title={t('close')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
         <div className="ip-body">
           <div className="ip-eyebrow">
-            <Icon name="sparkles" size={13} /> Personalize
+            <Icon name="sparkles" size={13} /> {t('ipEyebrow')}
           </div>
-          <h2 className="ip-title">What do you want to track?</h2>
-          <p className="ip-sub">Pick the assets you care about and we'll tailor WalletLens to you. You can change this anytime.</p>
+          <h2 className="ip-title">{t('ipTitle')}</h2>
+          <p className="ip-sub">{t('ipSub')}</p>
 
           <div className="ip-chips">
             {OPTIONS.map(o => {
@@ -118,7 +120,7 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
                         style={o.color ? { color: o.color } : undefined}
                         aria-hidden="true"
                       ><Icon name={o.emoji} size={17} /></span>}
-                  {o.label}
+                  {t(o.labelKey)}
                   {on && (
                     <span className="ip-chip-check" aria-hidden="true">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -132,17 +134,17 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
 
         <div className="ip-footer">
           <button className="ip-cta" onClick={getStarted}>
-            <span>{editMode ? `Save${count > 0 ? ` · ${count} selected` : ''}` : (count > 0 ? `Get started · ${count} selected` : 'Get started')}</span>
+            <span>{`${editMode ? t('ipSave') : t('ipGetStarted')}${count > 0 ? ` · ${t('ipSelected')(count)}` : ''}`}</span>
             <Icon name="arrow-right" size={17} />
           </button>
           {editMode ? (
-            <button className="ip-skip" onClick={onClose}>Cancel</button>
+            <button className="ip-skip" onClick={onClose}>{t('cancel')}</button>
           ) : (
             <button
               className="ip-skip"
               onClick={askSkip}
               style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
-            >Skip for now</button>
+            >{t('ipSkip')}</button>
           )}
         </div>
 

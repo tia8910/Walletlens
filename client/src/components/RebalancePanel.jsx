@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 /**
  * RebalancePanel — a simple, in-dashboard rebalance tool that works off the
@@ -97,6 +98,7 @@ function buildAdvice(items, targets, total, profile) {
 }
 
 export default function RebalancePanel({ open, onClose, holdings, cv }) {
+  const { t } = useLanguage()
   const items = useMemo(() =>
     (holdings || [])
       .filter(h => (h.value || 0) > 0)
@@ -145,13 +147,13 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
 
   return (
     <div className="wl-reb-overlay" onClick={onClose}>
-      <div className="wl-reb-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label="Rebalance portfolio">
+      <div className="wl-reb-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label={t('rbRebalancePortfolio')}>
         <div className="wl-reb-head">
           <div>
-            <h2 className="wl-reb-title">Rebalance</h2>
-            <p className="wl-reb-sub">Pick a style for a suggested mix, or set targets yourself.</p>
+            <h2 className="wl-reb-title">{t('rbRebalance')}</h2>
+            <p className="wl-reb-sub">{t('rbPickStyle')}</p>
           </div>
-          <button className="wl-reb-x" onClick={onClose} aria-label="Close">
+          <button className="wl-reb-x" onClick={onClose} aria-label={t('close')}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -172,15 +174,15 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
         )}
 
         <div className="wl-reb-actions">
-          <button className="wl-reb-quick" onClick={resetCurrent}>Reset to current</button>
+          <button className="wl-reb-quick" onClick={resetCurrent}>{t('rbResetToCurrent')}</button>
           <span className={`wl-reb-sum ${sumOff ? 'off' : 'ok'}`}>Targets {targetSum.toFixed(0)}%</span>
         </div>
 
         <div className="wl-reb-list">
           <div className="wl-reb-row wl-reb-row-head">
-            <span>Asset</span><span>Now</span><span>Target</span><span>Action</span>
+            <span>{t('tsAsset')}</span><span>{t('rbNow')}</span><span>{t('vsTarget')}</span><span>{t('rbAction')}</span>
           </div>
-          {rows.length === 0 && <p className="wl-reb-empty">Add some holdings first, then come back to rebalance.</p>}
+          {rows.length === 0 && <p className="wl-reb-empty">{t('rbAddHoldingsFirst')}</p>}
           {rows.map(r => {
             const on = Math.abs(r.diff) < onTargetEps
             return (
@@ -204,7 +206,7 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
           {sumOff
             ? <span className="wl-reb-hint">Targets add up to {targetSum.toFixed(0)}% — aim for 100%.</span>
             : <span className="wl-reb-hint ok">Targets balanced at 100% ✓</span>}
-          <button className="wl-reb-done" onClick={onClose}>Done</button>
+          <button className="wl-reb-done" onClick={onClose}>{t('rbDone')}</button>
         </div>
       </div>
     </div>

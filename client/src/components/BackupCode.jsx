@@ -5,10 +5,12 @@ import { track, trackProfileCreated } from '../analytics'
 
 import { generateBackupCode, applyBackupCode, makeQrParts } from '../backupCore'
 import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
+import { useLanguage } from '../LanguageContext'
 
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function BackupCode({ hideTrigger = false }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(hideTrigger)
   const [mode, setMode] = useState('export')
   const [exportCode, setExportCode] = useState('')
@@ -317,7 +319,7 @@ export default function BackupCode({ hideTrigger = false }) {
                       color: copied ? 'var(--g-ink)' : '#93c5fd',
                       display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
                     })}>
-                      {copied ? <><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Copied!</> : <><CopyIcon /> Copy code</>}
+                      {copied ? <><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bcCopied')}</> : <><CopyIcon /> Copy code</>}
                     </button>
                     <button onClick={handleDownload} style={btn({
                       background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
@@ -366,11 +368,11 @@ export default function BackupCode({ hideTrigger = false }) {
           {mode === 'import' && (
             <>
               <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:'0 0 0.8rem', lineHeight:1.5 }}>
-                Paste your backup code, upload a saved <strong>QR image</strong>, or scan one with your camera to restore. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
+                Paste your backup code, upload a saved <strong>{t('bcQrImage')}</strong>, or scan one with your camera to restore. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
               </p>
               <textarea value={importText}
                 onChange={e => { importSourceRef.current = 'backup_code'; setImportText(e.target.value); setError(''); setImportResult(null) }}
-                placeholder="Paste backup code here…" style={{
+                placeholder={t('bcPastePlaceholder')} style={{
                   width:'100%', minHeight:'80px', background:'rgba(0,0,0,0.25)',
                   border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
                   padding:'0.6rem', fontSize:'0.72rem', fontFamily:'monospace',
@@ -443,19 +445,19 @@ export default function BackupCode({ hideTrigger = false }) {
                   fontSize:'0.85rem', textAlign:'center', fontWeight:600,
                 }}>
                   <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Restored {importResult.restored} data set{importResult.restored !== 1 ? 's' : ''}!
-                  <div style={{ fontSize:'0.72rem', fontWeight:400, marginTop:'0.2rem', opacity:0.85 }}>Opening your overview…</div>
+                  <div style={{ fontSize:'0.72rem', fontWeight:400, marginTop:'0.2rem', opacity:0.85 }}>{t('bcOpeningOverview')}</div>
                 </div>
               ) : confirmImport ? (
                 <div style={{ display:'flex', gap:'0.5rem' }}>
                   <button onClick={handleImport} disabled={importing} style={btn({
                     flex:1, background:'linear-gradient(135deg, #f87171, #dc2626)', color:'#fff', padding:'0.55rem',
                   })}>
-                    {importing ? 'Restoring…' : <><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Yes, overwrite my data</>}
+                    {importing ? 'Restoring…' : <><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bcOverwrite')}</>}
                   </button>
                   <button onClick={() => setConfirmImport(false)} style={btn({
                     background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
                     color:'var(--text-muted)', padding:'0.55rem 0.9rem',
-                  })}>Cancel</button>
+                  })}>{t('cancel')}</button>
                 </div>
               ) : (
                 <button onClick={() => { setError(''); if (!importText.trim()) { setError('Paste a backup code first.'); return } setConfirmImport(true) }}
@@ -531,7 +533,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   <button onClick={unsubscribeBackup} style={btn({
                     background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
                     color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
-                  })}>Unsubscribe</button>
+                  })}>{t('bcUnsubscribe')}</button>
                 </div>
               </>
             )}

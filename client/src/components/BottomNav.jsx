@@ -1,11 +1,12 @@
 import React, { memo, useMemo, useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 const NAV_ITEMS = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    labelKey: 'dashboard',
     path: '/dashboard',
     tab: 'overview',
     icon: (
@@ -19,7 +20,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'watchlist',
-    label: 'Watchlist',
+    labelKey: 'watchlist',
     path: '/dashboard',
     tab: 'watchlist',
     icon: (
@@ -31,7 +32,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'analysis',
-    label: 'Analysis',
+    labelKey: 'analysis',
     path: '/dashboard',
     tab: 'tools',
     icon: (
@@ -44,7 +45,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'alerts',
-    label: 'Alerts',
+    labelKey: 'alerts',
     path: '/dashboard',
     tab: 'alerts',
     icon: (
@@ -56,7 +57,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'targets',
-    label: 'Targets',
+    labelKey: 'targets',
     path: '/dashboard',
     tab: 'targets',
     icon: (
@@ -69,7 +70,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'backup',
-    label: 'Backup',
+    labelKey: 'backup',
     path: '/dashboard',
     tab: 'manage',
     icon: (
@@ -83,12 +84,12 @@ const NAV_ITEMS = [
 ]
 
 const DASHBOARD_LP_ITEMS = [
-  { icon: '⚡', label: 'Quick Add Trade', onClick: (nav) => nav('/dashboard', { state: { tab: 'overview', quickAdd: true } }) },
-  { icon: '📥', label: 'Import Data', onClick: (nav) => nav('/dashboard', { state: { tab: 'manage' } }) },
-  { icon: '🔔', label: 'View All Alerts', onClick: (nav) => nav('/dashboard', { state: { tab: 'alerts' } }) },
-  { icon: '🎯', label: 'View All Targets', onClick: (nav) => nav('/dashboard', { state: { tab: 'targets' } }) },
+  { icon: '⚡', labelKey: 'quickAddTrade', onClick: (nav) => nav('/dashboard', { state: { tab: 'overview', quickAdd: true } }) },
+  { icon: '📥', labelKey: 'importData', onClick: (nav) => nav('/dashboard', { state: { tab: 'manage' } }) },
+  { icon: '🔔', labelKey: 'viewAllAlerts', onClick: (nav) => nav('/dashboard', { state: { tab: 'alerts' } }) },
+  { icon: '🎯', labelKey: 'viewAllTargets', onClick: (nav) => nav('/dashboard', { state: { tab: 'targets' } }) },
   { divider: true },
-  { icon: '⚙️', label: 'Settings', onClick: (nav) => nav('/settings') },
+  { icon: '⚙️', labelKey: 'settingsNav', onClick: (nav) => nav('/settings') },
 ]
 
 function showLpAt(x, y, items, setMenu) {
@@ -106,6 +107,7 @@ const BottomNav = memo(function BottomNav() {
   const location = useLocation()
   const [activeTab, setActiveTab] = useState('overview')
   const [lpMenu, setLpMenu] = useState(null)
+  const { t } = useLanguage()
   const lpTimer = React.useRef(null)
 
   useEffect(() => {
@@ -151,11 +153,11 @@ const BottomNav = memo(function BottomNav() {
               }, 500)
             }) : undefined}
             onPointerUp={isDash ? (() => clearTimeout(lpTimer.current)) : undefined}
-            aria-label={item.label}
+            aria-label={t(item.labelKey)}
             aria-current={isActive ? 'page' : undefined}
           >
             <span className="wl-nav-icon">{item.icon}</span>
-            <span className="wl-nav-label">{item.label}</span>
+            <span className="wl-nav-label">{t(item.labelKey)}</span>
             {isActive && <span className="wl-nav-indicator" />}
           </button>
         )
@@ -173,7 +175,7 @@ const BottomNav = memo(function BottomNav() {
                 ? <div key={i} className="lp-divider" />
                 : <button key={i} className="lp-item" onClick={() => { setLpMenu(null); it.onClick?.() }}>
                     <span className="lp-icon">{it.icon}</span>
-                    <span className="lp-label">{it.label}</span>
+                    <span className="lp-label">{t(it.labelKey)}</span>
                   </button>
               )}
             </div>

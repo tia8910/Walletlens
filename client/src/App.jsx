@@ -120,6 +120,7 @@ function IconClose()  { return <svg width="22" height="22" viewBox="0 0 24 24" f
 // ── PWA install button in topbar ─────────────────────────────────────
 // Only shown on Chrome/Edge where beforeinstallprompt fires — no-op on Firefox/iOS
 function PWATopbarButton() {
+  const { t } = useLanguage()
   const [prompt, setPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
 
@@ -148,7 +149,7 @@ function PWATopbarButton() {
   return (
     <button
       onClick={handleClick}
-      title="Install WalletLens"
+      title={t('installApp')}
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
@@ -235,49 +236,49 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
         </div>
 
         <div className="wl-drawer-section">
-          <div className="wl-drawer-label">Pages</div>
+          <div className="wl-drawer-label">{t('pages')}</div>
           <button className={active('/dashboard')} onClick={() => go('/dashboard', { tab: 'overview' })}><IconHome /><span>{t('dashboard')}</span></button>
           <button className={active('/coach')} onClick={() => go('/coach')}>
-            <IconCoach /><span>Coach</span>
+            <IconCoach /><span>{t('coach')}</span>
           </button>
           <button className={active('/academy')} onClick={() => go('/academy')}>
-            <IconAcademy /><span>Academy</span>
+            <IconAcademy /><span>{t('academy')}</span>
           </button>
           <button className={active('/alpha')} onClick={() => go('/alpha')}>
-            <IconAlpha /><span>Alpha</span>
+            <IconAlpha /><span>{t('alpha')}</span>
           </button>
           <button className={active('/calendar')} onClick={() => go('/calendar')}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            <span>Calendar</span>
+            <span>{t('calendar')}</span>
           </button>
           <button className={active('/technicals')} onClick={() => go('/technicals')}>
-            <IconTechnicals /><span>Analysis</span>
+            <IconTechnicals /><span>{t('analysis')}</span>
           </button>
           <button className={active('/vision')} onClick={() => { localStorage.setItem('wl_vision_visited', '1'); go('/vision') }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            <span>Goals<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— Vision planner</span></span>
+            <span>{t('navGoals')}<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— {t('visionPlanner')}</span></span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
           <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
         </div>
 
         <div className="wl-drawer-section">
-          <div className="wl-drawer-label">Tools</div>
+          <div className="wl-drawer-label">{t('tools')}</div>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'ai' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
-            <span>Portfolio Analysis</span>
+            <span>{t('portfolioAnalysisNav')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'targets' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-            <span>Targets</span>
+            <span>{t('priceTargets')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'alerts' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span>Price Alerts</span>
+            <span>{t('priceAlerts')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'risk' })}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <span>Risk Scanner</span>
+            <span>{t('riskScanner')}</span>
           </button>
         </div>
 
@@ -290,7 +291,7 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
         </div>
 
         <div className="wl-drawer-section">
-          <div className="wl-drawer-label">Preferences</div>
+          <div className="wl-drawer-label">{t('preferences')}</div>
           <div className="wl-drawer-theme-grid">
             {THEMES.map(th => (
               <button
@@ -314,23 +315,23 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
             onClick={() => { const next = mode === 'dark' ? 'light' : 'dark'; setMode(next); track('mode_changed', { mode: next }) }}
           >
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size={16} />
-            <span>{mode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            <span>{mode === 'dark' ? t('lightMode') : t('darkMode')}</span>
           </button>
         </div>
 
         <div className="wl-drawer-section">
-          <div className="wl-drawer-label">Account</div>
+          <div className="wl-drawer-label">{t('account')}</div>
           <button className={active('/settings')} onClick={() => go('/settings')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Settings</span>
+            <span>{t('settingsNav')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => { onHelp(); onClose() }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9.2a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.4" r="0.7" fill="currentColor" stroke="none"/></svg>
-            <span>How it works</span>
+            <span>{t('howItWorks')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/guardian')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Portfolio Guardian</span>
+            <span>{t('portfolioGuardian')}</span>
           </button>
         </div>
 
@@ -354,7 +355,7 @@ const AppFooter = memo(function AppFooter() {
       </div>
       <nav className="wl-app-footer-links">
         <button onClick={() => navigate('/about')}>{t('about')}</button>
-        <button onClick={() => navigate('/faq')}>FAQ</button>
+        <button onClick={() => navigate('/faq')}>{t('faq')}</button>
         <button onClick={() => navigate('/blog')}>{t('blog')}</button>
         <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
         <button onClick={() => navigate('/terms')}>{t('terms') || 'Terms'}</button>
@@ -582,7 +583,7 @@ export default function App() {
               className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
               title="Settings"
-              aria-label="Open settings"
+              aria-label={t('settingsNav')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
@@ -590,12 +591,12 @@ export default function App() {
             <button
               className="wl-topbar-stats"
               onClick={() => { setQuickStatsOpen(true); track('quick_stats_open', { source: 'topbar_button' }) }}
-              title="Quick Stats"
-              aria-label="Quick Stats"
+              title={t('stats')}
+              aria-label={t('stats')}
             >
               <span className="wl-stats-live" aria-hidden="true" />
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span>Stats</span>
+              <span>{t('stats')}</span>
             </button>
           </div>
         </div>

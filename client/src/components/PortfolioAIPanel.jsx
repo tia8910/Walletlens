@@ -3,8 +3,10 @@
 // + "show stress test" state. No data fetching here, no recharts deps,
 // pure presentation.
 import { useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 export default function PortfolioAIPanel({ analysis }) {
+  const { t } = useLanguage()
   const [showAnalysis, setShowAnalysis] = useState(true)
   const [showStressTest, setShowStressTest] = useState(false)
   if (!analysis) return null
@@ -14,7 +16,7 @@ export default function PortfolioAIPanel({ analysis }) {
       <div className="portfolio-ai-header" onClick={() => setShowAnalysis(s => !s)}>
         <div className="portfolio-ai-title">
           <span className="ai-badge">AI</span>
-          <span>Portfolio Analysis</span>
+          <span>{t('portfolioAnalysisNav')}</span>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
              style={{ transform: showAnalysis ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -37,7 +39,7 @@ export default function PortfolioAIPanel({ analysis }) {
                 <span className="ai-info-icon" aria-hidden="true">{analysis.riskIcon}</span>
                 <span className="ai-info-value" style={{ color: analysis.riskColor }}>{analysis.riskLevel}</span>
               </div>
-              <span className="ai-score-label">Risk</span>
+              <span className="ai-score-label">{t('apRisk')}</span>
               <span className="ai-score-desc muted">{analysis.riskDetail || `${analysis.avgVolatility.toFixed(1)}% 24h vol`}</span>
             </div>
             <div className="ai-score-card">
@@ -46,7 +48,7 @@ export default function PortfolioAIPanel({ analysis }) {
                   {analysis.weightedChange24h >= 0 ? '↑' : '↓'} {Math.abs(analysis.weightedChange24h).toFixed(2)}%
                 </span>
               </div>
-              <span className="ai-score-label">Momentum</span>
+              <span className="ai-score-label">{t('apMomentum')}</span>
               <span className="ai-score-desc" style={{ color: analysis.momentumColor }}>{analysis.momentumLabel}</span>
             </div>
           </div>
@@ -75,20 +77,20 @@ export default function PortfolioAIPanel({ analysis }) {
           )}
 
           {analysis.categoryBreakdown.length > 1 && (
-            <SegmentedBreakdown title="Asset-Class Allocation" badge={analysis.crossAssetDiversity} rows={analysis.categoryBreakdown} />
+            <SegmentedBreakdown title={t('apAssetClassAllocation')} badge={analysis.crossAssetDiversity} rows={analysis.categoryBreakdown} />
           )}
 
           {analysis.capBreakdown && analysis.capBreakdown.some(c => ['large','mid','small','unknown'].includes(c.key)) && (
-            <SegmentedBreakdown title="Market Cap Split" badge="Large ≥$10B · Mid $1B–10B · Small <$1B" badgeMuted rows={analysis.capBreakdown} />
+            <SegmentedBreakdown title={t('apMarketCapSplit')} badge="Large ≥$10B · Mid $1B–10B · Small <$1B" badgeMuted rows={analysis.capBreakdown} />
           )}
 
           {(analysis.topWinners.filter(h => h.pnl > 0).length > 0 || analysis.topLosers.length > 0) && (
             <div className="ai-section">
-              <div className="ai-section-head"><span>P&L Attribution</span></div>
+              <div className="ai-section-head"><span>{t('apPnlAttribution')}</span></div>
               <div className="ai-attribution">
                 {analysis.topWinners.filter(h => h.pnl > 0).length > 0 && (
                   <div className="ai-attr-col">
-                    <div className="ai-attr-title positive">Top Contributors</div>
+                    <div className="ai-attr-title positive">{t('apTopContributors')}</div>
                     {analysis.topWinners.filter(h => h.pnl > 0).map(h => (
                       <div key={h.coin_id} className="ai-attr-row">
                         <span className="ai-attr-sym">{h.coin_symbol.toUpperCase()}</span>
@@ -99,7 +101,7 @@ export default function PortfolioAIPanel({ analysis }) {
                 )}
                 {analysis.topLosers.length > 0 && (
                   <div className="ai-attr-col">
-                    <div className="ai-attr-title negative">Biggest Drags</div>
+                    <div className="ai-attr-title negative">{t('apBiggestDrags')}</div>
                     {analysis.topLosers.map(h => (
                       <div key={h.coin_id} className="ai-attr-row">
                         <span className="ai-attr-sym">{h.coin_symbol.toUpperCase()}</span>

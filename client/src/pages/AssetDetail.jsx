@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import CoinLogo from '../components/CoinLogo'
 import Icon from '../components/Icon'
 import TradeSheet from '../components/TradeSheet'
+import { useLanguage } from '../LanguageContext'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -33,6 +34,7 @@ function fmt(n) {
 }
 
 export default function AssetDetail() {
+  const { t } = useLanguage()
   const { coinId } = useParams()
   const navigate = useNavigate()
   const [chartData, setChartData] = useState([])
@@ -268,7 +270,7 @@ export default function AssetDetail() {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text2)' }}>No chart data available</div>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text2)' }}>{t('adNoChartData')}</div>
         )}
       </div>
 
@@ -278,30 +280,30 @@ export default function AssetDetail() {
         {coin?.low24 != null && <div className="dstat"><span className="dstat-label">24h Low</span><span>${fmt(coin.low24)}</span></div>}
         {coin?.change7d != null && <div className="dstat"><span className="dstat-label">7d Change</span><span className={coin.change7d >= 0 ? 'positive' : 'negative'}>{coin.change7d >= 0 ? '+' : ''}{coin.change7d.toFixed(2)}%</span></div>}
         {coin?.change30d != null && <div className="dstat"><span className="dstat-label">30d Change</span><span className={coin.change30d >= 0 ? 'positive' : 'negative'}>{coin.change30d >= 0 ? '+' : ''}{coin.change30d.toFixed(2)}%</span></div>}
-        {coin?.ath != null && <div className="dstat"><span className="dstat-label">All-Time High</span><span>${fmt(coin.ath)}</span></div>}
-        {coin?.marketCap != null && <div className="dstat"><span className="dstat-label">Market Cap</span><span>${(coin.marketCap / 1e9).toFixed(2)}B</span></div>}
+        {coin?.ath != null && <div className="dstat"><span className="dstat-label">{t('adAllTimeHigh')}</span><span>${fmt(coin.ath)}</span></div>}
+        {coin?.marketCap != null && <div className="dstat"><span className="dstat-label">{t('adMarketCap')}</span><span>${(coin.marketCap / 1e9).toFixed(2)}B</span></div>}
         {coin?.volume != null && <div className="dstat"><span className="dstat-label">24h Volume</span><span>${(coin.volume / 1e9).toFixed(2)}B</span></div>}
       </div>
 
       {/* Holdings */}
       {holdings && (
         <div className="detail-holdings">
-          <h3>Your Holdings</h3>
+          <h3>{t('adYourHoldings')}</h3>
           <div className="detail-holdings-grid">
             <div className="dh-item">
-              <span className="dh-label">Balance</span>
+              <span className="dh-label">{t('adBalance')}</span>
               <span className="dh-value">{amount.toFixed(6)} {coin?.symbol}</span>
             </div>
             <div className="dh-item">
-              <span className="dh-label">Value</span>
+              <span className="dh-label">{t('adValue')}</span>
               <span className="dh-value">${fmt(value)}</span>
             </div>
             <div className="dh-item">
-              <span className="dh-label">Avg Buy Price</span>
+              <span className="dh-label">{t('adAvgBuyPrice')}</span>
               <span className="dh-value">${fmt(avgBuy)}</span>
             </div>
             <div className="dh-item">
-              <span className="dh-label">Profit / Loss</span>
+              <span className="dh-label">{t('adProfitLoss')}</span>
               <span className={`dh-value ${pnl >= 0 ? 'positive' : 'negative'}`}>
                 {pnl >= 0 ? '+' : ''}{fmt(pnl)} ({pnlPct.toFixed(1)}%)
               </span>
@@ -324,7 +326,7 @@ export default function AssetDetail() {
       {/* Private coin notes */}
       <div className="glass-card coin-note-card">
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.5rem' }}>
-          <h3 style={{ margin:0, fontSize:'0.95rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="notes" size={16} style={{ color:'var(--text-muted)' }} />My Notes</h3>
+          <h3 style={{ margin:0, fontSize:'0.95rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="notes" size={16} style={{ color:'var(--text-muted)' }} />{t('adMyNotes')}</h3>
           {!noteEditing && (
             <button className="btn-secondary btn-sm" onClick={() => setNoteEditing(true)}>
               {note ? 'Edit' : '+ Add note'}
@@ -337,7 +339,7 @@ export default function AssetDetail() {
               className="coin-note-input"
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Why did you buy? Price thesis, exit plan, reminders…"
+              placeholder={t('adNotesPlaceholder')}
               rows={4}
               autoFocus
             />
@@ -346,7 +348,7 @@ export default function AssetDetail() {
                 onClick={() => { api.saveCoinNote(coinId, note); setNoteEditing(false); track('asset_note_save', { coin_id: coinId }) }}>
                 Save
               </button>
-              <button className="btn-secondary btn-sm" onClick={() => { setNote(api.getCoinNote(coinId)); setNoteEditing(false) }}>Cancel</button>
+              <button className="btn-secondary btn-sm" onClick={() => { setNote(api.getCoinNote(coinId)); setNoteEditing(false) }}>{t('cancel')}</button>
             </div>
           </div>
         ) : note ? (
@@ -359,7 +361,7 @@ export default function AssetDetail() {
       {/* Sell plan / targets */}
       <div className="sell-plan-card">
         <div className="sell-plan-head">
-          <h3>Sell Plan</h3>
+          <h3>{t('adSellPlan')}</h3>
           <button className="sp-add-btn" onClick={() => setShowAddTarget(s => !s)}>
             {showAddTarget ? 'Cancel' : '+ Add Target'}
           </button>
@@ -383,11 +385,11 @@ export default function AssetDetail() {
               value={tInputQty}
               onChange={e => setTInputQty(e.target.value)}
             />
-            <button type="submit" className="sp-save-btn">Save</button>
+            <button type="submit" className="sp-save-btn">{t('vsSave')}</button>
           </form>
         )}
         {targets.length === 0 && !showAddTarget && (
-          <p className="muted sp-empty">No targets set. Add price levels to plan your exits.</p>
+          <p className="muted sp-empty">{t('adNoTargets')}</p>
         )}
         {targets.length > 0 && (
           <div className="sp-list">
@@ -400,17 +402,17 @@ export default function AssetDetail() {
                 <div key={t.id} className={`sp-row ${reached ? 'sp-reached' : ''}`}>
                   <div className="sp-row-top">
                     <div className="sp-price">
-                      <span className="sp-label">Sell at</span>
+                      <span className="sp-label">{t('adSellAt')}</span>
                       <span className="sp-val">${fmt(t.price)}</span>
                     </div>
                     <div className="sp-qty">
-                      <span className="sp-label">Quantity</span>
+                      <span className="sp-label">{t('adQuantity')}</span>
                       <span className="sp-val">
                         {t.quantity == null ? `All (${amount.toFixed(4)})` : `${t.quantity} ${coin?.symbol || ''}`}
                       </span>
                     </div>
                     <div className="sp-proceeds">
-                      <span className="sp-label">Proceeds</span>
+                      <span className="sp-label">{t('adProceeds')}</span>
                       <span className="sp-val">${fmt(proceeds)}</span>
                     </div>
                     <button className="sp-remove" onClick={() => handleRemoveTarget(t.id)} aria-label="Remove target">×</button>
@@ -459,6 +461,7 @@ export default function AssetDetail() {
 }
 
 function WhalePanel({ s, symbol }) {
+  const { t } = useLanguage()
   const score = s.whaleScore
   const scoreLabel =
     score >= 50 ? 'Strong Accumulation' :
@@ -479,14 +482,14 @@ function WhalePanel({ s, symbol }) {
   return (
     <div className="whale-panel">
       <div className="whale-panel-head">
-        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={17} style={{ color:'#38bdf8' }} />Whale Activity & Smart Signals</h3>
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={17} style={{ color:'#38bdf8' }} />{t('adWhaleActivity')}</h3>
         <span className="whale-panel-window">Last {s.windowDays}d</span>
       </div>
 
       <div className="whale-score-row">
         <div className="whale-score-circle" style={{ borderColor: scoreColor, color: scoreColor }}>
           <div className="whale-score-num">{score > 0 ? '+' : ''}{score}</div>
-          <div className="whale-score-lbl">Whale Score</div>
+          <div className="whale-score-lbl">{t('adWhaleScore')}</div>
         </div>
         <div className="whale-score-info">
           <div className="whale-score-tag" style={{ background: scoreColor + '22', color: scoreColor }}>
@@ -543,6 +546,7 @@ function WhalePanel({ s, symbol }) {
 // Dividend & income card — shown for dividend-paying stocks/ETFs. Yield is
 // derived live from the current price; projected income uses the holding size.
 function DividendCard({ coinId, price, amount, symbol }) {
+  const { t } = useLanguage()
   const dps = getAnnualDividend(coinId)
   if (dps == null) return null
   const yieldPct = getDividendYield(coinId, price)
@@ -558,13 +562,13 @@ function DividendCard({ coinId, price, amount, symbol }) {
       </div>
       <div className="ta-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', padding:'0.25rem 0' }}>
         <div className="ta-stat">
-          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Dividend yield</div>
+          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>{t('adDividendYield')}</div>
           <div className="ta-stat-value" style={{ fontSize:'1.35rem', fontWeight:700, color:'var(--g-ink)' }}>
             {yieldPct != null ? yieldPct.toFixed(2) + '%' : '—'}
           </div>
         </div>
         <div className="ta-stat">
-          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Per share / yr</div>
+          <div className="ta-stat-label" style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>{t('adPerShareYr')}</div>
           <div className="ta-stat-value" style={{ fontSize:'1.35rem', fontWeight:700 }}>${dps.toFixed(2)}</div>
         </div>
         {amount > 0 && (
@@ -587,6 +591,7 @@ function DividendCard({ coinId, price, amount, symbol }) {
 }
 
 function TechnicalsCard({ ta }) {
+  const { t } = useLanguage()
   const lvl = (p) => (p == null ? '—' : '$' + (p >= 1 ? Math.round(p).toLocaleString() : +(+p).toPrecision(4)))
   const trendMeta = {
     uptrend:   { label: 'Uptrend',   color: 'var(--g-ink)' },
@@ -617,14 +622,14 @@ function TechnicalsCard({ ta }) {
   return (
     <div className="whale-panel">
       <div className="whale-panel-head">
-        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Technical Analysis</h3>
+        <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('adTechnicalAnalysis')}</h3>
         <span className="whale-panel-window">{ta.samples}d daily</span>
       </div>
 
       <div className="whale-score-row">
         <div className="whale-score-circle" style={{ borderColor: postureColor, color: postureColor }}>
           <div className="whale-score-num">{score > 0 ? '+' : ''}{score}</div>
-          <div className="whale-score-lbl">TA Score</div>
+          <div className="whale-score-lbl">{t('adTaScore')}</div>
         </div>
         <div className="whale-score-info">
           <div className="whale-score-tag" style={{ background: postureColor + '22', color: postureColor }}>
@@ -678,16 +683,16 @@ function TechnicalsCard({ ta }) {
 
       <div className="ta-levels">
         <div className="ta-levels-col">
-          <div className="ta-levels-h" style={{ color: '#ef4444' }}>Resistance</div>
+          <div className="ta-levels-h" style={{ color: '#ef4444' }}>{t('adResistance')}</div>
           {(ta.resistances || []).length
             ? ta.resistances.map((p, i) => <div key={i} className="ta-level">R{i + 1} · {lvl(p)}</div>)
-            : <div className="ta-level muted">None nearby</div>}
+            : <div className="ta-level muted">{t('adNoneNearby')}</div>}
         </div>
         <div className="ta-levels-col">
-          <div className="ta-levels-h" style={{ color: 'var(--g-ink)' }}>Support</div>
+          <div className="ta-levels-h" style={{ color: 'var(--g-ink)' }}>{t('adSupport')}</div>
           {(ta.supports || []).length
             ? ta.supports.map((p, i) => <div key={i} className="ta-level">S{i + 1} · {lvl(p)}</div>)
-            : <div className="ta-level muted">None nearby</div>}
+            : <div className="ta-level muted">{t('adNoneNearby')}</div>}
         </div>
       </div>
     </div>
