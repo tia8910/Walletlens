@@ -56,6 +56,28 @@ function sendNativeIntent(action, redirectUrl) {
   return fireNativeIntent(url)
 }
 
+/**
+ * Where the native side should send us back to.
+ *
+ * Only the unlock path needs this: it genuinely does relaunch the TWA, because
+ * the result is delivered as a ?biometric_auth= parameter on a fresh page load.
+ * Without a redirect the activity falls back to a hard-coded /dashboard, which
+ * moves a user who locked the app while reading, say, an asset page.
+ *
+ * enable/disable deliberately pass nothing — they no longer relaunch at all.
+ */
+function currentUrlForReturn() {
+  try {
+    // Strip any stale biometric_auth so a second unlock can't inherit the
+    // first one's result and skip the prompt.
+    const u = new URL(window.location.href)
+    u.searchParams.delete('biometric_auth')
+    return u.toString()
+  } catch {
+    return ''
+  }
+}
+
 // ── base64url <-> ArrayBuffer helpers (for storing/restoring the credential id)
 function bufToB64url(buf) {
   let s = ''
@@ -130,7 +152,7 @@ export function useBiometricLock() {
 
         // In Android TWA, also send native intent to trigger BiometricPrompt
         if (isAndroidTWA) {
-          sendNativeIntent('unlock')
+          sendNativeIntent('unlock', currentUrlForReturn())
         }
       }
     }
@@ -237,7 +259,7 @@ export function useBiometricLock() {
       // nativeBridge declined for want of a user gesture — surfaced as a
       // distinct error so the lock screen can ask for a tap instead of
       // sitting on a spinner that will never resolve.
-      if (!sendNativeIntent('unlock')) {
+      if (!sendNativeIntent('unlock', currentUrlForReturn())) {
         const err = new Error('needs-gesture')
         err.name = 'NeedsGestureError'
         throw err

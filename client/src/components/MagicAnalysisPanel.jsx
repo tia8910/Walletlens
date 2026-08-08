@@ -535,6 +535,7 @@ function MagicGauge({ score, direction, confidence, big }) {
 
 // ── Premium pillar bars with quality indicators ─────────────────────────
 function PillarBars({ pillars }) {
+  const { t } = useLanguage()
   return (
     <div className="pillar-list">
       {pillars.map((p) => {

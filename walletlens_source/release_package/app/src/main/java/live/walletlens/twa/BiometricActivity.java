@@ -72,8 +72,25 @@ public class BiometricActivity extends AppCompatActivity {
 
         // ── Handle enable/disable actions from web app intents ──────────
         // The TWA sends walletlens://biometric-auth?action=enable|disable|unlock
-        // For enable/disable we just set/clear the SharedPreference and redirect
-        // back without showing the biometric prompt.
+        // For enable/disable we only set/clear the SharedPreference — no prompt.
+        //
+        // These finish() straight away instead of calling redirectBack(). That
+        // matters more than it looks: redirectBack starts LauncherActivity with
+        // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP, which tears the
+        // running task down and cold-starts the TWA on a fresh Custom Tab. The
+        // web app is reloaded from its start URL with sessionStorage gone.
+        //
+        // For "enable" that was destructive in a very visible way: the toggle
+        // lives on slide 3 of the first-run onboarding, and onboarding only
+        // records completion on slide 4. Enabling the lock relaunched the app
+        // before the flag was ever written, so the user was dropped back on
+        // slide 1 and onboarding appeared to restart from the beginning.
+        //
+        // Nothing here needs a relaunch. The web side has already written its
+        // own localStorage flag before firing the intent, and this activity is
+        // started from Chrome's task, so finish() simply returns to the Custom
+        // Tab that is still sitting underneath — same page, same scroll, same
+        // onboarding slide.
         Intent intent = getIntent();
         if (intent != null && intent.getData() != null) {
             String action = intent.getData().getQueryParameter("action");
@@ -81,13 +98,13 @@ public class BiometricActivity extends AppCompatActivity {
                 setEnabled(this, true);
                 Log.d(TAG, "Biometric lock enabled via intent");
                 Toast.makeText(this, "🔒 Biometric lock enabled", Toast.LENGTH_SHORT).show();
-                redirectBack(true);
+                finish();
                 return;
             } else if ("disable".equals(action)) {
                 setEnabled(this, false);
                 Log.d(TAG, "Biometric lock disabled via intent");
                 Toast.makeText(this, "🔓 Biometric lock disabled", Toast.LENGTH_SHORT).show();
-                redirectBack(true);
+                finish();
                 return;
             }
         }
@@ -205,6 +222,30 @@ public class BiometricActivity extends AppCompatActivity {
      */
     private void redirectBack(String status) {
         String redirectUrl = getIntent().getStringExtra(EXTRA_REDIRECT_URL);
+
+        // Also accept the redirect as a query parameter on the launch URI.
+        // The web app has always sent it that way — sendNativeIntent() appends
+        // "&redirect=<encoded url>" — but this method only ever read the Intent
+        // extra, which the web has no way to set. The parameter was therefore
+        // discarded on every call and the hard-coded /dashboard below was used
+        // instead, so an unlock from any other route silently moved the user.
+        if (redirectUrl == null || redirectUrl.isEmpty()) {
+            Uri data = getIntent().getData();
+            if (data != null) {
+                try {
+                    String fromQuery = data.getQueryParameter("redirect");
+                    // Only same-origin URLs. This value arrives from a browsable
+                    // intent filter, so any installed app can send one; without
+                    // this check a malicious caller could point the TWA at a
+                    // page of their choosing carrying biometric_auth=success.
+                    if (fromQuery != null && fromQuery.startsWith("https://walletlens.live/")) {
+                        redirectUrl = fromQuery;
+                    }
+                } catch (UnsupportedOperationException ignored) {
+                    // Opaque URI — no query parameters to read.
+                }
+            }
+        }
 
         if (redirectUrl != null && !redirectUrl.isEmpty()) {
             // Append result parameter

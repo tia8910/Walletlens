@@ -29,7 +29,13 @@ function jsxFiles(dir, out = []) {
 // Matches `function Foo(` / `export default function Foo(` / `const Foo = memo(function`.
 const COMPONENT = /^(?:export default )?function ([A-Z]\w*)\s*\(|^const ([A-Z]\w*) = memo\(function/gm
 const BINDS_T = /const \{[^}]*\bt\b[^}]*\} = useLanguage\(\)/
-const CALLS_T = /\bt\(['"`]/
+// `t(` rather than `t('` on purpose. The first version of this test required a
+// quote, so it saw t('adSellAt') but not t(p.labelKey) — and the one component
+// left calling t() unbound in the whole tree, PillarBars, used exactly the
+// second form. It renders once per holding in the Magic Indicator, so the
+// narrower regex was passing while the Technicals page threw for every user
+// who had an asset. The \b keeps sort(, sqrt(, lt( and friends out.
+const CALLS_T = /\bt\(/
 
 /** Every top-level component in a file, with the source that belongs to it. */
 function components(src) {
