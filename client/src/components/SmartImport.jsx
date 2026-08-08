@@ -3,6 +3,7 @@ import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
+import { useLanguage } from '../LanguageContext'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -151,17 +152,18 @@ function ThumbStrip({ previews }) {
 }
 
 function ReviewTable({ rows, onChange, onRemove }) {
+  const { t } = useLanguage()
   return (
     <div className="si-table-wrap">
       <table className="si-table">
         <thead>
           <tr>
-            <th>Symbol</th>
-            <th>Name</th>
-            <th>Amount</th>
-            <th>Price (USD)</th>
-            <th>Type</th>
-            <th>Date</th>
+            <th>{t('siSymbol')}</th>
+            <th>{t('vsName')}</th>
+            <th>{t('txAmount')}</th>
+            <th>{t('siPriceUsd')}</th>
+            <th>{t('vsType')}</th>
+            <th>{t('txDate')}</th>
             <th></th>
           </tr>
         </thead>
@@ -174,8 +176,8 @@ function ReviewTable({ rows, onChange, onRemove }) {
               <td><input className="si-cell-input si-cell-num" type="number" min="0" value={r.price} onChange={e => onChange(i,'price',e.target.value)} /></td>
               <td>
                 <select className="si-cell-input" value={r.type} onChange={e => onChange(i,'type',e.target.value)}>
-                  <option value="buy">Buy</option>
-                  <option value="sell">Sell</option>
+                  <option value="buy">{t('buy')}</option>
+                  <option value="sell">{t('sell')}</option>
                 </select>
               </td>
               <td><input className="si-cell-input" type="date" value={r.date} onChange={e => onChange(i,'date',e.target.value)} /></td>
@@ -189,6 +191,7 @@ function ReviewTable({ rows, onChange, onRemove }) {
 }
 
 export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
+  const { t } = useLanguage()
   const [rows, setRows]         = useState([])
   const [busy, setBusy]         = useState(false)
   const [msg, setMsg]           = useState('')
@@ -385,12 +388,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
             className={`si-tab${mode === 'screenshot' ? ' si-tab-active' : ''}`}
             onClick={() => { setMode('screenshot'); clearMsg() }}
             disabled={busy}
-          ><Icon name="camera" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Screenshot</button>
+          ><Icon name="camera" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('siScreenshot')}</button>
           <button
             className={`si-tab${mode === 'excel' ? ' si-tab-active' : ''}`}
             onClick={() => { setMode('excel'); clearMsg() }}
             disabled={busy}
-          ><Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Excel / CSV</button>
+          ><Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('siExcelCsv')}</button>
         </div>
       )}
 
@@ -442,7 +445,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
             <button className="dvx-btn dvx-btn-primary" onClick={doImport} disabled={busy || !rows.length}>
               {busy ? 'Importing…' : `Import ${rows.filter(r => r.symbol && r.amount > 0).length} Rows`}
             </button>
-            <button className="dvx-btn" onClick={handleClear}>Clear</button>
+            <button className="dvx-btn" onClick={handleClear}>{t('siClear')}</button>
           </div>
         </>
       )}

@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
 import { api } from '../api'
 import { makeQr } from '../utils/qrBackup'
+import { useLanguage } from '../LanguageContext'
 
 const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 const GUARDIAN_KEY = 'wl_guardian'
@@ -179,6 +180,7 @@ function Field({ label, hint, error, children }) {
 }
 
 function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
+  const { t } = useLanguage()
   return (
     <div className="pg-heir-row">
       <div className="pg-heir-num">{idx + 1}</div>
@@ -186,7 +188,7 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
         <input
           type="text"
           className="pg-input"
-          placeholder="Full name"
+          placeholder={t('pgFullName')}
           value={heir.name}
           maxLength={80}
           onChange={e => onChange(idx, { ...heir, name: e.target.value })}
@@ -200,7 +202,7 @@ function HeirRow({ idx, heir, onChange, onRemove, showRemove }) {
         />
       </div>
       {showRemove && (
-        <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title="Remove heir">
+        <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title={t('pgRemoveHeir')}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       )}
@@ -220,6 +222,7 @@ function cleanHeirList(heirs) {
 }
 
 function SetupForm({ onSuccess, initial }) {
+  const { t } = useLanguage()
   const [ownerName, setOwnerName] = useState(initial?.ownerName || '')
   const [ownerEmail, setOwnerEmail] = useState(initial?.ownerEmail || '')
   const [heirs, setHeirs] = useState(initial?.heirs?.length ? initial.heirs.map(h => ({ name: h.name || '', email: h.email || '' })) : [{ name: '', email: '' }])
@@ -327,12 +330,12 @@ function SetupForm({ onSuccess, initial }) {
         Wallet keys and passwords are never included — the QR holds only your holdings snapshot (assets, amounts and cost basis), so heirs can view your portfolio in WalletLens.
       </p>
       <p className="pg-intro" style={{ marginTop: '-0.4rem' }}>
-        <b>Lost your phone?</b> No problem — before any heir is ever contacted, we first email <b>you</b> a warning with a one-click "I'm still here" link that works from any device. Your heirs are only notified if you don't respond for 14 days after that.
+        <b>{t('pgLostPhone')}</b> No problem — before any heir is ever contacted, we first email <b>you</b> a warning with a one-click "I'm still here" link that works from any device. Your heirs are only notified if you don't respond for 14 days after that.
       </p>
 
       {portfolio.assetSymbols.length > 0 && (
         <div className="pg-portfolio-preview">
-          <span className="pg-portfolio-label">Portfolio detected</span>
+          <span className="pg-portfolio-label">{t('pgPortfolioDetected')}</span>
           <span className="pg-portfolio-assets">{portfolio.assetSymbols.join(' · ')}</span>
           {portfolio.totalUsd > 0 && (
             <span className="pg-portfolio-value">≈ ${portfolio.totalUsd.toLocaleString()}</span>
@@ -379,7 +382,7 @@ function SetupForm({ onSuccess, initial }) {
       <Field label="Personal message" hint="Optional — shown in the notification email (max 500 chars)">
         <textarea
           className="pg-input pg-textarea"
-          placeholder="A message for your heirs to read…"
+          placeholder={t('pgMessagePlaceholder')}
           value={message}
           onChange={e => setMessage(e.target.value.slice(0, 500))}
           rows={3}
@@ -407,7 +410,7 @@ function SetupForm({ onSuccess, initial }) {
       {errors.submit && <p className="pg-error">{errors.submit}</p>}
 
       <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : <><Icon name="mail" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Send a test email to myself</>}
+        {testStatus === 'sending' ? 'Sending test…' : <><Icon name="mail" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('pgTestEmail')}</>}
       </button>
       {testStatus === 'sent' && <p className="pg-test-ok">✓ Test email sent to you — check your inbox (and spam) to preview exactly what your heirs would receive.</p>}
       {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check your email address and try again.'}</p>}
@@ -422,6 +425,7 @@ function SetupForm({ onSuccess, initial }) {
 // ── Active Status Card ────────────────────────────────────────────────────────
 
 function StatusCard({ config, onCheckin, onCancel, onEdit }) {
+  const { t } = useLanguage()
   const daysLeft = daysUntilDeadline(config.lastCheckin, config.intervalDays)
   const isWarning = daysLeft <= 7
   const isUrgent  = daysLeft <= 2
@@ -478,7 +482,7 @@ function StatusCard({ config, onCheckin, onCancel, onEdit }) {
           </svg>
         </div>
         <div>
-          <div className="pg-status-title">Portfolio Guardian Active</div>
+          <div className="pg-status-title">{t('pgActive')}</div>
           <div className="pg-status-subtitle">Last check-in: {fmtDate(config.lastCheckin)}</div>
         </div>
         <div className={`pg-days-badge ${isUrgent ? 'urgent' : isWarning ? 'warning' : ''}`}>
@@ -490,7 +494,7 @@ function StatusCard({ config, onCheckin, onCancel, onEdit }) {
       {!config.ownerEmail && (
         <div className="pg-deadline-banner warning">
           Add your email so Guardian warns <b>you</b> first if you go quiet — otherwise your heirs are contacted the moment the deadline passes.{' '}
-          <button type="button" className="pg-checkin-link" style={{ display: 'inline', padding: 0 }} onClick={onEdit}>Add it now</button>
+          <button type="button" className="pg-checkin-link" style={{ display: 'inline', padding: 0 }} onClick={onEdit}>{t('pgAddItNow')}</button>
         </div>
       )}
 
@@ -513,7 +517,7 @@ function StatusCard({ config, onCheckin, onCancel, onEdit }) {
       </div>
 
       <div className="pg-heirs-summary">
-        <span className="pg-heirs-label">Heirs</span>
+        <span className="pg-heirs-label">{t('pgHeirs')}</span>
         <div className="pg-heirs-chips">
           {config.heirs.map((h, i) => (
             <span key={i} className="pg-heir-chip">
@@ -554,24 +558,25 @@ function StatusCard({ config, onCheckin, onCancel, onEdit }) {
 // One-time popup shown right after the user activates Guardian, explaining how
 // the dead-man's switch works so the shield in the header makes sense.
 function ActivatedModal({ intervalDays, onClose }) {
+  const { t } = useLanguage()
   return (
-    <div className="pg-modal-overlay" role="dialog" aria-modal="true" aria-label="Portfolio Guardian activated" onClick={onClose}>
+    <div className="pg-modal-overlay" role="dialog" aria-modal="true" aria-label={t('pgActivated')} onClick={onClose}>
       <div className="pg-modal" onClick={e => e.stopPropagation()}>
-        <button className="wlm-close" onClick={onClose} aria-label="Close" title="Close">
+        <button className="wlm-close" onClick={onClose} aria-label={t('close')} title={t('close')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
         <div className="pg-modal-icon">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
         <h3 className="pg-modal-title">Portfolio Guardian is on <Icon name="shield" size={16} style={{ verticalAlign:'-2px', marginLeft:'0.25em' }} /></h3>
-        <p className="pg-modal-text">Here's how it protects your loved ones:</p>
+        <p className="pg-modal-text">{t('pgHowItProtects')}</p>
         <ul className="pg-modal-list">
-          <li><b>Just keep using WalletLens.</b> Every time you open the app, your countdown resets automatically — nothing to remember.</li>
+          <li><b>{t('pgJustKeepUsing')}</b> Every time you open the app, your countdown resets automatically — nothing to remember.</li>
           <li>If you don't open it for <b>{intervalDays} day{intervalDays !== 1 ? 's' : ''}</b>, we email your heirs your personal message and a scannable QR of your portfolio.</li>
           <li>A <b>shield</b> now sits in your dashboard header showing days left — green when you're safe, amber then red as the deadline nears.</li>
           <li>Your keys and passwords are never shared, and you can cancel anytime here in Settings.</li>
         </ul>
-        <button className="pg-modal-cta" onClick={onClose}>Got it</button>
+        <button className="pg-modal-cta" onClick={onClose}>{t('pgGotIt')}</button>
       </div>
     </div>
   )

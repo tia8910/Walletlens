@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
 import { loadBuckets } from '../data/visionStorage'
+import { useLanguage } from '../LanguageContext'
 
 /**
  * Grow My Net Worth — a personalized growth engine.
@@ -254,6 +255,7 @@ function FanChart({ band, goal, months }) {
 
 /* ── component ──────────────────────────────────────────────────────────── */
 export default function GrowthPlan({ enriched = [], prices = {}, transactions = [], totalValue = 0, totalInvested = 0, asPage = false, initialGoal = null }) {
+  const { t } = useLanguage()
   // As a page (route /grow) the content is always "open" and rendered inline —
   // no trigger button, no overlay, no history juggling.
   const [open, setOpen] = useState(asPage)
@@ -480,14 +482,14 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {/* ── Your goal — editable ── */}
             <div className="gp-goalcard">
               <label className="gp-goal-row">
-                <span className="gp-goal-lbl">My goal</span>
+                <span className="gp-goal-lbl">{t('gpMyGoal')}</span>
                 <span className="gp-goal-input">
                   <span>$</span>
                   <input
                     type="number" inputMode="numeric" min="0" step="1000"
                     value={Math.round(inputs.goal)}
                     onChange={e => setGoal(Math.max(0, Number(e.target.value) || 0))}
-                    aria-label="Goal amount"
+                    aria-label={t('gpGoalAmount')}
                   />
                 </span>
               </label>
@@ -511,7 +513,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                 add a lump sum, or lower the target. Each is one tap to apply. */}
             {(needMonthly > inputs.monthly || (yearsAtCurrent && yearsAtCurrent > inputs.months / 12)) && (
               <div className="gp-how">
-                <h4 className="gp-how-h"><Icon name="lightbulb" size={15} />How to reach it</h4>
+                <h4 className="gp-how-h"><Icon name="lightbulb" size={15} />{t('gpHowToReach')}</h4>
                 <p className="gp-how-lead">Any one of these gets you there — pick whichever fits your life.</p>
                 <ol className="gp-how-list">
                   {needMonthly > inputs.monthly && (
@@ -523,7 +525,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                           That's ${fmtN(needMonthly - inputs.monthly)} more a month — about
                           ${fmtN(Math.round((needMonthly - inputs.monthly) / 30))} a day.
                         </span>
-                        <button type="button" className="gp-how-apply" onClick={() => setMonthly(needMonthly)}>Try it</button>
+                        <button type="button" className="gp-how-apply" onClick={() => setMonthly(needMonthly)}>{t('gpTryIt')}</button>
                       </div>
                     </li>
                   )}
@@ -535,7 +537,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                         <span className="gp-how-note">
                           Keep saving ${fmtN(inputs.monthly)} a month and just wait longer — no extra money needed.
                         </span>
-                        <button type="button" className="gp-how-apply" onClick={() => setYears(Math.min(30, Math.ceil(yearsAtCurrent)))}>Try it</button>
+                        <button type="button" className="gp-how-apply" onClick={() => setYears(Math.min(30, Math.ceil(yearsAtCurrent)))}>{t('gpTryIt')}</button>
                       </div>
                     </li>
                   )}
@@ -559,7 +561,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                         <span className="gp-how-note">
                           A smaller target you're already on track for. You can always raise it later.
                         </span>
-                        <button type="button" className="gp-how-apply" onClick={() => setGoal(Math.round(sim.p50Terminal))}>Try it</button>
+                        <button type="button" className="gp-how-apply" onClick={() => setGoal(Math.round(sim.p50Terminal))}>{t('gpTryIt')}</button>
                       </div>
                     </li>
                   )}
@@ -604,7 +606,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
 
             {showDetails && (<>
             <div className="gp-section">
-              <h4 className="gp-h">Try a different mix</h4>
+              <h4 className="gp-h">{t('gpTryDifferentMix')}</h4>
               <p className="gp-caption gp-caption--tight">
                 Your own mix grows about <b>{(inputs.params.mu * 100).toFixed(1)}% a year</b> on average.
                 Tap another to see how a safer or bolder mix would change the picture.
@@ -621,7 +623,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {/* levers */}
             {levers.length > 0 && (
               <div className="gp-section">
-                <h4 className="gp-h">What moves the needle most</h4>
+                <h4 className="gp-h">{t('gpWhatMoves')}</h4>
                 {levers.map((l, i) => (
                   <div key={l.id} className="gp-lever">
                     <span className="gp-lever-rank">{i + 1}</span>
@@ -637,7 +639,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {/* milestones */}
             {stones.length > 0 && (
               <div className="gp-section">
-                <h4 className="gp-h">Next milestones (median path)</h4>
+                <h4 className="gp-h">{t('gpMilestones')}</h4>
                 <div className="gp-stones">
                   {stones.map(s => (
                     <div key={s.target} className="gp-stone">
@@ -651,8 +653,8 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
 
             {/* AI strategist */}
             <div className="gp-section">
-              <h4 className="gp-h">Your growth plan</h4>
-              {ai.state === 'loading' && <p className="muted" style={{ fontSize: '0.82rem' }}>Building your personalized plan…</p>}
+              <h4 className="gp-h">{t('gpTitle')}</h4>
+              {ai.state === 'loading' && <p className="muted" style={{ fontSize: '0.82rem' }}>{t('gpBuildingPlan')}</p>}
               {ai.state === 'done' && ai.plan && (
                 <>
                   <p className="gp-headline">{ai.plan.headline}</p>
@@ -674,7 +676,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
   // On the /grow route the parent page supplies the header + back button, so we
   // render the body inline with no trigger and no overlay chrome.
   if (asPage) {
-    if (!(profile && sim)) return <p className="gnw-msg">Building your growth model…</p>
+    if (!(profile && sim)) return <p className="gnw-msg">{t('gpBuildingModel')}</p>
     return (
       <div className="gp-body gp-body--page">
         {growthBody()}
@@ -702,7 +704,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                 Grow My Net Worth
                 {ai.plan?.source === 'ai' && <span className="ade-ai-badge"><Icon name="sparkles" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude AI</span>}
               </div>
-              <button className="qs-close" onClick={closePage} aria-label="Close">
+              <button className="qs-close" onClick={closePage} aria-label={t('close')}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
               </button>
             </div>

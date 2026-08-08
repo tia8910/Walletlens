@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
 import Icon from './Icon'
 import { TOKEN_UNLOCKS } from '../data/assets'
+import { useLanguage } from '../LanguageContext'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
@@ -14,6 +15,7 @@ const UNLOCK_SEVERITY = {
 }
 
 function TokenUnlockAlerts({ enriched }) {
+  const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
   const holdingIds = new Set((enriched || []).map(h => h.coin_id))
   const matches = TOKEN_UNLOCKS.filter(u => holdingIds.has(u.coin_id))
@@ -28,7 +30,7 @@ function TokenUnlockAlerts({ enriched }) {
       <div className="tua-header" onClick={() => setExpanded(v => !v)}>
         <span className="tua-header-icon"><Icon name="unlock" size={18} /></span>
         <div className="tua-header-text">
-          <span className="tua-header-title">Token Unlock Alerts</span>
+          <span className="tua-header-title">{t('saTokenUnlock')}</span>
           <span className="tua-header-sub">
             {critCount > 0 && <span style={{ color: '#f87171' }}>{critCount} critical</span>}
             {critCount > 0 && highCount > 0 && ' · '}
@@ -63,7 +65,7 @@ function TokenUnlockAlerts({ enriched }) {
                       <span className="tua-next-unlock">Next cliff: {daysUntil}d</span>
                     )}
                     {daysUntil !== null && daysUntil <= 0 && (
-                      <span className="tua-next-unlock" style={{ color: '#f87171' }}>Unlock now!</span>
+                      <span className="tua-next-unlock" style={{ color: '#f87171' }}>{t('saUnlockNow')}</span>
                     )}
                   </div>
                 </div>
@@ -299,6 +301,7 @@ const TOP_COINS = [
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function SmartAlerts({ enriched = [], prices = {} }) {
+  const { t } = useLanguage()
   const marketMode = enriched.length === 0
   const [alerts, setAlerts]       = useState(loadAlerts)
   const [cfg, setCfg]             = useState(loadConfig)
@@ -426,7 +429,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
         <div className="sa-header-left">
           <span className="sa-header-icon"><Icon name="zap" size={16} /></span>
           <div>
-            <h3 className="sa-title">Smart Alerts 2.0</h3>
+            <h3 className="sa-title">{t('saTitle')}</h3>
             <p className="sa-subtitle">{marketMode ? 'Watching BTC · ETH · SOL · XRP · BNB · DOGE' : 'Fires when whale + price + news + volume align'}</p>
           </div>
           {unread > 0 && <span className="sa-badge">{unread}</span>}
@@ -436,14 +439,14 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
             className={`sa-check-btn ${checking ? 'sa-checking' : ''}`}
             onClick={runCheck}
             disabled={checking}
-            title="Check now"
+            title={t('saCheckNow')}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={checking ? 'sa-spin' : ''}>
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
             {checking ? 'Checking…' : 'Check Now'}
           </button>
-          <button className="sa-cfg-btn" onClick={() => setShowCfg(v => !v)} title="Settings">
+          <button className="sa-cfg-btn" onClick={() => setShowCfg(v => !v)} title={t('settingsNav')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
           </button>
         </div>
@@ -456,16 +459,16 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {/* ── Config panel ── */}
       {showCfg && (
         <div className="sa-cfg glass-card">
-          <h4 className="sa-cfg-title">Alert Settings</h4>
+          <h4 className="sa-cfg-title">{t('saSettings')}</h4>
           <div className="sa-cfg-grid">
             <label className="sa-cfg-row">
-              <span>Enabled</span>
+              <span>{t('saEnabled')}</span>
               <button className={`settings-toggle ${cfg.enabled ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, enabled: !c.enabled }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </label>
             <label className="sa-cfg-row">
-              <span>Min signals to fire</span>
+              <span>{t('saMinSignals')}</span>
               <div className="sa-cfg-chips">
                 {[2,3,4].map(n => (
                   <button key={n} className={`sa-chip ${cfg.minSignals === n ? 'active' : ''}`} onClick={() => setCfg(c => ({ ...c, minSignals: n }))}>{n}</button>
@@ -473,7 +476,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
               </div>
             </label>
             <label className="sa-cfg-row">
-              <span>Min whale size</span>
+              <span>{t('saMinWhale')}</span>
               <div className="sa-cfg-chips">
                 {[500_000, 1_000_000, 5_000_000].map(v => (
                   <button key={v} className={`sa-chip ${cfg.minWhaleUsd === v ? 'active' : ''}`} onClick={() => setCfg(c => ({ ...c, minWhaleUsd: v }))}>{fmtUsd(v)}</button>
@@ -481,7 +484,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
               </div>
             </label>
             <label className="sa-cfg-row">
-              <span>Momentum threshold</span>
+              <span>{t('saMomentum')}</span>
               <div className="sa-cfg-chips">
                 {[2,4,7].map(v => (
                   <button key={v} className={`sa-chip ${cfg.momentumPct === v ? 'active' : ''}`} onClick={() => setCfg(c => ({ ...c, momentumPct: v }))}>{v}%</button>
@@ -489,7 +492,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
               </div>
             </label>
             <label className="sa-cfg-row">
-              <span>News recency</span>
+              <span>{t('saNewsRecency')}</span>
               <div className="sa-cfg-chips">
                 {[2,4,8].map(v => (
                   <button key={v} className={`sa-chip ${cfg.newsHours === v ? 'active' : ''}`} onClick={() => setCfg(c => ({ ...c, newsHours: v }))}>{v}h</button>
@@ -497,13 +500,13 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
               </div>
             </label>
             <label className="sa-cfg-row">
-              <span>Watch BTC whales</span>
+              <span>{t('saWatchBtc')}</span>
               <button className={`settings-toggle ${cfg.watchBtc ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, watchBtc: !c.watchBtc }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </label>
             <label className="sa-cfg-row">
-              <span>Watch ETH whales</span>
+              <span>{t('saWatchEth')}</span>
               <button className={`settings-toggle ${cfg.watchEth ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, watchEth: !c.watchEth }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
@@ -526,7 +529,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
       {active.length === 0 && dismissed.length === 0 && (
         <div className="sa-empty">
           <div className="sa-empty-icon"><Icon name="zap" size={26} /></div>
-          <p>No correlated signals yet.</p>
+          <p>{t('saNoSignals')}</p>
           <p className="sa-empty-sub">Smart Alerts fires when whale activity, price momentum, volume anomaly, or breaking news align for a coin you hold.</p>
           {marketMode && <p className="sa-empty-sub" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>Watching BTC, ETH, SOL, XRP, BNB, DOGE market-wide.</p>}
         </div>
@@ -536,7 +539,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
         <div className="sa-section">
           <div className="sa-section-hd">
             <span style={{ display:'inline-flex', alignItems:'center', gap:'0.35em' }}><Icon name="zap" size={14} /> Active Alerts</span>
-            <button className="sa-clear-btn" onClick={dismissAll}>Dismiss all</button>
+            <button className="sa-clear-btn" onClick={dismissAll}>{t('saDismissAll')}</button>
           </div>
           {active.map(a => <AlertCard key={a.id} alert={a} onDismiss={dismiss} onDelete={deleteAlert} />)}
         </div>
@@ -546,7 +549,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
         <div className="sa-section">
           <div className="sa-section-hd">
             <span className="sa-muted">Dismissed ({dismissed.length})</span>
-            <button className="sa-clear-btn" onClick={clearAll}>Clear all</button>
+            <button className="sa-clear-btn" onClick={clearAll}>{t('saClearAll')}</button>
           </div>
           {dismissed.map(a => <AlertCard key={a.id} alert={a} onDismiss={dismiss} onDelete={deleteAlert} dim />)}
         </div>
@@ -557,6 +560,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
 
 // ── Alert card ─────────────────────────────────────────────────────────────
 function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
+  const { t } = useLanguage()
   const ago = useAgo(a.firedAt)
   return (
     <div className={`sa-card glass-card ${dim ? 'sa-card-dim' : ''}`}>
@@ -572,8 +576,8 @@ function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
         <div className="sa-card-meta">
           <span className="sa-signal-count">{a.signalCount} signals</span>
           <span className="sa-ago">{ago}</span>
-          {!dim && <button className="sa-dismiss" onClick={() => onDismiss(a.id)} title="Dismiss">✕</button>}
-          <button className="sa-dismiss sa-delete" onClick={() => onDelete(a.id)} title="Delete"><Icon name="trash" size={14} /></button>
+          {!dim && <button className="sa-dismiss" onClick={() => onDismiss(a.id)} title={t('vsDismiss')}>✕</button>}
+          <button className="sa-dismiss sa-delete" onClick={() => onDelete(a.id)} title={t('vsDelete')}><Icon name="trash" size={14} /></button>
         </div>
       </div>
       <div className="sa-signals">
