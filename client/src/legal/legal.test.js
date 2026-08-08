@@ -3,6 +3,7 @@ import { privacy } from './privacy'
 import { terms } from './terms'
 import { LANGUAGES } from '../LanguageContext'
 import { inline } from '../components/DocProse'
+import { FAQ_SECTIONS } from '../pages/FAQ'
 
 // A legal document translated four ways fails in ways a UI string cannot. A
 // section quietly missing from one language, a bullet list that lost an item,
@@ -97,15 +98,35 @@ describe.each(Object.entries(DOCS))('%s', (name, doc) => {
   })
 })
 
-describe('the two documents agree with each other', () => {
-  it('neither claims the app serves advertising', () => {
-    // The Terms used to name "advertising (Google AdSense)" while the Privacy
-    // Policy said the app carries none. Only a verification meta tag exists —
-    // no ad script, no slot — so the Terms were the wrong one.
+describe('the public documents agree with each other', () => {
+  // Three places described the app's business model and two of them were
+  // wrong: the Terms named "advertising (Google AdSense)" and the FAQ said the
+  // app was "sustained by unobtrusive advertising", while the Privacy Policy
+  // said it carries none. Only a verification meta tag exists — no ad script,
+  // no slot — so the Privacy Policy was the accurate one. These checks exist
+  // because the claim survived in a third file after the first two were fixed.
+  it('no legal document mentions AdSense', () => {
     for (const [name, doc] of Object.entries(DOCS)) {
       for (const { code } of LANGUAGES) {
         expect(JSON.stringify(doc[code]), `${name}/${code} mentions AdSense`).not.toMatch(/AdSense/i)
       }
+    }
+  })
+
+  it('the FAQ does not claim the app is funded by advertising', () => {
+    const all = JSON.stringify(FAQ_SECTIONS)
+    expect(all).not.toMatch(/sustained by[^"]*advertis/i)
+    expect(all).not.toMatch(/AdSense/i)
+  })
+
+  it('the FAQ lists the languages that actually ship', () => {
+    // It claimed Arabic only, long after French and Spanish shipped.
+    const answer = FAQ_SECTIONS
+      .flatMap(s => s.faqs)
+      .find(f => /languages other than English/i.test(f.q))
+    expect(answer, 'the language question disappeared from the FAQ').toBeTruthy()
+    for (const name of ['Arabic', 'French', 'Spanish']) {
+      expect(answer.a, `FAQ does not mention ${name}`).toContain(name)
     }
   })
 })

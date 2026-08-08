@@ -11,7 +11,7 @@ export const FAQ_SECTIONS = [
     faqs: [
       {
         q: 'Is WalletLens really free?',
-        a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.',
+        a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app.',
       },
       {
         q: 'Do I need an account or email to use it?',
@@ -27,7 +27,7 @@ export const FAQ_SECTIONS = [
       },
       {
         q: 'Does WalletLens support languages other than English?',
-        a: 'Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned.',
+        a: 'Yes. The interface is available in English, Arabic, French and Spanish, with full right-to-left layout in Arabic. You can switch language during onboarding or at any time in Settings → Appearance → Language.',
       },
     ],
   },
