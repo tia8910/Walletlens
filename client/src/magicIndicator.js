@@ -829,52 +829,59 @@ function pillarIndustrialDemand(f, signals) {
 
 // Direction label / colour / icon for a composite score.
 export function directionMeta(score) {
-  if (score >= 45) return { label: 'Strong Buy', stance: 'bullish', icon: 'arrow-ne', color: '#16a34a' }
-  if (score >= 15) return { label: 'Accumulate', stance: 'bullish', icon: 'trend-up', color: '#22c55e' }
-  if (score > -15) return { label: 'Neutral', stance: 'neutral', icon: 'scale', color: '#94a3b8' }
-  if (score > -45) return { label: 'Reduce', stance: 'bearish', icon: 'trend-down', color: '#f59e0b' }
-  return { label: 'Distribute', stance: 'bearish', icon: 'arrow-down', color: '#ef4444' }
+  // Same arrangement as PILLAR_SETS: the English label stays for callers that
+  // need a language-independent string (share cards, AI prompts), labelKey is
+  // for anything rendered to the user.
+  if (score >= 45) return { label: 'Strong Buy', labelKey: 'dirStrongBuy', stance: 'bullish', icon: 'arrow-ne', color: '#16a34a' }
+  if (score >= 15) return { label: 'Accumulate', labelKey: 'dirAccumulate', stance: 'bullish', icon: 'trend-up', color: '#22c55e' }
+  if (score > -15) return { label: 'Neutral', labelKey: 'dirNeutral', stance: 'neutral', icon: 'scale', color: '#94a3b8' }
+  if (score > -45) return { label: 'Reduce', labelKey: 'dirReduce', stance: 'bearish', icon: 'trend-down', color: '#f59e0b' }
+  return { label: 'Distribute', labelKey: 'dirDistribute', stance: 'bearish', icon: 'arrow-down', color: '#ef4444' }
 }
 
 // Category-specific pillar definitions: crypto gets whales/on-chain/cycle,
 // stocks get fundamental/sector/dividend, metals get DXY/inflation/supply.
+// label is the English string and labelKey is its translation key. Both are
+// kept: this module is pure and has no React context, so it cannot call t()
+// itself, and callers outside the UI (the share-card renderer, the AI prompt
+// builder) still want a plain English name regardless of the user's language.
 const PILLAR_SETS = {
   crypto: [
-    { key: 'technical', label: 'Technical', weight: 0.20 },
-    { key: 'momentum', label: 'Momentum', weight: 0.18 },
-    { key: 'whales', label: 'Whales', weight: 0.12 },
-    { key: 'onchain', label: 'On-chain', weight: 0.12 },
-    { key: 'volume', label: 'Volume', weight: 0.10 },
-    { key: 'sentiment', label: 'Sentiment', weight: 0.12 },
-    { key: 'cycle', label: 'Cycle', weight: 0.08 },
-    { key: 'correlation', label: 'Correlation', weight: 0.08 },
+    { key: 'technical', label: 'Technical', labelKey: 'plTechnical', weight: 0.20 },
+    { key: 'momentum', label: 'Momentum', labelKey: 'plMomentum', weight: 0.18 },
+    { key: 'whales', label: 'Whales', labelKey: 'plWhales', weight: 0.12 },
+    { key: 'onchain', label: 'On-chain', labelKey: 'plOnChain', weight: 0.12 },
+    { key: 'volume', label: 'Volume', labelKey: 'plVolume', weight: 0.10 },
+    { key: 'sentiment', label: 'Sentiment', labelKey: 'plSentiment', weight: 0.12 },
+    { key: 'cycle', label: 'Cycle', labelKey: 'plCycle', weight: 0.08 },
+    { key: 'correlation', label: 'Correlation', labelKey: 'plCorrelation', weight: 0.08 },
   ],
   stock: [
-    { key: 'technical', label: 'Technical', weight: 0.20 },
-    { key: 'momentum', label: 'Momentum', weight: 0.18 },
-    { key: 'volume', label: 'Volume', weight: 0.12 },
-    { key: 'stockFundamental', label: 'Earnings', weight: 0.20 },
-    { key: 'sector', label: 'Sector', weight: 0.12 },
-    { key: 'dividend', label: 'Dividend', weight: 0.08 },
-    { key: 'marketSentiment', label: 'Market', weight: 0.10 },
+    { key: 'technical', label: 'Technical', labelKey: 'plTechnical', weight: 0.20 },
+    { key: 'momentum', label: 'Momentum', labelKey: 'plMomentum', weight: 0.18 },
+    { key: 'volume', label: 'Volume', labelKey: 'plVolume', weight: 0.12 },
+    { key: 'stockFundamental', label: 'Earnings', labelKey: 'plEarnings', weight: 0.20 },
+    { key: 'sector', label: 'Sector', labelKey: 'plSector', weight: 0.12 },
+    { key: 'dividend', label: 'Dividend', labelKey: 'plDividend', weight: 0.08 },
+    { key: 'marketSentiment', label: 'Market', labelKey: 'plMarket', weight: 0.10 },
   ],
   metal: [
-    { key: 'technical', label: 'Technical', weight: 0.22 },
-    { key: 'momentum', label: 'Momentum', weight: 0.20 },
-    { key: 'volume', label: 'Volume', weight: 0.12 },
-    { key: 'dxyCorrelation', label: 'DXY', weight: 0.15 },
-    { key: 'inflationHedge', label: 'Inflation', weight: 0.12 },
-    { key: 'safeHaven', label: 'Safe Haven', weight: 0.10 },
-    { key: 'supplyDemand', label: 'Supply', weight: 0.09 },
+    { key: 'technical', label: 'Technical', labelKey: 'plTechnical', weight: 0.22 },
+    { key: 'momentum', label: 'Momentum', labelKey: 'plMomentum', weight: 0.20 },
+    { key: 'volume', label: 'Volume', labelKey: 'plVolume', weight: 0.12 },
+    { key: 'dxyCorrelation', label: 'DXY', labelKey: 'plDxy', weight: 0.15 },
+    { key: 'inflationHedge', label: 'Inflation', labelKey: 'plInflation', weight: 0.12 },
+    { key: 'safeHaven', label: 'Safe Haven', labelKey: 'plSafeHaven', weight: 0.10 },
+    { key: 'supplyDemand', label: 'Supply', labelKey: 'plSupply', weight: 0.09 },
   ],
   // Copper/platinum: industrial metals get supply+demand focus
   industrialMetal: [
-    { key: 'technical', label: 'Technical', weight: 0.22 },
-    { key: 'momentum', label: 'Momentum', weight: 0.20 },
-    { key: 'volume', label: 'Volume', weight: 0.12 },
-    { key: 'dxyCorrelation', label: 'DXY', weight: 0.13 },
-    { key: 'industrialDemand', label: 'Demand', weight: 0.18 },
-    { key: 'supplyDemand', label: 'Supply', weight: 0.15 },
+    { key: 'technical', label: 'Technical', labelKey: 'plTechnical', weight: 0.22 },
+    { key: 'momentum', label: 'Momentum', labelKey: 'plMomentum', weight: 0.20 },
+    { key: 'volume', label: 'Volume', labelKey: 'plVolume', weight: 0.12 },
+    { key: 'dxyCorrelation', label: 'DXY', labelKey: 'plDxy', weight: 0.13 },
+    { key: 'industrialDemand', label: 'Demand', labelKey: 'plDemand', weight: 0.18 },
+    { key: 'supplyDemand', label: 'Supply', labelKey: 'plSupply', weight: 0.15 },
   ],
 }
 

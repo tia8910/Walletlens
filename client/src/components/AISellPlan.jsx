@@ -4,6 +4,7 @@ import { track, trackAI } from '../analytics'
 import { api } from '../api'
 import { buildTASellPlan } from '../technicals'
 import { isStablecoin } from '../stablecoins'
+import { useLanguage } from '../LanguageContext'
 
 // Fallback rule-based plan (P&L + concentration + 24h momentum) — used when no
 // technical analysis is available for the holding (non-crypto, or too little
@@ -182,6 +183,7 @@ function TAStrip({ ta }) {
 }
 
 export default function AISellPlan({ enriched = [], prices = {} }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [technicals, setTechnicals] = useState({})
   const [loading, setLoading] = useState(false)
@@ -216,10 +218,8 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
     <div className="glass-card" style={{ marginTop: '1rem' }}>
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'1rem' }}>
         <div>
-          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Smart Sell Plan</h3>
-          <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>
-            A technical-analysis exit strategy — sell targets derived from live support and resistance, RSI, MACD, and trend.
-          </p>
+          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('spTitle')}</h3>
+          <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>{t('spDesc')}</p>
         </div>
         {!open && (
           <button
@@ -260,7 +260,7 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
                 animation:'sp-btn-shimmer 3.5s ease-in-out infinite',
               }} />
             )}
-            <span style={{ position:'relative' }}>{loading ? <><Icon name="hourglass" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Analyzing…</> : <><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Generate</>}</span>
+            <span style={{ position:'relative' }}>{loading ? <><Icon name="hourglass" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('spAnalyzing')}</> : <><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('spGenerate')}</>}</span>
           </button>
         )}
         {open && (
