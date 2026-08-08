@@ -60,6 +60,15 @@
 /market.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
+/economic-calendar.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/stocks.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economy.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
 /llms.txt
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
