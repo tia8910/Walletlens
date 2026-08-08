@@ -117,19 +117,6 @@ function IconData()   { return <svg width="20" height="20" viewBox="0 0 24 24" f
 function IconMenu()   { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> }
 function IconClose()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> }
 
-function LangToggle() {
-  const { lang, setLang } = useLanguage()
-  return (
-    <button
-      className="wl-lang-btn"
-      onClick={() => { const next = lang === 'en' ? 'ar' : 'en'; setLang(() => next); track('language_toggle', { to: next }) }}
-      title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
-    >
-      {lang === 'en' ? 'ع' : 'EN'}
-    </button>
-  )
-}
-
 // ── PWA install button in topbar ─────────────────────────────────────
 // Only shown on Chrome/Edge where beforeinstallprompt fires — no-op on Firefox/iOS
 function PWATopbarButton() {

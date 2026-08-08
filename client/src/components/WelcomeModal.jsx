@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import sfx from '../sfx'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
+import { useLanguage, LANGUAGES } from '../LanguageContext'
 import { useBiometricLock } from './BiometricLock'
 
 const KEY = 'wl_welcomed_v2'
@@ -121,6 +122,7 @@ export default function WelcomeModal() {
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, mode, setTheme, setMode } = useTheme()
+  const { lang, setLang } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
 
   async function enableBiometric() {
@@ -235,6 +237,30 @@ export default function WelcomeModal() {
 
           {s.isThemeStep && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', margin: '0.2rem 0 0.5rem' }}>
+              {/* Language. Each button is labelled in its own language and
+                  carries its own dir, so the Arabic option reads correctly
+                  even while the rest of the modal is still in English. */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.45rem' }}>
+                {LANGUAGES.map(l => (
+                  <button
+                    key={l.code}
+                    lang={l.code}
+                    dir={l.rtl ? 'rtl' : 'ltr'}
+                    aria-label={l.label}
+                    onClick={() => { sfx.haptic(6); setLang(l.code); track('language_changed', { lang: l.code, source: 'welcome' }) }}
+                    style={{
+                      padding: '0.55rem 0.3rem',
+                      fontSize: '0.75rem', fontWeight: 700,
+                      color: lang === l.code ? '#00e676' : 'rgba(255,255,255,0.7)',
+                      background: lang === l.code ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.04)',
+                      border: `1.5px solid ${lang === l.code ? 'rgba(0,230,118,0.55)' : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
+                    }}
+                  >
+                    {l.native}
+                  </button>
+                ))}
+              </div>
               {/* Dark / Light toggle */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 {['dark', 'light'].map(m => (
