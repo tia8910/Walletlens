@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
+import { useLanguage } from '../LanguageContext'
 
 export default function Privacy() {
+  const { t, lang } = useLanguage()
   return (
     <div className="doc-page">
       <header className="doc-header">
@@ -10,6 +12,9 @@ export default function Privacy() {
       <article className="doc-article">
         <h1>Privacy Policy</h1>
         <p className="doc-meta">Last updated: August 2026</p>
+        {lang !== 'en' && (
+          <p className="doc-meta" style={{ fontStyle: 'italic' }}>{t('legalEnglishGoverns')}</p>
+        )}
 
         <p>WalletLens ("we", "our", or "the app") is committed to protecting your privacy. This policy explains what information we collect, how we use it, and what choices you have.</p>
 

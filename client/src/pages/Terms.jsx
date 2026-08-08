@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
+import { useLanguage } from '../LanguageContext'
 
 export default function Terms() {
+  const { t, lang } = useLanguage()
   return (
     <div className="doc-page">
       <header className="doc-header">
@@ -10,6 +12,9 @@ export default function Terms() {
       <article className="doc-article">
         <h1>Terms of Service</h1>
         <p className="doc-meta">Last updated: May 2026</p>
+        {lang !== 'en' && (
+          <p className="doc-meta" style={{ fontStyle: 'italic' }}>{t('legalEnglishGoverns')}</p>
+        )}
 
         <p>Please read these Terms of Service ("Terms") carefully before using WalletLens ("the app", "we", "our"). By accessing or using WalletLens, you agree to be bound by these Terms.</p>
 

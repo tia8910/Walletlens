@@ -883,6 +883,7 @@ export const translations = {
     dirDistribute: 'Distribute',
     tcChooseReceived: 'Choose what I received',
     tcJustRemoveIt: 'Yes, just remove it',
+    legalEnglishGoverns: 'This page is translated for convenience. The English version is the authoritative text and governs in the event of any discrepancy.',
   },
 
   ar: {
@@ -1774,6 +1775,7 @@ export const translations = {
     dirDistribute: 'تصريف',
     tcChooseReceived: 'اختر ما استلمته',
     tcJustRemoveIt: 'نعم، أزِله فقط',
+    legalEnglishGoverns: 'تُرجمت هذه الصفحة لتسهيل الاطلاع عليها. والنسخة الإنجليزية هي النص المعتمَد، وهي المرجع في حال وجود أي اختلاف.',
   },
   fr: {
     watchlist: 'Liste de suivi',
@@ -2638,6 +2640,7 @@ export const translations = {
     dirDistribute: 'Distribuer',
     tcChooseReceived: 'Choisir ce que j\'ai reçu',
     tcJustRemoveIt: 'Oui, retirez-le simplement',
+    legalEnglishGoverns: 'Cette page est traduite à titre indicatif. La version anglaise fait foi et prévaut en cas de divergence.',
   },
   es: {
     watchlist: 'Lista de seguimiento',
@@ -3502,5 +3505,6 @@ export const translations = {
     dirDistribute: 'Distribuir',
     tcChooseReceived: 'Elegir lo que recibí',
     tcJustRemoveIt: 'Sí, solo quítalo',
+    legalEnglishGoverns: 'Esta página está traducida a título informativo. La versión en inglés es el texto vinculante y prevalece en caso de discrepancia.',
   },
 }

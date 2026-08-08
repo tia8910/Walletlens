@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import { translateBatch } from '../translateText'
 
 function timeAgo(pubDate) {
   if (!pubDate) return ''
@@ -113,13 +114,37 @@ async function fetchFeed(feed) {
 }
 
 export default function NewsTicker() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [items, setItems]     = useState([])
   const [paused, setPaused]   = useState(false)
   const [category, setCategory] = useState('crypto')
   const [loading, setLoading] = useState(true)
   const trackRef              = useRef(null)
   const animRef               = useRef(null)
+
+  // Headlines arrive from the feeds in English, so they cannot come from
+  // i18n.js. They are translated after the fact rather than before first
+  // paint: the ticker shows English immediately and swaps in place a moment
+  // later, which beats an empty bar while a network call resolves. Cached in
+  // localStorage and at the edge, so this is usually free.
+  useEffect(() => {
+    if (!items.length || lang === 'en') return
+    let cancelled = false
+    const titles = items.map(it => it.title)
+    translateBatch(titles, lang).then(translated => {
+      if (cancelled) return
+      // Only touch state if something actually changed, or an unchanged
+      // result would re-render the ticker on every language check.
+      if (translated.some((txt, n) => txt !== titles[n])) {
+        setItems(prev => prev.map((it, n) => (
+          translated[n] && translated[n] !== it.title ? { ...it, title: translated[n] } : it
+        )))
+      }
+    }).catch(() => { /* translation is best-effort; English stands */ })
+    return () => { cancelled = true }
+    // items.length rather than items: the map above replaces the array, and
+    // depending on the array itself would loop.
+  }, [items.length, lang])
 
   useEffect(() => {
     let cancelled = false
