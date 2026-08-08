@@ -1318,8 +1318,8 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
   return (
     <div className="dvx-panel">
       <div className="dvx-type-row">
-        <button className={`dv-type-btn ${type === 'buy' ? 'active-buy' : ''}`} onClick={() => setType('buy')}>Buy</button>
-        <button className={`dv-type-btn ${type === 'sell' ? 'active-sell' : ''}`} onClick={() => setType('sell')}>Sell</button>
+        <button className={`dv-type-btn ${type === 'buy' ? 'active-buy' : ''}`} onClick={() => setType('buy')}>{t('buy')}</button>
+        <button className={`dv-type-btn ${type === 'sell' ? 'active-sell' : ''}`} onClick={() => setType('sell')}>{t('sell')}</button>
       </div>
       <div className="dvx-form-grid">
         <select className="dvx-input" value={walletId} onChange={e => setWalletId(e.target.value)}>
@@ -2780,7 +2780,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
         <div className="glass-card" style={{ textAlign:'center', padding:'2.5rem 1.5rem' }}>
           <div style={{ fontSize:'2rem', marginBottom:'0.75rem', opacity:0.4 }}>{Ico.target}</div>
           <p style={{ color:'var(--text-muted)', marginBottom:'1rem' }}>{t('targetsNeedHoldings')}</p>
-          <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>Add Trade</button>
+          <button className="dvx-btn dvx-btn-primary" onClick={() => navigate('/transactions')}>{t('addTrade')}</button>
         </div>
       ) : (
         targetable.map(h => {
@@ -4072,9 +4072,7 @@ export default function Dashboard() {
                 boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
                 transition: 'box-shadow 0.15s',
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Buy
-              </button>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>{t('buy')}</button>
               <button onClick={() => openSheet('sell', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'rgba(248,113,113,0.10)',
@@ -4083,18 +4081,14 @@ export default function Dashboard() {
                 boxShadow: '0 0 0 1px rgba(248,113,113,0.25)',
                 transition: 'box-shadow 0.15s',
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Sell
-              </button>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>{t('sell')}</button>
               <button onClick={() => navigate('/transactions')} style={{
                 padding: '0.75rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'var(--surface-1)',
                 color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.82rem',
                 boxShadow: '0 0 0 1px var(--border)',
                 whiteSpace: 'nowrap',
-              }}>
-                History
-              </button>
+              }}>{t('history')}</button>
             </div>
           )}
 
@@ -5442,12 +5436,12 @@ export default function Dashboard() {
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
             background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',
-          }}>Buy</button>
+          }}>{t('buy')}</button>
           <button onClick={() => { setNudgeVisible(false); openSheet('sell', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', cursor: 'pointer',
             background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 800, fontSize: '0.8rem',
             border: '1px solid rgba(248,113,113,0.3)',
-          }}>Sell</button>
+          }}>{t('sell')}</button>
           <button onClick={() => setNudgeVisible(false)} style={{
             background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
           }}>×</button>

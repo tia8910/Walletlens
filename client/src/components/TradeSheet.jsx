@@ -82,25 +82,25 @@ const IcoOther = (
 )
 
 const CATEGORIES = [
-  { key: 'crypto', label: 'Crypto',  icon: '₿',           color: '#6366f1' },
-  { key: 'stock',  label: 'Stocks',  icon: 'trend-up',           color: 'var(--g-ink)' },
-  { key: 'tstock', label: 'Tokenized', icon: 'coins',         color: '#f0b90b' },
-  { key: 'gold',   label: 'Gold',    icon: IcoGoldBar,     color: '#f59e0b' },
-  { key: 'silver', label: 'Silver',  icon: IcoSilverBar,   color: '#94a3b8' },
-  { key: 'fiat',   label: 'Fiat',    icon: '$',            color: '#0ea5e9' },
-  { key: 'bond',   label: 'Bonds',   icon: 'building',           color: '#0284c7' },
-  { key: 'other',  label: 'Other',   icon: IcoOther,       color: '#a78bfa' },
+  { key: 'crypto', label: 'Crypto', labelKey: 'catCrypto',  icon: '₿',           color: '#6366f1' },
+  { key: 'stock',  label: 'Stocks', labelKey: 'catStocks',  icon: 'trend-up',           color: 'var(--g-ink)' },
+  { key: 'tstock', label: 'Tokenized', labelKey: 'tcTokenized', icon: 'coins',         color: '#f0b90b' },
+  { key: 'gold',   label: 'Gold', labelKey: 'catGold',    icon: IcoGoldBar,     color: '#f59e0b' },
+  { key: 'silver', label: 'Silver', labelKey: 'catSilver',  icon: IcoSilverBar,   color: '#94a3b8' },
+  { key: 'fiat',   label: 'Fiat', labelKey: 'tcFiat',    icon: '$',            color: '#0ea5e9' },
+  { key: 'bond',   label: 'Bonds', labelKey: 'catBonds',   icon: 'building',           color: '#0284c7' },
+  { key: 'other',  label: 'Other', labelKey: 'txOther',   icon: IcoOther,       color: '#a78bfa' },
 ]
 
 // ── Payment leg options (Buy with / Sell for) ─────────────────────────────
 const BUY_WITH_OPTIONS = [
-  { key: 'NONE',   label: 'None',   icon: '⊘', color: '#94a3b8' },
+  { key: 'NONE',   label: 'None', labelKey: 'txNone',   icon: '⊘', color: '#94a3b8' },
   { key: 'USDT',   label: 'USDT',   icon: '₮', color: '#26a17b' },
   { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
   { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
   { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
-  { key: 'CUSTOM', label: 'Other',  icon: 'edit', color: '#a78bfa' },
+  { key: 'CUSTOM', label: 'Other', labelKey: 'txOther',  icon: 'edit', color: '#a78bfa' },
 ]
 const SELL_FOR_OPTIONS = [
   { key: 'USD',    label: 'USD',    icon: '$', color: 'var(--g-ink)' },
@@ -108,8 +108,8 @@ const SELL_FOR_OPTIONS = [
   { key: 'USDC',   label: 'USDC',   icon: '$', color: '#2775ca' },
   { key: 'BTC',    label: 'BTC',    icon: '₿', color: '#f7931a' },
   { key: 'EUR',    label: 'EUR',    icon: '€', color: '#3b82f6' },
-  { key: 'CUSTOM', label: 'Other',  icon: 'edit', color: '#a78bfa' },
-  { key: 'REMOVE', label: 'Remove', icon: 'trash', color: '#f87171' },
+  { key: 'CUSTOM', label: 'Other', labelKey: 'txOther',  icon: 'edit', color: '#a78bfa' },
+  { key: 'REMOVE', label: 'Remove', labelKey: 'txRemove', icon: 'trash', color: '#f87171' },
 ]
 
 // ── Preset asset for each non-crypto category ─────────────────────────────
@@ -588,7 +588,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <button className="bs-back" onClick={onClose} aria-label="Back">{IcoBack}</button>
             )}
             <div className="bs-type-dot" style={{ background: accent }} />
-            <h3 className="bs-title" style={{ color: accent }}>{isBuy ? 'Buy Asset' : 'Sell Asset'}</h3>
+            <h3 className="bs-title" style={{ color: accent }}>{isBuy ? t('tcBuyAsset') : t('tcSellAsset')}</h3>
           </div>
           <button className="bs-close" style={{ '--bs-acc': accent }} onClick={onClose} aria-label={t('close')}>{IcoClose}</button>
         </div>
@@ -631,7 +631,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
                       <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
-                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.label}</span>
+                      <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.labelKey ? t(o.labelKey) : o.label}</span>
                     </button>
                   ))}
                 </div>
@@ -701,7 +701,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
                       onClick={() => { track('trade_category_select', { category: c.key, trade_type: type }); setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
                     >
-                      <span><CatIcon icon={c.icon} size={15} /></span> {c.label}
+                      <span><CatIcon icon={c.icon} size={15} /></span> {t(c.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -1076,7 +1076,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
               <div className="bs-field">
                 <label className="bs-label">
-                  Price (USD)
+                  {t('tcPriceUsd')}
                   {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color: 'var(--g-ink)', fontWeight: 700}}>fetching…</span>}
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
@@ -1120,7 +1120,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       onClick={() => setSellFor(o.key)}
                     >
                       <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
-                      <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.label}</span>
+                      <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.labelKey ? t(o.labelKey) : o.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1174,7 +1174,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <button data-tour="ts-confirm" className={`bs-submit ${isBuy ? 'dvx-btn-primary' : 'dvx-btn-sell'}`}
               onClick={() => { playTradeSound(isBuy); submit() }}
               disabled={busy || !asset || !amount || !price || (isBuy ? !buyWith : !sellFor) || (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) || (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim())}>
-              {busy ? 'Recording…' : isBuy ? 'Confirm Buy' : 'Confirm Sell'}
+              {busy ? t('obSettingUp') : isBuy ? t('tcConfirmBuy') : t('tcConfirmSell')}
             </button>
           </div>
           </>
@@ -1202,11 +1202,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               )}
               <div className="bs-confirm-actions">
                 <button className="bs-confirm-switch" onClick={() => setConfirmNoneOpen(false)}>
-                  {isBuy ? 'Choose what I paid with' : 'Choose what I received'}
+                  {isBuy ? t('tcChoosePaid') : t('tcChooseReceived')}
                 </button>
                 <button className="bs-confirm-go" style={{ background: accent }}
                   onClick={() => { setConfirmNoneOpen(false); submit(true) }}>
-                  {isBuy ? 'Yes, just add it' : 'Yes, just remove it'}
+                  {isBuy ? t('tcJustAddIt') : t('tcJustRemoveIt')}
                 </button>
               </div>
             </div>

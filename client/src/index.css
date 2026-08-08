@@ -8523,7 +8523,10 @@ input[type="date"] { color-scheme: dark; }
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4,
 [dir="rtl"] h5, [dir="rtl"] h6, [dir="rtl"] p, [dir="rtl"] li,
 [dir="rtl"] label, [dir="rtl"] button, [dir="rtl"] figcaption,
-[dir="rtl"] td, [dir="rtl"] th, [dir="rtl"] option {
+[dir="rtl"] td, [dir="rtl"] th, [dir="rtl"] option,
+/* <summary> was missing and the FAQ is built from <details>/<summary>, so
+   every question rendered as "?Is WalletLens really free". */
+[dir="rtl"] summary, [dir="rtl"] dt, [dir="rtl"] dd, [dir="rtl"] blockquote {
   unicode-bidi: plaintext;
   text-align: start;
 }

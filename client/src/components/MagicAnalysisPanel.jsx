@@ -9,6 +9,7 @@ import { getAiVerdict } from '../magicAi'
 import { isStablecoin } from '../stablecoins'
 import { assetClass } from '../data/assets'
 import { getCachedCoinImage } from '../api'
+import { useLanguage } from '../LanguageContext'
 
 const PILLAR_INFO = {
   technical:   'RSI, MACD, Bollinger Bands, trend, Ichimoku Cloud, VWAP and Fibonacci levels.',
@@ -434,6 +435,7 @@ function tweetTextFor(item, verdict) {
 
 // ── Per-card "Share to X" button ───────────────────────────────────────────
 function ShareCardButton({ item, verdict }) {
+  const { t } = useLanguage()
   const [sharing, setSharing] = useState(false)
 
   async function share() {
@@ -485,13 +487,14 @@ function ShareCardButton({ item, verdict }) {
       {sharing ? '…' : (
         <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       )}
-      <span>Share</span>
+      <span>{t('miShare')}</span>
     </button>
   )
 }
 
 // ── Diverging gauge (-100..100) — enhanced premium design ────────────────────
 function MagicGauge({ score, direction, confidence, big }) {
+  const { t } = useLanguage()
   const pos = ((score + 100) / 200) * 100
   return (
     <div>
@@ -501,7 +504,7 @@ function MagicGauge({ score, direction, confidence, big }) {
             <Icon name={direction.icon} size={big ? 20 : 16} style={{ color: direction.color }} />
           </div>
           <span style={{ fontSize: big ? '1.5rem' : '1.15rem', fontWeight: 800, color: direction.color, letterSpacing: '-0.01em' }}>
-            {direction.label}
+            {t(direction.labelKey)}
           </span>
         </div>
         <span style={{ fontSize: big ? '1.1rem' : '0.9rem', fontWeight: 800, color: direction.color, fontVariantNumeric: 'tabular-nums' }}>
@@ -513,13 +516,13 @@ function MagicGauge({ score, direction, confidence, big }) {
         <div className="magic-marker" style={{ left: `${pos}%`, background: direction.color, boxShadow: `0 0 16px ${direction.color}, 0 0 32px ${direction.color}35` }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--text2)', marginTop: '0.3rem', gap: '0.2rem' }}>
-        <span style={{ flex: '0 0 auto' }}>Sell</span>
-        <span style={{ flex: 1, textAlign: 'center' }}>Neutral</span>
-        <span style={{ flex: '0 0 auto' }}>Buy</span>
+        <span style={{ flex: '0 0 auto' }}>{t('miSell')}</span>
+        <span style={{ flex: 1, textAlign: 'center' }}>{t('miNeutral')}</span>
+        <span style={{ flex: '0 0 auto' }}>{t('miBuy')}</span>
       </div>
       {confidence != null && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text2)', marginTop: '0.5rem' }}>
-          <span style={{ flexShrink: 0 }}>Conf</span>
+          <span style={{ flexShrink: 0 }}>{t('miConf')}</span>
           <div style={{ flex: 1, height: '5px', borderRadius: '3px', background: 'var(--bg3)', overflow: 'hidden', maxWidth: '140px' }}>
             <div style={{ width: `${confidence}%`, height: '100%', borderRadius: '3px', background: `linear-gradient(90deg, ${direction.color}70, ${direction.color})`, transition: 'width 0.5s ease' }} />
           </div>
@@ -552,7 +555,7 @@ function PillarBars({ pillars }) {
           <div key={p.key} className="pillar-row" title={title}>
             <div className="pillar-name" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: dotColor, flexShrink: 0, boxShadow: live ? `0 0 4px ${dotColor}` : 'none' }} />
-              {p.label}
+              {t(p.labelKey)}
             </div>
             <div className="pillar-track">
               <div className="pillar-zero" />
@@ -576,6 +579,7 @@ function PillarBars({ pillars }) {
 
 // ── AI verdict (optional, uses the Anthropic key via the Deno endpoint) ────
 function AiVerdict({ item, onVerdictReady }) {
+  const { t } = useLanguage()
   const [state, setState] = useState('idle') // idle | loading | done | error
   const [verdict, setVerdict] = useState(null)
 
@@ -595,35 +599,35 @@ function AiVerdict({ item, onVerdictReady }) {
 
   if (state === 'idle') return (
     <button className="magic-ai-btn" onClick={run}>
-      <Icon name="search" size={15} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />Detailed Analysis
+      <Icon name="search" size={15} style={{ verticalAlign: '-2px', marginInlineEnd: '0.35em' }} />{t('miDetailed')}
     </button>
   )
   if (state === 'loading') return <div className="magic-ai-loading"><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Claude is analysing {item.coin_symbol?.toUpperCase()}…</div>
   if (state === 'error') {
     return (
       <div className="magic-ai-err">
-        Detailed analysis unavailable — the indicator above still reflects the full analysis.
-        <button className="magic-ai-btn" style={{ marginLeft: '0.5rem' }} onClick={run}>Retry</button>
+        {t('miUnavailable')}
+        <button className="magic-ai-btn" style={{ marginLeft: '0.5rem' }} onClick={run}>{t('miRetry')}</button>
       </div>
     )
   }
   return (
     <div className="magic-ai-card">
       <div className="magic-ai-head">
-        <Icon name="search" size={16} style={{ verticalAlign: '-3px', marginRight: '0.35em' }} />Detailed Analysis
+        <Icon name="search" size={16} style={{ verticalAlign: '-3px', marginInlineEnd: '0.35em' }} />{t('miDetailed')}
         {verdict.direction ? <span className="magic-ai-dir">{verdict.direction}</span> : null}
       </div>
       {verdict.oneLiner && <p className="magic-ai-line">{verdict.oneLiner}</p>}
       <div className="magic-ai-cols">
         {verdict.bull?.length > 0 && (
           <div>
-            <div className="magic-ai-col-h" style={{ color: 'var(--g-ink)' }}>Bull</div>
+            <div className="magic-ai-col-h" style={{ color: 'var(--g-ink)' }}>{t('miBull')}</div>
             <ul>{verdict.bull.map((b, i) => <li key={i}>{b}</li>)}</ul>
           </div>
         )}
         {verdict.bear?.length > 0 && (
           <div>
-            <div className="magic-ai-col-h" style={{ color: '#ef4444' }}>Bear</div>
+            <div className="magic-ai-col-h" style={{ color: '#ef4444' }}>{t('miBear')}</div>
             <ul>{verdict.bear.map((b, i) => <li key={i}>{b}</li>)}</ul>
           </div>
         )}
@@ -635,6 +639,7 @@ function AiVerdict({ item, onVerdictReady }) {
 
 // ── Per-asset card — enhanced premium design ────────────────────────────
 function AssetCard({ item, onOpen }) {
+  const { t } = useLanguage()
   const m = item.magic
   const chg = item.fundamental?.change24h
   const ta = item.ta
@@ -676,7 +681,7 @@ function AssetCard({ item, onOpen }) {
         <AiVerdict item={item} onVerdictReady={setVerdict} />
         <div className="magic-foot-actions">
           <ShareCardButton item={item} verdict={verdict} />
-          <button className="magic-detail-link" onClick={onOpen}>Full chart →</button>
+          <button className="magic-detail-link" onClick={onOpen}>{t('miFullChart')} →</button>
         </div>
       </div>
     </div>
@@ -686,6 +691,7 @@ function AssetCard({ item, onOpen }) {
 // Shared Magic Indicator analysis view. Takes already-enriched holdings
 // (with coin_id, coin_symbol, coin_name, coin_image, amount, price, value).
 export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [ta, setTa] = useState({})
   const [signals, setSignals] = useState({})
@@ -804,7 +810,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       )}
 
 {analyzing && cryptoItems.length === 0 && (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>Crunching indicators…</div>
+        <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>{t('miCrunching')}</div>
       )}
 
       <div className="magic-grid">
