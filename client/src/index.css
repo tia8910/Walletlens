@@ -634,6 +634,52 @@ input, select, textarea {
   border: 1px solid rgba(255,255,255,0.1);
   color: rgba(255,255,255,0.8);
 }
+/* Onboarding: language and light/dark, above the palette.
+   Language comes first because it changes the words on every screen after it,
+   including the labels on the two rows below. */
+.no-lang-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem;
+  width: 100%; max-width: 320px; margin-bottom: 0.6rem;
+}
+.no-lang-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 0.5rem 0.25rem; cursor: pointer;
+  transition: all 0.2s ease; min-width: 0;
+}
+.no-lang-btn.active {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.85);
+  transform: scale(1.05);
+}
+/* The native name is the one people scan for, so it gets the weight. */
+.no-lang-native {
+  font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.9);
+  line-height: 1.15; white-space: nowrap;
+}
+.no-lang-en {
+  font-size: 0.52rem; font-weight: 600; color: rgba(255,255,255,0.45);
+  line-height: 1; white-space: nowrap;
+}
+.no-mode-row {
+  display: flex; gap: 0.5rem; width: 100%; max-width: 320px;
+  margin-bottom: 0.7rem;
+}
+.no-mode-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.4rem; padding: 0.55rem 0.5rem; cursor: pointer;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px; transition: all 0.2s ease;
+  font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.7);
+}
+.no-mode-btn.active {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.85);
+  color: #fff;
+}
+
 .no-theme-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem;
   width: 100%; max-width: 320px; margin-bottom: 0.5rem;
