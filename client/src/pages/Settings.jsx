@@ -5,6 +5,7 @@ import Icon from '../components/Icon'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
 import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
+import { useLanguage, LANGUAGES } from '../LanguageContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
@@ -53,6 +54,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
   const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
+  const { lang, setLang } = useLanguage()
   useEffect(() => { track('settings_view') }, [])
 
   function update(key, val) {
@@ -137,6 +139,30 @@ export default function Settings() {
           </div>
         </div>
 
+        <div className="settings-divider"/>
+
+        {/* Language. Onboarding also asks, but it only ever runs once — and on
+            Android the "already welcomed" flag lives in Chrome's storage for
+            walletlens.live, so reinstalling the app does not replay it. Without
+            this row an existing user has no way to reach the other languages. */}
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>Language</span>
+            <span className="settings-hint">Applies across the whole app</span>
+          </div>
+          <div className="settings-chips">
+            {LANGUAGES.map(l => (
+              <button key={l.code}
+                lang={l.code}
+                dir={l.rtl ? 'rtl' : 'ltr'}
+                aria-label={l.label}
+                className={`settings-chip ${lang === l.code ? 'active' : ''}`}
+                onClick={() => { setLang(l.code); track('language_changed', { lang: l.code, source: 'settings' }) }}>
+                {l.native}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="settings-divider"/>
 

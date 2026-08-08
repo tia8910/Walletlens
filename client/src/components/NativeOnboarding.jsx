@@ -172,7 +172,7 @@ export default function NativeOnboarding({ onDone }) {
               <button
                 key={l.code}
                 className={`no-lang-btn${lang === l.code ? ' active' : ''}`}
-                onClick={() => { try { setLang(l.code) } catch {}; try { track('language_toggle', { lang: l.code, source: 'onboarding' }) } catch {} }}
+                onClick={() => { try { setLang(l.code) } catch {}; try { track('language_changed', { lang: l.code, source: 'onboarding' }) } catch {} }}
                 lang={l.code}
                 dir={l.rtl ? 'rtl' : 'ltr'}
               >
