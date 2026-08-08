@@ -68,7 +68,7 @@ const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 const Watchlist      = lazy(() => import('../components/Watchlist'))
 
 function TabFallback() {
-  return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>Loading…</div>
+  return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>{t('dsLoading')}</div>
 }
 
 // ── SVG icon set ─────────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           <div className="ai-ind-val" style={{color: ai.momentum >= 0 ? 'var(--g-ink)' : '#f87171'}}>
             {ai.momentum >= 0 ? '+' : ''}{ai.momentum.toFixed(2)}%
           </div>
-          <div className="ai-ind-sub">weighted avg</div>
+          <div className="ai-ind-sub">{t('dsWeightedAvg')}</div>
         </div>
         <div className="ai-ind-card glass-card">
           <div className="ai-ind-label">{t('sentiment')}</div>
@@ -507,7 +507,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           <div className="ai-ind-sub">{ai.buyCount}B · {ai.sellCount}S</div>
         </div>
         <div className="ai-ind-card glass-card">
-          <div className="ai-ind-label">Assets</div>
+          <div className="ai-ind-label">{t('assets')}</div>
           <div className="ai-ind-val" style={{color:'var(--text)'}}>{enriched.length}</div>
           <div className="ai-ind-sub">{ai.mcBreakdown.length} cap tier{ai.mcBreakdown.length !== 1 ? 's' : ''}</div>
         </div>
@@ -547,7 +547,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
             </div>
           ))}
           {ai.insights.length === 0 && (
-            <p className="muted" style={{fontSize:'0.83rem'}}>Looking good — no critical signals detected.</p>
+            <p className="muted" style={{fontSize:'0.83rem'}}>{t('dsLookingGood')}</p>
           )}
         </div>
       </div>
@@ -608,7 +608,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
       {/* ── Entry Quality ── */}
       <div className="glass-card ai-entry-card">
         <h4 className="ai-section-title">{t('entryQuality')}<Tip text="How good your entry was for each asset — your average buy price versus the current price. Green means you're up on your entry; red means underwater." /></h4>
-        <p className="ai-entry-sub muted">Avg buy price vs current price per asset</p>
+        <p className="ai-entry-sub muted">{t('dsAvgVsCurrent')}</p>
         <div className="ai-entry-list">
           {ai.entryQuality.map(h => (
             <div key={h.coin_id} className="ai-entry-row">
@@ -1006,8 +1006,8 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
     <div className="dvx-form-page">
       <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem' }}>
         <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="search" size={38} style={{ color:'var(--text-sub)' }} /></div>
-        <h3 style={{ marginBottom:'0.5rem' }}>No Holdings to Evaluate</h3>
-        <p className="muted">Add some crypto holdings first and we'll tell you what your wallet is missing.</p>
+        <h3 style={{ marginBottom:'0.5rem' }}>{t('dsNoHoldingsEval')}</h3>
+        <p className="muted">{t('dsAddCryptoFirst')}</p>
       </div>
     </div>
   )
@@ -1019,10 +1019,8 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
       {/* Header score */}
       <div className="glass-card eval-header-card">
         <div className="eval-header-left">
-          <h2 style={{ margin:0, fontSize:'1.25rem' }}>Wallet Evaluation</h2>
-          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>
-            What your portfolio is missing vs best practices
-          </p>
+          <h2 style={{ margin:0, fontSize:'1.25rem' }}>{t('dsWalletEvaluation')}</h2>
+          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>{t('dsWhatMissing')}</p>
           {missing.length > 0 && (
             <div className="eval-missing-count">
               <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
@@ -1030,8 +1028,7 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
           )}
           {missing.length === 0 && (
             <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
-              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>All checks passed — excellent wallet health!
-            </div>
+              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>{t('dsAllChecksPassed')}</div>
           )}
         </div>
         <EvalScoreRing score={overall} />
@@ -1261,7 +1258,7 @@ function WalletPanel({ wallets, onRefresh, onCreated }) {
             <button className="dvx-btn-ghost dvx-btn-danger" onClick={() => del(w.id)}>{Ico.trash}</button>
           </li>
         ))}
-        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0', listStyle:'none' }}>No wallets yet. Add one above.</li>}
+        {wallets.length === 0 && <li className="muted" style={{ padding: '0.5rem 0', listStyle:'none' }}>{t('dsNoWallets')}</li>}
       </ul>
     </div>
   )
@@ -1322,7 +1319,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
       </div>
       <div className="dvx-form-grid">
         <select className="dvx-input" value={walletId} onChange={e => setWalletId(e.target.value)}>
-          {wallets.length === 0 && <option value="">Create a wallet first</option>}
+          {wallets.length === 0 && <option value="">{t('dsCreateWalletFirst')}</option>}
           {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
         </select>
         <input className="dvx-input" placeholder="Coin name (e.g. Bitcoin)" value={coin} onChange={e => setCoin(e.target.value)} />
@@ -1395,8 +1392,7 @@ function EmailBackupPanel() {
   return (
     <div className="dvx-email-backup" style={{ marginTop:'1.1rem', paddingTop:'1.1rem', borderTop:'1px solid var(--border, rgba(128,128,128,0.18))' }}>
       <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', color:'var(--text)', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-        <Icon name="mail" size={15} /> Weekly email backup
-      </div>
+        <Icon name="mail" size={15} />{t('bcWeeklyEmail')}</div>
 
       {!sub ? (
         <>
@@ -1419,7 +1415,7 @@ function EmailBackupPanel() {
               fontWeight:700, opacity: status === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
               display:'inline-flex', alignItems:'center', gap:'0.35rem',
             })}>
-              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} />{t('bcSubscribe')}</>}
             </button>
           </div>
         </>
@@ -1445,20 +1441,19 @@ function EmailBackupPanel() {
               color:'#3b82f6', fontWeight:700, opacity: status === 'sending' ? 0.7 : 1,
               display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
             })}>
-              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+              {status === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} />{t('bcSendNow')}</>}
             </button>
             <button onClick={unsubscribe} style={btn({
               background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
               color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
-            })}>Unsubscribe</button>
+            })}>{t('bcUnsubscribe')}</button>
           </div>
         </>
       )}
 
       {status === 'sent' && (
         <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-          <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
-        </p>
+          <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('dsSentCheckInbox')}</p>
       )}
       {err && <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{err}</p>}
     </div>
@@ -1555,9 +1550,7 @@ function DataPanel({ onRefresh, onImported }) {
   return (
     <div className="dvx-panel">
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>
-          Security
-        </div>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>{t('setSecurity')}</div>
         <BiometricToggle />
       </div>
 
@@ -1612,7 +1605,7 @@ function DataPanel({ onRefresh, onImported }) {
         </div>
       )}
 
-      <div className="dvx-divider">or restore from code</div>
+      <div className="dvx-divider">{t('dsOrRestoreFromCode')}</div>
 
       <textarea className="dvx-input dvx-textarea"
         placeholder="Paste your WLZ backup code here…"
@@ -1621,12 +1614,12 @@ function DataPanel({ onRefresh, onImported }) {
 
       {preview && (
         <div className="dvx-preview-box">
-          <div className="dvx-preview-title">Preview</div>
+          <div className="dvx-preview-title">{t('dsPreview')}</div>
           <div className="dvx-preview-row">
-            <span>Wallets</span><strong>{preview.summary.wallets}</strong>
+            <span>{t('wallets')}</span><strong>{preview.summary.wallets}</strong>
           </div>
           <div className="dvx-preview-row">
-            <span>Transactions</span><strong>{preview.summary.transactions}</strong>
+            <span>{t('transactions')}</span><strong>{preview.summary.transactions}</strong>
           </div>
           {Object.entries(preview.summary.byCategory || {}).map(([cat, n]) => (
             <div key={cat} className="dvx-preview-row">
@@ -1740,7 +1733,7 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
 
   return (
     <div className="glass-card heatmap-card">
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Portfolio Heatmap</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
       <div className="heatmap-grid">
         {cells.map((c, i) => {
           const minSize = 60
@@ -1766,7 +1759,7 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
       </div>
       <div className="heatmap-legend">
         <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
-        <span style={{ color:'var(--text-sub)' }}>Darker = bigger move</span>
+        <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
         <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ Gaining</span>
       </div>
     </div>
@@ -1853,9 +1846,7 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
   return (
     <div className="glass-card" style={{ marginTop:'0.75rem' }}>
       <h3 style={{ margin:'0 0 1rem', display:'inline-flex', alignItems:'center', gap:'0.4em', fontSize:'0.95rem', fontWeight:700 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Risk Profile
-      </h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>{t('dsRiskProfile')}</h3>
 
       {/* Trader type hero */}
       <div style={{
@@ -1886,9 +1877,7 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
         <RiskGauge pct={highPct} color="#60a5fa" label="High-risk products" />
       </div>
 
-      <p style={{ fontSize:'0.7rem', color:'var(--text-sub)', textAlign:'center', margin:'0.75rem 0 0', lineHeight:1.5 }}>
-        Based on asset type and market capitalization
-      </p>
+      <p style={{ fontSize:'0.7rem', color:'var(--text-sub)', textAlign:'center', margin:'0.75rem 0 0', lineHeight:1.5 }}>{t('dsBasedOnType')}</p>
     </div>
   )
 })
@@ -2065,7 +2054,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   ]
   return (
     <div className="fn-strip">
-      <span className="fn-strip-label"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Try</span>
+      <span className="fn-strip-label"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('dsTry')}</span>
       {items.map((item, i) => (
         <button key={i} className="fn-strip-btn" onClick={() => { track('feature_nudge_click', { feature: item.label }); item.action() }}>
           <Icon name={item.emoji} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{item.label}
@@ -2115,7 +2104,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
           {allDone ? "You're all set!" : 'Welcome to WalletLens'}
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color: 'var(--g-ink)', fontWeight: 700, marginBottom:'0.9rem' }}>
-          <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>ANALYZE</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
+          <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>{t('dsAnalyze')}</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
         </div>
         {/* Progress bar + counter */}
         <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', maxWidth:300, margin:'0 auto' }}>
@@ -2174,7 +2163,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
               }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
                   <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', textDecoration: s.done ? 'line-through' : 'none', textDecorationColor:'rgba(var(--g-rgb),0.5)' }}>{s.label}</span>
-                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Done</span>}
+                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('rbDone')}</span>}
                 </div>
                 <div style={{ fontSize:'0.74rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.45 }}>{s.desc}</div>
                 {isCurrent && s.cta && (
@@ -2198,8 +2187,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
       {/* Footer */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'1.1rem', paddingTop:'0.85rem', borderTop:'1px solid rgba(var(--g-rgb),0.1)' }}>
         <span style={{ fontSize:'0.68rem', color:'var(--text-sub)', display:'inline-flex', alignItems:'center', gap:'0.3rem' }}>
-          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Your data stays on your device
-        </span>
+          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('dsDataStaysLocal')}</span>
         <button onClick={onDismiss} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'0.74rem', fontWeight:700, color:'var(--text-muted)' }}>
           {allDone ? 'Dismiss' : 'Skip tour'}
         </button>
@@ -2554,9 +2542,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         })}
       </div>
 
-      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>
-        Your data stays on your device — no account needed
-      </div>
+      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{t('dsDataStaysLocalNoAccount')}</div>
     </div>
   )
 }
