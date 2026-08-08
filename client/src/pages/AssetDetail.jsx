@@ -393,29 +393,29 @@ export default function AssetDetail() {
         )}
         {targets.length > 0 && (
           <div className="sp-list">
-            {targets.map(t => {
-              const pct = price > 0 && t.price > 0 ? (price / t.price) * 100 : 0
-              const reached = price >= t.price
-              const sellQty = t.quantity == null ? amount : Math.min(t.quantity, amount)
-              const proceeds = sellQty * t.price
+            {targets.map(tg => {
+              const pct = price > 0 && tg.price > 0 ? (price / tg.price) * 100 : 0
+              const reached = price >= tg.price
+              const sellQty = tg.quantity == null ? amount : Math.min(tg.quantity, amount)
+              const proceeds = sellQty * tg.price
               return (
-                <div key={t.id} className={`sp-row ${reached ? 'sp-reached' : ''}`}>
+                <div key={tg.id} className={`sp-row ${reached ? 'sp-reached' : ''}`}>
                   <div className="sp-row-top">
                     <div className="sp-price">
                       <span className="sp-label">{t('adSellAt')}</span>
-                      <span className="sp-val">${fmt(t.price)}</span>
+                      <span className="sp-val">${fmt(tg.price)}</span>
                     </div>
                     <div className="sp-qty">
                       <span className="sp-label">{t('adQuantity')}</span>
                       <span className="sp-val">
-                        {t.quantity == null ? `All (${amount.toFixed(4)})` : `${t.quantity} ${coin?.symbol || ''}`}
+                        {tg.quantity == null ? `All (${amount.toFixed(4)})` : `${tg.quantity} ${coin?.symbol || ''}`}
                       </span>
                     </div>
                     <div className="sp-proceeds">
                       <span className="sp-label">{t('adProceeds')}</span>
                       <span className="sp-val">${fmt(proceeds)}</span>
                     </div>
-                    <button className="sp-remove" onClick={() => handleRemoveTarget(t.id)} aria-label="Remove target">×</button>
+                    <button className="sp-remove" onClick={() => handleRemoveTarget(tg.id)} aria-label={t('adRemoveTarget')}>×</button>
                   </div>
                   <div className="sp-progress">
                     <div className="sp-bar-bg">

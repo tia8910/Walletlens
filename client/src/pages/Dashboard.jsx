@@ -68,6 +68,7 @@ const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 const Watchlist      = lazy(() => import('../components/Watchlist'))
 
 function TabFallback() {
+  const { t } = useLanguage()
   return <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.85rem' }}>{t('dsLoading')}</div>
 }
 
@@ -999,6 +1000,7 @@ function EvalScoreRing({ score }) {
 }
 
 const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets }) {
+  const { t } = useLanguage()
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
   const [expanded, setExpanded] = useState(null)
 
@@ -1215,6 +1217,7 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
 
 // ── Wallet panel ─────────────────────────────────────────────────────────
 function WalletPanel({ wallets, onRefresh, onCreated }) {
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -1266,6 +1269,7 @@ function WalletPanel({ wallets, onRefresh, onCreated }) {
 
 // ── Trade panel ──────────────────────────────────────────────────────────
 function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
+  const { t } = useLanguage()
   const [type, setType]     = useState(defaultType)
   const [walletId, setWalletId] = useState('')
   const [coin, setCoin]     = useState('')
@@ -1343,6 +1347,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
 // automatically every week when opened. The portfolio never leaves the device
 // on our servers — the app regenerates and sends each time.
 function EmailBackupPanel() {
+  const { t } = useLanguage()
   const [emailAddr, setEmailAddr] = useState('')
   const [status, setStatus] = useState('idle') // idle | sending | sent | error
   const [err, setErr] = useState('')
@@ -1714,6 +1719,7 @@ const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark 
 
 // ── Portfolio Heatmap ─────────────────────────────────────────────────────
 const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
+  const { t } = useLanguage()
   const cells = enriched
     .filter(h => h.value > 0)
     .map(h => {
@@ -1833,6 +1839,7 @@ const RiskGauge = memo(function RiskGauge({ pct, color, label }) {
 })
 
 const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) {
+  const { t } = useLanguage()
   const profile = useMemo(() => computeRiskProfile(enriched, totalValue), [enriched, totalValue])
   if (!profile) return null
   const { lowPct, medPct, highPct, traderType, traderColor, traderDesc } = profile
@@ -2044,6 +2051,7 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
 // ── Feature discovery nudge strip ────────────────────────────────────────
 const FN_DISMISS_KEY = 'wl_fn_dismissed_v1'
 function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
+  const { t } = useLanguage()
   const [visible, setVisible] = useState(() => !localStorage.getItem(FN_DISMISS_KEY))
   if (!visible) return null
   function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
@@ -2067,6 +2075,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
 
 // Manage tab until all four steps are done or the user skips. ──────────────
 function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateWallet, onAddTrade, onViewDashboard, onOpenAI, onDismiss }) {
+  const { t } = useLanguage()
   const steps = [
     { key:'wallet', icon:'banknote', label:'Create your wallet', desc:'Name your first portfolio wallet to hold your assets.', done: wallets.length > 0,   cta:{ label:'Create wallet', fn:onCreateWallet } },
     { key:'trade',  icon:'mic', label:'Add your first trade', desc:'Type it, speak it by voice, or import a file — your call.', done: transactions.length > 0, cta:{ label:'Add a trade', fn:onAddTrade } },
@@ -2648,6 +2657,7 @@ function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, target
 }
 
 function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
 
@@ -2994,6 +3004,7 @@ const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
 
 // ── Main Dashboard ────────────────────────────────────────────────────────
 function AlertsSection({ enriched, prices, isDemo }) {
+  const { t } = useLanguage()
   const [alertTab, setAlertTab] = useState('smart')
   return (
     <div>
