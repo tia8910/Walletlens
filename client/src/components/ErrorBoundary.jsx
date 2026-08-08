@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import Icon from './Icon'
+import { track } from '../analytics'
 
 const isChunkError = (msg = '') =>
   msg.includes('Failed to fetch dynamically imported module') ||
@@ -37,7 +38,7 @@ function clearCachesAndReload() {
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, message: '', isChunk: false, autoReloading: false }
+    this.state = { hasError: false, message: '', isChunk: false, autoReloading: false, where: '' }
   }
 
   static getDerivedStateFromError(err) {
@@ -46,7 +47,28 @@ export default class ErrorBoundary extends Component {
     return { hasError: true, message: msg, isChunk: chunk }
   }
 
-  componentDidCatch(err) {
+  componentDidCatch(err, info) {
+    // Show WHERE, not just what.
+    //
+    // "t is not defined" has been reported from a phone three times now and
+    // reproduced here zero times — clean static analysis, clean build, every
+    // route, both languages, with and without holdings. The message alone does
+    // not identify the component, so each round has been a guess.
+    //
+    // React's componentStack names the component that threw. Rendering the
+    // first few frames turns the next screenshot into the diagnosis, which is
+    // what finally settled the native crash earlier in this project: stop
+    // guessing, capture it on the device that reproduces it.
+    try {
+      const stack = (info?.componentStack || '')
+        .split('\n').map(l => l.trim()).filter(Boolean).slice(0, 4).join(' ← ')
+      const frame = (err?.stack || '').split('\n')[1]?.trim() || ''
+      const where = [stack, frame].filter(Boolean).join('  |  ').slice(0, 300)
+      if (where) this.setState({ where })
+      // Also send it, redacted, so it lands in GA next to the message.
+      track('js_error_context', { error_message: String(err?.message || '').slice(0, 120), error_where: where.slice(0, 140) })
+    } catch { /* diagnostics must never mask the original error */ }
+
     if (this.state.isChunk) {
       const retries = getRetryCount()
       if (retries < MAX_AUTO_RETRIES) {
@@ -60,7 +82,7 @@ export default class ErrorBoundary extends Component {
 
   reset = () => {
     clearRetryCount()
-    this.setState({ hasError: false, message: '', isChunk: false, autoReloading: false })
+    this.setState({ hasError: false, message: '', isChunk: false, autoReloading: false, where: '' })
   }
 
   hardReload = () => {
@@ -95,6 +117,18 @@ export default class ErrorBoundary extends Component {
               ? 'A new version was deployed. Tap "Reload" to get the latest.'
               : this.state.message}
           </p>
+          {!this.state.isChunk && this.state.where && (
+            // Small and selectable rather than hidden behind a toggle: the
+            // whole point is that it appears in a screenshot without the user
+            // having to be told to expand anything.
+            <p className="muted" style={{
+              marginBottom: '1rem', fontSize: '0.7rem', lineHeight: 1.5,
+              fontFamily: 'var(--mono, monospace)', userSelect: 'text',
+              wordBreak: 'break-word', opacity: 0.75,
+            }}>
+              {this.state.where}
+            </p>
+          )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={this.hardReload}>
               Reload
