@@ -98,3 +98,42 @@ describe('t() bindings', () => {
     expect(bad).toEqual([])
   })
 })
+
+// ── Native intents ──────────────────────────────────────────────────────────
+// Navigating the top frame to a custom scheme takes the Custom Tab off its own
+// origin, and inside the TWA that ends the session — the app vanishes with
+// nothing in any log. nativeBridge.fireNativeIntent refuses to do it outside a
+// real user gesture for that reason.
+//
+// The guard is worth nothing if a second file writes the navigation itself.
+// BiometricLock did exactly that, and it was the worst possible place: the
+// lock screen auto-prompts on mount, which is by definition not a gesture.
+describe('native intent guard', () => {
+  const files = jsxFiles(SRC).concat(
+    ['nativeBridge.js', 'nativeWidgets.js'].map(f => join(SRC, f)),
+  )
+
+  it('only nativeBridge navigates to a walletlens:// or intent:// URL', () => {
+    // File-scoped rather than line-scoped on purpose. The original bug read
+    //   const url = 'walletlens://…'; window.location.href = url
+    // so the scheme and the navigation were never on the same line, and a
+    // line-matching version of this test passed while the bug was present.
+    // Verified by reverting the fix: this catches it, the line-scoped one did
+    // not.
+    const offenders = []
+    for (const f of files) {
+      if (f.endsWith('nativeBridge.js')) continue
+      const src = readFileSync(f, 'utf8')
+      const code = src
+        .split('\n')
+        .filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l))   // drop comments discussing it
+        .join('\n')
+      const buildsScheme = /['"`](?:walletlens|intent):\/\//.test(code)
+      const navigates = /location\.(href\s*=|assign\(|replace\()/.test(code)
+      if (buildsScheme && navigates) {
+        offenders.push(f.slice(SRC.length + 1))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})

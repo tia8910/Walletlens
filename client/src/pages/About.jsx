@@ -4,7 +4,7 @@ import Logo from '../components/Logo'
 const FAQS = [
   {
     q: 'Is WalletLens really free?',
-    a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.',
+    a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app.',
   },
   {
     q: 'Do I need an account or email to use it?',
@@ -71,7 +71,7 @@ export default function About() {
         </ul>
 
         <h2>Completely Free</h2>
-        <p>WalletLens is and will always be free to use. There are no paid tiers, no premium features locked behind a paywall, and no freemium limits. The app is sustained by Google AdSense advertising.</p>
+        <p>WalletLens is and will always be free to use. There are no paid tiers, no premium features locked behind a paywall, and no freemium limits. There is no advertising, no tracking of what you own, and nothing to upgrade to.</p>
 
         <h2>Privacy by Design</h2>
         <p>We chose a local-first architecture deliberately. Your portfolio is your most sensitive financial information. By keeping it in your browser's localStorage instead of a server, we eliminate the risk of a data breach, account takeover, or unauthorised access. The trade-off is that you are responsible for your own backups — use the WLZ export regularly.</p>

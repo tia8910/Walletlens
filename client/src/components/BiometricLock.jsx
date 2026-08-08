@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
+import { fireNativeIntent, isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
 const SESSION_KEY  = 'wl_biometric_unlocked'
@@ -36,12 +36,24 @@ const isAndroidTWA = detectAndroidTWA()
  * The TWA's AndroidManifest routes walletlens://biometric-auth URIs to
  * our BiometricActivity which shows the system BiometricPrompt dialog.
  */
+// Routed through fireNativeIntent rather than assigning window.location
+// directly, which is what this used to do.
+//
+// Firing a custom-scheme URL navigates the top frame off the Custom Tab's own
+// origin, and inside the TWA that ends the session — the app simply vanishes,
+// with nothing in any log because nothing crashed. nativeBridge refuses to do
+// it outside a real user gesture for exactly that reason, and this file had
+// its own copy that skipped the check.
+//
+// It matters most here: the lock screen auto-prompts on mount, which is by
+// definition not a gesture. Returns false when it declined, so the caller can
+// fall back to asking the user to tap.
 function sendNativeIntent(action, redirectUrl) {
   const base = 'walletlens://biometric-auth?action=' + encodeURIComponent(action)
   const url = redirectUrl
     ? base + '&redirect=' + encodeURIComponent(redirectUrl)
     : base
-  window.location.href = url
+  return fireNativeIntent(url)
 }
 
 // ── base64url <-> ArrayBuffer helpers (for storing/restoring the credential id)
@@ -220,8 +232,16 @@ export function useBiometricLock() {
   // listener above.
   async function unlock() {
     if (isAndroidTWA) {
-      sendNativeIntent('unlock')
-      // Don't await — the page will reload after auth
+      // No await: on success the native prompt takes over and the page
+      // reloads with biometric_auth in the URL. A false return means
+      // nativeBridge declined for want of a user gesture — surfaced as a
+      // distinct error so the lock screen can ask for a tap instead of
+      // sitting on a spinner that will never resolve.
+      if (!sendNativeIntent('unlock')) {
+        const err = new Error('needs-gesture')
+        err.name = 'NeedsGestureError'
+        throw err
+      }
       return
     }
 
@@ -287,6 +307,12 @@ export function BiometricLockScreen({ onUnlock }) {
       await onUnlock()
     } catch (e) {
       attemptCount.current += 1
+      // The native prompt was declined for want of a gesture, not by the
+      // device or the user. Nothing is wrong; it just needs a tap.
+      if (e?.name === 'NeedsGestureError') {
+        setError('Tap to unlock with your fingerprint.')
+        return
+      }
       const noPasskeys =
         (e?.message || '').toLowerCase().includes('no passkeys') ||
         (e?.message || '').toLowerCase().includes('no credentials') ||

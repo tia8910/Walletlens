@@ -1641,7 +1641,7 @@ console.log(`Prerendered ${AR_POSTS.length} Arabic blog articles.`)
 // ── About ────────────────────────────────────────────────────────────────────
 const aboutFaqs = [
   { q: 'Is WalletLens really free?',
-    a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. Track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.' },
+    a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. Track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app.' },
   { q: 'Do I need an account or email to use it?',
     a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately, so there is nothing to hack, leak, or lock you out of.' },
   { q: 'Where is my portfolio data stored?',
@@ -1686,7 +1686,7 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 const faqPageSections = [
   { title: 'Getting Started', faqs: [
     { q: 'Is WalletLens really free?',
-      a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.' },
+      a: 'Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app.' },
     { q: 'Do I need an account or email to use it?',
       a: 'No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of.' },
     { q: 'How do I add my first holding?',
