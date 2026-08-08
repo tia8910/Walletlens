@@ -42,6 +42,7 @@ function playTradeSound(isBuy) {
 import CoinLogo from './CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
+import { useLanguage } from '../LanguageContext'
 
 
 const IcoClose  = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
@@ -193,6 +194,7 @@ async function buildSpendLeg(source, costUsd) {
 
 // ── TradeSheet ────────────────────────────────────────────────────────────
 export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker, variant = 'sheet' }) {
+  const { t } = useLanguage()
   const isPage = variant === 'page'
   const [category, setCategory]         = useState('crypto')
   const [coinSearch, setCoinSearch]     = useState('')
@@ -588,7 +590,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <div className="bs-type-dot" style={{ background: accent }} />
             <h3 className="bs-title" style={{ color: accent }}>{isBuy ? 'Buy Asset' : 'Sell Asset'}</h3>
           </div>
-          <button className="bs-close" style={{ '--bs-acc': accent }} onClick={onClose} aria-label="Close">{IcoClose}</button>
+          <button className="bs-close" style={{ '--bs-acc': accent }} onClick={onClose} aria-label={t('close')}>{IcoClose}</button>
         </div>
 
         {success ? (
@@ -596,7 +598,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 17 9"/>
             </svg>
-            <p style={{ color:'var(--text)', fontWeight:700, fontSize:'1.05rem', margin:0 }}>Trade Recorded!</p>
+            <p style={{ color:'var(--text)', fontWeight:700, fontSize:'1.05rem', margin:0 }}>{t('tsTradeRecorded')}</p>
             <p className="muted" style={{ fontSize:'0.82rem', margin:'0.3rem 0 0.75rem' }}>
               {isBuy ? 'Bought' : 'Sold'} {amount} {asset?.symbol}
             </p>
@@ -621,7 +623,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* ── Buy with (first — drives balance & % fill) ── */}
             {isBuy && (
               <div className="bs-field">
-                <label className="bs-label">Buy with <span className="bs-req">*</span></label>
+                <label className="bs-label">{t('txBuyWith')} <span className="bs-req">*</span></label>
                 <div className="bs-leg-grid">
                   {BUY_WITH_OPTIONS.map(o => (
                     <button key={o.key} type="button"
@@ -666,7 +668,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                       {livePctLabel != null && (
                         <p className="bs-pct-live">
-                          This buy uses <strong>{livePctLabel}%</strong> of your {buyWith} balance
+                          {t('tsBuyUsesPct')(livePctLabel, buyWith)}
                         </p>
                       )}
                     </div>
@@ -690,7 +692,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* ── Category selector ── */}
             {!prefillCoin && (
               <div className="bs-field">
-                <label className="bs-label">Asset Category</label>
+                <label className="bs-label">{t('tsAssetCategory')}</label>
                 <div className="bs-cat-grid" data-tour="ts-category">
                   {CATEGORIES.map(c => (
                     <button
@@ -708,7 +710,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* ── Asset selector by category ── */}
             <div className="bs-field" data-tour="ts-asset">
-              <label className="bs-label">Asset</label>
+              <label className="bs-label">{t('tsAsset')}</label>
 
               {/* Crypto: search (buy) or holdings list (sell) */}
               {category === 'crypto' && (
@@ -729,7 +731,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   <>
                   <div className="bs-search-wrap">
                     <span className="bs-search-icon">{IcoSearch}</span>
-                    <input className="bs-input bs-search-input" placeholder="Search Bitcoin, Ethereum…"
+                    <input className="bs-input bs-search-input" placeholder={t('txSearchCoin')}
                       value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
                     {coinResults.length > 0 && (
                       <div className="bs-dropdown">
@@ -748,7 +750,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   {isPage && !coinSearch.trim() && coinResults.length === 0 && (
                     <div className="bs-markets">
                       <div className="bs-markets-head">
-                        <span>Popular</span><span>Price / 24h</span>
+                        <span>{t('txPopular')}</span><span>{t('tsPrice24h')}</span>
                       </div>
                       <div className="bs-markets-list">
                         {POPULAR_COINS.map(c => {
@@ -791,14 +793,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       )
                     : cryptoHoldings
                   if (!cryptoHoldings.length) return (
-                    <p className="bs-hint" style={{ margin: '0.4rem 0' }}>No crypto holdings yet. Add a buy trade first.</p>
+                    <p className="bs-hint" style={{ margin: '0.4rem 0' }}>{t('tsNoCryptoYet')}</p>
                   )
                   return (
                     <div className="bs-holdings-sel">
                       {cryptoHoldings.length > 5 && (
                         <div className="bs-search-wrap" style={{ marginBottom: '0.4rem' }}>
                           <span className="bs-search-icon">{IcoSearch}</span>
-                          <input className="bs-input bs-search-input" placeholder="Filter holdings…"
+                          <input className="bs-input bs-search-input" placeholder={t('tsFilterHoldings')}
                             value={holdingsFilter} onChange={e => setHoldingsFilter(e.target.value)} />
                         </div>
                       )}
@@ -817,7 +819,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                             </div>
                           </button>
                         ))}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
                       </div>
                     </div>
                   )
@@ -857,14 +859,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
                       <span className="bs-search-icon">{IcoSearch}</span>
                       <input className="bs-input bs-search-input"
-                        placeholder="Search ticker or company…"
+                        placeholder={t('txSearchTicker')}
                         value={stockInput}
                         onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
                       />
                     </div>
                     {/* Markets-style ticker list (same look as the crypto list) */}
                     <div className="bs-markets">
-                      <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>Price / 24h</span></div>
+                      <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>{t('tsPrice24h')}</span></div>
                       <div className="bs-markets-list">
                         {filtered.slice(0, 40).map(t => {
                           const sid = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
@@ -889,14 +891,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                             </button>
                           )
                         })}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
                       </div>
                     </div>
                     {stockTicker && (
                       <div className="bs-stock-selected">
                         <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}</span>
                         {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via Yahoo Finance / Stooq</span>
+                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveYahoo')}</span>
                       </div>
                     )}
                   </div>
@@ -915,13 +917,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
                       <span className="bs-search-icon">{IcoSearch}</span>
                       <input className="bs-input bs-search-input"
-                        placeholder="Search AAPL, Tesla…"
+                        placeholder={t('txSearchStock')}
                         value={stockInput}
                         onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_XSTOCKS.find(t=>t.ticker===v)) setStockTicker(v); }}
                       />
                     </div>
                     <div className="bs-markets">
-                      <div className="bs-markets-head"><span>Popular · Tokenized xStocks</span><span>Price / 24h</span></div>
+                      <div className="bs-markets-head"><span>Popular · Tokenized xStocks</span><span>{t('tsPrice24h')}</span></div>
                       <div className="bs-markets-list">
                         {filtered.map(t => {
                           const sid = `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`
@@ -946,14 +948,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                             </button>
                           )
                         })}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>No match.</p>}
+                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
                       </div>
                     </div>
                     {stockTicker && (
                       <div className="bs-stock-selected">
                         <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}X</span>
                         {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>Live price via CoinGecko</span>
+                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveCoinGecko')}</span>
                       </div>
                     )}
                   </div>
@@ -990,11 +992,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-field">
                 <div className="bs-buywith-balance">
                   <div className="bs-balance-row">
-                    <span className="muted">Available to sell</span>
+                    <span className="muted">{t('tsAvailableToSell')}</span>
                     <button className="bs-balance-max" onClick={() => { setSellPct(100); setAmount(String(holdingForCoin.amount)) }}>
                       {parseFloat(Number(holdingForCoin.amount).toFixed(8))} {holdingForCoin.coin_symbol?.toUpperCase()}
                       {holdingForCoin.value > 0 && <span className="muted"> ≈ ${Number(holdingForCoin.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
-                      <span className="bs-max-tag">MAX</span>
+                      <span className="bs-max-tag">{t('tsMax')}</span>
                     </button>
                   </div>
                   <div className="bs-pct-row">
@@ -1012,7 +1014,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   </div>
                   {livePctLabel != null && (
                     <p className="bs-pct-live">
-                      You're selling <strong>{livePctLabel}%</strong> of your {holdingForCoin.coin_symbol?.toUpperCase()} position
+                      {t('txSellingPct')(livePctLabel, holdingForCoin.coin_symbol?.toUpperCase())}
                     </p>
                   )}
                 </div>
@@ -1050,7 +1052,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     </div>
                   ) : (
                     <div className="bs-seg">
-                      <button type="button" className={`bs-seg-btn${amtMode === 'qty' ? ' active' : ''}`} onClick={() => switchAmtMode('qty')}>QTY</button>
+                      <button type="button" className={`bs-seg-btn${amtMode === 'qty' ? ' active' : ''}`} onClick={() => switchAmtMode('qty')}>{t('tsQty')}</button>
                       <button type="button" className={`bs-seg-btn${amtMode === 'usd' ? ' active' : ''}`} onClick={() => switchAmtMode('usd')}>$</button>
                     </div>
                   )}
@@ -1078,7 +1080,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   {price === '…' && <span style={{marginLeft:6,fontSize:'0.75rem',color: 'var(--g-ink)', fontWeight: 700}}>fetching…</span>}
                   {priceFetchFailed && <span style={{marginLeft:6,fontSize:'0.75rem',color:'#f87171'}}>couldn't fetch — enter manually</span>}
                 </label>
-                <input className="bs-input bs-input-value" type="text" inputMode={price === '…' ? 'text' : 'decimal'} placeholder="Enter price" min="0" step="any"
+                <input className="bs-input bs-input-value" type="text" inputMode={price === '…' ? 'text' : 'decimal'} placeholder={t('tsEnterPrice')} min="0" step="any"
                   value={price === '…' ? '' : priceFocused ? price : fmtPriceDisplay(price)}
                   onFocus={() => setPriceFocused(true)}
                   onBlur={() => setPriceFocused(false)}
@@ -1090,12 +1092,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* Date + Wallet */}
             <div className="bs-row-2">
               <div className="bs-field">
-                <label className="bs-label">Date</label>
+                <label className="bs-label">{t('txDate')}</label>
                 <input className="bs-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
               </div>
               {wallets.length > 1 && (
                 <div className="bs-field">
-                  <label className="bs-label">Wallet</label>
+                  <label className="bs-label">{t('txWallet')}</label>
                   <select className="bs-input" value={walletId} onChange={e => setWalletId(e.target.value)}>
                     {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
@@ -1107,7 +1109,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* Sell for — icon selector, mandatory */}
             {!isBuy && (
               <div className="bs-field">
-                <label className="bs-label">Sell for <span className="bs-req">*</span></label>
+                <label className="bs-label">{t('txSellFor')} <span className="bs-req">*</span></label>
                 <div className="bs-leg-grid">
                   {SELL_FOR_OPTIONS.map(o => (
                     <button
@@ -1140,7 +1142,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* Total */}
             {total > 0 && (
               <div className="bs-total">
-                <span className="muted">Total</span>
+                <span className="muted">{t('txTotal')}</span>
                 <strong style={{ color: accent, fontSize:'1.2rem' }}>
                   ${total.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}
                 </strong>
@@ -1189,21 +1191,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               </div>
               {isBuy ? (
                 <>
-                  <h4 className="bs-confirm-title">Buy without spending anything?</h4>
-                  <p className="bs-confirm-text">
-                    You chose <strong>None</strong>, so this just adds <strong>{asset?.symbol}</strong> to
-                    your holdings — no balance will be deducted. If you actually paid with cash or a coin
-                    you own, pick it so your other balances stay accurate.
-                  </p>
+                  <h4 className="bs-confirm-title">{t('txBuyNothing')}</h4>
+                  <p className="bs-confirm-text">{t('txChoseNone')(asset?.symbol)}</p>
                 </>
               ) : (
                 <>
-                  <h4 className="bs-confirm-title">Sell without receiving anything?</h4>
-                  <p className="bs-confirm-text">
-                    You chose <strong>Remove</strong>, so this just takes <strong>{asset?.symbol}</strong> out
-                    of your holdings — nothing will be credited back. If you got cash or another asset in
-                    return, pick it so it lands in your portfolio.
-                  </p>
+                  <h4 className="bs-confirm-title">{t('txSellNothing')}</h4>
+                  <p className="bs-confirm-text">{t('txChoseRemove')(asset?.symbol)}</p>
                 </>
               )}
               <div className="bs-confirm-actions">

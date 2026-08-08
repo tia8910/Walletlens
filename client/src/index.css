@@ -8560,7 +8560,12 @@ input[type="date"] { color-scheme: dark; }
 [dir="rtl"] .wl-topbar-brand-actions,
 [dir="rtl"] .wl-drawer-brand-actions { direction: rtl; }
 [dir="rtl"] .wl-bottom-nav { direction: rtl; }
-[dir="rtl"] .page-header { flex-direction: row-reverse; }
+/* No row-reverse here: the container is already dir="rtl", so the flex main
+ * axis starts on the right. Reversing it again is a double negative that put
+ * the page title back on the left, where a long word then overflowed off the
+ * edge of the screen. Letting it lay out naturally is the fix; min-width
+ * keeps a long title shrinking instead of pushing the action button away. */
+[dir="rtl"] .page-header > h2 { min-width: 0; overflow-wrap: anywhere; }
 [dir="rtl"] .dvx-hero { text-align: right; }
 [dir="rtl"] .dvx-hero-label { text-align: right; }
 [dir="rtl"] .dvx-hero-value { text-align: right; }

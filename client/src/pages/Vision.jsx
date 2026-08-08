@@ -6,6 +6,7 @@ import { getVisionAdvice } from '../visionAdviceAi'
 import { isStablecoin } from '../stablecoins'
 import Icon from '../components/Icon'
 import { track } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 const fmtSmall = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n)
@@ -289,6 +290,7 @@ function BucketAnalysis({ bucket, currentValue, totalNW, holdings, prices }) {
 
 // ── Category breakdown ────────────────────────────────────────────────
 function CategoryBreakdown({ holdings, prices }) {
+  const { t } = useLanguage()
   const cats = {}
   let total = 0
   for (const h of holdings) {
@@ -306,7 +308,7 @@ function CategoryBreakdown({ holdings, prices }) {
 
   return (
     <div className="vp-cat-breakdown">
-      <h3 className="vp-section-title">Portfolio by Asset Class</h3>
+      <h3 className="vp-section-title">{t('vsPortfolioByClass')}</h3>
       <div className="vp-cat-layout">
         <DonutChart slices={slices} total={total} cx={54} cy={54} r={40} stroke={15} />
         <div className="vp-cat-rows">
@@ -328,6 +330,7 @@ function CategoryBreakdown({ holdings, prices }) {
 
 // ── Bucket card ───────────────────────────────────────────────────────
 function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, onDelete, onToggleComplete, onSimulate }) {
+  const { t } = useLanguage()
   const type = BUCKET_TYPES[bucket.type] || BUCKET_TYPES.hold
   const target = bucket.isRest
     ? (totalNW - currentValue)
@@ -449,7 +452,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
       {isGoalMet && !bucket.completed && (
         <div className="vp-goal-met">
           <span>✓ Goal reached!</span>
-          <button className="vp-goal-met-btn" onClick={e => { e.stopPropagation(); onToggleComplete(bucket.id) }}>Archive</button>
+          <button className="vp-goal-met-btn" onClick={e => { e.stopPropagation(); onToggleComplete(bucket.id) }}>{t('vsArchive')}</button>
         </div>
       )}
 
@@ -466,6 +469,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
 
 // ── Add / Edit modal ──────────────────────────────────────────────────
 function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
+  const { t } = useLanguage()
   const isNew = !bucket.id
   const [form, setForm] = useState({
     name: bucket.name || '',
@@ -586,12 +590,12 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
           )}
 
           <label className="vp-field">
-            <span>Name</span>
+            <span>{t('vsName')}</span>
             <input value={form.name} onChange={e => set('name', e.target.value)} placeholder={BUCKET_TYPES[form.type]?.label} className="vp-input" />
           </label>
 
           <label className="vp-field">
-            <span>Type</span>
+            <span>{t('vsType')}</span>
             <select value={form.type} onChange={e => set('type', e.target.value)} className="vp-input">
               {Object.entries(BUCKET_TYPES).map(([k, v]) => (
                 <option key={k} value={k}>{v.label} — {v.desc}</option>
@@ -600,7 +604,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
           </label>
 
           <div className="vp-field">
-            <span>Color</span>
+            <span>{t('vsColor')}</span>
             <div className="vp-colors">
               {BUCKET_COLORS.map(c => (
                 <button key={c} className={`vp-color-swatch${form.color === c ? ' active' : ''}`}
@@ -610,7 +614,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
           </div>
 
           <div className="vp-field">
-            <span>Target</span>
+            <span>{t('vsTarget')}</span>
             <div className="vp-radios">
               {[['none','No target'],['fixed','Fixed $'],['pct','% of net worth'],['rest','Remaining (auto)']].map(([v, l]) => (
                 <label key={v} className="vp-radio">
@@ -783,7 +787,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
         </div>
 
         <div className="vp-modal-foot">
-          <button className="vp-btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="vp-btn-ghost" onClick={onClose}>{t('cancel')}</button>
           <button className="vp-btn-primary" onClick={handleSave}>
             {isNew ? 'Add Bucket' : 'Save Changes'}
           </button>
@@ -796,6 +800,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 // ── Main page ─────────────────────────────────────────────────────────
 // ── "How Goals work" explainer (dismissible, remembered on-device) ────────
 function VisionExplainer() {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(() => {
     try { return localStorage.getItem('wl_vision_explained') !== '1' } catch { return true }
   })
@@ -805,19 +810,19 @@ function VisionExplainer() {
     try { localStorage.setItem('wl_vision_explained', '1') } catch {}
   }
   const STEPS = [
-    { icon: 'folder', title: 'Buckets = purposes', desc: 'Split your net worth into goals — emergency fund, growth, a house deposit — instead of one undifferentiated pile.' },
-    { icon: 'target', title: 'Set a target & timeframe', desc: 'Give a bucket a dollar or % goal and a deadline; WalletLens shows how far off you are and the pace needed.' },
-    { icon: 'banknote', title: 'Runway & income', desc: 'Add monthly contributions or withdrawals to see funding progress and how many months a bucket can pay out.' },
-    { icon: 'sparkles', title: 'Auto-generate', desc: 'Tap Auto-plan and WalletLens builds a starter plan grouped by what you actually hold — then you fine-tune.' },
+    { icon: 'folder',   title: t('vsStep1Title'), desc: t('vsStep1Desc') },
+    { icon: 'target',   title: t('vsStep2Title'), desc: t('vsStep2Desc') },
+    { icon: 'banknote', title: t('vsStep3Title'), desc: t('vsStep3Desc') },
+    { icon: 'sparkles', title: t('vsStep4Title'), desc: t('vsStep4Desc') },
   ]
   return (
     <div className="vp-explain">
-      <button className="vp-explain-x" onClick={dismiss} aria-label="Dismiss">
+      <button className="vp-explain-x" onClick={dismiss} aria-label={t('vsDismiss')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
       </button>
       <div className="vp-explain-head">
         <Icon name="map" size={16} />
-        <b>How Goals work</b>
+        <b>{t('vsHowGoalsWork')}</b>
       </div>
       <div className="vp-explain-grid">
         {STEPS.map((s, i) => (
@@ -835,6 +840,7 @@ function VisionExplainer() {
 }
 
 export default function Vision() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
   const [buckets, setBuckets] = useState(loadBuckets)
@@ -1080,11 +1086,11 @@ export default function Vision() {
       <div className="vp-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          {t('back')}
         </button>
         <div className="vp-header-text">
-          <h1 style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="map" size={22} />Goals</h1>
-          <p>Plan every dollar — buckets, goals, and withdrawal runway in one view.</p>
+          <h1 style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem' }}><Icon name="map" size={22} />{t('navGoals')}</h1>
+          <p>{t('vsSubtitle')}</p>
         </div>
         <div className="vp-header-actions">
           {buckets.length > 0 && (
@@ -1095,7 +1101,7 @@ export default function Vision() {
           )}
           <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Export PDF
+            {t('vsExportPdf')}
           </button>
         </div>
       </div>
@@ -1107,20 +1113,20 @@ export default function Vision() {
           {/* ── Summary bar ── */}
           <div className="vp-summary">
             <div className="vp-stat">
-              <span className="vp-stat-label">Total Net Worth</span>
+              <span className="vp-stat-label">{t('vsTotalNetWorth')}</span>
               <span className="vp-stat-val">{fmt(totalNW)}</span>
             </div>
             <div className="vp-stat">
-              <span className="vp-stat-label">Allocated</span>
+              <span className="vp-stat-label">{t('vsAllocated')}</span>
               <span className="vp-stat-val">{fmt(allocatedValue)}</span>
             </div>
             <div className="vp-stat">
-              <span className="vp-stat-label">Unallocated</span>
+              <span className="vp-stat-label">{t('vsUnallocated')}</span>
               <span className="vp-stat-val" style={{ color: restValue < 0 ? '#ef4444' : undefined }}>{fmt(restValue)}</span>
             </div>
             {totalRunwayMonths != null && (
               <div className="vp-stat">
-                <span className="vp-stat-label">Total Runway</span>
+                <span className="vp-stat-label">{t('vsTotalRunway')}</span>
                 <span className="vp-stat-val">{Math.floor(totalRunwayMonths / 12)}y {totalRunwayMonths % 12}m</span>
               </div>
             )}
@@ -1130,19 +1136,19 @@ export default function Vision() {
           {(monthlyIn > 0 || monthlyOut > 0) && (
             <div className="vp-summary vp-summary-monthly">
               <div className="vp-stat">
-                <span className="vp-stat-label">Monthly In</span>
+                <span className="vp-stat-label">{t('vsMonthlyIn')}</span>
                 <span className="vp-stat-val" style={{ color: '#10b981' }}>+{fmt(monthlyIn)}</span>
               </div>
               <div className="vp-stat">
-                <span className="vp-stat-label">Monthly Out</span>
+                <span className="vp-stat-label">{t('vsMonthlyOut')}</span>
                 <span className="vp-stat-val" style={{ color: monthlyOut > 0 ? '#ef4444' : undefined }}>{monthlyOut > 0 ? '−' : ''}{fmt(monthlyOut)}</span>
               </div>
               <div className="vp-stat">
-                <span className="vp-stat-label">Net / Month</span>
+                <span className="vp-stat-label">{t('vsNetMonth')}</span>
                 <span className="vp-stat-val" style={{ color: monthlyNet >= 0 ? '#10b981' : '#ef4444' }}>{monthlyNet >= 0 ? '+' : '−'}{fmt(Math.abs(monthlyNet))}</span>
               </div>
               <div className="vp-stat">
-                <span className="vp-stat-label">Net / Year</span>
+                <span className="vp-stat-label">{t('vsNetYear')}</span>
                 <span className="vp-stat-val" style={{ color: monthlyNet >= 0 ? '#10b981' : '#ef4444' }}>{monthlyNet >= 0 ? '+' : '−'}{fmt(Math.abs(monthlyNet) * 12)}</span>
               </div>
             </div>
@@ -1158,7 +1164,7 @@ export default function Vision() {
           {buckets.length === 0 ? (
             <div className="vp-empty">
               <div className="vp-empty-icon"><Icon name="map" size={30} /></div>
-              <h2>Build your plan in one tap</h2>
+              <h2>{t('vsBuildOneTap')}</h2>
               <p>Buckets split your net worth into purposes — an emergency fund, long-term growth, a house deposit — so you can see if every dollar is pulling its weight.</p>
               {holdings.length > 0 && (
                 <p className="vp-empty-tip">
@@ -1177,7 +1183,7 @@ export default function Vision() {
             </div>
           ) : (
             <>
-              <h3 className="vp-section-title">Your Buckets</h3>
+              <h3 className="vp-section-title">{t('vsYourBuckets')}</h3>
               <div className="vp-layout">
                 <div className="vp-chart-col">
                   <DonutChart slices={donutSlices} total={totalAllocated || 1} />
@@ -1237,7 +1243,7 @@ export default function Vision() {
           {buckets.length > 0 && (
             <div className="vp-ai">
               <div className="vp-ai-head">
-                <h3 className="vp-ai-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Plan Advisor</h3>
+                <h3 className="vp-ai-title"><Icon name="sparkles" size={15} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('vsPlanAdvisor')}</h3>
                 <button className="vp-ai-btn" onClick={requestAdvice} disabled={adviceLoading}>
                   {adviceLoading ? 'Analyzing…' : advice ? 'Refresh advice' : 'Get AI advice'}
                 </button>
@@ -1279,14 +1285,14 @@ export default function Vision() {
 
                   {advice.actions.length > 0 && (
                     <div className="vp-ai-actions">
-                      <span className="vp-ai-actions-label">Next steps</span>
+                      <span className="vp-ai-actions-label">{t('vsNextSteps')}</span>
                       <ol>
                         {advice.actions.map((a, i) => <li key={i}>{a}</li>)}
                       </ol>
                     </div>
                   )}
 
-                  <p className="vp-ai-disclaimer">AI-generated education, not individualized financial advice.</p>
+                  <p className="vp-ai-disclaimer">{t('vsAiDisclaimer')}</p>
                 </div>
               )}
             </div>
@@ -1310,11 +1316,11 @@ export default function Vision() {
       {deleteId && (
         <div className="vp-modal-backdrop" onClick={() => setDeleteId(null)}>
           <div className="vp-modal vp-modal-sm" onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px' }}>Delete bucket?</h3>
-            <p style={{ opacity: .7, margin: '0 0 20px' }}>This cannot be undone. Assets will not be deleted.</p>
+            <h3 style={{ margin: '0 0 12px' }}>{t('vsDeleteBucket')}</h3>
+            <p style={{ opacity: .7, margin: '0 0 20px' }}>{t('vsCannotUndo')}</p>
             <div className="vp-modal-foot">
-              <button className="vp-btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
-              <button className="vp-btn-danger" onClick={() => handleDelete(deleteId)}>Delete</button>
+              <button className="vp-btn-ghost" onClick={() => setDeleteId(null)}>{t('cancel')}</button>
+              <button className="vp-btn-danger" onClick={() => handleDelete(deleteId)}>{t('vsDelete')}</button>
             </div>
           </div>
         </div>
