@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -51,24 +51,31 @@ describe('claims the product makes about itself', () => {
   })
 
   it('nowhere claims the app is funded by advertising', () => {
-    // There is no ad script and no ad slot. The only AdSense artefact is the
-    // site-verification meta tag in index.html, which serves a different
-    // purpose and is allowed by the exception below.
+    // There is no ad script, no ad slot, and since the AdSense verification
+    // meta tag and ads.txt were removed, no ad artefact of any kind.
     expect(filesMatching(/sustained by[^.]{0,40}advertis/i)).toEqual([])
     expect(filesMatching(/funded by[^.]{0,40}advertis/i)).toEqual([])
   })
 
-  it('mentions AdSense only in the verification tag and in comments explaining it', () => {
+  it('does not mention AdSense anywhere', () => {
+    // The verification meta tag, ads.txt and its _headers rule have all been
+    // removed, so there is no longer a legitimate occurrence to carve out.
+    // Comments are exempt only so this file and the ones documenting the
+    // removal can describe it.
     const offenders = FILES.filter(f => {
       const src = readFileSync(f, 'utf8')
       return src.split('\n').some(line => {
         if (!/AdSense/i.test(line)) return false
-        if (/google-adsense-account/.test(line)) return false      // the meta tag itself
-        if (/^\s*(\/\/|\/\*|\*|<!--)/.test(line.trim())) return false // a comment about it
-        return true
+        return !/^\s*(\/\/|\/\*|\*|<!--)/.test(line.trim())
       })
     }).map(f => relative(CLIENT, f))
     expect(offenders).toEqual([])
+  })
+
+  it('ships no ads.txt', () => {
+    // ads.txt exists only to authorise ad sellers. Keeping one for a product
+    // that serves no ads invites exactly the confusion this whole thread was.
+    expect(existsSync(join(CLIENT, 'public', 'ads.txt'))).toBe(false)
   })
 
   it('does not promise features behind a paywall', () => {
