@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme, THEMES } from '../ThemeContext'
+import { useLanguage, LANGUAGES } from '../LanguageContext'
 import { useBiometricLock } from './BiometricLock'
 import sfx from '../sfx'
 
@@ -22,7 +23,7 @@ const SLIDES = [
     gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
     accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
     eyebrow: 'PERSONALISE', title: 'Make it yours',
-    desc: 'Pick your look. Change anytime in Settings.', isTheme: true,
+    desc: 'Language, light or dark, and a colour. Change anytime in Settings.', isTheme: true,
   },
   {
     id: 'security',
@@ -51,7 +52,8 @@ export default function NativeOnboarding({ onDone }) {
   const [step, setStep] = useState(0)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
-  const { theme, setTheme, mode } = useTheme()
+  const { theme, setTheme, mode, setMode } = useTheme()
+  const { lang, setLang } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -161,6 +163,41 @@ export default function NativeOnboarding({ onDone }) {
         {s.features && (
           <div className="no-features">
             {s.features.map((f, i) => <div key={i} className="no-feature">{f}</div>)}
+          </div>
+        )}
+
+        {s.isTheme && (
+          <div className="no-lang-grid">
+            {LANGUAGES.map(l => (
+              <button
+                key={l.code}
+                className={`no-lang-btn${lang === l.code ? ' active' : ''}`}
+                onClick={() => { try { setLang(l.code) } catch {}; try { track('language_toggle', { lang: l.code, source: 'onboarding' }) } catch {} }}
+                lang={l.code}
+                dir={l.rtl ? 'rtl' : 'ltr'}
+              >
+                <span className="no-lang-native">{l.native}</span>
+                <span className="no-lang-en">{l.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {s.isTheme && (
+          <div className="no-mode-row">
+            {[
+              { id: 'dark',  label: 'Dark',  icon: 'moon' },
+              { id: 'light', label: 'Light', icon: 'sun' },
+            ].map(m => (
+              <button
+                key={m.id}
+                className={`no-mode-btn${mode === m.id ? ' active' : ''}`}
+                onClick={() => { try { setMode(m.id) } catch {}; try { track('mode_changed', { mode: m.id, source: 'onboarding' }) } catch {} }}
+              >
+                <Icon name={m.icon} size={16} />
+                <span>{m.label}</span>
+              </button>
+            ))}
           </div>
         )}
 
