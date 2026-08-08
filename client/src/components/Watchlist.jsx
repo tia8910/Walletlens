@@ -5,6 +5,7 @@ import CoinLogo from './CoinLogo'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
+import { useLanguage } from '../LanguageContext'
 
 const WATCHLIST_KEY = 'wl_watchlist'
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
@@ -91,6 +92,7 @@ function clsLabel(coin_id) {
 }
 
 export default function Watchlist({ portfolioPrices = {} }) {
+  const { t } = useLanguage()
   const [items, setItems]       = useState(loadWatchlist)
   const [prices, setPrices]     = useState({})
   const [alerts, setAlerts]     = useState(loadAlerts)
@@ -322,13 +324,10 @@ export default function Watchlist({ portfolioPrices = {} }) {
       {items.length === 0 && !showSearch && (
         <div className="glass-card wlw-empty">
           <div className="wlw-empty-icon"><Icon name="eye" size={30} /></div>
-          <p className="wlw-empty-title">Nothing in your watchlist yet</p>
-          <p className="muted wlw-empty-sub">
-            Track any crypto, stock, ETF, or precious metal without holding it.
-            Set price alerts and get notified the moment they hit.
-          </p>
+          <p className="wlw-empty-title">{t('watchlistEmptyTitle')}</p>
+          <p className="muted wlw-empty-sub">{t('watchlistEmptySub')}</p>
           <button className="dvx-btn dvx-btn-primary" onClick={toggleSearch}>
-            Add Your First Asset
+            {t('watchlistEmptyCta')}
           </button>
         </div>
       )}

@@ -17,28 +17,28 @@ import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
 
 /** Plain-English version of the last sync attempt, for the Settings row. */
-function widgetStatusText({ diag, hasPayload, lastSync }) {
+function widgetStatusText({ diag, hasPayload, lastSync }, t) {
   if (lastSync) {
     const mins = Math.round((Date.now() - lastSync) / 60000)
-    return mins < 1 ? 'Updated just now' : `Updated ${mins} min ago`
+    return mins < 1 ? t('wgJustNow') : t('wgMinsAgo')(mins)
   }
-  if (!diag) return hasPayload ? 'Ready — not sent yet' : 'Open the dashboard first'
+  if (!diag) return t(hasPayload ? 'wgReady' : 'wgOpenDash')
   switch (diag.result) {
-    case 'no-holdings': return 'No holdings to show yet'
-    case 'not-twa':     return 'Not recognised as the app — tap Sync now'
-    case 'no-payload':  return 'Open the dashboard first'
-    case 'throttled':   return 'Waiting for the next update'
-    case 'threw':       return 'Last attempt failed'
-    default:            return 'Not sent yet'
+    case 'no-holdings': return t('wgNoHoldings')
+    case 'not-twa':     return t('wgNotApp')
+    case 'no-payload':  return t('wgOpenDash')
+    case 'throttled':   return t('wgWaiting')
+    case 'threw':       return t('wgFailed')
+    default:            return t('wgNotSent')
   }
 }
 
 const SETTINGS_KEY = 'wl_settings'
 
 const FONT_SIZES = [
-  { id: 'sm',  label: 'Small',  size: '14px' },
-  { id: 'md',  label: 'Medium', size: '16px' },
-  { id: 'lg',  label: 'Large',  size: '18px' },
+  { id: 'sm',  labelKey: 'setSizeSmall',  size: '14px' },
+  { id: 'md',  labelKey: 'setSizeMedium', size: '16px' },
+  { id: 'lg',  labelKey: 'setSizeLarge',  size: '18px' },
 ]
 
 function loadSettings() {
@@ -54,7 +54,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
   const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
-  const { lang, setLang } = useLanguage()
+  const { lang, setLang, t } = useLanguage()
   useEffect(() => { track('settings_view') }, [])
 
   function update(key, val) {
@@ -75,11 +75,11 @@ export default function Settings() {
       <div className="settings-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          {t('back')}
         </button>
         <h2 style={{ margin:0, fontSize:'1.2rem', display:'inline-flex', alignItems:'center', gap:'0.45rem' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Settings
+          {t('settingsNav')}
         </h2>
       </div>
 
@@ -88,31 +88,31 @@ export default function Settings() {
 
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="sliders" size={16} />Appearance</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="sliders" size={16} />{t('setAppearance')}</h3>
 
         {/* Color Theme */}
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>
           <div className="settings-label">
-            <span>Color Theme</span>
-            <span className="settings-hint">Changes accent colors across the app</span>
+            <span>{t('setColorTheme')}</span>
+            <span className="settings-hint">{t('setColorThemeHint')}</span>
           </div>
           <div className="settings-chips" style={{ flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'flex-start' }}>
-            {COLOR_THEMES.map(t => (
-              <button key={t.id}
-                className={`settings-chip ${colorTheme === t.id ? 'active' : ''}`}
-                onClick={() => { setColorTheme(t.id); track('theme_changed', { theme: t.id, source: 'settings' }) }}
+            {COLOR_THEMES.map(th => (
+              <button key={th.id}
+                className={`settings-chip ${colorTheme === th.id ? 'active' : ''}`}
+                onClick={() => { setColorTheme(th.id); track('theme_changed', { theme: th.id, source: 'settings' }) }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <span className="settings-chip-swatch" style={{
-                  background: `radial-gradient(circle at 35% 35%, ${t.light}, ${t.swatch})`,
-                  border: colorTheme === t.id ? '2px solid white' : '2px solid transparent',
+                  background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+                  border: colorTheme === th.id ? '2px solid white' : '2px solid transparent',
                   fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden', padding: 0,
                 }}>
-                  {t.logo
-                    ? <img src={t.logo} alt={t.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  {th.logo
+                    ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     : null}
                 </span>
-                {t.name}
+                {th.name}
               </button>
             ))}
           </div>
@@ -123,17 +123,17 @@ export default function Settings() {
         {/* Light / Dark mode */}
         <div className="settings-row">
           <div className="settings-label">
-            <span>Mode</span>
-            <span className="settings-hint">Light or dark background</span>
+            <span>{t('setMode')}</span>
+            <span className="settings-hint">{t('setModeHint')}</span>
           </div>
           <div className="settings-chips">
-            {[{ id: 'dark', label: 'Dark', icon: 'moon' }, { id: 'light', label: 'Light', icon: 'sun' }].map(m => (
+            {[{ id: 'dark', labelKey: 'modeDark', icon: 'moon' }, { id: 'light', labelKey: 'modeLight', icon: 'sun' }].map(m => (
               <button key={m.id}
                 className={`settings-chip ${colorMode === m.id ? 'active' : ''}`}
                 onClick={() => { setColorMode(m.id); track('mode_changed', { mode: m.id, source: 'settings' }) }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <Icon name={m.icon} size={15} />
-                {m.label}
+                {t(m.labelKey)}
               </button>
             ))}
           </div>
@@ -147,8 +147,8 @@ export default function Settings() {
             this row an existing user has no way to reach the other languages. */}
         <div className="settings-row">
           <div className="settings-label">
-            <span>Language</span>
-            <span className="settings-hint">Applies across the whole app</span>
+            <span>{t('setLanguage')}</span>
+            <span className="settings-hint">{t('setLanguageHint')}</span>
           </div>
           <div className="settings-chips">
             {LANGUAGES.map(l => (
@@ -168,15 +168,15 @@ export default function Settings() {
 
         <div className="settings-row">
           <div className="settings-label">
-            <span>Font Size</span>
-            <span className="settings-hint">Text scale across the app</span>
+            <span>{t('setFontSize')}</span>
+            <span className="settings-hint">{t('setFontSizeHint')}</span>
           </div>
           <div className="settings-chips">
             {FONT_SIZES.map(f => (
               <button key={f.id}
                 className={`settings-chip ${fontSize === f.id ? 'active' : ''}`}
                 onClick={() => update('fontSize', f.id)}>
-                {f.label}
+                {t(f.labelKey)}
               </button>
             ))}
           </div>
@@ -186,8 +186,8 @@ export default function Settings() {
 
         <div className="settings-row settings-row-toggle">
           <div className="settings-label">
-            <span>Hide Values</span>
-            <span className="settings-hint">Blur portfolio amounts by default</span>
+            <span>{t('setHideValues')}</span>
+            <span className="settings-hint">{t('setHideValuesHint')}</span>
           </div>
           <button className={`settings-toggle ${hideValues ? 'on' : ''}`} onClick={() => update('hideValues', !hideValues)}>
             <span className="settings-toggle-thumb"/>
@@ -198,25 +198,25 @@ export default function Settings() {
 
         <div className="settings-row">
           <div className="settings-label">
-            <span>Assets I track</span>
-            <span className="settings-hint">Personalizes quick-add &amp; your dashboard</span>
+            <span>{t('setInterests')}</span>
+            <span className="settings-hint">{t('setInterestsHint')}</span>
           </div>
           <button className="settings-chip" onClick={() => { setEditInterests(true); track('interests_edit_open', { source: 'settings' }) }}
             style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-            <Icon name="edit" size={14} /> Edit
+            <Icon name="edit" size={14} /> {t('setEdit')}
           </button>
         </div>
       </div>
 
       {/* ── Weekly Report ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="mail" size={16} />Weekly Report</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="mail" size={16} />{t('setWeeklyReport')}</h3>
         <WeeklyEmailSignup source="settings" />
       </div>
 
       {/* ── Security ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />Security</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />{t('setSecurity')}</h3>
         <BiometricToggle />
       </div>
 
@@ -224,16 +224,16 @@ export default function Settings() {
            which does not exist on the web. */}
       {isAndroidTWA() && (
         <div className="settings-section glass-card">
-          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="star" size={16} />Rate WalletLens</h3>
+          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="star" size={16} />{t('setRate')}</h3>
           <div className="settings-row">
             <div className="settings-label">
-              <span>Leave a review</span>
-              <span className="settings-hint">Play&apos;s rating card, or the store listing if it can&apos;t show</span>
+              <span>{t('setReview')}</span>
+              <span className="settings-hint">{t('setReviewHint')}</span>
             </div>
             <button className="settings-chip"
               onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}
               style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-              <Icon name="star" size={14} /> Rate
+              <Icon name="star" size={14} /> {t('setRate')}
             </button>
           </div>
         </div>
@@ -248,12 +248,12 @@ export default function Settings() {
            design, so this is how a stuck widget gets explained. */}
       {isAndroid && (
         <div className="settings-section glass-card">
-          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} />Home screen widgets</h3>
+          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} />{t('setWidgets')}</h3>
 
           <div className="settings-row">
             <div className="settings-label">
-              <span>Status</span>
-              <span className="settings-hint">{widgetStatusText(wdiag)}</span>
+              <span>{t('setStatus')}</span>
+              <span className="settings-hint">{widgetStatusText(wdiag, t)}</span>
             </div>
             <button className="settings-chip"
               onClick={() => {
@@ -262,15 +262,15 @@ export default function Settings() {
                 setWdiag(widgetSyncDiagnostics())
               }}
               style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-              <Icon name="refresh" size={14} /> Sync now
+              <Icon name="refresh" size={14} /> {t('setSyncNow')}
             </button>
           </div>
 
           <div className="settings-row">
             <div className="settings-label">
-              <span>Running as the app</span>
+              <span>{t('setRunningAsApp')}</span>
               <span className="settings-hint">
-                {wdiag.twa ? 'Yes' : 'No — widgets only update from the installed app'}
+                {wdiag.twa ? t('setYes') : t('setNotApp')}
               </span>
             </div>
           </div>

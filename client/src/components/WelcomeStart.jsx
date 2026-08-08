@@ -5,6 +5,7 @@ import sfx from '../sfx'
 import { POPULAR_FIAT, GOLD_ID } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 import { track, trackProfileCreated } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 // Match the dashboard/trade icons. Self-contained data URIs so they always
 // render (no CDN dependency): a teal Tether ₮ coin and the "Au" gold bar.
@@ -25,6 +26,7 @@ function readCurrency() {
 }
 
 export default function WelcomeStart({ onDone }) {
+  const { t } = useLanguage()
   const [currency, setCurrency] = useState(() => {
     const cur = readCurrency()
     return POPULAR_FIAT.some(f => f.code === cur) ? cur : 'USD'
@@ -125,9 +127,9 @@ export default function WelcomeStart({ onDone }) {
   function onKeyDown(e) { if (e.key === 'Enter') start() }
 
   return (
-    <div className="wls-overlay" role="dialog" aria-modal="true" aria-label="Welcome to WalletLens">
+    <div className="wls-overlay" role="dialog" aria-modal="true" aria-label={t('wsTitle')}>
       <div className="wls-card">
-        <button className="wlm-close" onClick={skip} aria-label="Close" title="Close">
+        <button className="wlm-close" onClick={skip} aria-label={t('close')} title={t('close')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
 
@@ -135,11 +137,8 @@ export default function WelcomeStart({ onDone }) {
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         </div>
 
-        <h2 className="wls-title">Now build your dashboard</h2>
-        <p className="wls-sub">
-          Let's bring your dashboard to life. Add whatever you're holding and you'll see your net worth
-          instantly — all optional, and you can add stocks and more in a moment.
-        </p>
+        <h2 className="wls-title">{t('wsTitle')}</h2>
+        <p className="wls-sub">{t('wsSub')}</p>
 
         {/* Premium 2×2 asset grid — compact cards instead of full-width rows */}
         <div className="wls-grid">
@@ -147,7 +146,7 @@ export default function WelcomeStart({ onDone }) {
           <div className="wls-cell">
             <div className="wls-cell-head">
               <span className="wls-cell-ic"><Icon name="banknote" size={16} /></span>
-              <span className="wls-cell-name">Cash</span>
+              <span className="wls-cell-name">{t('catCash')}</span>
               <span className="wls-cell-sel">
                 <span className="wls-cell-sel-val">{currency}</span>
                 <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -189,16 +188,16 @@ export default function WelcomeStart({ onDone }) {
           <div className="wls-cell">
             <div className="wls-cell-head">
               <span className="wls-cell-ic">{GOLD_LOGO ? <img className="wls-ic" src={GOLD_LOGO} alt="" /> : <Icon name="award" size={16} />}</span>
-              <span className="wls-cell-name">Gold</span>
+              <span className="wls-cell-name">{t('catGold')}</span>
               <span className="wls-cell-sel">
-                <span className="wls-cell-sel-val">{goldUnit === 'g' ? 'gram' : 'oz'}</span>
+                <span className="wls-cell-sel-val">{goldUnit === 'g' ? t('wsGram') : 'oz'}</span>
                 <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 <select
                   className="wls-cell-sel-native" value={goldUnit}
                   onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
                 >
                   <option value="oz">oz</option>
-                  <option value="g">gram</option>
+                  <option value="g">{t('wsGram')}</option>
                 </select>
               </span>
             </div>
@@ -229,32 +228,28 @@ export default function WelcomeStart({ onDone }) {
         </div>
 
         <button className="wls-cta" onClick={start} disabled={busy}>
-          {busy ? 'Setting up…' : hasAny ? '✦ See my dashboard' : 'Next'}
+          {busy ? t('obSettingUp') : hasAny ? `✦ ${t('wsSeeDashboard')}` : t('wsNext')}
         </button>
         <button
           className="wls-skip" onClick={askSkip} disabled={busy}
           style={{ opacity: canSkip ? 0.6 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
-        >I'll add these later</button>
+        >{t('wsLater')}</button>
 
         <p className="wls-privacy">
-          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />100% private — everything stays on your device. No account needed.
+          <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{t('wsPrivacy')}
         </p>
 
         {confirmSkip && (
           <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>
             <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
-              <h4 className="bs-confirm-title">Start with an empty dashboard?</h4>
-              <p className="bs-confirm-text">
-                Adding even <strong>one balance</strong> lets you see your net worth and live P&L
-                right away instead of a blank $0. It's optional and stays on your device — you can
-                add or remove anything later.
-              </p>
+              <h4 className="bs-confirm-title">{t('wsSkipTitle')}</h4>
+              <p className="bs-confirm-text">{t('wsSkipText')}</p>
               <div className="bs-confirm-actions">
                 <button className="bs-confirm-go" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
                   onClick={() => setConfirmSkip(false)}>
-                  Add a balance
+                  {t('wsAddBalance')}
                 </button>
-                <button className="bs-confirm-switch" onClick={skip} disabled={busy}>Skip anyway</button>
+                <button className="bs-confirm-switch" onClick={skip} disabled={busy}>{t('wsSkipAnyway')}</button>
               </div>
             </div>
           </div>
