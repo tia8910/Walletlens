@@ -3,11 +3,10 @@
 // lives as structured content rather than flat keys.
 //
 // Section 8 previously said WalletLens integrates third-party "advertising
-// (Google AdSense)". It does not: the only AdSense trace in the repository is
-// a site-verification meta tag, no ad script loads and no ad slot exists. That
-// was corrected here rather than carried into three more languages, and the
-// Privacy Policy already says the app serves no advertising — the two
-// documents now agree.
+// (Google AdSense)". It does not, and since then every ad artefact has been
+// removed from the repository: the verification meta tag, ads.txt, and its
+// caching rule. No ad script loads and no ad slot exists. Corrected here
+// rather than carried into three more languages.
 
 export const terms = {
   en: {

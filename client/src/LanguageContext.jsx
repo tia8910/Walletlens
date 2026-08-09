@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { translations } from './i18n'
 
 /**
@@ -22,6 +22,7 @@ const SUPPORTED = new Set(LANGUAGES.map(l => l.code))
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
+  const firstRun = useRef(true)
   const [lang, setLang] = useState(() => {
     // Validate what comes out of storage: an unsupported code would resolve
     // every key to the English fallback while the UI claimed another language.
@@ -36,6 +37,18 @@ export function LanguageProvider({ children }) {
     localStorage.setItem('wl_lang', lang)
     document.documentElement.lang = lang
     document.documentElement.dir = RTL.has(lang) ? 'rtl' : 'ltr'
+
+    // Two things outside this document render text and cannot read the choice
+    // for themselves: the Android shell, which sends the lock-screen
+    // notifications, and the push server, which builds price alerts. Both are
+    // told here so a language change takes effect on the next notification
+    // instead of the next portfolio sync.
+    //
+    // Skipped on the first run — the picker fires this effect on mount too,
+    // and neither side needs to hear a language it was already given.
+    if (firstRun.current) { firstRun.current = false; return }
+    import('./nativeWidgets').then(m => m.syncLanguage?.()).catch(() => {})
+    import('./push').then(m => m.syncAlerts?.()).catch(() => {})
   }, [lang])
 
   const t = useCallback((key) => {

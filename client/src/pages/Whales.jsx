@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
+import { useLanguage } from '../LanguageContext'
 
 const SmartAlerts = lazy(() => import('../components/SmartAlerts'))
 
@@ -21,15 +22,16 @@ function fmtPct(n) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
 
-function timeAgo(d) {
+function timeAgo(d, t) {
   const sec = Math.floor((Date.now() - d.getTime()) / 1000)
-  if (sec < 60) return sec + 's ago'
-  if (sec < 3600) return Math.floor(sec / 60) + 'm ago'
-  if (sec < 86400) return Math.floor(sec / 3600) + 'h ago'
-  return Math.floor(sec / 86400) + 'd ago'
+  if (sec < 60) return t('wtSecAgo')(sec)
+  if (sec < 3600) return t('wtMinAgo')(Math.floor(sec / 60))
+  if (sec < 86400) return t('wtHourAgo')(Math.floor(sec / 3600))
+  return t('wtDayAgo')(Math.floor(sec / 86400))
 }
 
 export default function Whales() {
+  const { t } = useLanguage()
   const [snapshot, setSnapshot] = useState([])
   const [trending, setTrending] = useState([])
   const [largeTx, setLargeTx] = useState([])
@@ -94,26 +96,26 @@ export default function Whales() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Whale Tracker</h1>
-          <p className="page-sub">Live large-money flows, market anomalies, and smart-money signals.</p>
+          <h1 className="page-title">{t('wtTitle')}</h1>
+          <p className="page-sub">{t('wtSub')}</p>
         </div>
         <button className="refresh-btn" onClick={load} disabled={loading}>
           {loading
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{animation:'spin 0.8s linear infinite'}}><path d="M21 12a9 9 0 1 1-4.219-7.617"/></svg>
             : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.86"/></svg>}
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? t('loading') : t('refresh')}
         </button>
       </div>
 
       <div className="whale-tabs">
         {[
-          { k: 'smart', l: 'Smart Alerts' },
-          { k: 'movers', l: 'Top Movers' },
-          { k: 'volume', l: 'Volume Anomalies' },
-          { k: 'trending', l: 'Trending' },
-          { k: 'btc', l: 'BTC Whale Txs' },
-          { k: 'feed', l: 'Whale Feed' },
-          { k: 'flows', l: 'Exchange Flows' },
+          { k: 'smart', l: t('wtTabSmart') },
+          { k: 'movers', l: t('wtTabMovers') },
+          { k: 'volume', l: t('wtTabVolume') },
+          { k: 'trending', l: t('wtTabTrending') },
+          { k: 'btc', l: t('wtTabBtc') },
+          { k: 'feed', l: t('wtTabFeed') },
+          { k: 'flows', l: t('wtTabFlows') },
         ].map(t => (
           <button
             key={t.k}
@@ -126,12 +128,12 @@ export default function Whales() {
       </div>
 
       {tab === 'smart' && (
-        <Suspense fallback={<div className="card"><p className="muted">Loading…</p></div>}>
+        <Suspense fallback={<div className="card"><p className="muted">{t('loading')}</p></div>}>
           <SmartAlerts enriched={[]} prices={{}} />
         </Suspense>
       )}
 
-      {loading && tab !== 'smart' && <div className="card"><p className="muted">Loading whale signals…</p></div>}
+      {loading && tab !== 'smart' && <div className="card"><p className="muted">{t('wtLoadingSignals')}</p></div>}
 
       {!loading && tab === 'movers' && (
         <>
@@ -148,11 +150,11 @@ export default function Whales() {
           </div>
           <div className="whale-split">
             <div className="whale-card">
-              <h3 className="whale-card-h positive">▲ Top Gainers ({moverWindow})</h3>
+              <h3 className="whale-card-h positive">▲ {t('wtWindowed')(t('wtTopGainers'), moverWindow)}</h3>
               {gainers.map(c => <MoverRow key={c.id} c={c} pctKey={pctKey} />)}
             </div>
             <div className="whale-card">
-              <h3 className="whale-card-h negative">▼ Top Losers ({moverWindow})</h3>
+              <h3 className="whale-card-h negative">▼ {t('wtWindowed')(t('wtTopLosers'), moverWindow)}</h3>
               {losers.map(c => <MoverRow key={c.id} c={c} pctKey={pctKey} />)}
             </div>
           </div>
@@ -162,8 +164,8 @@ export default function Whales() {
       {!loading && tab === 'volume' && (
         <div className="whale-split">
           <div className="whale-card">
-            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="volume-chart" size={16} style={{ color:'#fb923c' }} />Volume Anomalies</h3>
-            <p className="whale-help">Highest 24h-volume / market-cap ratio — unusual turnover, often whale entry.</p>
+            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="volume-chart" size={16} style={{ color:'#fb923c' }} />{t('wtVolumeAnomalies')}</h3>
+            <p className="whale-help">{t('wtVolumeAnomaliesHelp')}</p>
             {volumeAnomalies.map(c => (
               <div key={c.id} className="whale-row">
                 <Link to={`/asset/${c.id}`} className="whale-coin">
@@ -175,18 +177,18 @@ export default function Whales() {
                 </Link>
                 <div className="whale-stat">
                   <div className="whale-stat-val">{(c._turnover * 100).toFixed(1)}%</div>
-                  <div className="whale-stat-lbl">turnover</div>
+                  <div className="whale-stat-lbl">{t('wtTurnover')}</div>
                 </div>
                 <div className="whale-stat">
                   <div className="whale-stat-val">{fmtUsd(c.total_volume)}</div>
-                  <div className="whale-stat-lbl">24h vol</div>
+                  <div className="whale-stat-lbl">{t('wt24hVol')}</div>
                 </div>
               </div>
             ))}
           </div>
           <div className="whale-card">
-            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bar-chart" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Volume Leaders</h3>
-            <p className="whale-help">Where the most dollars are flowing right now.</p>
+            <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bar-chart" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('wtVolumeLeaders')}</h3>
+            <p className="whale-help">{t('wtVolumeLeadersHelp')}</p>
             {volumeLeaders.map(c => (
               <div key={c.id} className="whale-row">
                 <Link to={`/asset/${c.id}`} className="whale-coin">
@@ -198,11 +200,11 @@ export default function Whales() {
                 </Link>
                 <div className="whale-stat">
                   <div className="whale-stat-val">{fmtUsd(c.total_volume)}</div>
-                  <div className="whale-stat-lbl">24h vol</div>
+                  <div className="whale-stat-lbl">{t('wt24hVol')}</div>
                 </div>
                 <div className={`whale-stat ${c.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}`}>
                   <div className="whale-stat-val">{fmtPct(c.price_change_percentage_24h)}</div>
-                  <div className="whale-stat-lbl">24h</div>
+                  <div className="whale-stat-lbl">{t('wt24h')}</div>
                 </div>
               </div>
             ))}
@@ -212,19 +214,21 @@ export default function Whales() {
 
       {!loading && tab === 'trending' && (
         <div className="whale-card">
-          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="search" size={16} style={{ color:'var(--text-muted)' }} />Trending Searches (CoinGecko)</h3>
-          <p className="whale-help">Most-searched coins on CoinGecko in the last 24h. A leading indicator of retail attention.</p>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="search" size={16} style={{ color:'var(--text-muted)' }} />{t('wtTrendingSearches')}</h3>
+          <p className="whale-help">{t('wtTrendingHelp')}</p>
           <div className="trending-grid">
-            {trending.map((t, i) => (
-              <Link key={t.id || i} to={`/asset/${t.id}`} className="trending-card">
+            {/* `coin`, not `t` — this map used to bind the translator's name,
+                which is fine until the body needs to translate something. */}
+            {trending.map((coin, i) => (
+              <Link key={coin.id || i} to={`/asset/${coin.id}`} className="trending-card">
                 <div className="trending-rank">#{i + 1}</div>
-                <img src={t.thumb} alt="coin logo" width={32} height={32}  onError={e => { e.currentTarget.style.display = 'none' }} />
+                <img src={coin.thumb} alt="coin logo" width={32} height={32}  onError={e => { e.currentTarget.style.display = 'none' }} />
                 <div className="trending-info">
-                  <div className="whale-name">{t.name}</div>
-                  <div className="whale-sym">{t.symbol}</div>
+                  <div className="whale-name">{coin.name}</div>
+                  <div className="whale-sym">{coin.symbol}</div>
                 </div>
-                {t.market_cap_rank && (
-                  <div className="trending-mcap">MCap #{t.market_cap_rank}</div>
+                {coin.market_cap_rank && (
+                  <div className="trending-mcap">{t('wtMcapRank')(coin.market_cap_rank)}</div>
                 )}
               </Link>
             ))}
@@ -234,10 +238,10 @@ export default function Whales() {
 
       {!loading && tab === 'btc' && (
         <div className="whale-card">
-          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />Live Bitcoin Whale Transactions</h3>
-          <p className="whale-help">Unconfirmed BTC txs over $500K from blockchain.info — refresh to see new ones.</p>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />{t('wtBtcTitle')}</h3>
+          <p className="whale-help">{t('wtBtcHelp')}</p>
           {largeTx.length === 0 && (
-            <p className="muted">No whale txs in current mempool snapshot. Try refresh.</p>
+            <p className="muted">{t('wtBtcEmpty')}</p>
           )}
           {largeTx.map(tx => (
             <a
@@ -254,7 +258,7 @@ export default function Whales() {
               </div>
               <div className="btc-tx-side">
                 <div className="btc-tx-usd">{fmtUsd(tx.usd)}</div>
-                <div className="btc-tx-time">{timeAgo(tx.time)}</div>
+                <div className="btc-tx-time">{timeAgo(tx.time, t)}</div>
               </div>
             </a>
           ))}
@@ -263,10 +267,10 @@ export default function Whales() {
 
       {!loading && tab === 'feed' && (
         <div className="whale-card">
-          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />Multi-Chain Whale Alert Feed</h3>
-          <p className="whale-help">Large transfers (&gt;$500K) across BTC and ETH mempools — live, no API key required.</p>
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="flow" size={16} style={{ color:'#38bdf8' }} />{t('wtFeedTitle')}</h3>
+          <p className="whale-help">{t('wtFeedHelp')}</p>
           {whaleFeed.length === 0 && (
-            <p className="muted">No whale transfers detected right now. Try refresh.</p>
+            <p className="muted">{t('wtFeedEmpty')}</p>
           )}
           {whaleFeed.map((tx, i) => (
             <a
@@ -285,7 +289,7 @@ export default function Whales() {
               </div>
               <div className="btc-tx-side">
                 <div className="btc-tx-usd">{fmtUsd(tx.usd)}</div>
-                <div className="btc-tx-time">{timeAgo(tx.time)}</div>
+                <div className="btc-tx-time">{timeAgo(tx.time, t)}</div>
               </div>
             </a>
           ))}
@@ -294,9 +298,9 @@ export default function Whales() {
 
       {!loading && tab === 'flows' && (
         <div className="whale-card">
-          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bank" size={16} style={{ color:'var(--text-muted)' }} />Exchange Flow Rankings</h3>
-          <p className="whale-help">Top exchanges by 24h BTC-equivalent volume. High trust score + high volume = healthy liquidity.</p>
-          {exchangeFlows.length === 0 && <p className="muted">Could not load exchange data.</p>}
+          <h3 className="whale-card-h" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bank" size={16} style={{ color:'var(--text-muted)' }} />{t('wtFlowsTitle')}</h3>
+          <p className="whale-help">{t('wtFlowsHelp')}</p>
+          {exchangeFlows.length === 0 && <p className="muted">{t('wtFlowsEmpty')}</p>}
           {exchangeFlows.map((ex, i) => (
             <div key={ex.id} className="exchange-row">
               <div className="exchange-rank">#{i + 1}</div>
@@ -309,11 +313,11 @@ export default function Whales() {
               </div>
               <div className="whale-stat">
                 <div className="whale-stat-val">{ex.volume24h >= 1000 ? (ex.volume24h / 1000).toFixed(1) + 'K' : ex.volume24h.toFixed(0)} BTC</div>
-                <div className="whale-stat-lbl">24h vol</div>
+                <div className="whale-stat-lbl">{t('wt24hVol')}</div>
               </div>
               <div className="whale-stat">
                 <TrustBar score={ex.trustScore} />
-                <div className="whale-stat-lbl">trust {ex.trustScore}/10</div>
+                <div className="whale-stat-lbl">{t('wtTrust')(ex.trustScore)}</div>
               </div>
             </div>
           ))}
@@ -334,6 +338,7 @@ function TrustBar({ score }) {
 }
 
 function MoverRow({ c, pctKey }) {
+  const { t } = useLanguage()
   const pct = c[pctKey]
   return (
     <div className="whale-row">
@@ -346,11 +351,11 @@ function MoverRow({ c, pctKey }) {
       </Link>
       <div className="whale-stat">
         <div className="whale-stat-val">{fmtUsd(c.current_price)}</div>
-        <div className="whale-stat-lbl">price</div>
+        <div className="whale-stat-lbl">{t('wtPrice')}</div>
       </div>
       <div className={`whale-stat ${pct >= 0 ? 'positive' : 'negative'}`}>
         <div className="whale-stat-val">{fmtPct(pct)}</div>
-        <div className="whale-stat-lbl">change</div>
+        <div className="whale-stat-lbl">{t('wtChange')}</div>
       </div>
     </div>
   )

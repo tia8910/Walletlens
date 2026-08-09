@@ -36,7 +36,8 @@ import org.json.JSONObject;
  *   "nw": 16897.55, "pnl": 318.92, "pnlPct": 2.56,
  *   "tracked": 12, "winners": 7, "losers": 5,
  *   "alloc": { "crypto": 41.2, "stocks": 25.6, "gold": 18.4, "cash": 14.8 },
- *   "movers": [ { "s": "BTC", "p": "$65,921", "c": 2.35 }, ... ]
+ *   "movers": [ { "s": "BTC", "p": "$65,921", "c": 2.35 }, ... ],
+ *   "lang": "ar"
  * }
  */
 public class WidgetSyncActivity extends Activity {
@@ -64,6 +65,13 @@ public class WidgetSyncActivity extends Activity {
 
         JSONObject j = new JSONObject(raw);
         Context ctx = getApplicationContext();
+
+        // The payload also carries the language chosen in the web app. It has
+        // nowhere else to go: localStorage is unreadable from native code, and
+        // PeriodicUpdateWorker needs it to send notifications in a language
+        // the user actually reads. Piggybacking here rather than adding an
+        // intent host of its own keeps the manifest surface unchanged.
+        LangPrefs.set(ctx, j.optString("lang", null));
 
         double nw     = j.optDouble("nw", 0);
         double pnl    = j.optDouble("pnl", 0);

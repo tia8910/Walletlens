@@ -114,6 +114,62 @@ interface StoredSub {
   alerts: Array<{ id: string | number; coin_id: string; coin_symbol: string; condition: "above" | "below"; targetPrice: number }>
   fired: Record<string, number>
   createdAt: number
+  /** The language the app was in when this device last talked to us. */
+  lang?: Lang
+}
+
+// ── Notification copy ───────────────────────────────────────────────────────
+// The alert cron runs here, not in the browser, so the text has to be built
+// here too — which means the four languages live here as well as in the
+// client's i18n.js. There is no way around the duplication without shipping
+// the whole translation table to the server, and this is four short strings.
+//
+// If you add a language to client/src/LanguageContext.jsx, add it here too:
+// an unknown code falls back to English rather than failing, so the omission
+// would be silent.
+type Lang = "en" | "ar" | "fr" | "es"
+const LANGS: Lang[] = ["en", "ar", "fr", "es"]
+
+function asLang(raw: unknown): Lang | undefined {
+  return typeof raw === "string" && (LANGS as string[]).includes(raw) ? raw as Lang : undefined
+}
+
+const COPY = {
+  targetTitle: {
+    en: (dir: string, sym: string) => `${dir} ${sym} hit your target`,
+    ar: (dir: string, sym: string) => `${dir} بلغ ${sym} هدفك`,
+    fr: (dir: string, sym: string) => `${dir} ${sym} a atteint votre objectif`,
+    es: (dir: string, sym: string) => `${dir} ${sym} ha alcanzado tu objetivo`,
+  },
+  targetBody: {
+    en: (sym: string, cond: string, target: number, now: number) =>
+      `${sym} is ${cond === "above" ? "above" : "below"} $${target} — now $${now}.`,
+    ar: (sym: string, cond: string, target: number, now: number) =>
+      `${sym} ${cond === "above" ? "فوق" : "تحت"} ${target} دولار — والسعر الآن ${now} دولار.`,
+    fr: (sym: string, cond: string, target: number, now: number) =>
+      `${sym} est ${cond === "above" ? "au-dessus" : "en dessous"} de ${target} $ — désormais à ${now} $.`,
+    es: (sym: string, cond: string, target: number, now: number) =>
+      `${sym} está ${cond === "above" ? "por encima" : "por debajo"} de ${target} $: ahora ${now} $.`,
+  },
+  testTitle: {
+    en: () => "🔔 WalletLens notifications are on",
+    ar: () => "🔔 تم تفعيل إشعارات WalletLens",
+    fr: () => "🔔 Les notifications WalletLens sont activées",
+    es: () => "🔔 Las notificaciones de WalletLens están activadas",
+  },
+  testBody: {
+    en: () => "You'll now get price-target alerts even when the app is closed.",
+    ar: () => "ستصلك الآن تنبيهات أهداف السعر حتى عندما يكون التطبيق مغلقاً.",
+    fr: () => "Vous recevrez désormais les alertes d'objectif de prix même quand l'application est fermée.",
+    es: () => "A partir de ahora recibirás alertas de objetivo de precio aunque la app esté cerrada.",
+  },
+}
+
+/** Pick a copy function for a language, falling back to English. */
+function copy<K extends keyof typeof COPY>(k: K, lang: Lang | undefined): (typeof COPY)[K]["en"] {
+  const table = COPY[k]
+  const chosen = lang && lang !== "en" ? table[lang] : table.en
+  return (chosen ?? table.en) as (typeof COPY)[K]["en"]
 }
 
 // ── Price fetch (server-side; no CORS limits) ───────────────────────────────
@@ -173,8 +229,8 @@ async function checkAlerts() {
       if (hit && !fired[id]) {
         const dir = a.condition === "above" ? "🚀" : "🔻"
         await sendPush(value, {
-          title: `${dir} ${a.coin_symbol} hit your target`,
-          body: `${a.coin_symbol} is ${a.condition} $${a.targetPrice} — now $${p}.`,
+          title: copy("targetTitle", value.lang)(dir, a.coin_symbol),
+          body: copy("targetBody", value.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
           tag: `price-${id}`,
           url: "/watchlist",
         })
@@ -233,6 +289,7 @@ Deno.serve(async (req, info) => {
       alerts: body.alerts !== undefined ? sanitizeAlerts(body.alerts) : existing?.alerts ?? [],
       fired: existing?.fired ?? {},
       createdAt: existing?.createdAt ?? Date.now(),
+      lang: asLang(body.lang) ?? existing?.lang,
     }
     await kv.set(["sub", k], stored)
     return new Response(JSON.stringify({ ok: true }), { headers })
@@ -250,7 +307,9 @@ Deno.serve(async (req, info) => {
     const liveIds = new Set(nextAlerts.map(a => String(a.id)))
     const fired: Record<string, number> = {}
     for (const [id, ts] of Object.entries(existing.fired ?? {})) if (liveIds.has(id)) fired[id] = ts
-    await kv.set(["sub", k], { ...existing, alerts: nextAlerts, fired })
+    // Alert edits also refresh the language, so switching language in Settings
+    // reaches the server without needing a re-subscribe.
+    await kv.set(["sub", k], { ...existing, alerts: nextAlerts, fired, lang: asLang(body.lang) ?? existing.lang })
     return new Response(JSON.stringify({ ok: true, count: nextAlerts.length }), { headers })
   }
 
@@ -261,9 +320,11 @@ Deno.serve(async (req, info) => {
     const k = await endpointKey(endpoint)
     const existing = (await kv.get<StoredSub>(["sub", k])).value
     if (!existing) return new Response(JSON.stringify({ error: "unknown_subscription" }), { status: 404, headers })
+    const lang = asLang(body.lang) ?? existing.lang
+    if (lang && lang !== existing.lang) await kv.set(["sub", k], { ...existing, lang })
     const ok = await sendPush(existing, {
-      title: "🔔 WalletLens notifications are on",
-      body: "You'll now get price-target alerts even when the app is closed.",
+      title: copy("testTitle", lang)(),
+      body: copy("testBody", lang)(),
       tag: "wl-test",
       url: "/watchlist",
     })

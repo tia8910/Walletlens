@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated. The notification copy PeriodicUpdateWorker shows on the
+     lock screen. Titles and bodies are parallel arrays: index i of
+     *_titles goes with index i of *_bodies and with the URL at index i
+     of the matching array in PeriodicUpdateWorker.java. Keep all three
+     the same length. -->
+<resources>
+    <string-array name="notif_hack_titles">
+        <item>📈 Aportaciones periódicas</item>
+        <item>🛡️ Diversificación</item>
+        <item>📉 Compra en las caídas</item>
+        <item>💰 Interés compuesto</item>
+        <item>🎯 Pon stop-loss</item>
+        <item>📊 Reequilibra cada trimestre</item>
+        <item>🔍 Investiga por tu cuenta</item>
+        <item>💵 Primero el fondo de emergencia</item>
+        <item>📋 Haz seguimiento de todo</item>
+        <item>🧠 Evita el FOMO</item>
+        <item>📅 Invierte con constancia</item>
+        <item>🔒 Almacenamiento en frío</item>
+        <item>📊 Vigila las correlaciones</item>
+        <item>💡 Compensación fiscal de pérdidas</item>
+        <item>🌍 Piensa en global</item>
+        <item>📈 Sigue la tendencia</item>
+        <item>⚡ Mantén liquidez</item>
+        <item>📚 Nunca dejes de aprender</item>
+        <item>🎯 Fija objetivos</item>
+        <item>💪 Mantén la calma</item>
+    </string-array>
+    <string-array name="notif_hack_bodies">
+        <item>Invierte cantidades fijas con regularidad: la emoción sale del timing</item>
+        <item>Reparte entre criptos, acciones, oro y efectivo: no pongas todos los huevos en la misma cesta</item>
+        <item>Cuando todos tienen miedo, plantéate comprar: los mercados son cíclicos</item>
+        <item>Reinvierte las ganancias para crecer exponencialmente: el tiempo es tu mayor aliado</item>
+        <item>Define tu salida antes de entrar: te protege de malas decisiones</item>
+        <item>Ajusta las asignaciones cada 3 meses para mantener el riesgo objetivo</item>
+        <item>Investiga siempre antes de invertir: entiende lo que posees</item>
+        <item>Guarda de 3 a 6 meses de gastos en efectivo antes de invertir</item>
+        <item>Usa WalletLens: lo que se mide se gestiona</item>
+        <item>El miedo a perderte algo te hace comprar caro: mantén la disciplina</item>
+        <item>Las aportaciones pequeñas y constantes ganan al timing de mercado</item>
+        <item>Los saldos cripto grandes van en carteras físicas, no en exchanges</item>
+        <item>El oro y las acciones a veces se mueven juntos: conoce tu cartera</item>
+        <item>Vende posiciones perdedoras para compensar ganancias: WalletLens sigue tus P&amp;L</item>
+        <item>La diversificación internacional reduce el riesgo de un solo país</item>
+        <item>La tendencia es tu amiga: no luches contra el mercado</item>
+        <item>Ten efectivo listo para aprovechar las caídas del mercado</item>
+        <item>Los mejores inversores nunca dejan de aprender: usa la Academia</item>
+        <item>Define tus metas financieras: los hitos de WalletLens siguen tu progreso</item>
+        <item>Los mercados caen y se recuperan: vender por pánico consolida la pérdida</item>
+    </string-array>
+    <string-array name="notif_academy_titles">
+        <item>🎓 ¿Qué es el RSI?</item>
+        <item>📈 El MACD explicado</item>
+        <item>📊 Bandas de Bollinger</item>
+        <item>🕯️ Patrones de velas</item>
+        <item>📉 Soportes y resistencias</item>
+        <item>⚖️ Relación riesgo-beneficio</item>
+        <item>🧮 Tamaño de la posición</item>
+        <item>📉 Índice de volatilidad (VIX)</item>
+        <item>🔄 Aportaciones periódicas</item>
+        <item>🎯 Asignación de activos</item>
+        <item>📊 Ponderación por capitalización</item>
+        <item>🌍 Macro global</item>
+        <item>💡 Análisis on-chain</item>
+        <item>📊 Fuerza relativa</item>
+        <item>🧠 Análisis de sentimiento</item>
+        <item>⚡ Lightning Network</item>
+        <item>🔐 Carteras físicas</item>
+        <item>📉 Recuperarse de una caída</item>
+        <item>🏦 La DeFi explicada</item>
+        <item>📜 Lee el whitepaper</item>
+    </string-array>
+    <string-array name="notif_academy_bodies">
+        <item>Índice de fuerza relativa: mide la sobrecompra por encima de 70 y la sobreventa por debajo de 30</item>
+        <item>Convergencia-divergencia de medias móviles: indicador de impulso que sigue la tendencia</item>
+        <item>Bandas de volatilidad trazadas a 2 desviaciones típicas de una media móvil</item>
+        <item>Aprende el Doji, el Martillo, la Envolvente y otros patrones para leer el precio</item>
+        <item>Niveles de precio clave donde se concentra la presión compradora o vendedora</item>
+        <item>Calcula siempre la pérdida potencial frente a la ganancia antes de entrar</item>
+        <item>Nunca arriesgues más del 1–2 % de la cartera en una sola operación</item>
+        <item>El VIX mide el miedo del mercado: lecturas altas indican mucha incertidumbre</item>
+        <item>Invierte una cantidad fija de forma programada, sea cual sea el precio</item>
+        <item>Reparte tu cartera entre acciones, bonos y criptos según tus objetivos</item>
+        <item>Las grandes capitalizaciones pesan más en la mayoría de los fondos indexados</item>
+        <item>Los tipos de interés, la inflación y la geopolítica mueven todos los mercados</item>
+        <item>Los datos de la blockchain revelan los movimientos de ballenas y la salud de la red</item>
+        <item>Compara el rendimiento de un activo con su índice de referencia para encontrar ganadores</item>
+        <item>Las métricas sociales y el índice de miedo y codicia miden el ánimo del mercado</item>
+        <item>La capa 2 de Bitcoin para pagos instantáneos con comisiones bajas</item>
+        <item>Guardan las claves privadas sin conexión: inmunes a los hackeos en línea</item>
+        <item>Una caída del 50 % exige un 100 % de ganancia para volver al punto de equilibrio: gestiona el riesgo</item>
+        <item>Finanzas descentralizadas: presta, pide prestado y gana sin intermediarios</item>
+        <item>Lee siempre el whitepaper: entiende en qué inviertes</item>
+    </string-array>
+    <string-array name="notif_feature_titles">
+        <item>🛡️ Guardián de cartera</item>
+        <item>📸 Importar desde captura</item>
+        <item>🎙️ Importación por voz</item>
+        <item>📲 Cambiar de móvil</item>
+        <item>🛡️ Tu interruptor de hombre muerto</item>
+        <item>📸 Olvídate de escribir</item>
+        <item>🎙️ Registra sin usar las manos</item>
+        <item>📲 Tu cartera en un código QR</item>
+        <item>🤖 Asesor con IA</item>
+        <item>🔒 Bloqueo biométrico</item>
+        <item>😱 Miedo y codicia</item>
+        <item>🐋 Alertas de ballenas</item>
+    </string-array>
+    <string-array name="notif_feature_bodies">
+        <item>Programa un registro periódico. Si algún día dejas de responder, tus activos llegan a quienes elegiste</item>
+        <item>Haz una captura de tu exchange: WalletLens lee cada posición directamente de la imagen</item>
+        <item>Solo dilo: «He comprado 0,5 BTC a 60 mil» y la operación queda registrada</item>
+        <item>Escanea un solo código QR para llevarte toda tu cartera: sin cuenta y sin nube</item>
+        <item>El Guardián de cartera evita que tus criptos se pierdan si no puedes acceder a ellas</item>
+        <item>Importa el saldo completo de un exchange desde una sola captura: Binance, Coinbase, el que sea</item>
+        <item>Di varias operaciones en una sola frase: en inglés o en árabe</item>
+        <item>Toda tu cartera en un código escaneable. Cambia de dispositivo en segundos</item>
+        <item>Puntuación de salud, nota de diversificación y prueba de estrés sobre tus posiciones reales</item>
+        <item>Huella o rostro antes de que se vea tu patrimonio</item>
+        <item>Conoce el ánimo del mercado antes de operar</item>
+        <item>Sigue las grandes transacciones cripto en tiempo real</item>
+    </string-array>
+    <string name="notif_price_update_title">📊 Actualización de precios</string>
+    <string name="notif_price_fallback">Consulta el índice de mercado para ver los últimos precios</string>
+    <string name="notif_price_loading">Cargando precios: consulta el índice de mercado</string>
+    <string name="notif_gold">Oro</string>
+</resources>

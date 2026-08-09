@@ -3,6 +3,7 @@ import { api } from '../api'
 import { track } from '../analytics'
 import CoinLogo from '../components/CoinLogo'
 import Icon from '../components/Icon'
+import { useLanguage } from '../LanguageContext'
 
 const CG = 'https://api.coingecko.com/api/v3'
 const CACHE_KEY = 'wl_alpha_cache_v1'
@@ -56,9 +57,13 @@ function calcAlphaScore(enriched, prices) {
   const oppScore = Math.round((upCount / Math.max(enriched.length, 1)) * 20)
 
   const total = momentumScore + pnlScore + divScore + oppScore
-  const grade = total >= 80 ? 'STRONG' : total >= 60 ? 'GOOD' : total >= 40 ? 'NEUTRAL' : total >= 20 ? 'WEAK' : 'POOR'
+  // A key, not a word: the grade is rendered through t() by the caller. This
+  // function has no hook to call it from and is also used for scoring, so it
+  // must stay language-independent.
+  const gradeKey = total >= 80 ? 'axGradeStrong' : total >= 60 ? 'axGradeGood'
+    : total >= 40 ? 'axGradeNeutral' : total >= 20 ? 'axGradeWeak' : 'axGradePoor'
   const color = total >= 80 ? 'var(--g)' : total >= 60 ? '#60a5fa' : total >= 40 ? '#f59e0b' : '#f87171'
-  return { total, grade, color, momentum, momentumScore, pnlScore, divScore, oppScore }
+  return { total, gradeKey, color, momentum, momentumScore, pnlScore, divScore, oppScore }
 }
 
 // ── Alpha Score Ring ──────────────────────────────────────────────────────
@@ -139,6 +144,7 @@ function SectionHead({ icon, title, sub, live }) {
 
 // ─────────────────────────────────────────────────────────────────────────
 export default function Alpha() {
+  const { t } = useLanguage()
   const [enriched, setEnriched]     = useState([])
   const [prices, setPrices]         = useState({})
   const [trending, setTrending]     = useState([])
@@ -304,11 +310,11 @@ export default function Alpha() {
         <div className="alpha-header-left">
           <div className="alpha-logo">α</div>
           <div>
-            <div className="alpha-title">WalletLens Alpha</div>
+            <div className="alpha-title">{t('axTitle')}</div>
             <div className="alpha-subtitle muted">
               {lastUpdate
-                ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                : 'Loading signals…'}
+                ? t('axUpdated')(lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+                : t('axLoadingSignals')}
             </div>
           </div>
         </div>
@@ -324,14 +330,14 @@ export default function Alpha() {
       {/* ── Portfolio Alpha Score ── */}
       {alphaScore ? (
         <div className="glass-card alpha-score-card">
-          <div className="alpha-score-label">YOUR PORTFOLIO ALPHA</div>
+          <div className="alpha-score-label">{t('axScoreLabel')}</div>
           <div className="alpha-score-body">
             <AlphaRing score={alphaScore.total} color={alphaScore.color} />
             <div className="alpha-score-meta">
-              <div className="alpha-score-grade" style={{ color: alphaScore.color }}>{alphaScore.grade}</div>
+              <div className="alpha-score-grade" style={{ color: alphaScore.color }}>{t(alphaScore.gradeKey)}</div>
               <div className="alpha-score-breakdown">
                 <div className="alpha-breakdown-row">
-                  <span className="muted">Momentum</span>
+                  <span className="muted">{t('momentum')}</span>
                   <div className="alpha-breakdown-bar-wrap">
                     <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.momentumScore / 30) * 100}%`, background: alphaScore.momentum >= 0 ? 'var(--g)' : '#f87171' }} />
                   </div>
@@ -340,21 +346,21 @@ export default function Alpha() {
                   </span>
                 </div>
                 <div className="alpha-breakdown-row">
-                  <span className="muted">P&L Health</span>
+                  <span className="muted">{t('axPnlHealth')}</span>
                   <div className="alpha-breakdown-bar-wrap">
                     <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.pnlScore / 30) * 100}%`, background: '#60a5fa' }} />
                   </div>
                   <span style={{ color: '#60a5fa' }}>{alphaScore.pnlScore}/30</span>
                 </div>
                 <div className="alpha-breakdown-row">
-                  <span className="muted">Diversification</span>
+                  <span className="muted">{t('diversification')}</span>
                   <div className="alpha-breakdown-bar-wrap">
                     <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.divScore / 20) * 100}%`, background: '#a78bfa' }} />
                   </div>
                   <span style={{ color: '#a78bfa' }}>{alphaScore.divScore}/20</span>
                 </div>
                 <div className="alpha-breakdown-row">
-                  <span className="muted">Opportunity</span>
+                  <span className="muted">{t('axOpportunity')}</span>
                   <div className="alpha-breakdown-bar-wrap">
                     <div className="alpha-breakdown-bar" style={{ width: `${(alphaScore.oppScore / 20) * 100}%`, background: '#fbbf24' }} />
                   </div>
@@ -366,15 +372,15 @@ export default function Alpha() {
         </div>
       ) : (
         <div className="glass-card alpha-score-card alpha-score-empty">
-          <div className="alpha-score-label">YOUR PORTFOLIO ALPHA</div>
-          <div className="alpha-empty-hint muted">Add crypto holdings to unlock your Alpha Score</div>
+          <div className="alpha-score-label">{t('axScoreLabel')}</div>
+          <div className="alpha-empty-hint muted">{t('axEmptyHint')}</div>
         </div>
       )}
 
       {/* ── My Holdings Signals ── */}
       {cryptoHoldings.length > 0 && (warnings.length > 0 || opportunities.length > 0 || strongHoldings.length > 0) && (
         <div className="glass-card alpha-section-card">
-          <SectionHead icon={<Icon name="bar-chart" size={20} />} title="Your Portfolio Signals" sub="Based on your actual holdings" />
+          <SectionHead icon={<Icon name="bar-chart" size={20} />} title={t('axYourSignals')} sub={t('axYourSignalsSub')} />
           <div className="alpha-signal-list">
             {warnings.map(h => {
               const chg = prices[h.coin_id]?.usd_24h_change ?? 0
@@ -383,9 +389,9 @@ export default function Alpha() {
                   icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
                   color="#f87171"
                   title={h.coin_symbol?.toUpperCase()}
-                  value={chg < -8 ? `${chg.toFixed(1)}% today` : undefined}
-                  sub={(h.pnlPct || 0) < -30 ? `Down ${Math.abs(h.pnlPct).toFixed(0)}% from entry — watch support` : 'Heavy daily loss — consider reducing'}
-                  badge="WARNING"
+                  value={chg < -8 ? t('axTodayPct')(chg.toFixed(1)) : undefined}
+                  sub={(h.pnlPct || 0) < -30 ? t('axDownFromEntry')(Math.abs(h.pnlPct).toFixed(0)) : t('axHeavyLoss')}
+                  badge={t('axWarning')}
                 />
               )
             })}
@@ -396,9 +402,9 @@ export default function Alpha() {
                   icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
                   color="var(--g)"
                   title={h.coin_symbol?.toUpperCase()}
-                  value={`+${chg.toFixed(1)}% today`}
-                  sub={`Up ${(h.pnlPct || 0).toFixed(0)}% from entry — momentum building`}
-                  badge="BULLISH"
+                  value={t('axTodayPct')('+' + chg.toFixed(1))}
+                  sub={t('axUpFromEntry')((h.pnlPct || 0).toFixed(0))}
+                  badge={t('axBullish')}
                 />
               )
             })}
@@ -406,9 +412,9 @@ export default function Alpha() {
               <SignalRow
                 icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
                 color="var(--g)"
-                title="All positions healthy"
-                sub="No warnings detected across your crypto holdings"
-                badge="CLEAR"
+                title={t('axAllHealthy')}
+                sub={t('axNoWarnings')}
+                badge={t('axClear')}
               />
             )}
           </div>
@@ -417,11 +423,11 @@ export default function Alpha() {
 
       {/* ── Smart Money / Trending ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon={<Icon name="flow" size={20} />} title="Smart Money" sub="What's trending with large volume right now" live />
+        <SectionHead icon={<Icon name="flow" size={20} />} title={t('axSmartMoney')} sub={t('axSmartMoneySub')} live />
         {loading && trending.length === 0 ? (
-          <div className="alpha-loading-row muted">Fetching signals…</div>
+          <div className="alpha-loading-row muted">{t('axFetchingSignals')}</div>
         ) : trending.length === 0 ? (
-          <div className="alpha-loading-row muted">Market data unavailable — check back in a moment</div>
+          <div className="alpha-loading-row muted">{t('axMarketUnavailable')}</div>
         ) : (
           <div className="alpha-coin-list">
             {trending.slice(0, 7).map((c, i) => (
@@ -431,8 +437,8 @@ export default function Alpha() {
                 badgeColor="#a78bfa"
                 reason={c.data?.price_change_percentage_24h?.usd !== undefined
                   ? `${c.data.price_change_percentage_24h.usd >= 0 ? '+' : ''}${Number(c.data.price_change_percentage_24h.usd).toFixed(1)}% (24h)`
-                  : 'Trending now'}
-                sub="Trending"
+                  : t('axTrendingNow')}
+                sub={t('axTrending')}
               />
             ))}
           </div>
@@ -441,11 +447,11 @@ export default function Alpha() {
 
       {/* ── Top Gainers ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon={<Icon name="arrow-ne" size={20} />} title="Top Gainers" sub="Coins up 5%+ in the last 24 hours" live />
+        <SectionHead icon={<Icon name="arrow-ne" size={20} />} title={t('axTopGainers')} sub={t('axTopGainersSub')} live />
         {loading && topGainers.length === 0 ? (
-          <div className="alpha-loading-row muted">Fetching…</div>
+          <div className="alpha-loading-row muted">{t('axFetching')}</div>
         ) : topGainers.length === 0 ? (
-          <div className="alpha-loading-row muted">No significant gainers right now</div>
+          <div className="alpha-loading-row muted">{t('axNoGainers')}</div>
         ) : (
           <div className="alpha-coin-list">
             {topGainers.map(c => (
@@ -453,7 +459,7 @@ export default function Alpha() {
                 coin={{ symbol: c.symbol, name: c.name, thumb: c.image }}
                 badge={`+${(c.price_change_percentage_24h || 0).toFixed(1)}%`}
                 badgeColor="var(--g)"
-                reason={`$${c.current_price?.toLocaleString(undefined, { maximumFractionDigits: 6 })} · Rank #${c.market_cap_rank}`}
+                reason={`$${c.current_price?.toLocaleString(undefined, { maximumFractionDigits: 6 })} · ${t('axRank')(c.market_cap_rank)}`}
               />
             ))}
           </div>
@@ -462,11 +468,11 @@ export default function Alpha() {
 
       {/* ── Hidden Gems ── */}
       <div className="glass-card alpha-section-card">
-        <SectionHead icon={<Icon name="diamond" size={20} />} title="Hidden Gems" sub="Rank 50–300 coins with high volume momentum" live />
+        <SectionHead icon={<Icon name="diamond" size={20} />} title={t('axHiddenGems')} sub={t('axHiddenGemsSub')} live />
         {loading && gems.length === 0 ? (
-          <div className="alpha-loading-row muted">Scanning…</div>
+          <div className="alpha-loading-row muted">{t('axScanning')}</div>
         ) : gems.length === 0 ? (
-          <div className="alpha-loading-row muted">No gems matching criteria right now</div>
+          <div className="alpha-loading-row muted">{t('axNoGems')}</div>
         ) : (
           <div className="alpha-coin-list">
             {gems.map(c => {
@@ -476,8 +482,8 @@ export default function Alpha() {
                   coin={{ symbol: c.symbol, name: c.name, thumb: c.image }}
                   badge={`+${(c.price_change_percentage_24h || 0).toFixed(1)}%`}
                   badgeColor="#fbbf24"
-                  reason={`${liqRatio}% vol/mcap · Rank #${c.market_cap_rank}`}
-                  sub="High liquidity signal"
+                  reason={`${t('axVolMcap')(liqRatio)} · ${t('axRank')(c.market_cap_rank)}`}
+                  sub={t('axHighLiquidity')}
                 />
               )
             })}
@@ -488,14 +494,14 @@ export default function Alpha() {
       {/* ── Bearish Watch ── */}
       {topLosers.length > 0 && (
         <div className="glass-card alpha-section-card">
-          <SectionHead icon={<Icon name="warning" size={20} />} title="Bearish Watch" sub="Coins down 5%+ today — possible oversold bounces" />
+          <SectionHead icon={<Icon name="warning" size={20} />} title={t('axBearish')} sub={t('axBearishSub')} />
           <div className="alpha-coin-list">
             {topLosers.map(c => (
               <CoinCard key={c.id}
                 coin={{ symbol: c.symbol, name: c.name, thumb: c.image }}
                 badge={`${(c.price_change_percentage_24h || 0).toFixed(1)}%`}
                 badgeColor="#f87171"
-                reason={`$${c.current_price?.toLocaleString(undefined, { maximumFractionDigits: 6 })} · Rank #${c.market_cap_rank}`}
+                reason={`$${c.current_price?.toLocaleString(undefined, { maximumFractionDigits: 6 })} · ${t('axRank')(c.market_cap_rank)}`}
               />
             ))}
           </div>
@@ -504,7 +510,7 @@ export default function Alpha() {
 
       {/* ── Disclaimer ── */}
       <p className="alpha-disclaimer muted">
-        Alpha signals are generated from public market data (CoinGecko) and your own portfolio. Not financial advice. Always DYOR.
+        {t('axDisclaimer')}
       </p>
     </div>
   )

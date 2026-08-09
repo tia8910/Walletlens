@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
+import { fireNativeIntent, isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
 const SESSION_KEY  = 'wl_biometric_unlocked'
@@ -36,12 +36,46 @@ const isAndroidTWA = detectAndroidTWA()
  * The TWA's AndroidManifest routes walletlens://biometric-auth URIs to
  * our BiometricActivity which shows the system BiometricPrompt dialog.
  */
+// Routed through fireNativeIntent rather than assigning window.location
+// directly, which is what this used to do.
+//
+// Firing a custom-scheme URL navigates the top frame off the Custom Tab's own
+// origin, and inside the TWA that ends the session — the app simply vanishes,
+// with nothing in any log because nothing crashed. nativeBridge refuses to do
+// it outside a real user gesture for exactly that reason, and this file had
+// its own copy that skipped the check.
+//
+// It matters most here: the lock screen auto-prompts on mount, which is by
+// definition not a gesture. Returns false when it declined, so the caller can
+// fall back to asking the user to tap.
 function sendNativeIntent(action, redirectUrl) {
   const base = 'walletlens://biometric-auth?action=' + encodeURIComponent(action)
   const url = redirectUrl
     ? base + '&redirect=' + encodeURIComponent(redirectUrl)
     : base
-  window.location.href = url
+  return fireNativeIntent(url)
+}
+
+/**
+ * Where the native side should send us back to.
+ *
+ * Only the unlock path needs this: it genuinely does relaunch the TWA, because
+ * the result is delivered as a ?biometric_auth= parameter on a fresh page load.
+ * Without a redirect the activity falls back to a hard-coded /dashboard, which
+ * moves a user who locked the app while reading, say, an asset page.
+ *
+ * enable/disable deliberately pass nothing — they no longer relaunch at all.
+ */
+function currentUrlForReturn() {
+  try {
+    // Strip any stale biometric_auth so a second unlock can't inherit the
+    // first one's result and skip the prompt.
+    const u = new URL(window.location.href)
+    u.searchParams.delete('biometric_auth')
+    return u.toString()
+  } catch {
+    return ''
+  }
 }
 
 // ── base64url <-> ArrayBuffer helpers (for storing/restoring the credential id)
@@ -118,7 +152,7 @@ export function useBiometricLock() {
 
         // In Android TWA, also send native intent to trigger BiometricPrompt
         if (isAndroidTWA) {
-          sendNativeIntent('unlock')
+          sendNativeIntent('unlock', currentUrlForReturn())
         }
       }
     }
@@ -220,8 +254,16 @@ export function useBiometricLock() {
   // listener above.
   async function unlock() {
     if (isAndroidTWA) {
-      sendNativeIntent('unlock')
-      // Don't await — the page will reload after auth
+      // No await: on success the native prompt takes over and the page
+      // reloads with biometric_auth in the URL. A false return means
+      // nativeBridge declined for want of a user gesture — surfaced as a
+      // distinct error so the lock screen can ask for a tap instead of
+      // sitting on a spinner that will never resolve.
+      if (!sendNativeIntent('unlock', currentUrlForReturn())) {
+        const err = new Error('needs-gesture')
+        err.name = 'NeedsGestureError'
+        throw err
+      }
       return
     }
 
@@ -287,6 +329,12 @@ export function BiometricLockScreen({ onUnlock }) {
       await onUnlock()
     } catch (e) {
       attemptCount.current += 1
+      // The native prompt was declined for want of a gesture, not by the
+      // device or the user. Nothing is wrong; it just needs a tap.
+      if (e?.name === 'NeedsGestureError') {
+        setError('Tap to unlock with your fingerprint.')
+        return
+      }
       const noPasskeys =
         (e?.message || '').toLowerCase().includes('no passkeys') ||
         (e?.message || '').toLowerCase().includes('no credentials') ||

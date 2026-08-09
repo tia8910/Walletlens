@@ -53,6 +53,48 @@ export function widgetSyncDiagnostics() {
 }
 
 /**
+ * The language chosen in the web app.
+ *
+ * It rides along on the widget payload because native code cannot read
+ * localStorage — the page is a Custom Tab in another process — and
+ * PeriodicUpdateWorker needs it to send notifications in a language the user
+ * actually reads. The device locale is not a stand-in: someone on an English
+ * phone can deliberately be using WalletLens in Arabic.
+ */
+function currentLang() {
+  try {
+    const l = localStorage.getItem('wl_lang')
+    return ['en', 'ar', 'fr', 'es'].includes(l) ? l : 'en'
+  } catch { return 'en' }
+}
+
+/**
+ * Push the language across on its own, right after the user picks one.
+ *
+ * The regular sync is throttled and only runs from the dashboard, so without
+ * this a language change could take until the next portfolio sync to reach
+ * the notifications. Choosing a language is a tap, which is what
+ * fireNativeIntent needs, so this can fire immediately — and it reuses the
+ * stored payload so the widgets are not blanked by a summary-less message.
+ */
+export function syncLanguage() {
+  try {
+    if (!isAndroidTWA()) return note('not-twa')
+    let payload = {}
+    try { payload = JSON.parse(localStorage.getItem(PAYLOAD_KEY) || '{}') } catch { /* fresh install */ }
+    payload.lang = currentLang()
+    const json = JSON.stringify(payload)
+    try { localStorage.setItem(PAYLOAD_KEY, json) } catch { /* quota; carry on */ }
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))) {
+      return note('no-activation', { lang: payload.lang })
+    }
+    return note('fired', { lang: payload.lang })
+  } catch (e) {
+    return note('threw', { message: String(e && e.message) })
+  }
+}
+
+/**
  * Re-send the most recent summary, ignoring both the throttle and the TWA
  * check. Wired to a button, so the user has already told us this is the app —
  * and if detection is what's broken, this is the way round it.
@@ -130,6 +172,7 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
       }))
 
     const payload = {
+      lang: currentLang(),
       nw: Math.round(totalValue * 100) / 100,
       pnl: Math.round(dayPnl * 100) / 100,
       pnlPct: Math.round(dayPct * 100) / 100,

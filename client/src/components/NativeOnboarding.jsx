@@ -8,6 +8,16 @@ import sfx from '../sfx'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
+// How far through the flow the user got. Completion is only recorded on the
+// last slide, so anything that reloads the page mid-flow used to drop them
+// back on slide 1 with their theme and language choices apparently undone.
+//
+// Enabling the biometric lock did exactly that on Android: the native side
+// relaunched the TWA, which is fixed there too, but the onboarding should not
+// depend on nothing ever reloading it. An OS memory kill, a pull-to-refresh or
+// a crash produce the same restart, and none of those are avoidable from here.
+const ONBOARD_STEP_KEY = 'wl_welcome_step_v2'
+
 const SLIDES = [
   {
     id: 'welcome',
@@ -49,7 +59,14 @@ const LOGO_SVGS = {
 }
 
 export default function NativeOnboarding({ onDone }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = parseInt(localStorage.getItem(ONBOARD_STEP_KEY) || '0', 10)
+      // Clamp rather than trust: a stored index past the end would render
+      // SLIDES[undefined] and blank the first screen the user ever sees.
+      return Number.isFinite(saved) ? Math.min(Math.max(saved, 0), SLIDES.length - 1) : 0
+    } catch { return 0 }
+  })
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, setTheme, mode, setMode } = useTheme()
@@ -62,6 +79,10 @@ export default function NativeOnboarding({ onDone }) {
 
   const s = SLIDES[step]
   const total = SLIDES.length
+
+  useEffect(() => {
+    try { localStorage.setItem(ONBOARD_STEP_KEY, String(step)) } catch {}
+  }, [step])
 
   const goNext = useCallback(() => {
     if (step < total - 1) { setStep(x => x + 1); try { sfx.playWhoosh() } catch {} }
@@ -130,6 +151,7 @@ export default function NativeOnboarding({ onDone }) {
 
   function finish() {
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
+    try { localStorage.removeItem(ONBOARD_STEP_KEY) } catch {}
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
     try { onDone?.() } catch {}
   }

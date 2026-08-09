@@ -4,6 +4,14 @@ import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
 import { POSTS } from '../data/blogPosts'
+import { useLanguage } from '../LanguageContext'
+import {
+  questions as academyQuestions,
+  guessrCoins,
+  hacks as academyHacks,
+  achievementText,
+  CATEGORY_KEYS,
+} from '../data/academyContent'
 
 // ── Persistence helpers ───────────────────────────────────────────────────
 const STORE_KEY = 'wl_academy_v1'
@@ -15,66 +23,15 @@ function saveStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s))
 function getTodayStr() { return new Date().toISOString().split('T')[0] }
 
 // ── Question bank ─────────────────────────────────────────────────────────
-const QUESTIONS = [
-  // Crypto basics
-  { q: 'What does "HODL" mean in crypto?', opts: ['Hold On for Dear Life', 'High Order Digital Ledger', 'Hash On Distributed Layer', 'Hedge On Digital Limit'], a: 0, cat: 'Crypto', exp: 'HODL originated from a misspelled "hold" post in 2013. It means keeping assets long-term through volatility.' },
-  { q: 'What is a blockchain?', opts: ['A type of crypto wallet', 'A chain of encrypted data blocks shared across a network', 'A trading platform', 'A type of mining hardware'], a: 1, cat: 'Crypto', exp: 'A blockchain is a distributed ledger where data is stored in blocks chained together cryptographically — making it tamper-resistant.' },
-  { q: 'What is a "gas fee" in Ethereum?', opts: ['A fee for converting ETH to USD', 'Energy cost of mining', 'A fee paid to validators for processing transactions', 'A tax on DeFi profits'], a: 2, cat: 'Crypto', exp: 'Gas fees compensate validators for the computational work of processing and confirming transactions on Ethereum.' },
-  { q: 'What does "DeFi" stand for?', opts: ['Digital Finance', 'Decentralized Finance', 'Distributed Fiat', 'Direct Finance'], a: 1, cat: 'DeFi', exp: 'DeFi (Decentralized Finance) refers to financial services built on blockchain without traditional intermediaries like banks.' },
-  { q: 'What is a "seed phrase"?', opts: ['A password for an exchange', 'A 12-24 word phrase that recovers your wallet', 'A type of staking reward', 'An NFT minting code'], a: 1, cat: 'Security', exp: 'Your seed phrase is the master key to your wallet. Anyone with it can access all your funds. Never share it.' },
-  { q: 'What is "market cap" in crypto?', opts: ['The total trading volume in 24h', 'Price × circulating supply', 'The highest ever price reached', 'The total number of wallets holding a coin'], a: 1, cat: 'Markets', exp: 'Market cap = price × circulating supply. It represents the total value of all coins in circulation and is used to rank coins.' },
-  { q: 'What is a "honeypot" in crypto?', opts: ['A wallet that rewards holders', 'A token you can buy but not sell', 'A DeFi yield strategy', 'A type of cold wallet'], a: 1, cat: 'Security', exp: 'A honeypot is a scam token designed so users can buy but a hidden contract prevents them from selling — stealing their funds.' },
-  { q: 'What does "ATH" stand for?', opts: ['Average Trade High', 'All-Time High', 'Annual Token History', 'Automated Trading Hub'], a: 1, cat: 'Markets', exp: 'ATH (All-Time High) is the highest price a coin has ever reached. Being far below ATH can signal either opportunity or permanent decline.' },
-  { q: 'What is "DCA" in investing?', opts: ['Direct Crypto Access', 'Dollar Cost Averaging — buying fixed amounts regularly', 'Decentralized Capital Allocation', 'Digital Currency Accounting'], a: 1, cat: 'Strategy', exp: 'DCA (Dollar Cost Averaging) means investing a fixed amount at regular intervals. It removes the pressure of timing the market.' },
-  { q: 'What is a "rug pull"?', opts: ['A market correction', 'When developers abandon a project and take investor funds', 'A type of flash crash', 'A forced liquidation'], a: 1, cat: 'Security', exp: 'A rug pull is when project developers suddenly withdraw all liquidity or sell their tokens, leaving investors with worthless assets.' },
-  // Risk management
-  { q: 'What does "diversification" mean in investing?', opts: ['Buying only Bitcoin', 'Spreading investments across different assets to reduce risk', 'Trading on multiple exchanges', 'Holding only stablecoins'], a: 1, cat: 'Risk', exp: 'Diversification reduces risk by ensuring no single bad investment can destroy your portfolio. "Don\'t put all eggs in one basket."' },
-  { q: 'What is a "stop-loss"?', opts: ['A limit on how much you can deposit', 'A pre-set order to sell if price drops to a level to limit losses', 'A fee charged by exchanges', 'A type of smart contract'], a: 1, cat: 'Risk', exp: 'A stop-loss automatically sells your position if price drops to your set level, preventing further losses beyond your tolerance.' },
-  { q: 'What does "position sizing" mean?', opts: ['The screen size for trading apps', 'Deciding how much of your portfolio to put into one trade', 'The number of coins in a trade', 'The physical size of your ledger device'], a: 1, cat: 'Risk', exp: 'Position sizing determines how much capital you risk per trade. Most professionals risk only 1-2% of their portfolio per position.' },
-  { q: 'If a coin drops 50%, how much does it need to rise to break even?', opts: ['50%', '75%', '100%', '25%'], a: 2, cat: 'Math', exp: 'After a 50% drop, $100 becomes $50. To return to $100, it needs to double — a 100% gain. Losses are asymmetric!' },
-  { q: 'What is "volatility" in crypto?', opts: ['The speed of transactions', 'The range and frequency of price swings', 'The number of daily trades', 'The supply inflation rate'], a: 1, cat: 'Risk', exp: 'High volatility means large, rapid price swings. Crypto is typically much more volatile than stocks or bonds.' },
-  { q: 'What is "liquidity" in a token?', opts: ['How new the token is', 'How easily it can be bought or sold without moving the price significantly', 'The number of developers', 'The staking reward rate'], a: 1, cat: 'Markets', exp: 'High liquidity means large orders can be filled without major price impact. Low liquidity = hard to exit without crashing the price.' },
-  { q: 'What is "concentration risk"?', opts: ['Danger of holding too many assets', 'Risk of having too much capital in one asset or sector', 'The risk of using centralised exchanges', 'Mining pool risk'], a: 1, cat: 'Risk', exp: 'Concentration risk means one bad investment can severely damage your total portfolio. Aim to keep no single asset above 20-30%.' },
-  { q: 'What is "unrealised P&L"?', opts: ['Profits from closed trades', 'Gains or losses on open positions not yet sold', 'Fees paid to exchanges', 'Tax owed on gains'], a: 1, cat: 'Strategy', exp: 'Unrealised P&L is profit or loss that only exists on paper — you haven\'t sold yet so it isn\'t locked in. It can still reverse.' },
-  // Psychology
-  { q: 'What is "FOMO" in trading?', opts: ['Fundamental On-chain Market Overview', 'Fear Of Missing Out — buying impulsively when prices rise', 'A type of order book entry', 'Fast Order Market Operation'], a: 1, cat: 'Psychology', exp: 'FOMO causes investors to buy near tops because they fear missing a rally. It\'s one of the most common and costly emotional mistakes.' },
-  { q: 'What is "FUD" in crypto?', opts: ['Fear, Uncertainty, Doubt — negative sentiment', 'Fundamental Utility Data', 'Fast Unwind Distribution', 'Fixed Utility Derivative'], a: 0, cat: 'Psychology', exp: 'FUD describes negative, often exaggerated information that causes panic selling. Learn to separate facts from FUD.' },
-  { q: 'What does "buying the dip" mean?', opts: ['Selling when price rises', 'Purchasing an asset after its price has dropped', 'A type of margin trade', 'Buying at all-time highs'], a: 1, cat: 'Strategy', exp: 'Buying the dip means purchasing an asset after a price decline, with the expectation it will recover. Only works if the asset has strong fundamentals.' },
-  { q: 'What is "capitulation" in markets?', opts: ['A breakout to new highs', 'Mass panic selling as investors give up', 'A bullish reversal pattern', 'A type of exchange listing'], a: 1, cat: 'Psychology', exp: 'Capitulation is when investors panic-sell regardless of losses. It often marks market bottoms — the "maximum pain" point.' },
-  { q: 'What is "diamond hands"?', opts: ['A type of hardware wallet', 'Holding an asset through extreme volatility without selling', 'A DeFi protocol', 'An NFT collection'], a: 1, cat: 'Psychology', exp: 'Diamond hands means holding strong through huge dips and not panic selling. Opposite of "paper hands" (selling at first sign of loss).' },
-  // Markets & coins
-  { q: 'What is Bitcoin\'s maximum supply?', opts: ['100 million BTC', '21 million BTC', '1 billion BTC', 'Unlimited'], a: 1, cat: 'Crypto', exp: 'Bitcoin has a hard cap of 21 million coins — enforced by its code. This scarcity is a key part of its value proposition.' },
-  { q: 'What is Ethereum\'s main innovation over Bitcoin?', opts: ['Faster transactions', 'Smart contracts — programmable self-executing agreements', 'Lower fees', 'Better privacy'], a: 1, cat: 'Crypto', exp: 'Ethereum introduced smart contracts in 2015, enabling decentralized applications (dApps), DeFi, NFTs, and much more.' },
-  { q: 'What is a "stablecoin"?', opts: ['Any coin under $1', 'A cryptocurrency pegged to a stable asset like USD', 'A coin with low volatility ranking', 'A government-issued crypto'], a: 1, cat: 'Crypto', exp: 'Stablecoins (USDT, USDC, DAI) maintain a peg to a real-world asset. They provide stability within crypto ecosystems.' },
-  { q: 'What is "proof of stake" (PoS)?', opts: ['Mining with computers', 'Validators lock up coins as collateral to validate transactions', 'A security audit process', 'A type of exchange listing process'], a: 1, cat: 'Crypto', exp: 'PoS replaces energy-intensive mining. Validators stake coins as collateral — bad actors lose their stake (slashing).' },
-  { q: 'What is the "Fear & Greed Index"?', opts: ['A government report on crypto regulation', 'A market sentiment score from 0 (extreme fear) to 100 (extreme greed)', 'A volatility measure for Bitcoin only', 'An exchange liquidity score'], a: 1, cat: 'Markets', exp: 'The Fear & Greed Index aggregates volatility, volume, social media, surveys, and dominance data into a 0-100 sentiment score.' },
-  { q: 'What is "slippage" in crypto trading?', opts: ['A fee for fast withdrawals', 'The difference between expected and actual execution price', 'Exchange downtime', 'A staking penalty'], a: 1, cat: 'Markets', exp: 'Slippage occurs when your order fills at a different price than expected — common in low-liquidity tokens or large orders.' },
-  { q: 'What does "on-chain" mean?', opts: ['Data stored in a centralised database', 'Transactions and data recorded directly on the blockchain', 'Tokens listed on major exchanges', 'Smart contracts deployed to mainnet'], a: 1, cat: 'Crypto', exp: 'On-chain refers to activity recorded on the actual blockchain — fully transparent, verifiable, and immutable.' },
-  { q: 'What is a "whale" in crypto?', opts: ['A pump-and-dump scheme', 'An entity holding a very large amount of a cryptocurrency', 'A high-frequency trading bot', 'A type of DEX trade'], a: 1, cat: 'Markets', exp: 'Whales hold enough crypto to significantly move markets with their trades. Tracking whale activity can signal market direction.' },
-  // Security
-  { q: 'What is a "cold wallet"?', opts: ['A wallet for storing stablecoins', 'A hardware or paper wallet not connected to the internet', 'An exchange wallet', 'A wallet with frozen funds'], a: 1, cat: 'Security', exp: 'Cold wallets (Ledger, Trezor, paper wallets) keep private keys offline — immune to online hacks. Best for long-term storage.' },
-  { q: 'What is "2FA"?', opts: ['Two-Factor Authentication — a second verification step', 'Two-Fee Access for VIP traders', 'Dual Funding Allocation', 'Second-layer blockchain technology'], a: 0, cat: 'Security', exp: '2FA adds a second verification step (usually a time-based code) beyond your password. Always enable it on exchanges.' },
-  { q: 'Which of these is SAFEST to click on?', opts: ['An email saying your exchange account is locked', 'A link from a friend\'s hacked social media', 'The official exchange URL typed manually', 'A Google ad for your exchange'], a: 2, cat: 'Security', exp: 'Always type URLs manually or use saved bookmarks. Phishing sites look identical to real exchanges. Emails and ads are common attack vectors.' },
-  { q: 'What happens if you lose your seed phrase?', opts: ['You can recover it from the exchange', 'You permanently lose access to your wallet and funds', 'Customer support can reset it', 'You can regenerate it with your email'], a: 1, cat: 'Security', exp: 'Seed phrases are generated once and cannot be recovered. Losing it means losing your wallet permanently. Store it offline and securely.' },
-  // DeFi
-  { q: 'What is "yield farming"?', opts: ['Mining crypto using solar energy', 'Lending or providing liquidity to earn rewards', 'A long-term holding strategy', 'Generating NFTs for passive income'], a: 1, cat: 'DeFi', exp: 'Yield farming involves providing liquidity or lending crypto to protocols in exchange for interest or governance token rewards.' },
-  { q: 'What is "impermanent loss"?', opts: ['A loss from a failed smart contract', 'Temporary loss from providing liquidity due to price changes', 'A fee for early unstaking', 'Loss from a hack on a DEX'], a: 1, cat: 'DeFi', exp: 'Impermanent loss happens when the price ratio of your liquidity pool tokens changes from when you deposited — reducing your value vs just holding.' },
-  { q: 'What is a "DEX"?', opts: ['Decentralized Exchange — trades occur via smart contracts, no middleman', 'Digital Exchange with extra security', 'Direct Execution exchange', 'A type of blockchain wallet'], a: 0, cat: 'DeFi', exp: 'DEXs (Uniswap, dYdX, PancakeSwap) allow peer-to-peer trading via smart contracts — no KYC, no custodian, full self-custody.' },
-  // Strategy
-  { q: 'What is a "sell target"?', opts: ['The maximum price you paid', 'A pre-planned price at which you intend to take profit', 'The price an exchange charges to sell', 'A limit order that prevents selling below cost'], a: 1, cat: 'Strategy', exp: 'Setting sell targets before buying removes emotion from decisions. Plan your exit before you enter — not during a rally.' },
-  { q: 'What does "taking profit" mean?', opts: ['Calculating total gains', 'Selling some or all of a position to lock in gains', 'Moving gains to a savings account', 'Reinvesting all gains'], a: 1, cat: 'Strategy', exp: 'Taking profit means selling while in the green to lock in real gains. Many investors watch profits disappear by never selling.' },
-  { q: 'What is the best strategy during a bear market?', opts: ['Sell everything at a loss', 'Use maximum leverage to recover losses faster', 'DCA into quality assets and build for the next cycle', 'Buy only meme coins for quick recovery'], a: 2, cat: 'Strategy', exp: 'Bear markets reward disciplined accumulators. DCA into high-conviction assets, manage risk, and avoid leverage until conditions improve.' },
-  { q: 'What is "rebalancing" a portfolio?', opts: ['Moving all funds to one asset', 'Adjusting allocations back to target weights by buying/selling', 'Closing all positions', 'Switching exchanges'], a: 1, cat: 'Strategy', exp: 'Rebalancing restores your target allocation. If BTC grows to 80% of your portfolio from 50%, you sell some and buy underweight assets.' },
-  // Math / calculation
-  { q: 'If you invest $1,000 and it grows to $3,000, what is your ROI?', opts: ['200%', '300%', '150%', '100%'], a: 0, cat: 'Math', exp: 'ROI = (Final - Initial) / Initial × 100 = (3000 - 1000) / 1000 × 100 = 200%. The profit is $2,000 on a $1,000 investment.' },
-  { q: 'What does a volume/market cap ratio above 10% indicate?', opts: ['The coin is overvalued', 'High liquidity and strong trading interest', 'The coin is about to be delisted', 'Low investor confidence'], a: 1, cat: 'Markets', exp: 'Volume/market cap > 10% signals active trading and good liquidity — making it easier to enter or exit large positions.' },
-  { q: 'What is "break-even price"?', opts: ['The price when a coin was first listed', 'The price you need to sell at to recover your investment', 'The 52-week average price', 'The price after deducting exchange fees'], a: 1, cat: 'Math', exp: 'Break-even is your average buy price — the price you need to reach to recover what you invested. Below it you\'re at a loss.' },
-]
+// The bank itself lives in data/academyContent.js, one copy per language,
+// with the correct-answer index and the category shared across all of them.
+// Note the day index rather than a random pick: everyone gets the same daily
+// question, and it must be the same question in every language.
 
 // Shuffle deterministically by day so everyone gets the same daily question
-function getDailyQuestion() {
+function getDailyQuestion(bank) {
   const daysSinceEpoch = Math.floor(Date.now() / 86400000)
-  return QUESTIONS[daysSinceEpoch % QUESTIONS.length]
+  return bank[daysSinceEpoch % bank.length]
 }
 
 // ── Game: Crypto Guessr ───────────────────────────────────────────────────
@@ -87,27 +44,10 @@ function shuffle(arr) {
   return a
 }
 
-const GUESSR_COINS = [
-  { name: 'Bitcoin',   symbol: 'BTC', emoji: '🟠', clues: ['I was created in 2009 by an anonymous person', 'My supply is capped at 21 million coins', 'I pioneered the blockchain technology', 'I am the largest cryptocurrency by market cap', 'My symbol comes from the first letter of my name'], wrong: ['Ethereum', 'Litecoin', 'Monero'] },
-  { name: 'Ethereum',  symbol: 'ETH', emoji: '💎', clues: ['I introduced smart contracts to the world', 'Vitalik Buterin co-created me in 2015', 'I transitioned from Proof of Work to Proof of Stake', 'DeFi and NFTs were born on my network', 'Gas fees are paid in my native token'], wrong: ['Solana', 'Cardano', 'Avalanche'] },
-  { name: 'Solana',    symbol: 'SOL', emoji: '🌊', clues: ['I can process over 65,000 transactions per second', 'I use a Proof of History consensus mechanism', 'I am known for extremely low transaction fees', 'I was founded by Anatoly Yakovenko in 2020', 'FTX\'s collapse caused my price to crash heavily'], wrong: ['Ethereum', 'Avalanche', 'Polkadot'] },
-  { name: 'Dogecoin',  symbol: 'DOGE', emoji: '🐶', clues: ['I started as an internet meme in 2013', 'My logo features a Shiba Inu dog', 'Elon Musk tweets about me frequently', 'I was created by Billy Markus and Jackson Palmer', 'I have no supply cap — new coins are minted every block'], wrong: ['Shiba Inu', 'Floki', 'SafeMoon'] },
-  { name: 'XRP',       symbol: 'XRP', emoji: '💧', clues: ['I was designed for fast cross-border payments', 'Ripple Labs created and holds a large supply of me', 'Banks use my network for international settlements', 'The SEC sued my creator claiming I am a security', 'Transactions on my network settle in 3-5 seconds'], wrong: ['Stellar', 'Litecoin', 'SWIFT'] },
-  { name: 'Cardano',   symbol: 'ADA', emoji: '🔵', clues: ['My name comes from an Italian mathematician', 'Charles Hoskinson co-founded Ethereum before creating me', 'I use peer-reviewed academic research for development', 'My native token is named after Ada Lovelace', 'I use the Ouroboros Proof of Stake protocol'], wrong: ['Polkadot', 'Algorand', 'Tezos'] },
-  { name: 'Chainlink', symbol: 'LINK', emoji: '🔗', clues: ['I connect smart contracts to real-world data', 'I am the leading decentralized oracle network', 'Without me, smart contracts would be blind to off-chain events', 'My nodes are run by independent node operators', 'Price feeds for DeFi protocols rely heavily on me'], wrong: ['The Graph', 'Band Protocol', 'API3'] },
-  { name: 'Polkadot',  symbol: 'DOT', emoji: '⚫', clues: ['Gavin Wood, an Ethereum co-founder, created me', 'I enable different blockchains to communicate with each other', 'Projects build on me by renting "parachain" slots', 'My relay chain coordinates the whole network', 'I use a nominated Proof of Stake consensus'], wrong: ['Cosmos', 'Avalanche', 'Kusama'] },
-  { name: 'Avalanche', symbol: 'AVAX', emoji: '🔺', clues: ['I can finalize transactions in under 2 seconds', 'I launched in 2020 and quickly became an Ethereum rival', 'I have three built-in blockchains: X, P, and C chains', 'I use the Avalanche consensus protocol', 'My name suggests speed and force'], wrong: ['Solana', 'Fantom', 'Near Protocol'] },
-  { name: 'Uniswap',   symbol: 'UNI', emoji: '🦄', clues: ['My mascot is a mythical horse with a horn', 'I am the most popular decentralized exchange on Ethereum', 'I use an Automated Market Maker model', 'I replaced order books with liquidity pools', 'Hayden Adams launched me in 2018'], wrong: ['SushiSwap', 'Curve', 'Balancer'] },
-  { name: 'Shiba Inu', symbol: 'SHIB', emoji: '🐕', clues: ['I was created anonymously in 2020 as a DOGE competitor', 'Half my supply was sent to Vitalik Buterin who burned most of it', 'My community calls themselves the "SHIB Army"', 'I trade at fractions of a cent with trillions in supply', 'I have a DEX called ShibaSwap'], wrong: ['Dogecoin', 'Floki', 'Baby Doge'] },
-  { name: 'Tether',    symbol: 'USDT', emoji: '💵', clues: ['I am pegged 1:1 to the US Dollar', 'I am the largest stablecoin by market cap', 'Tether Limited issues and backs me', 'I am the most traded cryptocurrency by volume', 'Controversy surrounds whether I am fully backed by reserves'], wrong: ['USD Coin', 'DAI', 'BUSD'] },
-  { name: 'Litecoin',  symbol: 'LTC', emoji: '🥈', clues: ['Charlie Lee, a former Google engineer, created me', 'I was launched in 2011 as the "silver to Bitcoin\'s gold"', 'I have a max supply of 84 million coins', 'My block time is 4x faster than Bitcoin', 'I use the Scrypt hashing algorithm'], wrong: ['Bitcoin Cash', 'Bitcoin SV', 'Dash'] },
-  { name: 'Cosmos',    symbol: 'ATOM', emoji: '🌌', clues: ['My vision is an "Internet of Blockchains"', 'I let independent chains communicate via IBC protocol', 'Tendermint BFT is my core consensus engine', 'My hub-and-zone architecture powers cross-chain transfers', 'Jae Kwon and Ethan Buchman co-founded me'], wrong: ['Polkadot', 'Algorand', 'Harmony'] },
-  { name: 'NEAR Protocol', symbol: 'NEAR', emoji: '🌐', clues: ['I use human-readable account names like "alice.near"', 'My sharding approach is called Nightshade', 'I focus on developer and user experience above all', 'I am carbon neutral and environmentally friendly', 'Aurora, an Ethereum-compatible layer, runs on top of me'], wrong: ['Fantom', 'Harmony', 'Algorand'] },
-]
-
 const GUESSR_ROUNDS = 5
 
 function CryptoGuessr({ onIqGain }) {
+  const { t, lang } = useLanguage()
   const [phase, setPhase] = useState('idle') // idle | playing | over
   const [round, setRound] = useState(0)
   const [clueIdx, setClueIdx] = useState(0)
@@ -120,7 +60,7 @@ function CryptoGuessr({ onIqGain }) {
   })
 
   function startGame() {
-    const picked = shuffle(GUESSR_COINS).slice(0, GUESSR_ROUNDS)
+    const picked = shuffle(guessrCoins(lang)).slice(0, GUESSR_ROUNDS)
     setCoins(picked)
     setRound(0); setClueIdx(0); setScore(0); setRoundResult(null); setChosen(null)
     setPhase('playing')
@@ -173,21 +113,21 @@ function CryptoGuessr({ onIqGain }) {
     return (
       <div className="guessr-idle">
         <div className="guessr-idle-icon">🕵️</div>
-        <div className="guessr-idle-title">Crypto Guessr</div>
+        <div className="guessr-idle-title">{t('ayTabGame')}</div>
         <div className="guessr-idle-sub muted">
-          A mystery coin is described clue by clue.<br />
-          Guess earlier = more points. 5 rounds per game.
+          {t('ayGuessrIntro')}<br />
+          {t('ayGuessrRules')}
         </div>
         <div className="guessr-pts-table">
-          {['50 pts — 1st clue', '40 pts — 2nd clue', '30 pts — 3rd clue', '20 pts — 4th clue', '10 pts — 5th clue'].map(r => (
-            <div key={r} className="guessr-pts-row muted">{r}</div>
+          {[50, 40, 30, 20, 10].map((pts, i) => (
+            <div key={pts} className="guessr-pts-row muted">{t('ayClueWorth')(pts, i + 1)}</div>
           ))}
         </div>
         <div className="blitz-hs-row">
-          <span className="muted">Best score:</span>
-          <span className="blitz-hs">{highScore} pts</span>
+          <span className="muted">{t('ayBestScore')}</span>
+          <span className="blitz-hs">{t('ayPts')(highScore)}</span>
         </div>
-        <button className="blitz-start-btn" onClick={startGame}>Start Game 🕵️</button>
+        <button className="blitz-start-btn" onClick={startGame}>{t('ayStartGame')} 🕵️</button>
       </div>
     )
   }
@@ -198,14 +138,14 @@ function CryptoGuessr({ onIqGain }) {
       <div className="blitz-over">
         <div className="blitz-over-icon">{isNewHs ? '🏆' : '🕵️'}</div>
         <div className="blitz-over-score">{score}</div>
-        <div className="blitz-over-label">points</div>
-        {isNewHs && <div className="blitz-new-hs">🎉 New high score!</div>}
-        <div className="blitz-iq-gain muted">+{Math.floor(score / 5)} IQ earned</div>
+        <div className="blitz-over-label">{t('ayPoints')}</div>
+        {isNewHs && <div className="blitz-new-hs">🎉 {t('ayNewHighScore')}</div>}
+        <div className="blitz-iq-gain muted">{t('ayIqEarned')(Math.floor(score / 5))}</div>
         <div className="blitz-hs-row">
-          <span className="muted">Best:</span>
-          <span className="blitz-hs">{Math.max(score, highScore)} pts</span>
+          <span className="muted">{t('ayBest')}</span>
+          <span className="blitz-hs">{t('ayPts')(Math.max(score, highScore))}</span>
         </div>
-        <button className="blitz-start-btn" onClick={startGame}>Play Again 🕵️</button>
+        <button className="blitz-start-btn" onClick={startGame}>{t('ayPlayAgain')} 🕵️</button>
       </div>
     )
   }
@@ -219,14 +159,14 @@ function CryptoGuessr({ onIqGain }) {
   return (
     <div className="guessr-playing">
       <div className="guessr-header">
-        <div className="guessr-round muted">Round {round + 1} / {GUESSR_ROUNDS}</div>
-        <div className="guessr-score-pill">{score} pts</div>
+        <div className="guessr-round muted">{t('ayRound')(round + 1, GUESSR_ROUNDS)}</div>
+        <div className="guessr-score-pill">{t('ayPts')(score)}</div>
       </div>
 
       <div className="guessr-mystery-coin">
         <div className="guessr-mystery-icon">❓</div>
-        <div className="guessr-mystery-label">Mystery Coin</div>
-        <div className="guessr-pts-badge">+{ptsAvailable} pts if correct now</div>
+        <div className="guessr-mystery-label">{t('ayMysteryCoin')}</div>
+        <div className="guessr-pts-badge">{t('ayPtsIfCorrect')(ptsAvailable)}</div>
       </div>
 
       <div className="guessr-clues">
@@ -240,7 +180,7 @@ function CryptoGuessr({ onIqGain }) {
 
       {roundResult === null && clueIdx < 4 && (
         <button className="guessr-reveal-btn" onClick={revealClue}>
-          Reveal next clue (−10 pts)
+          {t('ayRevealClue')}
         </button>
       )}
 
@@ -260,8 +200,8 @@ function CryptoGuessr({ onIqGain }) {
             <span>{roundResult === 'correct' ? '✅' : '❌'}</span>
             <span>
               {roundResult === 'correct'
-                ? `Correct! +${ptsAvailable} pts`
-                : `Wrong. It was ${coin.emoji} ${coin.name} (${coin.symbol})`}
+                ? t('ayGuessrCorrect')(ptsAvailable)
+                : t('ayGuessrWrong')(`${coin.emoji} ${coin.name} (${coin.symbol})`)}
             </span>
           </div>
           <div className="guessr-result-options">
@@ -272,7 +212,7 @@ function CryptoGuessr({ onIqGain }) {
             ))}
           </div>
           <button className="blitz-start-btn" style={{ marginTop: '1rem' }} onClick={nextRound}>
-            {round + 1 >= GUESSR_ROUNDS ? 'See Results' : 'Next Round →'}
+            {round + 1 >= GUESSR_ROUNDS ? t('aySeeResults') : t('ayNextRound') + ' →'}
           </button>
         </div>
       )}
@@ -285,15 +225,17 @@ function CryptoGuessr({ onIqGain }) {
 // two bonus wedges reward the player (2× IQ question, or +2 free spins). Correct
 // answers grant IQ + a free spin; sharing grants spins once a day. All spins are
 // tracked in the shared academy store so the dashboard card can show them.
+// `cat` is the question-bank category id and stays English; labelKey is what
+// the player reads.
 const WHEEL_WEDGES = [
-  { id: 'crypto',   label: 'Crypto',   icon: 'coins',    cat: 'Crypto',   color: '#f7931a' },
-  { id: 'markets',  label: 'Markets',  icon: 'trend-up', cat: 'Markets',  color: '#3b82f6' },
-  { id: 'risk',     label: 'Risk',     icon: 'shield',   cat: 'Risk',     color: '#ef4444' },
-  { id: 'defi',     label: 'DeFi',     icon: 'bank',     cat: 'DeFi',     color: '#22c55e' },
-  { id: 'security', label: 'Security', icon: 'lock',     cat: 'Security', color: '#8b5cf6' },
-  { id: 'strategy', label: 'Strategy', icon: 'target',   cat: 'Strategy', color: '#0ea5e9' },
-  { id: 'double',   label: '2× IQ',    icon: 'diamond',  cat: null, multiplier: 2, color: '#fbbf24' },
-  { id: 'bonus',    label: '+2 Spins', icon: 'gift',     cat: null, reward: 'spins', color: '#ec4899' },
+  { id: 'crypto',   labelKey: 'assetCrypto',      icon: 'coins',    cat: 'Crypto',   color: '#f7931a' },
+  { id: 'markets',  labelKey: 'ayCatMarkets',     icon: 'trend-up', cat: 'Markets',  color: '#3b82f6' },
+  { id: 'risk',     labelKey: 'ayCatRisk',        icon: 'shield',   cat: 'Risk',     color: '#ef4444' },
+  { id: 'defi',     labelKey: 'ayCatDefi',        icon: 'bank',     cat: 'DeFi',     color: '#22c55e' },
+  { id: 'security', labelKey: 'ayCatSecurity',    icon: 'lock',     cat: 'Security', color: '#8b5cf6' },
+  { id: 'strategy', labelKey: 'ayCatStrategy',    icon: 'target',   cat: 'Strategy', color: '#0ea5e9' },
+  { id: 'double',   labelKey: 'ayWedgeDouble',    icon: 'diamond',  cat: null, multiplier: 2, color: '#fbbf24' },
+  { id: 'bonus',    labelKey: 'ayWedgeBonus',     icon: 'gift',     cat: null, reward: 'spins', color: '#ec4899' },
 ]
 const WHEEL_SLICE = 360 / WHEEL_WEDGES.length
 const WHEEL_DAILY_SPINS = 3
@@ -305,13 +247,14 @@ function wheelStateOf(store) {
   return w
 }
 
-function pickQuestion(cat) {
-  const pool = cat ? QUESTIONS.filter(q => q.cat === cat) : QUESTIONS
-  const list = pool.length ? pool : QUESTIONS
+function pickQuestion(cat, bank) {
+  const pool = cat ? bank.filter(q => q.cat === cat) : bank
+  const list = pool.length ? pool : bank
   return list[Math.floor(Math.random() * list.length)]
 }
 
 function KnowledgeWheel({ store, onIqGain, setWheel }) {
+  const { t, lang } = useLanguage()
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const [phase, setPhase]       = useState('idle') // idle | question | answered | reward
@@ -352,10 +295,10 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       setWedge(landed)
       if (landed.reward === 'spins') {
         commitWheel({ left: wRef.current.left + 2 })
-        setRewardMsg('🎁 Bonus! +2 free spins')
+        setRewardMsg('🎁 ' + t('ayBonusSpins'))
         setPhase('reward')
       } else {
-        setQ(pickQuestion(landed.cat))
+        setQ(pickQuestion(landed.cat, academyQuestions(lang)))
         setPhase('question')
       }
     }, 4200)
@@ -378,18 +321,18 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
 
   async function shareForSpins() {
     track('wheel_share', { alreadyClaimed: sharedToday })
-    const text = `I'm leveling up my investing IQ on the WalletLens Knowledge Wheel 🎡 — spin, learn, and grow. Try it free:`
+    const text = t('ayWheelShareText')
     const url = 'https://walletlens.live/academy?tab=wheel'
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'WalletLens Knowledge Wheel', text, url })
+        await navigator.share({ title: t('ayWheelShareTitle'), text, url })
       } else {
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener')
       }
     } catch { /* user cancelled share sheet — still grant once daily below */ }
     if (!wRef.current.sharedToday) {
       commitWheel({ left: wRef.current.left + 2, sharedToday: true })
-      setRewardMsg('🎉 Thanks for sharing! +2 free spins')
+      setRewardMsg('🎉 ' + t('ayThanksSharing'))
     }
   }
 
@@ -398,11 +341,11 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       <div className="kw-topbar">
         <div className="kw-spins">
           <span className="kw-spins-num">{spins}</span>
-          <span className="kw-spins-lbl muted">spins left today</span>
+          <span className="kw-spins-lbl muted">{t('aySpinsLeft')}</span>
         </div>
         <button className="kw-share-btn" onClick={shareForSpins} disabled={sharedToday}
-          title={sharedToday ? 'Share bonus already claimed today' : 'Share to earn +2 spins'}>
-          {sharedToday ? '✓ Shared (+2)' : '📤 Share for +2 spins'}
+          title={sharedToday ? t('ayShareClaimedTitle') : t('ayShareTitle')}>
+          {sharedToday ? '✓ ' + t('aySharedClaimed') : '📤 ' + t('ayShareForSpins')}
         </button>
       </div>
 
@@ -426,10 +369,10 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       </div>
 
       <button className="kw-spin-btn blitz-start-btn" onClick={spin} disabled={spinning || spins <= 0}>
-        {spinning ? 'Spinning…' : spins > 0 ? 'SPIN' : 'No spins left'}
+        {spinning ? t('aySpinning') : spins > 0 ? t('aySpin') : t('ayNoSpins')}
       </button>
       {spins <= 0 && !spinning && (
-        <p className="kw-hint muted">Answer questions or share to earn more — spins refill daily.</p>
+        <p className="kw-hint muted">{t('aySpinsHint')}</p>
       )}
 
       {/* Reward wedge result */}
@@ -437,7 +380,7 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
         <div className="kw-result glass-card">
           <div className="kw-result-emoji" style={{ color: wedge.color }}><Icon name={wedge.icon} size={40} /></div>
           <div className="kw-result-title">{rewardMsg}</div>
-          <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>Spin again</button>
+          <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>{t('aySpinAgain')}</button>
         </div>
       )}
 
@@ -445,7 +388,7 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
       {(phase === 'question' || phase === 'answered') && q && (
         <div className="kw-question glass-card">
           <div className="kw-q-cat" style={{ background: (wedge?.color || 'var(--g)') + '22', color: wedge?.color || 'var(--g-ink)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            {wedge && <Icon name={wedge.icon} size={14} />} {wedge?.label}{wedge?.multiplier ? ' — double points!' : ''}
+            {wedge && <Icon name={wedge.icon} size={14} />} {wedge ? t(wedge.labelKey) : ''}{wedge?.multiplier ? ' — ' + t('ayDoublePoints') : ''}
           </div>
           <div className="kw-q-text">{q.q}</div>
           <div className="kw-q-opts">
@@ -465,11 +408,11 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
           {phase === 'answered' && (
             <div className="kw-explain">
               <div className={`kw-verdict ${selected === q.a ? 'ok' : 'no'}`}>
-                {selected === q.a ? `✅ Correct! +${lastIq} IQ · +1 spin` : '❌ Not quite'}
+                {selected === q.a ? '✅ ' + t('ayCorrectIqSpin')(lastIq) : '❌ ' + t('ayNotQuite')}
               </div>
               <p className="kw-exp-text">{q.exp}</p>
               <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>
-                {spins > 0 ? 'Spin again' : 'Out of spins'}
+                {spins > 0 ? t('aySpinAgain') : t('ayOutOfSpins')}
               </button>
             </div>
           )}
@@ -478,28 +421,6 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
     </div>
   )
 }
-
-// ── Investment Hacks ─────────────────────────────────────────────────────
-const HACKS = [
-  { icon: '🎯', cat: 'Entry', title: 'Buy in thirds, not all at once', body: 'Split your planned buy into 3 equal parts. Enter 1/3 now, 1/3 on a 10% dip, 1/3 on a 20% dip. You will never perfectly time the market — but you can average into a better price every time.' },
-  { icon: '🔒', cat: 'Risk', title: 'Set your stop-loss before you buy', body: 'Decide the maximum you are willing to lose BEFORE you enter a position. Write it down. When price hits that level, sell — no second-guessing. Emotional stops are no stops at all.' },
-  { icon: '🌊', cat: 'Strategy', title: 'DCA beats lump-sum for volatile assets', body: 'Invest a fixed amount every week or month regardless of price. Over time, you buy more when prices are low and less when they are high — automatically reducing your average cost.' },
-  { icon: '📊', cat: 'Portfolio', title: 'The 5% rule for new positions', body: 'Never put more than 5% of your portfolio into a single new, unproven position. If it does a 10x, you still win big. If it goes to zero, your portfolio survives. Let winners earn larger allocations.' },
-  { icon: '💰', cat: 'Profit', title: 'Take profit on the way up, not at the top', body: 'Sell 25% of a position when it doubles. Sell another 25% when it triples. You can never sell at the exact top — but taking profits on the way up guarantees you lock in real gains.' },
-  { icon: '🧠', cat: 'Psychology', title: 'Never check prices more than twice a day', body: 'Frequent price checking triggers emotional decisions. Set price alerts for key levels and check manually only at pre-set times. Boredom is your worst trading advisor.' },
-  { icon: '🔄', cat: 'Strategy', title: 'Rebalance quarterly, not reactively', body: 'Set a calendar reminder every 3 months to bring your portfolio back to target weights. Selling winners and buying laggards forces discipline — you sell high and buy low automatically.' },
-  { icon: '🛡️', cat: 'Risk', title: 'Keep 10-20% in stablecoins at all times', body: 'A permanent stablecoin reserve means you can always buy a crash. It also gives psychological comfort — you can watch a crash calmly knowing you have dry powder to deploy.' },
-  { icon: '📉', cat: 'Psychology', title: 'The 48-hour rule for panic sells', body: 'When you desperately want to sell during a crash, wait 48 hours. If you still want to sell after thinking it through calmly, then sell. Most panic impulses dissolve within 24 hours.' },
-  { icon: '🔍', cat: 'Research', title: 'Check on-chain data before trusting charts', body: 'Price can be manipulated. On-chain metrics (active addresses, transaction volume, exchange outflows) tell you what users are actually doing — not what traders want you to believe.' },
-  { icon: '⚖️', cat: 'Portfolio', title: 'Concentration is a feature, not a bug', body: 'Most wealth is made in 1-3 high-conviction bets, not 30 diversified ones. Have 3-5 core positions making up 70% of your portfolio. Diversification prevents loss; concentration creates wealth.' },
-  { icon: '🕐', cat: 'Entry', title: 'Volume confirms breakouts', body: 'A price breakout on low volume is likely fake. Wait for a breakout accompanied by volume 2× the average. That confirms real buying interest, not just a momentary squeeze.' },
-  { icon: '📅', cat: 'Strategy', title: 'Track your cost basis religiously', body: 'Always know exactly what you paid for each position. Without this, you cannot calculate real P&L, make rational sell decisions, or file accurate taxes. Use WalletLens to track every trade.' },
-  { icon: '🚫', cat: 'Risk', title: 'Avoid leverage until you are profitable without it', body: 'Leverage amplifies gains AND losses. If you cannot make money in spot markets consistently, leverage will just speed up your losses. Master the basics first.' },
-  { icon: '💎', cat: 'Psychology', title: 'Your conviction determines your position size', body: 'Size positions by how thoroughly you have researched them. High conviction = larger position. Heard-it-on-Twitter = 1% max. Conviction is earned through research, not hope.' },
-  { icon: '📈', cat: 'Strategy', title: 'The market rewards patience, not activity', body: 'Most profitable crypto investors make fewer than 20 trades per year. Every trade has friction (fees, tax events, emotional cost). Inactivity is often the highest-conviction trade.' },
-  { icon: '🌍', cat: 'Research', title: 'Follow the smart money, not the narrative', body: 'Watch where institutions and large wallets are accumulating. CoinGecko Whale Alerts, on-chain trackers, and dark pool data reveal where real money flows — often weeks before price reacts.' },
-  { icon: '⚡', cat: 'Entry', title: 'Fear and Greed Index as a contrarian signal', body: 'Extreme Fear (0-25) is historically the best time to accumulate. Extreme Greed (75-100) is when smart money quietly exits. Be greedy when others are fearful — Buffett\'s rule applies to crypto.' },
-]
 
 const CAT_COLORS = {
   Entry: 'var(--g)', Risk: '#f87171', Strategy: '#a78bfa',
@@ -516,33 +437,37 @@ const CAT_COLORS_LIGHT = {
   Research:   '#0369a1',
 }
 
-// ── Achievements definition ───────────────────────────────────────────────
+// ── Achievements ──────────────────────────────────────────────────────────
+// Ids and point values only. Titles and descriptions are per-language and
+// live in data/academyContent.js; the id is what a user's earned-badge list
+// is keyed on, so it must never change.
 const ACHIEVEMENTS = [
-  { id: 'first_lesson',    icon: '📖', title: 'First Lesson',       desc: 'Complete your first daily challenge',         pts: 50  },
-  { id: 'streak_3',        icon: '🔥', title: '3-Day Streak',       desc: 'Complete challenges 3 days in a row',          pts: 100 },
-  { id: 'streak_7',        icon: '⚡', title: 'Week Warrior',        desc: 'Complete challenges 7 days in a row',          pts: 200 },
-  { id: 'streak_30',       icon: '💎', title: 'Diamond Habit',       desc: '30-day challenge streak',                      pts: 500 },
-  { id: 'perfect_score',   icon: '🎯', title: 'Sharpshooter',        desc: 'Answer correctly on first try',                pts: 75  },
-  { id: 'fast_answer',     icon: '⚡', title: 'Lightning Brain',     desc: 'Answer correctly in under 3 seconds',          pts: 100 },
-  { id: 'all_categories',  icon: '🌈', title: 'Well Rounded',        desc: 'Answer questions from 5 different categories', pts: 150 },
-  { id: 'security_expert', icon: '🛡️', title: 'Security Expert',     desc: 'Answer 5 Security questions correctly',        pts: 120 },
-  { id: 'defi_master',     icon: '🏦', title: 'DeFi Master',         desc: 'Answer 3 DeFi questions correctly',            pts: 100 },
-  { id: 'risk_aware',      icon: '⚠️', title: 'Risk Aware',          desc: 'Answer 5 Risk questions correctly',            pts: 120 },
-  { id: 'crypto_scholar',  icon: '🎓', title: 'Crypto Scholar',      desc: 'Answer 10 Crypto questions correctly',         pts: 200 },
-  { id: 'psychologist',    icon: '🧠', title: 'Market Psychologist', desc: 'Answer 3 Psychology questions correctly',      pts: 100 },
-  { id: 'iq_500',          icon: '🥉', title: 'Analyst',             desc: 'Reach 500 Investor IQ',                        pts: 0   },
-  { id: 'iq_1000',         icon: '🥈', title: 'Strategist',          desc: 'Reach 1,000 Investor IQ',                      pts: 0   },
-  { id: 'iq_2000',         icon: '🥇', title: 'Whale',               desc: 'Reach 2,000 Investor IQ',                      pts: 0   },
-  { id: 'iq_5000',         icon: '👑', title: 'Legend',              desc: 'Reach 5,000 Investor IQ',                      pts: 0   },
+  { id: 'first_lesson',    icon: '📖', pts: 50  },
+  { id: 'streak_3',        icon: '🔥', pts: 100 },
+  { id: 'streak_7',        icon: '⚡', pts: 200 },
+  { id: 'streak_30',       icon: '💎', pts: 500 },
+  { id: 'perfect_score',   icon: '🎯', pts: 75  },
+  { id: 'fast_answer',     icon: '⚡', pts: 100 },
+  { id: 'all_categories',  icon: '🌈', pts: 150 },
+  { id: 'security_expert', icon: '🛡️', pts: 120 },
+  { id: 'defi_master',     icon: '🏦', pts: 100 },
+  { id: 'risk_aware',      icon: '⚠️', pts: 120 },
+  { id: 'crypto_scholar',  icon: '🎓', pts: 200 },
+  { id: 'psychologist',    icon: '🧠', pts: 100 },
+  { id: 'iq_500',          icon: '🥉', pts: 0   },
+  { id: 'iq_1000',         icon: '🥈', pts: 0   },
+  { id: 'iq_2000',         icon: '🥇', pts: 0   },
+  { id: 'iq_5000',         icon: '👑', pts: 0   },
 ]
 
+// A key rather than a word: this runs at module scope, with no hook to call.
 function getRank(iq) {
-  if (iq >= 5000) return { label: 'Legend', color: '#ffd700', icon: '👑' }
-  if (iq >= 2000) return { label: 'Whale',  color: '#a78bfa', icon: '🥇' }
-  if (iq >= 1000) return { label: 'Strategist', color: '#60a5fa', icon: '🥈' }
-  if (iq >= 500)  return { label: 'Analyst', color: 'var(--g-ink)', fontWeight: 700, icon: '🥉' }
-  if (iq >= 200)  return { label: 'Trader',  color: '#f59e0b', icon: '📈' }
-  return { label: 'Rookie', color: 'rgba(255,255,255,0.75)', icon: '🌱' }
+  if (iq >= 5000) return { labelKey: 'ayRankLegend', color: '#ffd700', icon: '👑' }
+  if (iq >= 2000) return { labelKey: 'ayRankWhale',  color: '#a78bfa', icon: '🥇' }
+  if (iq >= 1000) return { labelKey: 'ayRankStrategist', color: '#60a5fa', icon: '🥈' }
+  if (iq >= 500)  return { labelKey: 'ayRankAnalyst', color: 'var(--g-ink)', fontWeight: 700, icon: '🥉' }
+  if (iq >= 200)  return { labelKey: 'ayRankTrader',  color: '#f59e0b', icon: '📈' }
+  return { labelKey: 'ayRankRookie', color: 'rgba(255,255,255,0.75)', icon: '🌱' }
 }
 
 // ── Share hack as image ────────────────────────────────────────────────────
@@ -672,7 +597,12 @@ async function shareHackToX(hack, color) {
 }
 
 // ── Article helpers ───────────────────────────────────────────────────────
+// Ids, not labels: getArticleCat returns these and the filter compares them.
 const ARTICLE_CATS = ['All', 'Crypto', 'Strategy', 'Net Worth', 'Tracking', 'Tax & P&L']
+const ARTICLE_CAT_KEYS = {
+  All: 'txAll', Crypto: 'assetCrypto', Strategy: 'ayCatStrategy',
+  'Net Worth': 'ayCatNetWorth', Tracking: 'ayCatTracking', 'Tax & P&L': 'ayCatTax',
+}
 
 function getArticleCat(slug) {
   if (/net-worth|grow-your-net|calculate-your-net|tracker-vs-spread|best-free-net-worth/.test(slug)) return 'Net Worth'
@@ -692,6 +622,7 @@ const ARTICLE_CAT_COLORS = {
 
 // ── HackCard ──────────────────────────────────────────────────────────────
 function HackCard({ hack, color }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [sharing, setSharing] = useState(false)
 
@@ -710,12 +641,12 @@ function HackCard({ hack, color }) {
       <div className="acad-hack-header">
         <span className="acad-hack-icon">{hack.icon}</span>
         <div className="acad-hack-meta">
-          <span className="acad-hack-cat" style={{ color }}>{hack.cat}</span>
+          <span className="acad-hack-cat" style={{ color }}>{t(hack.catKey)}</span>
           <div className="acad-hack-title">{hack.title}</div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
           <button className="hack-share-btn" onClick={handleShare} disabled={sharing}
-            title="Share on X">
+            title={t('share')}>
             {sharing ? '⏳' : '𝕏'}
           </button>
           <span className="acad-hack-chevron">{open ? '▲' : '▼'}</span>
@@ -730,6 +661,7 @@ function HackCard({ hack, color }) {
 
 // ─────────────────────────────────────────────────────────────────────────
 export default function Academy() {
+  const { t, lang } = useLanguage()
   const { mode: themeMode } = useTheme()
   const isLight = themeMode === 'light'
   const [store, setStore] = useState(loadStore)
@@ -752,7 +684,8 @@ export default function Academy() {
 
   const todayStr   = getTodayStr()
   const alreadyDone = store.lastPlayed === todayStr
-  const question   = getDailyQuestion()
+  const badgeText  = achievementText(lang)
+  const question   = getDailyQuestion(academyQuestions(lang))
 
   // Init store defaults
   useEffect(() => {
@@ -875,8 +808,8 @@ export default function Academy() {
               <div key={id} className="acad-toast" onAnimationEnd={() => setNewBadges(p => p.filter(x => x !== id))}>
                 <span className="acad-toast-icon">{b.icon}</span>
                 <div>
-                  <div className="acad-toast-title">Badge Unlocked!</div>
-                  <div className="acad-toast-badge">{b.title}</div>
+                  <div className="acad-toast-title">{t('ayBadgeUnlocked')}</div>
+                  <div className="acad-toast-badge">{badgeText[b.id]?.title}</div>
                 </div>
               </div>
             ) : null
@@ -889,13 +822,13 @@ export default function Academy() {
         <div className="acad-header-left">
           <div className="acad-logo">🎓</div>
           <div>
-            <div className="acad-title">WalletLens Academy</div>
-            <div className="acad-subtitle muted">Level up your investment knowledge</div>
+            <div className="acad-title">{t('ayTitle')}</div>
+            <div className="acad-subtitle muted">{t('aySubtitle')}</div>
           </div>
         </div>
         <div className="acad-iq-pill" style={{ borderColor: rank.color + '44', background: rank.color + '12' }}>
           <span style={{ color: rank.color }}>{rank.icon} {store.iq || 0}</span>
-          <span className="muted" style={{ fontSize: '0.7rem' }}>IQ</span>
+          <span className="muted" style={{ fontSize: '0.7rem' }}>{t('ayIq')}</span>
         </div>
       </div>
 
@@ -904,22 +837,22 @@ export default function Academy() {
         <div className="acad-rank-left">
           <div className="acad-rank-icon" style={{ color: rank.color }}>{rank.icon}</div>
           <div>
-            <div className="acad-rank-label" style={{ color: rank.color }}>{rank.label}</div>
-            <div className="muted" style={{ fontSize: '0.74rem' }}>Investor IQ: {(store.iq || 0).toLocaleString()}</div>
+            <div className="acad-rank-label" style={{ color: rank.color }}>{t(rank.labelKey)}</div>
+            <div className="muted" style={{ fontSize: '0.74rem' }}>{t('ayIqValue')((store.iq || 0).toLocaleString())}</div>
           </div>
         </div>
         <div className="acad-rank-stats">
           <div className="acad-stat">
             <div className="acad-stat-val">{store.totalCorrect || 0}</div>
-            <div className="acad-stat-lbl muted">Correct</div>
+            <div className="acad-stat-lbl muted">{t('ayCorrect')}</div>
           </div>
           <div className="acad-stat">
             <div className="acad-stat-val">{store.streak || 0}🔥</div>
-            <div className="acad-stat-lbl muted">Streak</div>
+            <div className="acad-stat-lbl muted">{t('ayStreak')}</div>
           </div>
           <div className="acad-stat">
             <div className="acad-stat-val">{(store.earnedBadges || []).length}</div>
-            <div className="acad-stat-lbl muted">Badges</div>
+            <div className="acad-stat-lbl muted">{t('ayBadges')}</div>
           </div>
         </div>
       </div>
@@ -927,12 +860,12 @@ export default function Academy() {
       {/* Tabs */}
       <div className="acad-tabs">
         {[
-          { id: 'challenge', label: '📅 Daily Challenge' },
-          { id: 'badges',    label: `🏆 Badges (${(store.earnedBadges||[]).length}/${ACHIEVEMENTS.length})` },
-          { id: 'wheel',     label: '🎡 Spin & Learn' },
-          { id: 'game',      label: '🕵️ Crypto Guessr' },
-          { id: 'hacks',     label: '💡 Investment Hacks' },
-          { id: 'articles',  label: `📚 Articles (${POSTS.length})` },
+          { id: 'challenge', label: '📅 ' + t('ayTabChallenge') },
+          { id: 'badges',    label: '🏆 ' + t('ayBadgesTab')((store.earnedBadges||[]).length, ACHIEVEMENTS.length) },
+          { id: 'wheel',     label: '🎡 ' + t('ayTabWheel') },
+          { id: 'game',      label: '🕵️ ' + t('ayTabGame') },
+          { id: 'hacks',     label: '💡 ' + t('ayTabHacks') },
+          { id: 'articles',  label: '📚 ' + t('ayArticlesTab')(POSTS.length) },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
             onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
@@ -946,11 +879,11 @@ export default function Academy() {
         <div className="glass-card acad-challenge-card">
           {/* Category + timer */}
           <div className="acad-challenge-meta">
-            <span className="acad-cat-badge">{question.cat}</span>
+            <span className="acad-cat-badge">{t(CATEGORY_KEYS[question.cat] || question.cat)}</span>
             {phase === 'playing' && (
               <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : 'var(--g-ink)' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                {timeLeft}s
+                {t('ayTimerSeconds')(timeLeft)}
               </div>
             )}
           </div>
@@ -980,7 +913,7 @@ export default function Academy() {
           {/* Idle state */}
           {phase === 'idle' && !alreadyDone && (
             <button className="acad-start-btn" onClick={startChallenge}>
-              Start Today's Challenge
+              {t('ayStartChallenge')}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
           )}
@@ -990,8 +923,8 @@ export default function Academy() {
             <div className="acad-done-msg">
               <span className="acad-done-icon">✅</span>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--g-ink)' }}>Challenge complete for today!</div>
-                <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Come back tomorrow for a new question. Streak: {store.streak}🔥</div>
+                <div style={{ fontWeight: 700, color: 'var(--g-ink)' }}>{t('ayDoneTitle')}</div>
+                <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>{t('ayComeBack')(store.streak)}🔥</div>
               </div>
             </div>
           )}
@@ -1000,20 +933,20 @@ export default function Academy() {
           {phase === 'result' && (
             <div className={`acad-result ${selected === question.a ? 'acad-result-correct' : 'acad-result-wrong'}`}>
               {selected === -1 ? (
-                <><span>⏱️</span> Time's up! The answer was <strong>{question.opts[question.a]}</strong></>
+                <><span>⏱️</span> {t('ayTimesUp')()} <strong>{question.opts[question.a]}</strong></>
               ) : selected === question.a ? (
-                <><span>✅</span> Correct! +{selected === question.a && (Date.now() - startTime.current) / 1000 < 3 ? '50' : '20'} IQ</>
+                <><span>✅</span> {t('ayCorrectIq')(selected === question.a && (Date.now() - startTime.current) / 1000 < 3 ? '50' : '20')}</>
               ) : (
-                <><span>❌</span> Wrong. Correct answer: <strong>{question.opts[question.a]}</strong></>
+                <><span>❌</span> {t('ayWrongAnswer')()} <strong>{question.opts[question.a]}</strong></>
               )}
-              <button className="acad-explain-btn" onClick={() => setPhase('explanation')}>Why? →</button>
+              <button className="acad-explain-btn" onClick={() => setPhase('explanation')}>{t('ayWhy')} →</button>
             </div>
           )}
 
           {/* Explanation */}
           {phase === 'explanation' && (
             <div className="acad-explanation">
-              <div className="acad-explain-title">💡 Explanation</div>
+              <div className="acad-explain-title">💡 {t('ayExplanation')}</div>
               <div className="acad-explain-text">{question.exp}</div>
             </div>
           )}
@@ -1028,10 +961,10 @@ export default function Academy() {
             return (
               <div key={b.id} className={`acad-badge-card ${earned ? 'acad-badge-earned' : 'acad-badge-locked'}`}>
                 <div className="acad-badge-icon" style={{ opacity: earned ? 1 : 0.3 }}>{b.icon}</div>
-                <div className="acad-badge-title" style={{ color: earned ? 'var(--text)' : 'var(--text-sub)' }}>{b.title}</div>
-                <div className="acad-badge-desc muted">{b.desc}</div>
-                {b.pts > 0 && <div className="acad-badge-pts" style={{ color: earned ? '#fbbf24' : 'var(--text-sub)' }}>+{b.pts} IQ</div>}
-                {earned && <div className="acad-badge-earned-label">EARNED</div>}
+                <div className="acad-badge-title" style={{ color: earned ? 'var(--text)' : 'var(--text-sub)' }}>{badgeText[b.id]?.title}</div>
+                <div className="acad-badge-desc muted">{badgeText[b.id]?.desc}</div>
+                {b.pts > 0 && <div className="acad-badge-pts" style={{ color: earned ? '#fbbf24' : 'var(--text-sub)' }}>{t('ayBadgePts')(b.pts)}</div>}
+                {earned && <div className="acad-badge-earned-label">{t('ayEarned')}</div>}
               </div>
             )
           })}
@@ -1076,7 +1009,7 @@ export default function Academy() {
       {/* ── HACKS TAB ── */}
       {activeTab === 'hacks' && (
         <div className="acad-hacks-list">
-          {HACKS.map((h, i) => {
+          {academyHacks(lang).map((h, i) => {
             const palette = isLight ? CAT_COLORS_LIGHT : CAT_COLORS
             const color = palette[h.cat] || (isLight ? '#15803d' : '#a78bfa')
             return (
@@ -1096,7 +1029,7 @@ export default function Academy() {
                 className={`acad-articles-filter-btn ${articleFilter === cat ? 'acad-articles-filter-active' : ''}`}
                 onClick={() => { setArticleFilter(cat); track('academy_article_filter', { cat }) }}
               >
-                {cat}
+                {t(ARTICLE_CAT_KEYS[cat] || cat)}
               </button>
             ))}
           </div>
@@ -1116,12 +1049,12 @@ export default function Academy() {
                     onClick={() => track('academy_article_click', { slug: post.slug, cat })}
                   >
                     <div className="acad-article-top">
-                      <span className="acad-article-cat" style={{ color: catColor, borderColor: catColor + '44', background: catColor + '12' }}>{cat}</span>
+                      <span className="acad-article-cat" style={{ color: catColor, borderColor: catColor + '44', background: catColor + '12' }}>{t(ARTICLE_CAT_KEYS[cat] || cat)}</span>
                       <span className="acad-article-time muted">{post.readTime}</span>
                     </div>
                     <div className="acad-article-title">{post.title}</div>
                     <div className="acad-article-summary muted">{post.summary.length > 120 ? post.summary.slice(0, 120) + '…' : post.summary}</div>
-                    <div className="acad-article-cta">Read article →</div>
+                    <div className="acad-article-cta">{t('ayReadArticle')} →</div>
                   </Link>
                 )
               })}
@@ -1131,15 +1064,15 @@ export default function Academy() {
 
       {/* IQ guide */}
       <div className="glass-card acad-iq-guide">
-        <div className="acad-iq-guide-title">Investor IQ Ranks</div>
+        <div className="acad-iq-guide-title">{t('ayIqRanks')}</div>
         <div className="acad-iq-guide-grid">
           {[
-            { icon: '🌱', label: 'Rookie',     range: '0–199' },
-            { icon: '📈', label: 'Trader',     range: '200–499' },
-            { icon: '🥉', label: 'Analyst',    range: '500–999' },
-            { icon: '🥈', label: 'Strategist', range: '1,000–1,999' },
-            { icon: '🥇', label: 'Whale',      range: '2,000–4,999' },
-            { icon: '👑', label: 'Legend',     range: '5,000+' },
+            { icon: '🌱', label: t('ayRankRookie'),     range: '0–199' },
+            { icon: '📈', label: t('ayRankTrader'),     range: '200–499' },
+            { icon: '🥉', label: t('ayRankAnalyst'),    range: '500–999' },
+            { icon: '🥈', label: t('ayRankStrategist'), range: '1,000–1,999' },
+            { icon: '🥇', label: t('ayRankWhale'),      range: '2,000–4,999' },
+            { icon: '👑', label: t('ayRankLegend'),     range: '5,000+' },
           ].map(r => (
             <div key={r.label} className="acad-iq-guide-row">
               <span>{r.icon}</span>
@@ -1149,7 +1082,7 @@ export default function Academy() {
           ))}
         </div>
         <p className="muted" style={{ fontSize: '0.72rem', marginTop: '0.75rem', lineHeight: 1.5 }}>
-          Earn IQ by answering daily challenges (+20 base, +30 for sub-3s answers, streak bonuses) and unlocking badges.
+          {t('ayIqExplain')}
         </p>
       </div>
     </div>

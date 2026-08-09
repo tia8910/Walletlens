@@ -11,16 +11,18 @@ import { assetClass } from '../data/assets'
 import { getCachedCoinImage } from '../api'
 import { useLanguage } from '../LanguageContext'
 
+// Translation keys, not text: these are hover tooltips describing what each
+// pillar measures, and they were the last English left in the panel.
 const PILLAR_INFO = {
-  technical:   'RSI, MACD, Bollinger Bands, trend, Ichimoku Cloud, VWAP and Fibonacci levels.',
-  momentum:    'Stochastic RSI, Williams %R, ADX, CCI, MFI, Parabolic SAR, OBV — composite oscillator signal.',
-  whales:      'Accumulation vs distribution from volume-weighted flow + exchange transfers.',
-  onchain:     'NVT proxy, exchange flow, supply shock, turnover (volume/market-cap), dilution.',
-  volume:      'OBV divergence, volume profile, VWAP confirmation, turnover rate.',
-  sentiment:   'Fear & Greed Index (contrarian), BTC dominance shift, social buzz, market breadth.',
-  cycle:       'Bitcoin halving cycle position, Pi Cycle Top/Bottom, ATH drawdown phase.',
-  correlation: 'BTC/SPY/Gold/DXY correlation — regime detection and diversification value.',
-  fundamental: 'Market-cap tier, FDV/MC dilution and distance from all-time high.',
+  technical:   'miInfoTechnical',
+  momentum:    'miInfoMomentum',
+  whales:      'miInfoWhales',
+  onchain:     'miInfoOnchain',
+  volume:      'miInfoVolume',
+  sentiment:   'miInfoSentiment',
+  cycle:       'miInfoCycle',
+  correlation: 'miInfoCorrelation',
+  fundamental: 'miInfoFundamental',
 }
 
 // All holdings with price data are analyzable — except stablecoins and fiat/cash.
@@ -535,6 +537,7 @@ function MagicGauge({ score, direction, confidence, big }) {
 
 // ── Premium pillar bars with quality indicators ─────────────────────────
 function PillarBars({ pillars }) {
+  const { t } = useLanguage()
   return (
     <div className="pillar-list">
       {pillars.map((p) => {
@@ -546,9 +549,10 @@ function PillarBars({ pillars }) {
           : proxy ? (s >= 0 ? '#6ee7b7' : '#fca5a5')
           : s >= 0 ? '#22c55e' : '#ef4444'
         const widthPct = Math.min(50, Math.abs(s) / 2)
-        const title = est ? `${PILLAR_INFO[p.key]} — no live data, shown neutral`
-          : proxy ? `${PILLAR_INFO[p.key]} — estimated from related data`
-          : PILLAR_INFO[p.key]
+        const info = PILLAR_INFO[p.key] ? t(PILLAR_INFO[p.key]) : ''
+        const title = est ? `${info} — ${t('miNoLiveData')}`
+          : proxy ? `${info} — ${t('miProxyData')}`
+          : info
         // Quality dot: green = live, yellow = proxy, gray = estimated
         const dotColor = live ? '#22c55e' : proxy ? '#eab308' : '#6b7280'
         return (
@@ -783,8 +787,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
         <div style={{ marginBottom: '0.4rem', display: 'flex', justifyContent: 'center' }}><Icon name="pulse" size={30} style={{ color: 'var(--g-ink)', fontWeight: 700 }} /></div>
         <p className="muted" style={{ margin: 0 }}>
-          Add a holding to see the Magic Indicator — technicals, momentum, volume, sentiment
-          and more merged into one direction. Works for crypto, stocks, gold and silver.
+          {t('miEmpty')} {t('miEmptyWorks')}
         </p>
       </div>
     )
@@ -795,7 +798,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       {/* Category filter tabs */}
       {Object.keys(catCounts).length > 2 && (
         <div style={{ display: 'flex', gap: '0.4rem', margin: '0.6rem 0.75rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {[['all', 'All'], ['crypto', 'Crypto'], ['stock', 'Stocks'], ['gold', 'Gold'], ['silver', 'Silver']].filter(([k]) => catCounts[k] > 0).map(([key, label]) => (
+          {[['all', t('txAll')], ['crypto', t('assetCrypto')], ['stock', t('assetStocks')], ['gold', t('assetGold')], ['silver', t('assetSilver')]].filter(([k]) => catCounts[k] > 0).map(([key, label]) => (
             <button key={key} onClick={() => setCatFilter(key)} style={{
               padding: '0.4rem 0.8rem', borderRadius: '20px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.72rem', fontWeight: 700,
               background: catFilter === key ? 'var(--g)' : 'var(--surface-1)',
@@ -821,16 +824,14 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
 
       {filteredItems.some(it => it.magic?.pillars?.some(p => p.estimated || p.quality === 'proxy')) && (
         <p className="muted" style={{ fontSize: '0.72rem', margin: '0.6rem 0.2rem 0' }}>
-          <b>~</b> estimated from related data and <b>*</b> shown neutral when a live feed is
-          temporarily unavailable (rate-limited). These count at reduced or zero weight, so the
-          headline reading stays driven by live data — values refresh automatically within the hour.
+          <b>~</b> {t('miEstimated')} <b>*</b> {t('miNeutralNote')}
         </p>
       )}
 
       {nonCryptoCount > 0 && (
         <div className="glass-card" style={{ marginTop: '1rem', padding: '0.9rem 1.1rem' }}>
           <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
-            ℹ️ {nonCryptoCount} holding{nonCryptoCount === 1 ? '' : 's'} excluded — stablecoins and cash/fiat have no meaningful price series to analyze.
+            ℹ️ {t('miExcludedCount')(nonCryptoCount)}
           </p>
         </div>
       )}

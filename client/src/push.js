@@ -9,6 +9,18 @@
 // (a URL + keys, no identity) and the alert rules the user explicitly set.
 
 const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
+
+// The server builds the notification text, so it has to be told which language
+// to build it in — otherwise a user reading the app in Arabic still gets an
+// English price alert on their lock screen. Read live rather than cached: the
+// language can change after the subscription was created, and syncAlerts()
+// re-sends it on every alert edit.
+function currentLang() {
+  try {
+    const l = localStorage.getItem('wl_lang')
+    return ['en', 'ar', 'fr', 'es'].includes(l) ? l : 'en'
+  } catch { return 'en' }
+}
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
 const PA_ALERTS_KEY = 'walletlens_price_alerts'  // Dashboard 'Alerts' tab store
@@ -69,7 +81,7 @@ export async function enablePush() {
   const res = await fetch(`${PUSH_API}/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscription: sub.toJSON(), alerts: readAlerts() }),
+    body: JSON.stringify({ subscription: sub.toJSON(), alerts: readAlerts(), lang: currentLang() }),
   })
   if (!res.ok) {
     // Roll back so isPushEnabled() doesn't report a half-registered state.
@@ -104,7 +116,7 @@ export async function syncAlerts() {
     await fetch(`${PUSH_API}/alerts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: sub.endpoint, alerts: readAlerts() }),
+      body: JSON.stringify({ endpoint: sub.endpoint, alerts: readAlerts(), lang: currentLang() }),
     }).catch(() => {})
   } catch { /* best-effort */ }
 }
@@ -116,7 +128,7 @@ export async function sendTestPush() {
   const res = await fetch(`${PUSH_API}/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: sub.endpoint }),
+    body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang() }),
   })
   if (!res.ok) throw new Error('Test push failed.')
   return { ok: true }
