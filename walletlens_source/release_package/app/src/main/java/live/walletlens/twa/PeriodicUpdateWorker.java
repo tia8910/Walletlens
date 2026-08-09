@@ -2,6 +2,8 @@ package live.walletlens.twa;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -53,81 +55,128 @@ public class PeriodicUpdateWorker extends Worker {
     private static final String KEY_FEATURE = "feature_idx";
 
     // ── Content arrays: {title, body, deepLinkUrl} ────────────────────
-    private static final String[][] HACKS = {
-        {"📈 Dollar-Cost Averaging", "Invest fixed amounts regularly — removes emotions from timing the market", "https://walletlens.live/academy"},
-        {"🛡️ Diversification", "Spread across crypto, stocks, gold, cash — don't put all eggs in one basket", "https://walletlens.live/academy"},
-        {"📉 Buy the Dips", "When everyone is fearful, consider buying — markets always cycle", "https://walletlens.live/market-index"},
-        {"💰 Compound Interest", "Reinvest gains to grow exponentially — time is your biggest ally", "https://walletlens.live/academy"},
-        {"🎯 Set Stop-Losses", "Define your exit before entering — protects from bad decisions", "https://walletlens.live/academy"},
-        {"📊 Rebalance Quarterly", "Adjust allocations every 3 months to maintain target risk", "https://walletlens.live/dashboard"},
-        {"🔍 DYOR", "Always research before investing — understand what you own", "https://walletlens.live/academy"},
-        {"💵 Emergency Fund First", "Keep 3-6 months of expenses in cash before investing", "https://walletlens.live/academy"},
-        {"📋 Track Everything", "Use WalletLens — what gets measured gets managed", "https://walletlens.live/dashboard"},
-        {"🧠 Avoid FOMO", "Fear of Missing Out leads to buying high — stay disciplined", "https://walletlens.live/academy"},
-        {"📅 Invest Consistently", "Small consistent investments beat timing the market", "https://walletlens.live/dashboard"},
-        {"🔒 Cold Storage", "Large crypto holdings belong in hardware wallets, not exchanges", "https://walletlens.live/market-index"},
-        {"📊 Check Correlations", "Gold and stocks sometimes move together — know your portfolio", "https://walletlens.live/dashboard"},
-        {"💡 Tax-Loss Harvesting", "Sell losing positions to offset gains — WalletLens tracks P&L", "https://walletlens.live/dashboard"},
-        {"🌍 Think Globally", "International diversification reduces country-specific risk", "https://walletlens.live/market-index"},
-        {"📈 Trend Following", "The trend is your friend — don't fight the market direction", "https://walletlens.live/market-index"},
-        {"⚡ Stay Liquid", "Keep cash ready for opportunities during market dips", "https://walletlens.live/dashboard"},
-        {"📚 Never Stop Learning", "Best investors never stop learning — use Academy", "https://walletlens.live/academy"},
-        {"🎯 Set Goals", "Define financial goals — WalletLens milestones track progress", "https://walletlens.live/dashboard"},
-        {"💪 Stay Calm", "Markets crash and recover — panic selling locks in losses", "https://walletlens.live/fear-and-greed-index"}
+    // ── Notification copy ──────────────────────────────────────────────
+    // Titles and bodies live in res/values*/notification_copy.xml, one file
+    // per language, because these are the strings a user reads on their lock
+    // screen and they have to follow the language chosen inside the app.
+    // They used to be English string literals right here, so an app running in
+    // Arabic still sent English notifications.
+    //
+    // Only the deep links stay in Java: they are not translatable, and having
+    // one copy rather than four removes any chance of them drifting apart.
+    // Each URL array must stay the same length, and in the same order, as the
+    // matching *_titles / *_bodies array.
+    private static final String[] HACK_URLS = {
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/fear-and-greed-index"
     };
 
-    private static final String[][] ACADEMY = {
-        {"🎓 What is RSI?", "Relative Strength Index — measures overbought/oversold conditions above 70 or below 30", "https://walletlens.live/academy"},
-        {"📈 MACD Explained", "Moving Average Convergence Divergence — trend-following momentum indicator", "https://walletlens.live/academy"},
-        {"📊 Bollinger Bands", "Volatility bands plotted 2 standard deviations from a moving average", "https://walletlens.live/academy"},
-        {"🕯️ Candlestick Patterns", "Learn Doji, Hammer, Engulfing and other patterns to read price action", "https://walletlens.live/academy"},
-        {"📉 Support & Resistance", "Key price levels where buying or selling pressure concentrates", "https://walletlens.live/academy"},
-        {"⚖️ Risk-Reward Ratio", "Always calculate potential loss vs gain before entering a trade", "https://walletlens.live/academy"},
-        {"🧮 Position Sizing", "Never risk more than 1-2% of portfolio on a single trade", "https://walletlens.live/dashboard"},
-        {"📉 Volatility Index (VIX)", "The VIX measures market fear — high readings mean high uncertainty", "https://walletlens.live/fear-and-greed-index"},
-        {"🔄 Dollar-Cost Averaging", "Invest a fixed amount on a schedule regardless of price", "https://walletlens.live/dashboard"},
-        {"🎯 Asset Allocation", "Divide your portfolio between stocks, bonds, crypto based on goals", "https://walletlens.live/dashboard"},
-        {"📊 Market Cap Weighted", "Large-cap assets carry more weight in most index funds", "https://walletlens.live/market-index"},
-        {"🌍 Global Macro", "Interest rates, inflation and geopolitics drive all markets", "https://walletlens.live/market-index"},
-        {"💡 On-Chain Analysis", "Blockchain data reveals whale movements and network health", "https://walletlens.live/market-index"},
-        {"📊 Relative Strength", "Compare asset performance vs benchmark to find winners", "https://walletlens.live/market-index"},
-        {"🧠 Sentiment Analysis", "Social metrics and fear/greed index gauge market mood", "https://walletlens.live/fear-and-greed-index"},
-        {"⚡ Lightning Network", "Bitcoin's Layer 2 for instant low-fee payments", "https://walletlens.live/market-index"},
-        {"🔐 Hardware Wallets", "Store private keys offline — immune to online hacks", "https://walletlens.live/dashboard"},
-        {"📉 Drawdown Recovery", "A 50% drop needs 100% gain to break even — manage risk", "https://walletlens.live/dashboard"},
-        {"🏦 DeFi Explained", "Decentralised Finance — lend, borrow and earn without intermediaries", "https://walletlens.live/market-index"},
-        {"📜 Whitepaper Reading", "Always read the whitepaper — understand what you invest in", "https://walletlens.live/academy"}
+    private static final String[] ACADEMY_URLS = {
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/academy",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/fear-and-greed-index",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/fear-and-greed-index",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/market-index",
+        "https://walletlens.live/academy"
     };
 
     // Feature notifications lead with the four things no other free tracker
-    // does. The worker walks this array in order, so the exclusives are first
-    // and the list is kept short — a user sees them within their first few
-    // feature notifications instead of buried behind generic ones.
-    //
-    // Deep links point at where the feature actually lives: import and backup
-    // are surfaces inside /dashboard, Guardian has its own route.
-    private static final String[][] FEATURES = {
-        // ── The four exclusives ────────────────────────────────────────────
-        {"🛡️ Portfolio Guardian", "Set a check-in. If you ever stop responding, your holdings reach the people you chose", "https://walletlens.live/guardian"},
-        {"📸 Screenshot Import", "Screenshot your exchange app — WalletLens reads every holding straight off the image", "https://walletlens.live/dashboard"},
-        {"🎙️ Voice Import", "Just say it: 'I bought 0.5 BTC at 60k' and the trade is logged", "https://walletlens.live/dashboard"},
-        {"📲 Move to a New Phone", "Scan one QR code to carry your whole portfolio across — no account, no cloud", "https://walletlens.live/dashboard"},
+    // does, so a user meets them within their first few feature notifications
+    // instead of finding them buried behind generic ones. Entries 5-8 are a
+    // second pass on the same four from a different angle.
+    private static final String[] FEATURE_URLS = {
+        "https://walletlens.live/guardian",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
 
-        // ── Second pass on the same four, different angle ──────────────────
-        {"🛡️ Your Dead-Man's Switch", "Portfolio Guardian makes sure your crypto isn't lost if you can't reach it", "https://walletlens.live/guardian"},
-        {"📸 Skip the Typing", "Import a whole exchange balance from one screenshot — Binance, Coinbase, anything", "https://walletlens.live/dashboard"},
-        {"🎙️ Log Trades Hands-Free", "Speak several trades in one sentence — English or Arabic", "https://walletlens.live/dashboard"},
-        {"📲 Portfolio in a QR Code", "Your entire portfolio as a scannable code. Move devices in seconds", "https://walletlens.live/dashboard"},
+        "https://walletlens.live/guardian",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/dashboard",
 
-        // ── Supporting features ────────────────────────────────────────────
-        {"🤖 AI Advisor", "Health score, diversification grade and a stress test on your real holdings", "https://walletlens.live/dashboard"},
-        {"🔒 Biometric Lock", "Fingerprint or face unlock before your net worth is visible", "https://walletlens.live/settings"},
-        {"😱 Fear & Greed", "Know the market's mood before you trade", "https://walletlens.live/fear-and-greed-index"},
-        {"🐋 Whale Alerts", "Track large crypto transactions in real time", "https://walletlens.live/market-index"}
+        "https://walletlens.live/dashboard",
+        "https://walletlens.live/settings",
+        "https://walletlens.live/fear-and-greed-index",
+        "https://walletlens.live/market-index"
     };
 
     public PeriodicUpdateWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
+    }
+
+    /**
+     * A Resources bound to the language the user picked inside the web app,
+     * which is not necessarily the device language — someone on an English
+     * phone can be reading WalletLens in Arabic.
+     *
+     * The web writes the code into SharedPreferences through the widget-sync
+     * intent; when it has never done so, getResources() gives the device
+     * default, which is the best available guess.
+     */
+    private Resources localizedResources() {
+        Context ctx = getApplicationContext();
+        String lang = null;
+        try {
+            lang = ctx.getSharedPreferences(LangPrefs.PREFS_NAME, Context.MODE_PRIVATE)
+                    .getString(LangPrefs.KEY_LANG, null);
+        } catch (Throwable ignored) { }
+        if (lang == null || lang.isEmpty()) return ctx.getResources();
+        try {
+            Configuration cfg = new Configuration(ctx.getResources().getConfiguration());
+            cfg.setLocale(Locale.forLanguageTag(lang));
+            return ctx.createConfigurationContext(cfg).getResources();
+        } catch (Throwable e) {
+            Log.w(TAG, "Locale override failed for " + lang + ": " + e.getMessage());
+            return ctx.getResources();
+        }
+    }
+
+    /**
+     * Pull entry {@code i} out of a parallel title/body/URL triple, wrapping
+     * when the index runs past the end. Returns {title, body, url}.
+     */
+    private String[] entry(Resources res, int titlesId, int bodiesId, String[] urls, int i) {
+        String[] titles = res.getStringArray(titlesId);
+        String[] bodies = res.getStringArray(bodiesId);
+        // Never trust the three to agree: a translator adding an item to one
+        // array and not the others would otherwise crash the worker.
+        int n = Math.min(titles.length, Math.min(bodies.length, urls.length));
+        if (n <= 0) return null;
+        int k = ((i % n) + n) % n;
+        return new String[] { titles[k], bodies[k], urls[k] };
     }
 
     @NonNull
@@ -144,6 +193,8 @@ public class PeriodicUpdateWorker extends Worker {
             type = (type + 1) % 5;
             prefs.edit().putInt(KEY_TYPE, type).apply();
 
+            Resources res = localizedResources();
+
             String title;
             String body;
             String url;
@@ -152,34 +203,37 @@ public class PeriodicUpdateWorker extends Worker {
                 case 0:
                 case 4:
                     // Price update — deep link to market index
-                    title = "📊 Price Update";
-                    body = fetchPriceSummary();
+                    title = res.getString(R.string.notif_price_update_title);
+                    body = fetchPriceSummary(res);
                     url = "https://walletlens.live/market-index";
                     break;
                 case 1: {
                     int hi = prefs.getInt(KEY_HACK, 0);
-                    if (hi >= HACKS.length) hi = 0;
-                    title = "💡 " + HACKS[hi][0];
-                    body = HACKS[hi][1];
-                    url = HACKS[hi][2];
+                    String[] e = entry(res, R.array.notif_hack_titles, R.array.notif_hack_bodies, HACK_URLS, hi);
+                    if (e == null) return Result.success();
+                    title = "💡 " + e[0];
+                    body = e[1];
+                    url = e[2];
                     prefs.edit().putInt(KEY_HACK, hi + 1).apply();
                     break;
                 }
                 case 2: {
                     int ai = prefs.getInt(KEY_ACADEMY, 0);
-                    if (ai >= ACADEMY.length) ai = 0;
-                    title = ACADEMY[ai][0];
-                    body = ACADEMY[ai][1];
-                    url = ACADEMY[ai][2];
+                    String[] e = entry(res, R.array.notif_academy_titles, R.array.notif_academy_bodies, ACADEMY_URLS, ai);
+                    if (e == null) return Result.success();
+                    title = e[0];
+                    body = e[1];
+                    url = e[2];
                     prefs.edit().putInt(KEY_ACADEMY, ai + 1).apply();
                     break;
                 }
                 default: {
                     int fi = prefs.getInt(KEY_FEATURE, 0);
-                    if (fi >= FEATURES.length) fi = 0;
-                    title = "💡 " + FEATURES[fi][0];
-                    body = FEATURES[fi][1];
-                    url = FEATURES[fi][2];
+                    String[] e = entry(res, R.array.notif_feature_titles, R.array.notif_feature_bodies, FEATURE_URLS, fi);
+                    if (e == null) return Result.success();
+                    title = "💡 " + e[0];
+                    body = e[1];
+                    url = e[2];
                     prefs.edit().putInt(KEY_FEATURE, fi + 1).apply();
                     break;
                 }
@@ -203,7 +257,7 @@ public class PeriodicUpdateWorker extends Worker {
 
     // ── Price fetching ────────────────────────────────────────────────
 
-    private String fetchPriceSummary() {
+    private String fetchPriceSummary(Resources res) {
         try {
             String json = httpGet(CRYPTO_URL);
             JSONObject data = new JSONObject(json);
@@ -234,14 +288,14 @@ public class PeriodicUpdateWorker extends Worker {
                 if (arr.length() > 0) {
                     double goldPrice = arr.getJSONObject(0).getDouble("price");
                     if (sb.length() > 0) sb.append("\n");
-                    sb.append("🥇 Gold $").append(String.format(Locale.US, "%.0f", goldPrice));
+                    sb.append("🥇 ").append(res.getString(R.string.notif_gold)).append(" $").append(String.format(Locale.US, "%.0f", goldPrice));
                 }
             } catch (Throwable ignored) {}
 
             if (sb.length() > 0) return sb.toString();
-            return "Check market index for latest prices";
+            return res.getString(R.string.notif_price_fallback);
         } catch (Throwable e) {
-            return "Prices loading — check market index";
+            return res.getString(R.string.notif_price_loading);
         }
     }
 

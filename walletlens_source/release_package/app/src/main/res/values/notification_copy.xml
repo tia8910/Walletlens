@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated. The notification copy PeriodicUpdateWorker shows on the
+     lock screen. Titles and bodies are parallel arrays: index i of
+     *_titles goes with index i of *_bodies and with the URL at index i
+     of the matching array in PeriodicUpdateWorker.java. Keep all three
+     the same length. -->
+<resources>
+    <string-array name="notif_hack_titles">
+        <item>📈 Dollar-Cost Averaging</item>
+        <item>🛡️ Diversification</item>
+        <item>📉 Buy the Dips</item>
+        <item>💰 Compound Interest</item>
+        <item>🎯 Set Stop-Losses</item>
+        <item>📊 Rebalance Quarterly</item>
+        <item>🔍 DYOR</item>
+        <item>💵 Emergency Fund First</item>
+        <item>📋 Track Everything</item>
+        <item>🧠 Avoid FOMO</item>
+        <item>📅 Invest Consistently</item>
+        <item>🔒 Cold Storage</item>
+        <item>📊 Check Correlations</item>
+        <item>💡 Tax-Loss Harvesting</item>
+        <item>🌍 Think Globally</item>
+        <item>📈 Trend Following</item>
+        <item>⚡ Stay Liquid</item>
+        <item>📚 Never Stop Learning</item>
+        <item>🎯 Set Goals</item>
+        <item>💪 Stay Calm</item>
+    </string-array>
+    <string-array name="notif_hack_bodies">
+        <item>Invest fixed amounts regularly — removes emotions from timing the market</item>
+        <item>Spread across crypto, stocks, gold, cash — don\'t put all eggs in one basket</item>
+        <item>When everyone is fearful, consider buying — markets always cycle</item>
+        <item>Reinvest gains to grow exponentially — time is your biggest ally</item>
+        <item>Define your exit before entering — protects from bad decisions</item>
+        <item>Adjust allocations every 3 months to maintain target risk</item>
+        <item>Always research before investing — understand what you own</item>
+        <item>Keep 3-6 months of expenses in cash before investing</item>
+        <item>Use WalletLens — what gets measured gets managed</item>
+        <item>Fear of Missing Out leads to buying high — stay disciplined</item>
+        <item>Small consistent investments beat timing the market</item>
+        <item>Large crypto holdings belong in hardware wallets, not exchanges</item>
+        <item>Gold and stocks sometimes move together — know your portfolio</item>
+        <item>Sell losing positions to offset gains — WalletLens tracks P&amp;L</item>
+        <item>International diversification reduces country-specific risk</item>
+        <item>The trend is your friend — don\'t fight the market direction</item>
+        <item>Keep cash ready for opportunities during market dips</item>
+        <item>Best investors never stop learning — use Academy</item>
+        <item>Define financial goals — WalletLens milestones track progress</item>
+        <item>Markets crash and recover — panic selling locks in losses</item>
+    </string-array>
+    <string-array name="notif_academy_titles">
+        <item>🎓 What is RSI?</item>
+        <item>📈 MACD Explained</item>
+        <item>📊 Bollinger Bands</item>
+        <item>🕯️ Candlestick Patterns</item>
+        <item>📉 Support &amp; Resistance</item>
+        <item>⚖️ Risk-Reward Ratio</item>
+        <item>🧮 Position Sizing</item>
+        <item>📉 Volatility Index (VIX)</item>
+        <item>🔄 Dollar-Cost Averaging</item>
+        <item>🎯 Asset Allocation</item>
+        <item>📊 Market Cap Weighted</item>
+        <item>🌍 Global Macro</item>
+        <item>💡 On-Chain Analysis</item>
+        <item>📊 Relative Strength</item>
+        <item>🧠 Sentiment Analysis</item>
+        <item>⚡ Lightning Network</item>
+        <item>🔐 Hardware Wallets</item>
+        <item>📉 Drawdown Recovery</item>
+        <item>🏦 DeFi Explained</item>
+        <item>📜 Whitepaper Reading</item>
+    </string-array>
+    <string-array name="notif_academy_bodies">
+        <item>Relative Strength Index — measures overbought/oversold conditions above 70 or below 30</item>
+        <item>Moving Average Convergence Divergence — trend-following momentum indicator</item>
+        <item>Volatility bands plotted 2 standard deviations from a moving average</item>
+        <item>Learn Doji, Hammer, Engulfing and other patterns to read price action</item>
+        <item>Key price levels where buying or selling pressure concentrates</item>
+        <item>Always calculate potential loss vs gain before entering a trade</item>
+        <item>Never risk more than 1-2% of portfolio on a single trade</item>
+        <item>The VIX measures market fear — high readings mean high uncertainty</item>
+        <item>Invest a fixed amount on a schedule regardless of price</item>
+        <item>Divide your portfolio between stocks, bonds, crypto based on goals</item>
+        <item>Large-cap assets carry more weight in most index funds</item>
+        <item>Interest rates, inflation and geopolitics drive all markets</item>
+        <item>Blockchain data reveals whale movements and network health</item>
+        <item>Compare asset performance vs benchmark to find winners</item>
+        <item>Social metrics and fear/greed index gauge market mood</item>
+        <item>Bitcoin\'s Layer 2 for instant low-fee payments</item>
+        <item>Store private keys offline — immune to online hacks</item>
+        <item>A 50% drop needs 100% gain to break even — manage risk</item>
+        <item>Decentralised Finance — lend, borrow and earn without intermediaries</item>
+        <item>Always read the whitepaper — understand what you invest in</item>
+    </string-array>
+    <string-array name="notif_feature_titles">
+        <item>🛡️ Portfolio Guardian</item>
+        <item>📸 Screenshot Import</item>
+        <item>🎙️ Voice Import</item>
+        <item>📲 Move to a New Phone</item>
+        <item>🛡️ Your Dead-Man\'s Switch</item>
+        <item>📸 Skip the Typing</item>
+        <item>🎙️ Log Trades Hands-Free</item>
+        <item>📲 Portfolio in a QR Code</item>
+        <item>🤖 AI Advisor</item>
+        <item>🔒 Biometric Lock</item>
+        <item>😱 Fear &amp; Greed</item>
+        <item>🐋 Whale Alerts</item>
+    </string-array>
+    <string-array name="notif_feature_bodies">
+        <item>Set a check-in. If you ever stop responding, your holdings reach the people you chose</item>
+        <item>Screenshot your exchange app — WalletLens reads every holding straight off the image</item>
+        <item>Just say it: \'I bought 0.5 BTC at 60k\' and the trade is logged</item>
+        <item>Scan one QR code to carry your whole portfolio across — no account, no cloud</item>
+        <item>Portfolio Guardian makes sure your crypto isn\'t lost if you can\'t reach it</item>
+        <item>Import a whole exchange balance from one screenshot — Binance, Coinbase, anything</item>
+        <item>Speak several trades in one sentence — English or Arabic</item>
+        <item>Your entire portfolio as a scannable code. Move devices in seconds</item>
+        <item>Health score, diversification grade and a stress test on your real holdings</item>
+        <item>Fingerprint or face unlock before your net worth is visible</item>
+        <item>Know the market\'s mood before you trade</item>
+        <item>Track large crypto transactions in real time</item>
+    </string-array>
+    <string name="notif_price_update_title">📊 Price Update</string>
+    <string name="notif_price_fallback">Check market index for latest prices</string>
+    <string name="notif_price_loading">Prices loading — check market index</string>
+    <string name="notif_gold">Gold</string>
+</resources>
