@@ -831,7 +831,7 @@ function computeAssetMix(enriched, totalValue) {
 // because these run at module scope, with no hook to translate from.
 const EVAL_CATEGORIES = [
   {
-    id: 'asset_mix',
+    id: 'asset_mix', action: 'buy',
     labelKey: 'cchCatAssetMix',
     icon: 'grid',
     color: 'var(--g-ink)', fontWeight: 700,
@@ -851,7 +851,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'btc_anchor',
+    id: 'btc_anchor', action: 'buy',
     labelKey: 'cchCatBtcAnchor',
     icon: '₿',
     color: '#f7931a',
@@ -867,7 +867,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'eth_exposure',
+    id: 'eth_exposure', action: 'buy',
     labelKey: 'cchCatEthExposure',
     icon: 'Ξ',
     color: '#627eea',
@@ -881,7 +881,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'diversification',
+    id: 'diversification', action: 'buy',
     labelKey: 'cchCatDiversification',
     icon: 'scale',
     color: 'var(--g-ink)', fontWeight: 700,
@@ -896,7 +896,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'cash_reserve',
+    id: 'cash_reserve', action: 'buy',
     labelKey: 'cchCatCash',
     icon: 'bank',
     color: '#60a5fa',
@@ -909,7 +909,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'large_cap',
+    id: 'large_cap', action: 'buy',
     labelKey: 'cchCatLargeCap',
     icon: 'award',
     color: '#3b82f6',
@@ -925,7 +925,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'stock_sectors',
+    id: 'stock_sectors', action: 'buy',
     labelKey: 'cchCatStockSectors',
     icon: 'grid',
     color: '#818cf8',
@@ -941,7 +941,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'sell_targets',
+    id: 'sell_targets', action: 'targets',
     labelKey: 'cchCatSellTargets',
     icon: 'target',
     color: '#fbbf24',
@@ -980,9 +980,28 @@ function computeWalletEval(enriched, totalValue, targets = []) {
       return { ...cat, ...result }
     })
   const overall = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-  const missing = results.filter(r => !r.pass)
-  const strong = results.filter(r => r.pass)
+  // Worst first. The old layout rendered these in declaration order, so a 95
+  // and a 10 got the same weight and the same position — you had to read nine
+  // rows to find the one that mattered. Ascending score is a good enough proxy
+  // for impact while the categories carry no explicit weight.
+  const missing = results.filter(r => !r.pass).sort((a, b) => a.score - b.score)
+  const strong = results.filter(r => r.pass).sort((a, b) => b.score - a.score)
   return { results, overall, missing, strong }
+}
+
+/**
+ * Score → verdict tone.
+ *
+ * The category colours (Bitcoin orange, Ethereum blue) say which asset a row is
+ * about, not how it is doing, so using them for the bar made the two healthiest
+ * rows the brightest things on screen and left a score of 10 looking calm. Tone
+ * drives the bar, the number and the rail; the category colour survives only as
+ * the icon tint, where recognition helps and nothing competes with it.
+ */
+function verdictTone(score) {
+  if (score >= 80) return 'good'
+  if (score >= 55) return 'warn'
+  return 'bad'
 }
 
 function EvalScoreRing({ score }) {
@@ -1020,10 +1039,95 @@ function EvalScoreRing({ score }) {
   )
 }
 
-const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets }) {
+// How many gaps get the full treatment. A single-asset portfolio fails five
+// checks at once, and five expanded cards run longer than the nine-row layout
+// this replaces — so the tail collapses to one-line rows. Two is enough to
+// carry the diagnosis without turning the section back into a wall.
+const EVAL_EXPANDED_GAPS = 2
+
+/**
+ * One failing pillar.
+ *
+ * Expanded it carries the reason and the button that closes it; collapsed it
+ * is a single row you can tap open. Hierarchy comes from that split rather
+ * than from colour, because every score below 55 is the same red — five red
+ * cards of equal weight is the same "nothing stands out" problem the old
+ * layout had, just in a different hue.
+ */
+function EvalGapCard({ cat, onAction, defaultOpen }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(defaultOpen)
+  const tone = verdictTone(cat.score)
+  const actionKey = cat.action === 'targets' ? 'evalActionTargets' : cat.action === 'buy' ? 'evalActionBuy' : null
+  return (
+    <div className={`eval-gap eval-tone-${tone}${open ? ' eval-gap-open' : ''}`} style={{ '--eval-color': cat.color }}>
+      <button type="button" className="eval-gap-top" aria-expanded={open}
+        onClick={() => { const o = !open; setOpen(o); if (o) track('eval_cat_expand', { cat: cat.id, score: cat.score }) }}>
+        <span className="eval-gap-icon">
+          {cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}
+        </span>
+        <span className="eval-gap-label">{t(cat.labelKey)}</span>
+        <span className="eval-gap-score">{cat.score}</span>
+        {!open && <span className="eval-gap-chev">▾</span>}
+      </button>
+      <div className="eval-gap-bar-wrap">
+        <div className="eval-gap-bar" style={{ width: `${Math.max(cat.score, 2)}%` }} />
+      </div>
+      {open && (
+        <>
+          {/* The only part of the row that says what to do. It used to be
+              behind a tap for every pillar, including the worst one. */}
+          <div className="eval-gap-tip">{renderTip(cat.tip, t)}</div>
+          {actionKey && onAction && (
+            <button type="button" className="eval-gap-action"
+              onClick={() => onAction(cat.action, cat.id)}>
+              {t(actionKey)} <span className="eval-gap-arrow">→</span>
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** The pillars that pass, as one strip of chips instead of six full rows. */
+function EvalPassStrip({ items }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  if (!items.length) return null
+  return (
+    <div className="eval-pass">
+      <button type="button" className="eval-pass-head" onClick={() => setOpen(v => !v)} aria-expanded={open}>
+        <span className="eval-pass-tick"><Icon name="check" size={12} /></span>
+        <span className="eval-pass-title">{t('evalPassingCount')(items.length)}</span>
+        <span className="eval-pass-toggle">{open ? t('evalHidePassing') : t('evalShowPassing')}</span>
+        <span className={`eval-pass-chev${open ? ' open' : ''}`}>▾</span>
+      </button>
+      <div className="eval-pass-chips">
+        {items.map(cat => (
+          <span key={cat.id} className="eval-chip" style={{ '--eval-color': cat.color }} title={t(cat.labelKey)}>
+            <span className="eval-chip-icon">{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={13} />}</span>
+            <span className="eval-chip-score">{cat.score}</span>
+          </span>
+        ))}
+      </div>
+      {open && (
+        <div className="eval-pass-list">
+          {items.map(cat => (
+            <div key={cat.id} className="eval-pass-row">
+              <span className="eval-pass-row-label">{t(cat.labelKey)}</span>
+              <span className="eval-pass-row-tip">{renderTip(cat.tip, t)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
   const { t } = useLanguage()
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
-  const [expanded, setExpanded] = useState(null)
 
   if (!enriched.length) return (
     <div className="dvx-form-page">
@@ -1035,59 +1139,53 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
     </div>
   )
 
-  const { results, overall, missing } = eval_
+  const { overall, missing, strong } = eval_
 
   return (
     <div className="dvx-form-page">
-      {/* Header score */}
+      {/* Score, compact: ring beside the verdict rather than above nine rows,
+          so the number and the first gap share a screen. */}
       <div className="glass-card eval-header-card">
+        <EvalScoreRing score={overall} />
         <div className="eval-header-left">
-          <h2 style={{ margin:0, fontSize:'1.25rem' }}>{t('dsWalletEvaluation')}</h2>
-          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>{t('dsWhatMissing')}</p>
-          {missing.length > 0 && (
+          <h2 className="eval-header-title">{t('dsWalletEvaluation')}</h2>
+          <p className="eval-header-sub">{t('dsWhatMissing')}</p>
+          {missing.length > 0 ? (
             <div className="eval-missing-count">
-              <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
+              <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />
+              {t('evalGapsFound')(missing.length)}
             </div>
-          )}
-          {missing.length === 0 && (
-            <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
-              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>{t('dsAllChecksPassed')}</div>
+          ) : (
+            <div className="eval-missing-count eval-all-clear">
+              <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />
+              {t('dsAllChecksPassed')}
+            </div>
           )}
         </div>
-        <EvalScoreRing score={overall} />
       </div>
 
-      {/* Category cards */}
-      <div className="eval-grid">
-        {results.map(cat => (
-          <div key={cat.id}
-            className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${expanded === cat.id ? 'eval-cat-open' : ''}`}
-            onClick={() => { const opening = expanded !== cat.id; setExpanded(opening ? cat.id : null); if (opening) track('eval_cat_expand', { cat: cat.id, pass: cat.pass, score: cat.score }) }}
-            style={{ '--eval-color': cat.color }}>
-            <div className="eval-cat-header">
-              <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}</span>
-              <div className="eval-cat-info">
-                <div className="eval-cat-label">{t(cat.labelKey)}</div>
-                <div className="eval-cat-bar-wrap">
-                  <div className="eval-cat-bar" style={{ width: `${cat.score}%` }} />
-                </div>
-              </div>
-              <div className="eval-cat-right">
-                <span className="eval-cat-score" style={{ color: cat.color }}>{cat.score}</span>
-                <span className={`eval-cat-badge ${cat.pass ? 'eval-badge-pass' : 'eval-badge-fail'}`}>
-                  {cat.pass ? '✓' : '✗'}
-                </span>
-              </div>
-            </div>
-            {expanded === cat.id && (
-              <div className="eval-cat-tip">
-                <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g-ink)' : '#f59e0b' }} />
-                {renderTip(cat.tip, t)}
-              </div>
-            )}
+      {missing.length > 0 && (
+        <>
+          <div className="eval-section-head eval-section-fix">{t('evalFixThese')}</div>
+          <div className="eval-grid">
+            {missing.map((cat, i) => (
+              <EvalGapCard key={cat.id} cat={cat} defaultOpen={i < EVAL_EXPANDED_GAPS}
+                onAction={onAction && ((kind, id) => { track('eval_gap_action', { cat: id, kind }); onAction(kind, id) })} />
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {missing.length === 0 && (
+        <div className="eval-clear-banner">{t('evalNothingToFix')}</div>
+      )}
+
+      {strong.length > 0 && (
+        <>
+          <div className="eval-section-head">{t('evalPassing')}</div>
+          <EvalPassStrip items={strong} />
+        </>
+      )}
     </div>
   )
 })
@@ -5195,6 +5293,7 @@ export default function Dashboard() {
               enriched={enriched}
               totalValue={totalValue}
               targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
+              onAction={kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval')}
             />
           )}
 

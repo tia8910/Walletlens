@@ -111,3 +111,59 @@ describe('the import tree flips with the page', () => {
     expect(block).toMatch(/\[dir="rtl"\][^{]*\.wl-import-node-label[^{]*\{[^}]*text-align:\s*right/s)
   })
 })
+
+describe('the wallet evaluation flips with the page', () => {
+  const css = readFileSync(join(SRC, 'index.css'), 'utf8')
+  // The diagnosis layout only — Coach still uses the older .eval-cat-* rows,
+  // which live further down and are deliberately not held to this.
+  const block = css.slice(css.indexOf('.eval-tone-good'), css.indexOf('.eval-pass-row-tip'))
+
+  it('reads the right block', () => {
+    expect(block).toContain('.eval-gap-action')
+    expect(block).toContain('.eval-chip')
+  })
+
+  it('uses logical properties for the accent rail and padding', () => {
+    // The rail is a 4px stripe down the leading edge. As border-left or left:0
+    // it would sit on the wrong side of every card in Arabic — the same bug
+    // the import tree had.
+    const physical = block
+      .split('\n')
+      .filter(l => !l.trim().startsWith('*') && !l.trim().startsWith('/*'))
+      .filter(l => /(?:^|[\s;{])(?:padding-left|padding-right|margin-left|margin-right|border-left|border-right)\s*:/.test(l)
+                || /(?:^|[\s;{])(?:left|right)\s*:\s*[-\d]/.test(l))
+    expect(physical).toEqual([])
+  })
+
+  it('turns the action arrow around under RTL', () => {
+    // "Set a target →" points at the button it sits in. Left alone it would
+    // point away from the reading direction in Arabic.
+    expect(block).toMatch(/\[dir="rtl"\][^{]*\.eval-gap-arrow[^{]*\{[^}]*scaleX\(-1\)/s)
+  })
+})
+
+describe('the wallet evaluation copy is fully keyed', () => {
+  const src = readFileSync(join(SRC, 'pages/Dashboard.jsx'), 'utf8')
+  const section = src.slice(src.indexOf('function EvalGapCard'), src.indexOf('const TIMEFRAMES'))
+
+  it('reads the right section', () => {
+    expect(section).toContain('EvalPassStrip')
+    expect(section.length).toBeGreaterThan(1000)
+  })
+
+  it('has no English literals left in the markup', () => {
+    // The old header rendered `{missing.length} gap{s} found — tap each to fix`
+    // as a literal. It was the one line in this section that never got keyed,
+    // and it survived several full translation passes.
+    const prose = [...section.matchAll(/>\s*([A-Z][a-z]+(?:\s+[a-z]+){1,})/g)].map(m => m[1])
+    expect(prose).toEqual([])
+  })
+
+  for (const lang of LANGS) {
+    it(`layout keys resolve in ${lang}`, () => {
+      const keys = [...new Set([...section.matchAll(/t\('(eval[A-Z]\w+)'\)/g)].map(m => m[1]))]
+      expect(keys.length).toBeGreaterThan(3)
+      expect(keys.filter(k => translations[lang][k] === undefined)).toEqual([])
+    })
+  }
+})

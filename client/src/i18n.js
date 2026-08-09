@@ -1752,6 +1752,16 @@ export const translations = {
     saNextCliff: (days) => `Next cliff: ${days}d`,
     saShowAll: (n) => `▼ Show all ${n}`,
     saSignalCount: (n) => `${n} signals`,
+    // ── Wallet evaluation: diagnosis layout ─────────────────────
+    evalFixThese: 'Fix these',
+    evalPassing: 'Passing',
+    evalActionBuy: 'Add a holding',
+    evalActionTargets: 'Set a target',
+    evalNothingToFix: 'Nothing to fix — every check passed.',
+    evalShowPassing: 'Show',
+    evalHidePassing: 'Hide',
+    evalGapsFound: (n) => `${n} gap${n > 1 ? 's' : ''} found — worst first`,
+    evalPassingCount: (n) => `${n} passing`,
   },
 
   ar: {
@@ -3512,6 +3522,16 @@ export const translations = {
     saNextCliff: (days) => `الفتح القادم: بعد ${days} يوم`,
     saShowAll: (n) => `▼ عرض الكل (${n})`,
     saSignalCount: (n) => n === 1 ? 'إشارة واحدة' : n === 2 ? 'إشارتان' : n <= 10 ? `${n} إشارات` : `${n} إشارة`,
+    // ── Wallet evaluation: diagnosis layout ─────────────────────
+    evalFixThese: 'عالِج هذه',
+    evalPassing: 'مستوفاة',
+    evalActionBuy: 'أضِف أصلاً',
+    evalActionTargets: 'حدّد هدفاً',
+    evalNothingToFix: 'لا شيء يحتاج إصلاحاً — كل الفحوص مستوفاة.',
+    evalShowPassing: 'عرض',
+    evalHidePassing: 'إخفاء',
+    evalGapsFound: (n) => `${n === 1 ? 'ثغرة واحدة' : n === 2 ? 'ثغرتان' : n <= 10 ? `${n} ثغرات` : `${n} ثغرة`} — الأسوأ أولاً`,
+    evalPassingCount: (n) => `${n === 1 ? 'فحص واحد مستوفى' : n === 2 ? 'فحصان مستوفيان' : n <= 10 ? `${n} فحوص مستوفاة` : `${n} فحصاً مستوفى`}`,
   },
   fr: {
     watchlist: 'Liste de suivi',
@@ -5245,6 +5265,16 @@ export const translations = {
     saNextCliff: (days) => `Prochain palier : ${days} j`,
     saShowAll: (n) => `▼ Afficher les ${n}`,
     saSignalCount: (n) => `${n} signa${n > 1 ? 'ux' : 'l'}`,
+    // ── Wallet evaluation: diagnosis layout ─────────────────────
+    evalFixThese: 'À corriger',
+    evalPassing: 'Conformes',
+    evalActionBuy: 'Ajouter un actif',
+    evalActionTargets: 'Définir un objectif',
+    evalNothingToFix: 'Rien à corriger — tous les contrôles sont au vert.',
+    evalShowPassing: 'Afficher',
+    evalHidePassing: 'Masquer',
+    evalGapsFound: (n) => `${n} lacune${n > 1 ? 's' : ''} détectée${n > 1 ? 's' : ''} — la plus grave d'abord`,
+    evalPassingCount: (n) => `${n} au vert`,
   },
   es: {
     watchlist: 'Lista de seguimiento',
@@ -6978,6 +7008,16 @@ export const translations = {
     saNextCliff: (days) => `Próximo tramo: ${days} d`,
     saShowAll: (n) => `▼ Mostrar los ${n}`,
     saSignalCount: (n) => `${n} señal${n === 1 ? '' : 'es'}`,
+    // ── Wallet evaluation: diagnosis layout ─────────────────────
+    evalFixThese: 'Corrige esto',
+    evalPassing: 'Correctos',
+    evalActionBuy: 'Añadir un activo',
+    evalActionTargets: 'Definir un objetivo',
+    evalNothingToFix: 'Nada que corregir: todas las comprobaciones pasan.',
+    evalShowPassing: 'Mostrar',
+    evalHidePassing: 'Ocultar',
+    evalGapsFound: (n) => `${n} carencia${n === 1 ? '' : 's'} detectada${n === 1 ? '' : 's'}: la peor primero`,
+    evalPassingCount: (n) => `${n} correctos`,
   },
 }
 

@@ -1224,6 +1224,18 @@ input, select, textarea {
 
 /* ── Wallet Eval tab ── */
 [data-wl-light] .eval-ring-track { stroke: rgba(15,23,42,0.08); }
+[data-wl-light] .eval-gap,
+[data-wl-light] .eval-pass {
+  background: linear-gradient(180deg, #ffffff, var(--surface-1));
+  border-color: rgba(15,23,42,0.07);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+[data-wl-light] .eval-gap-bar-wrap { background: rgba(15,23,42,0.09); }
+/* The dark palette's ink shades wash out on white — the amber especially,
+   which is the tone a "needs work" row leans on most. */
+[data-wl-light] .eval-tone-warn { --eval-tone-ink: #b45309; }
+[data-wl-light] .eval-tone-bad  { --eval-tone-ink: #dc2626; }
+/* Coach's row layout, still in use there. */
 [data-wl-light] .eval-cat-card {
   background: linear-gradient(180deg, #ffffff, var(--surface-1));
   border-color: rgba(15,23,42,0.07);
@@ -9880,16 +9892,174 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .acad-article-card:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.14); }
 [data-wl-light] .acad-article-title { color: rgba(0,0,0,0.85); }
 
-/* ── Wallet Evaluation ───────────────────────────────────────────────────── */
-.eval-header-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.eval-header-left { flex: 1; min-width: 0; }
-.eval-missing-count { margin-top: 0.6rem; font-size: 0.82rem; font-weight: 700; color: var(--amber); }
-.eval-ring-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
-.eval-ring-track { stroke: rgba(255,255,255,0.09); }
-.eval-ring-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; }
-.eval-ring-score { font-size: 2.15rem; font-weight: 900; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.eval-ring-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.9; }
+/* ── Wallet Evaluation ─────────────────────────────────────────────────────
+ *
+ * Laid out as a diagnosis rather than a scoreboard. Nine near-identical rows
+ * ran to roughly 1000px and gave a score of 10 the same weight and the same
+ * position as a 95, so finding the problem meant reading all of them. Now the
+ * failures come first, worst first, with their tip already open and the button
+ * that fixes them; the passing ones collapse into a single chip strip.
+ *
+ * Colour carries the verdict, not the asset. --eval-color (Bitcoin orange,
+ * Ethereum blue) is kept for the icon only.
+ *
+ * Everything here is logical — the accent rail is exactly the border-left that
+ * broke the import tree under Arabic.
+ */
+.eval-tone-good { --eval-tone: var(--g); --eval-tone-ink: var(--g-ink); }
+.eval-tone-warn { --eval-tone: #f59e0b; --eval-tone-ink: #fbbf24; }
+.eval-tone-bad  { --eval-tone: #ef4444; --eval-tone-ink: #f87171; }
 
+.eval-header-card { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.eval-header-left { flex: 1; min-width: 0; }
+.eval-header-title { margin: 0; font-size: 1.15rem; letter-spacing: -0.01em; }
+.eval-header-sub { margin: 0.3rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+.eval-missing-count { margin-top: 0.6rem; font-size: 0.82rem; font-weight: 700; color: var(--amber); }
+.eval-all-clear { color: var(--g-ink); }
+
+.eval-section-head {
+  margin: 1.25rem 0 0.6rem; font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-sub);
+}
+.eval-section-fix { color: #f87171; }
+
+.eval-clear-banner {
+  margin-top: 1rem; padding: 0.9rem 1.05rem; border-radius: 14px;
+  font-size: 0.86rem; font-weight: 600; color: var(--g-ink);
+  background: rgba(var(--g-rgb), 0.10);
+  box-shadow: inset 0 0 0 1px rgba(var(--g-rgb), 0.28);
+}
+
+/* ── A failing pillar ── */
+.eval-gap {
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012));
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 0.7rem 0.95rem;
+  padding-inline-start: 1.15rem;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+/* The two open cards are the headline; the collapsed tail is the list under
+   it. Hierarchy lives in this split, not in colour — every score below 55 is
+   the same red, so five equal red cards stand out no better than nine equal
+   grey rows did. */
+.eval-gap-open {
+  border-radius: 16px;
+  padding: 0.95rem 1.05rem;
+  padding-inline-start: 1.25rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--eval-tone) 8%, transparent), rgba(255,255,255,0.02));
+  border-color: color-mix(in srgb, var(--eval-tone) 26%, transparent);
+}
+/* Accent rail. inset-inline-start so it leads the row in both directions. */
+.eval-gap::before {
+  content: ''; position: absolute; inset-inline-start: 0; inset-block: 0; width: 4px;
+  background: linear-gradient(180deg, var(--eval-tone), color-mix(in srgb, var(--eval-tone) 45%, transparent));
+}
+.eval-gap-top {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%;
+  background: none; border: none; padding: 0; cursor: pointer; color: inherit;
+  text-align: start;
+}
+.eval-gap-chev { font-size: 0.7rem; color: var(--text-sub); flex-shrink: 0; }
+.eval-gap-icon {
+  width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 1.02rem;
+  background: color-mix(in srgb, var(--eval-color, var(--g)) 16%, transparent);
+  color: var(--eval-color, var(--g));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eval-color, var(--g)) 30%, transparent);
+}
+.eval-gap-open .eval-gap-icon { width: 34px; height: 34px; border-radius: 11px; }
+.eval-gap-label {
+  flex: 1; min-width: 0; font-size: 0.94rem; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--text);
+}
+.eval-gap-score {
+  font-size: 1.15rem; font-weight: 900; line-height: 1; flex-shrink: 0;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  color: var(--eval-tone-ink);
+}
+.eval-gap-open .eval-gap-score { font-size: 1.35rem; }
+.eval-gap-bar-wrap {
+  height: 4px; margin-top: 0.55rem; border-radius: 99px; overflow: hidden;
+  background: rgba(255,255,255,0.09);
+}
+.eval-gap-open .eval-gap-bar-wrap { height: 5px; margin-top: 0.7rem; }
+.eval-gap-bar {
+  height: 100%; border-radius: 99px; transition: width 1s ease;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--eval-tone) 55%, transparent), var(--eval-tone));
+}
+.eval-gap-tip {
+  margin-top: 0.7rem; font-size: 0.83rem; line-height: 1.6; color: var(--text-muted);
+}
+.eval-gap-action {
+  margin-top: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.9rem; border-radius: 10px; cursor: pointer;
+  font-size: 0.8rem; font-weight: 700;
+  color: var(--eval-tone-ink);
+  background: color-mix(in srgb, var(--eval-tone) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--eval-tone) 34%, transparent);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.eval-gap-action:hover { background: color-mix(in srgb, var(--eval-tone) 24%, transparent); }
+.eval-gap-action:active { transform: scale(0.97); }
+/* The arrow points at the action, so it has to turn around in Arabic. */
+[dir="rtl"] .eval-gap-arrow { display: inline-block; transform: scaleX(-1); }
+
+/* ── The passing pillars, as one strip ── */
+.eval-pass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 0.85rem 1rem;
+}
+.eval-pass-head {
+  display: flex; align-items: center; gap: 0.55rem; width: 100%;
+  background: none; border: none; padding: 0; cursor: pointer; color: inherit;
+  text-align: start;
+}
+.eval-pass-tick {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--g-ink); background: rgba(var(--g-rgb), 0.18);
+}
+.eval-pass-title { flex: 1; min-width: 0; font-size: 0.86rem; font-weight: 700; color: var(--text); }
+.eval-pass-toggle { font-size: 0.76rem; font-weight: 700; color: var(--text-sub); }
+.eval-pass-chev { font-size: 0.7rem; color: var(--text-sub); transition: transform 0.2s ease; }
+.eval-pass-chev.open { transform: rotate(180deg); }
+
+.eval-pass-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.eval-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.32rem 0.6rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--eval-color, var(--g)) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eval-color, var(--g)) 26%, transparent);
+}
+.eval-chip-icon { display: flex; color: var(--eval-color, var(--g)); font-size: 0.82rem; }
+.eval-chip-score {
+  font-size: 0.76rem; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.eval-pass-list { margin-top: 0.85rem; display: flex; flex-direction: column; gap: 0.7rem; animation: fadeInUp 0.2s ease; }
+.eval-pass-row { display: flex; flex-direction: column; gap: 0.15rem; }
+.eval-pass-row-label { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.eval-pass-row-tip { font-size: 0.79rem; line-height: 1.55; color: var(--text-muted); }
+.eval-ring-wrap { position: relative; width: 112px; height: 112px; flex-shrink: 0; }
+.eval-ring-wrap svg { width: 112px; height: 112px; }
+.eval-ring-track { stroke: rgba(255,255,255,0.09); }
+.eval-ring-inner {
+  position: absolute; inset: 0 -14px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.15rem; text-align: center;
+}
+.eval-ring-score { font-size: 1.85rem; font-weight: 900; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.eval-ring-label {
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; opacity: 0.9; line-height: 1.2; max-width: 100%;
+}
+
+/* Coach has its own wallet evaluation and still uses this row layout. The
+ * dashboard's copy moved to the .eval-gap / .eval-pass diagnosis layout above;
+ * these stay until Coach follows, and deleting them blanks that page. */
 .eval-grid { display: flex; flex-direction: column; gap: 0.6rem; }
 .eval-cat-card {
   position: relative;
