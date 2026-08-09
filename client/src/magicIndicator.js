@@ -938,14 +938,20 @@ export function computeMagic({ ta, signals, fundamental, assetClass } = {}) {
     raw.correlation = pillarCorrelation(signals, fundamental)
   }
 
+  // labelKey has to travel with every pillar. This mapper rebuilds the objects
+  // rather than spreading the definition, so leaving it out is valid
+  // JavaScript that builds and renders clean — the row keeps its dot, bar and
+  // score, and only the name silently disappears, because t(undefined) returns
+  // undefined and React renders nothing for it. Every pillar name in the Magic
+  // Indicator was blank in all four languages until this was put back.
   const pillars = pillarDefs.map((d) => {
     const r = raw[d.key]
     if (r.available) {
-      return { key: d.key, label: d.label, weight: d.weight, available: true, score: r.score, note: r.note, quality: r.quality || 'live', estimated: false }
+      return { key: d.key, label: d.label, labelKey: d.labelKey, weight: d.weight, available: true, score: r.score, note: r.note, quality: r.quality || 'live', estimated: false }
     }
     // Last-resort neutral so the row reads "0" instead of "n/a". Marked
     // `none`/`estimated` so it's excluded from the composite & confidence.
-    return { key: d.key, label: d.label, weight: d.weight, available: true, score: 0, note: 'limited data — neutral', quality: 'none', estimated: true }
+    return { key: d.key, label: d.label, labelKey: d.labelKey, weight: d.weight, available: true, score: 0, note: 'limited data — neutral', quality: 'none', estimated: true }
   })
 
   // Effective weight by data quality: live data at full weight, proxies (price

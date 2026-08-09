@@ -27,9 +27,9 @@ const RISKY_CAP = { cautious: 25, balanced: 35, aggressive: 50 }
 const SAFE_FACTOR = { cautious: 1.0, balanced: 0.7, aggressive: 0.4 }
 const SAFE_MAX = { cautious: 75, balanced: 55, aggressive: 30 }
 const PROFILES = [
-  { id: 'cautious',   label: 'Cautious',   sub: 'Investor · low risk' },
-  { id: 'balanced',   label: 'Balanced',   sub: 'A steady mix' },
-  { id: 'aggressive', label: 'Aggressive', sub: 'Trader · high risk' },
+  { id: 'cautious',   labelKey: 'rbCautious',   subKey: 'rbCautiousSub' },
+  { id: 'balanced',   labelKey: 'rbBalanced',   subKey: 'rbBalancedSub' },
+  { id: 'aggressive', labelKey: 'rbAggressive', subKey: 'rbAggressiveSub' },
 ]
 const SAFE = ['cash', 'stable', 'metal']
 
@@ -161,21 +161,21 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
         <div className="wl-reb-profiles">
           {PROFILES.map(p => (
             <button key={p.id} className={`wl-reb-profile${profile === p.id ? ' active' : ''}`} onClick={() => applyProfile(p.id)}>
-              <strong>{p.label}</strong><em>{p.sub}</em>
+              <strong>{t(p.labelKey)}</strong><em>{t(p.subKey)}</em>
             </button>
           ))}
         </div>
 
         {advice.length > 0 && (
           <div className="wl-reb-advice">
-            <div className="wl-reb-advice-title"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />To stay on the safe side</div>
+            <div className="wl-reb-advice-title"><Icon name="lightbulb" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('rbSafeSide')}</div>
             {advice.map((a, i) => <p key={i}>{a}</p>)}
           </div>
         )}
 
         <div className="wl-reb-actions">
           <button className="wl-reb-quick" onClick={resetCurrent}>{t('rbResetToCurrent')}</button>
-          <span className={`wl-reb-sum ${sumOff ? 'off' : 'ok'}`}>Targets {targetSum.toFixed(0)}%</span>
+          <span className={`wl-reb-sum ${sumOff ? 'off' : 'ok'}`}>{t('rbTargetsSum')(targetSum.toFixed(0))}</span>
         </div>
 
         <div className="wl-reb-list">
@@ -195,7 +195,7 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
                   <em>%</em>
                 </span>
                 <span className={`wl-reb-act ${on ? 'flat' : r.diff > 0 ? 'buy' : 'sell'}`}>
-                  {on ? 'On target' : `${r.diff > 0 ? 'Buy' : 'Sell'} ${money(Math.abs(r.diff))}`}
+                  {on ? t('rbOnTarget') : t(r.diff > 0 ? 'rbBuyAmount' : 'rbSellAmount')(money(Math.abs(r.diff)))}
                 </span>
               </div>
             )
@@ -204,8 +204,8 @@ export default function RebalancePanel({ open, onClose, holdings, cv }) {
 
         <div className="wl-reb-foot">
           {sumOff
-            ? <span className="wl-reb-hint">Targets add up to {targetSum.toFixed(0)}% — aim for 100%.</span>
-            : <span className="wl-reb-hint ok">Targets balanced at 100% ✓</span>}
+            ? <span className="wl-reb-hint">{t('rbTargetsOff')(targetSum.toFixed(0))}</span>
+            : <span className="wl-reb-hint ok">{t('rbBalancedOk')}</span>}
           <button className="wl-reb-done" onClick={onClose}>{t('rbDone')}</button>
         </div>
       </div>

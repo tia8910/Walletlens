@@ -13,6 +13,8 @@ import { useLanguage } from '../LanguageContext'
 
 // Translation keys, not text: these are hover tooltips describing what each
 // pillar measures, and they were the last English left in the panel.
+const TREND_KEYS = { uptrend: 'taUptrend', downtrend: 'taDowntrend', sideways: 'taSideways' }
+
 const PILLAR_INFO = {
   technical:   'miInfoTechnical',
   momentum:    'miInfoMomentum',
@@ -673,7 +675,7 @@ function AssetCard({ item, onOpen }) {
 
       {ta && (
         <div className="magic-ta-strip">
-          {ta.trend && <span>{ta.trend}</span>}
+          {ta.trend && <span>{t(TREND_KEYS[ta.trend]) || ta.trend}</span>}
           {ta.rsi != null && <span>RSI {Math.round(ta.rsi)}</span>}
           {ta.nearestSupport != null && <span>S {money(ta.nearestSupport)}</span>}
           {ta.nearestResistance != null && <span>R {money(ta.nearestResistance)}</span>}

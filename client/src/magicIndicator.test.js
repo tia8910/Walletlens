@@ -3,6 +3,7 @@ import {
   pillarTechnical, pillarVolume, pillarWhales, pillarOnchain, pillarFundamental,
   directionMeta, computeMagic, aggregateMagic,
 } from './magicIndicator'
+import { translations } from './i18n'
 
 const bullishTA = { score: 60, trend: 'uptrend', rsi: 58, macd: { cross: 'bullish' } }
 const bearishTA = { score: -60, trend: 'downtrend', rsi: 32, macd: { cross: 'bearish' } }
@@ -119,4 +120,57 @@ describe('aggregateMagic', () => {
     expect(aggregateMagic([])).toBeNull()
     expect(aggregateMagic([{ value: 0, magic: null }])).toBeNull()
   })
+})
+
+// ── Pillar labels ──────────────────────────────────────────────────────────
+//
+// computeMagic rebuilds each pillar object field by field rather than
+// spreading the definition, so a field left out of that mapper vanishes
+// silently. labelKey did exactly that: the build stayed green, the rows kept
+// their dot, bar and score, and only the name disappeared — in every language,
+// because t(undefined) returns undefined and React renders nothing for it.
+//
+// The mapper has TWO return statements, one per branch. Calling computeMagic
+// with no data only ever reaches the second, so the first version of this test
+// passed happily while the live branch was broken. Both branches are covered
+// here, and each is asserted to be non-empty so neither can go vacuous again.
+describe('every pillar carries a resolvable label key', () => {
+  const CLASSES = ['crypto', 'stock', 'metal']
+  const LANGS = ['en', 'ar', 'fr', 'es']
+
+  // Enough signal to push at least one pillar down the `available` path.
+  const LIVE = {
+    ta: { rsi: 62, macd: { hist: 0.4 }, sma20: 100, sma50: 95, sma200: 80, price: 105,
+          trend: 'uptrend', bb: { upper: 110, lower: 90 }, adx: 28, stoch: { k: 60, d: 55 }, atr: 2 },
+    signals: { volume24h: 1e9, volumeChange: 0.3, whaleNet: 2e6, activeAddresses: 5e5, socialScore: 60 },
+    fundamental: { marketCap: 2e11, circulating: 19e6, maxSupply: 21e6, pe: 20, eps: 5,
+                   dividendYield: 0.01, sectorPerf: 0.03 },
+  }
+
+  it('the live fixture really does reach the available branch', () => {
+    // Without this the branch coverage below is a claim, not a fact.
+    const live = ['crypto', 'metal']
+      .map(assetClass => computeMagic({ ...LIVE, assetClass }).pillars.filter(p => p.quality !== 'none'))
+    expect(live.every(ps => ps.length > 0)).toBe(true)
+  })
+
+  for (const assetClass of CLASSES) {
+    for (const [branch, args] of [['neutral', {}], ['live', LIVE]]) {
+      it(`${assetClass} pillars all have labelKey (${branch} branch)`, () => {
+        const pillars = computeMagic({ ...args, assetClass }).pillars
+        expect(pillars.length).toBeGreaterThan(3)
+        expect(pillars.filter(p => !p.labelKey).map(p => p.key)).toEqual([])
+      })
+    }
+
+    for (const lang of LANGS) {
+      it(`${assetClass} pillar labels resolve in ${lang}`, () => {
+        const pillars = computeMagic({ ...LIVE, assetClass }).pillars
+        const unresolved = pillars
+          .filter(p => typeof translations[lang][p.labelKey] !== 'string')
+          .map(p => `${p.key} → ${p.labelKey}`)
+        expect(unresolved).toEqual([])
+      })
+    }
+  }
 })
