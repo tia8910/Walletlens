@@ -77,7 +77,7 @@ function currentLang() {
  * fireNativeIntent needs, so this can fire immediately — and it reuses the
  * stored payload so the widgets are not blanked by a summary-less message.
  */
-export function syncLanguage() {
+export function syncLanguage({ retryOnGesture = true } = {}) {
   try {
     if (!isAndroidTWA()) return note('not-twa')
     let payload = {}
@@ -86,6 +86,13 @@ export function syncLanguage() {
     const json = JSON.stringify(payload)
     try { localStorage.setItem(PAYLOAD_KEY, json) } catch { /* quota; carry on */ }
     if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))) {
+      // Activation is transient and the picker may close, re-render and settle
+      // before this runs — and a language change that misses the window then
+      // waits for the next dashboard sync to reach the notifications. Ride the
+      // next tap instead; `once` means at most one extra attempt.
+      if (retryOnGesture && typeof document !== 'undefined') {
+        document.addEventListener('pointerup', () => syncLanguage({ retryOnGesture: false }), { once: true })
+      }
       return note('no-activation', { lang: payload.lang })
     }
     return note('fired', { lang: payload.lang })

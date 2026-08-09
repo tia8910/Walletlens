@@ -4,8 +4,22 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
 import CoinLogo from './CoinLogo'
+import { renderMaybe } from '../data/walletEvalTips'
+
+// The action code drives the filtering below and the badge colour, so it stays
+// a stable English token. Only its label is translated.
+const ACTION_LABEL_KEYS = {
+  SELL: 'deActSell', TRIM: 'deActTrim', ADD: 'deActAdd',
+  HOLD: 'deActHold', WATCH: 'deActWatch',
+}
 
 /* ─── local rule engine (fallback when API not available) ─────────────── */
+/**
+ * Runs at module scope, so every sentence it produces is a descriptor
+ * `[key, ...args]` that the panel resolves — there is no hook to translate
+ * from here. The model-backed path in fetchAIAnalysis() returns real prose
+ * instead, which renderMaybe passes through untouched.
+ */
 function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
   if (!enriched?.length) return null
 
@@ -33,19 +47,19 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
     let score = 0
     const reasons = []
 
-    if (pnlPct > 200)       { score -= 3; reasons.push(`up ${pnlPct.toFixed(0)}% — consider taking some profit`) }
-    else if (pnlPct > 80)   { score -= 1; reasons.push(`up ${pnlPct.toFixed(0)}% — partial profit-take worth considering`) }
-    else if (pnlPct < -40)  { score -= 2; reasons.push(`down ${Math.abs(pnlPct).toFixed(0)}% from entry — weak recovery signal`) }
-    else if (pnlPct < -15)  { score -= 1; reasons.push(`down ${Math.abs(pnlPct).toFixed(0)}% — watch for support`) }
-    else if (pnlPct > 10)   { score += 1; reasons.push(`up ${pnlPct.toFixed(0)}% — in a healthy profit zone`) }
+    if (pnlPct > 200)       { score -= 3; reasons.push(['deRnProfitBig', pnlPct.toFixed(0)]) }
+    else if (pnlPct > 80)   { score -= 1; reasons.push(['deRnProfitMed', pnlPct.toFixed(0)]) }
+    else if (pnlPct < -40)  { score -= 2; reasons.push(['deRnDownBig', Math.abs(pnlPct).toFixed(0)]) }
+    else if (pnlPct < -15)  { score -= 1; reasons.push(['deRnDownMed', Math.abs(pnlPct).toFixed(0)]) }
+    else if (pnlPct > 10)   { score += 1; reasons.push(['deRnHealthy', pnlPct.toFixed(0)]) }
 
-    if (w > 60)       { score -= 3; reasons.push(`${w.toFixed(0)}% of portfolio — dangerously concentrated`) }
-    else if (w > 40)  { score -= 1; reasons.push(`${w.toFixed(0)}% of portfolio — consider trimming`) }
+    if (w > 60)       { score -= 3; reasons.push(['deRnConcentrated', w.toFixed(0)]) }
+    else if (w > 40)  { score -= 1; reasons.push(['deRnTrimWeight', w.toFixed(0)]) }
 
-    if (chg24h > 10)       { score -= 1; reasons.push(`+${chg24h.toFixed(1)}% today — may be overextended`) }
-    else if (chg24h > 3)   { score += 1; reasons.push(`+${chg24h.toFixed(1)}% today — bullish momentum`) }
-    else if (chg24h < -8)  { score -= 1; reasons.push(`${chg24h.toFixed(1)}% today — bearish pressure`) }
-    else if (chg24h < -3)  { reasons.push(`${chg24h.toFixed(1)}% today — pulling back`) }
+    if (chg24h > 10)       { score -= 1; reasons.push(['deRnOverextended', chg24h.toFixed(1)]) }
+    else if (chg24h > 3)   { score += 1; reasons.push(['deRnBullish', chg24h.toFixed(1)]) }
+    else if (chg24h < -8)  { score -= 1; reasons.push(['deRnBearish', chg24h.toFixed(1)]) }
+    else if (chg24h < -3)  { reasons.push(['deRnPullback', chg24h.toFixed(1)]) }
 
     const action =
       score <= -4 ? 'SELL' :
@@ -67,24 +81,24 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
 
   let headline, summary, overallColor
   if (momentum > 5 && sellOrTrim.length === 0) {
-    headline = 'Portfolio is performing well — hold your positions'
-    summary  = `Strong bullish momentum (+${momentum.toFixed(1)}% weighted). All positions look healthy. No urgent action required.`
+    headline = ['deHlPerforming']
+    summary  = ['deSumPerforming', momentum.toFixed(1)]
     overallColor = 'var(--g)'
   } else if (momentum < -5 && sellOrTrim.length >= 2) {
-    headline = 'Market is turning — consider reducing risk'
-    summary  = `Bearish momentum (${momentum.toFixed(1)}% weighted) with ${sellOrTrim.length} positions signalling exit. Protect capital.`
+    headline = ['deHlTurning']
+    summary  = ['deSumTurning', momentum.toFixed(1), sellOrTrim.length]
     overallColor = '#f87171'
   } else if (sellOrTrim.length >= 2) {
-    headline = 'Take some profit — a few positions are overextended'
-    summary  = `${sellOrTrim.length} of your ${n} positions are flagged for trimming or selling.`
+    headline = ['deHlTakeProfit']
+    summary  = ['deSumTakeProfit', sellOrTrim.length, n]
     overallColor = '#fbbf24'
   } else if (sentiment === 'accumulating' && momentum > 0) {
-    headline = "You're in accumulation mode — keep building"
-    summary  = `Your trade history shows strong buy conviction. Momentum is positive. Continue DCA on your core positions.`
+    headline = ['deHlAccumulation']
+    summary  = ['deSumAccumulation']
     overallColor = 'var(--g)'
   } else {
-    headline = 'Mixed signals — stay patient and watch the market'
-    summary  = `No strong directional signal right now. Monitor your positions and wait for clearer market structure.`
+    headline = ['deHlMixed']
+    summary  = ['deSumMixed']
     overallColor = '#a78bfa'
   }
 
@@ -92,7 +106,7 @@ function runEngine(enriched, prices, transactions, totalValue, totalInvested) {
 }
 
 /* ─── AI API call ─────────────────────────────────────────────────────── */
-async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, transactions) {
+async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, transactions, lang) {
   const investable = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
   const investValue = investable.reduce((s, h) => s + h.value, 0) || 1
   const momentum = investable.reduce((s, h) => {
@@ -117,7 +131,7 @@ async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, tran
   const resp = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ holdings, totalValue, totalInvested, momentum, sentiment }),
+    body: JSON.stringify({ holdings, totalValue, totalInvested, momentum, sentiment, lang }),
   })
 
   if (!resp.ok) {
@@ -134,7 +148,7 @@ async function fetchAIAnalysis(enriched, prices, totalValue, totalInvested, tran
 
 /* ─── component ──────────────────────────────────────────────────────── */
 export default function AIDecisionEngine({ enriched, prices, transactions, totalValue, totalInvested }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [open, setOpen]         = useState(false)
   const [thinking, setThinking] = useState(false)
   const [result, setResult]     = useState(null)
@@ -160,7 +174,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
 
     try {
       // Try Claude API first
-      const aiResult = await fetchAIAnalysis(enriched, prices, totalValue, totalInvested, transactions)
+      const aiResult = await fetchAIAnalysis(enriched, prices, totalValue, totalInvested, transactions, lang)
       if (aiResult) {
         setResult(aiResult)
         setAiMode(true)
@@ -200,12 +214,12 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
           <div className="ade-panel" onClick={e => e.stopPropagation()}>
             <div className="ade-panel-header">
               <div className="ade-panel-title">
-                <span className="ade-title-icon">◈</span> Decision Engine
+                <span className="ade-title-icon">◈</span> {t('deTitleFull')}
                 {result?.source === 'ai' && (
                   <span className="ade-ai-badge"><Icon name="sparkles" size={12} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('deAiBadge')}</span>
                 )}
               </div>
-              <button className="qs-close" onClick={close} aria-label="Close">
+              <button className="qs-close" onClick={close} aria-label={t('close')}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
               </button>
             </div>
@@ -213,11 +227,11 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
             {thinking && (
               <div className="ade-thinking">
                 <div className="ade-thinking-orb">◈</div>
-                <div className="ade-thinking-text">Analysing your portfolio{dots}</div>
+                <div className="ade-thinking-text">{t('deAnalysing')}{dots}</div>
                 <div className="ade-thinking-steps">
                   <div className="ade-thinking-step">
                     <span className="ade-step-dot" />
-                    <span className="ade-step-label">Reading {enriched?.length ?? 0} holdings</span>
+                    <span className="ade-step-label">{t('deReadingN')(enriched?.length ?? 0)}</span>
                   </div>
                   <div className="ade-thinking-step">
                     <span className="ade-step-dot" />
@@ -235,13 +249,13 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
               <div className="ade-body">
                 <div className="ade-verdict" style={{ borderColor: result.overallColor + '44', background: result.overallColor + '0d', '--verdict-color': result.overallColor }}>
                   <div className="ade-verdict-headline" style={{ color: result.overallColor }}>
-                    {result.headline}
+                    {renderMaybe(result.headline, t)}
                   </div>
-                  <div className="ade-verdict-summary">{result.summary}</div>
+                  <div className="ade-verdict-summary">{renderMaybe(result.summary, t)}</div>
                   {result.tip && (
                     <div className="ade-tip">
                       <span className="ade-tip-icon"><Icon name="lightbulb" size={14} /></span>
-                      <span>{result.tip}</span>
+                      <span>{renderMaybe(result.tip, t)}</span>
                     </div>
                   )}
                   <div className="ade-verdict-meta">
@@ -249,10 +263,10 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                       <span className="ade-conf-track">
                         <span className="ade-conf-bar" style={{ width: result.confidence + '%', background: result.overallColor }} />
                       </span>
-                      {result.confidence}% confidence
+                      {t('deConfidencePct')(result.confidence)}
                     </span>
                     <span className="ade-momentum-badge" style={{ color: result.momentum >= 0 ? 'var(--g-ink)' : '#f87171' }}>
-                      {result.momentum >= 0 ? '▲' : '▼'} {Math.abs(result.momentum).toFixed(1)}% momentum
+                      {t('deMomentumBadge')(`${result.momentum >= 0 ? '▲' : '▼'} ${Math.abs(result.momentum).toFixed(1)}%`)}
                     </span>
                   </div>
                 </div>
@@ -265,16 +279,16 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                         <CoinLogo image={a.coin_image} symbol={a.sym} coinId={a.coin_id} size={28} className="ade-asset-img" />
                         <div>
                           <div className="ade-asset-sym">{a.sym}</div>
-                          <div className="ade-asset-weight">{typeof a.w === 'number' ? a.w.toFixed(1) : '—'}% of portfolio</div>
+                          <div className="ade-asset-weight">{t('deOfPortfolio')(typeof a.w === 'number' ? a.w.toFixed(1) : '—')}</div>
                         </div>
                       </div>
                       <div className="ade-asset-reasons">
                         {(a.reasons || []).map((r, j) => (
-                          <div key={j} className="ade-reason">{r}</div>
+                          <div key={j} className="ade-reason">{renderMaybe(r, t)}</div>
                         ))}
                       </div>
                       <div className="ade-action-badge" style={{ background: a.actionColor + '22', color: a.actionColor, borderColor: a.actionColor + '44', '--badge-glow': a.actionColor + '44' }}>
-                        {a.action}
+                        {t(ACTION_LABEL_KEYS[a.action]) || a.action}
                       </div>
                     </div>
                   ))}

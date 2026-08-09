@@ -18,7 +18,7 @@ import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
 import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
-import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
+import { CLASS_LABEL_KEYS, renderTip, renderMaybe } from '../data/walletEvalTips'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
@@ -234,7 +234,7 @@ function CatLabel({ cat, className, iconSize = 14 }) {
 }
 
 // ── AI analysis engine ────────────────────────────────────────────────────
-function computeAI(enriched, prices, transactions, totalValue) {
+function computeAI(enriched, prices, transactions, totalValue, t) {
   if (!enriched.length || !totalValue || !isFinite(totalValue)) return null
 
   const investments = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol))
@@ -308,19 +308,19 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const topWeight = weights[0] * 100
 
   const topSym = topAsset?.coin_symbol?.toUpperCase() || topAsset?.coin_id || ''
-  if (topWeight > 60) insights.push({ type: 'warn', text: `${topSym} dominates ${topWeight.toFixed(0)}% of your portfolio — high concentration risk.` })
-  else if (topWeight > 40) insights.push({ type: 'info', text: `${topSym} is your largest position at ${topWeight.toFixed(0)}%.` })
+  if (topWeight > 60) insights.push({ type: 'warn', text: ['insDominates', topSym, topWeight.toFixed(0)] })
+  else if (topWeight > 40) insights.push({ type: 'info', text: ['insLargest', topSym, topWeight.toFixed(0)] })
 
-  if (n < 3) insights.push({ type: 'warn', text: `Only ${n} asset${n > 1 ? 's' : ''} detected — consider spreading into more positions to reduce risk.` })
-  else if (n >= 8) insights.push({ type: 'good', text: `${n} assets tracked — solid diversification across your portfolio.` })
+  if (n < 3) insights.push({ type: 'warn', text: ['insOnlyN', n] })
+  else if (n >= 8) insights.push({ type: 'good', text: ['insTracked', n] })
 
   const inProfit = investments.filter(h => h.pnl > 0)
   const inLoss   = investments.filter(h => h.pnl < 0)
-  if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: `All ${inProfit.length} positions are in profit` })
-  else if (inProfit.length > 0) insights.push({ type: 'info', text: `${inProfit.length} of ${n} positions in profit, ${inLoss.length} in loss.` })
+  if (inProfit.length > 0 && inLoss.length === 0) insights.push({ type: 'good', text: ['insAllProfit', inProfit.length] })
+  else if (inProfit.length > 0) insights.push({ type: 'info', text: ['insSomeProfit', inProfit.length, n, inLoss.length] })
 
-  if (momentum > 3) insights.push({ type: 'good', text: `Strong bullish momentum: weighted 24h gain of +${momentum.toFixed(2)}% across holdings.` })
-  else if (momentum < -3) insights.push({ type: 'warn', text: `Bearish pressure: weighted 24h loss of ${momentum.toFixed(2)}% across holdings.` })
+  if (momentum > 3) insights.push({ type: 'good', text: ['insBullish', momentum.toFixed(2)] })
+  else if (momentum < -3) insights.push({ type: 'warn', text: ['insBearish', momentum.toFixed(2)] })
 
   const hasMetals = investments.some(h => categorizeAsset(h) === 'metals')
   const hasStocks = investments.some(h => categorizeAsset(h) === 'stocks')
@@ -329,33 +329,35 @@ function computeAI(enriched, prices, transactions, totalValue) {
   const nonCryptoCount = [hasMetals, hasStocks, hasRealEstate].filter(Boolean).length
 
   if (hasCrypto && nonCryptoCount >= 2) {
-    insights.push({ type: 'good', text: `Strong cross-asset diversification — crypto combined with ${[hasMetals && 'precious metals', hasStocks && 'stocks', hasRealEstate && 'real estate'].filter(Boolean).join(' & ')}.` })
+    const list = [hasMetals && 'insMetals', hasStocks && 'insStocks', hasRealEstate && 'insRealEstate']
+      .filter(Boolean).map(k => t(k)).join(' & ')
+    insights.push({ type: 'good', text: ['insCrossAsset', list] })
   } else if (hasCrypto && nonCryptoCount === 1) {
-    const which = hasMetals ? 'precious metals' : hasStocks ? 'stocks' : 'real estate'
-    insights.push({ type: 'good', text: `Good diversification — crypto + ${which} adds a hedge against crypto-only volatility.` })
+    const which = hasMetals ? 'insMetals' : hasStocks ? 'insStocks' : 'insRealEstate'
+    insights.push({ type: 'good', text: ['insGoodDiv', { k: which }] })
   } else if (!hasMetals && !hasStocks && !hasRealEstate) {
-    insights.push({ type: 'info', text: 'Portfolio is 100% crypto — adding gold/silver or stocks could hedge volatility.' })
+    insights.push({ type: 'info', text: ['aiAllCrypto'] })
   }
 
   const cryptoTierSet = new Set(investments.filter(h => categorizeAsset(h) === 'crypto').map(h => classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id))
-  if (cryptoTierSet.size >= 3) insights.push({ type: 'good', text: `Well-diversified across ${cryptoTierSet.size} crypto market-cap tiers — balanced risk profile.` })
-  else if (hasCrypto && !cryptoTierSet.has('mid') && !cryptoTierSet.has('small')) insights.push({ type: 'info', text: 'Holding mainly large/mega-cap crypto — mid/small-cap exposure could boost upside.' })
+  if (cryptoTierSet.size >= 3) insights.push({ type: 'good', text: ['insTiers', cryptoTierSet.size] })
+  else if (hasCrypto && !cryptoTierSet.has('mid') && !cryptoTierSet.has('small')) insights.push({ type: 'info', text: ['aiLargeCapOnly'] })
 
   // Crypto category diversity insight
   if (cryptoCatSet.size >= 3) {
-    insights.push({ type: 'good', text: `Crypto holdings span ${cryptoCatSet.size} categories (${[...cryptoCatSet].join(', ')}) — good sector diversification.` })
+    insights.push({ type: 'good', text: ['insCryptoCats', cryptoCatSet.size, [...cryptoCatSet].join(', ')] })
   } else if (cryptoHoldings.length >= 3 && cryptoCatSet.size <= 1) {
-    insights.push({ type: 'warn', text: `All crypto in ${cryptoCatSet.size === 1 ? [...cryptoCatSet][0] : 'one'} category — consider adding DeFi, AI, or RWA exposure.` })
+    insights.push({ type: 'warn', text: ['insCryptoOneCat', cryptoCatSet.size === 1 ? [...cryptoCatSet][0] : t('txOne')] })
   } else if (cryptoCatSet.size === 2) {
-    insights.push({ type: 'info', text: `Crypto covers ${[...cryptoCatSet].join(' & ')} — diversifying into more categories reduces sector risk.` })
+    insights.push({ type: 'info', text: ['insCryptoTwoCats', [...cryptoCatSet].join(' & ')] })
   }
 
   // Stock sector diversity insight
   if (stockHoldings.length >= 2) {
     if (stockSectorSet.size >= 3) {
-      insights.push({ type: 'good', text: `Stocks span ${stockSectorSet.size} sectors (${[...stockSectorSet].join(', ')}) — well diversified.` })
+      insights.push({ type: 'good', text: ['insStockSectors', stockSectorSet.size, [...stockSectorSet].join(', ')] })
     } else if (stockSectorSet.size === 1) {
-      insights.push({ type: 'warn', text: `All stocks in ${[...stockSectorSet][0]} sector — sector concentration risk. Consider adding Healthcare, Finance, or Consumer.` })
+      insights.push({ type: 'warn', text: ['insStockOneSector', [...stockSectorSet][0]] })
     }
   }
 
@@ -433,8 +435,8 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
   // Smart Sell Plan (AISellPlan) now lives in the Targets tab.
   const { t } = useLanguage()
   const ai = useMemo(
-    () => computeAI(enriched, prices, transactions, totalValue),
-    [enriched, prices, transactions, totalValue]
+    () => computeAI(enriched, prices, transactions, totalValue, t),
+    [enriched, prices, transactions, totalValue, t]
   )
 
   if (pricesLoading && !ai) return (
@@ -550,7 +552,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
           {ai.insights.map((ins, i) => (
             <div key={i} className={`ai-insight ai-insight-${ins.type}`}>
               <span className="ai-insight-dot" />
-              <span>{ins.text}</span>
+              <span>{renderMaybe(ins.text, t)}</span>
             </div>
           ))}
           {ai.insights.length === 0 && (
@@ -692,11 +694,12 @@ function FearGreedGauge({ value, label, color }) {
 }
 
 // ── Radar chart (pure SVG, no library needed) ─────────────────────────────
-const RADAR_LABELS = ['Diversity', 'Momentum', 'P&L', 'Cap Spread', 'Asset Count']
+const RADAR_LABEL_KEYS = ['rdDiversity', 'rdMomentum', 'rdPnl', 'rdCapSpread', 'rdAssetCount']
 
 function AIRadar({ diversity, momentum, pnl, capSpread, assetCount }) {
+  const { t } = useLanguage()
   const vals   = [diversity, momentum, pnl, capSpread, assetCount]
-  const labels = RADAR_LABELS
+  const labels = RADAR_LABEL_KEYS.map(k => t(k))
   const n = labels.length
   const cx = 130, cy = 130, r = 95
 
@@ -828,7 +831,7 @@ function computeAssetMix(enriched, totalValue) {
 // because these run at module scope, with no hook to translate from.
 const EVAL_CATEGORIES = [
   {
-    id: 'asset_mix',
+    id: 'asset_mix', action: 'buy',
     labelKey: 'cchCatAssetMix',
     icon: 'grid',
     color: 'var(--g-ink)', fontWeight: 700,
@@ -848,7 +851,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'btc_anchor',
+    id: 'btc_anchor', action: 'buy',
     labelKey: 'cchCatBtcAnchor',
     icon: '₿',
     color: '#f7931a',
@@ -864,7 +867,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'eth_exposure',
+    id: 'eth_exposure', action: 'buy',
     labelKey: 'cchCatEthExposure',
     icon: 'Ξ',
     color: '#627eea',
@@ -878,7 +881,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'diversification',
+    id: 'diversification', action: 'buy',
     labelKey: 'cchCatDiversification',
     icon: 'scale',
     color: 'var(--g-ink)', fontWeight: 700,
@@ -893,7 +896,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'cash_reserve',
+    id: 'cash_reserve', action: 'buy',
     labelKey: 'cchCatCash',
     icon: 'bank',
     color: '#60a5fa',
@@ -906,7 +909,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'large_cap',
+    id: 'large_cap', action: 'buy',
     labelKey: 'cchCatLargeCap',
     icon: 'award',
     color: '#3b82f6',
@@ -922,7 +925,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'stock_sectors',
+    id: 'stock_sectors', action: 'buy',
     labelKey: 'cchCatStockSectors',
     icon: 'grid',
     color: '#818cf8',
@@ -938,7 +941,7 @@ const EVAL_CATEGORIES = [
     },
   },
   {
-    id: 'sell_targets',
+    id: 'sell_targets', action: 'targets',
     labelKey: 'cchCatSellTargets',
     icon: 'target',
     color: '#fbbf24',
@@ -977,9 +980,28 @@ function computeWalletEval(enriched, totalValue, targets = []) {
       return { ...cat, ...result }
     })
   const overall = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-  const missing = results.filter(r => !r.pass)
-  const strong = results.filter(r => r.pass)
+  // Worst first. The old layout rendered these in declaration order, so a 95
+  // and a 10 got the same weight and the same position — you had to read nine
+  // rows to find the one that mattered. Ascending score is a good enough proxy
+  // for impact while the categories carry no explicit weight.
+  const missing = results.filter(r => !r.pass).sort((a, b) => a.score - b.score)
+  const strong = results.filter(r => r.pass).sort((a, b) => b.score - a.score)
   return { results, overall, missing, strong }
+}
+
+/**
+ * Score → verdict tone.
+ *
+ * The category colours (Bitcoin orange, Ethereum blue) say which asset a row is
+ * about, not how it is doing, so using them for the bar made the two healthiest
+ * rows the brightest things on screen and left a score of 10 looking calm. Tone
+ * drives the bar, the number and the rail; the category colour survives only as
+ * the icon tint, where recognition helps and nothing competes with it.
+ */
+function verdictTone(score) {
+  if (score >= 80) return 'good'
+  if (score >= 55) return 'warn'
+  return 'bad'
 }
 
 function EvalScoreRing({ score }) {
@@ -1017,10 +1039,95 @@ function EvalScoreRing({ score }) {
   )
 }
 
-const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets }) {
+// How many gaps get the full treatment. A single-asset portfolio fails five
+// checks at once, and five expanded cards run longer than the nine-row layout
+// this replaces — so the tail collapses to one-line rows. Two is enough to
+// carry the diagnosis without turning the section back into a wall.
+const EVAL_EXPANDED_GAPS = 2
+
+/**
+ * One failing pillar.
+ *
+ * Expanded it carries the reason and the button that closes it; collapsed it
+ * is a single row you can tap open. Hierarchy comes from that split rather
+ * than from colour, because every score below 55 is the same red — five red
+ * cards of equal weight is the same "nothing stands out" problem the old
+ * layout had, just in a different hue.
+ */
+function EvalGapCard({ cat, onAction, defaultOpen }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(defaultOpen)
+  const tone = verdictTone(cat.score)
+  const actionKey = cat.action === 'targets' ? 'evalActionTargets' : cat.action === 'buy' ? 'evalActionBuy' : null
+  return (
+    <div className={`eval-gap eval-tone-${tone}${open ? ' eval-gap-open' : ''}`} style={{ '--eval-color': cat.color }}>
+      <button type="button" className="eval-gap-top" aria-expanded={open}
+        onClick={() => { const o = !open; setOpen(o); if (o) track('eval_cat_expand', { cat: cat.id, score: cat.score }) }}>
+        <span className="eval-gap-icon">
+          {cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}
+        </span>
+        <span className="eval-gap-label">{t(cat.labelKey)}</span>
+        <span className="eval-gap-score">{cat.score}</span>
+        {!open && <span className="eval-gap-chev">▾</span>}
+      </button>
+      <div className="eval-gap-bar-wrap">
+        <div className="eval-gap-bar" style={{ width: `${Math.max(cat.score, 2)}%` }} />
+      </div>
+      {open && (
+        <>
+          {/* The only part of the row that says what to do. It used to be
+              behind a tap for every pillar, including the worst one. */}
+          <div className="eval-gap-tip">{renderTip(cat.tip, t)}</div>
+          {actionKey && onAction && (
+            <button type="button" className="eval-gap-action"
+              onClick={() => onAction(cat.action, cat.id)}>
+              {t(actionKey)} <span className="eval-gap-arrow">→</span>
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** The pillars that pass, as one strip of chips instead of six full rows. */
+function EvalPassStrip({ items }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  if (!items.length) return null
+  return (
+    <div className="eval-pass">
+      <button type="button" className="eval-pass-head" onClick={() => setOpen(v => !v)} aria-expanded={open}>
+        <span className="eval-pass-tick"><Icon name="check" size={12} /></span>
+        <span className="eval-pass-title">{t('evalPassingCount')(items.length)}</span>
+        <span className="eval-pass-toggle">{open ? t('evalHidePassing') : t('evalShowPassing')}</span>
+        <span className={`eval-pass-chev${open ? ' open' : ''}`}>▾</span>
+      </button>
+      <div className="eval-pass-chips">
+        {items.map(cat => (
+          <span key={cat.id} className="eval-chip" style={{ '--eval-color': cat.color }} title={t(cat.labelKey)}>
+            <span className="eval-chip-icon">{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={13} />}</span>
+            <span className="eval-chip-score">{cat.score}</span>
+          </span>
+        ))}
+      </div>
+      {open && (
+        <div className="eval-pass-list">
+          {items.map(cat => (
+            <div key={cat.id} className="eval-pass-row">
+              <span className="eval-pass-row-label">{t(cat.labelKey)}</span>
+              <span className="eval-pass-row-tip">{renderTip(cat.tip, t)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
   const { t } = useLanguage()
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
-  const [expanded, setExpanded] = useState(null)
 
   if (!enriched.length) return (
     <div className="dvx-form-page">
@@ -1032,59 +1139,53 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
     </div>
   )
 
-  const { results, overall, missing } = eval_
+  const { overall, missing, strong } = eval_
 
   return (
     <div className="dvx-form-page">
-      {/* Header score */}
+      {/* Score, compact: ring beside the verdict rather than above nine rows,
+          so the number and the first gap share a screen. */}
       <div className="glass-card eval-header-card">
+        <EvalScoreRing score={overall} />
         <div className="eval-header-left">
-          <h2 style={{ margin:0, fontSize:'1.25rem' }}>{t('dsWalletEvaluation')}</h2>
-          <p className="muted" style={{ margin:'0.3rem 0 0', fontSize:'0.82rem' }}>{t('dsWhatMissing')}</p>
-          {missing.length > 0 && (
+          <h2 className="eval-header-title">{t('dsWalletEvaluation')}</h2>
+          <p className="eval-header-sub">{t('dsWhatMissing')}</p>
+          {missing.length > 0 ? (
             <div className="eval-missing-count">
-              <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{missing.length} gap{missing.length > 1 ? 's' : ''} found — tap each to fix
+              <Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />
+              {t('evalGapsFound')(missing.length)}
             </div>
-          )}
-          {missing.length === 0 && (
-            <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>
-              <span style={{ marginRight:'0.4em', fontWeight:900 }}>✓</span>{t('dsAllChecksPassed')}</div>
+          ) : (
+            <div className="eval-missing-count eval-all-clear">
+              <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />
+              {t('dsAllChecksPassed')}
+            </div>
           )}
         </div>
-        <EvalScoreRing score={overall} />
       </div>
 
-      {/* Category cards */}
-      <div className="eval-grid">
-        {results.map(cat => (
-          <div key={cat.id}
-            className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${expanded === cat.id ? 'eval-cat-open' : ''}`}
-            onClick={() => { const opening = expanded !== cat.id; setExpanded(opening ? cat.id : null); if (opening) track('eval_cat_expand', { cat: cat.id, pass: cat.pass, score: cat.score }) }}
-            style={{ '--eval-color': cat.color }}>
-            <div className="eval-cat-header">
-              <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}</span>
-              <div className="eval-cat-info">
-                <div className="eval-cat-label">{t(cat.labelKey)}</div>
-                <div className="eval-cat-bar-wrap">
-                  <div className="eval-cat-bar" style={{ width: `${cat.score}%` }} />
-                </div>
-              </div>
-              <div className="eval-cat-right">
-                <span className="eval-cat-score" style={{ color: cat.color }}>{cat.score}</span>
-                <span className={`eval-cat-badge ${cat.pass ? 'eval-badge-pass' : 'eval-badge-fail'}`}>
-                  {cat.pass ? '✓' : '✗'}
-                </span>
-              </div>
-            </div>
-            {expanded === cat.id && (
-              <div className="eval-cat-tip">
-                <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g-ink)' : '#f59e0b' }} />
-                {renderTip(cat.tip, t)}
-              </div>
-            )}
+      {missing.length > 0 && (
+        <>
+          <div className="eval-section-head eval-section-fix">{t('evalFixThese')}</div>
+          <div className="eval-grid">
+            {missing.map((cat, i) => (
+              <EvalGapCard key={cat.id} cat={cat} defaultOpen={i < EVAL_EXPANDED_GAPS}
+                onAction={onAction && ((kind, id) => { track('eval_gap_action', { cat: id, kind }); onAction(kind, id) })} />
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {missing.length === 0 && (
+        <div className="eval-clear-banner">{t('evalNothingToFix')}</div>
+      )}
+
+      {strong.length > 0 && (
+        <>
+          <div className="eval-section-head">{t('evalPassing')}</div>
+          <EvalPassStrip items={strong} />
+        </>
+      )}
     </div>
   )
 })
@@ -2726,12 +2827,12 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
     <div className="dvx-targets-page">
       {/* Summary cards */}
       <div className="dvx-stats-row">
-        <StatCard label="Total Targets" value={totalTargets} />
-        <StatCard label="Reached" value={totalReached} color={totalReached > 0 ? 'var(--g)' : undefined} />
-        <StatCard label="Potential Proceeds"
+        <StatCard label={t('stTotalTargets')} value={totalTargets} />
+        <StatCard label={t('stReached')} value={totalReached} color={totalReached > 0 ? 'var(--g)' : undefined} />
+        <StatCard label={t('stProceeds')}
           value={`$${totalPotentialProceeds >= 1000 ? (totalPotentialProceeds/1000).toFixed(1)+'k' : fmt(totalPotentialProceeds)}`}
           color="var(--g)" />
-        <StatCard label="Assets Planned" value={`${rowsWithTargets} / ${rows.length}`} />
+        <StatCard label={t('stAssetsPlanned')} value={`${rowsWithTargets} / ${rows.length}`} />
       </div>
 
       {/* Sell targets table — asset × Target 1, 2, 3… */}
@@ -2835,7 +2936,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   <div>
                     <strong style={{ color:'var(--text)' }}>{h.coin_symbol?.toUpperCase()}</strong>
                     <div className="muted" style={{ fontSize:'0.72rem' }}>
-                      {currentPrice > 0 ? `$${fmt(currentPrice)}` : '—'} · {Number(h.amount).toLocaleString(undefined, { maximumFractionDigits:6 })} held
+                      {currentPrice > 0 ? `$${fmt(currentPrice)}` : '—'} · {t('stHeld')(Number(h.amount).toLocaleString(undefined, { maximumFractionDigits:6 }))}
                       {h.value > 0 && ` · $${fmt(h.value)}`}
                     </div>
                     {plannedQty > 0 && (
@@ -2851,7 +2952,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                   disabled={!isAdding && available <= 0}
                   onClick={() => setAdding(prev => prev[h.coin_id] ? (({ [h.coin_id]: _, ...rest }) => rest)(prev) : { ...prev, [h.coin_id]: { price:'', mode:'pct', pct:100 } })}>
 
-                  {isAdding ? 'Cancel' : '+ Target'}
+                  {isAdding ? t('cancel') : t('stAddTarget')}
                 </button>
               </div>
 
@@ -2862,14 +2963,14 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     <div style={{ flex:'1 1 120px' }}>
                       <div className="dvx-tgt-form-lbl">{t('dsTargetPriceUsd')}</div>
                       <input
-                        type="number" placeholder="e.g. 75000" min="0" step="any"
+                        type="number" placeholder={t('stEgPrice')} min="0" step="any"
                         value={addState.price || ''}
                         onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
                         style={{ width:'100%', background:'var(--surface-2)', border:`1px solid ${priceTooLow ? 'rgba(239,68,68,0.6)' : 'rgba(var(--g-rgb),0.3)'}`, borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
                       />
                       {priceTooLow && (
                         <div style={{ fontSize:'0.72rem', color:'#ef4444', marginTop:'0.35rem' }}>
-                          Target must be higher than the current price ({`$${fmt(currentPrice)}`}).
+                          {t('stTooLow')(`$${fmt(currentPrice)}`)}
                         </div>
                       )}
                     </div>
@@ -2880,11 +2981,11 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     <div className="dvx-tgt-mode-row">
                       <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'pct' ? 'active' : ''}`}
                         onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'pct', pct: prev[h.coin_id]?.pct ?? 100 } }))}>
-                        Percentage
+                        {t('stPercentage')}
                       </button>
                       <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'qty' ? 'active' : ''}`}
                         onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'qty' } }))}>
-                        Quantity
+                        {t('stQuantity')}
                       </button>
                     </div>
                     {addMode === 'pct' ? (
@@ -2908,14 +3009,14 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                         />
                         <button type="button" className="dvx-tgt-pct-btn"
                           onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: String(parseFloat(available.toFixed(8))) } }))}>
-                          MAX
+                          {t('stMax')}
                         </button>
                       </div>
                     )}
                     <div className="dvx-tgt-form-hint">
-                      Sell {parseFloat(addQty.toFixed(6))} {h.coin_symbol?.toUpperCase()}
-                      {addState.price && parseFloat(addState.price) > 0 && ` · $${fmt(addQty * parseFloat(addState.price))} proceeds`}
-                      {' · '}<strong style={{ color:'var(--text)' }}>{parseFloat(remainingAfter.toFixed(6))} {h.coin_symbol?.toUpperCase()} left</strong>
+                      {t('stSellQty')(parseFloat(addQty.toFixed(6)), h.coin_symbol?.toUpperCase())}
+                      {addState.price && parseFloat(addState.price) > 0 && t('stProceedsPart')(`$${fmt(addQty * parseFloat(addState.price))}`)}
+                      {' · '}<strong style={{ color:'var(--text)' }}>{t('stLeftAfter')(parseFloat(remainingAfter.toFixed(6)), h.coin_symbol?.toUpperCase())}</strong>
                     </div>
                   </div>
                   {addPriceNum > currentPrice && (
@@ -2927,7 +3028,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     className="dvx-btn dvx-btn-primary dvx-tgt-save"
                     disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0 || priceTooLow}
                     onClick={() => saveTarget(h.coin_id, addState.price, addQty, currentPrice)}>
-                    Save Target
+                    {t('stSaveTarget')}
                   </button>
                 </div>
               )}
@@ -5192,6 +5293,7 @@ export default function Dashboard() {
               enriched={enriched}
               totalValue={totalValue}
               targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
+              onAction={kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval')}
             />
           )}
 
@@ -5373,15 +5475,15 @@ export default function Dashboard() {
                 <div style={{ textAlign:'center', marginBottom:'1.1rem' }}>
                   <div style={{ display:'flex', justifyContent:'center', marginBottom:'0.6rem' }}><Logo size={40} animated /></div>
                   <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>{t('dsWalletCreated')}</div>
-                  <div style={{ fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem' }}>How would you like to add your holdings?</div>
+                  <div style={{ fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem' }}>{t('impHowAdd')}</div>
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
                   {[
-                    { icon:'notes', label:'Add manually', desc:'Type a trade', color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
+                    { icon:'notes', label:t('impAddManual'), desc:t('impTypeTrade'), color:'52,211,153', fn:() => { setImportChooser(false); openSheet('buy', 'wallet_created') } },
                     { icon:'mic', label:t('importVoice'), desc:t('voiceJustSay'), color:'16,185,129', fn:() => setImportMode('voice') },
-                    { icon:'camera', label:'Screenshot', desc:'Reads it for you', color:'244,114,182', fn:() => setImportMode('screenshot') },
-                    { icon:'bar-chart', label:'Excel / CSV', desc:'Upload a file', color:'167,139,250', fn:() => setImportMode('excel') },
-                    { icon:'folder', label:'Restore backup', desc:'Paste a code', color:'96,165,250', fn:() => setImportMode('backup') },
+                    { icon:'camera', label:t('impScreenshot'), desc:t('impReadsIt'), color:'244,114,182', fn:() => setImportMode('screenshot') },
+                    { icon:'bar-chart', label:t('impExcel'), desc:t('impUploadFile'), color:'167,139,250', fn:() => setImportMode('excel') },
+                    { icon:'folder', label:t('impBackup'), desc:t('impPasteCode'), color:'96,165,250', fn:() => setImportMode('backup') },
                   ].map(o => (
                     <button key={o.label} onClick={o.fn} style={{
                       display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'0.2rem',
@@ -5401,7 +5503,7 @@ export default function Dashboard() {
                 <button onClick={() => setImportMode('menu')} style={{
                   display:'inline-flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.9rem',
                   background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontWeight:700, fontSize:'0.8rem',
-                }}>‹ Back</button>
+                }}>‹ {t('adBack')}</button>
                 {importMode === 'voice' && <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'screenshot' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} defaultMode="screenshot" onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}
                 {importMode === 'excel' && <Suspense fallback={<TabFallback />}><SmartImport wallets={wallets} onImported={() => { loadAll(); setImportChooser(false) }} /></Suspense>}

@@ -35,6 +35,12 @@ export async function onRequestPost(context) {
 
   const { holdings = [], totalValue = 0, totalInvested = 0, momentum = 0, sentiment = 'balanced' } = body
 
+  // The model writes the verdict prose, so it is the only thing that can write
+  // it in the user's language. Validated against the supported set rather than
+  // interpolated raw — this string goes into the prompt.
+  const LANG_NAMES = { en: 'English', ar: 'Arabic', fr: 'French', es: 'Spanish' }
+  const language = LANG_NAMES[body.lang] || 'English'
+
   if (!Array.isArray(holdings) || !holdings.length) {
     return new Response(JSON.stringify({ error: 'no_holdings' }), {
       status: 400,
@@ -88,7 +94,11 @@ Respond with a JSON object ONLY (no markdown, no explanation outside the JSON):
     }
   ],
   "tip": "one specific insight or market observation the user probably doesn't know"
-}`
+}
+
+Write every human-readable string in the JSON — headline, summary, reasons and
+tip — in ${language}. Keep the JSON keys, the action codes and the ticker
+symbols exactly as specified, in English.`
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
