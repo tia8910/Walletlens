@@ -121,10 +121,20 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
-          // invalidates this chunk, not the whole app.
-          if (id.includes('/src/i18n.')) {
-            return 'i18n'
+          // Non-English translation tables (~45 KB source each) are dynamically
+          // imported by LanguageContext one at a time, only for visitors who need
+          // that language. Named chunks here just keep the output readable —
+          // each is already its own chunk by default since nothing statically
+          // imports them. English ships in the main bundle: it's the default
+          // language and the fallback for missing keys in every other table.
+          if (id.includes('/src/i18n/ar')) {
+            return 'i18n-ar'
+          }
+          if (id.includes('/src/i18n/fr')) {
+            return 'i18n-fr'
+          }
+          if (id.includes('/src/i18n/es')) {
+            return 'i18n-es'
           }
           // blogPosts: 136 KB of inline article content — split so Blog page
           // JS stays lean and a content-only update re-downloads only this chunk.
