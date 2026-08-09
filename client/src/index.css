@@ -9535,20 +9535,24 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .dvx-trc-compact-tf { flex: 1; min-width: 0; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; line-height: 1.45; }
 
 /* ── Smart Import tree ─────────────────────────────────────────────────── */
-.wl-import-tree { position: relative; display: flex; flex-direction: column; gap: 0.6rem; padding-left: 1.15rem; }
+/* Logical properties throughout: the trunk and its connectors have to sit on
+ * the side the rows start from, and under dir="rtl" that is the right. With
+ * padding-left/left they stayed pinned to the left while the rows flipped, so
+ * the connectors ran away from the nodes instead of into them. */
+.wl-import-tree { position: relative; display: flex; flex-direction: column; gap: 0.6rem; padding-inline-start: 1.15rem; }
 /* Trunk line */
 .wl-import-tree::before {
-  content: ''; position: absolute; left: 0.35rem; top: 1.35rem; bottom: 1.35rem; width: 2px;
+  content: ''; position: absolute; inset-inline-start: 0.35rem; top: 1.35rem; bottom: 1.35rem; width: 2px;
   background: var(--border); border-radius: 2px;
 }
 .wl-import-branch { position: relative; }
 /* Branch connector from trunk to node */
 .wl-import-branch::before {
-  content: ''; position: absolute; left: -0.8rem; top: 1.4rem; width: 0.8rem; height: 2px;
+  content: ''; position: absolute; inset-inline-start: -0.8rem; top: 1.4rem; width: 0.8rem; height: 2px;
   background: var(--border); border-radius: 2px;
 }
 .wl-import-node {
-  display: flex; align-items: center; gap: 0.7rem; width: 100%; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 0.7rem; width: 100%; text-align: start; cursor: pointer;
   padding: 0.65rem 0.8rem; border-radius: 12px; border: 1px solid var(--border);
   background: var(--surface-1); transition: background 0.15s, border-color 0.15s;
 }
@@ -9563,9 +9567,23 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .wl-import-node-desc { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; }
 .wl-import-node-chev { color: var(--text-muted); font-size: 0.85rem; flex-shrink: 0; }
 .wl-import-panel {
-  margin: 0.55rem 0 0.2rem 0.4rem; padding: 0.6rem 0 0.2rem 0.75rem;
-  border-left: 2px dashed var(--border); animation: fadeInUp 0.25s ease;
+  margin: 0.55rem 0 0.2rem; margin-inline-start: 0.4rem;
+  padding: 0.6rem 0 0.2rem; padding-inline-start: 0.75rem;
+  border-inline-start: 2px dashed var(--border); animation: fadeInUp 0.25s ease;
 }
+
+/* "Excel / CSV" is a product name and stays Latin in every language. Under
+ * dir="rtl" the global `unicode-bidi: plaintext` resolves that row's paragraph
+ * direction from its first strong character — Latin — and `text-align: start`
+ * then follows the *resolved* direction rather than the page's, so this one
+ * row aligned left while its Arabic siblings aligned right.
+ *
+ * Pin the physical edge instead. plaintext still governs the run itself, so
+ * the label reads "Excel / CSV" and not "CSV / Excel"; only where the line
+ * sits changes. */
+[dir="rtl"] .wl-import-node,
+[dir="rtl"] .wl-import-node-label,
+[dir="rtl"] .wl-import-node-desc { text-align: right; }
 
 /* ── Knowledge Wheel (Spin & Learn) ────────────────────────────────────── */
 .kw-wrap { display: flex; flex-direction: column; align-items: center; gap: 1rem; }

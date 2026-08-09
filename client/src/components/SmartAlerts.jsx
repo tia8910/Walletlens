@@ -5,13 +5,14 @@ import CoinLogo from './CoinLogo'
 import Icon from './Icon'
 import { TOKEN_UNLOCKS } from '../data/assets'
 import { useLanguage } from '../LanguageContext'
+import { renderMaybe } from '../data/walletEvalTips'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
 const UNLOCK_SEVERITY = {
-  critical: { color: '#f87171', bg: 'rgba(248,113,113,0.10)', icon: 'unlock', label: 'Critical Unlock' },
-  high:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)',  icon: 'unlock', label: 'High Unlock'     },
-  medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',  icon: 'bell',   label: 'Unlock Watch'    },
+  critical: { color: '#f87171', bg: 'rgba(248,113,113,0.10)', icon: 'unlock', labelKey: 'saUnlockCritical' },
+  high:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.10)',  icon: 'unlock', labelKey: 'saUnlockHigh'     },
+  medium:   { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',  icon: 'bell',   labelKey: 'saUnlockWatch'    },
 }
 
 function TokenUnlockAlerts({ enriched }) {
@@ -32,10 +33,10 @@ function TokenUnlockAlerts({ enriched }) {
         <div className="tua-header-text">
           <span className="tua-header-title">{t('saTokenUnlock')}</span>
           <span className="tua-header-sub">
-            {critCount > 0 && <span style={{ color: '#f87171' }}>{critCount} critical</span>}
+            {critCount > 0 && <span style={{ color: '#f87171' }}>{t('saCritCount')(critCount)}</span>}
             {critCount > 0 && highCount > 0 && ' · '}
-            {highCount > 0 && <span style={{ color: '#f59e0b' }}>{highCount} high</span>}
-            {' '}{matches.length} of your holdings have unlock pressure
+            {highCount > 0 && <span style={{ color: '#f59e0b' }}>{t('saHighCount')(highCount)}</span>}
+            {' '}{t('saUnlockPressure')(matches.length)}
           </span>
         </div>
         <span className="tua-chevron">{expanded ? '▲' : '▼'}</span>
@@ -54,7 +55,7 @@ function TokenUnlockAlerts({ enriched }) {
                     <div className="tua-card-sym">
                       <strong>{u.symbol}</strong>
                       <span className="tua-sev-pill" style={{ color: sev.color, borderColor: sev.color + '55', background: sev.color + '18', display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
-                        <Icon name={sev.icon} size={12} /> {sev.label}
+                        <Icon name={sev.icon} size={12} /> {t(sev.labelKey)}
                       </span>
                     </div>
                     <div className="tua-card-note">{u.note}</div>
@@ -62,7 +63,7 @@ function TokenUnlockAlerts({ enriched }) {
                   <div className="tua-card-right">
                     <span className="tua-unlock-pct" style={{ color: sev.color }}>~{u.unlockPct}%/mo</span>
                     {daysUntil !== null && daysUntil > 0 && (
-                      <span className="tua-next-unlock">Next cliff: {daysUntil}d</span>
+                      <span className="tua-next-unlock">{t('saNextCliff')(daysUntil)}</span>
                     )}
                     {daysUntil !== null && daysUntil <= 0 && (
                       <span className="tua-next-unlock" style={{ color: '#f87171' }}>{t('saUnlockNow')}</span>
@@ -74,11 +75,11 @@ function TokenUnlockAlerts({ enriched }) {
           })}
           {matches.length > 3 && (
             <button className="tua-show-more" onClick={() => setExpanded(v => !v)}>
-              {expanded && shown.length === matches.length ? '▲ Show less' : `▼ Show all ${matches.length}`}
+              {expanded && shown.length === matches.length ? t('saShowLess') : t('saShowAll')(matches.length)}
             </button>
           )}
           <a href="https://token.unlocks.app" target="_blank" rel="noopener noreferrer" className="tua-source-link">
-            <Icon name="calendar" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />View full unlock calendar → token.unlocks.app
+            <Icon name="calendar" size={13} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />{t('saUnlockCalendar')}
           </a>
         </div>
       )}
@@ -148,13 +149,24 @@ function fmtUsd(n) {
 }
 
 const SIGNAL_META = {
-  whale:      { icon: 'flow',         color: '#38bdf8', label: 'Whale Move'   },
-  momentum:   { icon: 'arrow-ne',     color: '#a78bfa', label: 'Momentum'     },
-  volume:     { icon: 'volume-chart', color: '#fb923c', label: 'Vol Anomaly'  },
-  news:       { icon: 'news',         color: 'var(--g-ink)', label: 'Breaking News' },
+  whale:      { icon: 'flow',         color: '#38bdf8', labelKey: 'saSigWhale'    },
+  momentum:   { icon: 'arrow-ne',     color: '#a78bfa', labelKey: 'saSigMomentum' },
+  volume:     { icon: 'volume-chart', color: '#fb923c', labelKey: 'saSigVolume'   },
+  news:       { icon: 'news',         color: 'var(--g-ink)', labelKey: 'saSigNews' },
 }
 
 // ── Correlation engine (pure function, no side-effects) ────────────────────
+/**
+ * Build the alerts.
+ *
+ * Signal descriptions come out as `[key, ...args]`, not sentences. This runs at
+ * module scope with no hook to translate from, and — more importantly — the
+ * alerts it returns are written to localStorage and re-read for days. Resolving
+ * the text here would pin each stored alert to whichever language was active
+ * when it fired, so switching to Arabic would leave yesterday's alerts English.
+ *
+ * The news signal is the exception: its description is the headline itself.
+ */
 function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds }) {
   if (!holdings.length) return []
 
@@ -185,7 +197,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
         const biggest = bigWhales[0]
         signals.push({
           type: 'whale',
-          desc: `Whale moved ${fmtUsd(biggest.usd)} BTC on-chain`,
+          desc: ['saWhale', fmtUsd(biggest.usd), 'BTC'],
           usd: biggest.usd,
           extra: `${biggest.amount.toFixed(2)} BTC`,
         })
@@ -197,7 +209,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
         const biggest = bigWhales[0]
         signals.push({
           type: 'whale',
-          desc: `Whale moved ${fmtUsd(biggest.usd)} ETH on-chain`,
+          desc: ['saWhale', fmtUsd(biggest.usd), 'ETH'],
           usd: biggest.usd,
           extra: `${biggest.amount.toFixed(2)} ETH`,
         })
@@ -212,7 +224,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
         const dir = chg24 > 0 ? '▲' : '▼'
         signals.push({
           type: 'momentum',
-          desc: `${dir} ${chg24 > 0 ? '+' : ''}${chg24.toFixed(1)}% in 24h`,
+          desc: ['saMomentum24', `${dir} ${chg24 > 0 ? '+' : ''}${chg24.toFixed(1)}%`],
           chg: chg24,
           chg1h,
           price: mkt.current_price,
@@ -222,7 +234,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
         const dir = chg1h > 0 ? '▲' : '▼'
         signals.push({
           type: 'momentum',
-          desc: `${dir} ${chg1h > 0 ? '+' : ''}${chg1h.toFixed(1)}% in 1h`,
+          desc: ['saMomentum1h', `${dir} ${chg1h > 0 ? '+' : ''}${chg1h.toFixed(1)}%`],
           chg: chg1h,
           chg1h,
           price: mkt.current_price,
@@ -236,7 +248,7 @@ function correlate({ holdings, whales, marketSnap, newsArticles, cfg, seenIds })
       if (ratio >= cfg.volumeRatio) {
         signals.push({
           type: 'volume',
-          desc: `Volume ${(ratio * 100).toFixed(0)}% of market cap`,
+          desc: ['saVolume', (ratio * 100).toFixed(0)],
           ratio,
           volume: mkt.total_volume,
         })
@@ -353,8 +365,8 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           return merged
         })
         const top = newOnes[0]
-        const title = `${top.coinSymbol} — ${top.signalCount}-Signal Alert`
-        const body  = top.signals.map(s => s.desc).join(' · ')
+        const title = t('saAlertTitle')(top.coinSymbol, top.signalCount)
+        const body  = top.signals.map(s => renderMaybe(s.desc, t)).join(' · ')
         fireNotif(title, body)
         playAlarm()
         setToast({ title, body })
@@ -520,7 +532,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
         {Object.entries(SIGNAL_META).map(([type, m]) => (
           <div key={type} className="sa-legend-item">
             <span><Icon name={m.icon} size={14} style={{ color: m.color }} /></span>
-            <span style={{ color: m.color, fontSize: '0.72rem', fontWeight: 700 }}>{m.label}</span>
+            <span style={{ color: m.color, fontSize: '0.72rem', fontWeight: 700 }}>{t(m.labelKey)}</span>
           </div>
         ))}
       </div>
@@ -574,7 +586,7 @@ function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
           {a.price && <span className="sa-card-price">${a.price >= 1000 ? a.price.toLocaleString('en', { maximumFractionDigits: 0 }) : a.price.toPrecision(4)}</span>}
         </div>
         <div className="sa-card-meta">
-          <span className="sa-signal-count">{a.signalCount} signals</span>
+          <span className="sa-signal-count">{t('saSignalCount')(a.signalCount)}</span>
           <span className="sa-ago">{ago}</span>
           {!dim && <button className="sa-dismiss" onClick={() => onDismiss(a.id)} title={t('vsDismiss')}>✕</button>}
           <button className="sa-dismiss sa-delete" onClick={() => onDelete(a.id)} title={t('vsDelete')}><Icon name="trash" size={14} /></button>
@@ -588,8 +600,8 @@ function AlertCard({ alert: a, onDismiss, onDelete, dim }) {
               <span className="sa-signal-icon">{m.icon ? <Icon name={m.icon} size={14} style={{ color: m.color }} /> : null}</span>
               <span className="sa-signal-desc">
                 {s.url
-                  ? <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{s.desc}</a>
-                  : s.desc}
+                  ? <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>{renderMaybe(s.desc, t)}</a>
+                  : renderMaybe(s.desc, t)}
               </span>
               {s.extra && <span className="sa-signal-extra">{s.extra}</span>}
             </div>

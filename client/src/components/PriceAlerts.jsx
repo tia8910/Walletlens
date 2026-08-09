@@ -123,8 +123,12 @@ export default function PriceAlerts({ enriched, prices }) {
       if (hit) {
         updated[i] = { ...a, triggered: true, triggeredAt: new Date().toISOString(), triggeredPrice: cur }
         changed = true
-        const dir = a.condition === 'above' ? 'Hit target ↑' : 'Hit target ↓'
-        const body = `${a.coin_symbol} is now $${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })} — target was $${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
+        const dir = t(a.condition === 'above' ? 'paHitAbove' : 'paHitBelow')
+        const body = t('paTargetBody')(
+          a.coin_symbol,
+          `$${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })}`,
+          `$${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}`,
+        )
         fireNotification(`${dir} ${a.coin_symbol}`, body)
         playAlarm()
         addToast(`${dir} ${a.coin_symbol?.toUpperCase()} — ${body}`)
@@ -133,7 +137,7 @@ export default function PriceAlerts({ enriched, prices }) {
     }
     if (changed) setAlerts(updated)
     prevPricesRef.current = prices
-  }, [prices, addToast])
+  }, [prices, addToast, t])
 
   function addAlert(e) {
     e.preventDefault()

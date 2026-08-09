@@ -35,3 +35,22 @@ export function renderTip(tip, t) {
   if (typeof fn !== 'function') return fn
   return fn(...tip.slice(1).map(a => (a && typeof a === 'object' && a.k) ? t(a.k) : a))
 }
+
+/**
+ * Render a value that is *either* a tip descriptor or already a sentence.
+ *
+ * Three callers need the string case and would otherwise each reinvent it:
+ *  • the smart-alert news signal, whose description is a headline from the
+ *    feed and stays in the language it was published in;
+ *  • the decision engine when the analysis came from the model rather than the
+ *    local rules — the model already wrote prose, in the language it was asked
+ *    for;
+ *  • anything persisted to localStorage before its producer started emitting
+ *    descriptors, which is every stored alert on an existing install.
+ *
+ * Without the passthrough, renderTip('some sentence') returns '' and the row
+ * silently renders blank — worse than the wrong language.
+ */
+export function renderMaybe(value, t) {
+  return Array.isArray(value) ? renderTip(value, t) : (value ?? '')
+}
