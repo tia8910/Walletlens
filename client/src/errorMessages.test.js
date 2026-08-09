@@ -51,10 +51,15 @@ const ALLOW = [
 // Listed explicitly rather than pattern-matched so the gap stays visible: when
 // the routing question is answered, delete an entry and this test tells you
 // exactly what is left to translate on that page.
+//
+// FAQ and About have left this list — their copy now lives in
+// data/faqContent.js and data/aboutContent.js in all four languages, with
+// their own parity tests. The English FAQ_SECTIONS export stays, because the
+// prerendered FAQPage JSON-LD describes the English page at the canonical URL.
 const MARKETING_PENDING_I18N_ROUTING = [
-  'pages/Landing.jsx', 'pages/LandingTest.jsx', 'pages/About.jsx', 'pages/Blog.jsx',
-  'pages/FAQ.jsx', 'pages/Rebalancing.jsx', 'pages/Calculator.jsx',
-  'pages/FearAndGreedIndex.jsx', 'pages/MarketIndex.jsx', 'pages/PricePage.jsx',
+  'pages/Landing.jsx', 'pages/LandingTest.jsx', 'pages/Blog.jsx',
+  'pages/Rebalancing.jsx', 'pages/Calculator.jsx',
+  'pages/MarketIndex.jsx', 'pages/PricePage.jsx',
   'pages/TrackCoin.jsx', 'pages/Compare.jsx', 'pages/Learn.jsx',
   'pages/GrowNetWorth.jsx', 'pages/AdminMail.jsx',
 ]
