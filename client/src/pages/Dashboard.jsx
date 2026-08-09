@@ -18,6 +18,7 @@ import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
 import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
+import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
 import { useTheme, THEMES } from '../ThemeContext'
 import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
@@ -205,24 +206,29 @@ function getAssetCategoryBadge(h) {
 }
 
 const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
+// Keys, not words. These name the donut slices and the legend, so they are
+// read by the user, but the object is also indexed by category id all over
+// this file — keeping the id → key mapping here means callers just wrap the
+// lookup in t().
 const CATEGORY_LABELS = {
-  crypto: 'Crypto',
-  metals: 'Precious Metals',
-  stocks: 'Stocks & ETFs',
-  realestate: 'Real Estate',
-  cash: 'Cash',
+  crypto: 'catCrypto',
+  metals: 'catMetals',
+  stocks: 'catStocksEtfs',
+  realestate: 'catRealEstate',
+  cash: 'catCash',
 }
 // SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
 const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
 const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
 
 function CatLabel({ cat, className, iconSize = 14 }) {
+  const { t } = useLanguage()
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
       {cat === 'crypto'
         ? <span style={{ fontWeight: 800, color: CATEGORY_COLOR.crypto, lineHeight: 1 }}>₿</span>
         : <Icon name={CATEGORY_ICON[cat]} size={iconSize} style={{ color: CATEGORY_COLOR[cat], flexShrink: 0 }} />}
-      {CATEGORY_LABELS[cat]}
+      {t(CATEGORY_LABELS[cat])}
     </span>
   )
 }
@@ -570,7 +576,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         <h4 className="ai-section-title">{t('fearGreed')}<Tip text="How fearful or greedy YOUR portfolio looks right now — built from your momentum, P&L bias, trade sentiment and concentration. High greed can be a signal to take profit; high fear, to be patient." /></h4>
         <FearGreedGauge value={ai.fearGreed} label={ai.fgLabel} color={ai.fgColor} />
         <p className="ai-fg-desc">
-          Derived from momentum, P&amp;L bias, trade sentiment &amp; concentration — specific to <em>your</em> portfolio.
+          {t('dsMomentumDerived')}
         </p>
       </div>
 
@@ -811,10 +817,19 @@ function computeAssetMix(enriched, totalValue) {
   return mix
 }
 
+// The dashboard's wallet evaluation. It is not the same set of pillars as
+// Coach's — this one adds ETH exposure and sell-target coverage, and drops
+// the equity/crypto balance check — so the two produce different scores and
+// cannot simply be merged without changing numbers users already see.
+//
+// What they DO share is the copy: most of these tips were duplicated word for
+// word in Coach.jsx, so both now emit the same cchTip* keys and the wording
+// lives in one place. `labelKey` and `tip` are keys rather than English
+// because these run at module scope, with no hook to translate from.
 const EVAL_CATEGORIES = [
   {
     id: 'asset_mix',
-    label: 'Asset-Class Balance',
+    labelKey: 'cchCatAssetMix',
     icon: 'grid',
     color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue, targets, mix) => {
@@ -822,75 +837,77 @@ const EVAL_CATEGORIES = [
       const n = classes.length
       const top = Math.max(...Object.values(mix))
       if (n <= 1) {
-        const only = classes[0]?.[0] || 'one asset class'
-        return { pass: false, score: 25, tip: `Everything is in ${only}. Spreading across uncorrelated classes (crypto + stocks + gold + cash) is the biggest way to cut portfolio risk.` }
+        // A mix key ('crypto', 'stock', …) is an internal identifier. It was
+        // being printed to the user verbatim.
+        const only = classes[0]?.[0]
+        return { pass: false, score: 25, tip: ['cchTipMixSingle', { k: CLASS_LABEL_KEYS[only] || 'clsOther' }] }
       }
-      if (top > 0.85) return { pass: false, score: 55, tip: `${(top*100).toFixed(0)}% sits in one asset class. A second or third class (stocks, gold, or cash) would hedge a downturn in your dominant one.` }
-      if (n >= 3) return { pass: true, score: 100, tip: `Balanced across ${n} asset classes — they hedge each other well.` }
-      return { pass: true, score: 85, tip: `Spread across ${n} asset classes. A third (e.g. gold or cash) would add another hedge.` }
+      if (top > 0.85) return { pass: false, score: 55, tip: ['cchTipMixTop', (top * 100).toFixed(0)] }
+      if (n >= 3) return { pass: true, score: 100, tip: ['cchTipMixThree', n] }
+      return { pass: true, score: 85, tip: ['cchTipMixTwo', n] }
     },
   },
   {
     id: 'btc_anchor',
-    label: 'BTC Anchor',
+    labelKey: 'cchCatBtcAnchor',
     icon: '₿',
     color: '#f7931a',
     applies: (mix) => mix.crypto >= 0.1,
     check: (enriched, totalValue, targets, mix) => {
       const cryptoVal = mix.crypto * totalValue
       const btc = enriched.find(h => h.coin_id === 'bitcoin' || h.coin_symbol?.toLowerCase() === 'btc')
-      if (!btc) return { pass: false, score: 20, tip: 'No Bitcoin in your crypto sleeve. BTC acts as a safe haven during crypto downturns — consider it as a stability anchor.' }
+      if (!btc) return { pass: false, score: 20, tip: ['cchTipBtcNone'] }
       const w = btc.value / cryptoVal * 100
-      if (w < 20) return { pass: false, score: 50, tip: `BTC is only ${w.toFixed(1)}% of your crypto. Increasing toward 30–40% of the crypto sleeve reduces altcoin volatility.` }
-      if (w > 80) return { pass: true, score: 75, tip: `BTC is ${w.toFixed(1)}% of your crypto — a strong anchor, though ETH/SOL would broaden exposure.` }
-      return { pass: true, score: 100, tip: `Solid BTC anchor at ${w.toFixed(1)}% of your crypto sleeve.` }
+      if (w < 20) return { pass: false, score: 50, tip: ['cchTipBtcLow', w.toFixed(1)] }
+      if (w > 80) return { pass: true, score: 75, tip: ['cchTipBtcHigh', w.toFixed(1)] }
+      return { pass: true, score: 100, tip: ['cchTipBtcGood', w.toFixed(1)] }
     },
   },
   {
     id: 'eth_exposure',
-    label: 'ETH / Smart Contract',
+    labelKey: 'cchCatEthExposure',
     icon: 'Ξ',
     color: '#627eea',
     applies: (mix) => mix.crypto >= 0.1,
-    check: (enriched, totalValue) => {
+    check: (enriched) => {
       const eth = enriched.find(h => h.coin_id === 'ethereum' || h.coin_symbol?.toLowerCase() === 'eth')
       const hasAlt = enriched.some(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
-      if (!eth && !hasAlt) return { pass: false, score: 20, tip: 'No smart-contract layer exposure. ETH (or SOL/ADA/AVAX) drives DeFi, NFTs, and Web3 — your crypto misses this sector.' }
+      if (!eth && !hasAlt) return { pass: false, score: 20, tip: ['cchTipEthNone'] }
       const asset = eth || enriched.find(h => ['solana','cardano','avalanche-2','polkadot'].includes(h.coin_id))
-      return { pass: true, score: 90, tip: `Good — ${asset.coin_symbol?.toUpperCase()} covers your smart-contract exposure.` }
+      return { pass: true, score: 90, tip: ['cchTipEthOk', asset.coin_symbol?.toUpperCase()] }
     },
   },
   {
     id: 'diversification',
-    label: 'Diversification',
+    labelKey: 'cchCatDiversification',
     icon: 'scale',
     color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => totalValue > 0 ? h.value / totalValue : 0)
       const hhi = weights.reduce((s, w) => s + w * w, 0)
-      if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 positions to reduce single-name risk.` }
-      if (hhi > 0.5) return { pass: false, score: 30, tip: `One position dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single holding exceeds 50%.` }
-      if (n < 5) return { pass: false, score: 60, tip: `${n} holdings is okay but aim for 5–10. Add 1–2 more quality positions from different sectors or classes.` }
-      return { pass: true, score: 95, tip: `Well diversified across ${n} positions with balanced weights.` }
+      if (n < 3) return { pass: false, score: 10, tip: ['cchTipDivFew', n] }
+      if (hhi > 0.5) return { pass: false, score: 30, tip: ['cchTipDivHhi', hhi.toFixed(2)] }
+      if (n < 5) return { pass: false, score: 60, tip: ['cchTipDivOkay', n] }
+      return { pass: true, score: 95, tip: ['cchTipDivGood', n] }
     },
   },
   {
     id: 'cash_reserve',
-    label: 'Cash & Dry Powder',
+    labelKey: 'cchCatCash',
     icon: 'bank',
     color: '#60a5fa',
     check: (enriched, totalValue, targets, mix) => {
       const pct = mix.cash * 100
-      if (pct === 0) return { pass: false, score: 30, tip: 'No cash or stablecoin reserve. Holding 5–15% in cash/stablecoins gives you dry powder to buy dips without selling at a loss.' }
-      if (pct < 5) return { pass: false, score: 60, tip: `Only ${pct.toFixed(1)}% in cash/stablecoins. Increasing to 5–15% gives you a proper "buy the dip" reserve.` }
-      if (pct > 50) return { pass: true, score: 65, tip: `${pct.toFixed(1)}% in cash is high — you may be missing market upside. Consider deploying some into quality assets.` }
-      return { pass: true, score: 100, tip: `${pct.toFixed(1)}% cash reserve — healthy dry powder for opportunities.` }
+      if (pct === 0) return { pass: false, score: 30, tip: ['cchTipCashNone'] }
+      if (pct < 5) return { pass: false, score: 60, tip: ['cchTipCashLow', pct.toFixed(1)] }
+      if (pct > 50) return { pass: true, score: 65, tip: ['cchTipCashHigh', pct.toFixed(1)] }
+      return { pass: true, score: 100, tip: ['cchTipCashGood', pct.toFixed(1)] }
     },
   },
   {
     id: 'large_cap',
-    label: 'Large-Cap Crypto',
+    labelKey: 'cchCatLargeCap',
     icon: 'award',
     color: '#3b82f6',
     applies: (mix) => mix.crypto >= 0.1,
@@ -899,14 +916,14 @@ const EVAL_CATEGORIES = [
       const largeCap = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
       const lcVal = enriched.filter(h => largeCap.has(h.coin_id)).reduce((s, h) => s + h.value, 0)
       const pct = lcVal / cryptoVal * 100
-      if (pct < 40) return { pass: false, score: 30, tip: `Only ${pct.toFixed(1)}% of your crypto is large-cap. Heavy small-cap exposure raises wipeout risk — anchor with more BTC/ETH/SOL.` }
-      if (pct < 60) return { pass: false, score: 70, tip: `${pct.toFixed(1)}% large-cap crypto. Aim for 60%+ in proven coins to absorb micro-cap volatility.` }
-      return { pass: true, score: 95, tip: `${pct.toFixed(1)}% of your crypto is large-cap — a solid, volatility-absorbing base.` }
+      if (pct < 40) return { pass: false, score: 30, tip: ['cchTipLcLow', pct.toFixed(1)] }
+      if (pct < 60) return { pass: false, score: 70, tip: ['cchTipLcMid', pct.toFixed(1)] }
+      return { pass: true, score: 95, tip: ['cchTipLcGood', pct.toFixed(1)] }
     },
   },
   {
     id: 'stock_sectors',
-    label: 'Stock Sector Spread',
+    labelKey: 'cchCatStockSectors',
     icon: 'grid',
     color: '#818cf8',
     applies: (mix) => mix.stock >= 0.1,
@@ -914,38 +931,38 @@ const EVAL_CATEGORIES = [
       const stocks = enriched.filter(h => assetClass(h.coin_id) === 'stock')
       const sectors = new Set(stocks.map(h => getStockSector(h.coin_id)).filter(Boolean))
       const n = sectors.size
-      if (stocks.length < 2) return { pass: false, score: 40, tip: 'Only one stock position. Single-name risk is high — add 2–3 stocks from different sectors (Tech, Healthcare, Finance).' }
-      if (n === 1) return { pass: false, score: 35, tip: `All your stocks are in ${[...sectors][0]}. Sector concentration is risky — diversify into Healthcare, Finance, Energy, or Consumer.` }
-      if (n === 2) return { pass: false, score: 70, tip: `Stocks span 2 sectors (${[...sectors].join(', ')}). A third sector would smooth out sector-specific drawdowns.` }
-      return { pass: true, score: 100, tip: `Stocks span ${n} sectors (${[...sectors].join(', ')}) — well diversified across the equity market.` }
+      if (stocks.length < 2) return { pass: false, score: 40, tip: ['cchTipSecOne'] }
+      if (n === 1) return { pass: false, score: 35, tip: ['cchTipSecSingle', [...sectors][0]] }
+      if (n === 2) return { pass: false, score: 70, tip: ['cchTipSecTwo', [...sectors].join(', ')] }
+      return { pass: true, score: 100, tip: ['cchTipSecGood', n, [...sectors].join(', ')] }
     },
   },
   {
     id: 'sell_targets',
-    label: 'Profit Targets Set',
+    labelKey: 'cchCatSellTargets',
     icon: 'target',
     color: '#fbbf24',
     check: (enriched, totalValue, targets) => {
       const coinsWithTargets = new Set(targets.map(tg => tg.coin_id))
       const covered = enriched.filter(h => coinsWithTargets.has(h.coin_id)).length
       const total = enriched.length
-      if (covered === 0) return { pass: false, score: 0, tip: 'No sell targets set. Without a plan, emotions will decide when you sell — usually at the wrong time. Go to Targets and set exit levels.' }
-      if (covered < total * 0.5) return { pass: false, score: 40, tip: `Only ${covered}/${total} holdings have sell targets. Set exit points for every position so you never exit on panic.` }
-      return { pass: true, score: 95, tip: `${covered}/${total} holdings have sell targets — disciplined exit planning.` }
+      if (covered === 0) return { pass: false, score: 0, tip: ['cchTipTargetsNone'] }
+      if (covered < total * 0.5) return { pass: false, score: 40, tip: ['cchTipTargetsFew', covered, total] }
+      return { pass: true, score: 95, tip: ['cchTipTargetsGood', covered, total] }
     },
   },
   {
     id: 'pnl_health',
-    label: 'P&L Health',
+    labelKey: 'cchCatPnl',
     icon: 'pulse',
     color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
-      if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
+      if (!enriched.length) return { pass: false, score: 0, tip: ['cchTipPnlNone'] }
       const avgPnlPct = totalValue > 0 ? enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested, 1)) * (h.value / totalValue), 0) * 100 : 0
-      if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
-      if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
-      if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits to lock in gains.` }
-      return { pass: true, score: 90, tip: `Portfolio up ${avgPnlPct.toFixed(1)}% — healthy. Keep managing risk.` }
+      if (avgPnlPct < -30) return { pass: false, score: 10, tip: ['cchTipPnlDeep', Math.abs(avgPnlPct).toFixed(1)] }
+      if (avgPnlPct < 0) return { pass: false, score: 50, tip: ['cchTipPnlUnder', avgPnlPct.toFixed(1)] }
+      if (avgPnlPct > 100) return { pass: true, score: 100, tip: ['cchTipPnlStrong', avgPnlPct.toFixed(1)] }
+      return { pass: true, score: 90, tip: ['cchTipPnlHealthy', avgPnlPct.toFixed(1)] }
     },
   },
 ]
@@ -966,12 +983,13 @@ function computeWalletEval(enriched, totalValue, targets = []) {
 }
 
 function EvalScoreRing({ score }) {
+  const { t } = useLanguage()
   const r = 54, circ = 2 * Math.PI * r
   const dash = circ * score / 100
   const color = score >= 80 ? 'var(--g)' : score >= 55 ? '#fbbf24' : '#f87171'
   // Lighter companion stop for a subtle gradient sweep along the arc.
   const color2 = score >= 80 ? '#34d399' : score >= 55 ? '#f59e0b' : '#fb7185'
-  const label = score >= 80 ? 'Strong' : score >= 55 ? 'Needs Work' : 'At Risk'
+  const label = score >= 80 ? t('cchRingStrong') : score >= 55 ? t('cchRingNeedsWork') : t('cchRingAtRisk')
   return (
     <div className="eval-ring-wrap">
       <svg width="140" height="140" viewBox="0 0 140 140">
@@ -1046,7 +1064,7 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
             <div className="eval-cat-header">
               <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}>{cat.icon.length <= 2 ? cat.icon : <Icon name={cat.icon} size={16} />}</span>
               <div className="eval-cat-info">
-                <div className="eval-cat-label">{cat.label}</div>
+                <div className="eval-cat-label">{t(cat.labelKey)}</div>
                 <div className="eval-cat-bar-wrap">
                   <div className="eval-cat-bar" style={{ width: `${cat.score}%` }} />
                 </div>
@@ -1061,7 +1079,7 @@ const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, target
             {expanded === cat.id && (
               <div className="eval-cat-tip">
                 <Icon name={cat.pass ? 'lightbulb' : 'warning'} size={14} style={{ marginRight:'0.5rem', verticalAlign:'-2px', color: cat.pass ? 'var(--g-ink)' : '#f59e0b' }} />
-                {cat.tip}
+                {renderTip(cat.tip, t)}
               </div>
             )}
           </div>
@@ -1402,7 +1420,7 @@ function EmailBackupPanel() {
       {!sub ? (
         <>
           <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0.15rem 0 0.6rem', lineHeight:1.55 }}>
-            Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
+            {t('dsBackupEmailBody')} <strong>noreply@walletlens.live</strong> {t('dsBackupEmailTail')}
           </p>
           <div style={{ display:'flex', gap:'0.5rem' }}>
             <input
@@ -1560,7 +1578,7 @@ function DataPanel({ onRefresh, onImported }) {
       </div>
 
       <p className="dvx-data-hint">
-        Your data is stored as a short backup code (WLZ format). Export it to save or transfer to another device. Paste a code to restore.
+        {t('dsBackupCodeHelp')}
       </p>
 
       <div className="dvx-panel-row">
@@ -1757,16 +1775,16 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
                 {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
               </div>
               {size >= 90 && (
-                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{c.sizePct.toFixed(1)}% of portfolio</div>
+                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
               )}
             </div>
           )
         })}
       </div>
       <div className="heatmap-legend">
-        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ Losing</span>
+        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ {t('dsLosing')}</span>
         <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
-        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ Gaining</span>
+        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ {t('dsGaining')}</span>
       </div>
     </div>
   )
@@ -1799,21 +1817,22 @@ function computeRiskProfile(enriched, totalValue) {
   const lowPct  = (low    / total) * 100
   const medPct  = (medium / total) * 100
   const highPct = (high   / total) * 100
-  let traderType, traderColor, traderDesc
+  // Keys, resolved by the renderer: this runs at module scope.
+  let traderTypeKey, traderColor, traderDescKey
   if (lowPct >= 60) {
-    traderType = 'Conservative Trader'
+    traderTypeKey = 'rpConservative'
     traderColor = '#fbbf24'
-    traderDesc = 'Your portfolio is primarily in low-risk, stable assets.'
+    traderDescKey = 'rpConservativeDesc'
   } else if (highPct >= 50) {
-    traderType = 'Aggressive Trader'
+    traderTypeKey = 'rpAggressive'
     traderColor = '#f87171'
-    traderDesc = 'You hold significant high-risk positions.'
+    traderDescKey = 'rpAggressiveDesc'
   } else {
-    traderType = 'Moderate Trader'
+    traderTypeKey = 'rpModerate'
     traderColor = '#10b981'
-    traderDesc = 'Balanced mix of risk levels across your portfolio.'
+    traderDescKey = 'rpModerateDesc'
   }
-  return { lowPct, medPct, highPct, traderType, traderColor, traderDesc }
+  return { lowPct, medPct, highPct, traderTypeKey, traderColor, traderDescKey }
 }
 
 const RiskGauge = memo(function RiskGauge({ pct, color, label }) {
@@ -1842,7 +1861,7 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
   const { t } = useLanguage()
   const profile = useMemo(() => computeRiskProfile(enriched, totalValue), [enriched, totalValue])
   if (!profile) return null
-  const { lowPct, medPct, highPct, traderType, traderColor, traderDesc } = profile
+  const { lowPct, medPct, highPct, traderTypeKey, traderColor, traderDescKey } = profile
 
   const iconPath = traderColor === '#f87171'
     ? 'M13 2L3 14h9l-1 8 10-12h-9l1-8z'      // aggressive: lightning
@@ -1872,8 +1891,8 @@ const RiskProfileCard = memo(function RiskProfileCard({ enriched, totalValue }) 
           </svg>
         </div>
         <div>
-          <div style={{ fontSize:'1rem', fontWeight:800, color:traderColor }}>{traderType}</div>
-          <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.4 }}>{traderDesc}</div>
+          <div style={{ fontSize:'1rem', fontWeight:800, color:traderColor }}>{t(traderTypeKey)}</div>
+          <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.4 }}>{t(traderDescKey)}</div>
         </div>
       </div>
 
@@ -2206,6 +2225,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
 }
 
 function ConstellationMap() {
+  const { t } = useLanguage()
   const canvasRef = useRef(null)
   const NODES = [
     { symbol:'BTC',  coinId:'bitcoin',  color:'#f7931a', x:0.50, y:0.14 },
@@ -2345,7 +2365,7 @@ function ConstellationMap() {
                   {/* emboss border on front */}
                   <polygon points="4,9 20,9 20,15 4,15" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="0.7"/>
                   {/* text FINE GOLD */}
-                  <text x="12" y="12.2" textAnchor="middle" fontSize="3" fill="rgba(0,0,0,0.45)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.3">FINE GOLD</text>
+                  <text x="12" y="12.2" textAnchor="middle" fontSize="3" fill="rgba(0,0,0,0.45)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.3">{t('dsFineGold')}</text>
                   <text x="12" y="15" textAnchor="middle" fontSize="2.4" fill="rgba(0,0,0,0.35)" fontFamily="Arial">999.9</text>
                 </svg>
               : n.svg === 'silver'
@@ -2361,7 +2381,7 @@ function ConstellationMap() {
                     {/* emboss border on front */}
                     <polygon points="4,9 20,9 20,15 4,15" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="0.7"/>
                     {/* text FINE SILVER */}
-                    <text x="12" y="12.2" textAnchor="middle" fontSize="2.6" fill="rgba(0,0,0,0.4)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.2">FINE SILVER</text>
+                    <text x="12" y="12.2" textAnchor="middle" fontSize="2.6" fill="rgba(0,0,0,0.4)" fontFamily="Arial" fontWeight="bold" letterSpacing="0.2">{t('dsFineSilver')}</text>
                     <text x="12" y="15" textAnchor="middle" fontSize="2.4" fill="rgba(0,0,0,0.3)" fontFamily="Arial">999.9</text>
                   </svg>
                 : n.svg === 'usd'
@@ -2594,6 +2614,7 @@ function fmtQty(n) {
 // take?" Local heuristic (ATH + past-year pace + trend) with an optional AI take.
 const VOICE_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, targetPrice, assetClass, compact = false }) {
+  const { t } = useLanguage()
   const [data, setData] = useState(null)
   const [ai, setAi] = useState({ state: 'idle' })
 
@@ -2650,7 +2671,7 @@ function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, target
             {ai.state === 'loading' ? 'Analyzing…' : ai.state === 'error' ? 'Retry AI take' : '✨ Ask AI for a deeper take'}
           </button>
         )}
-        <span className="dvx-trc-disclaimer">Rough estimate — not a prediction or financial advice.</span>
+        <span className="dvx-trc-disclaimer">{t('dsRoughEstimate')}</span>
       </div>
     </div>
   )
@@ -2718,16 +2739,16 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
         if (maxTargets === 0) return null
         return (
           <div className="glass-card">
-            <h3 style={{ margin:'0 0 0.85rem' }}>Sell Targets Plan</h3>
+            <h3 style={{ margin:'0 0 0.85rem' }}>{t('dsSellPlan')}</h3>
             <div className="dvx-tgt-table-wrap">
               <table className="dvx-tgt-table">
                 <thead>
                   <tr>
-                    <th className="dvx-tgt-th-asset">Asset</th>
+                    <th className="dvx-tgt-th-asset">{t('tsAsset')}</th>
                     {Array.from({ length: maxTargets }, (_, i) => (
                       <th key={i}>Target {i + 1}</th>
                     ))}
-                    <th className="dvx-tgt-th-total">Total Projected</th>
+                    <th className="dvx-tgt-th-total">{t('dsTotalProjected')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2740,7 +2761,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                             <span className="dvx-tgt-now">{r.currentPrice > 0 ? `$${fmt(r.currentPrice)}` : '—'}</span>
                           </td>
                           <td colSpan={maxTargets + 1} className="dvx-tgt-empty" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                            No targets yet — scroll down to add
+                            {t('dsNoTargetsScroll')}
                           </td>
                         </tr>
                       )
@@ -2838,7 +2859,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                 <div className="dvx-tgt-form">
                   <div className="dvx-tgt-form-row">
                     <div style={{ flex:'1 1 120px' }}>
-                      <div className="dvx-tgt-form-lbl">Target Price ($)</div>
+                      <div className="dvx-tgt-form-lbl">{t('dsTargetPriceUsd')}</div>
                       <input
                         type="number" placeholder="e.g. 75000" min="0" step="any"
                         value={addState.price || ''}
@@ -2853,7 +2874,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     </div>
                   </div>
                   <div>
-                    <div className="dvx-tgt-form-lbl">How much to sell at this target</div>
+                    <div className="dvx-tgt-form-lbl">{t('dsHowMuchAtTarget')}</div>
                     {/* Mode toggle: percentage or exact quantity */}
                     <div className="dvx-tgt-mode-row">
                       <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'pct' ? 'active' : ''}`}
@@ -2911,14 +2932,14 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
               )}
 
               {/* Existing targets */}
-              {plan.map(t => {
-                const sellQty   = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
-                const proceeds  = sellQty * t.price
-                const progress  = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
-                const reached   = currentPrice >= t.price && currentPrice > 0
-                const gainVsNow = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
+              {plan.map(tg => {
+                const sellQty   = tg.quantity == null ? h.amount : Math.min(tg.quantity, h.amount)
+                const proceeds  = sellQty * tg.price
+                const progress  = currentPrice > 0 && tg.price > 0 ? Math.min((currentPrice / tg.price) * 100, 100) : 0
+                const reached   = currentPrice >= tg.price && currentPrice > 0
+                const gainVsNow = currentPrice > 0 ? ((tg.price - currentPrice) / currentPrice) * 100 : 0
                 return (
-                  <div key={t.id} className={`dvx-target-row ${reached ? 'dvx-target-reached' : ''}`}>
+                  <div key={tg.id} className={`dvx-target-row ${reached ? 'dvx-target-reached' : ''}`}>
                     {reached && (
                       <div className="dvx-target-reached-banner">
                         <Icon name="target" size={13} />
@@ -2927,24 +2948,24 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     )}
                     <div className="dvx-target-row-top">
                       <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Target Price</span>
-                        <span className="dvx-target-val">${fmt(t.price)}</span>
+                        <span className="dvx-target-lbl">{t('dsTargetPrice')}</span>
+                        <span className="dvx-target-val">${fmt(tg.price)}</span>
                       </div>
                       <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Qty to Sell</span>
-                        <span className="dvx-target-val">{t.quantity == null ? `All (${h.amount.toFixed(4)})` : sellQty.toFixed(4)}</span>
+                        <span className="dvx-target-lbl">{t('dsQtyToSell')}</span>
+                        <span className="dvx-target-val">{tg.quantity == null ? `All (${h.amount.toFixed(4)})` : sellQty.toFixed(4)}</span>
                       </div>
                       <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Proceeds</span>
+                        <span className="dvx-target-lbl">{t('adProceeds')}</span>
                         <span className="dvx-target-val" style={{ color: 'var(--g-ink)', fontWeight: 700 }}>${fmt(proceeds)}</span>
                       </div>
                       <div className="dvx-target-cell">
-                        <span className="dvx-target-lbl">Distance</span>
+                        <span className="dvx-target-lbl">{t('dsDistance')}</span>
                         <span className="dvx-target-val" style={{ color: reached ? 'var(--g-ink)' : gainVsNow > 0 ? 'var(--text)' : '#f87171' }}>
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
-                      <button onClick={() => removeTarget(h.coin_id, t.id)} title="Remove target"
+                      <button onClick={() => removeTarget(h.coin_id, tg.id)} title="Remove target"
                         style={{ background:'none', border:'none', color:'rgba(248,113,113,0.7)', cursor:'pointer', fontSize:'1rem', padding:'0 4px', flexShrink:0 }}>✕</button>
                     </div>
                     <div className="dvx-target-bar-wrap">
@@ -2957,7 +2978,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                     {!reached && (
                       <TargetRealityCheck compact
                         coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
-                        currentPrice={currentPrice} targetPrice={t.price} assetClass={categorizeAsset(h)} />
+                        currentPrice={currentPrice} targetPrice={tg.price} assetClass={categorizeAsset(h)} />
                     )}
                   </div>
                 )
@@ -2966,7 +2987,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
               {/* Empty state per holding */}
               {plan.length === 0 && !isAdding && (
                 <div style={{ fontSize:'0.75rem', color:'var(--text-sub)', padding:'0.25rem 0 0.1rem' }}>
-                  No targets set — tap "+ Target" to add one
+                  {t('dsNoTargetsTap')}
                 </div>
               )}
             </div>
@@ -2989,16 +3010,16 @@ const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets'
 const ACTIVE_TAB_KEY = 'wl_active_tab'
 
 const CARD_CONFIG = [
-  { id:'spin_learn',         label:'Spin & Learn' },
-  { id:'pnl_chart',          label:'P&L by Asset' },
-  { id:'portfolio_heatmap',  label:'Portfolio Heatmap' },
-  { id:'goal_tracker',       label:'Goal Tracker' },
-  { id:'allocation',         label:'Allocation' },
-  { id:'net_worth_history',  label:'Net Worth History' },
-  { id:'market_mood',        label:'Market Mood' },
-  { id:'movers',             label:"Today's Movers" },
-  { id:'correlation',        label:'Correlation Matrix' },
-  { id:'sector_heatmap',     label:'Sector Heatmap' },
+  { id:'spin_learn',         labelKey:'cardSpinLearn' },
+  { id:'pnl_chart',          labelKey:'cardPnlByAsset' },
+  { id:'portfolio_heatmap',  labelKey:'cardHeatmap' },
+  { id:'goal_tracker',       labelKey:'cardGoalTracker' },
+  { id:'allocation',         labelKey:'cardAllocation' },
+  { id:'net_worth_history',  labelKey:'cardNetWorthHistory' },
+  { id:'market_mood',        labelKey:'cardMarketMood' },
+  { id:'movers',             labelKey:'dsTodaysMovers' },
+  { id:'correlation',        labelKey:'cardCorrelation' },
+  { id:'sector_heatmap',     labelKey:'cardSectorHeatmap' },
 ]
 const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
 
@@ -3013,7 +3034,7 @@ function AlertsSection({ enriched, prices, isDemo }) {
           <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{t('smartAlerts')}
         </button>
         <button className={`sa-alert-tab ${alertTab === 'price' ? 'active' : ''}`} onClick={() => setAlertTab('price')}>
-          <Icon name="bell" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Price Alerts
+          <Icon name="bell" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('priceAlerts')}
         </button>
       </div>
       {alertTab === 'smart' && (
@@ -3820,13 +3841,13 @@ export default function Dashboard() {
       const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
       const assets = (assetsByCat[cat] || []).sort((a, b) => b.value - a.value)
       return {
-        cat, label: CATEGORY_LABELS[cat],
+        cat, label: t(CATEGORY_LABELS[cat]),
         value: totals[cat],
         pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
         invested, pnl, pnlPct, assets,
       }
     })
-  }, [enriched, totalValue])
+  }, [enriched, totalValue, t])
 
   const catAllocData = useMemo(() => {
     if (!enriched.length) return []
@@ -3837,11 +3858,11 @@ export default function Dashboard() {
     })
     const total = Object.values(totals).reduce((s, v) => s + v, 0)
     return CATEGORY_ORDER.filter(cat => totals[cat] > 0).map(cat => ({
-      name: CATEGORY_LABELS[cat], cat,
+      name: t(CATEGORY_LABELS[cat]), cat,
       value: totals[cat],
       pct: total > 0 ? (totals[cat] / total) * 100 : 0,
     }))
-  }, [enriched])
+  }, [enriched, t])
 
   const pnlData = useMemo(() => {
     if (pricesFailed || !enriched.some(h => h.pnl !== 0)) return []
@@ -4142,7 +4163,7 @@ export default function Dashboard() {
             // think their data was wiped.
             if (!loaded) return (
               <div className="dvx-loading-holdings" style={{ padding:'2.5rem 1rem', textAlign:'center', color:'var(--text-sub)', fontSize:'0.9rem' }}>
-                Loading your portfolio…
+                {t('dsLoadingPortfolio')}
               </div>
             )
             const isEmpty = enriched.length === 0
@@ -4193,7 +4214,7 @@ export default function Dashboard() {
             <p className="dvx-hero-label">
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
-              {pricesFailed && <span className="dvx-badge-warn">PRICES OFFLINE</span>}
+              {pricesFailed && <span className="dvx-badge-warn">{t('dsPricesOffline')}</span>}
               {/* Partial failure: some asset classes priced, others didn't. Without
                   this the unpriced ones just read $0 and look like they're gone. */}
               {!pricesFailed && unpriced.length > 0 && (
@@ -4242,7 +4263,7 @@ export default function Dashboard() {
             </h2>
             {perfCat !== 'all' && !hidden && (
               <p className="dvx-hero-catlabel">
-                {CATEGORY_LABELS[perfCat]} · {totalValue > 0 ? ((perfCatValue / totalValue) * 100).toFixed(0) : 0}% of net worth
+                {t(CATEGORY_LABELS[perfCat])} · {t('dsPctOfNetWorth')(totalValue > 0 ? ((perfCatValue / totalValue) * 100).toFixed(0) : 0)}
               </p>
             )}
             {wallets.length > 1 && (
@@ -4257,7 +4278,7 @@ export default function Dashboard() {
                     cursor:'pointer', maxWidth:200,
                   }}
                 >
-                  <option value="all">All wallets</option>
+                  <option value="all">{t('dsAllWallets')}</option>
                   {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
               </div>
@@ -4316,11 +4337,11 @@ export default function Dashboard() {
                           <circle cx="12" cy="12" r="3"/>
                           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                         </svg>
-                        <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>Customize Dashboard</h3>
+                        <h3 style={{ margin:0, fontSize:'1rem', color:'var(--text)' }}>{t('dsCustomize')}</h3>
                       </div>
                       <button onClick={() => setShowCardConfig(false)} aria-label="Close" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:0, width:36, height:36, lineHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
                     </div>
-                    <p style={{ fontSize:'0.73rem', color:'var(--text-muted)', margin:'0 0 1.1rem', lineHeight:1.4 }}>Tap a card to show or hide it on your dashboard.</p>
+                    <p style={{ fontSize:'0.73rem', color:'var(--text-muted)', margin:'0 0 1.1rem', lineHeight:1.4 }}>{t('dsCardConfigHint')}</p>
 
                     {/* Card grid */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
@@ -4328,7 +4349,7 @@ export default function Dashboard() {
                         const on = !!cardVis[c.id]
                         return (
                           <label key={c.id} onClick={() => toggleCard(c.id)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', padding:'0.6rem 0.75rem', borderRadius:'10px', background: on ? 'rgba(var(--g-rgb),0.12)' : 'var(--surface-2)', border:`1.5px solid ${on ? 'rgba(var(--g-rgb),0.4)' : 'var(--border)'}`, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
-                            <span style={{ fontSize:'0.78rem', fontWeight:600, color: on ? 'var(--text)' : 'var(--text-muted)', transition:'color 0.15s' }}>{c.label}</span>
+                            <span style={{ fontSize:'0.78rem', fontWeight:600, color: on ? 'var(--text)' : 'var(--text-muted)', transition:'color 0.15s' }}>{t(c.labelKey)}</span>
                             {/* Toggle pill */}
                             <div style={{ width:34, height:18, borderRadius:9, background: on ? 'var(--g)' : 'rgba(128,134,148,0.4)', flexShrink:0, position:'relative', transition:'background 0.2s', boxShadow: on ? '0 0 8px rgba(var(--g-rgb),0.4)' : 'none' }}>
                               <div style={{ position:'absolute', top:2, left: on ? 18 : 2, width:14, height:14, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.35)' }}/>
@@ -4643,7 +4664,7 @@ export default function Dashboard() {
               {/* P&L bar chart */}
               {cardVis.pnl_chart && pnlData.length > 0 && (
                 <div className="glass-card">
-                  <h3 style={{ margin:'0 0 0.75rem' }}>Profit / Loss by Asset</h3>
+                  <h3 style={{ margin:'0 0 0.75rem' }}>{t('dsPnlByAsset')}</h3>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
                       <defs>
@@ -4680,13 +4701,13 @@ export default function Dashboard() {
                     Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
                   </h3>
                   <div style={{ display:'flex', gap:'0.4rem', alignItems:'center', flexWrap:'wrap' }}>
-                    {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>INVESTED</span>}
+                    {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>{t('dsInvestedCaps')}</span>}
                     <button
                       className={`dvx-breakeven-toggle ${showBreakEven ? 'active' : ''}`}
                       onClick={() => setShowBreakEven(v => !v)}
                       title="Toggle break-even view"
                     >
-                      <Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Break-Even
+                      <Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('dsBreakEven')}
                     </button>
                     <button
                       className="dvx-export-btn"
@@ -4729,11 +4750,11 @@ export default function Dashboard() {
                         onChange={e => setHoldingsSort(e.target.value)}
                         style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:'8px', padding:'0.35rem 0.5rem', color:'var(--text)', fontSize:'0.75rem', cursor:'pointer', flexShrink:0 }}
                       >
-                        <option value="value">Value</option>
+                        <option value="value">{t('adValue')}</option>
                         <option value="pnl_pct">P&L %</option>
                         <option value="pct24h">24 h</option>
-                        <option value="invested">Invested</option>
-                        <option value="name">Name</option>
+                        <option value="invested">{t('invested')}</option>
+                        <option value="name">{t('vsName')}</option>
                       </select>
                       <button
                         onClick={() => setHoldingsSortDir(d => d === 'desc' ? 'asc' : 'desc')}
@@ -4795,7 +4816,7 @@ export default function Dashboard() {
                 )}
 
                 {enriched.length === 0
-                  ? <p className="muted">Nothing yet.</p>
+                  ? <p className="muted">{t('dsNothingYet')}</p>
                   : <>
                     <div>
                       {(() => {
@@ -4884,7 +4905,7 @@ export default function Dashboard() {
                                       <div className="dvx-holding-line1">
                                         <div className="dvx-holding-meta">
                                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                                          {isStable && <span className="dvx-stable-badge">STABLE</span>}
+                                          {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                           {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
                                         </div>
@@ -4899,7 +4920,7 @@ export default function Dashboard() {
                                       </div>
                                       {showBreakEven ? (
                                         <span className="muted dvx-holding-detail" style={{ fontSize:'0.72rem' }}>
-                                          Break-even: <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:700 }}>
+                                          {t('dsBreakEvenAt')} <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:700 }}>
                                             {cv(breakEvenPrice)}
                                           </span>
                                           {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171' }}>
@@ -4911,8 +4932,8 @@ export default function Dashboard() {
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
-                                            return <span className="dvx-hstat"><em>Price</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
-                                          })() : <span className="dvx-hstat"><em>Invested</em><b>{cv(h.total_invested)}</b></span>}
+                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
+                                          })() : <span className="dvx-hstat"><em>{t('invested')}</em><b>{cv(h.total_invested)}</b></span>}
                                           {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && (
                                             <span className="dvx-hstat"><em>Avg</em><b>{cv(breakEvenPrice)}</b></span>
                                           )}
@@ -4945,12 +4966,12 @@ export default function Dashboard() {
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'targets' } })}>
-                                            <Icon name="target" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Set Target
+                                            <Icon name="target" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsSetTarget')}
                                           </button>
                                         )}
                                         <button className="dvx-ha-btn"
                                           onClick={() => navigate('/vision', { state: { linkAsset: h.coin_id } })}>
-                                          <Icon name="map" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Set Vision
+                                          <Icon name="map" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsSetVision')}
                                         </button>
                                         {isCryptoOnly && (
                                           <button className="dvx-ha-btn"
@@ -4961,13 +4982,13 @@ export default function Dashboard() {
                                         {isCryptoOnly && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } })}>
-                                            <Icon name="sparkles" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Magic Score
+                                            <Icon name="sparkles" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsMagicScore')}
                                           </button>
                                         )}
                                         {!isStable && (
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } })}>
-                                            <Icon name="search" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Risk Scan
+                                            <Icon name="search" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsRiskScan')}
                                           </button>
                                         )}
                                       </div>
@@ -5004,7 +5025,7 @@ export default function Dashboard() {
 
               {/* ── Allocation donut (by category) ── */}
               {cardVis.allocation && <div className="glass-card">
-                <h3>{pricesFailed ? t('allocationInvested') : 'Net Worth by Category'}</h3>
+                <h3>{pricesFailed ? t('allocationInvested') : t('dsNetWorthByCat')}</h3>
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
@@ -5033,7 +5054,7 @@ export default function Dashboard() {
                       onMouseOut={e => e.currentTarget.style.background='rgba(var(--g-rgb),0.1)'}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                      Rebalance my portfolio
+                      {t('dsRebalanceCta')}
                     </button>
                   </>
                 }
@@ -5059,8 +5080,8 @@ export default function Dashboard() {
                 return (
                   <div className="glass-card">
                     <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Net Worth History</h3>
-                      <span className="muted" style={{ fontSize:'0.72rem' }}>30-day invested capital</span>
+                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('cardNetWorthHistory')}</h3>
+                      <span className="muted" style={{ fontSize:'0.72rem' }}>{t('dsInvestedCapital30d')}</span>
                     </div>
                     <ResponsiveContainer width="100%" height={175}>
                       <AreaChart data={points} margin={{ left:0, right:8, top:10, bottom:0 }}>
@@ -5090,7 +5111,7 @@ export default function Dashboard() {
                 <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', padding:'0.65rem 1rem', display:'flex', gap:'0.6rem', alignItems:'flex-start', marginBottom:'0.5rem' }}>
                   <span style={{ flexShrink:0, display:'inline-flex' }}><Icon name="warning" size={15} /></span>
                   <div style={{ fontSize:'0.78rem', color:'var(--text-muted)', lineHeight:1.5 }}>
-                    <strong style={{ color:'#f59e0b' }}>Stale prices:</strong>{' '}
+                    <strong style={{ color:'#f59e0b' }}>{t('dsStalePrices')}</strong>{' '}
                     {staleAssets.map(h => h.coin_symbol?.toUpperCase()).join(', ')} — prices are over 7 days old.
                     Update them via Add Trade to keep your portfolio value accurate.
                   </div>
@@ -5105,7 +5126,7 @@ export default function Dashboard() {
           {/* Today's Movers — actionable daily insight */}
           {cardVis.movers && !isDemo && enriched.length >= 2 && !pricesFailed && (
             <div className="glass-card dvx-movers-card">
-              <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />Today's Movers</h3>
+              <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsTodaysMovers')}</h3>
               <div className="dvx-movers-row">
                 {[...enriched]
                   .filter(h => prices[h.coin_id]?.usd_24h_change != null)
@@ -5206,10 +5227,10 @@ export default function Dashboard() {
         <div className="glass-card" style={{ textAlign:'center', padding:'1.5rem 1.25rem 1.25rem', marginBottom:'1rem' }}>
           <FeatureSlideshow />
           <div style={{ fontWeight:800, fontSize:'1rem', color:'var(--text)', marginBottom:'0.3rem' }}>
-            Add holdings to unlock AI analysis
+            {t('dsUnlockAi')}
           </div>
           <div style={{ fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:'1.25rem' }}>
-            Import your portfolio in seconds — no account needed
+            {t('dsImportSeconds')}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
             <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
@@ -5283,14 +5304,14 @@ export default function Dashboard() {
             <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
           </div>
           <div className="glass-card dvx-form-card">
-            <h3>Browser Extension</h3>
+            <h3>{t('dsBrowserExtension')}</h3>
             <p className="dvx-data-hint" style={{ marginBottom: '0.75rem' }}>
-              Track your portfolio from the toolbar in Chrome, Edge or Brave — it syncs automatically whenever this page is open.
+              {t('dsExtensionDesc')}
             </p>
             <InstallExtension variant="badge" source="dashboard_data_tab" />
           </div>
           <div className="glass-card dvx-form-card">
-            <h3>Smart Import</h3>
+            <h3>{t('dsSmartImport')}</h3>
             <p className="dvx-data-hint" style={{ marginBottom: '0.9rem' }}>{t('impHeadingPick')}</p>
             <div className="wl-import-tree">
               {[
@@ -5350,7 +5371,7 @@ export default function Dashboard() {
               <>
                 <div style={{ textAlign:'center', marginBottom:'1.1rem' }}>
                   <div style={{ display:'flex', justifyContent:'center', marginBottom:'0.6rem' }}><Logo size={40} animated /></div>
-                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>Wallet created</div>
+                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:'var(--text)' }}>{t('dsWalletCreated')}</div>
                   <div style={{ fontSize:'0.82rem', color:'var(--text-muted)', marginTop:'0.2rem' }}>How would you like to add your holdings?</div>
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
@@ -5435,7 +5456,7 @@ export default function Dashboard() {
           ...nudgeSwipeStyle,
         }}>
           <Icon name="bar-chart" size={15} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Log your latest trade</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t('dsLogLatestTrade')}</span>
           <button onClick={() => { setNudgeVisible(false); openSheet('buy', 'nudge_toast') }} style={{
             padding: '0.35rem 0.85rem', borderRadius: '50px', border: 'none', cursor: 'pointer',
             background: 'var(--g)', color: '#000', fontWeight: 800, fontSize: '0.8rem',

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { useTheme } from '../ThemeContext'
 import Icon from './Icon'
 
@@ -189,6 +190,7 @@ async function fetchHeadlines() {
 }
 
 export default function MarketMood() {
+  const { t } = useLanguage()
   const { mode } = useTheme()
   const [mood, setMood] = useState(null)
   const [fetched, setFetched] = useState(false)
@@ -213,10 +215,10 @@ export default function MarketMood() {
           <line x1="15" y1="9" x2="15.01" y2="9"/>
         </svg>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5 }}>
-          Market Mood
+          {t('mmTitle')}
         </span>
         <span style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginLeft: 'auto' }}>
-          {mood ? `${mood.n} headlines` : ''}
+          {mood ? t('mmHeadlines')(mood.n) : ''}
         </span>
       </div>
 
@@ -237,14 +239,14 @@ export default function MarketMood() {
             fontSize: '0.62rem', color: 'var(--text-sub)',
             marginTop: '0.25rem', padding: '0 0.25rem',
           }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="frown" size={12} style={{ color: '#f87171' }} />Fear</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: 'var(--text-muted)' }} />Neutral</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: 'var(--g-ink)' }} />Greed</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="frown" size={12} style={{ color: '#f87171' }} />{t('mmFear')}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="meh" size={12} style={{ color: 'var(--text-muted)' }} />{t('mmNeutral')}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}><Icon name="smile" size={12} style={{ color: 'var(--g-ink)' }} />{t('mmGreed')}</span>
           </div>
         </>
       ) : (
         <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-sub)', fontSize: '0.8rem' }}>
-          Analysing headlines…
+          {t('mmAnalysing')}
         </div>
       )}
     </div>

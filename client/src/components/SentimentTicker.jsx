@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
+import { useLanguage } from '../LanguageContext'
 
 // ── Sentiment keyword scoring ─────────────────────────────────────────────
 const BULLISH_KW = ['bullish','surge','rally','adoption','institutional','etf','approval','milestone','record high','all-time','growth','rises','soars','breakout','recovery','outperform','upgrade','inflows','accumulate','moon']
@@ -26,36 +27,28 @@ async function fetchSentiment() {
 }
 
 // ── Portfolio tips ────────────────────────────────────────────────────────
-const WISDOM_TIPS = [
-  'Consistency beats timing — investors who stayed invested long-term outperformed those who tried to time the market',
-  'Never invest more than you can afford to lose — protecting your downside matters as much as chasing upside',
-  'Emotions are your biggest enemy — stick to your strategy and avoid FOMO or panic decisions',
-  'Cash is a position too — keeping dry powder gives you the power to buy during dips',
-  'Review your portfolio regularly, but avoid checking prices obsessively — short-term noise clouds long-term thinking',
-  'Set price alerts and stop-losses — automating risk management removes emotion from the equation',
-  'Diversification across asset classes helps smooth out volatility and protect against single-asset risk',
-  'Long-term thinking wins — assets that feel risky short-term often reward patient holders',
-  'Dollar-cost averaging (DCA) removes the stress of timing the market — small, regular buys add up over time',
-  'Define your exit strategy before you enter a trade — knowing your target prevents greed from erasing gains',
-]
+// Keys, not sentences: buildTips runs outside any component, so the translator
+// is passed in rather than pulled from a hook.
+const WISDOM_KEYS = ['stW1','stW2','stW3','stW4','stW5','stW6','stW7','stW8','stW9','stW10']
 
-function buildTips(holdings, totalValue, totalPnLPct, sentimentScore) {
+
+function buildTips(holdings, totalValue, totalPnLPct, sentimentScore, t) {
   const tips = []
   const isBullish = sentimentScore > 1
   const isBearish = sentimentScore < -1
 
   // Market sentiment
-  if (isBullish) tips.push('Market sentiment is BULLISH — momentum is on your side, watch for breakout entries')
+  if (isBullish) tips.push(t('stBullish'))
   if (isBearish) {
-    tips.push('Market sentiment is BEARISH — stay calm, every bear market in history has eventually ended')
-    tips.push('Feeling the pressure? You\'re not alone — even seasoned investors feel anxiety in down markets. Breathe and stick to your plan')
-    tips.push('Bear markets are where generational wealth is built — every dip is a potential accumulation opportunity for the patient')
+    tips.push(t('stBearish'))
+    tips.push(t('stBearish2'))
+    tips.push(t('stBearish3'))
   }
-  if (!isBullish && !isBearish) tips.push('Market sentiment is NEUTRAL — wait for a clear directional signal before adding size')
+  if (!isBullish && !isBearish) tips.push(t('stNeutral'))
 
   if (!holdings.length) {
-    tips.push('Add your first holding to unlock personalised portfolio tips')
-    tips.push(...WISDOM_TIPS.slice(0, 4))
+    tips.push(t('stFirstHolding'))
+    tips.push(...WISDOM_KEYS.slice(0, 4).map(t))
     return tips
   }
 
@@ -63,22 +56,22 @@ function buildTips(holdings, totalValue, totalPnLPct, sentimentScore) {
   const sorted = [...holdings].sort((a, b) => b.value - a.value)
   const topHolding = sorted[0]
   const topPct = totalValue > 0 ? (topHolding.value / totalValue) * 100 : 0
-  if (topPct > 60) tips.push(`${topHolding.coin_symbol?.toUpperCase()} makes up ${topPct.toFixed(0)}% of your portfolio — heavy concentration amplifies both gains and losses`)
-  else if (topPct > 40) tips.push(`${topHolding.coin_symbol?.toUpperCase()} is your largest position at ${topPct.toFixed(0)}% — consider whether that exposure matches your risk tolerance`)
+  if (topPct > 60) tips.push(t('stConcHeavy')(topHolding.coin_symbol?.toUpperCase(), topPct.toFixed(0)))
+  else if (topPct > 40) tips.push(t('stConcLargest')(topHolding.coin_symbol?.toUpperCase(), topPct.toFixed(0)))
 
   // Gainers
   const gainers = [...holdings].filter(h => h.pnlPct > 10).sort((a, b) => b.pnlPct - a.pnlPct)
   if (gainers.length) {
     const g = gainers[0]
-    tips.push(`${g.coin_symbol?.toUpperCase()} is up ${g.pnlPct.toFixed(1)}% — consider taking partial profits to lock in gains and reduce risk`)
+    tips.push(t('stGainer')(g.coin_symbol?.toUpperCase(), g.pnlPct.toFixed(1)))
   }
 
   // Losers — extra support when things are rough
   const losers = [...holdings].filter(h => h.pnlPct < -10).sort((a, b) => a.pnlPct - b.pnlPct)
   if (losers.length) {
     const l = losers[0]
-    tips.push(`${l.coin_symbol?.toUpperCase()} is down ${Math.abs(l.pnlPct).toFixed(1)}% — review your thesis or set a stop-loss to protect remaining capital`)
-    tips.push(`${l.coin_symbol?.toUpperCase()} is hurting right now — every great asset has rough patches. DCA can lower your average entry if your conviction holds`)
+    tips.push(t('stLoser')(l.coin_symbol?.toUpperCase(), Math.abs(l.pnlPct).toFixed(1)))
+    tips.push(t('stLoserSupport')(l.coin_symbol?.toUpperCase()))
   }
 
   // 24 h movers (lowered to 3 %)
@@ -86,37 +79,38 @@ function buildTips(holdings, totalValue, totalPnLPct, sentimentScore) {
   const topMover = movers24[0]
   if (topMover && Math.abs(topMover.pct24h) > 3) {
     const dir = topMover.pct24h > 0 ? `+${topMover.pct24h.toFixed(1)}%` : `${topMover.pct24h.toFixed(1)}%`
-    tips.push(`${topMover.coin_symbol?.toUpperCase()} moved ${dir} in 24 h — monitor for continuation or reversal before adding to the position`)
+    tips.push(t('stMover24')(topMover.coin_symbol?.toUpperCase(), dir))
   }
 
   // Overall P&L — supportive tiers
   if (totalPnLPct != null) {
-    if (totalPnLPct > 50) tips.push(`Portfolio up ${totalPnLPct.toFixed(1)}% overall — outstanding! Review profit targets and consider rebalancing to protect those gains`)
-    else if (totalPnLPct > 20) tips.push(`Portfolio up ${totalPnLPct.toFixed(1)}% — solid performance. A great time to revisit your targets and lock in some profit`)
-    else if (totalPnLPct > 5) tips.push(`Portfolio up ${totalPnLPct.toFixed(1)}% — you're in the green. Stay disciplined and keep risk in check`)
+    if (totalPnLPct > 50) tips.push(t('stPnlGreat')(totalPnLPct.toFixed(1)))
+    else if (totalPnLPct > 20) tips.push(t('stPnlSolid')(totalPnLPct.toFixed(1)))
+    else if (totalPnLPct > 5) tips.push(t('stPnlGreen')(totalPnLPct.toFixed(1)))
     else if (totalPnLPct < -30) {
-      tips.push(`Portfolio down ${Math.abs(totalPnLPct).toFixed(1)}% — that's painful, but drawdowns are part of every investor's journey. Focus on what you can control: risk size and your exit plan`)
-      tips.push(`Down ${Math.abs(totalPnLPct).toFixed(1)}% but not out — the investors who stayed the course through deep drawdowns often saw the biggest recoveries`)
+      tips.push(t('stPnlDeep')(Math.abs(totalPnLPct).toFixed(1)))
+      tips.push(t('stPnlDeep2')(Math.abs(totalPnLPct).toFixed(1)))
     } else if (totalPnLPct < -15) {
-      tips.push(`Portfolio down ${Math.abs(totalPnLPct).toFixed(1)}% — this is hard. Avoid panic selling; instead review position sizes and make sure you still believe in your thesis`)
-      tips.push(`It\'s okay to feel stressed when your portfolio is down — what matters is acting calmly and not making fear-driven decisions`)
+      tips.push(t('stPnlMid')(Math.abs(totalPnLPct).toFixed(1)))
+      tips.push(t('stPnlMid2')())
     } else if (totalPnLPct < -5) {
-      tips.push(`Portfolio down ${Math.abs(totalPnLPct).toFixed(1)}% — tighten stops and revisit your position sizing. Small losses are manageable; let them stay small`)
+      tips.push(t('stPnlSmall')(Math.abs(totalPnLPct).toFixed(1)))
     }
   }
 
   // Single asset
-  if (holdings.length === 1) tips.push('You hold only one asset — adding 2–3 uncorrelated assets can significantly reduce your overall risk')
-  else if (holdings.length < 4) tips.push('A portfolio of 5–10 assets across different sectors can balance risk and reward more effectively')
+  if (holdings.length === 1) tips.push(t('stOneAsset'))
+  else if (holdings.length < 4) tips.push(t('stFewAssets'))
 
   // Always pad with wisdom so the ticker is never sparse
-  tips.push(...WISDOM_TIPS)
+  tips.push(...WISDOM_KEYS.map(t))
 
   return tips
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
 export default function SentimentTicker({ holdings = [], totalValue = 0, totalPnLPct = null }) {
+  const { t } = useLanguage()
   const [sentimentScore, setSentimentScore] = useState(null)
   const [tips, setTips] = useState([])
   const trackRef = useRef(null)
@@ -134,8 +128,9 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
   // Rebuild tips whenever holdings or sentiment changes
   useEffect(() => {
     if (sentimentScore === null) return
-    setTips(buildTips(holdings, totalValue, totalPnLPct, sentimentScore))
-  }, [holdings, totalValue, totalPnLPct, sentimentScore])
+    setTips(buildTips(holdings, totalValue, totalPnLPct, sentimentScore, t))
+    // `t` is a dependency: the ticker rebuilds when the language changes.
+  }, [holdings, totalValue, totalPnLPct, sentimentScore, t])
 
   // Scroll animation
   useEffect(() => {
