@@ -98,7 +98,7 @@ export default function WeeklyEmailSignup({ enriched, source = 'settings' }) {
               type="email" inputMode="email" autoComplete="email" placeholder="your@email.com"
               value={email}
               onChange={e => { setEmail(e.target.value); if (state === 'error') { setState('idle'); setMsg('') } }}
-              aria-label="Email address" className="wk-input"
+              aria-label={t('phEmail')} className="wk-input"
             />
             <button type="submit" className="wk-btn" disabled={state === 'sending'}>
               {state === 'sending' ? 'Subscribing…' : 'Subscribe'}
@@ -111,7 +111,7 @@ export default function WeeklyEmailSignup({ enriched, source = 'settings' }) {
 
       {popup && (
         <div className="wk-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setPopup(false) }}>
-          <div className="wk-modal" role="dialog" aria-modal="true" aria-label="Subscribed to weekly report">
+          <div className="wk-modal" role="dialog" aria-modal="true" aria-label={t('atSubscribedWeekly')}>
             <div className="wk-modal-badge"><Icon name="check" size={26} /></div>
             <h3 className="wk-modal-title">{t('weSubscribed')}</h3>
             <p className="wk-modal-sub">

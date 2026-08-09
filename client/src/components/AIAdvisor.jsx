@@ -392,7 +392,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
             <input
               ref={inputRef}
               className="ai-chat-input"
-              placeholder="Ask about your portfolio…"
+              placeholder={t('phAskPortfolio')}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()}

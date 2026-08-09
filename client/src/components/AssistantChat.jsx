@@ -138,6 +138,7 @@ function panelStyleFor(pos) {
 }
 
 export default function AssistantChat() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const { lang } = useLanguage()
   const [open, setOpen] = useState(false)
@@ -328,7 +329,7 @@ export default function AssistantChat() {
       </button>
 
       {open && (
-        <div className="wlc-panel" role="dialog" aria-label="WalletLens assistant" style={pos ? panelStyleFor(pos) : undefined}>
+        <div className="wlc-panel" role="dialog" aria-label={t('atAssistant')} style={pos ? panelStyleFor(pos) : undefined}>
           {/* ── Header ── */}
           <div className="wlc-header">
             <button className="wlc-history-btn" onClick={() => setShowHistory(h => !h)} title={isAr ? (showHistory ? 'رجوع' : 'المحادثات') : (showHistory ? 'Back to chat' : 'Conversations')}>

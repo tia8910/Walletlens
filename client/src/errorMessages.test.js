@@ -40,6 +40,35 @@ const ALLOW = [
   /\/legal\//,                 // ditto, with its own parity test
 ]
 
+// The public marketing and SEO pages are still English on purpose.
+//
+// Translating them is not just a code change: they are what Google indexes,
+// and serving four languages from one URL without hreflang or per-language
+// routes hurts ranking rather than helping it. That needs a URL-scheme
+// decision first (/ar/rebalancing or similar) plus matching meta tags in the
+// prerender.
+//
+// Listed explicitly rather than pattern-matched so the gap stays visible: when
+// the routing question is answered, delete an entry and this test tells you
+// exactly what is left to translate on that page.
+const MARKETING_PENDING_I18N_ROUTING = [
+  'pages/Landing.jsx', 'pages/LandingTest.jsx', 'pages/About.jsx', 'pages/Blog.jsx',
+  'pages/FAQ.jsx', 'pages/Rebalancing.jsx', 'pages/Calculator.jsx',
+  'pages/FearAndGreedIndex.jsx', 'pages/MarketIndex.jsx', 'pages/PricePage.jsx',
+  'pages/TrackCoin.jsx', 'pages/Compare.jsx', 'pages/Learn.jsx',
+  'pages/GrowNetWorth.jsx', 'pages/AdminMail.jsx',
+]
+
+// placeholder / title / aria-label have the same blind spot: rendered to the
+// user (or read aloud) but attributes, not text nodes. aria-label is the one
+// that matters most — someone navigating by screen reader in Arabic was
+// hearing English for every control in the app.
+const ATTR = /\b(?:placeholder|title|aria-label)=(["'])((?:[^"'\\]|\\.){6,}?)\1/g
+
+// A bare capitalised word is a label too ("Settings", "Refresh"), so accept
+// either two lowercase words in a row or a single capitalised word.
+const ATTR_PROSE = /[a-z]{3}\s+[a-z]{2}|^[A-Z][a-z]{3,}$/
+
 describe('user-facing messages go through the translator', () => {
   const files = sourceFiles(SRC).filter(f => !ALLOW.some(re => re.test(f)))
 
@@ -53,6 +82,29 @@ describe('user-facing messages go through the translator', () => {
       const src = readFileSync(f, 'utf8')
       for (const m of src.matchAll(CALL)) {
         if (!LOOKS_LIKE_PROSE.test(m[2])) continue
+        const line = src.slice(0, m.index).split('\n').length
+        offenders.push(`${f.slice(SRC.length + 1)}:${line} → ${m[2].slice(0, 60)}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('the marketing exclusion list points at real files', () => {
+    // A renamed page would silently drop out of the check above.
+    const missing = MARKETING_PENDING_I18N_ROUTING
+      .filter(rel => !files.some(f => f.slice(SRC.length + 1) === rel))
+    expect(missing).toEqual([])
+  })
+
+  it('no English prose is left in an in-app placeholder, title or aria-label', () => {
+    const offenders = []
+    const inApp = files.filter(f =>
+      f.endsWith('.jsx') &&
+      !MARKETING_PENDING_I18N_ROUTING.includes(f.slice(SRC.length + 1)))
+    for (const f of inApp) {
+      const src = readFileSync(f, 'utf8')
+      for (const m of src.matchAll(ATTR)) {
+        if (!ATTR_PROSE.test(m[2])) continue
         const line = src.slice(0, m.index).split('\n').length
         offenders.push(`${f.slice(SRC.length + 1)}:${line} → ${m[2].slice(0, 60)}`)
       }

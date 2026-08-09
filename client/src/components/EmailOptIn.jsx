@@ -61,7 +61,7 @@ export default function EmailOptIn({ source = 'landing', compact = false, label 
           placeholder="your@email.com"
           value={email}
           onChange={e => { setEmail(e.target.value); if (status === 'error') { setStatus('idle'); setMsg('') } }}
-          aria-label="Email address"
+          aria-label={t('phEmail')}
         />
         <button
           type="submit"

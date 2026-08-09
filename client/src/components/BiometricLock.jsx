@@ -399,7 +399,7 @@ export function BiometricLockScreen({ onUnlock }) {
           className={`bl-fp${trying ? ' bl-fp-busy' : ''}`}
           onClick={attempt}
           disabled={trying}
-          aria-label="Unlock with fingerprint"
+          aria-label={t('atUnlockFingerprint')}
         >
           <span className="bl-ring bl-ring-1" aria-hidden="true" />
           <span className="bl-ring bl-ring-2" aria-hidden="true" />

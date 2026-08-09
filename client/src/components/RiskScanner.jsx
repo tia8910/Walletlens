@@ -685,7 +685,7 @@ function ScamCatcher() {
       <div className="risk-scam-input-row">
         <input
           className="risk-scam-input"
-          placeholder="e.g. 0x1f9840... or pepe or solana-token-id"
+          placeholder={t('phTokenAddress')}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCheck()}

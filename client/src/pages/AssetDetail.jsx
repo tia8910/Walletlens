@@ -372,7 +372,7 @@ export default function AssetDetail() {
               type="number"
               step="any"
               min="0"
-              placeholder="Target price ($)"
+              placeholder={t('phTargetPrice')}
               value={tInputPrice}
               onChange={e => setTInputPrice(e.target.value)}
               required

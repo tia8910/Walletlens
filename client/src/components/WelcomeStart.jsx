@@ -152,7 +152,7 @@ export default function WelcomeStart({ onDone }) {
                 <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 <select
                   className="wls-cell-sel-native" value={currency}
-                  onChange={e => setCurrency(e.target.value)} aria-label="Cash currency"
+                  onChange={e => setCurrency(e.target.value)} aria-label={t('phCashCurrency')}
                 >
                   {POPULAR_FIAT.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
                 </select>
@@ -163,7 +163,7 @@ export default function WelcomeStart({ onDone }) {
               <input
                 className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
                 value={cash} onChange={e => setCash(e.target.value)} onKeyDown={onKeyDown} autoFocus
-                aria-label="Cash balance"
+                aria-label={t('phCashBalance')}
               />
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function WelcomeStart({ onDone }) {
                 <svg className="wls-cell-sel-caret" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 <select
                   className="wls-cell-sel-native" value={goldUnit}
-                  onChange={e => setGoldUnit(e.target.value)} aria-label="Gold unit"
+                  onChange={e => setGoldUnit(e.target.value)} aria-label={t('phGoldUnit')}
                 >
                   <option value="oz">oz</option>
                   <option value="g">{t('wsGram')}</option>
@@ -205,7 +205,7 @@ export default function WelcomeStart({ onDone }) {
               <input
                 className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
                 value={gold} onChange={e => setGold(e.target.value)} onKeyDown={onKeyDown}
-                aria-label="Gold amount"
+                aria-label={t('phGoldAmount')}
               />
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function WelcomeStart({ onDone }) {
               <input
                 className="wls-input" type="number" inputMode="decimal" min="0" placeholder="0.00"
                 value={btc} onChange={e => setBtc(e.target.value)} onKeyDown={onKeyDown}
-                aria-label="Bitcoin amount"
+                aria-label={t('phBitcoinAmount')}
               />
             </div>
           </div>

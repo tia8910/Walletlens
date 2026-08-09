@@ -124,7 +124,7 @@ const BottomNav = memo(function BottomNav() {
   }
 
   return (
-    <nav className="wl-bottom-nav" role="navigation" aria-label="Main navigation">
+    <nav className="wl-bottom-nav" role="navigation" aria-label={t('atMainNav')}>
       {NAV_ITEMS.map(item => {
         const isActive = activeTab === item.tab
         const isDash = item.id === 'dashboard'

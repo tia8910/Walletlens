@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 
 const LS_KEY = 'wl_goals'
@@ -68,6 +69,7 @@ function fmt(n) {
 }
 
 export default function GoalTracker({ currentValue }) {
+  const { t } = useLanguage()
   const [goals, setGoals] = useState(loadGoals)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ label: '', targetAmount: '', targetDate: '' })
@@ -159,7 +161,7 @@ export default function GoalTracker({ currentValue }) {
                 <button
                   onClick={() => deleteGoal(goal.id)}
                   style={{ background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 0 0 0.5rem', flexShrink: 0 }}
-                  title="Remove goal"
+                  title={t('atRemoveGoal')}
                 >×</button>
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.2rem 0' }}>
@@ -204,7 +206,7 @@ export default function GoalTracker({ currentValue }) {
           <input
             style={inputStyle}
             type="number"
-            placeholder="Target amount (USD)"
+            placeholder={t('phTargetAmount')}
             value={form.targetAmount}
             onChange={e => setForm(f => ({ ...f, targetAmount: e.target.value }))}
           />

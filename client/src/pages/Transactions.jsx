@@ -709,7 +709,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                             className="market-price-btn"
                             onClick={fetchStockLivePrice}
                             disabled={fetchingPrice}
-                            title="Fetch live price from Stooq"
+                            title={t('atFetchStooq')}
                           >
                             {fetchingPrice ? <span className="price-spinner" /> : <span>{t('txLive')}</span>}
                           </button>
@@ -880,7 +880,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                         className="market-price-btn"
                         onClick={fetchMarketPrice}
                         disabled={fetchingPrice}
-                        title="Use current market price"
+                        title={t('atUseMarketPrice')}
                       >
                         {fetchingPrice ? (
                           <span className="price-spinner" />

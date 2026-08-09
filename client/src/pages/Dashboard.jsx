@@ -1264,7 +1264,7 @@ function WalletPanel({ wallets, onRefresh, onCreated }) {
   return (
     <div className="dvx-panel">
       <div className="dvx-panel-row">
-        <input className="dvx-input" placeholder="Wallet name…"
+        <input className="dvx-input" placeholder={t('phWalletName')}
           value={name} onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && add()} />
         <button className="dvx-btn dvx-btn-primary" onClick={add} disabled={busy || !name.trim()}>
@@ -1344,10 +1344,10 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
           {wallets.length === 0 && <option value="">{t('dsCreateWalletFirst')}</option>}
           {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
         </select>
-        <input className="dvx-input" placeholder="Coin name (e.g. Bitcoin)" value={coin} onChange={e => setCoin(e.target.value)} />
+        <input className="dvx-input" placeholder={t('phCoinName')} value={coin} onChange={e => setCoin(e.target.value)} />
         <input className="dvx-input" placeholder="Ticker (BTC)" value={symbol} onChange={e => setSymbol(e.target.value)} />
-        <input className="dvx-input" type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} />
-        <input className="dvx-input" type="number" placeholder="Price per unit ($)" value={price} onChange={e => setPrice(e.target.value)} />
+        <input className="dvx-input" type="number" placeholder={t('phAmount')} value={amount} onChange={e => setAmount(e.target.value)} />
+        <input className="dvx-input" type="number" placeholder={t('phPricePerUnit')} value={price} onChange={e => setPrice(e.target.value)} />
         <input className="dvx-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
       </div>
       {msg && <p className="dvx-msg">{msg}</p>}
@@ -1631,7 +1631,7 @@ function DataPanel({ onRefresh, onImported }) {
       <div className="dvx-divider">{t('dsOrRestoreFromCode')}</div>
 
       <textarea className="dvx-input dvx-textarea"
-        placeholder="Paste your WLZ backup code here…"
+        placeholder={t('phPasteWlz')}
         value={code} onChange={e => { setCode(e.target.value); setPreview(null); setMsg('') }}
         rows={4} />
 
@@ -1973,7 +1973,7 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
       }}
     >
       <div style={{ position:'relative', padding:'0 20px' }}>
-        <button onClick={prev} aria-label="Previous" style={{
+        <button onClick={prev} aria-label={t('atPrevious')} style={{
           position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', zIndex:3,
           width:30, height:30, borderRadius:'50%', border:`1px solid ${slide.color}40`,
           cursor:'pointer', background:'var(--surface-1)', color:slide.color,
@@ -2087,7 +2087,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
           <Icon name={item.emoji} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{item.label}
         </button>
       ))}
-      <button className="fn-strip-close" onClick={dismiss} aria-label="Dismiss">×</button>
+      <button className="fn-strip-close" onClick={dismiss} aria-label={t('atDismiss')}>×</button>
     </div>
   )
 }
@@ -2435,6 +2435,7 @@ const QUICK_ADD_ASSETS = [
 // Header shield shown when Portfolio Guardian is active. Colour + days-left
 // reflect the countdown; tapping opens Settings to manage it.
 function GuardianBadge() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [g, setG] = useState(() => { try { return JSON.parse(localStorage.getItem('wl_guardian') || 'null') } catch { return null } })
   useEffect(() => {
@@ -2452,7 +2453,7 @@ function GuardianBadge() {
       className={`dvx-eye-btn dvx-guardian-badge dvx-guardian-${state}`}
       title={`Portfolio Guardian active — ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left. Opening the app resets it. Tap to manage.`}
       onClick={() => { track('guardian_badge_click'); navigate('/settings') }}
-      aria-label="Portfolio Guardian active"
+      aria-label={t('atGuardianActive')}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       <span className="dvx-guardian-days">{daysLeft}</span>
@@ -2965,7 +2966,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
                           {reached ? '✓ Reached' : `${gainVsNow >= 0 ? '+' : ''}${gainVsNow.toFixed(1)}%`}
                         </span>
                       </div>
-                      <button onClick={() => removeTarget(h.coin_id, tg.id)} title="Remove target"
+                      <button onClick={() => removeTarget(h.coin_id, tg.id)} title={t('atRemoveTarget')}
                         style={{ background:'none', border:'none', color:'rgba(248,113,113,0.7)', cursor:'pointer', fontSize:'1rem', padding:'0 4px', flexShrink:0 }}>✕</button>
                     </div>
                     <div className="dvx-target-bar-wrap">
@@ -4226,7 +4227,7 @@ export default function Dashboard() {
                 </span>
               )}
               {pricesLoading && <span className="dvx-badge-info">LIVE</span>}
-              <button className="dvx-refresh-btn" title="Refresh prices" disabled={refreshing} onClick={async () => {
+              <button className="dvx-refresh-btn" title={t('atRefreshPrices')} disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
                 try { await refreshPrices() } finally { setRefreshing(false) }
@@ -4239,7 +4240,7 @@ export default function Dashboard() {
                   <path d="M8 16H3v5"/>
                 </svg>
               </button>
-              <button className="dvx-eye-btn" title="Customize dashboard" onClick={() => setShowCardConfig(v => !v)} style={{ color: showCardConfig ? 'var(--g-ink)' : undefined }}>
+              <button className="dvx-eye-btn" title={t('atCustomizeDash')} onClick={() => setShowCardConfig(v => !v)} style={{ color: showCardConfig ? 'var(--g-ink)' : undefined }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3"/>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -4307,7 +4308,7 @@ export default function Dashboard() {
                   }
                   setShowCurrencyPicker(p => !p)
                 }}
-                title="More currencies"
+                title={t('atMoreCurrencies')}
               >
                 {!['USD','EUR','GBP','BTC'].includes(displayCurrency)
                   ? (POPULAR_FIAT.find(f => f.code === displayCurrency)?.symbol || displayCurrency)
@@ -4405,7 +4406,7 @@ export default function Dashboard() {
               </div>
             )}
             {/* Chart-type picker — Area (default) · Line · Candles */}
-            <div className="dvx-charttype-seg" role="tablist" aria-label="Chart type">
+            <div className="dvx-charttype-seg" role="tablist" aria-label={t('atChartType')}>
               {[
                 { id: 'area',    label: 'Area',    icon: <><path d="M3 15l4-5 4 3 5-7 3 4v6H3z"/></> },
                 { id: 'line',    label: 'Line',    icon: <><polyline points="3 14 8 9 12 12 20 4"/></> },
@@ -4705,13 +4706,13 @@ export default function Dashboard() {
                     <button
                       className={`dvx-breakeven-toggle ${showBreakEven ? 'active' : ''}`}
                       onClick={() => setShowBreakEven(v => !v)}
-                      title="Toggle break-even view"
+                      title={t('atToggleBreakEven')}
                     >
                       <Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('dsBreakEven')}
                     </button>
                     <button
                       className="dvx-export-btn"
-                      title="Export to Excel"
+                      title={t('atExportExcel')}
                       onClick={() => { track('holdings_export', { format: 'excel' }); exportToExcel(filteredHoldings, totalValue, displayCurrency) }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -4719,7 +4720,7 @@ export default function Dashboard() {
                     </button>
                     <button
                       className="dvx-export-btn"
-                      title="Export to PDF"
+                      title={t('atExportPdf')}
                       onClick={() => { track('holdings_export', { format: 'pdf' }); exportToPDF(filteredHoldings, totalValue, totalPnL, totalPnLPct, displayCurrency) }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h1a2 2 0 0 1 0 4H9v-4z"/><path d="M14 13h1.5a1.5 1.5 0 0 1 0 3H14v-3z"/></svg>
@@ -4736,7 +4737,7 @@ export default function Dashboard() {
                       <div style={{ flex: 1, position: 'relative' }}>
                         <input
                           type="text"
-                          placeholder="Search assets…"
+                          placeholder={t('phSearchAssets')}
                           value={holdingsSearch}
                           onChange={e => setHoldingsSearch(e.target.value)}
                           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.35rem 1.6rem 0.35rem 0.6rem', color: 'var(--text)', fontSize: '0.77rem', outline: 'none' }}
@@ -4809,7 +4810,7 @@ export default function Dashboard() {
                             </>
                           )}
                         </div>
-                        <button onClick={() => setSelectedAssets(new Set())} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.78rem', padding:'0.2rem 0.3rem', lineHeight:1 }} title="Clear selection">✕ Clear</button>
+                        <button onClick={() => setSelectedAssets(new Set())} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'0.78rem', padding:'0.2rem 0.3rem', lineHeight:1 }} title={t('atClearSelection')}>✕ Clear</button>
                       </div>
                     )}
                   </div>
@@ -4957,7 +4958,7 @@ export default function Dashboard() {
                                       return (<>
                                       <button
                                         className={`dvx-ha-toggle${actionsOpen ? ' open' : ''}`}
-                                        aria-label="Asset actions" title="Actions"
+                                        aria-label={t('atAssetActions')} title={t('atActions')}
                                         aria-expanded={actionsOpen}
                                         onClick={e => { e.stopPropagation(); setExpandedActions(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}>
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>

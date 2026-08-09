@@ -264,7 +264,7 @@ export default function TradeTips() {
           <span className="tips-cat-pill">{tip.cat}</span>
           <span className="tips-counter">{(idx % filtered.length) + 1} / {filtered.length}</span>
         </div>
-        <button className="tips-dismiss" onClick={handleDismiss} aria-label="Dismiss" title="Dismiss">✕</button>
+        <button className="tips-dismiss" onClick={handleDismiss} aria-label={t('atDismiss')} title={t('atDismiss')}>✕</button>
       </div>
 
       {/* Category tabs */}
@@ -301,7 +301,7 @@ export default function TradeTips() {
 
       {/* Controls */}
       <div className="tips-controls">
-        <button className="tips-nav-btn" onClick={handlePrev} aria-label="Previous tip">‹</button>
+        <button className="tips-nav-btn" onClick={handlePrev} aria-label={t('atPreviousTip')}>‹</button>
 
         {/* Progress dots */}
         <div className="tips-dots" aria-hidden="true">
@@ -314,9 +314,9 @@ export default function TradeTips() {
           ))}
         </div>
 
-        <button className="tips-nav-btn" onClick={handleNext} aria-label="Next tip">›</button>
+        <button className="tips-nav-btn" onClick={handleNext} aria-label={t('atNextTip')}>›</button>
 
-        <button className="tips-share-btn" onClick={handleShare} aria-label="Share this tip">
+        <button className="tips-share-btn" onClick={handleShare} aria-label={t('atShareTip')}>
           {shareState === 'done'
             ? <><span>✓</span> Saved!</>
             : <><ShareIcon /> Share</>}

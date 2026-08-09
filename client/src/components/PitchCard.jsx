@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // Cycling-word headline matching the walletlens.html mock-up.
 // Replaces the previous "Why WalletLens" features box.
@@ -11,6 +12,7 @@ const WORDS = [
 ]
 
 export default function PitchCard({ className = '' }) {
+  const { t } = useLanguage()
   const [idx, setIdx] = useState(0)
   const [fade, setFade] = useState(false)
 
@@ -26,7 +28,7 @@ export default function PitchCard({ className = '' }) {
   }, [])
 
   return (
-    <div className={`tagline-hero ${className}`} aria-label="WalletLens tagline">
+    <div className={`tagline-hero ${className}`} aria-label={t('atTagline')}>
       <div className="tagline-tag">
         <span className="tagline-tag-dot" />
         100% Free · No Account

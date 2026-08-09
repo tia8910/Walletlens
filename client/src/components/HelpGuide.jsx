@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
 
@@ -44,6 +45,7 @@ const TIPS = [
 ]
 
 export default function HelpGuide({ open, onClose, onNavigate }) {
+  const { t } = useLanguage()
   useEffect(() => {
     if (open) track('help_guide_open')
   }, [open])
@@ -61,7 +63,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
 
   return (
     <div className="wl-help-overlay" onClick={onClose}>
-      <div className="wl-help-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label="How WalletLens works">
+      <div className="wl-help-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label={t('atHowItWorks')}>
         <div className="wl-help-head">
           <div>
             <h2 className="wl-help-title">How WalletLens works</h2>

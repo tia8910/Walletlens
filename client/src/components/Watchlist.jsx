@@ -287,7 +287,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
             <input
               ref={searchRef}
               className="wlw-search-input"
-              placeholder="Search crypto, stock ticker, or metal…"
+              placeholder={t('phSearchWatchlist')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -366,7 +366,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
                   <div className="wlw-item-btns">
                     <button
                       className={`wlw-bell ${isAlertOpen ? 'wlw-bell-open' : ''} ${activeAlerts.length > 0 ? 'wlw-bell-set' : ''}`}
-                      title="Set price alert"
+                      title={t('atSetPriceAlert')}
                       onClick={() => openAlertForm(item.coin_id)}
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill={activeAlerts.length > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
@@ -375,7 +375,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
                       </svg>
                       {activeAlerts.length > 0 && <span className="wlw-bell-count">{activeAlerts.length}</span>}
                     </button>
-                    <button className="wlw-remove" title="Remove" onClick={() => removeItem(item.coin_id)}>
+                    <button className="wlw-remove" title={t('atRemove')} onClick={() => removeItem(item.coin_id)}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -434,7 +434,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
                             {Math.abs(((a.targetPrice - price) / price) * 100).toFixed(1)}% away
                           </span>
                         )}
-                        <button className="wlw-chip-del" onClick={() => removeAlert(a.id)} title="Remove alert">✕</button>
+                        <button className="wlw-chip-del" onClick={() => removeAlert(a.id)} title={t('atRemoveAlert')}>✕</button>
                       </div>
                     ))}
                     {triggeredAlerts.map(a => (
@@ -442,8 +442,8 @@ export default function Watchlist({ portfolioPrices = {} }) {
                         <span style={{ color: 'var(--g-ink)' }}>
                           ✓ {a.condition === 'above' ? '↑' : '↓'} {fmtPrice(a.targetPrice)} reached
                         </span>
-                        <button className="wlw-chip-reset" onClick={() => resetAlert(a.id)} title="Reset alert">↺</button>
-                        <button className="wlw-chip-del" onClick={() => removeAlert(a.id)} title="Remove">✕</button>
+                        <button className="wlw-chip-reset" onClick={() => resetAlert(a.id)} title={t('atResetAlert')}>↺</button>
+                        <button className="wlw-chip-del" onClick={() => removeAlert(a.id)} title={t('atRemove')}>✕</button>
                       </div>
                     ))}
                   </div>
