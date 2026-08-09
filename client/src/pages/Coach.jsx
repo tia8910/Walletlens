@@ -34,115 +34,144 @@ function assetMix(enriched, totalValue) {
   return mix
 }
 
+// Mix keys → translation keys, so a generated sentence can name the class.
+const CLASS_LABEL_KEYS = {
+  crypto: 'clsCrypto', stock: 'clsStock', metal: 'clsMetal',
+  cash: 'clsCash', bond: 'clsBond', other: 'clsOther',
+}
+
 // ── Wallet Evaluation — adaptive checks ────────────────────────────────────
 // Each check declares `applies(mix)`: only relevant checks are scored, so the
 // overall grade reflects the right rubric for crypto-heavy, stock-heavy, or
 // genuinely mixed portfolios. Universal checks always apply.
+//
+// `label` and `tip` are translation keys rather than English. These run at
+// module scope, where there is no hook to call useLanguage() from, and they
+// are also used for scoring — so a tip is returned as [key, ...args] and the
+// row renders it with t(key)(...args).
 const EVAL_CATEGORIES = [
   // ── Universal ──
   {
-    id: 'asset_mix', label: 'Asset-Class Balance', icon: 'grid', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'asset_mix', labelKey: 'cchCatAssetMix', icon: 'grid', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue, mix) => {
       const classes = Object.entries(mix).filter(([, v]) => v >= 0.03)
       const n = classes.length
       const top = Math.max(...Object.values(mix))
       if (n <= 1) {
-        const only = (classes[0]?.[0] || 'one asset class')
-        return { pass: false, score: 25, tip: `Everything is in ${only}. Spreading across uncorrelated classes (e.g. crypto + stocks + gold + cash) is the single biggest way to cut portfolio risk.` }
+        // The mix key ('crypto', 'stock', …) is an internal identifier, not a
+        // word to show anyone. It gets resolved to a translated noun so the
+        // sentence reads naturally in every language.
+        const only = classes[0]?.[0]
+        return { pass: false, score: 25, tip: ['cchTipMixSingle', { k: CLASS_LABEL_KEYS[only] || 'clsOther' }] }
       }
-      if (top > 0.85) return { pass: false, score: 55, tip: `${(top*100).toFixed(0)}% sits in one asset class. Adding a second or third class (stocks, gold, or cash) would hedge a downturn in your dominant one.` }
-      if (n >= 3) return { pass: true, score: 100, tip: `Balanced across ${n} asset classes — crypto, equities, metals and cash hedge each other well.` }
-      return { pass: true, score: 85, tip: `Spread across ${n} asset classes. A third (e.g. gold or cash) would add another hedge.` }
+      if (top > 0.85) return { pass: false, score: 55, tip: ['cchTipMixTop', (top * 100).toFixed(0)] }
+      if (n >= 3) return { pass: true, score: 100, tip: ['cchTipMixThree', n] }
+      return { pass: true, score: 85, tip: ['cchTipMixTwo', n] }
     },
   },
   {
-    id: 'diversification', label: 'Diversification', icon: 'scale', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'diversification', labelKey: 'cchCatDiversification', icon: 'scale', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
       const n = enriched.length
       const weights = enriched.map(h => h.value / totalValue)
       const hhi = weights.reduce((s, w) => s + w * w, 0)
-      if (n < 3) return { pass: false, score: 10, tip: `Only ${n} holding${n===1?'':'s'} — extremely concentrated. Spread across 5–10 positions to reduce single-name risk.` }
-      if (hhi > 0.5) return { pass: false, score: 30, tip: `One position dominates your portfolio (HHI ${hhi.toFixed(2)}). Rebalance so no single holding exceeds 50%.` }
-      if (n < 5) return { pass: false, score: 60, tip: `${n} holdings is okay but aim for 5–10. Add 1–2 more quality positions from different sectors or classes.` }
-      return { pass: true, score: 95, tip: `Well diversified across ${n} positions with balanced weights.` }
+      if (n < 3) return { pass: false, score: 10, tip: ['cchTipDivFew', n] }
+      if (hhi > 0.5) return { pass: false, score: 30, tip: ['cchTipDivHhi', hhi.toFixed(2)] }
+      if (n < 5) return { pass: false, score: 60, tip: ['cchTipDivOkay', n] }
+      return { pass: true, score: 95, tip: ['cchTipDivGood', n] }
     },
   },
   {
-    id: 'cash_reserve', label: 'Cash & Dry Powder', icon: 'bank', color: '#60a5fa',
+    id: 'cash_reserve', labelKey: 'cchCatCash', icon: 'bank', color: '#60a5fa',
     check: (enriched, totalValue, mix) => {
       const pct = mix.cash * 100
-      if (pct === 0) return { pass: false, score: 30, tip: 'No cash or stablecoin reserve. Holding 5–15% in cash/stablecoins gives you dry powder to buy dips without selling at a loss.' }
-      if (pct < 5)  return { pass: false, score: 60, tip: `Only ${pct.toFixed(1)}% in cash/stablecoins. Increasing to 5–15% gives you a proper "buy the dip" reserve.` }
-      if (pct > 50) return { pass: true,  score: 65, tip: `${pct.toFixed(1)}% in cash is high — you may be missing market upside. Consider deploying some into quality assets.` }
-      return { pass: true, score: 100, tip: `${pct.toFixed(1)}% cash reserve — healthy dry powder for opportunities.` }
+      if (pct === 0) return { pass: false, score: 30, tip: ['cchTipCashNone'] }
+      if (pct < 5)  return { pass: false, score: 60, tip: ['cchTipCashLow', pct.toFixed(1)] }
+      if (pct > 50) return { pass: true,  score: 65, tip: ['cchTipCashHigh', pct.toFixed(1)] }
+      return { pass: true, score: 100, tip: ['cchTipCashGood', pct.toFixed(1)] }
     },
   },
   {
-    id: 'pnl_health', label: 'P&L Health', icon: 'pulse', color: 'var(--g-ink)', fontWeight: 700,
+    id: 'pnl_health', labelKey: 'cchCatPnl', icon: 'pulse', color: 'var(--g-ink)', fontWeight: 700,
     check: (enriched, totalValue) => {
-      if (!enriched.length) return { pass: false, score: 0, tip: 'No holdings to evaluate.' }
+      if (!enriched.length) return { pass: false, score: 0, tip: ['cchTipPnlNone'] }
       const avgPnlPct = enriched.reduce((s, h) => s + (h.pnl / Math.max(h.total_invested || h.invested || 1, 1)) * (h.value / totalValue), 0) * 100
-      if (avgPnlPct < -30) return { pass: false, score: 10, tip: `Portfolio is down ${Math.abs(avgPnlPct).toFixed(1)}% overall. Consider DCA-ing into your strongest convictions to lower average cost.` }
-      if (avgPnlPct < 0) return { pass: false, score: 50, tip: `Portfolio is slightly underwater (${avgPnlPct.toFixed(1)}%). Hold quality assets and average down on dips if you believe in them.` }
-      if (avgPnlPct > 100) return { pass: true, score: 100, tip: `Up ${avgPnlPct.toFixed(1)}%! Consider taking some profits to lock in gains.` }
-      return { pass: true, score: 90, tip: `Portfolio up ${avgPnlPct.toFixed(1)}% — healthy. Keep managing risk.` }
+      if (avgPnlPct < -30) return { pass: false, score: 10, tip: ['cchTipPnlDeep', Math.abs(avgPnlPct).toFixed(1)] }
+      if (avgPnlPct < 0) return { pass: false, score: 50, tip: ['cchTipPnlUnder', avgPnlPct.toFixed(1)] }
+      if (avgPnlPct > 100) return { pass: true, score: 100, tip: ['cchTipPnlStrong', avgPnlPct.toFixed(1)] }
+      return { pass: true, score: 90, tip: ['cchTipPnlHealthy', avgPnlPct.toFixed(1)] }
     },
   },
 
   // ── Crypto sleeve (only when crypto is a meaningful part) ──
   {
-    id: 'btc_anchor', label: 'BTC Anchor', icon: '₿', color: '#f7931a',
+    id: 'btc_anchor', labelKey: 'cchCatBtcAnchor', icon: '₿', color: '#f7931a',
     applies: (mix) => mix.crypto >= 0.1,
     check: (enriched, totalValue, mix) => {
       const cryptoVal = mix.crypto * totalValue
       const btc = enriched.find(h => h.coin_id === 'bitcoin' || h.coin_symbol?.toLowerCase() === 'btc')
-      if (!btc) return { pass: false, score: 20, tip: 'No Bitcoin in your crypto sleeve. BTC acts as a safe haven during crypto downturns — consider it as a stability anchor.' }
+      if (!btc) return { pass: false, score: 20, tip: ['cchTipBtcNone'] }
       const w = btc.value / cryptoVal * 100  // share of the crypto sleeve
-      if (w < 20) return { pass: false, score: 50, tip: `BTC is only ${w.toFixed(1)}% of your crypto. Increasing toward 30–40% of the crypto sleeve reduces altcoin volatility.` }
-      if (w > 80) return { pass: true, score: 75, tip: `BTC is ${w.toFixed(1)}% of your crypto — a strong anchor, though adding ETH/SOL would broaden crypto exposure.` }
-      return { pass: true, score: 100, tip: `Solid BTC anchor at ${w.toFixed(1)}% of your crypto sleeve.` }
+      if (w < 20) return { pass: false, score: 50, tip: ['cchTipBtcLow', w.toFixed(1)] }
+      if (w > 80) return { pass: true, score: 75, tip: ['cchTipBtcHigh', w.toFixed(1)] }
+      return { pass: true, score: 100, tip: ['cchTipBtcGood', w.toFixed(1)] }
     },
   },
   {
-    id: 'large_cap', label: 'Large-Cap Crypto', icon: 'whale', color: '#3b82f6',
+    id: 'large_cap', labelKey: 'cchCatLargeCap', icon: 'whale', color: '#3b82f6',
     applies: (mix) => mix.crypto >= 0.1,
     check: (enriched, totalValue, mix) => {
       const cryptoVal = mix.crypto * totalValue
       const lc = new Set(['bitcoin','ethereum','ripple','binancecoin','solana','cardano','avalanche-2','polkadot','chainlink','litecoin'])
       const lcVal = enriched.filter(h => lc.has(h.coin_id)).reduce((s,h) => s+h.value, 0)
       const pct = lcVal / cryptoVal * 100
-      if (pct < 40) return { pass: false, score: 30, tip: `Only ${pct.toFixed(1)}% of your crypto is large-cap. Heavy small-cap exposure raises wipeout risk — anchor with more BTC/ETH/SOL.` }
-      if (pct < 60) return { pass: false, score: 70, tip: `${pct.toFixed(1)}% large-cap crypto. Aim for 60%+ in proven coins to absorb micro-cap volatility.` }
-      return { pass: true, score: 95, tip: `${pct.toFixed(1)}% of your crypto is large-cap — a solid, volatility-absorbing base.` }
+      if (pct < 40) return { pass: false, score: 30, tip: ['cchTipLcLow', pct.toFixed(1)] }
+      if (pct < 60) return { pass: false, score: 70, tip: ['cchTipLcMid', pct.toFixed(1)] }
+      return { pass: true, score: 95, tip: ['cchTipLcGood', pct.toFixed(1)] }
     },
   },
 
   // ── Stock sleeve (only when stocks are a meaningful part) ──
   {
-    id: 'stock_sectors', label: 'Stock Sector Spread', icon: 'bar-chart', color: '#818cf8',
+    id: 'stock_sectors', labelKey: 'cchCatStockSectors', icon: 'bar-chart', color: '#818cf8',
     applies: (mix) => mix.stock >= 0.1,
     check: (enriched) => {
       const stocks = enriched.filter(h => assetClass(h.coin_id) === 'stock')
       const sectors = new Set(stocks.map(h => getStockSector(h.coin_id)).filter(Boolean))
       const n = sectors.size
-      if (stocks.length < 2) return { pass: false, score: 40, tip: 'Only one stock position. Single-name risk is high — add 2–3 stocks from different sectors (e.g. Tech, Healthcare, Finance).' }
-      if (n === 1) return { pass: false, score: 35, tip: `All your stocks are in ${[...sectors][0]}. Sector concentration is risky — diversify into Healthcare, Finance, Energy, or Consumer.` }
-      if (n === 2) return { pass: false, score: 70, tip: `Stocks span 2 sectors (${[...sectors].join(', ')}). Adding a third sector would smooth out sector-specific drawdowns.` }
-      return { pass: true, score: 100, tip: `Stocks span ${n} sectors (${[...sectors].join(', ')}) — well diversified across the equity market.` }
+      if (stocks.length < 2) return { pass: false, score: 40, tip: ['cchTipSecOne'] }
+      if (n === 1) return { pass: false, score: 35, tip: ['cchTipSecSingle', [...sectors][0]] }
+      if (n === 2) return { pass: false, score: 70, tip: ['cchTipSecTwo', [...sectors].join(', ')] }
+      return { pass: true, score: 100, tip: ['cchTipSecGood', n, [...sectors].join(', ')] }
     },
   },
   {
-    id: 'equity_quality', label: 'Equity vs Crypto Balance', icon: 'building', color: '#38bdf8',
+    id: 'equity_quality', labelKey: 'cchCatEquityQuality', icon: 'building', color: '#38bdf8',
     applies: (mix) => mix.stock >= 0.1 && mix.crypto >= 0.1,
     check: (enriched, totalValue, mix) => {
       const ratio = mix.stock / (mix.stock + mix.crypto)
       const pct = ratio * 100
-      if (pct < 15) return { pass: false, score: 60, tip: `Equities are just ${pct.toFixed(0)}% of your risk assets — the rest is crypto. More stocks would dampen crypto's swings.` }
-      if (pct > 85) return { pass: true, score: 80, tip: `Equities are ${pct.toFixed(0)}% of your risk assets — a small crypto allocation can add asymmetric upside.` }
-      return { pass: true, score: 100, tip: `Healthy ${pct.toFixed(0)}/${(100-pct).toFixed(0)} split between stocks and crypto — they hedge each other's cycles.` }
+      if (pct < 15) return { pass: false, score: 60, tip: ['cchTipEqLow', pct.toFixed(0)] }
+      if (pct > 85) return { pass: true, score: 80, tip: ['cchTipEqHigh', pct.toFixed(0)] }
+      return { pass: true, score: 100, tip: ['cchTipEqGood', pct.toFixed(0), (100 - pct).toFixed(0)] }
     },
   },
 ]
+
+/**
+ * Render a tip descriptor.
+ *
+ * A tip is [key, ...args]. Most args are already-formatted numbers, but an arg
+ * of the shape { k: 'someKey' } is itself a translation key — the asset-class
+ * nouns that get dropped into a sentence. Resolving those here keeps the check
+ * functions free of any hook, which they have to be: they run at module scope.
+ */
+function renderTip(tip, t) {
+  if (!Array.isArray(tip) || !tip.length) return ''
+  const fn = t(tip[0])
+  if (typeof fn !== 'function') return fn
+  return fn(...tip.slice(1).map(a => (a && typeof a === 'object' && a.k) ? t(a.k) : a))
+}
 
 function computeEval(enriched, totalValue) {
   if (!enriched.length) return null
@@ -155,9 +184,10 @@ function computeEval(enriched, totalValue) {
 }
 
 function ScoreRing({ score }) {
+  const { t } = useLanguage()
   const r = 52, circ = 2 * Math.PI * r
   const color = score >= 80 ? 'var(--g)' : score >= 55 ? '#fbbf24' : '#f87171'
-  const label = score >= 80 ? 'Strong' : score >= 55 ? 'Needs Work' : 'At Risk'
+  const label = score >= 80 ? t('cchRingStrong') : score >= 55 ? t('cchRingNeedsWork') : t('cchRingAtRisk')
   return (
     <div className="coach-ring-wrap">
       <svg width="130" height="130" viewBox="0 0 130 130">
@@ -176,6 +206,7 @@ function ScoreRing({ score }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Coach() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [portfolio, setPortfolio]     = useState([])
   const [prices, setPrices]           = useState({})
@@ -220,10 +251,10 @@ export default function Coach() {
   const hasPrices = enriched.some(h => h.value > 0)
 
   const SECTIONS = [
-    { id: 'engine',  label: 'Decision Engine', icon: 'zap' },
-    { id: 'eval',    label: 'Wallet Score',    icon: 'search' },
-    { id: 'actions', label: 'Portfolio Analysis',     icon: 'cpu' },
-    { id: 'alpha',   label: 'Alpha',           icon: 'α' },
+    { id: 'engine',  label: t('cchSecEngine'),  icon: 'zap' },
+    { id: 'eval',    label: t('cchSecEval'),    icon: 'search' },
+    { id: 'actions', label: t('cchSecActions'), icon: 'cpu' },
+    { id: 'alpha',   label: t('cchSecAlpha'),   icon: 'α' },
   ]
 
   return (
@@ -242,8 +273,8 @@ export default function Coach() {
             </svg>
           </div>
           <div>
-            <h1 className="coach-hero-title">Coach</h1>
-            <p className="coach-hero-sub">Decision engine · wallet health · portfolio advice</p>
+            <h1 className="coach-hero-title">{t('cchTitle')}</h1>
+            <p className="coach-hero-sub">{t('cchSub')}</p>
           </div>
         </div>
         {hasPrices && eval_ && (
@@ -276,10 +307,10 @@ export default function Coach() {
       {loaded && enriched.length === 0 && (
         <div className="glass-card" style={{ textAlign:'center', padding:'3rem 1.5rem', margin:'1rem 1rem' }}>
           <div style={{ marginBottom:'0.75rem', display:'flex', justifyContent:'center' }}><Icon name="brain" size={40} /></div>
-          <h3 style={{ marginBottom:'0.5rem' }}>Nothing to Coach Yet</h3>
-          <p className="muted" style={{ marginBottom:'1.25rem' }}>Add your first trade to get a full analysis of your portfolio with personalised advice.</p>
+          <h3 style={{ marginBottom:'0.5rem' }}>{t('cchEmptyTitle')}</h3>
+          <p className="muted" style={{ marginBottom:'1.25rem' }}>{t('cchEmptyBody')}</p>
           <button className="coach-cta-btn" onClick={() => navigate('/transactions')}>
-            + Add First Trade
+            + {t('cchAddFirst')}
           </button>
         </div>
       )}
@@ -290,10 +321,10 @@ export default function Coach() {
           {!hasPrices && (
             <div className="coach-loading-bar">
               <span className="coach-loading-dot" />
-              Fetching live prices to generate signals…
+              {t('cchFetchingPrices')}
             </div>
           )}
-          <Suspense fallback={<div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>Loading engine…</div>}>
+          <Suspense fallback={<div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>{t('cchLoadingEngine')}</div>}>
             <AIDecisionEngine
               enriched={enriched}
               prices={prices}
@@ -309,8 +340,8 @@ export default function Coach() {
               >
                 <span className="ade-trigger-brain"><Icon name="trend-up" size={20} /></span>
                 <span className="ade-trigger-text">
-                  Grow My Net Worth
-                  <span className="ade-trigger-sub">Personal growth path — simulated on your real portfolio</span>
+                  {t('cchGrowTitle')}
+                  <span className="ade-trigger-sub">{t('cchGrowSub')}</span>
                 </span>
                 <span className="ade-trigger-arrow">→</span>
               </button>
@@ -323,18 +354,18 @@ export default function Coach() {
       {activeSection === 'eval' && enriched.length > 0 && (
         <div style={{ padding: '0 0 1.5rem' }}>
           {!eval_ ? (
-            <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>Calculating…</div>
+            <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>{t('cchCalculating')}</div>
           ) : (
             <>
               {/* Score header */}
               <div className="glass-card coach-eval-header">
                 <div className="coach-eval-header-left">
-                  <h2 className="coach-eval-title">Wallet Evaluation</h2>
-                  <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.82rem' }}>Portfolio health vs best practices</p>
+                  <h2 className="coach-eval-title">{t('cchEvalTitle')}</h2>
+                  <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.82rem' }}>{t('cchEvalSub')}</p>
                   {eval_.missing.length > 0 ? (
                     <div className="eval-missing-count"><Icon name="warning" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{eval_.missing.length} gap{eval_.missing.length > 1 ? 's' : ''} found — tap each to fix</div>
                   ) : (
-                    <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}><Icon name="shield-check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />All checks passed — excellent wallet health!</div>
+                    <div className="eval-missing-count" style={{ color: 'var(--g-ink)', fontWeight: 700 }}><Icon name="shield-check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('cchAllPassed')}</div>
                   )}
                 </div>
                 <ScoreRing score={eval_.overall} />
@@ -351,7 +382,7 @@ export default function Coach() {
                     <div className="eval-cat-header">
                       <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}><Icon name={cat.icon} size={16} /></span>
                       <div className="eval-cat-info">
-                        <div className="eval-cat-label">{cat.label}</div>
+                        <div className="eval-cat-label">{t(cat.labelKey)}</div>
                         <div className="eval-cat-bar-wrap">
                           <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: cat.color }} />
                         </div>
@@ -362,7 +393,7 @@ export default function Coach() {
                       </div>
                     </div>
                     {evalExpanded === cat.id && (
-                      <div className="eval-cat-tip"><Icon name={cat.pass ? 'lightbulb' : 'sliders'} size={14} style={{ marginRight:'0.4rem', verticalAlign:'-2px' }} />{cat.tip}</div>
+                      <div className="eval-cat-tip"><Icon name={cat.pass ? 'lightbulb' : 'sliders'} size={14} style={{ marginRight:'0.4rem', verticalAlign:'-2px' }} />{renderTip(cat.tip, t)}</div>
                     )}
                   </div>
                 ))}
@@ -387,8 +418,8 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Full Portfolio Analysis</div>
-              <div className="coach-action-sub">Deep-dive analysis of your holdings, risk profile, and personalized recommendations powered by Claude AI</div>
+              <div className="coach-action-title">{t('cchFullAnalysis')}</div>
+              <div className="coach-action-sub">{t('cchFullAnalysisSub')}</div>
             </div>
             <span className="coach-action-arrow">→</span>
           </div>
@@ -398,8 +429,8 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Set Profit Targets</div>
-              <div className="coach-action-sub">Plan your exits before emotions take over — set multi-level sell targets for each holding</div>
+              <div className="coach-action-title">{t('cchSetTargets')}</div>
+              <div className="coach-action-sub">{t('cchSetTargetsSub')}</div>
             </div>
             <span className="coach-action-arrow">→</span>
           </div>
@@ -409,8 +440,8 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Smart Price Alerts</div>
-              <div className="coach-action-sub">Get notified when your coins hit key levels — never miss a breakout or a crash warning</div>
+              <div className="coach-action-title">{t('cchSmartAlerts')}</div>
+              <div className="coach-action-sub">{t('cchSmartAlertsSub')}</div>
             </div>
             <span className="coach-action-arrow">→</span>
           </div>
@@ -420,8 +451,8 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Risk Scanner</div>
-              <div className="coach-action-sub">Scan your portfolio for concentration risk, liquidity risk, and volatility exposure</div>
+              <div className="coach-action-title">{t('cchRiskScanner')}</div>
+              <div className="coach-action-sub">{t('cchRiskScannerSub')}</div>
             </div>
             <span className="coach-action-arrow">→</span>
           </div>
@@ -431,8 +462,8 @@ export default function Coach() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg>
             </div>
             <div className="coach-action-body">
-              <div className="coach-action-title">Alpha Signals</div>
-              <div className="coach-action-sub">Price signals, buy/sell indicators, and on-chain metrics for your holdings</div>
+              <div className="coach-action-title">{t('cchAlphaSignals')}</div>
+              <div className="coach-action-sub">{t('cchAlphaSignalsSub')}</div>
             </div>
             <span className="coach-action-arrow">→</span>
           </div>

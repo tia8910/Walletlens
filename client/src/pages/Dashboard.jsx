@@ -2056,9 +2056,9 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   if (!visible) return null
   function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
   const items = [
-    { emoji: 'target', label: 'Price Targets', action: () => { onGoToTargets(); dismiss() } },
-    { emoji: 'map', label: 'Goals', action: () => { onGoToVision(); dismiss() } },
-    { emoji: 'calendar', label: 'Weekly Report', action: () => { onWeeklyReport(); dismiss() } },
+    { emoji: 'target', label: t('qaPriceTargets'), action: () => { onGoToTargets(); dismiss() } },
+    { emoji: 'map', label: t('qaGoals'), action: () => { onGoToVision(); dismiss() } },
+    { emoji: 'calendar', label: t('qaWeeklyReport'), action: () => { onWeeklyReport(); dismiss() } },
   ]
   return (
     <div className="fn-strip">
@@ -3034,6 +3034,7 @@ function AlertsSection({ enriched, prices, isDemo }) {
 
 // ── Portfolio Brief Statement — natural language holding status ──────────
 const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, totalPnL, totalPnLPct }) {
+  const { t } = useLanguage()
   const statement = useMemo(() => {
     if (!enriched.length || totalValue <= 0) return null
 
@@ -3042,7 +3043,7 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
 
     // Opening: total status
     const pctStr = (totalPnLPct >= 0 ? '+' : '') + totalPnLPct.toFixed(1) + '%'
-    parts.push(`Your portfolio is ${isUp ? 'up' : 'down'} ${pctStr} today`)
+    parts.push(t('dsSummaryStatus')(pctStr, isUp))
 
     // Winners / losers count
     let winners = 0, losers = 0, flat = 0
@@ -3058,22 +3059,24 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
     }
 
     const countParts = []
-    if (winners) countParts.push(`${winners} winner${winners !== 1 ? 's' : ''}`)
-    if (losers) countParts.push(`${losers} loser${losers !== 1 ? 's' : ''}`)
-    if (countParts.length) parts.push(countParts.join(' and '))
+    if (winners) countParts.push(t('dsSummaryWinners')(winners))
+    if (losers) countParts.push(t('dsSummaryLosers')(losers))
+    if (countParts.length) parts.push(countParts.join(t('dsSummaryAnd')()))
 
     // Top performer
     if (topChg > 0.01) {
-      parts.push(`${topSym} leads at +${topChg.toFixed(1)}%`)
+      parts.push(t('dsSummaryLeads')(topSym, topChg.toFixed(1)))
     }
 
     // Worst performer
     if (worstChg < -0.01 && worstSym !== topSym) {
-      parts.push(`${worstSym} trails at ${worstChg.toFixed(1)}%`)
+      parts.push(t('dsSummaryTrails')(worstSym, worstChg.toFixed(1)))
     }
 
     return parts.join('. ') + '.'
-  }, [enriched, totalValue, totalPnLPct])
+    // `t` is a dependency: without it the sentence would keep the language it
+    // was first built in until the numbers happened to change.
+  }, [enriched, totalValue, totalPnLPct, t])
 
   if (!statement) return null
 
@@ -3991,14 +3994,14 @@ export default function Dashboard() {
   const importOptions = (
     <div style={{ margin:'0 0 0.75rem' }}>
       <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
-        Import your net worth smartly
+        {t('impHeading')}
       </div>
       <div className="wl-import-tree">
         {[
-          { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
-          { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
-          { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
-          { key:'backup',     icon:'folder',    label:'Backup',      desc:'Bring your portfolio to any device',           color:'96,165,250' },
+          { key:'excel',      icon:'bar-chart', label:t('impExcel'),      desc:t('impExcelDesc'),      color:'167,139,250' },
+          { key:'voice',      icon:'mic',       label:t('impVoice'),      desc:t('impVoiceDesc'),      color:'16,185,129' },
+          { key:'screenshot', icon:'camera',    label:t('impScreenshot'), desc:t('impScreenshotDesc'), color:'244,114,182' },
+          { key:'backup',     icon:'folder',    label:t('impBackup'),     desc:t('impBackupDesc'),     color:'96,165,250' },
         ].map(m => {
           const open = openImport === m.key
           return (
@@ -5288,12 +5291,12 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>Smart Import</h3>
-            <p className="dvx-data-hint" style={{ marginBottom: '0.9rem' }}>Import your net worth smartly — pick a method.</p>
+            <p className="dvx-data-hint" style={{ marginBottom: '0.9rem' }}>{t('impHeadingPick')}</p>
             <div className="wl-import-tree">
               {[
-                { key:'excel',      icon:'bar-chart', label:'Excel / CSV', desc:'Switch from messy spreadsheets to WalletLens', color:'167,139,250' },
-                { key:'voice',      icon:'mic',       label:'Voice',       desc:'Skip the typing — just say your trades',       color:'16,185,129' },
-                { key:'screenshot', icon:'camera',    label:'Screenshot',  desc:'Turn any exchange screenshot into holdings',   color:'244,114,182' },
+                { key:'excel',      icon:'bar-chart', label:t('impExcel'),      desc:t('impExcelDesc'),      color:'167,139,250' },
+                { key:'voice',      icon:'mic',       label:t('impVoice'),      desc:t('impVoiceDesc'),      color:'16,185,129' },
+                { key:'screenshot', icon:'camera',    label:t('impScreenshot'), desc:t('impScreenshotDesc'), color:'244,114,182' },
               ].map(m => {
                 const open = openImport === m.key
                 return (

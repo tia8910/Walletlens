@@ -145,8 +145,8 @@ export default function Watchlist({ portfolioPrices = {} }) {
         if (canNotify) {
           const dir = a.condition === 'above' ? '↑' : '↓'
           try {
-            new Notification(`${dir} ${a.coin_symbol} watchlist alert`, {
-              body: `${a.coin_symbol} hit your target of ${fmtPrice(a.targetPrice)} — now ${fmtPrice(p)}`,
+            new Notification(t('ntWatchlistTitle')(dir, a.coin_symbol), {
+              body: t('ntWatchlistBody')(a.coin_symbol, fmtPrice(a.targetPrice), fmtPrice(p)),
               icon: '/icon-192.svg', badge: '/icon-192.svg',
               tag: `wl-alert-${a.id}`,
             })

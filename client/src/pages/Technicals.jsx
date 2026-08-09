@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
 import MagicAnalysisPanel from '../components/MagicAnalysisPanel'
+import { useLanguage } from '../LanguageContext'
 
 export default function Technicals() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [portfolio, setPortfolio] = useState([])
   const [prices, setPrices] = useState({})
@@ -41,7 +43,7 @@ export default function Technicals() {
   }, [portfolio, prices])
 
   if (!loaded) {
-    return <div className="dvx-page"><div className="glass-card" style={{ textAlign: 'center', padding: '2.5rem' }}>Loading analysis…</div></div>
+    return <div className="dvx-page"><div className="glass-card" style={{ textAlign: 'center', padding: '2.5rem' }}>{t('tnLoading')}</div></div>
   }
 
   if (portfolio.length === 0) {
@@ -49,12 +51,11 @@ export default function Technicals() {
       <div className="dvx-page">
         <div className="glass-card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
           <div style={{ marginBottom: '0.5rem', display:'flex', justifyContent:'center' }}><Icon name="ruler" size={36} /></div>
-          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.15rem' }}>Technical Analysis</h2>
+          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.15rem' }}>{t('tnTitle')}</h2>
           <p className="muted" style={{ maxWidth: 420, margin: '0 auto 1.2rem' }}>
-            Add a holding and the Magic Indicator will merge technicals, momentum,
-            volume and fundamentals into a single direction for each asset.
+            {t('tnEmptyBody')}
           </p>
-          <button className="dvx-btn-primary" onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
+          <button className="dvx-btn-primary" onClick={() => navigate('/dashboard')}>{t('tnGoDashboard')}</button>
         </div>
       </div>
     )
@@ -63,8 +64,8 @@ export default function Technicals() {
   return (
     <div className="dvx-page">
       <div className="magic-hero">
-        <h1 className="magic-hero-title" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'0.35rem' }}><Icon name="ruler" size={20} /> <span>Technical Analysis</span></h1>
-        <p className="magic-hero-sub"><b>Magic Indicator</b> — technicals, momentum, volume & fundamentals in one signal.</p>
+        <h1 className="magic-hero-title" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'0.35rem' }}><Icon name="ruler" size={20} /> <span>{t('tnTitle')}</span></h1>
+        <p className="magic-hero-sub"><b>{t('miTitle')}</b> — {t('miSubtitle')}</p>
       </div>
       <MagicAnalysisPanel enriched={enriched} totalValue={totalValue} />
     </div>
