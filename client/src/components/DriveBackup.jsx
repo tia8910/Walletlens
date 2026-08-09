@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
@@ -57,6 +58,7 @@ function Msg({ msg }) {
 }
 
 export default function DriveBackup() {
+  const { t } = useLanguage()
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
   const [connected, setConnected] = useState(() => previouslyConnected())
@@ -223,7 +225,7 @@ export default function DriveBackup() {
             value={pass}
             onChange={e => setPass(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && pass.length >= 8 && !busy) onSubmit() }}
-            placeholder="Your backup passphrase"
+            placeholder={t('phPassphrase')}
             autoComplete="off"
             autoFocus
             style={{ width:'100%' }}

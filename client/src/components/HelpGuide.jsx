@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
 
@@ -44,6 +45,7 @@ const TIPS = [
 ]
 
 export default function HelpGuide({ open, onClose, onNavigate }) {
+  const { t } = useLanguage()
   useEffect(() => {
     if (open) track('help_guide_open')
   }, [open])
@@ -61,11 +63,11 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
 
   return (
     <div className="wl-help-overlay" onClick={onClose}>
-      <div className="wl-help-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label="How WalletLens works">
+      <div className="wl-help-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label={t('atHowItWorks')}>
         <div className="wl-help-head">
           <div>
-            <h2 className="wl-help-title">How WalletLens works</h2>
-            <p className="wl-help-sub">What each area is — and where to find it.</p>
+            <h2 className="wl-help-title">{t('hgTitle')}</h2>
+            <p className="wl-help-sub">{t('hgSub')}</p>
           </div>
           <button className="wl-help-x" onClick={onClose} aria-label="Close">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -79,8 +81,8 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
           >
             <span className="wl-help-primary-ico" aria-hidden="true"><Icon name="plus" size={16} /></span>
             <span className="wl-help-primary-txt">
-              <strong>How to add your assets</strong>
-              <span>A quick step-by-step walkthrough</span>
+              <strong>{t('hgAddAssets')}</strong>
+              <span>{t('hgWalkthrough')}</span>
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
           </button>
@@ -102,7 +104,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
           ))}
 
           <div className="wl-help-tips">
-            <h3 className="wl-help-tips-title">Get the most out of it</h3>
+            <h3 className="wl-help-tips-title">{t('hgMostOut')}</h3>
             {TIPS.map((tip, i) => (
               <div key={i} className="wl-help-tip-row">
                 <span aria-hidden="true"><Icon name={tip.icon} size={16} /></span>
@@ -113,7 +115,7 @@ export default function HelpGuide({ open, onClose, onNavigate }) {
         </div>
 
         <div className="wl-help-foot">
-          <button className="wl-help-done" onClick={onClose}>Got it</button>
+          <button className="wl-help-done" onClick={onClose}>{t('hgGotIt')}</button>
         </div>
       </div>
     </div>

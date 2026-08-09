@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { api } from '../api'
 
 export default function Exchanges() {
+  const { t } = useLanguage()
   const [exchanges, setExchanges] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [syncResult, setSyncResult] = useState(null)
@@ -40,45 +42,45 @@ export default function Exchanges() {
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Exchange Connections</h2>
+        <h2>{t('exTitle')}</h2>
         <button onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : '+ Connect Exchange'}
         </button>
       </div>
 
-      <p className="muted">Connect your exchange accounts to sync balances and import transactions. API keys are stored locally.</p>
+      <p className="muted">{t('exSub')}</p>
 
       {showForm && (
         <div className="card">
-          <h3>Connect Exchange</h3>
+          <h3>{t('exConnect')}</h3>
           <form onSubmit={handleSubmit} className="form-grid">
             <div className="form-group">
-              <label>Exchange</label>
+              <label>{t('txExchange')}</label>
               <select value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}>
                 <option value="Binance">Binance</option>
                 <option value="Coinbase">Coinbase</option>
                 <option value="Kraken">Kraken</option>
                 <option value="KuCoin">KuCoin</option>
-                <option value="Other">Other</option>
+                <option value="Other">{t('txOther')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label>API Key</label>
+              <label>{t('exApiKey')}</label>
               <input type="text" value={form.api_key} onChange={e => setForm(f => ({ ...f, api_key: e.target.value }))} placeholder="Your API key" />
             </div>
             <div className="form-group full-width">
-              <label>API Secret</label>
+              <label>{t('exApiSecret')}</label>
               <input type="password" value={form.api_secret} onChange={e => setForm(f => ({ ...f, api_secret: e.target.value }))} placeholder="Your API secret" />
             </div>
             <div className="form-group full-width">
-              <button type="submit">Connect</button>
+              <button type="submit">{t('exConnectBtn')}</button>
             </div>
           </form>
         </div>
       )}
 
       <div className="card">
-        {exchanges.length === 0 ? <p className="muted">No exchanges connected yet.</p> : (
+        {exchanges.length === 0 ? <p className="muted">{t('exNone')}</p> : (
           <div className="exchange-list">
             {exchanges.map(ex => (
               <div key={ex.id} className="exchange-item">
@@ -102,7 +104,7 @@ export default function Exchanges() {
 
       {syncResult && (
         <div className="card">
-          <h3>Sync Result</h3>
+          <h3>{t('exSyncResult')}</h3>
           {syncResult.error ? (
             <p className="negative">{syncResult.error}</p>
           ) : (
@@ -111,7 +113,7 @@ export default function Exchanges() {
               {syncResult.balances?.length > 0 && (
                 <table>
                   <thead>
-                    <tr><th>Asset</th><th>Balance</th></tr>
+                    <tr><th>{t('tsAsset')}</th><th>{t('exBalance')}</th></tr>
                   </thead>
                   <tbody>
                     {syncResult.balances.map(b => (

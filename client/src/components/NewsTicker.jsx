@@ -301,7 +301,7 @@ export default function NewsTicker() {
               </a>
               <button
                 className="news-ticker-share"
-                title="Share on X"
+                title={t('atShareX')}
                 onClick={e => {
                   e.stopPropagation()
                   const text = encodeURIComponent(`${item.title} — via walletlens.live`)

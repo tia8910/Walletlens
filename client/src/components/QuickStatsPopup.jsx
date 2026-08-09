@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { api } from '../api'
 
@@ -12,6 +13,7 @@ function fmtPct(n) {
 }
 
 export default function QuickStatsPopup({ onClose }) {
+  const { t } = useLanguage()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -63,22 +65,22 @@ export default function QuickStatsPopup({ onClose }) {
     <div className="qs-overlay" onClick={onClose}>
       <div className="qs-popup" onClick={e => e.stopPropagation()}>
         <div className="qs-header">
-          <span className="qs-title">Quick Stats</span>
+          <span className="qs-title">{t('qsTitle')}</span>
           <button className="qs-close" onClick={onClose} aria-label="Close">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
           </button>
         </div>
 
-        {loading && <div className="qs-loading"><span className="qs-spinner" />Loading…</div>}
+        {loading && <div className="qs-loading"><span className="qs-spinner" />{t('loading')}</div>}
 
         {!loading && !data && (
-          <div className="qs-empty">No portfolio data yet.<br />Add some trades to get started.</div>
+          <div className="qs-empty">{t('qsNoData')}<br />{t('qsAddTrades')}</div>
         )}
 
         {!loading && data && (
           <div className="qs-body">
             <div className="qs-main-value">
-              <div className="qs-label">Total Portfolio Value</div>
+              <div className="qs-label">{t('qsTotalValue')}</div>
               <div className="qs-value">{fmt(data.totalValue)}</div>
               <div className={`qs-badge ${data.today24hChange >= 0 ? 'pos' : 'neg'}`}>
                 {data.today24hChange >= 0 ? '▲' : '▼'} {fmt(data.today24hChange)} ({fmtPct(data.today24hPct)}) today
@@ -93,15 +95,15 @@ export default function QuickStatsPopup({ onClose }) {
                 </div>
               </div>
               <div className="qs-stat">
-                <div className="qs-stat-label">Total Invested</div>
+                <div className="qs-stat-label">{t('qsTotalInvested')}</div>
                 <div className="qs-stat-val">{fmt(data.totalInvested)}</div>
               </div>
               <div className="qs-stat">
-                <div className="qs-stat-label">Holdings</div>
+                <div className="qs-stat-label">{t('qsHoldings')}</div>
                 <div className="qs-stat-val">{data.holdings}</div>
               </div>
               <div className="qs-stat">
-                <div className="qs-stat-label">Return</div>
+                <div className="qs-stat-label">{t('qsReturn')}</div>
                 <div className={`qs-stat-val ${data.totalPnl >= 0 ? 'pos' : 'neg'}`}>
                   {data.totalInvested > 0 ? fmtPct((data.totalPnl / data.totalInvested) * 100) : '—'}
                 </div>
@@ -112,14 +114,14 @@ export default function QuickStatsPopup({ onClose }) {
               <div className="qs-movers">
                 {data.best && (
                   <div className="qs-mover best">
-                    <span className="qs-mover-label"><Icon name="trophy" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Best today</span>
+                    <span className="qs-mover-label"><Icon name="trophy" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('qsBestToday')}</span>
                     <span className="qs-mover-coin">{data.best.coin_symbol?.toUpperCase()}</span>
                     <span className="qs-mover-pct pos">{fmtPct(data.best.change24hPct)}</span>
                   </div>
                 )}
                 {data.worst && data.worst.coin_id !== data.best?.coin_id && (
                   <div className="qs-mover worst">
-                    <span className="qs-mover-label"><Icon name="trend-down" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Worst today</span>
+                    <span className="qs-mover-label"><Icon name="trend-down" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('qsWorstToday')}</span>
                     <span className="qs-mover-coin">{data.worst.coin_symbol?.toUpperCase()}</span>
                     <span className="qs-mover-pct neg">{fmtPct(data.worst.change24hPct)}</span>
                   </div>

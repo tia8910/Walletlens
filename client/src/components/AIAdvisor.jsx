@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { ANTHROPIC_KEY } from '../anthropic'
 
@@ -167,6 +168,7 @@ const ChatBubble = memo(function ChatBubble({ role, content }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function AIAdvisor({ portfolio, prices, transactions, coinTargets, totalValue, totalInvested, totalPnL }) {
+  const { t } = useLanguage()
   const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORAGE) || ANTHROPIC_KEY || '')
   const [keyInput, setKeyInput]   = useState('')
   const [showKey, setShowKey]     = useState(false)
@@ -256,10 +258,10 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
     return (
       <div className="ai-adv-setup glass-card">
         <div className="ai-adv-setup-icon"><Icon name="sparkles" size={26} /></div>
-        <h3 className="ai-adv-setup-title">Portfolio Advisor</h3>
+        <h3 className="ai-adv-setup-title">{t('aaTitle')}</h3>
         <p className="ai-adv-setup-sub">
-          Powered by Claude — enter your Anthropic API key to get a CFA-level analysis of your portfolio.<br/>
-          Your key is stored locally in your browser and sent only to Anthropic's API.
+          {t('aaIntro')}<br/>
+          {t('aaKeyLocal')}
         </p>
         <div className="ai-adv-key-row">
           <input
@@ -278,7 +280,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           Save &amp; Continue
         </button>
         <p className="ai-adv-key-hint muted">
-          Get a free key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color: 'var(--g-ink)', fontWeight: 700}}>console.anthropic.com</a>
+          {t('aaGetKey')} <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color: 'var(--g-ink)', fontWeight: 700}}>console.anthropic.com</a>
         </p>
       </div>
     )
@@ -293,13 +295,13 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           className={`ai-adv-mode-btn ${mode === 'analysis' ? 'active' : ''}`}
           onClick={() => setMode('analysis')}
         >
-          <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Deep Analysis
+          <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aaDeepAnalysis')}
         </button>
         <button
           className={`ai-adv-mode-btn ${mode === 'chat' ? 'active' : ''}`}
           onClick={() => setMode('chat')}
         >
-          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Chat
+          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aaChat')}
         </button>
         <button className="ai-adv-key-remove" onClick={removeKey} title="Remove API key">
           <Icon name="key" size={16} />
@@ -312,13 +314,13 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           {!analysis && !analyzing && (
             <div className="ai-adv-cta glass-card">
               <div className="ai-adv-cta-icon">◈</div>
-              <h3 className="ai-adv-cta-title">Portfolio Deep Dive</h3>
+              <h3 className="ai-adv-cta-title">{t('aaDeepDive')}</h3>
               <p className="ai-adv-cta-sub muted">
                 Claude analyzes your actual holdings, cost basis, P&L, and sell targets to give you
                 institutional-grade insights — risks, opportunities, priority actions, and stress tests.
               </p>
               <button className="dvx-btn dvx-btn-primary ai-adv-analyze-btn" onClick={runAnalysis}>
-                <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Analyze My Portfolio
+                <Icon name="zap" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aaAnalyze')}
               </button>
             </div>
           )}
@@ -326,14 +328,14 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           {analyzing && !analysis && (
             <div className="ai-adv-loading glass-card">
               <div className="ai-adv-spinner" />
-              <p>Analyzing your portfolio with Claude Opus…</p>
+              <p>{t('aaAnalyzing')}</p>
             </div>
           )}
 
           {analysisErr && (
             <div className="ai-adv-error glass-card">
               <p><Icon name="warning" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{analysisErr}</p>
-              <button className="dvx-btn" onClick={runAnalysis} style={{marginTop:'0.75rem'}}>Retry</button>
+              <button className="dvx-btn" onClick={runAnalysis} style={{marginTop:'0.75rem'}}>{t('miRetry')}</button>
             </div>
           )}
 
@@ -359,7 +361,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
             {messages.length === 0 && (
               <div className="ai-chat-empty">
                 <div className="ai-chat-empty-icon"><Icon name="message" size={26} /></div>
-                <p>Ask me anything about your portfolio.</p>
+                <p>{t('aaAskAnything')}</p>
                 <div className="ai-chat-suggestions">
                   {[
                     'Should I take profits on any position now?',
@@ -390,7 +392,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
             <input
               ref={inputRef}
               className="ai-chat-input"
-              placeholder="Ask about your portfolio…"
+              placeholder={t('phAskPortfolio')}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()}

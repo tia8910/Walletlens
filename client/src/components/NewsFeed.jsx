@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
 const RSS_FEEDS = [
@@ -162,6 +163,7 @@ function NewsCard({ article, matchedCoins }) {
 }
 
 export default function NewsFeed({ enriched = [] }) {
+  const { t } = useLanguage()
   const [articles, setArticles]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
@@ -213,7 +215,7 @@ export default function NewsFeed({ enriched = [] }) {
       setArticles(deduped)
       setLastFetch(Date.now())
     } catch {
-      setError('Could not load news. Please try again.')
+      setError(t('errNewsLoad'))
     } finally {
       setLoading(false)
     }
@@ -260,7 +262,7 @@ export default function NewsFeed({ enriched = [] }) {
               >All</button>
             </div>
           )}
-          <button className="news-refresh-btn" onClick={fetchNews} disabled={loading} title="Refresh">
+          <button className="news-refresh-btn" onClick={fetchNews} disabled={loading} title={t('atRefresh')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               style={{ animation: loading ? 'news-spin 1s linear infinite' : 'none' }}>
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>

@@ -5,6 +5,7 @@ import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { useLanguage } from '../LanguageContext'
+import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
@@ -33,12 +34,6 @@ function assetMix(enriched, totalValue) {
     else mix.other += share
   }
   return mix
-}
-
-// Mix keys → translation keys, so a generated sentence can name the class.
-const CLASS_LABEL_KEYS = {
-  crypto: 'clsCrypto', stock: 'clsStock', metal: 'clsMetal',
-  cash: 'clsCash', bond: 'clsBond', other: 'clsOther',
 }
 
 // ── Wallet Evaluation — adaptive checks ────────────────────────────────────
@@ -158,21 +153,6 @@ const EVAL_CATEGORIES = [
     },
   },
 ]
-
-/**
- * Render a tip descriptor.
- *
- * A tip is [key, ...args]. Most args are already-formatted numbers, but an arg
- * of the shape { k: 'someKey' } is itself a translation key — the asset-class
- * nouns that get dropped into a sentence. Resolving those here keeps the check
- * functions free of any hook, which they have to be: they run at module scope.
- */
-function renderTip(tip, t) {
-  if (!Array.isArray(tip) || !tip.length) return ''
-  const fn = t(tip[0])
-  if (typeof fn !== 'function') return fn
-  return fn(...tip.slice(1).map(a => (a && typeof a === 'object' && a.k) ? t(a.k) : a))
-}
 
 function computeEval(enriched, totalValue) {
   if (!enriched.length) return null

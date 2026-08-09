@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
 
@@ -8,6 +9,7 @@ const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
 // Posts to the Deno endpoint (mode: "email") which stores the address in Deno KV.
 // `source` tags where the signup came from so campaigns can be measured in GA.
 export default function EmailOptIn({ source = 'landing', compact = false, label = 'Subscribe' }) {
+  const { t } = useLanguage()
   const [email, setEmail]   = useState('')
   const [status, setStatus] = useState('idle') // idle | sending | ok | error
   const [msg, setMsg]       = useState('')
@@ -16,7 +18,7 @@ export default function EmailOptIn({ source = 'landing', compact = false, label 
     e.preventDefault()
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setStatus('error'); setMsg('Please enter a valid email address.')
+      setStatus('error'); setMsg(t('errValidEmail'))
       return
     }
     setStatus('sending'); setMsg('')
@@ -39,7 +41,7 @@ export default function EmailOptIn({ source = 'landing', compact = false, label 
       }
     } catch {
       setStatus('error')
-      setMsg('Network error — please try again.')
+      setMsg(t('errNetwork'))
       track('email_signup_error', { source, error_code: 'network' })
     }
   }
@@ -59,7 +61,7 @@ export default function EmailOptIn({ source = 'landing', compact = false, label 
           placeholder="your@email.com"
           value={email}
           onChange={e => { setEmail(e.target.value); if (status === 'error') { setStatus('idle'); setMsg('') } }}
-          aria-label="Email address"
+          aria-label={t('phEmail')}
         />
         <button
           type="submit"

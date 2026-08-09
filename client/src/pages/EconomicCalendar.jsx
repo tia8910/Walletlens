@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { api } from '../api'
 import { track } from '../analytics'
 
@@ -33,6 +34,7 @@ function calDayLabel(dateStr) {
 }
 
 export default function EconomicCalendar() {
+  const { t } = useLanguage()
   const [data, setData] = useState({ updated: '', events: [] })
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -73,7 +75,7 @@ export default function EconomicCalendar() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Economic Calendar</h1>
+          <h1 className="page-title">{t('ecTitle')}</h1>
           <p className="page-sub">Market-moving macro events — CPI, jobs, GDP & central-bank decisions.</p>
         </div>
         <button className="refresh-btn" onClick={load} disabled={loading}>
@@ -97,10 +99,10 @@ export default function EconomicCalendar() {
         ))}
       </div>
 
-      {loading && <div className="card"><p className="muted">Loading calendar…</p></div>}
+      {loading && <div className="card"><p className="muted">{t('ecLoading')}</p></div>}
 
       {!loading && groups.length === 0 && (
-        <div className="card"><p className="muted">No upcoming events for this filter.</p></div>
+        <div className="card"><p className="muted">{t('ecNoEvents')}</p></div>
       )}
 
       {!loading && groups.map(date => {
@@ -124,11 +126,11 @@ export default function EconomicCalendar() {
                     </div>
                     <div className="cal-nums">
                       <div className="cal-num">
-                        <span className="cal-num-lbl">Prev</span>
+                        <span className="cal-num-lbl">{t('ecPrev')}</span>
                         <span className="cal-num-val">{e.previous || '–'}</span>
                       </div>
                       <div className="cal-num">
-                        <span className="cal-num-lbl">Fcst</span>
+                        <span className="cal-num-lbl">{t('ecFcst')}</span>
                         <span className="cal-num-val">{e.forecast || '–'}</span>
                       </div>
                       <div className="cal-num">

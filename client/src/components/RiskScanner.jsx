@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
 import Icon from './Icon'
@@ -378,6 +379,7 @@ async function scoreToken(coinId, forceRefresh = false, symbol = '') {
 
 // ── Portfolio summary ─────────────────────────────────────────────────────
 function PortfolioRiskSummary({ results, holdings }) {
+  const { t } = useLanguage()
   if (!results || Object.keys(results).length === 0) return null
 
   const scanned = holdings.filter(h => results[h.coin_id] && results[h.coin_id].score != null)
@@ -406,7 +408,7 @@ function PortfolioRiskSummary({ results, holdings }) {
 
   return (
     <div className="glass-card risk-portfolio-summary">
-      <div className="risk-summary-header">Portfolio Risk Overview</div>
+      <div className="risk-summary-header">{t('rsOverview')}</div>
       <div className="risk-summary-body">
         <div className="risk-summary-score-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
@@ -421,7 +423,7 @@ function PortfolioRiskSummary({ results, holdings }) {
             </text>
           </svg>
           <div className="risk-summary-grade" style={{ color: gradeColor }}>{gradeLabel}</div>
-          <div className="risk-summary-label muted">Portfolio Score</div>
+          <div className="risk-summary-label muted">{t('rsScore')}</div>
         </div>
         <div className="risk-summary-breakdown">
           {Object.entries(gradeCounts).filter(([, v]) => v > 0).map(([grade, count]) => {
@@ -436,7 +438,7 @@ function PortfolioRiskSummary({ results, holdings }) {
           })}
           {worstResult.score < 80 && (
             <div className="risk-summary-worst">
-              <span className="muted">Most risky:</span>
+              <span className="muted">{t('rsMostRisky')}</span>
               <span style={{ color: worstResult.color, fontWeight: 700 }}>
                 {worst.coin_symbol?.toUpperCase()} ({worstResult.score})
               </span>
@@ -651,6 +653,7 @@ async function checkScamAddress(input) {
 }
 
 function ScamCatcher() {
+  const { t } = useLanguage()
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState(null)
@@ -674,7 +677,7 @@ function ScamCatcher() {
     <div className="glass-card risk-scam-card">
       <div className="risk-scam-header">
         <Icon name="search" size={19} />
-        <span className="risk-scam-title">Scam Catcher</span>
+        <span className="risk-scam-title">{t('rsScamCatcher')}</span>
       </div>
       <p className="risk-scam-desc">
         Enter a token name, CoinGecko ID, or contract address (EVM / Solana) to check for honeypots, hidden taxes, mint traps, and whale concentration.
@@ -682,7 +685,7 @@ function ScamCatcher() {
       <div className="risk-scam-input-row">
         <input
           className="risk-scam-input"
-          placeholder="e.g. 0x1f9840... or pepe or solana-token-id"
+          placeholder={t('phTokenAddress')}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCheck()}
@@ -728,6 +731,7 @@ const LEGEND = [
 ]
 
 export default function RiskScanner({ enriched }) {
+  const { t } = useLanguage()
   const [results, setResults]   = useState({})
   const [scanGen, setScanGen]   = useState(0) // bump to force re-scan all
 
@@ -763,9 +767,9 @@ export default function RiskScanner({ enriched }) {
       {/* Legend + rescan */}
       <div className="glass-card risk-legend">
         <div className="risk-legend-header">
-          <p className="risk-legend-title">Risk Score Guide</p>
+          <p className="risk-legend-title">{t('rsGuide')}</p>
           {cryptoHoldings.length > 0 && (
-            <button className="risk-rescan-all-btn" onClick={rescanAll}>↻ Re-scan All</button>
+            <button className="risk-rescan-all-btn" onClick={rescanAll}>↻ {t('rsRescan')}</button>
           )}
         </div>
         <div className="risk-legend-grid">
@@ -789,7 +793,7 @@ export default function RiskScanner({ enriched }) {
 
       {cryptoHoldings.length === 0 ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: '2.5rem' }}>
-          <p className="muted">Add crypto holdings to see risk scores.</p>
+          <p className="muted">{t('rsAddCrypto')}</p>
         </div>
       ) : (
         sorted.map(h => (

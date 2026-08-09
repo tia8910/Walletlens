@@ -62,6 +62,7 @@ function filterImageFiles(files) {
 // Accepts multiple files at once — via drag-drop, file picker (Ctrl/Cmd+click),
 // or the camera roll on mobile.
 function MultiDragZone({ busy, onFiles, compact = false }) {
+  const { t } = useLanguage()
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
@@ -91,13 +92,14 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
       <span className="si-dropzone-label">
         {compact ? 'Add more screenshots' : 'Drop screenshots here or tap to select'}
       </span>
-      {!compact && <span className="si-dropzone-hint">PNG, JPG, WEBP · select multiple at once</span>}
+      {!compact && <span className="si-dropzone-hint">{t('siPngJpg')}</span>}
     </div>
   )
 }
 
 // ── Single-file drop zone (spreadsheet) ──────────────────────────────────────
 function DragZone({ accept, label, icon, onFile, disabled }) {
+  const { t } = useLanguage()
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
@@ -123,7 +125,7 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
         onChange={e => handle(e.target.files[0])} />
       <span className="si-dropzone-icon"><Icon name={icon} size={24} /></span>
       <span className="si-dropzone-label">{label}</span>
-      <span className="si-dropzone-hint">XLSX, XLS, CSV</span>
+      <span className="si-dropzone-hint">{t('siXlsx')}</span>
     </div>
   )
 }
@@ -278,7 +280,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } else if (totalAdded > 0) {
       showMsg(`Detected ${totalAdded} holding(s) — ${errors} screenshot${errors > 1 ? 's' : ''} could not be read. Review and edit below.`, 'ok')
     } else {
-      showMsg('No holdings detected in any screenshot. Try clearer, tighter shots of the holdings list.')
+      showMsg(t('errNoHoldingsDetected'))
     }
   }
 
@@ -289,7 +291,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     setRows([])
     try {
       const raw = await parseSpreadsheet(file)
-      if (raw.length < 2) { showMsg('File appears empty.'); return }
+      if (raw.length < 2) { showMsg(t('errFileEmpty')); return }
 
       const headers   = raw[0].map(h => String(h).toLowerCase().trim())
       const colSymbol = detectColumn(headers, 'symbol')
@@ -300,7 +302,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       const colType   = detectColumn(headers, 'type')
 
       if (colSymbol === -1 && colName === -1) {
-        showMsg('Could not detect a Symbol or Name column. Use headers: Symbol, Name, Amount, Price, Date, Type')
+        showMsg(t('siNoColumns'))
         return
       }
 
@@ -321,11 +323,11 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
           date:   colDate  >= 0 && row[colDate] ? String(row[colDate]).trim() : today,
         })
       }
-      if (!parsed.length) { showMsg('No valid rows found. Check your column headers.'); return }
+      if (!parsed.length) { showMsg(t('errNoValidRows')); return }
       setRows(parsed)
       showMsg(`Parsed ${parsed.length} row(s) — review and edit below.`, 'ok')
     } catch (e) {
-      showMsg('Parse error: ' + e.message)
+      showMsg(t('errParsePrefix') + e.message)
     } finally {
       setBusy(false)
     }
@@ -334,9 +336,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
   // ── Import ────────────────────────────────────────────────────────────────
   async function doImport() {
     if (!rows.length) return
-    if (!walletId) { showMsg('Please select a wallet first.'); return }
+    if (!walletId) { showMsg(t('errSelectWallet')); return }
     const valid = rows.filter(r => r.symbol && r.amount > 0)
-    if (!valid.length) { showMsg('No valid rows to import (need symbol + amount > 0).'); return }
+    if (!valid.length) { showMsg(t('errNoRowsToImport')); return }
     setBusy(true)
     clearMsg()
     try {
@@ -367,7 +369,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       setPreviews([])
       onImported?.()
     } catch (e) {
-      showMsg('Import error: ' + e.message)
+      showMsg(t('errImportPrefix') + e.message)
     } finally {
       setBusy(false)
     }
@@ -418,12 +420,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       {/* Hints */}
       {!rows.length && !busy && !previews.length && mode === 'excel' && (
         <p className="si-hint">
-          Use column headers: <strong>Symbol, Name, Amount, Price, Date, Type</strong> (buy/sell). CSV and XLSX both supported.
+          {t('siUseHeaders')} <strong>{t('siHeaderList')}</strong> {t('siBuySell')}
         </p>
       )}
       {!rows.length && !busy && !previews.length && mode === 'screenshot' && (
         <p className="si-hint">
-          Select multiple screenshots at once — from different exchanges or wallets — and all holdings are combined into one import.
+          {t('siMultiShots')}
         </p>
       )}
 
