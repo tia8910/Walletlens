@@ -354,7 +354,7 @@ export default function AssetDetail() {
         ) : note ? (
           <p style={{ margin:0, color:'var(--text)', fontSize:'0.88rem', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{note}</p>
         ) : (
-          <p className="muted" style={{ margin:0, fontSize:'0.85rem' }}>No notes yet. Tap "Add note" to record your thesis.</p>
+          <p className="muted" style={{ margin:0, fontSize:'0.85rem' }}>{t('adNoNotes')}</p>
         )}
       </div>
 
@@ -584,7 +584,7 @@ function DividendCard({ coinId, price, amount, symbol }) {
         )}
       </div>
       <p className="whale-score-desc" style={{ marginTop:'0.5rem', fontSize:'0.74rem', color:'var(--text-muted)' }}>
-        Estimated from trailing 12-month payouts. Actual dividends vary with company policy and ex-dividend dates.
+        {t('adDividendNote')}
       </p>
     </div>
   )

@@ -48,7 +48,7 @@ export default function Exchanges() {
         </button>
       </div>
 
-      <p className="muted">Connect your exchange accounts to sync balances and import transactions. API keys are stored locally.</p>
+      <p className="muted">{t('exSub')}</p>
 
       {showForm && (
         <div className="card">

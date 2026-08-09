@@ -66,7 +66,7 @@ function WalletReader() {
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="wallet" size={26} /></div>
         <h2 className="intel-hero-title">{t('inWalletReader')}</h2>
-        <p className="intel-hero-sub">Paste any BTC or ETH address to instantly profile it — balance, activity, and whale classification.</p>
+        <p className="intel-hero-sub">{t('inWalletReaderSub')}</p>
       </div>
 
       <div className="wr-chain-row">
@@ -176,7 +176,7 @@ function GemsTab({ market }) {
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="diamond" size={26} /></div>
         <h2 className="intel-hero-title">{t('inGems')}</h2>
-        <p className="intel-hero-sub">Low-to-mid cap coins with unusual volume spikes and momentum — early signal radar before the crowd arrives.</p>
+        <p className="intel-hero-sub">{t('inGemsSub')}</p>
       </div>
       <div className="gems-grid">
         {gems.map(c => (
@@ -265,7 +265,7 @@ function AlphaTab({ market, trending }) {
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="zap" size={26} /></div>
         <h2 className="intel-hero-title">{t('inAlphaFeed')}</h2>
-        <p className="intel-hero-sub">Real-time signals — volume anomalies, trending low-caps, and big movers before the herd catches on.</p>
+        <p className="intel-hero-sub">{t('inAlphaFeedSub')}</p>
       </div>
       <div className="alpha-feed">
         {signals.map((s, i) => (
@@ -320,7 +320,7 @@ function IndicatorsTab({ market, globalData }) {
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="bar-chart" size={26} /></div>
         <h2 className="intel-hero-title">{t('inIndicators')}</h2>
-        <p className="intel-hero-sub">Macro crypto health at a glance — dominance, altseason index, BTC/ETH ratio, and momentum signals.</p>
+        <p className="intel-hero-sub">{t('inIndicatorsSub')}</p>
       </div>
 
       <div className="ind-grid">

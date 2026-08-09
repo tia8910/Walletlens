@@ -260,8 +260,8 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
         <div className="ai-adv-setup-icon"><Icon name="sparkles" size={26} /></div>
         <h3 className="ai-adv-setup-title">{t('aaTitle')}</h3>
         <p className="ai-adv-setup-sub">
-          Powered by Claude — enter your Anthropic API key to get a CFA-level analysis of your portfolio.<br/>
-          Your key is stored locally in your browser and sent only to Anthropic's API.
+          {t('aaIntro')}<br/>
+          {t('aaKeyLocal')}
         </p>
         <div className="ai-adv-key-row">
           <input
@@ -280,7 +280,7 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           Save &amp; Continue
         </button>
         <p className="ai-adv-key-hint muted">
-          Get a free key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color: 'var(--g-ink)', fontWeight: 700}}>console.anthropic.com</a>
+          {t('aaGetKey')} <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color: 'var(--g-ink)', fontWeight: 700}}>console.anthropic.com</a>
         </p>
       </div>
     )
@@ -295,13 +295,13 @@ export default function AIAdvisor({ portfolio, prices, transactions, coinTargets
           className={`ai-adv-mode-btn ${mode === 'analysis' ? 'active' : ''}`}
           onClick={() => setMode('analysis')}
         >
-          <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Deep Analysis
+          <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aaDeepAnalysis')}
         </button>
         <button
           className={`ai-adv-mode-btn ${mode === 'chat' ? 'active' : ''}`}
           onClick={() => setMode('chat')}
         >
-          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Chat
+          <Icon name="message" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('aaChat')}
         </button>
         <button className="ai-adv-key-remove" onClick={removeKey} title="Remove API key">
           <Icon name="key" size={16} />

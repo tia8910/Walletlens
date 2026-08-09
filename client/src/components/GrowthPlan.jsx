@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { inline } from './DocProse'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
@@ -425,7 +426,8 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
     return null
   }, [sim, inputs?.goal, totalValue])
 
-  const yearsLabel = inputs ? `${Math.round(inputs.months / 12)} ${Math.round(inputs.months / 12) === 1 ? 'year' : 'years'}` : ''
+  // Arabic has four plural forms for a count, so this cannot be a suffix.
+  const yearsLabel = inputs ? t('gpYears')(Math.round(inputs.months / 12)) : ''
   const odds = Math.round((sim?.probGoal ?? 0) * 100)
   const oddsWord = odds >= 90 ? 'almost certain' : odds >= 70 ? 'very likely' : odds >= 40 ? 'possible' : 'unlikely'
   // Percentages confuse; "7 in 10" reads instantly.
@@ -469,13 +471,11 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {/* ── The answer, in one sentence ── */}
             <div className="gp-answer">
               <p className="gp-answer-lead">
-                If you keep saving <b>${fmtN(inputs.monthly)}</b> a month, in <b>{yearsLabel}</b> you'll
-                probably have about
+                {inline(t('gpAnswerLead')('$' + fmtN(inputs.monthly), yearsLabel))}
               </p>
               <p className="gp-answer-big">${fmtN(sim.p50Terminal)}</p>
               <p className="gp-answer-sub">
-                Could be as low as <b>${fmtN(sim.p10Terminal)}</b> or as high
-                as <b>${fmtN(sim.p90Terminal)}</b>, depending on the markets.
+                {inline(t('gpAnswerRange')('$' + fmtN(sim.p10Terminal), '$' + fmtN(sim.p90Terminal)))}
               </p>
             </div>
 
@@ -495,15 +495,16 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
               </label>
               <p className="gp-goal-verdict" style={{ color: oddsColor }}>
                 {odds < 40 ? (
-                  <>At <b>${fmtN(inputs.monthly)}</b> a month, you probably <b>won't</b> reach this
-                    within {yearsLabel} — only about <b>{oddsChance} in 10</b> chance.</>
+                  inline(t('gpVerdictUnlikely')('$' + fmtN(inputs.monthly), yearsLabel, oddsChance))
                 ) : likelyYears ? (
-                  <>You'd probably reach it in about <b>{likelyYears < 1
-                    ? `${Math.max(1, Math.round(likelyYears * 12))} ${Math.max(1, Math.round(likelyYears * 12)) === 1 ? 'month' : 'months'}`
-                    : `${likelyYears.toFixed(1)} years`}</b> — {oddsWord}.
-                    {inputs.goal > totalValue && <> You're <b>${fmtN(inputs.goal - totalValue)}</b> away.</>}</>
+                  <>{inline(t('gpVerdictReach')(
+                      likelyYears < 1
+                        ? t('gpMonths')(Math.max(1, Math.round(likelyYears * 12)))
+                        : t('gpYearsDec')(likelyYears.toFixed(1)),
+                      oddsWord))}
+                    {inputs.goal > totalValue && inline(t('gpVerdictAway')('$' + fmtN(inputs.goal - totalValue)))}</>
                 ) : (
-                  <>Reaching this within {yearsLabel} looks <b>{oddsWord}</b> — about <b>{oddsChance} in 10</b> chance.</>
+                  inline(t('gpVerdictOdds')(yearsLabel, oddsWord, oddsChance))
                 )}
               </p>
             </div>
@@ -514,7 +515,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {(needMonthly > inputs.monthly || (yearsAtCurrent && yearsAtCurrent > inputs.months / 12)) && (
               <div className="gp-how">
                 <h4 className="gp-how-h"><Icon name="lightbulb" size={15} />{t('gpHowToReach')}</h4>
-                <p className="gp-how-lead">Any one of these gets you there — pick whichever fits your life.</p>
+                <p className="gp-how-lead">{t('gpAnyOne')}</p>
                 <ol className="gp-how-list">
                   {needMonthly > inputs.monthly && (
                     <li>
@@ -545,7 +546,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                     <li>
                       <span className="gp-how-n">{1 + (needMonthly > inputs.monthly ? 1 : 0) + (yearsAtCurrent && yearsAtCurrent > inputs.months / 12 && yearsAtCurrent <= 30 ? 1 : 0)}</span>
                       <div>
-                        <b>Add ${fmtN(lumpNow)} now</b> as a one-off
+                        {inline(t('gpAddLump')('$' + fmtN(lumpNow)))}
                         <span className="gp-how-note">
                           A single top-up today — a bonus, savings, or selling something you don't need —
                           then carry on at ${fmtN(inputs.monthly)} a month.
@@ -559,7 +560,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                       <div>
                         <b>Aim for ${fmtN(sim.p50Terminal)}</b> instead
                         <span className="gp-how-note">
-                          A smaller target you're already on track for. You can always raise it later.
+                          {t('gpSmallerTarget')}
                         </span>
                         <button type="button" className="gp-how-apply" onClick={() => setGoal(Math.round(sim.p50Terminal))}>{t('gpTryIt')}</button>
                       </div>
@@ -567,7 +568,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                   )}
                 </ol>
                 <p className="gp-how-foot">
-                  Saving more is the one thing fully in your control — market returns aren't.
+                  {t('gpSavingControl')}
                 </p>
               </div>
             )}
@@ -575,24 +576,21 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             {/* ── Chart, with a plain caption ── */}
             <FanChart band={sim.band} goal={inputs.goal} months={inputs.months} />
             <div className="gp-legend">
-              <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> Likely</span>
-              <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> If markets do well</span>
-              <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> If markets do poorly</span>
+              <span><i className="gp-dot" style={{ background: 'var(--g)' }} /> {t('gpLikely')}</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(var(--g-rgb),0.45)' }} /> {t('gpMarketsWell')}</span>
+              <span><i className="gp-dot" style={{ background: 'rgba(248,113,113,0.6)' }} /> {t('gpMarketsPoorly')}</span>
             </div>
-            <p className="gp-caption">
-              The solid line is the most likely path. The shaded band is the realistic range —
-              your money could end up anywhere inside it. The dashed line is your goal.
-            </p>
+            <p className="gp-caption">{t('gpCaption')}</p>
 
             {/* ── Two simple dials ── */}
             <div className="gp-controls">
               <label className="gp-slider">
-                <span>I save <b>${fmtN(inputs.monthly)}</b> a month</span>
+                <span>{inline(t('gpSaveMonthly')('$' + fmtN(inputs.monthly)))}</span>
                 <input type="range" min="0" max={Math.max(2000, profile.monthly * 4)} step="25"
                   value={inputs.monthly} onChange={e => setMonthly(Number(e.target.value))} />
               </label>
               <label className="gp-slider">
-                <span>For <b>{yearsLabel}</b></span>
+                <span>{inline(t('gpForYears')(yearsLabel))}</span>
                 <input type="range" min="1" max="30" step="1"
                   value={Math.round(inputs.months / 12)} onChange={e => setYears(Number(e.target.value))} />
               </label>
@@ -600,7 +598,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
 
             {/* ── Everything advanced lives behind one toggle ── */}
             <button type="button" className="gp-more" onClick={() => setShowDetails(v => !v)}>
-              {showDetails ? 'Hide details' : 'Show more details'}
+              {showDetails ? t('gpHideDetails') : t('gpShowDetails')}
               <span className={`gp-more-arrow${showDetails ? ' open' : ''}`}>›</span>
             </button>
 
@@ -608,8 +606,7 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
             <div className="gp-section">
               <h4 className="gp-h">{t('gpTryDifferentMix')}</h4>
               <p className="gp-caption gp-caption--tight">
-                Your own mix grows about <b>{(inputs.params.mu * 100).toFixed(1)}% a year</b> on average.
-                Tap another to see how a safer or bolder mix would change the picture.
+                {inline(t('gpMixGrows')((inputs.params.mu * 100).toFixed(1)))}
               </p>
               <div className="gp-presets">
                 {['current', 'conservative', 'balanced', 'aggressive'].map(p => (
