@@ -53,10 +53,25 @@ describe('t() bindings', () => {
     expect(files.length).toBeGreaterThan(20)
   })
 
-  it('every file that calls t() imports useLanguage', () => {
+  it('every file that calls useLanguage() imports it', () => {
+    // This used to test `src.includes('useLanguage')`, which the call site
+    // satisfies all by itself — so a file with `const { t } = useLanguage()`
+    // and no import passed. Coach.jsx shipped exactly that and threw
+    // "useLanguage is not defined" on every render. Match the import.
+    const IMPORTS = /import\s*\{[^}]*\buseLanguage\b[^}]*\}\s*from/
     const missing = files.filter(f => {
       const src = readFileSync(f, 'utf8')
-      return CALLS_T.test(src) && !src.includes('useLanguage')
+      // LanguageContext declares the hook, so it neither has nor needs one.
+      if (/export function useLanguage/.test(src)) return false
+      return /\buseLanguage\s*\(/.test(src) && !IMPORTS.test(src)
+    })
+    expect(missing.map(f => f.slice(SRC.length + 1))).toEqual([])
+  })
+
+  it('every file that calls t() has a translator to call', () => {
+    const missing = files.filter(f => {
+      const src = readFileSync(f, 'utf8')
+      return CALLS_T.test(src) && !/useLanguage\s*\(|translator\s*\(/.test(src)
     })
     expect(missing.map(f => f.slice(SRC.length + 1))).toEqual([])
   })
