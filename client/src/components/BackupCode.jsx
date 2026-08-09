@@ -255,7 +255,7 @@ export default function BackupCode({ hideTrigger = false }) {
           padding: '0.55rem 0.9rem', fontWeight: 700, fontSize: '0.85rem',
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
         }}>
-          <BackupIcon /> Backup Code
+          <BackupIcon /> {t('bkTitle')}
         </button>
       )}
 
@@ -276,8 +276,8 @@ export default function BackupCode({ hideTrigger = false }) {
                 display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
               }}>
                 {m === 'export'
-                  ? <><ArrowDown /> Export</>
-                  : <><ArrowUp /> Import</>}
+                  ? <><ArrowDown /> {t('bkExport')}</>
+                  : <><ArrowUp /> {t('bkImport')}</>}
               </button>
             ))}
           </div>
@@ -285,7 +285,7 @@ export default function BackupCode({ hideTrigger = false }) {
           {mode === 'export' && (
             <>
               <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:'0 0 0.8rem', lineHeight:1.5 }}>
-                Generates a compressed code containing all your trades, wallets and settings. Save it to restore later or move to another device.
+                {t('bkExportHelp')}
               </p>
               {!exportCode ? (
                 <button onClick={handleGenerate} disabled={generating} style={btn({
@@ -319,7 +319,7 @@ export default function BackupCode({ hideTrigger = false }) {
                       color: copied ? 'var(--g-ink)' : '#93c5fd',
                       display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
                     })}>
-                      {copied ? <><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bcCopied')}</> : <><CopyIcon /> Copy code</>}
+                      {copied ? <><Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bcCopied')}</> : <><CopyIcon /> {t('bkCopyCode')}</>}
                     </button>
                     <button onClick={handleDownload} style={btn({
                       background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
@@ -357,7 +357,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     </div>
                   )}
                   <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', margin:'0.7rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                    <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Keep this code private — anyone with it can restore your portfolio.
+                    <Icon name="lock" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bkKeepPrivate')}
                   </p>
                 </>
               )}
@@ -368,7 +368,7 @@ export default function BackupCode({ hideTrigger = false }) {
           {mode === 'import' && (
             <>
               <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', margin:'0 0 0.8rem', lineHeight:1.5 }}>
-                Paste your backup code, upload a saved <strong>{t('bcQrImage')}</strong>, or scan one with your camera to restore. This will <strong style={{ color:'#f87171' }}>overwrite</strong> your current data.
+                {t('bkPasteHelp')} <strong>{t('bcQrImage')}</strong>{t('bkPasteTail')} <strong style={{ color:'#f87171' }}>{t('bkOverwrite')}</strong> {t('bkYourData')}
               </p>
               <textarea value={importText}
                 onChange={e => { importSourceRef.current = 'backup_code'; setImportText(e.target.value); setError(''); setImportResult(null) }}
@@ -386,7 +386,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   color:'var(--text-muted)', padding:'0.45rem', fontSize:'0.78rem',
                   cursor:'pointer', fontWeight:600,
                 }}>
-                  <Icon name="folder" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />File / QR image
+                  <Icon name="folder" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bkFileOrQr')}
                   <input type="file" accept=".txt,text/plain,image/*" onChange={handleFileUpload} style={{ display:'none' }} />
                 </label>
                 <button onClick={scanning ? stopCamera : startScan} style={btn({
@@ -469,7 +469,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     boxShadow: importText.trim() ? '0 4px 14px rgba(59,130,246,0.35)' : 'none',
                     display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem',
                   })}>
-                  <ArrowUp /> Restore from code
+                  <ArrowUp /> {t('bkRestore')}
                 </button>
               )}
             </>
@@ -478,13 +478,13 @@ export default function BackupCode({ hideTrigger = false }) {
           {/* ── Weekly email backup subscription (always available) ── */}
           <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
             <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-              <Icon name="mail" size={15} /> Weekly email backup
+              <Icon name="mail" size={15} /> {t('bkWeeklyEmail')}
             </div>
 
             {!sub ? (
               <>
                 <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.6rem', lineHeight:1.55 }}>
-                  Register your email and WalletLens will send your backup (code + scannable QR) from <strong>noreply@walletlens.live</strong> — right now, then automatically every week when you open the app. Delivered on demand; no copy is kept on our servers.
+                  {t('dsBackupEmailBody')} <strong>noreply@walletlens.live</strong> {t('dsBackupEmailTail')}
                 </p>
                 <div style={{ display:'flex', gap:'0.5rem' }}>
                   <input
@@ -502,7 +502,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
                     display:'inline-flex', alignItems:'center', gap:'0.35rem',
                   })}>
-                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> Subscribe</>}
+                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> {t('bkSubscribe')}</>}
                   </button>
                 </div>
               </>
@@ -528,7 +528,7 @@ export default function BackupCode({ hideTrigger = false }) {
                     color:'#93c5fd', fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1,
                     display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
                   })}>
-                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> Send now</>}
+                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> {t('bkSendNow')}</>}
                   </button>
                   <button onClick={unsubscribeBackup} style={btn({
                     background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
@@ -540,7 +540,7 @@ export default function BackupCode({ hideTrigger = false }) {
 
             {emailStatus === 'sent' && (
               <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-                <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />Sent — check your inbox (and spam folder).
+                <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bkSent')}
               </p>
             )}
             {emailErr && (

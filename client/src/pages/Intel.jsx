@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
@@ -32,6 +33,7 @@ function timeAgo(d) {
 
 /* ══════════════ WALLET READER ══════════════ */
 function WalletReader() {
+  const { t } = useLanguage()
   const [addr, setAddr] = useState('')
   const [chain, setChain] = useState('btc')
   const [result, setResult] = useState(null)
@@ -63,7 +65,7 @@ function WalletReader() {
     <div className="intel-section">
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="wallet" size={26} /></div>
-        <h2 className="intel-hero-title">Wallet Reader</h2>
+        <h2 className="intel-hero-title">{t('inWalletReader')}</h2>
         <p className="intel-hero-sub">Paste any BTC or ETH address to instantly profile it — balance, activity, and whale classification.</p>
       </div>
 
@@ -101,30 +103,30 @@ function WalletReader() {
             </div>
             <div className="wr-stats-grid">
               <div className="wr-stat">
-                <div className="wr-stat-lbl">Balance</div>
+                <div className="wr-stat-lbl">{t('inBalance')}</div>
                 <div className="wr-stat-val">{fmtNum(result.balance, 6)} {chain.toUpperCase()}</div>
                 <div className="wr-stat-usd">{fmtUsd(result.balanceUsd)}</div>
               </div>
               <div className="wr-stat">
-                <div className="wr-stat-lbl">Transactions</div>
+                <div className="wr-stat-lbl">{t('inTransactions')}</div>
                 <div className="wr-stat-val">{result.txCount?.toLocaleString() ?? '–'}</div>
               </div>
               {result.lastTx && (
                 <div className="wr-stat">
-                  <div className="wr-stat-lbl">Last Active</div>
+                  <div className="wr-stat-lbl">{t('inLastActive')}</div>
                   <div className="wr-stat-val">{timeAgo(result.lastTx)}</div>
                 </div>
               )}
               {result.received != null && (
                 <div className="wr-stat">
-                  <div className="wr-stat-lbl">Total Received</div>
+                  <div className="wr-stat-lbl">{t('inTotalReceived')}</div>
                   <div className="wr-stat-val">{fmtNum(result.received, 4)} {chain.toUpperCase()}</div>
                 </div>
               )}
             </div>
             {result.topTokens?.length > 0 && (
               <div className="wr-tokens">
-                <div className="wr-tokens-title">Top Token Holdings</div>
+                <div className="wr-tokens-title">{t('inTopTokens')}</div>
                 {result.topTokens.slice(0,5).map((t,i) => (
                   <div key={i} className="wr-token-row">
                     <span className="wr-token-sym">{t.symbol}</span>
@@ -146,6 +148,7 @@ function WalletReader() {
 
 /* ══════════════ GEMS TO CATCH ══════════════ */
 function GemsTab({ market }) {
+  const { t } = useLanguage()
   const gems = market
     .filter(c =>
       c.market_cap > 5_000_000 &&
@@ -166,13 +169,13 @@ function GemsTab({ market }) {
     .sort((a, b) => b.gemScore - a.gemScore)
     .slice(0, 12)
 
-  if (!gems.length) return <p className="muted" style={{padding:'1rem'}}>Loading gem data…</p>
+  if (!gems.length) return <p className="muted" style={{padding:'1rem'}}>{t('inLoadingGems')}</p>
 
   return (
     <div className="intel-section">
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="diamond" size={26} /></div>
-        <h2 className="intel-hero-title">Gems to Catch</h2>
+        <h2 className="intel-hero-title">{t('inGems')}</h2>
         <p className="intel-hero-sub">Low-to-mid cap coins with unusual volume spikes and momentum — early signal radar before the crowd arrives.</p>
       </div>
       <div className="gems-grid">
@@ -193,7 +196,7 @@ function GemsTab({ market }) {
             </div>
             <div className="gem-stats">
               <div className="gem-stat">
-                <span className="gem-stat-lbl">Turnover</span>
+                <span className="gem-stat-lbl">{t('inTurnover')}</span>
                 <span className="gem-stat-val">{(c.turnover*100).toFixed(1)}%</span>
               </div>
               <div className="gem-stat">
@@ -203,7 +206,7 @@ function GemsTab({ market }) {
                 </span>
               </div>
               <div className="gem-stat">
-                <span className="gem-stat-lbl">MCap</span>
+                <span className="gem-stat-lbl">{t('inMcap')}</span>
                 <span className="gem-stat-val">{fmtUsd(c.market_cap)}</span>
               </div>
             </div>
@@ -219,6 +222,7 @@ function GemsTab({ market }) {
 
 /* ══════════════ ALPHA FEED ══════════════ */
 function AlphaTab({ market, trending }) {
+  const { t } = useLanguage()
   const signals = []
 
   // Volume spike: 24h volume > 5× what you'd expect (turnover > 50%)
@@ -254,13 +258,13 @@ function AlphaTab({ market, trending }) {
       coin: c, detail: `${fmtPct(c.price_change_percentage_24h_in_currency)} · MCap ${fmtUsd(c.market_cap)}`,
     }))
 
-  if (!signals.length) return <p className="muted" style={{padding:'1rem'}}>Loading alpha signals…</p>
+  if (!signals.length) return <p className="muted" style={{padding:'1rem'}}>{t('inLoadingAlpha')}</p>
 
   return (
     <div className="intel-section">
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="zap" size={26} /></div>
-        <h2 className="intel-hero-title">Alpha Feed</h2>
+        <h2 className="intel-hero-title">{t('inAlphaFeed')}</h2>
         <p className="intel-hero-sub">Real-time signals — volume anomalies, trending low-caps, and big movers before the herd catches on.</p>
       </div>
       <div className="alpha-feed">
@@ -292,6 +296,7 @@ function AlphaTab({ market, trending }) {
 
 /* ══════════════ INDICATORS ══════════════ */
 function IndicatorsTab({ market, globalData }) {
+  const { t } = useLanguage()
   const btc = market.find(c => c.id === 'bitcoin')
   const eth = market.find(c => c.id === 'ethereum')
 
@@ -314,14 +319,14 @@ function IndicatorsTab({ market, globalData }) {
     <div className="intel-section">
       <div className="intel-hero">
         <div className="intel-hero-icon"><Icon name="bar-chart" size={26} /></div>
-        <h2 className="intel-hero-title">Market Indicators</h2>
+        <h2 className="intel-hero-title">{t('inIndicators')}</h2>
         <p className="intel-hero-sub">Macro crypto health at a glance — dominance, altseason index, BTC/ETH ratio, and momentum signals.</p>
       </div>
 
       <div className="ind-grid">
         {/* BTC Dominance */}
         <div className="ind-card">
-          <div className="ind-card-title">₿ BTC Dominance</div>
+          <div className="ind-card-title">₿ {t('inBtcDominance')}</div>
           <div className="ind-gauge-wrap">
             <GaugeSemi value={btcDom ?? 0} max={70} color="#f7931a" />
           </div>
@@ -331,7 +336,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* Altseason Index */}
         <div className="ind-card">
-          <div className="ind-card-title"><Icon name="refresh" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Altseason Index</div>
+          <div className="ind-card-title"><Icon name="refresh" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('inAltseason')}</div>
           <div className="ind-gauge-wrap">
             <GaugeSemi value={altseasonScore} max={100} color={altseasonColor} />
           </div>
@@ -341,7 +346,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* Total Market Cap */}
         <div className="ind-card">
-          <div className="ind-card-title"><Icon name="globe" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Total Market Cap</div>
+          <div className="ind-card-title"><Icon name="globe" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('inTotalMcap')}</div>
           <div className="ind-big-stat">{fmtUsd(totalMcap)}</div>
           <div className="ind-hint">Combined top {market.length} assets</div>
           <div className={`ind-badge ${(btc?.price_change_percentage_24h_in_currency||0) >= 0 ? 'pos' : 'neg'}`}>
@@ -351,7 +356,7 @@ function IndicatorsTab({ market, globalData }) {
 
         {/* BTC/ETH Ratio */}
         <div className="ind-card">
-          <div className="ind-card-title"><Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />BTC / ETH Ratio</div>
+          <div className="ind-card-title"><Icon name="scale" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('inBtcEthRatio')}</div>
           <div className="ind-big-stat">{btcEthRatio != null ? btcEthRatio.toFixed(1) + 'x' : '–'}</div>
           <div className="ind-hint">{btcEthRatio != null ? (btcEthRatio > 20 ? 'ETH undervalued vs BTC' : btcEthRatio < 12 ? 'ETH strong vs BTC' : 'Neutral ratio') : ''}</div>
         </div>
@@ -359,7 +364,7 @@ function IndicatorsTab({ market, globalData }) {
 
       {/* Momentum table */}
       <div className="ind-momentum">
-        <div className="ind-mom-title">Top 10 Momentum</div>
+        <div className="ind-mom-title">{t('inTop10Momentum')}</div>
         {top10.map(c => {
           const ch = c.price_change_percentage_24h_in_currency || 0
           const barW = Math.min(Math.abs(ch) / 15 * 100, 100)
@@ -407,6 +412,7 @@ function GaugeSemi({ value, max, color }) {
 
 /* ══════════════ MAIN PAGE ══════════════ */
 export default function Intel() {
+  const { t } = useLanguage()
   const [tab, setTab] = useState('gems')
   const [market, setMarket] = useState([])
   const [trending, setTrending] = useState([])
@@ -441,8 +447,8 @@ export default function Intel() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Intel</h1>
-          <p className="page-sub">Wallets · Gems · Alpha · Market Indicators</p>
+          <h1 className="page-title">{t('inTitle')}</h1>
+          <p className="page-sub">{t('inSub')}</p>
         </div>
         <button className="refresh-btn" onClick={loadData} disabled={loading}>
           {loading
@@ -458,7 +464,7 @@ export default function Intel() {
         ))}
       </div>
 
-      {loading && tab !== 'wallets' && <div className="card"><p className="muted">Loading intel…</p></div>}
+      {loading && tab !== 'wallets' && <div className="card"><p className="muted">{t('inLoading')}</p></div>}
 
       {tab === 'wallets' && <WalletReader />}
       {!loading && tab === 'gems' && <GemsTab market={market} />}

@@ -629,7 +629,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             <form onSubmit={handleSubmit}>
               {wallets.length > 1 && (
                 <div className="form-field">
-                  <label>Wallet</label>
+                  <label>{t('txWallet')}</label>
                   <select value={form.wallet_id} onChange={e => setForm(f => ({ ...f, wallet_id: e.target.value }))}>
                     {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
@@ -638,7 +638,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
               {form.category === 'crypto' ? (
                 <div className="form-field" style={{ position: 'relative' }}>
-                  <label>Coin</label>
+                  <label>{t('txCoin')}</label>
                   <input type="text" value={coinSearch} onChange={e => handleCoinSearch(e.target.value)} placeholder={t('txSearchCoin')} autoFocus />
                   {coinResults.length > 0 && (
                     <div className="dropdown">
@@ -656,7 +656,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                 <>
                   {form.category === 'stock' && (
                     <div className="ticker-chips">
-                      <div className="ticker-chips-label">Popular</div>
+                      <div className="ticker-chips-label">{t('txPopular')}</div>
                       <div className="ticker-chips-row">
                         {POPULAR_TICKERS.map(t => (
                           <button
@@ -674,7 +674,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   )}
                   {form.category === 'fiat' && (
                     <div className="ticker-chips">
-                      <div className="ticker-chips-label">Currency</div>
+                      <div className="ticker-chips-label">{t('txCurrency')}</div>
                       <div className="ticker-chips-row">
                         {POPULAR_FIAT.map(f => (
                           <button
@@ -711,7 +711,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                             disabled={fetchingPrice}
                             title="Fetch live price from Stooq"
                           >
-                            {fetchingPrice ? <span className="price-spinner" /> : <span>Live</span>}
+                            {fetchingPrice ? <span className="price-spinner" /> : <span>{t('txLive')}</span>}
                           </button>
                         )}
                       </div>
@@ -735,7 +735,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       ) : form.price_per_unit ? (
                         <><span className="live-dot" /> Live spot price from gold-api.com — ${fmt(parseFloat(form.price_per_unit))} / oz</>
                       ) : (
-                        <>Waiting for live price…</>
+                        <>{t('txWaitingPrice')}</>
                       )}
                     </div>
                   )}
@@ -793,7 +793,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
                   {/* 24h price range */}
                   <div className="ai-range">
-                    <span className="ai-range-label">24h Range</span>
+                    <span className="ai-range-label">{t('tx24hRange')}</span>
                     <div className="ai-range-bar">
                       <div className="ai-range-marker" style={{ left: `${coinAnalysis.rangePos}%` }} />
                     </div>
@@ -867,7 +867,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
               <div className="form-row-2">
                 <div className="form-field">
-                  <label>Amount</label>
+                  <label>{t('txAmountLbl')}</label>
                   <input type="number" step="any" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" required />
                 </div>
                 <div className="form-field">
@@ -889,7 +889,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                           </svg>
                         )}
-                        <span>Live</span>
+                        <span>{t('txLive')}</span>
                       </button>
                     )}
                   </div>
@@ -898,27 +898,27 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
               {totalCalc > 0 && (
                 <div className="total-preview">
-                  <span>Total</span>
+                  <span>{t('txTotalLbl')}</span>
                   <span className="total-amount">${totalCalc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               )}
 
               <div className="form-row-2">
                 <div className="form-field">
-                  <label>Exchange</label>
+                  <label>{t('txExchange')}</label>
                   <select value={form.exchange} onChange={e => setForm(f => ({ ...f, exchange: e.target.value }))}>
-                    <option value="">Select...</option>
+                    <option value="">{t('txSelect')}</option>
                     <option value="Binance">Binance</option>
                     <option value="Coinbase">Coinbase</option>
                     <option value="Kraken">Kraken</option>
                     <option value="KuCoin">KuCoin</option>
                     <option value="Bybit">Bybit</option>
                     <option value="OKX">OKX</option>
-                    <option value="Other">Other</option>
+                    <option value="Other">{t('txOther')}</option>
                   </select>
                 </div>
                 <div className="form-field">
-                  <label>Date</label>
+                  <label>{t('txDate')}</label>
                   <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                 </div>
               </div>
@@ -942,7 +942,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       <option value="BTC">BTC</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
-                      <option value="CUSTOM">Other…</option>
+                      <option value="CUSTOM">{t('txOtherDots')}</option>
                     </select>
                     {form.buy_with === 'CUSTOM' && (
                       <input
@@ -955,7 +955,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                   </div>
                   <p className="form-hint">
                     {form.buy_with === 'NONE'
-                      ? <>The buy will only add to your holdings — no other balance is reduced.</>
+                      ? <>{t('txBuyOnlyAdds')}</>
                       : <>Total cost{totalCalc ? ` $${totalCalc.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''} will be deducted from your{' '}
                         <strong>{form.buy_with === 'CUSTOM' ? (form.buy_with_custom.trim().toUpperCase() || '…') : form.buy_with}</strong> balance automatically.</>}
                   </p>
@@ -975,7 +975,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                       <option value="USDC">USDC</option>
                       <option value="BTC">BTC</option>
                       <option value="EUR">EUR</option>
-                      <option value="CUSTOM">Other…</option>
+                      <option value="CUSTOM">{t('txOtherDots')}</option>
                       <option value="REMOVE">{t('txRemoveNoCredit')}</option>
                     </select>
                     {form.sell_for === 'CUSTOM' && (
