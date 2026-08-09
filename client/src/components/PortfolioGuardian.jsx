@@ -453,7 +453,7 @@ function StatusCard({ config, onCheckin, onCancel, onEdit }) {
         track('guardian_checkin_manual')
       }
     } catch (e) {
-      alert('Check-in failed — check your connection and try again.')
+      alert(t('errCheckInFailed'))
     } finally { setChecking(false) }
   }
 

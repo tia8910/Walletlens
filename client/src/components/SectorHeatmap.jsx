@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 
 const SECTORS = {
@@ -122,6 +123,7 @@ async function fetchSectors() {
 }
 
 export default function SectorHeatmap() {
+  const { t } = useLanguage()
   const [open, setOpen]     = useState(true)
   const [tiles, setTiles]   = useState(null)
   const [loading, setLoading] = useState(false)
@@ -134,7 +136,7 @@ export default function SectorHeatmap() {
     setLoading(true); setError(null)
     fetchSectors().then(result => {
       if (result) { _cache = result; _cacheTime = Date.now(); setTiles(result) }
-      else setError('Failed to load sector data')
+      else setError(t('errSectorLoad'))
       setLoading(false)
     })
   }, [open])

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { isStablecoin } from '../stablecoins'
 
@@ -138,6 +139,7 @@ const MAX_ASSETS = 8
 let _cache = null, _cacheTime = 0
 
 export default function CorrelationMatrix({ enriched = [] }) {
+  const { t } = useLanguage()
   const [matrix, setMatrix]   = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
@@ -165,10 +167,10 @@ export default function CorrelationMatrix({ enriched = [] }) {
       if (series) { _cache = series; _cacheTime = now }
     }
 
-    if (!series) { setError('Price data unavailable. Try again later.'); setLoading(false); return }
+    if (!series) { setError(t('errPriceUnavailable')); setLoading(false); return }
 
     const ids = cryptoHoldings.map(h => h.coin_id).filter(id => series[id])
-    if (ids.length < 2) { setError('Not enough price data for your holdings.'); setLoading(false); return }
+    if (ids.length < 2) { setError(t('errNotEnoughPrices')); setLoading(false); return }
 
     const mat = {}
     for (const a of ids) {

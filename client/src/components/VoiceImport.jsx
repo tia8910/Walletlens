@@ -1362,6 +1362,7 @@ const IS_IOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navig
 
 // ── Component ───────────────────────────────────────────────────────────────
 export default function VoiceImport({ hideTrigger = false, onImported, onClose }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(hideTrigger)
   const { lang: appLang } = useLanguage()
   const lang = appLang === 'ar' ? 'ar-sa' : 'en'
@@ -1452,7 +1453,7 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
   const startListening = () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
-      setError('Voice recognition not supported in this browser. Try Chrome or Edge.'); return
+      setError(t('errVoiceUnsupported')); return
     }
     // Stop any lingering recognizers from the previous session.
     recsRef.current.forEach(r => { try { r.stop() } catch {} })

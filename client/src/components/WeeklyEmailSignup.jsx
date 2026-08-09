@@ -54,7 +54,7 @@ export default function WeeklyEmailSignup({ enriched, source = 'settings' }) {
   async function submit(e) {
     e.preventDefault()
     const val = email.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { setState('error'); setMsg('Please enter a valid email address.'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { setState('error'); setMsg(t('errValidEmail')); return }
     setState('sending'); setMsg('')
     track('weekly_email_subscribe', { source })
     try {
@@ -63,7 +63,7 @@ export default function WeeklyEmailSignup({ enriched, source = 'settings' }) {
       setSubbed(val); setFirstSent(!!data?.sent); setState('subscribed'); setPopup(true)
       track('weekly_email_subscribe_ok', { source, sent: data?.sent ? 'yes' : 'no' })
     } catch (err) {
-      setState('error'); setMsg('Something went wrong — please try again.')
+      setState('error'); setMsg(t('errGeneric'))
       track('weekly_email_subscribe_error', { source, error_code: String(err?.message || 'unknown') })
     }
   }

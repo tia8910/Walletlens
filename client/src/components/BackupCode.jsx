@@ -151,7 +151,7 @@ export default function BackupCode({ hideTrigger = false }) {
         }
       }, 80)
     } catch {
-      setError('Camera access denied. Allow camera permission and try again.')
+      setError(t('errCameraDenied'))
     }
   }
 
@@ -460,7 +460,7 @@ export default function BackupCode({ hideTrigger = false }) {
                   })}>{t('cancel')}</button>
                 </div>
               ) : (
-                <button onClick={() => { setError(''); if (!importText.trim()) { setError('Paste a backup code first.'); return } setConfirmImport(true) }}
+                <button onClick={() => { setError(''); if (!importText.trim()) { setError(t('errPasteCodeFirst')); return } setConfirmImport(true) }}
                   disabled={!importText.trim()} style={btn({
                     width:'100%', padding:'0.65rem', fontSize:'0.88rem', fontWeight:800,
                     background: importText.trim() ? 'linear-gradient(135deg, #3b82f6, #0ea5e9)' : 'rgba(59,130,246,0.2)',

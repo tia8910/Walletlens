@@ -435,15 +435,15 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Swipe-to-close disabled — use the × button only
 
   async function submit(force = false) {
-    if (!asset || !amount || !price || price === '…') { setMsg('Fill all fields.'); return }
-    if (isBuy && !buyWith) { setMsg('Choose what to buy with.'); return }
-    if (!isBuy && !sellFor) { setMsg('Choose what to sell for.'); return }
-    if (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) { setMsg('Enter the asset to buy with.'); return }
-    if (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim()) { setMsg('Enter the asset to sell for.'); return }
+    if (!asset || !amount || !price || price === '…') { setMsg(t('errFillAll')); return }
+    if (isBuy && !buyWith) { setMsg(t('errChooseBuyWith')); return }
+    if (!isBuy && !sellFor) { setMsg(t('errChooseSellFor')); return }
+    if (isBuy && buyWith === 'CUSTOM' && !buyWithCustom.trim()) { setMsg(t('errEnterBuyAsset')); return }
+    if (!isBuy && sellFor === 'CUSTOM' && !sellForCustom.trim()) { setMsg(t('errEnterSellAsset')); return }
     // Numeric validation — block NaN/negative/zero before anything is recorded.
     const amtCheck = parseFloat(amount), pxCheck = parseFloat(price)
-    if (!isFinite(amtCheck) || amtCheck <= 0) { setMsg('Enter a valid amount greater than 0.'); return }
-    if (!isFinite(pxCheck) || pxCheck < 0) { setMsg('Enter a valid price.'); return }
+    if (!isFinite(amtCheck) || amtCheck <= 0) { setMsg(t('errValidAmount')); return }
+    if (!isFinite(pxCheck) || pxCheck < 0) { setMsg(t('errValidPrice')); return }
     // A sell can never exceed the held balance (would create a negative position).
     if (!isBuy && holdingForCoin && isFinite(holdingForCoin.amount) && amtCheck > holdingForCoin.amount + 1e-9) {
       setMsg(`You only hold ${parseFloat(Number(holdingForCoin.amount).toFixed(8))} ${holdingForCoin.coin_symbol?.toUpperCase() || ''}.`); return

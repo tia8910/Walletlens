@@ -1301,7 +1301,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
   useEffect(() => { if (wallets.length) setWalletId(String(wallets[0].id)) }, [wallets])
 
   async function submit() {
-    if (!walletId || !coin || !symbol || !amount || !price) { setMsg('Fill all fields.'); return }
+    if (!walletId || !coin || !symbol || !amount || !price) { setMsg(t('errFillAll')); return }
     setBusy(true)
     try {
       // First-ever transaction = the user started their profile via manual entry.
@@ -1328,7 +1328,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
       })
       track('trade_submitted', { trade_type: type, asset_symbol: symbol.toUpperCase(), asset_category: 'crypto', trade_value_usd: valueUsd, source: 'manage_tab' })
       if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'manage_tab' })
-      setMsg('Trade added!'); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
+      setMsg(t('errTradeAdded')); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
     } finally { setBusy(false) }
   }
@@ -1506,7 +1506,7 @@ function DataPanel({ onRefresh, onImported }) {
       ])
       const qrSource = qrUrl || result
       if (result) { setCode(result); setMsg('') }
-      else if (!qrSource) setMsg('Export failed.')
+      else if (!qrSource) setMsg(t('errExportFailed'))
       else setMsg('')
       if (qrSource) {
         const parts = await makeQrParts(qrSource)
@@ -1536,7 +1536,7 @@ function DataPanel({ onRefresh, onImported }) {
         setQrParts(parts); setShowQr(parts.length > 0)
         setMsg(parts.length > 0 ? '' : 'QR generation failed.')
       } else {
-        setMsg('QR generation failed.')
+        setMsg(t('errQrFailed'))
       }
     } finally { setBusy(false) }
   }
@@ -1545,7 +1545,7 @@ function DataPanel({ onRefresh, onImported }) {
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true); setTimeout(() => setCopied(false), 2000)
-    } catch { setMsg('Copy failed — select and copy manually.') }
+    } catch { setMsg(t('errCopyFailed')) }
   }
 
   async function loadPreview() {
@@ -1553,7 +1553,7 @@ function DataPanel({ onRefresh, onImported }) {
     setBusy(true)
     const result = await api.previewImportCode(code.trim())
     setBusy(false)
-    if (!result.success) { setMsg('Invalid code: ' + result.error); setPreview(null); return }
+    if (!result.success) { setMsg(t('errInvalidCodePrefix') + result.error); setPreview(null); return }
     setPreview(result); setMsg('')
   }
 
@@ -1562,7 +1562,7 @@ function DataPanel({ onRefresh, onImported }) {
     setBusy(true)
     const result = await api.importCode(code.trim())
     setBusy(false)
-    if (result?.success === false) { setMsg('Import failed: ' + (result.error || 'unknown error')); return }
+    if (result?.success === false) { setMsg(t('errImportFailedPrefix') + (result.error || 'unknown error')); return }
     setMsg('Imported! Redirecting…'); setCode(''); setPreview(null)
     onRefresh()
     // Jump to the portfolio overview so the user sees their restored holdings.

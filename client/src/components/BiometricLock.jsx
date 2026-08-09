@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { fireNativeIntent, isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
@@ -316,6 +317,7 @@ export function useBiometricLock() {
 
 // Full-screen lock overlay. Auto-prompts on mount for a native app feel.
 export function BiometricLockScreen({ onUnlock }) {
+  const { t } = useLanguage()
   const [trying, setTrying] = useState(false)
   const [error, setError] = useState('')
   const [recover, setRecover] = useState(false)
@@ -332,7 +334,7 @@ export function BiometricLockScreen({ onUnlock }) {
       // The native prompt was declined for want of a gesture, not by the
       // device or the user. Nothing is wrong; it just needs a tap.
       if (e?.name === 'NeedsGestureError') {
-        setError('Tap to unlock with your fingerprint.')
+        setError(t('blTapToUnlock'))
         return
       }
       const noPasskeys =
@@ -342,10 +344,10 @@ export function BiometricLockScreen({ onUnlock }) {
       if (noPasskeys || (e?.name && e.name !== 'NotAllowedError')) {
         // Device has no registered passkey for this origin, or authenticator error → escape hatch
         setRecover(true)
-        setError('No passkey found for this app. Disable the lock to continue.')
+        setError(t('blNoPasskey'))
       } else {
         // NotAllowedError = user cancelled/timed out
-        setError('Authentication cancelled. Tap to try again.')
+        setError(t('blCancelled'))
         // Show escape hatch after 2 failed attempts so user is never truly stuck
         if (attemptCount.current >= 2) setRecover(true)
       }
@@ -363,7 +365,7 @@ export function BiometricLockScreen({ onUnlock }) {
     // against — skip the futile prompt and offer recovery straight away.
     if (!isAndroidTWA && !localStorage.getItem(CRED_KEY)) {
       setRecover(true)
-      setError('No passkey is registered on this device. Disable the lock to continue, then re-enable it from Data → Security.')
+      setError(t('blNoPasskeyDevice'))
       return
     }
     attempt()

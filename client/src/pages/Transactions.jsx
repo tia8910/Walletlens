@@ -448,7 +448,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     // Reject invalid numbers so NaN/negative values never reach storage and
     // corrupt the portfolio aggregation.
     if (!isFinite(amount) || amount <= 0 || !isFinite(pricePerUnit) || pricePerUnit < 0) {
-      alert('Enter a valid amount and price (positive numbers).')
+      alert(t('errAmountAndPrice'))
       return
     }
     // Never let a sell exceed the held balance — that would create a negative

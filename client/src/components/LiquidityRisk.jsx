@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { isStablecoin } from '../stablecoins'
 import Icon from './Icon'
 
@@ -28,6 +29,7 @@ function fmt(n) {
 }
 
 export default function LiquidityRisk({ holdings }) {
+  const { t } = useLanguage()
   const [open, setOpen]       = useState(true)
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(false)
@@ -123,7 +125,7 @@ export default function LiquidityRisk({ holdings }) {
         } catch { /* exhausted */ }
       }
 
-      if (!volMap || Object.keys(volMap).length === 0) { setError('Failed to fetch volume data. Try again later.'); setLoading(false); return }
+      if (!volMap || Object.keys(volMap).length === 0) { setError(t('errVolumeFetch')); setLoading(false); return }
       const rows = cryptoHoldings
         .map(h => {
           const id = h.coin_id || h.id

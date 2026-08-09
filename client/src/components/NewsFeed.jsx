@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 
 const RSS_FEEDS = [
@@ -162,6 +163,7 @@ function NewsCard({ article, matchedCoins }) {
 }
 
 export default function NewsFeed({ enriched = [] }) {
+  const { t } = useLanguage()
   const [articles, setArticles]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
@@ -213,7 +215,7 @@ export default function NewsFeed({ enriched = [] }) {
       setArticles(deduped)
       setLastFetch(Date.now())
     } catch {
-      setError('Could not load news. Please try again.')
+      setError(t('errNewsLoad'))
     } finally {
       setLoading(false)
     }
