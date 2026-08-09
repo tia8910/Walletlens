@@ -276,13 +276,13 @@ export default function AssetDetail() {
 
       {/* Market stats */}
       <div className="detail-stats-grid">
-        {coin?.high24 != null && <div className="dstat"><span className="dstat-label">24h High</span><span>${fmt(coin.high24)}</span></div>}
-        {coin?.low24 != null && <div className="dstat"><span className="dstat-label">24h Low</span><span>${fmt(coin.low24)}</span></div>}
-        {coin?.change7d != null && <div className="dstat"><span className="dstat-label">7d Change</span><span className={coin.change7d >= 0 ? 'positive' : 'negative'}>{coin.change7d >= 0 ? '+' : ''}{coin.change7d.toFixed(2)}%</span></div>}
-        {coin?.change30d != null && <div className="dstat"><span className="dstat-label">30d Change</span><span className={coin.change30d >= 0 ? 'positive' : 'negative'}>{coin.change30d >= 0 ? '+' : ''}{coin.change30d.toFixed(2)}%</span></div>}
+        {coin?.high24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hHigh')}</span><span>${fmt(coin.high24)}</span></div>}
+        {coin?.low24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hLow')}</span><span>${fmt(coin.low24)}</span></div>}
+        {coin?.change7d != null && <div className="dstat"><span className="dstat-label">{t('ad7dChange')}</span><span className={coin.change7d >= 0 ? 'positive' : 'negative'}>{coin.change7d >= 0 ? '+' : ''}{coin.change7d.toFixed(2)}%</span></div>}
+        {coin?.change30d != null && <div className="dstat"><span className="dstat-label">{t('ad30dChange')}</span><span className={coin.change30d >= 0 ? 'positive' : 'negative'}>{coin.change30d >= 0 ? '+' : ''}{coin.change30d.toFixed(2)}%</span></div>}
         {coin?.ath != null && <div className="dstat"><span className="dstat-label">{t('adAllTimeHigh')}</span><span>${fmt(coin.ath)}</span></div>}
         {coin?.marketCap != null && <div className="dstat"><span className="dstat-label">{t('adMarketCap')}</span><span>${(coin.marketCap / 1e9).toFixed(2)}B</span></div>}
-        {coin?.volume != null && <div className="dstat"><span className="dstat-label">24h Volume</span><span>${(coin.volume / 1e9).toFixed(2)}B</span></div>}
+        {coin?.volume != null && <div className="dstat"><span className="dstat-label">{t('ad24hVolume')}</span><span>${(coin.volume / 1e9).toFixed(2)}B</span></div>}
       </div>
 
       {/* Holdings */}
@@ -558,7 +558,7 @@ function DividendCard({ coinId, price, amount, symbol }) {
         <h3 style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
           <Icon name="bank" size={17} style={{ color: 'var(--g-ink)' }} />Dividend &amp; Income
         </h3>
-        <span className="whale-panel-window">est. annual</span>
+        <span className="whale-panel-window">{t('adEstAnnual')}</span>
       </div>
       <div className="ta-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', padding:'0.25rem 0' }}>
         <div className="ta-stat">

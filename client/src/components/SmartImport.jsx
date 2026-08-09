@@ -62,6 +62,7 @@ function filterImageFiles(files) {
 // Accepts multiple files at once — via drag-drop, file picker (Ctrl/Cmd+click),
 // or the camera roll on mobile.
 function MultiDragZone({ busy, onFiles, compact = false }) {
+  const { t } = useLanguage()
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
@@ -91,13 +92,14 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
       <span className="si-dropzone-label">
         {compact ? 'Add more screenshots' : 'Drop screenshots here or tap to select'}
       </span>
-      {!compact && <span className="si-dropzone-hint">PNG, JPG, WEBP · select multiple at once</span>}
+      {!compact && <span className="si-dropzone-hint">{t('siPngJpg')}</span>}
     </div>
   )
 }
 
 // ── Single-file drop zone (spreadsheet) ──────────────────────────────────────
 function DragZone({ accept, label, icon, onFile, disabled }) {
+  const { t } = useLanguage()
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
@@ -123,7 +125,7 @@ function DragZone({ accept, label, icon, onFile, disabled }) {
         onChange={e => handle(e.target.files[0])} />
       <span className="si-dropzone-icon"><Icon name={icon} size={24} /></span>
       <span className="si-dropzone-label">{label}</span>
-      <span className="si-dropzone-hint">XLSX, XLS, CSV</span>
+      <span className="si-dropzone-hint">{t('siXlsx')}</span>
     </div>
   )
 }
@@ -300,7 +302,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       const colType   = detectColumn(headers, 'type')
 
       if (colSymbol === -1 && colName === -1) {
-        showMsg('Could not detect a Symbol or Name column. Use headers: Symbol, Name, Amount, Price, Date, Type')
+        showMsg(t('siNoColumns'))
         return
       }
 
@@ -418,12 +420,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       {/* Hints */}
       {!rows.length && !busy && !previews.length && mode === 'excel' && (
         <p className="si-hint">
-          Use column headers: <strong>Symbol, Name, Amount, Price, Date, Type</strong> (buy/sell). CSV and XLSX both supported.
+          {t('siUseHeaders')} <strong>{t('siHeaderList')}</strong> {t('siBuySell')}
         </p>
       )}
       {!rows.length && !busy && !previews.length && mode === 'screenshot' && (
         <p className="si-hint">
-          Select multiple screenshots at once — from different exchanges or wallets — and all holdings are combined into one import.
+          {t('siMultiShots')}
         </p>
       )}
 

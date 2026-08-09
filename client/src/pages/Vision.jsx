@@ -380,7 +380,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
         <div className="vp-card-title">
           <strong>{bucket.name || type.label}</strong>
           <span className="vp-type-label">{type.label}</span>
-          {bucket.completed && <span className="vp-done-badge">✓ Done</span>}
+          {bucket.completed && <span className="vp-done-badge">✓ {t('vnDone')}</span>}
         </div>
         <div className="vp-card-actions">
           {bucket.completed && (
@@ -451,7 +451,7 @@ function BucketCard({ bucket, currentValue, totalNW, holdings, prices, onEdit, o
 
       {isGoalMet && !bucket.completed && (
         <div className="vp-goal-met">
-          <span>✓ Goal reached!</span>
+          <span>✓ {t('vnGoalReached')}</span>
           <button className="vp-goal-met-btn" onClick={e => { e.stopPropagation(); onToggleComplete(bucket.id) }}>{t('vsArchive')}</button>
         </div>
       )}
@@ -565,7 +565,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
         <div className="vp-modal-body">
           {isNew && (
             <div className="vp-field">
-              <span>Start from template <span style={{opacity:.5,fontWeight:400}}>(optional)</span></span>
+              <span>{t('vnFromTemplate')} <span style={{opacity:.5,fontWeight:400}}>{t('vnOptional')}</span></span>
               <div className="vp-templates">
                 {GOAL_TEMPLATES.map((tpl, i) => (
                   <button key={i} type="button" className="vp-tpl-btn"
@@ -638,12 +638,12 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 
           <div className="vp-field-row">
             <label className="vp-field">
-              <span>Monthly Contribution <span style={{ opacity: .5, fontWeight: 400 }}>(adding)</span></span>
+              <span>{t('vnMonthlyContribution')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnAdding')}</span></span>
               <input type="number" min="0" value={form.monthlyContribution} onChange={e => set('monthlyContribution', e.target.value)}
                 placeholder="e.g. 300" className="vp-input" />
             </label>
             <label className="vp-field">
-              <span>Monthly Withdrawal <span style={{ opacity: .5, fontWeight: 400 }}>(drawing)</span></span>
+              <span>{t('vnMonthlyWithdrawal')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnDrawing')}</span></span>
               <input type="number" min="0" value={form.monthlyWithdrawal} onChange={e => set('monthlyWithdrawal', e.target.value)}
                 placeholder="e.g. 500" className="vp-input" />
             </label>
@@ -651,7 +651,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 
           {/* Goal timeframe — user chooses how many months to reach the target */}
           <label className="vp-field">
-            <span>Reach goal in <span style={{ opacity: .5, fontWeight: 400 }}>(months)</span></span>
+            <span>{t('vnReachGoalIn')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnMonths')}</span></span>
             <input type="number" min="1" step="1" value={form.targetMonths} onChange={e => set('targetMonths', e.target.value)}
               placeholder="e.g. 24" className="vp-input" />
             {(() => {
@@ -676,7 +676,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 
           {/* Plan by asset category — always available, no portfolio required */}
           <div className="vp-field">
-            <span>Plan by category <span style={{ opacity: .5, fontWeight: 400 }}>(what this bucket holds)</span></span>
+            <span>{t('vnPlanByCategory')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnWhatBucketHolds')}</span></span>
             <div className="vp-cat-btns">
               {Object.entries(CATEGORIES).map(([k, v]) => (
                 <button
@@ -694,7 +694,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
           {/* Manual current amount — for planning when assets aren't linked */}
           {form.linkedAssets.length === 0 && (
             <label className="vp-field">
-              <span>Current amount <span style={{ opacity: .5, fontWeight: 400 }}>(manual, if not linking assets)</span></span>
+              <span>{t('vnCurrentAmount')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnManualIfNoLink')}</span></span>
               <input type="number" min="0" value={form.manualAmount} onChange={e => set('manualAmount', e.target.value)}
                 placeholder="e.g. 5000" className="vp-input" />
             </label>
@@ -702,7 +702,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
 
           {holdings.length > 0 && (
             <div className="vp-field">
-              <span>Link assets <span style={{ opacity: .5, fontWeight: 400 }}>(select by category or individually)</span></span>
+              <span>{t('vnLinkAssets')} <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnSelectBy')}</span></span>
 
               {(() => {
                 const suggestedCats = ({
@@ -780,7 +780,7 @@ function BucketModal({ bucket, holdings, prices, totalNW, onSave, onClose }) {
           )}
 
           <label className="vp-field">
-            <span>Notes <span style={{ opacity: .5, fontWeight: 400 }}>(optional)</span></span>
+            <span>Notes <span style={{ opacity: .5, fontWeight: 400 }}>{t('vnOptional')}</span></span>
             <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
               placeholder="e.g. BTC long term hold, don't sell before 2027" className="vp-input vp-textarea" />
           </label>
@@ -1096,7 +1096,7 @@ export default function Vision() {
           {buckets.length > 0 && (
             <button className="vp-autogen-btn" onClick={autoGeneratePlan} title="Fill in any missing buckets from your portfolio">
               <Icon name="sparkles" size={14} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />
-              Auto-plan
+              {t('vnAutoPlan')}
             </button>
           )}
           <button className="vp-export-btn" onClick={() => window.print()} title="Export / Print plan">
@@ -1107,7 +1107,7 @@ export default function Vision() {
       </div>
 
       {loading ? (
-        <div className="vp-loading">Loading portfolio…</div>
+        <div className="vp-loading">{t('vnLoadingPortfolio')}</div>
       ) : (
         <>
           {/* ── Summary bar ── */}
@@ -1165,7 +1165,7 @@ export default function Vision() {
             <div className="vp-empty">
               <div className="vp-empty-icon"><Icon name="map" size={30} /></div>
               <h2>{t('vsBuildOneTap')}</h2>
-              <p>Buckets split your net worth into purposes — an emergency fund, long-term growth, a house deposit — so you can see if every dollar is pulling its weight.</p>
+              <p>{t('vnBucketsExplain')}</p>
               {holdings.length > 0 && (
                 <p className="vp-empty-tip">
                   You have {holdings.length} holding{holdings.length !== 1 ? 's' : ''} worth {fmt(totalNW)}. Auto-generate a starter plan grouped by what you actually own, then fine-tune it.
@@ -1174,7 +1174,7 @@ export default function Vision() {
               <div className="vp-empty-actions">
                 <button className="vp-btn-primary vp-autogen-primary" onClick={autoGeneratePlan}>
                   <Icon name="sparkles" size={15} style={{ verticalAlign: '-2px', marginRight: '0.4em' }} />
-                  Auto-generate my plan
+                  {t('vnAutoGenerate')}
                 </button>
                 <button className="vp-btn-ghost vp-add-first" onClick={() => setEditTarget('new')}>
                   + Add manually
@@ -1250,10 +1250,10 @@ export default function Vision() {
               </div>
 
               {!advice && !adviceLoading && !adviceError && (
-                <p className="vp-ai-empty">Get personalized advice on your goals, diversification, emergency cover, and funding pace — based on your actual buckets and asset mix.</p>
+                <p className="vp-ai-empty">{t('vnAdviceIntro')}</p>
               )}
               {adviceError && (
-                <p className="vp-ai-empty vp-ai-err">Couldn't reach the advisor right now. Please try again in a moment.</p>
+                <p className="vp-ai-empty vp-ai-err">{t('vnAdvisorFailed')}</p>
               )}
 
               {advice && (

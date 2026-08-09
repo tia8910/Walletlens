@@ -262,16 +262,16 @@ export default function Watchlist({ portfolioPrices = {} }) {
         <div className="wlw-notif-banner glass-card">
           <span className="wlw-notif-icon"><Icon name="bell" size={16} /></span>
           <div>
-            <strong>Enable notifications</strong> — get alerted the moment a price target is hit.
+            <strong>{t('wlEnableNotifs')}</strong> — get alerted the moment a price target is hit.
           </div>
-          <button className="dvx-btn dvx-btn-primary wlw-notif-btn" onClick={requestPerm}>Enable</button>
+          <button className="dvx-btn dvx-btn-primary wlw-notif-btn" onClick={requestPerm}>{t('wlEnable')}</button>
         </div>
       )}
 
       {/* Header */}
       <div className="wlw-header">
         <div>
-          <div className="wlw-title">Watchlist</div>
+          <div className="wlw-title">{t('wlTitle')}</div>
           <div className="wlw-sub muted">{items.length} asset{items.length !== 1 ? 's' : ''} tracked</div>
         </div>
         <button className="dvx-btn dvx-btn-primary wlw-add-btn" onClick={toggleSearch}>
@@ -406,7 +406,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
                         required
                         autoFocus
                       />
-                      <button type="submit" className="dvx-btn dvx-btn-primary wlw-alert-set">Notify me</button>
+                      <button type="submit" className="dvx-btn dvx-btn-primary wlw-alert-set">{t('wlNotifyMe')}</button>
                     </div>
                     {price > 0 && alertPrice && (() => {
                       const t = parseFloat(alertPrice)

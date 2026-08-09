@@ -61,7 +61,7 @@ export default function Exchanges() {
                 <option value="Coinbase">Coinbase</option>
                 <option value="Kraken">Kraken</option>
                 <option value="KuCoin">KuCoin</option>
-                <option value="Other">Other</option>
+                <option value="Other">{t('txOther')}</option>
               </select>
             </div>
             <div className="form-group">
