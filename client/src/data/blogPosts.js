@@ -37,6 +37,118 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-dividend-income-alongside-capital-gains',
+    title: 'How to Track Dividend Income Alongside Capital Gains',
+    date: 'August 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to track dividend income and capital gains together in one portfolio view — so you always know your true total return.',
+    content: `
+Most investors think about their portfolio in terms of price: buy low, sell high, watch the number go up. But for anyone holding dividend-paying stocks, ETFs, REITs, or even interest-bearing cash accounts, that lens captures only part of the picture. Dividends, distributions, and yield quietly compound in the background — and if you are not tracking them alongside your unrealised capital gains, you are missing a significant slice of your actual return.
+
+This is especially true in 2026, when many investors hold a hybrid mix of assets: growth-oriented crypto alongside dividend ETFs, physical gold alongside REITs, or blue-chip stocks alongside stablecoins earning yield. Pulling all of that into one coherent total-return view used to require either a paid platform or a complex spreadsheet. Here is how to do it clearly and accurately.
+
+## Why Total Return ≠ Price Appreciation
+
+**Capital gains** are the profit you make when an asset rises in value. You buy 10 shares of a stock at $50 each and the price rises to $70 — your unrealised capital gain is $200.
+
+**Dividend income** (or distributions, coupons, or yield) is cash (or additional shares) paid to you periodically just for holding the asset. A stock yielding 4% on a $5,000 position pays you roughly $200 per year regardless of whether the price moves at all.
+
+**Total return** is the combination of both. Ignoring dividends understates your true performance and can lead to poor rebalancing decisions — for example, selling a "flat" position that is actually delivering strong income, or overweighting a high-growth asset while ignoring the compounding power of reinvested dividends.
+
+## The Two Flavours of Dividend Tracking
+
+Before setting up any tracking system, it helps to distinguish between two approaches:
+
+**1. Cash dividend tracking** — dividends hit your brokerage account as cash. You need to record each payment date, amount, and the asset it came from.
+
+**2. DRIP (Dividend Reinvestment Plan) tracking** — dividends are automatically used to buy fractional shares. Each reinvestment creates a new cost-basis lot, which complicates both your average cost and your tax position.
+
+DRIP tracking is harder but more important. Every reinvested dividend changes your average cost basis slightly, so if you only record your original purchase and the current price, your P&L figures will be wrong.
+
+## Setting Up a Dividend Tracking Framework
+
+A solid dividend tracker — whether in a tool or a spreadsheet — needs to capture the following fields for each payment:
+
+| Field | Why It Matters |
+|---|---|
+| Asset / ticker | Which holding generated the income |
+| Ex-dividend date | Determines eligibility; useful for tax timing |
+| Payment date | When cash actually landed |
+| Amount per share/unit | Gross income before tax |
+| Total payout | Amount × shares held on ex-date |
+| Tax withheld (if any) | Important for foreign dividends |
+| Reinvested? (Y/N) | Triggers a new cost-basis lot if yes |
+| New shares purchased (DRIP) | Quantity and price of fractional lot |
+
+Tracking these consistently transforms a vague sense of "I earn some dividends" into hard numbers you can compare across assets and time periods.
+
+## Calculating Dividend Yield on Cost vs. Current Yield
+
+Two metrics that experienced dividend investors watch are often confused:
+
+- **Current yield** = annual dividend per share ÷ current market price. This is the yield a new buyer would receive today.
+- **Yield on cost (YOC)** = annual dividend per share ÷ your original cost basis. This shows what you are personally earning on money you actually spent.
+
+A stock you bought at $30 that now trades at $60 and pays $2 per share annually has a current yield of 3.3%. But your YOC is 6.7% — nearly double — because you paid half the current price. YOC is a powerful reminder of why long-term dividend investors hold through volatility: their personal income yield keeps rising as dividends grow while their cost basis stays fixed.
+
+## Combining Dividends With Unrealised Capital Gains
+
+To see your true total return, you need a single view that adds:
+
+1. **Unrealised capital gain (or loss)** = current value minus total cost basis
+2. **Total dividends received to date** from each position
+3. **Reinvested dividend value** (counted in current position value if you used DRIP)
+
+The resulting formula looks like this:
+
+**Total return (%) = (current value + total cash dividends received - original cost) ÷ original cost × 100**
+
+If you use DRIP, the reinvested dividends are already embedded in "current value" (because you now own more shares), so you should not double-count them. For cash dividends, add them explicitly.
+
+## Tracking Across a Multi-Asset Portfolio
+
+The challenge for most investors in 2026 is that dividends arrive from many different places: brokerage accounts, ETF distributions, REIT payouts, and potentially yield from stablecoin or lending positions. Keeping these in a unified view is where most spreadsheets break down.
+
+A tool like [walletlens.live](https://walletlens.live) lets you track stocks, ETFs, crypto, gold, real estate, and cash in a single net-worth dashboard — with cost basis, unrealised P&L, and allocation percentages all visible at once. While dividend income entries can be logged manually as cash transactions (adding to your cash or cash-equivalent allocation), the unified view means you are always comparing apples to apples: a dividend ETF's sluggish price gain sits next to a high-flying crypto position, and you can see the full picture rather than just the flashy headline number.
+
+Because WalletLens is entirely local-first — no account, no server, no data ever leaving your browser — you can record detailed financial information, including dividend amounts and dates, without worrying about a third party storing your holdings data.
+
+## DRIP and Cost Basis: The Hidden Complexity
+
+Each DRIP reinvestment creates what tax authorities in most countries treat as a separate acquisition lot. If you have held a position for five years with quarterly dividends reinvested, you may have 20+ individual lots, each with its own cost basis and holding period.
+
+This matters enormously at tax time, because the holding period determines whether gains are taxed at short-term or long-term rates (in the US), and similar distinctions apply in the UK, Australia, Canada, and most European jurisdictions. Logging each DRIP lot as a separate buy trade — with the correct date and fractional share count — keeps your average cost basis accurate and makes eventual tax reporting far less painful.
+
+**Note: This article is educational, not financial or tax advice. Tax treatment of dividends and DRIP transactions varies by country and individual circumstances. Consult a qualified tax professional for advice specific to your situation.**
+
+## A Practical Monthly Dividend Audit
+
+Rather than trying to track every dividend in real time, many investors find a monthly audit sufficient:
+
+1. Pull your brokerage statement for the month.
+2. List every dividend or distribution payment received.
+3. Note whether it was paid as cash or reinvested.
+4. For DRIP: log the new lot (date, shares, price per share).
+5. Update your total-return calculation for each position.
+6. Compare dividend income month-over-month — is it growing, flat, or declining?
+
+This takes 15-20 minutes and gives you a far clearer picture of your portfolio's income-generating power than checking prices alone.
+
+## Dividend ETFs vs. Individual Stocks: What to Track Differently
+
+If you hold dividend ETFs (like SCHD, VYM, or VHYAX), the fund automatically reinvests or distributes income on your behalf. Your tracking job is simpler: record the distribution date and amount, and log any DRIP shares. You do not need to track individual company dividends inside the ETF.
+
+For individual stocks, you should track the dividend history per company, watch for dividend cuts (a warning sign of financial stress), and monitor payout ratio trends. A rising payout ratio — the proportion of earnings paid as dividends — can signal that a dividend is at risk of being cut.
+
+WalletLens's per-asset detail view, where you can set up to 5 price targets and view entry quality scores, makes it easy to add manual notes and monitor individual positions closely alongside price movement.
+
+## Conclusion
+
+Dividend income is one of the most underappreciated contributors to long-term investment returns, yet most portfolio trackers focus almost entirely on price. By tracking dividends separately, combining them with unrealised capital gains into a true total-return figure, and managing DRIP lots carefully, you get a far more accurate — and motivating — picture of how your money is actually working. Whether you prefer a detailed spreadsheet or a unified tool like WalletLens that brings all your asset classes into one private dashboard, the key habit is consistency: log every payment, every reinvestment, and review monthly. The numbers will surprise you.
+    `
+  },
+
+  {
     slug: 'how-to-track-portfolio-health-score',
     title: 'How to Track Your Portfolio Health Score (And What It Means)',
     date: 'August 2026',
