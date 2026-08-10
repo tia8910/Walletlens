@@ -227,8 +227,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
+  // Client-side pagination — long transaction histories were rendering every
+  // row into the DOM at once. Resets whenever the wallet filter changes.
+  const PAGE_SIZE = 50
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [filterWallet])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1056,7 +1061,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1090,6 +1095,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {visibleCount < transactions.length && (
+            <button className="dvx-btn" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+              {t('txLoadMore')} ({transactions.length - visibleCount})
+            </button>
+          )}
         </div>
       )}
 
