@@ -1,6 +1,13 @@
 // Core backup logic shared by the Backup panel and the weekly email-backup
 // subscription. Pure functions — no React — so they can run on app open too.
-import QRCode from 'qrcode'
+//
+// `qrcode` is loaded lazily (not statically imported) because
+// maybeSendWeeklyBackup() below runs on every app open, on every route, for
+// every visitor — the vast majority of whom never subscribed to weekly email
+// backup. A static import here would drag the ~56 KB gzip qrcode+jsqr chunk
+// into that hot path (and into Dashboard's bundle, since Dashboard statically
+// imports from backupSubscription.js) even though QR generation only actually
+// runs for the small minority who both subscribed and are due for a resend.
 
 // Everything that makes up someone's profile, as a single alias -> key table.
 //
@@ -229,6 +236,7 @@ export async function applyBackupCode(raw) {
 export const QR_CHUNK = 1200
 
 export async function makeQrDataUrl(data) {
+  const { default: QRCode } = await import('qrcode')
   return QRCode.toDataURL(data, {
     errorCorrectionLevel: 'L', margin: 2, scale: 5,
     color: { dark: '#000000', light: '#ffffff' },
