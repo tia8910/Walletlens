@@ -17,7 +17,7 @@ You get a **Public Key** and a **Private Key**.
 
 ## 2. Deploy the service
 
-Create a new project on https://dash.deno.com (e.g. `walletlens-push`) and point
+Create a new app on https://app.deno.com (e.g. `walletlens-push`) and point
 it at this folder's `main.ts`, **or** with the CLI:
 
 ```bash
