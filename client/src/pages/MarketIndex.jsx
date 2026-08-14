@@ -158,9 +158,27 @@ export default function MarketIndex() {
   useEffect(() => {
     document.title = 'WalletLens Market Index — Live Crypto Market Sentiment Score'
     track('market_index_view')
+    let lastLoad = Date.now()
     load()
-    timerRef.current = setInterval(load, REFRESH_MS)
-    return () => clearInterval(timerRef.current)
+
+    // Pause polling while the tab is hidden — a public data page like this
+    // is often left open in a background tab, and there's no point burning
+    // API quota refreshing data nobody is looking at.
+    function handleVisibility() {
+      if (document.hidden) {
+        clearInterval(timerRef.current); timerRef.current = null
+      } else {
+        if (Date.now() - lastLoad > REFRESH_MS) { lastLoad = Date.now(); load() }
+        if (!timerRef.current) timerRef.current = setInterval(() => { lastLoad = Date.now(); load() }, REFRESH_MS)
+      }
+    }
+    if (!document.hidden) timerRef.current = setInterval(() => { lastLoad = Date.now(); load() }, REFRESH_MS)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(timerRef.current)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   async function load() {

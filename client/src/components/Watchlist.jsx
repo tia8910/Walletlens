@@ -122,8 +122,24 @@ export default function Watchlist({ portfolioPrices = {} }) {
 
   useEffect(() => {
     fetchPrices()
-    const iv = setInterval(fetchPrices, 60_000)
-    return () => clearInterval(iv)
+    let iv = setInterval(fetchPrices, 60_000)
+
+    // Pause polling while the tab is hidden — Watchlist keeps its own timer
+    // independent of Dashboard's, so a backgrounded tab was polling forever.
+    function handleVisibility() {
+      if (document.hidden) {
+        clearInterval(iv); iv = null
+      } else {
+        fetchPrices()
+        if (!iv) iv = setInterval(fetchPrices, 60_000)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(iv)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [fetchPrices])
 
   // Alert checking — fires browser notifications when a target is crossed

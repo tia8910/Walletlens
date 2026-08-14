@@ -156,10 +156,28 @@ export default function Alpha() {
   const refreshRef = useRef(null)
 
   useEffect(() => {
+    let lastLoad = Date.now()
     loadAll()
-    refreshRef.current = setInterval(loadAll, CACHE_TTL)
+    refreshRef.current = setInterval(() => { lastLoad = Date.now(); loadAll() }, CACHE_TTL)
     track('alpha_view')
-    return () => clearInterval(refreshRef.current)
+
+    // Pause polling while the tab is hidden — this page hits CoinGecko for
+    // trending/gainers/losers/gems on every tick, no point doing that in
+    // the background.
+    function handleVisibility() {
+      if (document.hidden) {
+        clearInterval(refreshRef.current); refreshRef.current = null
+      } else {
+        if (Date.now() - lastLoad > CACHE_TTL) { lastLoad = Date.now(); loadAll() }
+        if (!refreshRef.current) refreshRef.current = setInterval(() => { lastLoad = Date.now(); loadAll() }, CACHE_TTL)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(refreshRef.current)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   async function loadAll() {
