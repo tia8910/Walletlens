@@ -988,9 +988,22 @@ Deno.cron("weekly-report", "0 13 * * 1", async () => {
 // Token-gated HTML page (GET /subscribers?token=…) that lists newsletter
 // signups and weekly-digest subscribers so the owner can see them from a phone
 // without curl. Personal data — only ever reachable with SIGNUP_EXPORT_TOKEN.
+type GuardianRow = {
+  ownerEmail?: string
+  ownerName?: string
+  active?: boolean
+  intervalDays?: number | null
+  heirCount?: number
+  createdAt?: string
+  lastCheckin?: string
+  warnedAt?: string | null
+  notifiedAt?: string | null
+}
+
 function subscribersPage(
   signups: { email: string; source?: string; at?: string }[],
   weekly: { email?: string; active?: boolean; createdAt?: string; lastSentAt?: string }[],
+  guardians: GuardianRow[],
 ): string {
   const fmtDate = (s?: string) => {
     if (!s) return "—"
@@ -1000,6 +1013,12 @@ function subscribersPage(
       : d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
   }
   const activeWeekly = weekly.filter((w) => w.email && w.active !== false).length
+  const activeGuardians = guardians.filter((g) => g.ownerEmail && g.active !== false).length
+  // Guardian owners are deliberately NOT in "copy all". They gave an address so
+  // Guardian could warn them before contacting their heirs — not to be mailed.
+  // Putting them in the same bucket makes pasting them into a campaign a single
+  // tap, which is how a purpose limit gets crossed by accident rather than by
+  // decision. Their own button below is there when it is a decision.
   const allEmails = Array.from(new Set([
     ...signups.map((s) => s.email),
     ...weekly.map((w) => w.email || ""),
@@ -1013,6 +1032,18 @@ function subscribersPage(
     ? weekly.map((w, i) =>
         `<tr><td class="n">${i + 1}</td><td>${escapeHtml(w.email || "—")}</td><td>${w.active === false ? '<span class="pill paused">Paused</span>' : '<span class="pill active">Active</span>'}</td><td>${fmtDate(w.createdAt)}</td><td>${fmtDate(w.lastSentAt)}</td></tr>`).join("")
     : `<tr><td colspan="5" class="empty">No weekly subscribers yet.</td></tr>`
+  const guardianState = (g: GuardianRow) =>
+    g.notifiedAt
+      ? '<span class="pill notified">Heirs notified</span>'
+      : g.warnedAt
+      ? '<span class="pill paused">Warned</span>'
+      : g.active === false
+      ? '<span class="pill off">Cancelled</span>'
+      : '<span class="pill active">Active</span>'
+  const guardianRows = guardians.length
+    ? guardians.map((g, i) =>
+        `<tr><td class="n">${i + 1}</td><td>${escapeHtml(g.ownerEmail || "—")}</td><td>${escapeHtml(g.ownerName || "—")}</td><td>${g.heirCount ?? 0}</td><td>${g.intervalDays ?? "—"}d</td><td>${guardianState(g)}</td><td>${fmtDate(g.createdAt)}</td><td>${fmtDate(g.lastCheckin)}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="empty">No Guardian subscribers yet.</td></tr>`
 
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1042,6 +1073,9 @@ function subscribersPage(
   .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
   .pill.active{background:#123024;color:#4ade80}
   .pill.paused{background:#2a2410;color:#e7c14b}
+  .pill.notified{background:#2f1618;color:#f87171}
+  .pill.off{background:#1a212b;color:#8a93a0}
+  .note{color:#6b7480;font-size:12px;line-height:1.6;margin:8px 2px 0}
   .foot{color:#5b6572;font-size:12px;margin-top:26px;line-height:1.6}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#132a1e;color:#4ade80;border:1px solid #1f4a3a;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
   .toast.show{opacity:1}
@@ -1053,6 +1087,8 @@ function subscribersPage(
     <div class="stat"><div class="v">${signups.length}</div><div class="l">Newsletter signups</div></div>
     <div class="stat"><div class="v">${weekly.length}</div><div class="l">Weekly subscribers</div></div>
     <div class="stat"><div class="v">${activeWeekly}</div><div class="l">Weekly · active</div></div>
+    <div class="stat"><div class="v">${guardians.length}</div><div class="l">Guardian subscribers</div></div>
+    <div class="stat"><div class="v">${activeGuardians}</div><div class="l">Guardian · active</div></div>
   </div>
 
   <h2>Newsletter signups <button class="copy" onclick="copyCol('su')">Copy emails</button></h2>
@@ -1067,7 +1103,16 @@ function subscribersPage(
     ${weeklyRows}
   </table></div>
 
-  <p class="foot">All emails (deduped): tap <b>Copy all</b> below to grab every address.<br>
+  <h2>Portfolio Guardian <button class="copy" onclick="copyCol('gd')">Copy emails</button></h2>
+  <div class="card"><table id="gd">
+    <tr><th>#</th><th>Owner email</th><th>Name</th><th>Heirs</th><th>Every</th><th>State</th><th>Joined</th><th>Last seen</th></tr>
+    ${guardianRows}
+  </table></div>
+  <p class="note">Heir names and addresses, the owner\u2019s personal message and their portfolio
+    snapshot are stored but deliberately not shown here \u2014 none of it is needed to see who subscribed.</p>
+
+  <p class="foot">All emails (deduped): tap <b>Copy all</b> below to grab every address.
+    <b>Guardian owners are excluded</b> \u2014 they gave their address for deadline warnings, not mail.<br>
     <button class="copy" style="margin-top:8px" onclick="copyAll()">Copy all emails</button>
   </p>
 </div>
@@ -1177,18 +1222,57 @@ Deno.serve(async (req: Request) => {
             lastSentAt: v.lastSentAt as string | undefined,
           })
         }
+        // Guardian owners live under their own prefix, which is why they were
+        // missing from this page. Projected down to the same fields the POST
+        // guardian_export returns — the record also holds the heirs, the
+        // owner's personal message, a portfolio summary and qrPng, an image
+        // encoding their entire holdings snapshot. None of that is needed to
+        // see who subscribed, and this page is a URL that gets pasted around.
+        const guardians: GuardianRow[] = []
+        for await (const e of kv.list<Record<string, unknown>>({ prefix: ["guardian"] })) {
+          const v = e.value || {}
+          if (!v.ownerEmail) continue
+          guardians.push({
+            ownerEmail: v.ownerEmail as string,
+            ownerName: (v.ownerName as string) || "",
+            active: v.active as boolean | undefined,
+            intervalDays: (v.intervalDays as number | undefined) ?? null,
+            heirCount: Array.isArray(v.heirs) ? v.heirs.length : 0,
+            createdAt: v.createdAt as string | undefined,
+            lastCheckin: v.lastCheckin as string | undefined,
+            warnedAt: (v.warnedAt as string | null) ?? null,
+            notifiedAt: (v.notifiedAt as string | null) ?? null,
+          })
+        }
+
         signups.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
         weekly.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+        guardians.sort((a, b) =>
+          String(b.createdAt || b.lastCheckin || "").localeCompare(String(a.createdAt || a.lastCheckin || "")))
 
         if (reqUrl.searchParams.get("format") === "json") {
           return new Response(
-            JSON.stringify({ ok: true, counts: { signups: signups.length, weekly: weekly.length }, signups, weekly }, null, 2),
+            JSON.stringify({
+              ok: true,
+              counts: { signups: signups.length, weekly: weekly.length, guardians: guardians.length },
+              signups,
+              weekly,
+              guardians,
+            }, null, 2),
             { status: 200, headers: { ...headers, "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } },
           )
         }
-        return new Response(subscribersPage(signups, weekly), {
+        return new Response(subscribersPage(signups, weekly, guardians), {
           status: 200,
-          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" },
+          // no-referrer matters here specifically: the token is in the query
+          // string, so any outbound link or image would otherwise hand the
+          // full URL — token included — to a third-party server.
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store",
+            "x-robots-tag": "noindex",
+            "referrer-policy": "no-referrer",
+          },
         })
       } catch (e) {
         console.error("subscribers view error:", e)
