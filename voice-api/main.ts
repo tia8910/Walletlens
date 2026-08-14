@@ -1277,6 +1277,71 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // ── Export Guardian subscribers (mode: "guardian_export") ─────────────────
+  // Same SIGNUP_EXPORT_TOKEN gate as email_export. POST { mode, token }.
+  //
+  // Guardian records live under a different KV prefix from ["signups"], so
+  // these people were invisible to email_export even though they had handed
+  // over an address.
+  //
+  // The projection below is deliberately narrow. A Guardian record also holds:
+  //
+  //   • heirs[]          — names and addresses of people who never used
+  //                        WalletLens and never agreed to anything; their
+  //                        address was supplied by someone else.
+  //   • message          — a private note meant to be read after the owner
+  //                        stops answering.
+  //   • portfolioSummary — total value and asset symbols.
+  //   • qrPng            — an image encoding the owner's ENTIRE holdings
+  //                        snapshot. Anyone holding this export could scan it
+  //                        and load their portfolio.
+  //
+  // None of that is needed to know who subscribed, and an export is the most
+  // copied, forwarded and least-guarded artefact a service produces. Fields are
+  // listed one by one rather than deleted from a spread, so a field added to
+  // the record later stays out of the export until someone chooses to add it.
+  if (body?.mode === "guardian_export") {
+    const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN")
+    if (!expected || body.token !== expected) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers })
+    }
+    try {
+      const kv = await Deno.openKv()
+      const rows: unknown[] = []
+      let active = 0
+      for await (const entry of kv.list({ prefix: ["guardian"] })) {
+        // deno-lint-ignore no-explicit-any
+        const r = entry.value as any
+        if (!r?.ownerEmail) continue
+        if (r.active) active++
+        rows.push({
+          ownerEmail: r.ownerEmail,
+          ownerName: r.ownerName || "",
+          active: !!r.active,
+          intervalDays: r.intervalDays ?? null,
+          heirCount: Array.isArray(r.heirs) ? r.heirs.length : 0,
+          createdAt: r.createdAt || null,
+          lastCheckin: r.lastCheckin || null,
+          warnedAt: r.warnedAt || null,
+          notifiedAt: r.notifiedAt || null,
+          deviceId: r.deviceId || null,
+        })
+      }
+      rows.sort((a, b) =>
+        // deno-lint-ignore no-explicit-any
+        String((b as any).createdAt || (b as any).lastCheckin || "")
+          // deno-lint-ignore no-explicit-any
+          .localeCompare(String((a as any).createdAt || (a as any).lastCheckin || "")))
+      return new Response(
+        JSON.stringify({ ok: true, count: rows.length, active, guardians: rows }),
+        { status: 200, headers },
+      )
+    } catch (e) {
+      console.error("Guardian export error:", e)
+      return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers })
+    }
+  }
+
   // ── Send a campaign to all signups (mode: "send_campaign") ────────────────
   // Protected by SIGNUP_EXPORT_TOKEN. POST { mode, token, subject, html, test? }.
   // Sends from contact@walletlens.live via Resend, wrapped in the brand shell.
@@ -1524,6 +1589,12 @@ Deno.serve(async (req: Request) => {
 
     try {
       const kv = await Deno.openKv()
+      // This handler is reused for edits and overwrites the record wholesale,
+      // so the original subscribe date has to be carried across or every edit
+      // would look like a brand-new signup.
+      const prior = await kv.get(["guardian", deviceId])
+      // deno-lint-ignore no-explicit-any
+      const priorCreatedAt = (prior.value as any)?.createdAt
       const record = {
         deviceId,
         ownerName: cleanOwnerName,
@@ -1533,6 +1604,7 @@ Deno.serve(async (req: Request) => {
         intervalDays: interval,
         portfolioSummary: summary,
         qrPng: sanitizeQrPng(body.qrPng),
+        createdAt: priorCreatedAt || new Date().toISOString(),
         lastCheckin: new Date().toISOString(),
         warnedAt: null,
         notifiedAt: null,

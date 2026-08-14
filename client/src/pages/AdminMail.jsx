@@ -15,6 +15,7 @@ export default function AdminMail() {
   const [busy, setBusy]       = useState(false)
   const [result, setResult]   = useState(null)
   const [stats, setStats]     = useState(null)
+  const [guardians, setGuardians] = useState(null)
 
   function saveToken(v) {
     setToken(v)
@@ -37,6 +38,29 @@ export default function AdminMail() {
     setBusy(false)
     if (ok && data.ok) setStats({ count: data.count })
     else setResult({ type: 'error', msg: data.error === 'unauthorized' ? 'Wrong token.' : (data.error || 'Failed to load.') })
+  }
+
+  async function loadGuardians() {
+    setBusy(true); setResult(null)
+    const { ok, data } = await post({ mode: 'guardian_export', token })
+    setBusy(false)
+    if (ok && data.ok) setGuardians({ count: data.count, active: data.active, rows: data.guardians || [] })
+    else setResult({ type: 'error', msg: data.error === 'unauthorized' ? 'Wrong token.' : (data.error || 'Failed to load.') })
+  }
+
+  function downloadGuardianCsv() {
+    if (!guardians?.rows?.length) return
+    const cols = ['ownerEmail', 'ownerName', 'active', 'intervalDays', 'heirCount', 'createdAt', 'lastCheckin', 'warnedAt', 'notifiedAt']
+    // Quote every field and double internal quotes: a name containing a comma
+    // would otherwise shift every later column by one.
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const csv = [cols.join(','), ...guardians.rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `guardian-subscribers-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function sendTest() {
@@ -86,6 +110,53 @@ export default function AdminMail() {
           <button style={btn('rgba(255,255,255,0.1)', '#fff')} onClick={loadStats} disabled={busy || !token}>Check</button>
         </div>
         {stats && <p style={{ color: 'var(--g-ink)', fontSize: '0.82rem', marginTop: '0.5rem' }}>✓ {stats.count} subscriber(s) on the list</p>}
+
+        <div style={{ marginTop: '1.6rem', padding: '1rem', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <strong style={{ fontSize: '0.9rem', color: '#fff' }}>Portfolio Guardian subscribers</strong>
+            <button style={btn('rgba(255,255,255,0.1)', '#fff')} onClick={loadGuardians} disabled={busy || !token}>Load</button>
+            {guardians && (
+              <button style={btn('rgba(255,255,255,0.1)', '#fff')} onClick={downloadGuardianCsv} disabled={!guardians.rows.length}>CSV</button>
+            )}
+          </div>
+          {guardians && (
+            <p style={{ color: 'var(--g-ink)', fontSize: '0.82rem', margin: '0.6rem 0 0' }}>
+              {guardians.count} subscriber(s) · {guardians.active} active
+            </p>
+          )}
+          {guardians?.rows?.length > 0 && (
+            <div style={{ maxHeight: 260, overflow: 'auto', marginTop: '0.7rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead>
+                  <tr style={{ color: '#7d8794', textAlign: 'left' }}>
+                    <th style={{ padding: '0.3rem 0.4rem' }}>Email</th>
+                    <th style={{ padding: '0.3rem 0.4rem' }}>Heirs</th>
+                    <th style={{ padding: '0.3rem 0.4rem' }}>Every</th>
+                    <th style={{ padding: '0.3rem 0.4rem' }}>Last seen</th>
+                    <th style={{ padding: '0.3rem 0.4rem' }}>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guardians.rows.map(r => (
+                    <tr key={r.deviceId || r.ownerEmail} style={{ borderTop: '1px solid rgba(255,255,255,0.07)', color: '#c9d1d9' }}>
+                      <td style={{ padding: '0.35rem 0.4rem' }}>{r.ownerEmail}</td>
+                      <td style={{ padding: '0.35rem 0.4rem' }}>{r.heirCount}</td>
+                      <td style={{ padding: '0.35rem 0.4rem' }}>{r.intervalDays}d</td>
+                      <td style={{ padding: '0.35rem 0.4rem' }}>{(r.lastCheckin || '').slice(0, 10)}</td>
+                      <td style={{ padding: '0.35rem 0.4rem', color: r.active ? 'var(--g-ink)' : '#7d8794' }}>
+                        {r.notifiedAt ? 'notified' : r.warnedAt ? 'warned' : r.active ? 'active' : 'cancelled'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p style={{ color: '#7d8794', fontSize: '0.74rem', margin: '0.7rem 0 0', lineHeight: 1.5 }}>
+            These addresses were given so Guardian can warn the owner before contacting their heirs.
+            The campaign sender below goes to the newsletter list only — it does not reach this list.
+          </p>
+        </div>
 
         <label style={label}>Subject</label>
         <input style={input} placeholder="This week's market sentiment" value={subject} onChange={e => setSubject(e.target.value)} />
