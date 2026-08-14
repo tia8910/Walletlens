@@ -103,3 +103,82 @@ describe('the admin page', () => {
     expect(PAGE).not.toMatch(/r\.qrPng\b/)
   })
 })
+
+// ── The browsable /subscribers page ────────────────────────────────────────
+//
+// This route predates the POST export and already listed newsletter and weekly
+// subscribers; Guardian owners were missing because they live under their own
+// KV prefix. The same withholding rules apply here and matter more, because
+// this is a URL that gets pasted into chats and left open in tabs.
+describe('/subscribers page', () => {
+  const start = API.indexOf('reqUrl.pathname === "/subscribers"')
+  const block = API.slice(start, API.indexOf('return new Response(JSON.stringify({ error: "not_found" })', start))
+
+  it('reads the right block', () => {
+    expect(start).toBeGreaterThan(0)
+    expect(block).toContain('SIGNUP_EXPORT_TOKEN')
+  })
+
+  it('lists all three subscriber prefixes', () => {
+    for (const prefix of ['["signups"]', '["weekly"]', '["guardian"]']) {
+      expect(block).toContain(`kv.list<`)
+      expect(block).toContain(prefix)
+    }
+  })
+
+  it('withholds the same Guardian fields as the POST export', () => {
+    expect(block).not.toMatch(/qrPng:\s*v\.qrPng/)
+    expect(block).not.toMatch(/message:\s*v\.message/)
+    expect(block).not.toMatch(/portfolioSummary:\s*v\.portfolioSummary/)
+    expect(block).not.toMatch(/heirs:\s*v\.heirs/)
+    expect(block).not.toMatch(/\.\.\.\s*v\b/)
+  })
+
+  it('counts heirs rather than listing them', () => {
+    expect(block).toMatch(/heirCount:\s*Array\.isArray\(v\.heirs\)\s*\?\s*v\.heirs\.length/)
+  })
+
+  it('sends no-referrer, because the token is in the query string', () => {
+    // Without it, any outbound link or remote image on the page hands the full
+    // URL — token included — to a third-party server via the Referer header.
+    expect(block).toMatch(/"referrer-policy":\s*"no-referrer"/)
+    expect(block).toMatch(/"cache-control":\s*"no-store"/)
+    expect(block).toMatch(/"x-robots-tag":\s*"noindex"/)
+  })
+
+  it('is rate limited', () => {
+    expect(block).toMatch(/rateLimited\(ip, "subscribers"/)
+  })
+})
+
+describe('the subscribers page markup', () => {
+  const start = API.indexOf('function subscribersPage')
+  const block = API.slice(start, API.indexOf('// ── Per-IP rate limiting', start))
+
+  it('keeps Guardian owners out of "copy all emails"', () => {
+    // They gave an address so Guardian could warn them before contacting their
+    // heirs. One tap that drops them into a campaign paste is how a purpose
+    // limit gets crossed by accident instead of by decision.
+    const allEmails = block.slice(block.indexOf('const allEmails'), block.indexOf('const signupRows'))
+    expect(allEmails).toContain('signups.map')
+    expect(allEmails).toContain('weekly.map')
+    expect(allEmails).not.toContain('guardians')
+  })
+
+  it('still offers Guardian its own deliberate copy button', () => {
+    expect(block).toContain("copyCol('gd')")
+  })
+
+  it('renders no heir address, message or portfolio value', () => {
+    expect(block).not.toMatch(/g\.heirs\b/)
+    expect(block).not.toMatch(/g\.message\b/)
+    expect(block).not.toMatch(/g\.qrPng\b/)
+    expect(block).not.toMatch(/g\.portfolioSummary\b/)
+  })
+
+  it('escapes every owner-supplied string it prints', () => {
+    // ownerName is free text straight from the setup form.
+    expect(block).toMatch(/escapeHtml\(g\.ownerName/)
+    expect(block).toMatch(/escapeHtml\(g\.ownerEmail/)
+  })
+})
