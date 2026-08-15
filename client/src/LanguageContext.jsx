@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { translations } from './i18n'
+import { translations, loadLanguage } from './i18n'
 
 /**
  * The languages the picker offers.
@@ -19,19 +19,44 @@ export const LANGUAGES = [
 const RTL = new Set(LANGUAGES.filter(l => l.rtl).map(l => l.code))
 const SUPPORTED = new Set(LANGUAGES.map(l => l.code))
 
+/**
+ * Resolves the boot language from storage/browser alone, with no React and no
+ * translation chunk involved. main.jsx calls this before the first render to
+ * decide whether to await that language's chunk (see loadLanguage in i18n.js)
+ * so the app never mounts mid-language-swap; exported here so the two checks
+ * can't drift apart.
+ */
+export function detectInitialLang() {
+  // Validate what comes out of storage: an unsupported code would resolve
+  // every key to the English fallback while the UI claimed another language.
+  try {
+    const saved = localStorage.getItem('wl_lang')
+    if (saved && SUPPORTED.has(saved)) return saved
+  } catch { /* storage blocked — fall through to browser detection */ }
+  const browser = (navigator.language || navigator.userLanguage || '').toLowerCase()
+  const match = LANGUAGES.find(l => browser.startsWith(l.code))
+  return match ? match.code : 'en'
+}
+
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
   const firstRun = useRef(true)
-  const [lang, setLang] = useState(() => {
-    // Validate what comes out of storage: an unsupported code would resolve
-    // every key to the English fallback while the UI claimed another language.
-    const saved = localStorage.getItem('wl_lang')
-    if (saved && SUPPORTED.has(saved)) return saved
-    const browser = (navigator.language || navigator.userLanguage || '').toLowerCase()
-    const match = LANGUAGES.find(l => browser.startsWith(l.code))
-    return match ? match.code : 'en'
-  })
+  const [lang, setLang] = useState(detectInitialLang)
+  // English ships in the main bundle; the other three languages are separate
+  // chunks fetched on demand (see i18n.js). `ready` mirrors whether the
+  // current language's strings are actually in memory yet — main.jsx already
+  // awaits the boot language before the first render, so this only flips
+  // visibly on a manual mid-session language switch.
+  const [ready, setReady] = useState(() => !!translations[lang])
+
+  useEffect(() => {
+    if (translations[lang]) { setReady(true); return }
+    setReady(false)
+    let cancelled = false
+    loadLanguage(lang).then(() => { if (!cancelled) setReady(true) })
+    return () => { cancelled = true }
+  }, [lang])
 
   useEffect(() => {
     localStorage.setItem('wl_lang', lang)
@@ -53,7 +78,10 @@ export function LanguageProvider({ children }) {
 
   const t = useCallback((key) => {
     return translations[lang]?.[key] ?? translations.en[key] ?? key
-  }, [lang])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `ready` isn't
+    // read above; it's a version bump so `t`'s identity (and therefore the
+    // memoized context value) changes once a lazily-loaded language lands.
+  }, [lang, ready])
 
   const value = useMemo(() => ({ lang, setLang, t, isRtl: RTL.has(lang) }), [lang, t])
 
