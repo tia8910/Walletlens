@@ -121,10 +121,24 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
-          // invalidates this chunk, not the whole app.
-          if (id.includes('/src/i18n.')) {
+          // i18n.js holds only the English strings (the fallback every lookup
+          // can reach) and is eagerly imported, so it's isolated into its own
+          // small chunk — a copy change doesn't bust the whole app.
+          // ar/fr/es are matched separately below: each is reachable only via
+          // a dynamic import() in i18n.js, so leaving them OUT of this rule
+          // is what lets Rollup split them into their own on-demand chunks
+          // instead of folding them into this eagerly-loaded one.
+          if (id.endsWith('/src/i18n.js')) {
             return 'i18n'
+          }
+          if (id.includes('/src/i18n.ar.js')) {
+            return 'i18n-ar'
+          }
+          if (id.includes('/src/i18n.fr.js')) {
+            return 'i18n-fr'
+          }
+          if (id.includes('/src/i18n.es.js')) {
+            return 'i18n-es'
           }
           // blogPosts: 136 KB of inline article content — split so Blog page
           // JS stays lean and a content-only update re-downloads only this chunk.

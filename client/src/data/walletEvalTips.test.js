@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LANGUAGES } from '../LanguageContext'
-import { translations } from '../i18n'
+import { translations, loadLanguage } from '../i18n'
 import { CLASS_LABEL_KEYS, renderTip } from './walletEvalTips'
+
+// ar/fr/es load lazily at runtime (see i18n.js); pull all three into memory
+// before any assertion below reads translations[lang] directly.
+beforeAll(() => Promise.all(['ar', 'fr', 'es'].map(loadLanguage)))
 
 // Two wallet evaluations exist — Coach's and the Dashboard's — with
 // overlapping pillars and, until now, two copies of the same English tips.

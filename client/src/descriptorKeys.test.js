@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { translations } from './i18n'
+import { translations, loadLanguage } from './i18n'
+
+// ar/fr/es load lazily at runtime (see i18n.js); pull all three into memory
+// before any assertion below reads translations[lang] directly.
+beforeAll(() => Promise.all(['ar', 'fr', 'es'].map(loadLanguage)))
 
 // Three producers now emit `[key, ...args]` descriptors instead of sentences,
 // because they run at module scope where there is no hook to translate from:

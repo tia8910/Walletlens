@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { translations } from './i18n'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { translations, loadLanguage } from './i18n'
 import { LANGUAGES } from './LanguageContext'
 
 // t() falls back to English when a key is missing, which is the right runtime
@@ -10,6 +10,10 @@ import { LANGUAGES } from './LanguageContext'
 
 const OTHERS = LANGUAGES.map(l => l.code).filter(c => c !== 'en')
 const enKeys = Object.keys(translations.en)
+
+// ar/fr/es load lazily at runtime (see i18n.js); pull all three into memory
+// before any assertion below reads translations[lang] directly.
+beforeAll(() => Promise.all(OTHERS.map(loadLanguage)))
 
 describe('translation coverage', () => {
   it('ships a table for every language the picker offers', () => {

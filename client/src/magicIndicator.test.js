@@ -1,9 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   pillarTechnical, pillarVolume, pillarWhales, pillarOnchain, pillarFundamental,
   directionMeta, computeMagic, aggregateMagic,
 } from './magicIndicator'
-import { translations } from './i18n'
+import { translations, loadLanguage } from './i18n'
+
+// ar/fr/es load lazily at runtime (see i18n.js); pull all three into memory
+// before any assertion below reads translations[lang] directly.
+beforeAll(() => Promise.all(['ar', 'fr', 'es'].map(loadLanguage)))
 
 const bullishTA = { score: 60, trend: 'uptrend', rsi: 58, macd: { cross: 'bullish' } }
 const bearishTA = { score: -60, trend: 'downtrend', rsi: 32, macd: { cross: 'bearish' } }

@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
-import { LanguageProvider } from './LanguageContext'
+import { LanguageProvider, detectInitialLang } from './LanguageContext'
+import { loadLanguage } from './i18n'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack, initErrorTracking, initHumanSignal } from './analytics'
 import { initVitals } from './vitals'
@@ -84,19 +85,31 @@ initHumanSignal()
 // Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
 initVitals()
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter basename={basename}>
-        <ThemeProvider>
-          <LanguageProvider>
-            <App />
-          </LanguageProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
-  </React.StrictMode>
-)
+// ar/fr/es are separate chunks (see i18n.js) so an English session — the
+// large majority — never fetches the other three languages' strings. For a
+// non-English boot language, await that one chunk here, before the tree
+// mounts: the CSS-only splash in index.html stays on screen for it exactly
+// as it already does while the main bundle itself loads, so there is no
+// language flash and no extra paint delay for anyone who reads English.
+async function mount() {
+  const initialLang = detectInitialLang()
+  if (initialLang !== 'en') await loadLanguage(initialLang)
+
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <BrowserRouter basename={basename}>
+          <ThemeProvider>
+            <LanguageProvider>
+              <App />
+            </LanguageProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </React.StrictMode>
+  )
+}
+mount()
 
 // Register the service worker after first paint. Skipped on the
 // /Walletlens/ subpath since GitHub Pages doesn't serve it from there

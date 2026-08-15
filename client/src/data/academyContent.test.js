@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { LANGUAGES } from '../LanguageContext'
 import {
   ACHIEVEMENT_TEXT, HACK_TEXT, HACK_META,
@@ -6,7 +6,11 @@ import {
   GUESSR_META, GUESSR_CLUES,
   achievementText, hacks, questions, guessrCoins,
 } from './academyContent'
-import { translations } from '../i18n'
+import { translations, loadLanguage } from '../i18n'
+
+// ar/fr/es load lazily at runtime (see i18n.js); pull all three into memory
+// before any assertion below reads translations[lang] directly.
+beforeAll(() => Promise.all(['ar', 'fr', 'es'].map(loadLanguage)))
 
 // The failure this file exists to prevent is not a missing string — it is a
 // question whose translated options got reordered, leaving `a` pointing at the
