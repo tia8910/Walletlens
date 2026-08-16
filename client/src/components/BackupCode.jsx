@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { noteMoment } from '../reviewPrompt'
 import Icon from './Icon'
 import { decodeQrFromImageFile } from '../utils/qrBackup'
 import { track, trackProfileCreated } from '../analytics'
@@ -92,6 +93,9 @@ export default function BackupCode({ hideTrigger = false }) {
       setSub(loadBackupSub())
       setEmailStatus('sent')
       track('backup_email_subscribed')
+      // Their portfolio is now recoverable — the anxiety this app's local-only
+      // storage creates, solved. A good moment to ask what they think of it.
+      noteMoment('backup_saved')
     } catch (e) {
       setEmailErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
       setEmailStatus('error')

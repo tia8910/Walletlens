@@ -1,4 +1,7 @@
 // These tests cover the *rules* — when WalletLens decides someone has used it
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 // enough to be worth asking. The transport is nativeBridge's problem and has
 // its own tests, so it is mocked here: that keeps this file from caring whether
 // an intent travels by iframe, top-frame navigation or anything else.
@@ -312,5 +315,60 @@ describe('the manual Rate button', () => {
 
     expect(requestReviewNow('settings')).toBe(true)
     expect(firedIntents()).toEqual(['walletlens://review?fallback=store&source=settings'])
+  })
+})
+
+// ── Call sites across the tree ─────────────────────────────────────────────
+//
+// noteMoment ignores a kind it does not recognise, which is the right runtime
+// behaviour and a terrible failure mode to debug: the call runs, nothing
+// throws, and the moment simply never fires. This checks the real call sites
+// rather than trusting them.
+
+describe('every noteMoment / noteFriction call site uses a real kind', () => {
+  const SRC = dirname(fileURLToPath(import.meta.url))
+
+  function sourceFiles(dir, out = []) {
+    for (const name of readdirSync(dir)) {
+      if (name === 'node_modules') continue
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) sourceFiles(p, out)
+      else if (/\.(jsx|js)$/.test(name) && !name.endsWith('.test.js')) out.push(p)
+    }
+    return out
+  }
+
+  const files = sourceFiles(SRC).filter(f => !f.endsWith('reviewPrompt.js'))
+
+  // Matches both the direct call and the lazy-import form used where importing
+  // reviewPrompt eagerly would be wrong:
+  //   noteMoment('streak')
+  //   import('./reviewPrompt').then(m => m.noteMoment?.('streak'))
+  function callsOf(fn) {
+    const re = new RegExp(`\\b${fn}\\??\\(\\s*['"]([a-z_]+)['"]`, 'g')
+    const found = []
+    for (const f of files) {
+      for (const m of readFileSync(f, 'utf8').matchAll(re)) {
+        found.push({ file: f.slice(SRC.length + 1), kind: m[1] })
+      }
+    }
+    return found
+  }
+
+  it('finds the call sites at all', () => {
+    expect(callsOf('noteMoment').length).toBeGreaterThan(3)
+    expect(callsOf('noteFriction').length).toBeGreaterThan(1)
+  })
+
+  it('every noteMoment kind is declared in MOMENTS', async () => {
+    const { MOMENTS } = await loadModule()
+    const bad = callsOf('noteMoment').filter(c => !MOMENTS.has(c.kind))
+    expect(bad.map(c => `${c.file} → ${c.kind}`)).toEqual([])
+  })
+
+  it('every noteFriction kind is declared in FRICTIONS', async () => {
+    const { FRICTIONS } = await loadModule()
+    const bad = callsOf('noteFriction').filter(c => !FRICTIONS.has(c.kind))
+    expect(bad.map(c => `${c.file} → ${c.kind}`)).toEqual([])
   })
 })
