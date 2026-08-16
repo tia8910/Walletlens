@@ -24,12 +24,17 @@ function firedIntents() {
   return bridge.fired
 }
 
-function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0 } = {}) {
-  localStorage.setItem('wl_review_state_v1', JSON.stringify({ first, opens, asked, askCount }))
+const KEY = 'wl_review_state_v2'
+
+// Default: a tenured user, so the tenure fallback carries the ask and each
+// test below is still isolating the one field it names. Tests that care about
+// the moment path pass `moment` explicitly.
+function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0, moment = 0, momentKind = '', friction = 0 } = {}) {
+  localStorage.setItem(KEY, JSON.stringify({ first, opens, asked, askCount, moment, momentKind, friction }))
 }
 
 function readState() {
-  return JSON.parse(localStorage.getItem('wl_review_state_v1') || '{}')
+  return JSON.parse(localStorage.getItem(KEY) || '{}')
 }
 
 /** Enough real usage that only the field under test decides the outcome. */
@@ -70,7 +75,7 @@ describe('noteAppOpen', () => {
     bridge.twa = false
     const { noteAppOpen } = await loadModule()
     noteAppOpen()
-    expect(localStorage.getItem('wl_review_state_v1')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBeNull()
   })
 })
 
@@ -81,7 +86,9 @@ describe('maybeAskForReview', () => {
     vi.setSystemTime(T0 + 60 * 1000) // past the dwell window
 
     expect(maybeAskForReview(READY)).toBe(true)
-    expect(firedIntents()).toEqual(['walletlens://review?source=dashboard'])
+    // No moment was recorded, so this is the tenure path — and it says so, which
+    // is how the Play console shows which trigger earns reviews.
+    expect(firedIntents()).toEqual(['walletlens://review?source=tenure'])
     expect(readState()).toMatchObject({ askCount: 1, asked: T0 + 60 * 1000 })
   })
 
@@ -112,9 +119,19 @@ describe('maybeAskForReview', () => {
     seed()
     vi.setSystemTime(T0 + 60 * 1000)
 
-    expect(maybeAskForReview({ holdingsCount: 1, totalValue: 400 })).toBe(false)
+    expect(maybeAskForReview({ holdingsCount: 0, totalValue: 400 })).toBe(false)
     expect(maybeAskForReview({ holdingsCount: 8, totalValue: 0 })).toBe(false)
     expect(firedIntents()).toEqual([])
+  })
+
+  it('counts a single holding as enough to have an opinion', async () => {
+    // The old floor was three, which silently excluded everyone tracking only
+    // Bitcoin — a large share of the users most likely to rate the thing.
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    expect(maybeAskForReview({ holdingsCount: 1, totalValue: 400 })).toBe(true)
   })
 
   it('does not ask twice in the same session, or again for months', async () => {
@@ -125,17 +142,23 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 60 * DAY)
+    // Inside the 45-day re-ask window.
+    vi.setSystemTime(T0 + 30 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 200 * DAY)
+    vi.setSystemTime(T0 + 60 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(2)
 
-    // Two asks is the lifetime limit.
+    // Four asks is the lifetime limit. Play's own quota bites long before
+    // this does; the cap only stops us firing intents that cannot be honoured.
+    vi.setSystemTime(T0 + 200 * DAY)
+    expect(maybeAskForReview(READY)).toBe(true)
+    vi.setSystemTime(T0 + 400 * DAY)
+    expect(maybeAskForReview(READY)).toBe(true)
     vi.setSystemTime(T0 + 900 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
-    expect(firedIntents()).toHaveLength(2)
+    expect(firedIntents()).toHaveLength(4)
   })
 
   it('does nothing outside the Android app', async () => {
@@ -162,5 +185,132 @@ describe('requestReviewNow', () => {
     const { requestReviewNow } = await loadModule()
     expect(requestReviewNow('settings')).toBe(false)
     expect(firedIntents()).toEqual([])
+  })
+})
+
+// ── Moments, friction and interruption ─────────────────────────────────────
+//
+// These are what changed the shape of the thing. The old rules asked any
+// eligible user 50 seconds after the dashboard loaded, regardless of what had
+// just happened to them. These decide *when*.
+
+describe('positive moments', () => {
+  it('lets a fresh moment carry an ask that tenure alone would not', async () => {
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    // Eligible on the base gates, but nowhere near tenured.
+    seed({ first: T0 - 5 * DAY, opens: 5 })
+    vi.setSystemTime(T0 + 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    noteMoment('target_reached')
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=target_reached'])
+  })
+
+  it('shortens the dwell, because the good news is already on screen', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'import_success' })
+
+    // Too soon even for a moment.
+    vi.setSystemTime(T0 + 3 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    // Past the shortened window but well inside the normal 40s one.
+    vi.setSystemTime(T0 + 12 * 1000)
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('lets a moment go stale', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'achievement' })
+    // Three minutes later the card would feel unrelated to whatever happened.
+    vi.setSystemTime(T0 + 3 * 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+
+  it('clears the moment once used, so one win is not worth two asks', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'goal_reached' })
+    vi.setSystemTime(T0 + 12 * 1000)
+
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(readState()).toMatchObject({ moment: 0, momentKind: '' })
+  })
+
+  it('ignores a kind that is not on the list', async () => {
+    // A typo at a call site should fail loudly in tests, not quietly register
+    // a moment that never matches anything.
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 5 * DAY, opens: 5 })
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    noteMoment('target_reachd')
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+})
+
+describe('friction', () => {
+  it('stays quiet after the app fails, even for a tenured user', async () => {
+    const { noteFriction, maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    noteFriction('import_failed')
+    expect(maybeAskForReview(READY)).toBe(false)
+    expect(firedIntents()).toEqual([])
+  })
+
+  it('outranks even a fresh positive moment', async () => {
+    // Import two files, one works and one does not. The failure is the thing
+    // they will remember, and it is the one that decides.
+    const { maybeAskForReview } = await loadModule()
+    seed({ moment: T0, momentKind: 'import_success', friction: T0 })
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+
+  it('lifts once the cooling-off period passes', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ friction: T0 })
+
+    vi.setSystemTime(T0 + 30 * 60 * 60 * 1000)   // still inside 36h
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    vi.setSystemTime(T0 + 40 * 60 * 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('ignores a kind that is not a real failure', async () => {
+    const { noteFriction, maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    // Notably NOT a friction: the market falling is not the app failing, and
+    // suppressing on it would be screening by predicted mood.
+    noteFriction('portfolio_down')
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+})
+
+describe('interruption', () => {
+  it('never asks over an open sheet', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    expect(maybeAskForReview({ ...READY, busy: true })).toBe(false)
+    expect(maybeAskForReview({ ...READY, busy: false })).toBe(true)
+  })
+})
+
+describe('the manual Rate button', () => {
+  it('bypasses the quiet period, because they went looking for it', async () => {
+    const { noteFriction, requestReviewNow } = await loadModule()
+    seed()
+    noteFriction('exception')
+
+    expect(requestReviewNow('settings')).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?fallback=store&source=settings'])
   })
 })
