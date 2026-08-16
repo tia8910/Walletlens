@@ -41,7 +41,7 @@ import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
-import { noteAppOpen, maybeAskForReview } from '../reviewPrompt'
+import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2820,7 +2820,12 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
         if (t.reached) reached.push({ id: String(t.id), symbol: r.coinSymbol, price: t.price })
       }
     }
-    if (activeIds.length) notifyTargetsReached(reached, activeIds)
+    if (activeIds.length) {
+      notifyTargetsReached(reached, activeIds)
+      // A target they set themselves just paid off — the best moment the app
+      // ever offers to ask what they think of it.
+      noteMoment('target_reached')
+    }
   }, [rows])
 
   return (
@@ -3735,13 +3740,17 @@ export default function Dashboard() {
   // restart every time a price ticks.
   const reviewSnapshot = useRef({ holdingsCount: 0, totalValue: 0 })
   useEffect(() => {
-    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue }
-  }, [enriched, totalValue])
+    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue, busy: sheetOpen || importChooser }
+  }, [enriched, totalValue, sheetOpen, importChooser])
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()
     const t = setTimeout(() => maybeAskForReview(reviewSnapshot.current), 50000)
-    return () => clearTimeout(t)
+    // A moment can land long after that one timer has fired, so re-check on a
+    // slow interval too. Every gate still applies; this only means a target hit
+    // in minute nine is not silently wasted because minute one had nothing.
+    const iv = setInterval(() => maybeAskForReview(reviewSnapshot.current), 90000)
+    return () => { clearTimeout(t); clearInterval(iv) }
   }, [loaded])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash

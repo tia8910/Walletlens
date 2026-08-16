@@ -67,6 +67,10 @@ export default class ErrorBoundary extends Component {
       if (where) this.setState({ where })
       // Also send it, redacted, so it lands in GA next to the message.
       track('js_error_context', { error_message: String(err?.message || '').slice(0, 120), error_where: where.slice(0, 140) })
+      // Never ask for a rating in the days after the app broke in front of
+      // someone. Imported lazily so the boundary keeps working even if this
+      // module is the thing that failed.
+      import('../reviewPrompt').then(m => m.noteFriction?.('exception')).catch(() => {})
     } catch { /* diagnostics must never mask the original error */ }
 
     if (this.state.isChunk) {
