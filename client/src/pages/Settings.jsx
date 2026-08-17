@@ -45,7 +45,6 @@ function reviewStatusText(d, t) {
     case 'recent-ask': return t('rvAsked')
     case 'few-opens':  return t('rvOpens')(d.opensLeft)
     case 'too-new':    return t('rvDays')(d.daysLeft)
-    case 'no-moment':  return t('rvWaiting')
     default:           return t('rvReady')
   }
 }

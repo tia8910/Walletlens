@@ -29,9 +29,9 @@ function firedIntents() {
 
 const KEY = 'wl_review_state_v2'
 
-// Default: a tenured user, so the tenure fallback carries the ask and each
-// test below is still isolating the one field it names. Tests that care about
-// the moment path pass `moment` explicitly.
+// Default: a user well past every base gate, so each test below is isolating
+// the one field it names. Tests that care about moments pass `moment`
+// explicitly — moments only label the ask, they no longer decide it.
 function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0, moment = 0, momentKind = '', friction = 0 } = {}) {
   localStorage.setItem(KEY, JSON.stringify({ first, opens, asked, askCount, moment, momentKind, friction }))
 }
@@ -89,9 +89,9 @@ describe('maybeAskForReview', () => {
     vi.setSystemTime(T0 + 60 * 1000) // past the dwell window
 
     expect(maybeAskForReview(READY)).toBe(true)
-    // No moment was recorded, so this is the tenure path — and it says so, which
-    // is how the Play console shows which trigger earns reviews.
-    expect(firedIntents()).toEqual(['walletlens://review?source=tenure'])
+    // No moment was recorded, so this is the plain returning-user path — and it
+    // says so, which is how the Play console shows which trigger earns reviews.
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
     expect(readState()).toMatchObject({ askCount: 1, asked: T0 + 60 * 1000 })
   })
 
@@ -145,11 +145,14 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    // Inside the 45-day re-ask window.
+    // Inside the 60-day re-ask window — Play's own quota would swallow an ask
+    // here anyway, so firing one only burns an intent.
     vi.setSystemTime(T0 + 30 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
+    vi.setSystemTime(T0 + 59 * DAY)
+    expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 60 * DAY)
+    vi.setSystemTime(T0 + 70 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(2)
 
@@ -193,17 +196,17 @@ describe('requestReviewNow', () => {
 
 // ── Moments, friction and interruption ─────────────────────────────────────
 //
-// These are what changed the shape of the thing. The old rules asked any
-// eligible user 50 seconds after the dashboard loaded, regardless of what had
-// just happened to them. These decide *when*.
+// Eligibility is decided by the base gates above. These decide how the ask is
+// *credited*, and — in friction's case — when it must not happen at all.
 
 describe('positive moments', () => {
-  it('lets a fresh moment carry an ask that tenure alone would not', async () => {
+  it('labels the ask with the moment that earned it', async () => {
+    // A moment is not a gate — the base rules already carry this user. What it
+    // changes is the source, which is the only way to tell afterwards which
+    // trigger actually produces ratings.
     const { noteMoment, maybeAskForReview } = await loadModule()
-    // Eligible on the base gates, but nowhere near tenured.
     seed({ first: T0 - 5 * DAY, opens: 5 })
     vi.setSystemTime(T0 + 60 * 1000)
-    expect(maybeAskForReview(READY)).toBe(false)
 
     noteMoment('target_reached')
     expect(maybeAskForReview(READY)).toBe(true)
@@ -223,12 +226,14 @@ describe('positive moments', () => {
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
-  it('lets a moment go stale', async () => {
+  it('lets a moment go stale without blocking the ask', async () => {
     const { maybeAskForReview } = await loadModule()
     seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'achievement' })
-    // Three minutes later the card would feel unrelated to whatever happened.
+    // Three minutes on, the card would feel unrelated to the badge, so it stops
+    // being credited for it — but this user qualifies on the base rules anyway.
     vi.setSystemTime(T0 + 3 * 60 * 1000)
-    expect(maybeAskForReview(READY)).toBe(false)
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
   })
 
   it('clears the moment once used, so one win is not worth two asks', async () => {
@@ -248,12 +253,17 @@ describe('positive moments', () => {
     vi.setSystemTime(T0 + 60 * 1000)
 
     noteMoment('target_reachd')
-    expect(maybeAskForReview(READY)).toBe(false)
+    expect(readState()).toMatchObject({ moment: 0, momentKind: '' })
+
+    // The user still qualifies on the base rules, so the ask goes out — but
+    // credited to nothing, which is how a typo shows up in the Play console.
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
   })
 })
 
 describe('friction', () => {
-  it('stays quiet after the app fails, even for a tenured user', async () => {
+  it('stays quiet after the app fails, however eligible the user is', async () => {
     const { noteFriction, maybeAskForReview } = await loadModule()
     seed()
     vi.setSystemTime(T0 + 60 * 1000)
@@ -434,7 +444,7 @@ describe('asking without a user gesture', () => {
     control().click()
     vi.advanceTimersByTime(1)
 
-    expect(firedIntents()).toEqual(['walletlens://review?source=tenure'])
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
     expect(readState()).toMatchObject({ askCount: 1 })
   })
 

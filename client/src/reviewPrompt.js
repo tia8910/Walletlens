@@ -19,6 +19,12 @@
 // levers that actually move review volume are how many users ever qualify, and
 // whether the one ask they get lands somewhere they are not busy or annoyed.
 //
+// Of those two, reach was chosen: every returning user qualifies, with no
+// waiting period. A moment is a bonus that shortens the dwell and labels the
+// source, not a requirement. What remains is only the stuff that would make an
+// ask actively counterproductive — an open sheet, an empty portfolio, or a
+// recent failure in the app.
+//
 // Friction below means the APP failed — an exception, a failed import, a sync
 // error. It deliberately does not include the market going down. A drawdown is
 // not our fault and suppressing on it would be filtering by predicted mood,
@@ -32,10 +38,24 @@ const STATE_KEY = 'wl_review_state_v2'
 const SESSION_FLAG = 'wl_review_session_counted'
 
 // ── Base eligibility — all of these must hold ──────────────────────────────
-const MIN_OPENS = 4              // separate app launches
+//
+// Installed at least three days, opened at least three times, tracking at
+// least one asset. The intended journey is:
+//
+//   install → add assets → see the portfolio → come back over a few days → ask
+//
+// No moment is required. Viewing a loaded dashboard IS the value moment, and
+// that is what the dashboard's own timer represents — so the ask lands on
+// someone looking at their portfolio, never on someone mid-entry. The `busy`
+// flag is what keeps that promise: while a trade sheet or import chooser is
+// open, nothing fires.
+//
+// Moments still exist, but only as a bonus — they shorten the dwell and label
+// the source. They are not a gate.
+const MIN_OPENS = 3              // separate app launches
 const MIN_DAYS = 3               // days since the very first launch
 const MIN_HOLDINGS = 1           // one tracked asset is enough to have a view
-const MIN_DWELL_MS = 40 * 1000   // don't interrupt the first seconds of a session
+const MIN_DWELL_MS = 15 * 1000   // don't interrupt the first seconds of a session
 
 // A moment shortens the dwell: someone who just watched a price target hit is
 // already looking at good news, and making them wait another half minute only
@@ -51,17 +71,12 @@ const MOMENT_TTL_MS = 2 * 60 * 1000
 // plus a cooling-off period, because the next launch is often the retry.
 const FRICTION_QUIET_MS = 36 * 60 * 60 * 1000
 
-// Play's own quota is the real limiter, so these exist to stop us firing an
-// intent that can only be ignored — not to ration a scarce resource.
-const REASK_AFTER_DAYS = 45
+// Play applies its own undisclosed per-user quota and simply shows nothing once
+// it is spent, so repeated attempts over a short window achieve nothing. This
+// is our own cooldown on top of that: two months before the same person is
+// considered again.
+const REASK_AFTER_DAYS = 60
 const MAX_ASKS = 4
-
-// Someone who keeps using the app without ever tripping a moment should still
-// get asked. Set close to the base gates on purpose: the moment path exists to
-// ask *well*, not to shrink who gets asked at all, and a steady user three
-// weeks in is exactly who a rating should come from.
-const TENURE_DAYS = 14
-const TENURE_OPENS = 10
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -201,16 +216,18 @@ export function reviewDiagnostics() {
   }
 }
 
-/** The gates that depend only on what we have stored. '' means none of them. */
+/**
+ * The gates that depend only on what we have stored. '' means none of them.
+ *
+ * A moment is no longer required to pass. It still decides the *source* label
+ * and shortens the dwell, but a returning user qualifies on their own.
+ */
 function storedGates(s, now) {
   if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
   if (s.askCount >= MAX_ASKS) return 'max-asks'
   if (s.opens < MIN_OPENS) return 'few-opens'
   if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
   if (s.asked && now - s.asked < REASK_AFTER_DAYS * DAY_MS) return 'recent-ask'
-  const momentFresh = !!s.moment && now - s.moment < MOMENT_TTL_MS
-  const tenured = s.opens >= TENURE_OPENS && now - s.first >= TENURE_DAYS * DAY_MS
-  if (!momentFresh && !tenured) return 'no-moment'
   return ''
 }
 
@@ -287,7 +304,10 @@ function evaluate(snap) {
   const dwellNeeded = momentFresh ? MOMENT_DWELL_MS : MIN_DWELL_MS
   if (now - startedAt < dwellNeeded) return { ok: false, blocked: 'dwell' }
 
-  return { ok: true, source: momentFresh ? s.momentKind : 'tenure' }
+  // 'returning' is the plain "came back and has a portfolio" path. It is a
+  // distinct label from the moment kinds so the Play console still shows which
+  // trigger actually earns ratings.
+  return { ok: true, source: momentFresh ? s.momentKind : 'returning' }
 }
 
 function fireAsk(source) {

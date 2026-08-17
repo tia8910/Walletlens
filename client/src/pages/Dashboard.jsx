@@ -3750,7 +3750,7 @@ export default function Dashboard() {
     // ask is armed and fires on the next tap. By then this snapshot has moved
     // on, and `busy` in particular has to be read fresh at that later moment.
     const snap = () => reviewSnapshot.current
-    const t = setTimeout(() => maybeAskForReview(snap), 50000)
+    const t = setTimeout(() => maybeAskForReview(snap), 18000)
     // A moment can land long after that one timer has fired, so re-check on a
     // slow interval too. Every gate still applies; this only means a target hit
     // in minute nine is not silently wasted because minute one had nothing.
