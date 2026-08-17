@@ -372,3 +372,134 @@ describe('every noteMoment / noteFriction call site uses a real kind', () => {
     expect(bad.map(c => `${c.file} → ${c.kind}`)).toEqual([])
   })
 })
+
+// Every automatic ask is made from a timer, so there is never a user
+// activation at the moment the rules pass. fireNativeIntent refuses to
+// navigate without one, which meant the card could not appear for anyone: the
+// gates were all satisfied and the intent was silently dropped.
+//
+// These drive the real DOM path. Point `activation` at false and nothing may
+// fire until a genuine tap arrives.
+describe('asking without a user gesture', () => {
+  let activation
+  let realAdd
+  let added
+
+  beforeEach(() => {
+    activation = { isActive: false }
+    Object.defineProperty(navigator, 'userActivation', {
+      value: activation, configurable: true, writable: true,
+    })
+    document.body.innerHTML = ''
+
+    // loadModule() resets the module registry but not the DOM, so an armed
+    // instance from an earlier test keeps its listener — and its own stale
+    // snapshot — attached to this same document. Left alone it answers the
+    // next test's tap and fires an intent nothing in that test asked for.
+    // Production only ever has one instance; this is purely the cost of
+    // re-importing. Track what gets attached and take it back off.
+    added = []
+    realAdd = document.addEventListener
+    document.addEventListener = function (type, fn, opts) {
+      if (type === 'click') added.push([fn, opts])
+      return realAdd.call(this, type, fn, opts)
+    }
+  })
+
+  afterEach(() => {
+    document.addEventListener = realAdd
+    for (const [fn, opts] of added) document.removeEventListener('click', fn, opts)
+    delete navigator.userActivation
+    document.body.innerHTML = ''
+  })
+
+  /** A tappable control, which is the only thing an armed ask rides on. */
+  function control() {
+    const b = document.createElement('button')
+    document.body.appendChild(b)
+    return b
+  }
+
+  it('arms instead of firing, then asks on the next tap', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    // The timer's own call cannot fire — no gesture to ride on.
+    expect(maybeAskForReview(READY)).toBe(false)
+    expect(firedIntents()).toEqual([])
+
+    // A real tap. Chrome would have set the activation flag by now.
+    activation.isActive = true
+    control().click()
+    vi.advanceTimersByTime(1)
+
+    expect(firedIntents()).toEqual(['walletlens://review?source=tenure'])
+    expect(readState()).toMatchObject({ askCount: 1 })
+  })
+
+  it('ignores taps that are not on a control', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+    maybeAskForReview(READY)
+
+    // Scrolling produces no click at all, but an incidental tap on background
+    // padding does. That is not someone interacting with the app.
+    activation.isActive = true
+    const plain = document.createElement('div')
+    document.body.appendChild(plain)
+    plain.click()
+    vi.advanceTimersByTime(1)
+
+    expect(firedIntents()).toEqual([])
+  })
+
+  it('does not land on a sheet the tap just opened', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    // The dashboard passes a getter precisely so this stays live: the ask is
+    // armed while nothing is open, and the tap that carries it is the tap that
+    // opens the trade sheet.
+    const snap = { ...READY, busy: false }
+    maybeAskForReview(() => snap)
+
+    activation.isActive = true
+    const btn = control()
+    btn.addEventListener('click', () => { snap.busy = true })
+    btn.click()
+    vi.advanceTimersByTime(1)
+
+    expect(firedIntents()).toEqual([])
+    expect(readState().askCount ?? 0).toBe(0)
+  })
+
+  it('disarms when the user stops qualifying', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+    maybeAskForReview(READY)
+
+    // Something went wrong in the app before the tap arrived.
+    const { noteFriction } = await import('./reviewPrompt')
+    noteFriction('import_failed')
+    maybeAskForReview(READY)
+
+    activation.isActive = true
+    control().click()
+    vi.advanceTimersByTime(1)
+
+    expect(firedIntents()).toEqual([])
+  })
+
+  it('still fires straight away when the caller already has a gesture', async () => {
+    const { requestReviewNow } = await loadModule()
+    // The Rate button runs inside a click handler, so this path was always
+    // fine — it is the only reason the feature looked half-working.
+    activation.isActive = true
+    expect(requestReviewNow('settings')).toBe(true)
+    expect(firedIntents()[0]).toContain('fallback=store')
+  })
+})

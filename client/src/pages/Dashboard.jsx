@@ -3745,11 +3745,16 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()
-    const t = setTimeout(() => maybeAskForReview(reviewSnapshot.current), 50000)
+    // Pass the ref's getter, not its current value: a timer that finds every
+    // rule satisfied still has no user gesture to send the intent on, so the
+    // ask is armed and fires on the next tap. By then this snapshot has moved
+    // on, and `busy` in particular has to be read fresh at that later moment.
+    const snap = () => reviewSnapshot.current
+    const t = setTimeout(() => maybeAskForReview(snap), 50000)
     // A moment can land long after that one timer has fired, so re-check on a
     // slow interval too. Every gate still applies; this only means a target hit
     // in minute nine is not silently wasted because minute one had nothing.
-    const iv = setInterval(() => maybeAskForReview(reviewSnapshot.current), 90000)
+    const iv = setInterval(() => maybeAskForReview(snap), 90000)
     return () => { clearTimeout(t); clearInterval(iv) }
   }, [loaded])
 
