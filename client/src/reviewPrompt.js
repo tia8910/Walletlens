@@ -176,69 +176,196 @@ export function noteFriction(kind) {
  * Why an ask was or wasn't made. Exposed for the Settings diagnostics readout —
  * there is no other way to see this on a user's phone, and "the card never
  * shows" is otherwise indistinguishable from "Play declined to show it".
+ *
+ * `blockedBy` only considers the gates this file can judge from stored state.
+ * Whether there is a portfolio on screen depends on a snapshot the caller
+ * passes, which Settings does not have, so those gates are left out rather
+ * than reported wrongly.
  */
 export function reviewDiagnostics() {
   const s = readState()
   const now = Date.now()
+  const g = storedGates(s, now)
   return {
     ...s,
     twa: isAndroidTWA(),
     momentFresh: !!s.moment && now - s.moment < MOMENT_TTL_MS,
     inQuietPeriod: !!s.friction && now - s.friction < FRICTION_QUIET_MS,
     daysSinceFirst: s.first ? Math.floor((now - s.first) / DAY_MS) : 0,
+    opensLeft: Math.max(0, MIN_OPENS - s.opens),
+    daysLeft: s.first
+      ? Math.max(0, MIN_DAYS - Math.floor((now - s.first) / DAY_MS))
+      : MIN_DAYS,
+    pendingAsk: !!pending,
+    blockedBy: g,
   }
+}
+
+/** The gates that depend only on what we have stored. '' means none of them. */
+function storedGates(s, now) {
+  if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
+  if (s.askCount >= MAX_ASKS) return 'max-asks'
+  if (s.opens < MIN_OPENS) return 'few-opens'
+  if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
+  if (s.asked && now - s.asked < REASK_AFTER_DAYS * DAY_MS) return 'recent-ask'
+  const momentFresh = !!s.moment && now - s.moment < MOMENT_TTL_MS
+  const tenured = s.opens >= TENURE_OPENS && now - s.first >= TENURE_DAYS * DAY_MS
+  if (!momentFresh && !tenured) return 'no-moment'
+  return ''
+}
+
+// ── Delivery ───────────────────────────────────────────────────────────────
+//
+// Deciding to ask and being able to ask are two different problems.
+//
+// Sending the intent means navigating the top frame, and fireNativeIntent
+// refuses to do that without a user activation — rightly, because inside a
+// Custom Tab an unhandled navigation ends the session and the app vanishes.
+// But every automatic ask is made from a timer, where there is no activation
+// and never can be. So the intent was recorded as 'skipped-no-activation' and
+// dropped every single time: the card could not appear for anyone, however
+// eligible, and the web side reported nothing wrong because nothing threw.
+//
+// The fix is to let the decision and the gesture happen at different moments.
+// When the rules say yes with no activation in hand, the ask is armed, and the
+// next deliberate tap carries it.
+//
+// It has to be a completed `click` on a control. `pointerdown` fires at the
+// start of a scroll too, and firing an intent under a scrolling finger is the
+// exact bug that used to read as "the app closes when I scroll".
+
+let pending = null          // { source } once armed, null otherwise
+let snapshotSource = null   // last thing passed to maybeAskForReview
+
+const CONTROL_SELECTOR =
+  'button, a[href], input, select, textarea, summary, label, [role="button"], [role="tab"], [role="link"]'
+
+function hasActivation() {
+  const a = typeof navigator !== 'undefined' ? navigator.userActivation : null
+  // Missing in older Chrome; assume allowed and let the navigation be the test.
+  return !a || a.isActive
+}
+
+/**
+ * The caller may pass a plain snapshot or a getter. A getter is what the
+ * dashboard uses, because an armed ask fires later than the call that armed it
+ * and a snapshot captured back then would be stale about the one thing that
+ * matters most — whether a sheet is now open.
+ */
+function readSnapshot() {
+  try {
+    const v = typeof snapshotSource === 'function' ? snapshotSource() : snapshotSource
+    const o = v || {}
+    return {
+      holdingsCount: Number(o.holdingsCount) || 0,
+      totalValue: Number(o.totalValue) || 0,
+      busy: !!o.busy,
+    }
+  } catch {
+    return { holdingsCount: 0, totalValue: 0, busy: false }
+  }
+}
+
+function evaluate(snap) {
+  if (snap.busy) return { ok: false, blocked: 'busy' }
+
+  // Nothing to have an opinion about yet.
+  if (snap.holdingsCount < MIN_HOLDINGS || snap.totalValue <= 0) {
+    return { ok: false, blocked: 'no-portfolio' }
+  }
+
+  const s = readState()
+  const now = Date.now()
+
+  // The app let them down recently. Nothing else matters until that passes.
+  const gate = storedGates(s, now)
+  if (gate) return { ok: false, blocked: gate }
+
+  // Still settling into the session — a dialog now reads as an ambush. A
+  // fresh moment earns a shorter wait, since the good news is on screen.
+  const momentFresh = !!s.moment && now - s.moment < MOMENT_TTL_MS
+  const dwellNeeded = momentFresh ? MOMENT_DWELL_MS : MIN_DWELL_MS
+  if (now - startedAt < dwellNeeded) return { ok: false, blocked: 'dwell' }
+
+  return { ok: true, source: momentFresh ? s.momentKind : 'tenure' }
+}
+
+function fireAsk(source) {
+  // Record the ask before firing. If the intent is dropped — an older build of
+  // the shell with no ReviewActivity, say — the alternative is retrying on
+  // every render, which is far worse than losing one ask.
+  const s = readState()
+  s.asked = Date.now()
+  s.askCount += 1
+  s.moment = 0
+  s.momentKind = ''
+  writeState(s)
+  return fireNativeIntent('walletlens://review?source=' + encodeURIComponent(source))
+}
+
+function onClick(e) {
+  if (!pending) return disarm()
+  const el = e.target
+  if (!el || typeof el.closest !== 'function' || !el.closest(CONTROL_SELECTOR)) return
+
+  const source = pending.source
+  disarm()
+
+  // Let the tap's own work commit before deciding. Transient activation lasts
+  // about five seconds, so a zero-delay hop still counts as the same gesture,
+  // and by then React has opened whatever the tap was for — which is how we
+  // avoid dropping a rating card on top of a sheet the user just opened.
+  setTimeout(() => {
+    try {
+      const snap = readSnapshot()
+      const again = evaluate(snap)
+      if (!again.ok) return   // the interval will re-arm if it becomes true again
+      fireAsk(source)
+    } catch { /* nothing safe left to do */ }
+  }, 0)
+}
+
+function arm(source) {
+  if (typeof document === 'undefined') return
+  if (!pending) document.addEventListener('click', onClick, false)
+  pending = { source }
+}
+
+function disarm() {
+  if (typeof document === 'undefined') return
+  if (pending) document.removeEventListener('click', onClick, false)
+  pending = null
 }
 
 /**
  * Ask Play to show the review card, if now is a good moment.
  *
- * @param {object} o
- * @param {number} [o.holdingsCount]  positions currently held
- * @param {number} [o.totalValue]     net worth, used only as a "has data" signal
- * @param {boolean} [o.busy]          a sheet/modal is open — never interrupt
- * @returns {boolean} whether the card was requested
+ * Safe to call on a timer. When the rules pass but there is no user gesture to
+ * ride on, the ask is armed rather than lost, and fires on the next tap.
+ *
+ * @param {object|function} input  snapshot, or a getter returning one:
+ *   `holdingsCount` positions held, `totalValue` net worth (a "has data"
+ *   signal only), `busy` true while a sheet/modal is open.
+ * @returns {boolean} whether the card was requested right now
  */
-export function maybeAskForReview({ holdingsCount = 0, totalValue = 0, busy = false } = {}) {
+export function maybeAskForReview(input = {}) {
   try {
+    snapshotSource = input
     if (!isAndroidTWA()) return false
-    if (busy) return false
 
-    // Nothing to have an opinion about yet.
-    if (holdingsCount < MIN_HOLDINGS || totalValue <= 0) return false
+    const e = evaluate(readSnapshot())
+    if (!e.ok) {
+      disarm()
+      return false
+    }
 
-    const s = readState()
-    const now = Date.now()
+    if (hasActivation()) {
+      disarm()
+      return fireAsk(e.source)
+    }
 
-    // The app let them down recently. Nothing else matters until that passes.
-    if (s.friction && now - s.friction < FRICTION_QUIET_MS) return false
-
-    if (s.askCount >= MAX_ASKS) return false
-    if (s.opens < MIN_OPENS) return false
-    if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return false
-    if (s.asked && now - s.asked < REASK_AFTER_DAYS * DAY_MS) return false
-
-    // Either something good just happened, or they have been here long enough
-    // that waiting for a moment that may never come is the worse option.
-    const momentFresh = !!s.moment && now - s.moment < MOMENT_TTL_MS
-    const tenured = s.opens >= TENURE_OPENS && now - s.first >= TENURE_DAYS * DAY_MS
-    if (!momentFresh && !tenured) return false
-
-    // Still settling into the session — a dialog now reads as an ambush. A
-    // fresh moment earns a shorter wait, since the good news is on screen.
-    const dwellNeeded = momentFresh ? MOMENT_DWELL_MS : MIN_DWELL_MS
-    if (now - startedAt < dwellNeeded) return false
-
-    // Record the ask before firing. If the intent is dropped — an older build
-    // of the shell with no ReviewActivity, say — the alternative is retrying on
-    // every render, which is far worse than losing one ask.
-    const source = momentFresh ? s.momentKind : 'tenure'
-    s.asked = now
-    s.askCount += 1
-    s.moment = 0
-    s.momentKind = ''
-    writeState(s)
-
-    return fireNativeIntent('walletlens://review?source=' + encodeURIComponent(source))
+    arm(e.source)
+    return false
   } catch {
     return false
   }
