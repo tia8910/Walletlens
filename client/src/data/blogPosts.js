@@ -37,6 +37,119 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-cash-and-crypto-together',
+    title: 'How to Track Investments When You Hold Cash and Crypto',
+    date: 'August 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to track cash savings alongside crypto and stocks in one net-worth view — without spreadsheets, accounts, or privacy risks.',
+    content: `
+Most portfolio trackers were built with a single asset class in mind. Crypto apps ignore your savings account. Brokerage dashboards pretend your Bitcoin doesn't exist. And almost nobody accounts for the stack of cash sitting in a high-yield account waiting to be deployed. The result is a fragmented picture of your finances — and a dangerous blind spot when it comes to understanding your real net worth.
+
+Holding cash alongside crypto and stocks isn't a bug in your strategy; it's a feature. Cash is dry powder. It earns yield. It buffers volatility. But only if you're actually tracking it alongside everything else. This guide walks through exactly how to do that, why it matters, and what to look for in a tool that handles the full picture.
+
+## Why Cash Deserves a Place in Your Portfolio Tracker
+
+Investors often underestimate cash as a legitimate portfolio position. In reality, cash and cash equivalents — savings accounts, money market funds, stablecoins like USDT or USDC, T-bills held in a brokerage — serve distinct strategic roles:
+
+- **Volatility buffer:** When crypto drops 30% in a week, uninvested cash lets you buy rather than panic-sell.
+- **Opportunity cost awareness:** Seeing your cash allocation in a portfolio view reminds you what you're giving up by sitting on the sidelines.
+- **Accurate net worth:** Your true financial picture includes every dollar, not just the invested ones.
+- **Rebalancing fuel:** Many rebalancing strategies involve selling one asset and holding cash temporarily before rotating into another.
+
+If your tracker doesn't show cash, your allocation percentages are simply wrong. A portfolio showing 60% crypto might actually be 40% crypto if half your liquid savings isn't counted.
+
+## The Difference Between Cash, Stablecoins, and Short-Term Holdings
+
+Before tracking, it helps to be clear about what counts as "cash" in a portfolio context. The lines blur in 2026 more than ever:
+
+| Type | Examples | How to Track |
+|---|---|---|
+| Fiat cash | Bank savings, checking, money market | Manual entry as a cash position |
+| Stablecoins | USDT, USDC, DAI | As crypto assets (pegged to $1) |
+| Short-term T-bills | 3-month treasury held in brokerage | As a stock/ETF position |
+| Brokerage cash | Uninvested dollars in your account | Manual cash entry |
+
+The key principle: **wherever it lives, if it's liquid and denominated in a known value, it should appear in your net-worth view.** A tool that only shows you invested assets gives you half the story.
+
+## The Problem With Spreadsheets for Mixed Portfolios
+
+Spreadsheets are the default solution most people reach for when they have a complex, multi-asset portfolio. And for a while, they work. You can add a "cash" row, type in a balance, and call it done.
+
+But the cracks appear quickly:
+
+- **Manual price updates** for crypto require you to look up prices and re-enter them constantly.
+- **No live P&L** means your unrealized gains figure is always stale.
+- **No allocation chart** means you have to build one yourself — and rebuild it every time balances change.
+- **No stress testing** means you can't quickly model "what if crypto drops 50%?" against your cash cushion.
+- **Version sprawl** is real: most people end up with five slightly different copies of the same spreadsheet.
+
+The goal isn't to abandon discipline — it's to apply it without the friction.
+
+## What to Look for in a Tool That Handles Cash + Crypto Together
+
+Not every portfolio app treats cash as a first-class citizen. Here's what a genuinely useful tool needs to do:
+
+**1. Accept manual cash entries with no friction.** You should be able to type "USD cash — $8,500" and have it appear in your total net worth immediately, with no account, no bank connection, and no OAuth flow.
+
+**2. Show allocation by category.** The breakdown should distinguish between crypto, stocks, precious metals, real estate, and cash — not lump everything into one number.
+
+**3. Update prices automatically for non-cash positions.** The moment you add your Bitcoin or ETF positions, live prices should calculate unrealized P&L without you touching anything.
+
+**4. Let you model rebalancing scenarios.** If you're sitting on 25% cash and wondering how to deploy it, a rebalance planner should show you what target allocations would look like.
+
+**5. Keep your data private.** Cash balances are sensitive. A tool that uploads your financial data to a server — even an encrypted one — creates risk. Local-first tools eliminate that risk at the source.
+
+[WalletLens](https://walletlens.live) was built around exactly this use case. You can add a cash position in seconds, and it appears in the same allocation donut alongside your crypto holdings, stock ETFs, gold, and real estate. Everything is computed in your browser — nothing leaves your device.
+
+## How to Actually Set Up a Cash + Crypto Tracker
+
+Here's a practical step-by-step for getting a unified view:
+
+**Step 1: List every liquid account.**
+Write down every place you hold cash: checking, savings, money market, brokerage uninvested balance, and any stablecoins on exchanges or wallets.
+
+**Step 2: Decide how to categorise stablecoins.**
+Stablecoins held as dry powder are functionally cash. You can track them as crypto assets (they'll show up with a $1 price) or as a separate cash line — either works as long as you're consistent.
+
+**Step 3: Add crypto and stock positions with cost basis.**
+Enter each position with the price you paid. This gives you unrealized P&L that reflects reality, not just current value.
+
+**Step 4: Add precious metals and real estate if relevant.**
+A genuinely complete net-worth view includes illiquid assets too, noted at estimated current value.
+
+**Step 5: Review your allocation breakdown.**
+Once everything is in, look at your category percentages. Most people are surprised — either cash is larger than expected (and opportunity cost is high) or smaller than they thought (and they're more exposed than they realized).
+
+**Step 6: Set a cash target range.**
+Some investors target 5-10% cash. Others prefer 20% during high-volatility periods. The right number is personal, but having a target turns cash management from passive to intentional.
+
+## Using AI Analysis to Understand Your Cash Position
+
+One underused feature in modern portfolio tools is AI-powered health analysis. When your cash is tracked alongside everything else, the tool can actually give you meaningful feedback — not just "your portfolio is up 12%," but:
+
+- **Health score:** Is your portfolio diversified across uncorrelated assets, or overweighted in a single category?
+- **Stress test:** If crypto fell 40%, what does your portfolio look like? Does your cash position mean you survive it without forced selling?
+- **Rebalance planner:** If you want to deploy $5,000 of cash into equities, what does that do to your allocation percentages?
+
+In WalletLens, all of this analysis runs on-device. The AI doesn't send your data anywhere — it processes everything locally and surfaces insights in plain language. That matters when the data includes your savings balance.
+
+## The Privacy Angle: Why Local-First Matters for Cash Tracking
+
+Linking your bank account to a third-party app is standard practice now. But it carries real risks: data breaches, sold transaction histories, and terms of service that grant broad access to your financial behavior.
+
+For crypto positions, many trackers require exchange API keys. For cash, some want bank read access. Both create exposure.
+
+A local-first approach — where you manually enter your cash balance and it stays in your browser — eliminates the attack surface entirely. There's no server to breach because the data never leaves your machine. The trade-off is that you update balances manually, but for most people, cash balances don't change hourly. A weekly update takes 30 seconds.
+
+## Conclusion
+
+Tracking investments without tracking cash is like measuring your fitness while ignoring sleep. The number looks better, but it doesn't reflect reality. Cash is a position — one with yield, strategic value, and meaningful impact on your risk exposure.
+
+The solution isn't a more complex spreadsheet. It's a unified tracker that treats cash as a first-class asset alongside crypto, stocks, and everything else — one that updates prices automatically, shows your full allocation picture, and keeps your sensitive financial data private. In 2026, that combination is finally available without paying for it or handing over your email address.
+    `
+  },
+
+  {
     slug: 'how-to-track-dividend-income-alongside-capital-gains',
     title: 'How to Track Dividend Income Alongside Capital Gains',
     date: 'August 2026',
