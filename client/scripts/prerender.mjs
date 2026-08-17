@@ -157,7 +157,7 @@ function clampDesc(s, max = 158) {
 // ogType: 'article' | 'website' (default). Blog posts pass 'article'.
 // published / modified: ISO date strings for article:published_time /
 //   article:modified_time — only emitted when ogType === 'article'.
-function buildPage({ path, canonicalOverride, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false, ogType = 'website', published, modified }) {
+function buildPage({ path, canonicalOverride, title, description, bodyHtml, jsonLd, lang = 'en', dir = 'ltr', alternates, noindex = false, ogType = 'website', published, modified, heroImage = false }) {
   const canonUrl = ORIGIN + withSlash(canonicalOverride || path)
   const pageUrl  = ORIGIN + withSlash(path)
   description = clampDesc(description)
@@ -200,6 +200,17 @@ function buildPage({ path, canonicalOverride, title, description, bodyHtml, json
       `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + withSlash(a.path))}" />`
     ).join('\n')
     html = html.replace('</head>', `${links}\n  </head>`)
+  }
+  // These pages render Landing.jsx, whose hero <img> (the LCP element) only
+  // enters the DOM once the Landing chunk lazy-loads and React hydrates —
+  // several steps after the browser could otherwise start the fetch. A
+  // preload discovered by the HTML parser starts that fetch immediately,
+  // in parallel with the JS bundle, instead of waiting on hydration.
+  if (heroImage) {
+    html = html.replace(
+      '</head>',
+      '  <link rel="preload" as="image" href="/shots/app-phone.webp" fetchpriority="high" />\n  </head>'
+    )
   }
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
@@ -373,6 +384,7 @@ write('/', buildPage({
       ],
     },
   ],
+  heroImage: true,
 }))
 
 // ── Free Net Worth Tracker (comparison landing) ──────────────────────────────
@@ -438,6 +450,7 @@ write('/free-net-worth-tracker', buildPage({
     },
   ],
   alternates: hreflangPair('/free-net-worth-tracker', '/ar/free-net-worth-tracker'),
+  heroImage: true,
 }))
 
 // ── Long-tail landing pages ──────────────────────────────────────────────────
@@ -494,6 +507,7 @@ write('/crypto-and-stock-portfolio-tracker', buildPage({
       ],
     },
   ],
+  heroImage: true,
 }))
 
 const noAccountBody = `
@@ -541,6 +555,7 @@ write('/portfolio-tracker-no-account', buildPage({
       ],
     },
   ],
+  heroImage: true,
 }))
 
 
@@ -661,6 +676,7 @@ ${faq.html}
       faq.jsonLd,
     ],
     alternates: hreflangPair('/import-portfolio-from-screenshot', '/ar/import-portfolio-from-screenshot'),
+    heroImage: true,
   }))
 }
 
@@ -781,6 +797,7 @@ ${faq.html}
       faq.jsonLd,
     ],
     alternates: hreflangPair('/add-holdings-by-voice', '/ar/add-holdings-by-voice'),
+    heroImage: true,
   }))
 }
 
@@ -1015,6 +1032,7 @@ ${arFaq.html}
       arFaq.jsonLd,
     ],
     alternates: hreflangPair('/' + f.slug, '/ar/' + f.slug),
+    heroImage: true,
   }))
 }
 
@@ -1031,6 +1049,7 @@ ${arFaq.html}
     dir: 'rtl',
     jsonLd: [arFaq.jsonLd],
     alternates: hreflangPair('/free-net-worth-tracker', '/ar/free-net-worth-tracker'),
+    heroImage: true,
   }))
 }
 
