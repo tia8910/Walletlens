@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from 'react'
-import { noteMoment, noteFriction } from '../reviewPrompt'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackProfileCreated } from '../analytics'
@@ -328,7 +327,6 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       setRows(parsed)
       showMsg(`Parsed ${parsed.length} row(s) — review and edit below.`, 'ok')
     } catch (e) {
-      noteFriction('import_failed')
       showMsg(t('errParsePrefix') + e.message)
     } finally {
       setBusy(false)
@@ -371,12 +369,10 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       setPreviews([])
       // A screenshot or spreadsheet just turned into a portfolio — the payoff
       // moment for the feature people are most impressed by.
-      noteMoment('import_success')
       onImported?.()
     } catch (e) {
       // The write itself failed, which is the worst kind: they did the work
       // and got nothing. Stay off the review card for a while.
-      noteFriction('import_failed')
       showMsg(t('errImportPrefix') + e.message)
     } finally {
       setBusy(false)

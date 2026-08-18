@@ -113,6 +113,37 @@ public class LauncherActivity
             // the user has unlocked.
             Log.w(TAG, "cold-start biometric gate failed, continuing: " + e);
         }
+
+        // Play in-app review, decided natively.
+        //
+        // This has to happen at launch and nowhere else. Once the TWA is up the
+        // page lives in Chrome's process and this app has no foreground
+        // activity, so starting one would be a background activity launch —
+        // blocked since Android 10. The gap between onCreate and the base
+        // class launching the TWA in onResume is the only window we get.
+        //
+        // isFinishing() is the guard that matters: the crash notice and the
+        // biometric gate both divert by starting an activity and calling
+        // finish(), and stacking a rating card on top of either would show it
+        // before the user has even unlocked.
+        try {
+            if (!isFinishing()) {
+                ReviewGate.noteLaunch(this);
+                if (ReviewGate.shouldAsk(this)) {
+                    // Marked before the divert, never after. If the flow throws
+                    // or is killed the cost is one lost ask; the alternative is
+                    // re-asking on every launch forever.
+                    ReviewGate.markAsked(this);
+                    Intent r = new Intent(this, ReviewActivity.class);
+                    r.putExtra(ReviewActivity.EXTRA_CONTINUE_TO_APP, true);
+                    startActivity(r);
+                    finish();
+                    return;
+                }
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "review gate failed, continuing: " + e);
+        }
     }
 
     @Override

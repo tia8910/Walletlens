@@ -179,7 +179,6 @@ export function checkDailyWelcome(streak) {
     // A week of consecutive days is the clearest habit signal the app has.
     // Lazy import: this module is loaded on paths where the review bridge is
     // irrelevant, and it must never be the reason a notification fails.
-    import('./reviewPrompt').then(m => m.noteMoment?.('streak')).catch(() => {})
   } else if (streak >= 3) {
     fireNotification(t('ntWelcomeBackStreak')(streak), t('ntKeepTracking'), 'daily-streak')
   } else {

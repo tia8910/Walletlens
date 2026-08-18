@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
-import { noteMoment } from '../reviewPrompt'
 import Icon from '../components/Icon'
 import { useLocation } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
@@ -552,7 +551,6 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     track('trade_submitted', { trade_type: form.type, asset_symbol: form.coin_symbol, trade_value_usd: valueUsd })
     if (isFirstHolding) {
       trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'transactions_page' })
-      noteMoment('first_holding')
     }
 
     setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '', buy_with: 'NONE', buy_with_custom: '' })

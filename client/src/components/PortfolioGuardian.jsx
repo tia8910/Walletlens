@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { noteMoment } from '../reviewPrompt'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
@@ -601,7 +600,6 @@ export default function PortfolioGuardian() {
     setActivated(record) // show the "how it works" popup once
     track('guardian_activated_popup')
     // They just handed the app something that matters — a plan for their heirs.
-    noteMoment('guardian_active')
   }, [])
 
   const handleCheckin = useCallback((updated) => {

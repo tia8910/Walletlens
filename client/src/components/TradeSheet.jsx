@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { noteMoment } from '../reviewPrompt'
 import Icon from './Icon'
 import { MetalBar } from '../data/assetIcons'
 
@@ -575,7 +574,6 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'trade_sheet' })
         // The moment the app stops being empty. Matters most for the
         // single-asset users the old holdings floor excluded entirely.
-        noteMoment('first_holding')
       }
       setTimeout(() => { onClose(); onDone() }, 1200)
     } catch { setMsg('Failed. Try again.') }
