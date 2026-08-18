@@ -5,15 +5,35 @@
 
 const PREFIX = 'crypto_tracker_'
 
+// Parsed-JSON cache keyed by storage key, holding the last raw string seen
+// alongside its parsed value. getPortfolio/getTransactions/etc. are all
+// called back-to-back on nearly every page load and poll tick, each
+// independently re-parsing the same (often large) transactions blob — this
+// skips the JSON.parse when the underlying string hasn't changed since the
+// last read. Callers get a fresh shallow copy each time so mutating the
+// returned array (a common pattern: load, push/unshift, saveData) can never
+// corrupt the cached value.
+const parseCache = new Map()
+
 export function loadData(key, fallback = []) {
   try {
-    const data = localStorage.getItem(`${PREFIX}${key}`)
-    return data ? JSON.parse(data) : fallback
+    const raw = localStorage.getItem(`${PREFIX}${key}`)
+    if (raw == null) return fallback
+    const cached = parseCache.get(key)
+    const value = (cached && cached.raw === raw) ? cached.value : JSON.parse(raw)
+    if (!cached || cached.raw !== raw) parseCache.set(key, { raw, value })
+    if (Array.isArray(value)) return value.slice()
+    if (value && typeof value === 'object') return { ...value }
+    return value
   } catch { return fallback }
 }
 
 export function saveData(key, data) {
-  try { localStorage.setItem(`${PREFIX}${key}`, JSON.stringify(data)) } catch {}
+  try {
+    const raw = JSON.stringify(data)
+    localStorage.setItem(`${PREFIX}${key}`, raw)
+    parseCache.set(key, { raw, value: data })
+  } catch {}
 }
 
 export function bumpId(key) {
