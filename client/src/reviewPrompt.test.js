@@ -27,7 +27,7 @@ function firedIntents() {
   return bridge.fired
 }
 
-const KEY = 'wl_review_state_v2'
+const KEY = 'wl_review_state_v3'
 
 // Default: a user well past every base gate, so each test below is isolating
 // the one field it names. Tests that care about moments pass `moment`
@@ -104,37 +104,28 @@ describe('maybeAskForReview', () => {
     expect(firedIntents()).toEqual([])
   })
 
-  it('stays quiet until the app has been used for a few days and sessions', async () => {
-    const { maybeAskForReview } = await loadModule()
-    vi.setSystemTime(T0 + 60 * 1000)
+  it('asks on the very first visit', async () => {
+    // No waiting period and no session minimum. This is the whole point of the
+    // current rules, so it is asserted directly rather than inferred from the
+    // generous seed() default the other tests use.
+    const { noteAppOpen, maybeAskForReview } = await loadModule()
+    noteAppOpen()
+    expect(readState()).toMatchObject({ opens: 1 })
 
-    seed({ opens: 2 })
-    expect(maybeAskForReview(READY)).toBe(false)
-
-    seed({ first: T0 - 1 * DAY })
-    expect(maybeAskForReview(READY)).toBe(false)
-
-    expect(firedIntents()).toEqual([])
+    vi.setSystemTime(T0 + 20 * 1000)   // just past the dwell
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
   })
 
-  it('stays quiet when there is no portfolio to have an opinion about', async () => {
+  it('asks even with an empty portfolio', async () => {
+    // Requiring a holding would push the ask past the first visit for every new
+    // user, which is the one thing these rules exist to avoid. The floor went
+    // three, then one, then none.
     const { maybeAskForReview } = await loadModule()
     seed()
     vi.setSystemTime(T0 + 60 * 1000)
 
-    expect(maybeAskForReview({ holdingsCount: 0, totalValue: 400 })).toBe(false)
-    expect(maybeAskForReview({ holdingsCount: 8, totalValue: 0 })).toBe(false)
-    expect(firedIntents()).toEqual([])
-  })
-
-  it('counts a single holding as enough to have an opinion', async () => {
-    // The old floor was three, which silently excluded everyone tracking only
-    // Bitcoin — a large share of the users most likely to rate the thing.
-    const { maybeAskForReview } = await loadModule()
-    seed()
-    vi.setSystemTime(T0 + 60 * 1000)
-
-    expect(maybeAskForReview({ holdingsCount: 1, totalValue: 400 })).toBe(true)
+    expect(maybeAskForReview({ holdingsCount: 0, totalValue: 0 })).toBe(true)
   })
 
   it('does not ask twice in the same session, or again for months', async () => {

@@ -21,15 +21,29 @@ import com.google.android.play.core.review.ReviewManagerFactory;
 /**
  * Shows Google Play's in-app review card.
  *
- * <p>WHY THIS EXISTS
- * The portfolio and the usage history that decide <em>when</em> to ask both
- * live in the web app's localStorage, inside the Custom Tab. The rating card
- * itself can only be shown by the Play In-App Review API, which is native. So
- * the web side owns the "is now a good moment?" decision and hands off to this
- * activity when the answer is yes.
+ * <p>THREE WAYS IN
+ * <ol>
+ *   <li><b>The web app's automatic ask</b>, via {@code walletlens://review}.
+ *       This is the main path and the one that produces the best-placed card,
+ *       because it lands while the user is looking at their portfolio. It arms
+ *       on a timer and fires on the next tap — the tap is not decoration, it is
+ *       the user activation without which Chrome refuses to navigate to an
+ *       external scheme at all.</li>
+ *   <li><b>{@link ReviewGate}, at launch</b>, with {@link #EXTRA_CONTINUE_TO_APP}
+ *       set. The backstop for users the in-session ask never reaches. Native
+ *       because it has to be: once the Custom Tab is up this app has no
+ *       foreground activity, so starting one is a background activity launch,
+ *       which Android 10+ blocks. That also makes launch the only moment it can
+ *       fire, which is why it is second choice rather than first.</li>
+ *   <li><b>"Rate WalletLens" in Settings</b>, the same web route with
+ *       {@code fallback=store}.</li>
+ * </ol>
  *
- * <p>Triggered from the web app via {@code walletlens://review}. Optional
- * query parameters:
+ * <p>The first two cannot both fire: {@link #markCompleted} stamps native
+ * SharedPreferences on every completion whatever started it, and ReviewGate
+ * reads that back before asking.
+ *
+ * <p>Optional query parameters on the web path:
  * <ul>
  *   <li>{@code source} — where the ask came from, for logcat only.</li>
  *   <li>{@code fallback=store} — if Play declines to show the card, open the
@@ -54,11 +68,39 @@ public class ReviewActivity extends Activity {
     private static final String TAG = "WalletLensReview";
     private static final String PREFS = "walletlens_review";
 
+    /**
+     * Intent extra: this activity was started by {@link ReviewGate} during
+     * launch, so the app has not opened yet and this activity owes the user a
+     * hand-off to it once the card is done.
+     *
+     * <p>Deliberately an extra carrying a boolean rather than a redirect URL.
+     * The intent filter here is BROWSABLE, so anything on the device can start
+     * this activity — a URL parameter would have to be validated against the
+     * site origin the way BiometricActivity does. A flag that only ever means
+     * "open our own launcher" cannot be pointed anywhere.
+     */
+    public static final String EXTRA_CONTINUE_TO_APP = "continue_to_app";
+
     /** Set once the flow has actually run, so the web side can stop asking. */
     private static final String KEY_COMPLETED_AT = "review_flow_completed_at";
 
     /** Below this, the rating card cannot have been on screen. */
     private static final long NO_CARD_THRESHOLD_MS = 1200L;
+
+    /**
+     * How long the launch path will wait on Play before opening the app anyway.
+     *
+     * <p>Only armed when we are holding up startup. Play normally answers in
+     * well under a second, but it is a cross-process call to another app that
+     * can be updating, disabled or wedged, and none of those may cost the user
+     * their launch — a translucent activity that never finishes looks exactly
+     * like the app failing to open.
+     */
+    private static final long HANDOFF_WATCHDOG_MS = 4000L;
+
+    private boolean continueToApp = false;
+    private boolean handedOff = false;
+    private android.os.Handler watchdog;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -67,11 +109,20 @@ public class ReviewActivity extends Activity {
         String source = "unknown";
         boolean fallbackToStore = false;
         Intent intent = getIntent();
+        continueToApp = intent != null && intent.getBooleanExtra(EXTRA_CONTINUE_TO_APP, false);
         if (intent != null && intent.getData() != null) {
             Uri uri = intent.getData();
             String s = uri.getQueryParameter("source");
             if (s != null && !s.isEmpty()) source = s;
             fallbackToStore = "store".equals(uri.getQueryParameter("fallback"));
+        }
+        if (continueToApp) {
+            source = "launch";
+            watchdog = new android.os.Handler(getMainLooper());
+            watchdog.postDelayed(() -> {
+                Log.w(TAG, "Play did not answer in time; opening the app");
+                handOff();
+            }, HANDOFF_WATCHDOG_MS);
         }
 
         final boolean openStoreOnFailure = fallbackToStore;
@@ -114,7 +165,7 @@ public class ReviewActivity extends Activity {
                                     return;
                                 }
                                 markCompleted();
-                                finish();
+                                handOff();
                             });
                 } catch (Throwable t) {
                     Log.w(TAG, "launchReviewFlow threw: " + t);
@@ -134,6 +185,34 @@ public class ReviewActivity extends Activity {
     private void finishFlow(boolean openStore) {
         if (openStore && openStoreListing()) {
             markCompleted();
+        }
+        handOff();
+    }
+
+    /**
+     * Close this activity, and open the app if we interrupted its launch.
+     *
+     * <p>Idempotent on purpose: the watchdog and the Play callback race by
+     * design, and whichever arrives first wins. Without the guard a slow Play
+     * response after a watchdog hand-off would start the launcher a second
+     * time, cold-starting the Custom Tab out from under a user who is already
+     * looking at their dashboard.
+     */
+    private void handOff() {
+        if (handedOff) return;
+        handedOff = true;
+        if (watchdog != null) watchdog.removeCallbacksAndMessages(null);
+
+        if (continueToApp) {
+            try {
+                Intent app = new Intent(this, LauncherActivity.class);
+                app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(app);
+            } catch (Throwable t) {
+                // Nothing left to try. Finishing at least returns the user to
+                // their launcher rather than a blank translucent window.
+                Log.w(TAG, "could not open the app after the review flow: " + t);
+            }
         }
         finish();
     }

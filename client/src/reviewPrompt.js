@@ -34,27 +34,37 @@
 
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 
-const STATE_KEY = 'wl_review_state_v2'
+// v3: the rules changed from "3 days and 3 sessions" to "ask from the first
+// visit", which makes every stored counter meaningless. Worse, the old manual
+// button recorded an ask, so anyone who ever tapped "Rate WalletLens" carries a
+// 60-day cooldown they never earned. Bumping the key drops all of it rather
+// than migrating state whose meaning no longer exists.
+const STATE_KEY = 'wl_review_state_v3'
 const SESSION_FLAG = 'wl_review_session_counted'
 
-// ── Base eligibility — all of these must hold ──────────────────────────────
+// ── Base eligibility ───────────────────────────────────────────────────────
 //
-// Installed at least three days, opened at least three times, tracking at
-// least one asset. The intended journey is:
+// There is no waiting period and no session minimum: the card is eligible from
+// the very first visit. This deliberately matches how apps like Product Hunt
+// do it, and the trade is understood — some of those users are rating an app
+// they have barely used, which costs a little on the average. What it buys is
+// that everybody gets asked instead of the fraction still around days later.
 //
-//   install → add assets → see the portfolio → come back over a few days → ask
+// Two rules survive, because both prevent an ask that would actively backfire:
 //
-// No moment is required. Viewing a loaded dashboard IS the value moment, and
-// that is what the dashboard's own timer represents — so the ask lands on
-// someone looking at their portfolio, never on someone mid-entry. The `busy`
-// flag is what keeps that promise: while a trade sheet or import chooser is
-// open, nothing fires.
+//   `busy`     — never land the card on someone mid-entry, with a trade sheet
+//                or import chooser open.
+//   dwell      — give the session a few seconds first, so the card is not the
+//                first thing that happens when the dashboard paints.
+//
+// Note what is NOT required: a portfolio. Requiring one would push the ask past
+// the first visit for every new user, which is exactly what this is not.
 //
 // Moments still exist, but only as a bonus — they shorten the dwell and label
 // the source. They are not a gate.
-const MIN_OPENS = 3              // separate app launches
-const MIN_DAYS = 3               // days since the very first launch
-const MIN_HOLDINGS = 1           // one tracked asset is enough to have a view
+const MIN_OPENS = 1              // the first launch counts
+const MIN_DAYS = 0               // no waiting period
+const MIN_HOLDINGS = 0           // no portfolio needed
 const MIN_DWELL_MS = 15 * 1000   // don't interrupt the first seconds of a session
 
 // A moment shortens the dwell: someone who just watched a price target hit is
@@ -286,8 +296,10 @@ function readSnapshot() {
 function evaluate(snap) {
   if (snap.busy) return { ok: false, blocked: 'busy' }
 
-  // Nothing to have an opinion about yet.
-  if (snap.holdingsCount < MIN_HOLDINGS || snap.totalValue <= 0) {
+  // Only checked when MIN_HOLDINGS is above zero. It is deliberately not, so
+  // this is inert — kept as the single line to change if the ask should ever
+  // wait for a portfolio again, rather than having to reconstruct the rule.
+  if (MIN_HOLDINGS > 0 && snap.holdingsCount < MIN_HOLDINGS) {
     return { ok: false, blocked: 'no-portfolio' }
   }
 
@@ -402,9 +414,20 @@ export function maybeAskForReview(input = {}) {
  */
 export function requestReviewNow(source = 'manual') {
   if (!isAndroidTWA()) return false
-  const s = readState()
-  s.asked = Date.now()
-  writeState(s)
+
+  // Deliberately does NOT record an ask.
+  //
+  // It used to, and that quietly spent the 60-day cooldown: one tap on
+  // "Rate WalletLens" and the automatic prompt was dead on that device for two
+  // months. Nothing surfaced it, because the automatic path failing silently is
+  // indistinguishable from it not being due yet.
+  //
+  // The cooldown exists to stop *us* interrupting the same person repeatedly.
+  // Someone who went looking for the button has not been interrupted by
+  // anything, so there is nothing to cool down from. If they did go on to
+  // leave a rating, Play's own per-user quota is what stops a second card —
+  // and on the native side ReviewGate checks review_flow_completed_at, which
+  // is only written when a flow actually ran.
   return fireNativeIntent(
     'walletlens://review?fallback=store&source=' + encodeURIComponent(source)
   )
