@@ -70,6 +70,7 @@ export default class ErrorBoundary extends Component {
       // Never ask for a rating in the days after the app broke in front of
       // someone. Imported lazily so the boundary keeps working even if this
       // module is the thing that failed.
+      import('../reviewPrompt').then(m => m.noteFriction?.('exception')).catch(() => {})
     } catch { /* diagnostics must never mask the original error */ }
 
     if (this.state.isChunk) {

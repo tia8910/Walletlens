@@ -11,7 +11,7 @@ import InterestPicker from '../components/InterestPicker'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
-import { requestReviewNow } from '../reviewPrompt'
+import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
@@ -30,6 +30,22 @@ function widgetStatusText({ diag, hasPayload, lastSync }, t) {
     case 'throttled':   return t('wgWaiting')
     case 'threw':       return t('wgFailed')
     default:            return t('wgNotSent')
+  }
+}
+
+// Same job as widgetStatusText: the automatic rating card is invisible when it
+// doesn't fire, and Play deliberately never says whether it showed one. This
+// line is the only place a user — or we — can see which rule is still open.
+function reviewStatusText(d, t) {
+  if (!d) return ''
+  if (d.pendingAsk) return t('rvPending')
+  switch (d.blockedBy) {
+    case 'friction':   return t('rvQuiet')
+    case 'max-asks':   return t('rvDone')
+    case 'recent-ask': return t('rvAsked')
+    case 'few-opens':  return t('rvOpens')(d.opensLeft)
+    case 'too-new':    return t('rvDays')(d.daysLeft)
+    default:           return t('rvReady')
   }
 }
 
@@ -69,6 +85,7 @@ export default function Settings() {
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
+  const [rdiag] = useState(() => reviewDiagnostics())
 
   return (
     <div className="page settings-page">
@@ -229,6 +246,7 @@ export default function Settings() {
             <div className="settings-label">
               <span>{t('setReview')}</span>
               <span className="settings-hint">{t('setReviewHint')}</span>
+              <span className="settings-hint">{reviewStatusText(rdiag, t)}</span>
             </div>
             <button className="settings-chip"
               onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}

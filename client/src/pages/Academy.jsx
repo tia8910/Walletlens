@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { noteMoment } from '../reviewPrompt'
 import { Link } from 'react-router-dom'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
@@ -780,6 +781,7 @@ export default function Academy() {
 
       if (freshBadges.length) {
         setNewBadges(freshBadges)
+        noteMoment('achievement')
       }
 
       const updated = {

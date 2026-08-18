@@ -41,6 +41,7 @@ import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
+import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2823,6 +2824,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
       notifyTargetsReached(reached, activeIds)
       // A target they set themselves just paid off — the best moment the app
       // ever offers to ask what they think of it.
+      noteMoment('target_reached')
     }
   }, [rows])
 
@@ -3731,13 +3733,30 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
-  // The Play in-app review prompt used to be decided here, on a timer. It has
-  // moved into the Android shell (ReviewGate.java), because this was never a
-  // decision the page could act on: sending the intent means navigating the top
-  // frame, Chrome refuses that without a user activation, and a timer has none.
-  // Every ask was dropped. The shell decides at launch instead, where it can
-  // simply start the activity. Settings still has the manual "Rate WalletLens"
-  // button, which works because a tap supplies the activation.
+  // Play in-app review. reviewPrompt owns the "has this person used WalletLens
+  // enough to have an opinion?" rules; all this does is count the launch and
+  // give it a chance to fire. Held behind a timer so the card can never land on
+  // the dashboard's first paint, and read through a ref so the timer doesn't
+  // restart every time a price ticks.
+  const reviewSnapshot = useRef({ holdingsCount: 0, totalValue: 0 })
+  useEffect(() => {
+    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue, busy: sheetOpen || importChooser }
+  }, [enriched, totalValue, sheetOpen, importChooser])
+  useEffect(() => {
+    if (!loaded) return
+    noteAppOpen()
+    // Pass the ref's getter, not its current value: a timer that finds every
+    // rule satisfied still has no user gesture to send the intent on, so the
+    // ask is armed and fires on the next tap. By then this snapshot has moved
+    // on, and `busy` in particular has to be read fresh at that later moment.
+    const snap = () => reviewSnapshot.current
+    const t = setTimeout(() => maybeAskForReview(snap), 18000)
+    // A moment can land long after that one timer has fired, so re-check on a
+    // slow interval too. Every gate still applies; this only means a target hit
+    // in minute nine is not silently wasted because minute one had nothing.
+    const iv = setInterval(() => maybeAskForReview(snap), 90000)
+    return () => { clearTimeout(t); clearInterval(iv) }
+  }, [loaded])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash
   const tickerValueRef = useRef(0)
