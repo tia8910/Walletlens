@@ -83,10 +83,10 @@ final class ReviewGate {
     /**
      * Record a cold start. Call once per launch, before {@link #shouldAsk}.
      *
-     * <p>The first call also stamps the install date. That means "installed
-     * three days ago" really means "first opened three days ago", which is the
-     * more useful reading anyway — an app installed and never opened has not
-     * earned an opinion.
+     * <p>The first call also stamps the install date. Nothing reads it while
+     * MIN_DAYS is zero, but it is recorded from the start so that reinstating a
+     * waiting period later is a constant change, rather than a rule that has to
+     * wait for everyone's clock to begin again.
      */
     static void noteLaunch(Context c) {
         try {
@@ -117,10 +117,10 @@ final class ReviewGate {
             long asked = p.getLong(KEY_LAST_ASKED, 0);
             if (asked != 0 && now - asked < REASK_AFTER_DAYS * DAY_MS) return false;
 
-            // The web app already got there. Not a duplicate-suppression nicety:
-            // Play's per-user quota is small and undisclosed, so a second ask
-            // would most likely be swallowed silently, having cost the user an
-            // interrupted launch for nothing.
+            // A flow has already completed on this device, from either side.
+            // Not a tidiness nicety: Play's per-user quota is small and
+            // undisclosed, so a second ask would most likely be swallowed in
+            // silence, having cost the user an interrupted launch for nothing.
             if (alreadyRan(c)) return false;
 
             return hasPortfolio(c);
