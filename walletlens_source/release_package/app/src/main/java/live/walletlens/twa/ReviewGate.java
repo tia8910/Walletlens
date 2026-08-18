@@ -7,27 +7,28 @@ import android.util.Log;
 /**
  * Decides whether this launch should show Google Play's in-app review card.
  *
- * <p>THIS IS THE BACKSTOP, NOT THE MAIN PATH
- * The web app asks first, in-session, from the user's very first visit — it
- * arms on a timer and fires on the next tap, which is what supplies the user
- * activation the intent navigation needs. That is the better ask, because the
- * card lands while the user is actually looking at their portfolio.
+ * <p>THIS IS THE FIRST ASK
+ * It runs at launch, from the very first one, before the TWA opens. Launch is
+ * the only window native code gets: once the Custom Tab is up this app has no
+ * foreground activity, and starting one would be a background activity launch,
+ * which Android 10+ blocks.
  *
- * <p>What it cannot cover is a user who never taps anything, or a session that
- * ends before the dwell elapses. This gate exists for them. It runs at launch —
- * the only window native code gets, since once the Custom Tab is up this app
- * has no foreground activity and starting one would be a background activity
- * launch, blocked since Android 10.
+ * <p>The cost of that is real and was accepted deliberately — on a new install
+ * the card appears before the user has seen the dashboard. What it buys is an
+ * ask that needs no tap, does not depend on the web deploy having reached the
+ * device, and cannot be lost to a session that ends early.
  *
- * <p>The two never double-ask. {@link ReviewActivity} stamps
- * {@code review_flow_completed_at} into its own SharedPreferences whenever a
- * flow completes, whichever side started it, and {@link #alreadyRan} reads that
- * back. Native storage is the one thing both paths can see: the web app's
- * localStorage is invisible from here, but every web-triggered ask still lands
- * in this process on its way to Play.
+ * <p>The web app keeps its own in-session ask as the second attempt, for the
+ * case that matters most: Play declining. Play returns success and shows
+ * nothing when its per-user quota is spent, and there is no way to tell that
+ * apart from success — so rather than guess, the web path simply tries again
+ * later, in-session, where the card would land better anyway.
  *
- * <p>Thresholds are deliberately later than the web path's, so in the normal
- * case the in-session ask has long since happened and this never fires.
+ * <p>They do not double-ask when the first one worked. {@link ReviewActivity}
+ * stamps {@code review_flow_completed_at} whenever a flow completes, whichever
+ * side started it, and both sides consult it. Native storage is the only state
+ * they share — localStorage is invisible from here, but every web-triggered ask
+ * still passes through this process on its way to Play.
  *
  * <p>WHERE THE NUMBERS COME FROM
  * Launch count and first-seen date are ours, written on every cold start.
@@ -57,17 +58,11 @@ final class ReviewGate {
 
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
-    /**
-     * Installed at least this many days.
-     *
-     * <p>Later than the web path, which asks from the first visit. By the time
-     * this is reachable the in-session ask has had several sessions to land, so
-     * reaching here means it never did.
-     */
-    private static final int MIN_DAYS = 2;
+    /** No waiting period: eligible from the first launch. */
+    private static final int MIN_DAYS = 0;
 
-    /** Cold starts, including this one. */
-    private static final int MIN_LAUNCHES = 4;
+    /** Cold starts, including this one. 1 = the very first launch. */
+    private static final int MIN_LAUNCHES = 1;
 
     /**
      * Our own cooldown. Play applies an undisclosed per-user quota on top and
