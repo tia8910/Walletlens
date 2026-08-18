@@ -112,13 +112,18 @@ export default function Watchlist({ portfolioPrices = {} }) {
   useEffect(() => { saveAlerts(alerts); syncAlerts() }, [alerts])
 
   const fetchPrices = useCallback(async () => {
-    if (!items.length) return
-    const ids = items.map(i => i.coin_id).join(',')
+    if (!items.length) { setPrices({}); return }
+    // Skip ids the Dashboard's own 60s poll (portfolioPrices) already covers —
+    // avoids a redundant duplicate request for every overlapping coin on every
+    // tick. getPrice() below falls back to portfolioPrices for anything not
+    // fetched here, so this only needs to hold the ids portfolioPrices lacks.
+    const missing = items.filter(i => !portfolioPrices[i.coin_id]).map(i => i.coin_id)
+    if (!missing.length) { setPrices({}); return }
     try {
-      const px = await api.getPrices(ids)
+      const px = await api.getPrices(missing.join(','))
       if (px) setPrices(px)
     } catch {}
-  }, [items])
+  }, [items, portfolioPrices])
 
   useEffect(() => {
     fetchPrices()
