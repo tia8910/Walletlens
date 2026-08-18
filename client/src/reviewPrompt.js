@@ -34,7 +34,12 @@
 
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 
-const STATE_KEY = 'wl_review_state_v2'
+// v3: the rules changed from "3 days and 3 sessions" to "ask from the first
+// visit", which makes every stored counter meaningless. Worse, the old manual
+// button recorded an ask, so anyone who ever tapped "Rate WalletLens" carries a
+// 60-day cooldown they never earned. Bumping the key drops all of it rather
+// than migrating state whose meaning no longer exists.
+const STATE_KEY = 'wl_review_state_v3'
 const SESSION_FLAG = 'wl_review_session_counted'
 
 // ── Base eligibility ───────────────────────────────────────────────────────
@@ -409,9 +414,20 @@ export function maybeAskForReview(input = {}) {
  */
 export function requestReviewNow(source = 'manual') {
   if (!isAndroidTWA()) return false
-  const s = readState()
-  s.asked = Date.now()
-  writeState(s)
+
+  // Deliberately does NOT record an ask.
+  //
+  // It used to, and that quietly spent the 60-day cooldown: one tap on
+  // "Rate WalletLens" and the automatic prompt was dead on that device for two
+  // months. Nothing surfaced it, because the automatic path failing silently is
+  // indistinguishable from it not being due yet.
+  //
+  // The cooldown exists to stop *us* interrupting the same person repeatedly.
+  // Someone who went looking for the button has not been interrupted by
+  // anything, so there is nothing to cool down from. If they did go on to
+  // leave a rating, Play's own per-user quota is what stops a second card —
+  // and on the native side ReviewGate checks review_flow_completed_at, which
+  // is only written when a flow actually ran.
   return fireNativeIntent(
     'walletlens://review?fallback=store&source=' + encodeURIComponent(source)
   )

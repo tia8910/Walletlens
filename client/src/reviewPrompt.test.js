@@ -27,7 +27,7 @@ function firedIntents() {
   return bridge.fired
 }
 
-const KEY = 'wl_review_state_v2'
+const KEY = 'wl_review_state_v3'
 
 // Default: a user well past every base gate, so each test below is isolating
 // the one field it names. Tests that care about moments pass `moment`
