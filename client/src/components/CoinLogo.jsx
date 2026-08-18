@@ -69,11 +69,15 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 
 // Robust coin-logo fallback chain. Each <img> uses onError to bump to
 // the next stage; onLoad clears the timeout so we never advance past a
-// successfully loaded image. A 3 s timer forces an advance only when
-// the browser silently stalls (blocked extension, slow CDN).
+// successfully loaded image. A timer forces an advance only when the
+// browser silently stalls (blocked extension, slow CDN) — the first
+// (user-supplied/cached) stage gets the most patience since it's most
+// likely to be correct; later last-resort CDN fallbacks fail fast so a
+// blocked/slow CDN can't stall the whole chain for many seconds per icon.
 //
 // Order: provided URL → jsDelivr SVG → CoinGecko assets → CoinCap → cryptoicons → generated gradient
 const STAGE_TIMEOUT_MS = 3000
+const FALLBACK_TIMEOUT_MS = 1200
 
 const CoinLogo = memo(function CoinLogo({
   image,
@@ -160,9 +164,10 @@ const CoinLogo = memo(function CoinLogo({
   useEffect(() => {
     if (stageIdx >= STAGES.length) return
     loadedRef.current = false
+    const timeout = stageIdx <= 1 ? STAGE_TIMEOUT_MS : FALLBACK_TIMEOUT_MS
     const t = setTimeout(() => {
       if (stageIdxRef.current === stageIdx && !loadedRef.current) setStageIdx(s => s + 1)
-    }, STAGE_TIMEOUT_MS)
+    }, timeout)
     return () => clearTimeout(t)
   }, [stageIdx])
 
