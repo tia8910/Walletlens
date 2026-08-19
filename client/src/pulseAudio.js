@@ -54,7 +54,13 @@ export function unlock() {
       master.gain.value = 0.6
       master.connect(ctx.destination)
     }
-    if (ctx.state === 'suspended') ctx.resume()
+    // resume() is asynchronous. Reading ctx.state on the next line returns
+    // 'suspended' every time, so the previous version latched unlocked=false
+    // inside the very gesture that was supposed to unlock it, and nothing ever
+    // played on any device. The flag has to come from the promise.
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => { unlocked = ctx.state === 'running' }).catch(() => {})
+    }
     unlocked = ctx.state === 'running'
     return unlocked
   } catch {
@@ -172,7 +178,17 @@ export const DURATION_MS = { rocket: 2500, ath: 1600, milestone: 1950 }
  */
 export function play(type) {
   try {
-    if (!unlocked || !ctx || ctx.state !== 'running') return false
+    if (!ctx) return false
+    // Trust the context, not the cached flag. `unlocked` is a hint that can
+    // lag the real state in both directions — the resume promise may not have
+    // settled yet, and a context can be suspended again by the platform when
+    // the app is backgrounded. ctx.state is the only thing that actually
+    // decides whether a scheduled node will be heard.
+    if (ctx.state !== 'running') {
+      ctx.resume?.().catch(() => {})
+      return false
+    }
+    unlocked = true
     const voice = VOICES[type]
     if (!voice) return false
     voice(ctx.currentTime + 0.02)
@@ -180,6 +196,23 @@ export function play(type) {
   } catch {
     return false
   }
+}
+
+/**
+ * Unlock and play one sound, for a preview button.
+ *
+ * Separate from play() because it awaits the resume. play() must stay
+ * synchronous and non-blocking — it runs inside a price refresh, where waiting
+ * on the audio subsystem would be wrong. A preview is a deliberate tap with
+ * nothing else in flight, so it can afford to wait for the context and is the
+ * only place that should.
+ */
+export async function preview(type) {
+  unlock()
+  try {
+    if (ctx && ctx.state !== 'running') await ctx.resume()
+  } catch { /* platform refused; play() reports the failure below */ }
+  return play(type)
 }
 
 /**
