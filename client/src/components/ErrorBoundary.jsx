@@ -84,6 +84,25 @@ export default class ErrorBoundary extends Component {
     }
   }
 
+  /**
+   * Clear the error when the user navigates somewhere else.
+   *
+   * This boundary wraps the whole <Routes> tree, so without this one page
+   * throwing takes down every route: React keeps rendering the fallback, and
+   * navigating does nothing because the boundary never re-renders its
+   * children. A missing import in Settings therefore looked like the entire
+   * app was broken, and the only way out was a reload.
+   *
+   * Keyed on the path rather than remounting the boundary on every navigation
+   * — remounting unconditionally would discard page state on each route change
+   * for a problem that only exists after an error.
+   */
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.reset()
+    }
+  }
+
   reset = () => {
     clearRetryCount()
     this.setState({ hasError: false, message: '', isChunk: false, autoReloading: false, where: '' })
