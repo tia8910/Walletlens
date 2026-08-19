@@ -7,27 +7,28 @@ import android.util.Log;
 /**
  * Decides whether this launch should show Google Play's in-app review card.
  *
- * <p>THIS IS THE BACKSTOP, NOT THE MAIN PATH
- * The web app asks first, in-session, from the user's very first visit — it
- * arms on a timer and fires on the next tap, which is what supplies the user
- * activation the intent navigation needs. That is the better ask, because the
- * card lands while the user is actually looking at their portfolio.
+ * <p>THIS IS THE FIRST ASK
+ * It runs at launch, from the very first one, before the TWA opens. Launch is
+ * the only window native code gets: once the Custom Tab is up this app has no
+ * foreground activity, and starting one would be a background activity launch,
+ * which Android 10+ blocks.
  *
- * <p>What it cannot cover is a user who never taps anything, or a session that
- * ends before the dwell elapses. This gate exists for them. It runs at launch —
- * the only window native code gets, since once the Custom Tab is up this app
- * has no foreground activity and starting one would be a background activity
- * launch, blocked since Android 10.
+ * <p>The cost of that is real and was accepted deliberately — on a new install
+ * the card appears before the user has seen the dashboard. What it buys is an
+ * ask that needs no tap, does not depend on the web deploy having reached the
+ * device, and cannot be lost to a session that ends early.
  *
- * <p>The two never double-ask. {@link ReviewActivity} stamps
- * {@code review_flow_completed_at} into its own SharedPreferences whenever a
- * flow completes, whichever side started it, and {@link #alreadyRan} reads that
- * back. Native storage is the one thing both paths can see: the web app's
- * localStorage is invisible from here, but every web-triggered ask still lands
- * in this process on its way to Play.
+ * <p>The web app keeps its own in-session ask as the second attempt, for the
+ * case that matters most: Play declining. Play returns success and shows
+ * nothing when its per-user quota is spent, and there is no way to tell that
+ * apart from success — so rather than guess, the web path simply tries again
+ * later, in-session, where the card would land better anyway.
  *
- * <p>Thresholds are deliberately later than the web path's, so in the normal
- * case the in-session ask has long since happened and this never fires.
+ * <p>They do not double-ask when the first one worked. {@link ReviewActivity}
+ * stamps {@code review_flow_completed_at} whenever a flow completes, whichever
+ * side started it, and both sides consult it. Native storage is the only state
+ * they share — localStorage is invisible from here, but every web-triggered ask
+ * still passes through this process on its way to Play.
  *
  * <p>WHERE THE NUMBERS COME FROM
  * Launch count and first-seen date are ours, written on every cold start.
@@ -57,17 +58,11 @@ final class ReviewGate {
 
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
-    /**
-     * Installed at least this many days.
-     *
-     * <p>Later than the web path, which asks from the first visit. By the time
-     * this is reachable the in-session ask has had several sessions to land, so
-     * reaching here means it never did.
-     */
-    private static final int MIN_DAYS = 2;
+    /** No waiting period: eligible from the first launch. */
+    private static final int MIN_DAYS = 0;
 
-    /** Cold starts, including this one. */
-    private static final int MIN_LAUNCHES = 4;
+    /** Cold starts, including this one. 1 = the very first launch. */
+    private static final int MIN_LAUNCHES = 1;
 
     /**
      * Our own cooldown. Play applies an undisclosed per-user quota on top and
@@ -88,10 +83,10 @@ final class ReviewGate {
     /**
      * Record a cold start. Call once per launch, before {@link #shouldAsk}.
      *
-     * <p>The first call also stamps the install date. That means "installed
-     * three days ago" really means "first opened three days ago", which is the
-     * more useful reading anyway — an app installed and never opened has not
-     * earned an opinion.
+     * <p>The first call also stamps the install date. Nothing reads it while
+     * MIN_DAYS is zero, but it is recorded from the start so that reinstating a
+     * waiting period later is a constant change, rather than a rule that has to
+     * wait for everyone's clock to begin again.
      */
     static void noteLaunch(Context c) {
         try {
@@ -122,10 +117,10 @@ final class ReviewGate {
             long asked = p.getLong(KEY_LAST_ASKED, 0);
             if (asked != 0 && now - asked < REASK_AFTER_DAYS * DAY_MS) return false;
 
-            // The web app already got there. Not a duplicate-suppression nicety:
-            // Play's per-user quota is small and undisclosed, so a second ask
-            // would most likely be swallowed silently, having cost the user an
-            // interrupted launch for nothing.
+            // A flow has already completed on this device, from either side.
+            // Not a tidiness nicety: Play's per-user quota is small and
+            // undisclosed, so a second ask would most likely be swallowed in
+            // silence, having cost the user an interrupted launch for nothing.
             if (alreadyRan(c)) return false;
 
             return hasPortfolio(c);
@@ -169,6 +164,34 @@ final class ReviewGate {
             return w.getFloat("alloc_total", 0f) > 0f;
         } catch (Throwable t) {
             return true;
+        }
+    }
+
+    /**
+     * Undo the last {@link #markAsked}, for a flow that returned too fast for
+     * the card to have been displayed.
+     *
+     * <p>markAsked deliberately runs before the activity starts, so a crashed
+     * or killed flow cannot cause an ask on every launch forever. The cost of
+     * that ordering is this: when Play declines silently we have charged the
+     * user for something they never saw. This gives it back.
+     *
+     * <p>It cannot underflow past zero, and it clears the timestamp rather than
+     * restoring the previous one — the previous value is not kept anywhere, and
+     * treating "never asked" as the fallback errs towards asking again, which
+     * is the right direction when we know the last attempt showed nothing.
+     */
+    static void rollbackAsk(Context c) {
+        try {
+            SharedPreferences p = prefs(c);
+            int n = p.getInt(KEY_ASK_COUNT, 0);
+            p.edit()
+             .putInt(KEY_ASK_COUNT, Math.max(0, n - 1))
+             .putLong(KEY_LAST_ASKED, 0)
+             .apply();
+            Log.d(TAG, "ask rolled back; Play showed nothing");
+        } catch (Throwable t) {
+            Log.w(TAG, "could not roll back ask: " + t);
         }
     }
 

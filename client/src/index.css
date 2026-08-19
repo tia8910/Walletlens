@@ -682,8 +682,11 @@ input, select, textarea {
 /* Onboarding: language and light/dark, above the palette.
    Language comes first because it changes the words on every screen after it,
    including the labels on the two rows below. */
+/* auto-fit, not a fixed count: the language list grows, and a hardcoded
+   four columns silently squeezed the fifth onto a row of its own. */
 .no-lang-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 0.45rem;
   width: 100%; max-width: 320px; margin-bottom: 0.6rem;
 }
 .no-lang-btn {
@@ -697,6 +700,12 @@ input, select, textarea {
   background: rgba(255,255,255,0.1);
   border-color: rgba(255,255,255,0.85);
   transform: scale(1.05);
+}
+/* Decoration only — the name below it is what carries the meaning, which is
+   why this is aria-hidden in the markup. A flag cannot stand for a language:
+   Arabic has no country and English has several. */
+.no-lang-flag {
+  font-size: 1rem; line-height: 1;
 }
 /* The native name is the one people scan for, so it gets the weight. */
 .no-lang-native {

@@ -27,6 +27,7 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
+import { startAutoBackup } from './driveAutoBackup'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -431,6 +432,10 @@ export default function App() {
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
   useEffect(() => { if (drawerOpen) setDrawerMounted(true) }, [drawerOpen])
+
+  // Keep the Drive backup current on its own. No-op until the user has done
+  // one manual backup, which is what gives this device the key to encrypt with.
+  useEffect(() => startAutoBackup(), [])
 
   // Any part of the app can open the Help guide by dispatching `wl:open-help`
   // (e.g. an on-screen tip's "how it works" link).

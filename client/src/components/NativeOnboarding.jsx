@@ -198,6 +198,7 @@ export default function NativeOnboarding({ onDone }) {
                 lang={l.code}
                 dir={l.rtl ? 'rtl' : 'ltr'}
               >
+                <span className="no-lang-flag" aria-hidden="true">{l.flag}</span>
                 <span className="no-lang-native">{l.native}</span>
                 <span className="no-lang-en">{l.label}</span>
               </button>
