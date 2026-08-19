@@ -13,6 +13,7 @@ import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
 import { pulseSettings, setPulseSettings } from '../marketPulseRuntime'
+import { preview as previewPulse } from '../pulseAudio'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
@@ -262,6 +263,21 @@ export default function Settings() {
 
         {pulse.enabled && (
           <>
+            <div className="settings-divider"/>
+            {/* Real events are rare on purpose, so without this there is no way
+                to find out whether sound works on your device short of waiting
+                for a market move. */}
+            <div className="settings-row">
+              <div className="settings-label">
+                <span>{t('setPulsePreview')}</span>
+                <span className="settings-hint">{t('setPulsePreviewHint')}</span>
+              </div>
+              <button className="settings-chip"
+                onClick={() => { track('market_pulse_preview'); previewPulse('rocket') }}
+                style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+                <Icon name="volume" size={14} /> {t('setPulsePlay')}
+              </button>
+            </div>
             <div className="settings-divider"/>
             <div className="settings-row">
               <div className="settings-label">
