@@ -11,6 +11,7 @@ import { isStablecoin } from '../stablecoins'
 import { pulseClass } from '../marketPulse'
 import { observeMarket, armPulseAudio } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
+import PulseOverlay from '../components/PulseOverlay'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
@@ -3736,6 +3737,8 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
+  const [pulseEvent, setPulseEvent] = useState(null)
+
   // Market Pulse — react to meaningful market moves.
   //
   // All this does is assemble a snapshot and hand it over. Whether anything is
@@ -3763,7 +3766,10 @@ export default function Dashboard() {
         }),
       }
     }
-    observeMarket({ samples, totalValue })
+    const event = observeMarket({ samples, totalValue })
+    // Set even when the audio was refused — someone on silent has not opted
+    // out of seeing it, and the caption is the part that carries the fact.
+    if (event) setPulseEvent(event)
   }, [loaded, enriched, prices, totalValue])
 
   // Play in-app review. reviewPrompt owns the "has this person used WalletLens
@@ -4340,6 +4346,7 @@ export default function Dashboard() {
           {/* Market Pulse offer, shown only after the user has actually missed
               something worth hearing. At most twice, ever. */}
           {enriched.length > 0 && <PulseDiscovery />}
+          <PulseOverlay event={pulseEvent} onDone={() => setPulseEvent(null)} />
 
           {/* Sentiment + portfolio tips ticker */}
           {enriched.length > 0 && (

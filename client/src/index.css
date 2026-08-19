@@ -16178,3 +16178,113 @@ input, select, textarea, .dvx-input {
 
 [data-cache-bust="178415073"] { display: none; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+/* ── Market Pulse overlay ───────────────────────────────────────────────────
+   Keyframe offsets mirror pulseAudio's cue points. The rocket's ignition sits
+   at 0.25s, launch at 1.00s, boom at 1.80s and fade by 2.50s, so the motion
+   below is timed against the same clock rather than eyeballed — an animation
+   that peaks after the engine sound is worse than none at all. */
+.wl-pulse {
+  position: fixed; inset: 0; z-index: 60;
+  pointer-events: none;                 /* never swallow a tap meant for the app */
+  display: flex; align-items: center; justify-content: center;
+}
+
+.wl-pulse-glow {
+  position: absolute; inset-inline: 0; bottom: 0; height: 55vh;
+  background: radial-gradient(60% 80% at 50% 100%, var(--accent, #12b76a) 0%, transparent 70%);
+  opacity: 0;
+}
+
+.wl-pulse-caption {
+  position: absolute; top: 22%;
+  padding: 0.45rem 0.95rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--bg2, #131a11) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #12b76a) 40%, transparent);
+  color: var(--text, #e9eee6);
+  font-weight: 600; font-size: 1rem; letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+}
+
+.wl-pulse-craft {
+  position: absolute; bottom: 18%; font-size: 2.6rem; line-height: 1;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent, #12b76a) 55%, transparent));
+  opacity: 0;
+}
+
+/* Rocket — rumble, ignition, launch, exit, fade. */
+.wl-pulse-rocket .wl-pulse-glow    { animation: wl-pulse-ignite 2.5s ease-out forwards; }
+.wl-pulse-rocket .wl-pulse-craft   { animation: wl-pulse-launch 2.5s cubic-bezier(.4,0,.7,1) forwards; }
+.wl-pulse-rocket .wl-pulse-caption { animation: wl-pulse-cap 2.5s ease-out forwards; }
+
+@keyframes wl-pulse-ignite {
+  0%   { opacity: 0; }
+  8%   { opacity: .10; }                /* rumble, 0.2s */
+  12%  { opacity: .36; }                /* ignition hit, 0.3s */
+  40%  { opacity: .32; }                /* engine at full, launch */
+  60%  { opacity: .10; }                /* craft gone, glow falls away */
+  100% { opacity: 0; }
+}
+/* Percentages are of 2.5s, so they map straight onto the audio cue points:
+   10% = 0.25s ignition · 16% = 0.4s build starts · 40% = 1.0s launch
+   60% = 1.5s exit · 72% = 1.8s boom. An earlier version had the launch at
+   60% and the exit at 76%, which put the craft half a second behind its own
+   engine — the rocket was still hovering when the launch sound played. */
+@keyframes wl-pulse-launch {
+  0%   { opacity: 0; transform: translateY(0) scale(.9); }
+  8%   { opacity: 1; transform: translateY(0) scale(1); }
+  10%  { transform: translateY(3px) scale(1.05); }          /* recoil, ignition */
+  16%  { transform: translateY(0) scale(1.02); }            /* build begins */
+  40%  { opacity: 1; transform: translateY(-7vh) scale(1); }/* launch, 1.0s */
+  52%  { transform: translateY(-52vh) scale(.92); }
+  60%  { opacity: .85; transform: translateY(-100vh) scale(.78); }  /* exit, 1.5s */
+  66%  { opacity: 0; transform: translateY(-115vh) scale(.7); }
+  100% { opacity: 0; }
+}
+@keyframes wl-pulse-cap {
+  0%   { opacity: 0; transform: translateY(6px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+/* All-time high and milestone — no flight, just arrival. Restrained on
+   purpose: this is a finance app, not a slot machine. */
+.wl-pulse-ath .wl-pulse-glow,
+.wl-pulse-milestone .wl-pulse-glow { animation: wl-pulse-swell 1.6s ease-out forwards; }
+.wl-pulse-ath .wl-pulse-caption,
+.wl-pulse-milestone .wl-pulse-caption { animation: wl-pulse-rise 1.6s cubic-bezier(.2,.8,.2,1) forwards; }
+.wl-pulse-milestone .wl-pulse-glow { animation-duration: 1.95s; }
+.wl-pulse-milestone .wl-pulse-caption { animation-duration: 1.95s; }
+
+@keyframes wl-pulse-swell {
+  0%   { opacity: 0; }
+  25%  { opacity: .26; }
+  100% { opacity: 0; }
+}
+@keyframes wl-pulse-rise {
+  0%   { opacity: 0; transform: translateY(14px) scale(.96); }
+  22%  { opacity: 1; transform: translateY(0) scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Reduced motion: the caption still appears, because knowing what happened is
+   the information. Nothing travels across the screen. */
+.wl-pulse.is-still .wl-pulse-glow { display: none; }
+.wl-pulse.is-still .wl-pulse-caption {
+  animation: wl-pulse-fade 1.4s ease-out forwards;
+}
+@keyframes wl-pulse-fade {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-pulse-glow, .wl-pulse-craft { display: none; }
+  .wl-pulse-caption { animation: wl-pulse-fade 1.4s ease-out forwards !important; }
+}
