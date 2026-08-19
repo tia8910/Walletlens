@@ -12,6 +12,7 @@ import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
+import { pulseSettings, setPulseSettings } from '../marketPulseRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
