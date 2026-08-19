@@ -168,6 +168,34 @@ final class ReviewGate {
     }
 
     /**
+     * Undo the last {@link #markAsked}, for a flow that returned too fast for
+     * the card to have been displayed.
+     *
+     * <p>markAsked deliberately runs before the activity starts, so a crashed
+     * or killed flow cannot cause an ask on every launch forever. The cost of
+     * that ordering is this: when Play declines silently we have charged the
+     * user for something they never saw. This gives it back.
+     *
+     * <p>It cannot underflow past zero, and it clears the timestamp rather than
+     * restoring the previous one — the previous value is not kept anywhere, and
+     * treating "never asked" as the fallback errs towards asking again, which
+     * is the right direction when we know the last attempt showed nothing.
+     */
+    static void rollbackAsk(Context c) {
+        try {
+            SharedPreferences p = prefs(c);
+            int n = p.getInt(KEY_ASK_COUNT, 0);
+            p.edit()
+             .putInt(KEY_ASK_COUNT, Math.max(0, n - 1))
+             .putLong(KEY_LAST_ASKED, 0)
+             .apply();
+            Log.d(TAG, "ask rolled back; Play showed nothing");
+        } catch (Throwable t) {
+            Log.w(TAG, "could not roll back ask: " + t);
+        }
+    }
+
+    /**
      * Record that the card was requested.
      *
      * <p>Called before the activity is started, never after. If the flow throws,

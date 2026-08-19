@@ -23,25 +23,25 @@ import com.google.android.play.core.review.ReviewManagerFactory;
  *
  * <p>THREE WAYS IN
  * <ol>
- *   <li><b>The web app's automatic ask</b>, via {@code walletlens://review}.
- *       This is the main path and the one that produces the best-placed card,
- *       because it lands while the user is looking at their portfolio. It arms
- *       on a timer and fires on the next tap — the tap is not decoration, it is
- *       the user activation without which Chrome refuses to navigate to an
- *       external scheme at all.</li>
  *   <li><b>{@link ReviewGate}, at launch</b>, with {@link #EXTRA_CONTINUE_TO_APP}
- *       set. The backstop for users the in-session ask never reaches. Native
- *       because it has to be: once the Custom Tab is up this app has no
- *       foreground activity, so starting one is a background activity launch,
- *       which Android 10+ blocks. That also makes launch the only moment it can
- *       fire, which is why it is second choice rather than first.</li>
+ *       set. The first ask, from the first launch. Native because it has to be:
+ *       once the Custom Tab is up this app has no foreground activity, so
+ *       starting one is a background activity launch, which Android 10+ blocks.
+ *       That is also why it can only fire before the app opens.</li>
+ *   <li><b>The web app's automatic ask</b>, via {@code walletlens://review}.
+ *       The second attempt, and the better-placed one — it lands while the user
+ *       is looking at their portfolio. It arms on a timer and fires on the next
+ *       tap; the tap is not decoration, it is the user activation without which
+ *       Chrome refuses to navigate to an external scheme at all.</li>
  *   <li><b>"Rate WalletLens" in Settings</b>, the same web route with
  *       {@code fallback=store}.</li>
  * </ol>
  *
- * <p>The first two cannot both fire: {@link #markCompleted} stamps native
- * SharedPreferences on every completion whatever started it, and ReviewGate
- * reads that back before asking.
+ * <p>Once a card has actually been shown, {@link #markCompleted} stamps native
+ * SharedPreferences and ReviewGate stops asking. Crucially that stamp is only
+ * written when the flow lasted long enough for the card to have been on screen
+ * — see NO_CARD_THRESHOLD_MS. Writing it for a silently declined flow is what
+ * previously let one swallowed attempt disable the feature permanently.
  *
  * <p>Optional query parameters on the web path:
  * <ul>
@@ -160,8 +160,25 @@ public class ReviewActivity extends Activity {
                                 long shownFor = SystemClock.elapsedRealtime() - startedAt;
                                 boolean looksUnshown = shownFor < NO_CARD_THRESHOLD_MS;
                                 Log.d(TAG, "review flow returned after " + shownFor + "ms");
-                                if (looksUnshown && openStoreOnFailure) {
-                                    finishFlow(true);
+                                if (looksUnshown) {
+                                    // Play answered so fast the card cannot
+                                    // have been on screen — quota spent, most
+                                    // likely. Whatever happened, the user was
+                                    // not asked anything.
+                                    if (openStoreOnFailure) {
+                                        finishFlow(true);
+                                        return;
+                                    }
+                                    // Do NOT mark this completed. Recording a
+                                    // completion for a card nobody saw is what
+                                    // made a single swallowed attempt kill the
+                                    // feature outright: alreadyRan() then
+                                    // blocks the native gate for good, on top
+                                    // of the 60-day cooldown markAsked() has
+                                    // already started. Give the ask back
+                                    // instead, and try again next launch.
+                                    ReviewGate.rollbackAsk(ReviewActivity.this);
+                                    handOff();
                                     return;
                                 }
                                 markCompleted();
