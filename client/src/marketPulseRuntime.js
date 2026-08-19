@@ -247,6 +247,49 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
   }
 }
 
+// ── Demo ───────────────────────────────────────────────────────────────────
+
+/** The three types a demo may ask for. Anything else is ignored. */
+const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone'])
+
+/**
+ * Fire one event on demand, for checking the feature actually works.
+ *
+ * Market Pulse is close to unobservable by design: a rocket needs an asset to
+ * cross its class threshold between two consecutive price refreshes, so a
+ * short session shows nothing whether the code works or not. Without some way
+ * to trigger one, "I saw no effects" and "it is broken" are the same
+ * observation, which makes the feature impossible to verify on a real phone.
+ *
+ * This is deliberately not a Settings row — it is reached only by adding
+ * ?pulse=rocket to the URL, so it costs nothing in the interface and no user
+ * finds it by accident.
+ *
+ * Must be called from inside a click handler: unlock() only works within a
+ * user gesture, and without one this returns an event that will be seen and
+ * not heard.
+ *
+ * @returns {object|null} the event to hand the overlay, or null if unrecognised
+ */
+export function demoPulse(type, { totalValue = 0 } = {}) {
+  if (!DEMO_TYPES.has(type)) return null
+  unlock()
+  setVolume(pulseSettings().volume)
+  play(type)
+  if (pulseSettings().haptics) {
+    try { navigator.vibrate?.(type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+  }
+  return {
+    type,
+    priority: type === 'milestone' ? 0 : type === 'ath' ? 1 : 2,
+    symbol: 'BTC',
+    changePct: 12.4,
+    value: totalValue > 0 ? totalValue : 100000,
+    at: Date.now(),
+    demo: true,
+  }
+}
+
 /** For diagnostics and tests. */
 export function pulseDiagnostics() {
   return { ...pulseSettings(), audioUnlocked: isUnlocked(), state: pulseState() }

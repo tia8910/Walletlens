@@ -16185,7 +16185,12 @@ input, select, textarea, .dvx-input {
    below is timed against the same clock rather than eyeballed — an animation
    that peaks after the engine sound is worse than none at all. */
 .wl-pulse {
-  position: fixed; inset: 0; z-index: 60;
+  position: fixed; inset: 0;
+  /* Above the bottom nav (300) and full-page views (400), below every modal
+     and the tour (900+). 60 put it under all of them: the glow occupies the
+     bottom 55vh, which is exactly where the nav sits, so most of the effect
+     was drawn and then covered up. */
+  z-index: 500;
   pointer-events: none;                 /* never swallow a tap meant for the app */
   display: flex; align-items: center; justify-content: center;
 }
