@@ -121,9 +121,22 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
-          // invalidates this chunk, not the whole app.
-          if (id.includes('/src/i18n.')) {
+          // en/ar are the two languages the app markets (see the
+          // WebApplication structured data's `inLanguage`) — LanguageContext
+          // imports them eagerly for a same-tick first render with no
+          // language flash. Pinned to their own chunk name, distinct from
+          // 'i18n' below, so Rollup can't fold them back into the lazy
+          // fr/es-carrying aggregate just because that aggregate also
+          // references them for translator()/tests.
+          if (id.includes('/src/i18nData/en') || id.includes('/src/i18nData/ar')) {
+            return 'i18n-core'
+          }
+          // Full-catalogue aggregate (all 4 languages + translator()) plus
+          // fr/es, which only this chunk and LanguageContext's on-demand
+          // import() reach. Loaded lazily — by Dashboard/notifications, or by
+          // LanguageContext when a visitor picks/has saved fr or es — never on
+          // the initial render path.
+          if (id.includes('/src/i18n.') || id.includes('/src/i18nData/fr') || id.includes('/src/i18nData/es')) {
             return 'i18n'
           }
           // blogPosts: 136 KB of inline article content — split so Blog page

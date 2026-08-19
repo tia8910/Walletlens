@@ -1,5 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { translations } from './i18n'
+import en from './i18nData/en'
+import ar from './i18nData/ar'
+
+// en and ar are the two languages the app actually markets (see the
+// WebApplication structured data's `inLanguage`), so they ship in the main
+// bundle for a same-tick first render with no language flash. fr and es are
+// newer additions fetched on demand — only visitors who pick or were saved on
+// one of them pay for their ~30 KB gzipped table, and only after the initial
+// paint.
+const EAGER = { en, ar }
+const LAZY_LOADERS = {
+  fr: () => import('./i18nData/fr').then(m => m.default),
+  es: () => import('./i18nData/es').then(m => m.default),
+}
 
 /**
  * The languages the picker offers.
@@ -33,6 +46,12 @@ export function LanguageProvider({ children }) {
     return match ? match.code : 'en'
   })
 
+  // Table for the active language: available synchronously for en/ar, fetched
+  // on demand for fr/es. Falls back to English until a lazy table resolves, so
+  // switching to (or loading a saved) fr/es briefly shows English rather than
+  // blocking the first render on a network round-trip.
+  const [table, setTable] = useState(() => EAGER[lang] ?? null)
+
   useEffect(() => {
     localStorage.setItem('wl_lang', lang)
     document.documentElement.lang = lang
@@ -51,9 +70,16 @@ export function LanguageProvider({ children }) {
     import('./push').then(m => m.syncAlerts?.()).catch(() => {})
   }, [lang])
 
-  const t = useCallback((key) => {
-    return translations[lang]?.[key] ?? translations.en[key] ?? key
+  useEffect(() => {
+    if (EAGER[lang]) { setTable(EAGER[lang]); return }
+    let cancelled = false
+    LAZY_LOADERS[lang]?.().then(dict => { if (!cancelled) setTable(dict) })
+    return () => { cancelled = true }
   }, [lang])
+
+  const t = useCallback((key) => {
+    return table?.[key] ?? EAGER.en[key] ?? key
+  }, [table])
 
   const value = useMemo(() => ({ lang, setLang, t, isRtl: RTL.has(lang) }), [lang, t])
 
