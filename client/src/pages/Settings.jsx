@@ -85,6 +85,7 @@ export default function Settings() {
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
+  const [pulse, setPulse] = useState(() => pulseSettings())
   const [rdiag] = useState(() => reviewDiagnostics())
 
   return (
@@ -236,6 +237,43 @@ export default function Settings() {
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />{t('setSecurity')}</h3>
         <BiometricToggle />
+      </div>
+
+      {/* ── Market Pulse ── Off by default. A finance app that makes noise
+           nobody asked for only gets to do it once. */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setPulse')}</h3>
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>{t('setPulseSound')}</span>
+            <span className="settings-hint">{t('setPulseHint')}</span>
+          </div>
+          <button className={`settings-chip ${pulse.enabled ? 'active' : ''}`}
+            onClick={() => {
+              const next = setPulseSettings({ enabled: !pulse.enabled })
+              setPulse(next)
+              track('market_pulse_toggle', { on: next.enabled })
+            }}
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+            {pulse.enabled ? t('setPulseOn') : t('setPulseOff')}
+          </button>
+        </div>
+
+        {pulse.enabled && (
+          <>
+            <div className="settings-divider"/>
+            <div className="settings-row">
+              <div className="settings-label">
+                <span>{t('setPulseHaptics')}</span>
+                <span className="settings-hint">{t('setPulseHapticsHint')}</span>
+              </div>
+              <button className={`settings-chip ${pulse.haptics ? 'active' : ''}`}
+                onClick={() => setPulse(setPulseSettings({ haptics: !pulse.haptics }))}>
+                {pulse.haptics ? t('setPulseOn') : t('setPulseOff')}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Rate the app ── Android only: this opens Play's own review card,

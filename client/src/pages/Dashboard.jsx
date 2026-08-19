@@ -8,6 +8,9 @@ import {
 import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
+import { pulseClass } from '../marketPulse'
+import { observeMarket, armPulseAudio } from '../marketPulseRuntime'
+import PulseDiscovery from '../components/PulseDiscovery'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
@@ -3733,6 +3736,36 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
+  // Market Pulse — react to meaningful market moves.
+  //
+  // All this does is assemble a snapshot and hand it over. Whether anything is
+  // worth reacting to is marketPulse.js's decision, and that decision is pure,
+  // so the interesting rules are covered by tests rather than by whatever this
+  // component happens to re-render.
+  //
+  // Runs on every price refresh on purpose: a crossing is only visible by
+  // comparing consecutive samples, so a skipped refresh is a missed event.
+  useEffect(() => {
+    if (!loaded || !enriched.length) return
+    armPulseAudio()
+
+    const samples = {}
+    for (const h of enriched) {
+      const pct = prices[h.coin_id]?.usd_24h_change
+      if (!Number.isFinite(pct)) continue
+      samples[h.coin_id] = {
+        changePct: pct,
+        symbol: (h.coin_symbol || '').toUpperCase(),
+        cls: pulseClass({
+          category: categorizeAsset(h),
+          isStable: isStablecoin(h.coin_id, h.coin_symbol),
+          mcTier: classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id,
+        }),
+      }
+    }
+    observeMarket({ samples, totalValue })
+  }, [loaded, enriched, prices, totalValue])
+
   // Play in-app review. reviewPrompt owns the "has this person used WalletLens
   // enough to have an opinion?" rules; all this does is count the launch and
   // give it a chance to fire. Held behind a timer so the card can never land on
@@ -4303,6 +4336,10 @@ export default function Dashboard() {
               </>
             )
           })()}
+
+          {/* Market Pulse offer, shown only after the user has actually missed
+              something worth hearing. At most twice, ever. */}
+          {enriched.length > 0 && <PulseDiscovery />}
 
           {/* Sentiment + portfolio tips ticker */}
           {enriched.length > 0 && (
