@@ -518,7 +518,7 @@ export default function App() {
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
-        <ErrorBoundary><Suspense fallback={<PageFallback />}><Routes>
+        <ErrorBoundary resetKey={location.pathname}><Suspense fallback={<PageFallback />}><Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/crypto-and-stock-portfolio-tracker" element={<Landing />} />
@@ -615,7 +615,7 @@ export default function App() {
 
       <PullToRefresh>
       <main className={`wl-content${isStandalone ? ' twa-mode' : ''}`}>
-        <ErrorBoundary>
+        <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />

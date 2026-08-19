@@ -67,3 +67,40 @@ describe('error boundary context capture', () => {
     expect(() => b.componentDidCatch(new Error('Loading chunk 3 failed'), { componentStack: '\n at X' })).not.toThrow()
   })
 })
+
+// A page that throws must not take the rest of the app with it.
+//
+// The boundary wraps the whole <Routes> tree, so before this it stayed in the
+// error state forever: navigating re-rendered nothing, and the only escape was
+// a reload. One missing import in Settings therefore read as "every page is
+// broken", which is exactly how it was reported.
+describe('recovering by navigation', () => {
+  it('clears the error when the route changes', async () => {
+    const { default: ErrorBoundary } = await import('./components/ErrorBoundary')
+    const boundary = new ErrorBoundary({ resetKey: '/settings' })
+    boundary.state = { hasError: true, message: 'pulseSettings is not defined', isChunk: false, autoReloading: false, where: '' }
+
+    const applied = []
+    boundary.setState = (patch) => { applied.push(patch); Object.assign(boundary.state, patch) }
+
+    // Same route, still broken — a re-render must not silently retry.
+    boundary.componentDidUpdate({ resetKey: '/settings' })
+    expect(boundary.state.hasError).toBe(true)
+
+    // Navigating away clears it.
+    boundary.props = { resetKey: '/dashboard' }
+    boundary.componentDidUpdate({ resetKey: '/settings' })
+    expect(boundary.state.hasError).toBe(false)
+  })
+
+  it('does nothing when there was no error', async () => {
+    const { default: ErrorBoundary } = await import('./components/ErrorBoundary')
+    const boundary = new ErrorBoundary({ resetKey: '/a' })
+    boundary.state = { hasError: false }
+    let touched = false
+    boundary.setState = () => { touched = true }
+    boundary.props = { resetKey: '/b' }
+    boundary.componentDidUpdate({ resetKey: '/a' })
+    expect(touched).toBe(false)
+  })
+})
