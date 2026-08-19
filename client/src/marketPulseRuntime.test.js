@@ -159,3 +159,63 @@ describe('robustness', () => {
     expect(event).toMatchObject({ type: 'rocket' })
   })
 })
+
+describe('across app restarts', () => {
+  // The whole point of persisting the snapshot. A crossing is only visible by
+  // comparing two samples, so while the baseline lived in memory the first
+  // observation of every session had nothing to compare against and was
+  // discarded — the app could only react to moves that happened while you were
+  // already watching it.
+  //
+  // Re-importing the module with localStorage left intact is what a cold app
+  // open actually looks like: fresh module state, same disk.
+  const restart = async () => {
+    vi.resetModules()
+    return import('./marketPulseRuntime')
+  }
+
+  it('reacts on the first observation after a cold open', async () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })          // seed
+    observeMarket({ samples: btc(2.1), totalValue: 50000, now: T0 + 1000 }) // baseline
+
+    const fresh = await restart()
+    const event = fresh.observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 2000 })
+
+    expect(event).toMatchObject({ type: 'rocket', symbol: 'BTC' })
+    expect(audio.played).toContain('rocket')
+  })
+
+  it('stays quiet on a cold open when nothing crossed while away', async () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(2.1), totalValue: 50000, now: T0 + 1000 })
+
+    const fresh = await restart()
+    expect(fresh.observeMarket({ samples: btc(2.4), totalValue: 50000, now: T0 + 2000 })).toBeNull()
+    expect(audio.played).toEqual([])
+  })
+
+  it('re-seeds silently when the stored snapshot is too old to compare', async () => {
+    // 24-hour change figures from two days ago are not two points on the same
+    // curve, they are unrelated windows. Comparing them would invent crossings.
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(2.1), totalValue: 50000, now: T0 + 1000 })
+
+    const stored = JSON.parse(localStorage.getItem('wl_pulse_samples'))
+    stored.at = Date.now() - (49 * 60 * 60 * 1000)
+    localStorage.setItem('wl_pulse_samples', JSON.stringify(stored))
+
+    const fresh = await restart()
+    expect(fresh.observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 2000 })).toBeNull()
+    expect(audio.played).toEqual([])
+
+    // ...and the session carries on normally from that fresh baseline. The
+    // re-seed banked 9%, which is already over the threshold, so it takes a
+    // real crossing — down and back up — to earn a sound.
+    fresh.observeMarket({ samples: btc(3), totalValue: 50000, now: T0 + 3000 })
+    fresh.observeMarket({ samples: btc(12), totalValue: 50000, now: T0 + 4000 })
+    expect(audio.played).toContain('rocket')
+  })
+})

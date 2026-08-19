@@ -9,7 +9,7 @@ import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { pulseClass } from '../marketPulse'
-import { observeMarket, armPulseAudio } from '../marketPulseRuntime'
+import { observeMarket, armPulseAudio, demoPulse } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
@@ -3771,6 +3771,27 @@ export default function Dashboard() {
     // out of seeing it, and the caption is the part that carries the fact.
     if (event) setPulseEvent(event)
   }, [loaded, enriched, prices, totalValue])
+
+  // ?pulse=rocket — fire one event on demand, to check the feature works.
+  //
+  // A real rocket needs an asset to cross its threshold between two price
+  // refreshes, so a short session shows nothing whether the code works or not.
+  // That makes "I saw no effects" and "it is broken" indistinguishable, which
+  // is no way to verify anything on a phone.
+  //
+  // Waits for a tap rather than firing on load, because unlock() only works
+  // inside a user gesture — firing immediately would show the animation in
+  // silence and look like the audio was broken.
+  useEffect(() => {
+    const type = new URLSearchParams(location.search).get('pulse')
+    if (!type) return
+    const once = () => {
+      const event = demoPulse(type, { totalValue })
+      if (event) setPulseEvent(event)
+    }
+    document.addEventListener('click', once, { once: true })
+    return () => document.removeEventListener('click', once)
+  }, [location.search, totalValue])
 
   // Play in-app review. reviewPrompt owns the "has this person used WalletLens
   // enough to have an opinion?" rules; all this does is count the launch and

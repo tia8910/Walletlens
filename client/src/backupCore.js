@@ -101,6 +101,14 @@ export const DEVICE_ONLY_KEYS = [
   'wl_last_visit', 'wl_streak', 'wl_engagement_ts', 'wl_daily_notif_date',
   'wl_guessr_hs', 'wl_sfx_enabled', 'wl_chunk_retry',
   'wl_target_reached_fired', 'wl_portfolio_notify_ts', 'wl_guardian_remind_ts',
+  // Market Pulse. Sound preferences follow wl_sfx_enabled and stay with the
+  // device — volume and haptics are properties of the phone, not the
+  // portfolio. The rest is derived state that rebuilds itself correctly on
+  // first refresh: wl_pulse_state re-seeds from the current value (which is
+  // the point of seedRecords — carrying an old high-water mark across would
+  // announce a stale all-time high), and the snapshot and missed-event
+  // records are transient by construction.
+  'wl_pulse_settings', 'wl_pulse_state', 'wl_pulse_missed', 'wl_pulse_samples',
   // Marks THIS install as running inside the Android app. Carrying it to a
   // browser would make the site think it was the app.
   'wl_native',

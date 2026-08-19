@@ -12,6 +12,17 @@ import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
 const SETTINGS_KEY = 'wl_pulse_settings'
 const STATE_KEY    = 'wl_pulse_state'
 const MISSED_KEY   = 'wl_pulse_missed'
+const SAMPLES_KEY  = 'wl_pulse_samples'
+
+/**
+ * How stale a stored snapshot may be and still be worth comparing against.
+ *
+ * The samples carry each asset's 24-hour change, so comparing today's figure
+ * with one from last week is not comparing two points on the same curve — it
+ * is two unrelated windows. Past this age the stored snapshot is used as a
+ * baseline only: it re-seeds silently and the next refresh can fire.
+ */
+const MAX_BASELINE_AGE_MS = 48 * 60 * 60 * 1000
 
 // How many times the discovery card may ever appear. Two is enough to catch
 // someone who dismissed the first one without reading it; a third would be
@@ -118,7 +129,35 @@ export function dismissDiscovery() {
 
 // ── The observation loop ───────────────────────────────────────────────────
 
-let lastSamples = {}
+/**
+ * The previous market snapshot, persisted rather than held only in memory.
+ *
+ * This is what makes anything happen when the app opens. A crossing is only
+ * visible by comparing two samples, so with an in-memory baseline the first
+ * observation of every session had nothing to compare against and was thrown
+ * away — the app could only react to moves that happened while you were
+ * already watching, which is the opposite of useful.
+ *
+ * With the snapshot on disk, opening the app compares where things stood when
+ * you last looked against where they stand now, which is the reaction the
+ * spec asked for in its app-open section.
+ */
+function readSamples() {
+  try {
+    const raw = localStorage.getItem(SAMPLES_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return {}
+    if (!parsed.at || Date.now() - parsed.at > MAX_BASELINE_AGE_MS) return {}
+    return parsed.samples || {}
+  } catch { return {} }
+}
+
+function writeSamples(samples) {
+  try { localStorage.setItem(SAMPLES_KEY, JSON.stringify({ at: Date.now(), samples })) } catch { /* private mode */ }
+}
+
+let lastSamples = readSamples()
 let cooldown = { lastAt: 0, lastMajorAt: 0 }
 
 /**
@@ -143,11 +182,13 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
       state = seedRecords(state, totalValue)
       write(STATE_KEY, state)
       lastSamples = samples
+      writeSamples(samples)
       return null
     }
 
     const events = detectEvents({ prev: lastSamples, next: samples, state, totalValue, now })
     lastSamples = samples
+    writeSamples(samples)
 
     if (!events.length) {
       write(STATE_KEY, applyFired(state, null, totalValue))
@@ -206,6 +247,49 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
   }
 }
 
+// ── Demo ───────────────────────────────────────────────────────────────────
+
+/** The three types a demo may ask for. Anything else is ignored. */
+const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone'])
+
+/**
+ * Fire one event on demand, for checking the feature actually works.
+ *
+ * Market Pulse is close to unobservable by design: a rocket needs an asset to
+ * cross its class threshold between two consecutive price refreshes, so a
+ * short session shows nothing whether the code works or not. Without some way
+ * to trigger one, "I saw no effects" and "it is broken" are the same
+ * observation, which makes the feature impossible to verify on a real phone.
+ *
+ * This is deliberately not a Settings row — it is reached only by adding
+ * ?pulse=rocket to the URL, so it costs nothing in the interface and no user
+ * finds it by accident.
+ *
+ * Must be called from inside a click handler: unlock() only works within a
+ * user gesture, and without one this returns an event that will be seen and
+ * not heard.
+ *
+ * @returns {object|null} the event to hand the overlay, or null if unrecognised
+ */
+export function demoPulse(type, { totalValue = 0 } = {}) {
+  if (!DEMO_TYPES.has(type)) return null
+  unlock()
+  setVolume(pulseSettings().volume)
+  play(type)
+  if (pulseSettings().haptics) {
+    try { navigator.vibrate?.(type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+  }
+  return {
+    type,
+    priority: type === 'milestone' ? 0 : type === 'ath' ? 1 : 2,
+    symbol: 'BTC',
+    changePct: 12.4,
+    value: totalValue > 0 ? totalValue : 100000,
+    at: Date.now(),
+    demo: true,
+  }
+}
+
 /** For diagnostics and tests. */
 export function pulseDiagnostics() {
   return { ...pulseSettings(), audioUnlocked: isUnlocked(), state: pulseState() }
@@ -214,6 +298,7 @@ export function pulseDiagnostics() {
 /** Test seam — clears the in-memory baseline between cases. */
 export function __resetPulseRuntime() {
   lastSamples = {}
+  try { localStorage.removeItem(SAMPLES_KEY) } catch { /* ignore */ }
   cooldown = { lastAt: 0, lastMajorAt: 0 }
   armed = false
 }
