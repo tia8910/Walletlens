@@ -240,7 +240,7 @@ export default function WelcomeModal() {
               {/* Language. Each button is labelled in its own language and
                   carries its own dir, so the Arabic option reads correctly
                   even while the rest of the modal is still in English. */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.45rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(74px, 1fr))', gap: '0.45rem' }}>
                 {LANGUAGES.map(l => (
                   <button
                     key={l.code}
@@ -257,6 +257,7 @@ export default function WelcomeModal() {
                       borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
                     }}
                   >
+                    <span aria-hidden="true" style={{ marginInlineEnd: '0.3rem' }}>{l.flag}</span>
                     {l.native}
                   </button>
                 ))}

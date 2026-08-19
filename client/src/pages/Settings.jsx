@@ -175,6 +175,7 @@ export default function Settings() {
                 aria-label={l.label}
                 className={`settings-chip ${lang === l.code ? 'active' : ''}`}
                 onClick={() => { setLang(l.code); track('language_changed', { lang: l.code, source: 'settings' }) }}>
+                <span aria-hidden="true" style={{ marginInlineEnd: '0.35rem' }}>{l.flag}</span>
                 {l.native}
               </button>
             ))}
