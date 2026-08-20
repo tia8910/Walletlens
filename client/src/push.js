@@ -184,6 +184,45 @@ function resolveWatch(holdings) {
   return derived.length ? derived : readCachedWatch()
 }
 
+// ── Which features are set up ───────────────────────────────────────────────
+/**
+ * A four-boolean snapshot of what the user has configured, so the server can
+ * tell them about a feature they are not using yet.
+ *
+ * These are facts about *setup*, not behaviour: "Guardian is not registered",
+ * not "opened Guardian and left". That distinction is the whole licence for
+ * this to exist — configuration state justifies one tip, usage telemetry would
+ * be a different product with different obligations, and none is collected.
+ *
+ * Only booleans leave the device. Not the Guardian contact, not the goal
+ * amounts, not the watchlist contents.
+ */
+export function featureSetup() {
+  const read = (k, fallback) => {
+    try { return JSON.parse(localStorage.getItem(k) || fallback) } catch { return JSON.parse(fallback) }
+  }
+  try {
+    return {
+      guardian: !!read('wl_guardian', 'null')?.active,
+      vision: (read('vision_buckets', '[]') || []).length > 0,
+      watchlist: (read('wl_watchlist', '[]') || []).length > 0,
+      weekly: !!localStorage.getItem('wl_weekly_email'),
+      // Per-asset take-profit / stop-loss ladders, which are a different
+      // feature from the price alerts counted by alertCount.
+      coinTargets: Object.keys(read('crypto_tracker_coin_targets', '{}') || {}).length > 0,
+      // A Drive file id only exists once a backup has actually been written.
+      backup: !!localStorage.getItem('wl_drive_file_id'),
+    }
+  } catch {
+    // An unreadable store must not claim things are unconfigured — that would
+    // aim every tip at someone who may already be using all of it.
+    return {
+      guardian: true, vision: true, watchlist: true, weekly: true,
+      coinTargets: true, backup: true,
+    }
+  }
+}
+
 // ── Asking for permission ───────────────────────────────────────────────────
 // A two-step ask: the app explains first, and only calls requestPermission()
 // if the user says yes.
@@ -268,6 +307,7 @@ export async function enablePush() {
       // call this: turning push on from Settings must arm the movement and
       // news channels immediately, not at the next dashboard visit.
       watch: resolveWatch(),
+      setup: featureSetup(),
       prefs: getPushPrefs(),
       lang: currentLang(),
       tz: currentTz(),
@@ -367,6 +407,7 @@ export async function syncWatch(holdings) {
       body: JSON.stringify({
         endpoint: sub.endpoint,
         watch,
+        setup: featureSetup(),
         prefs: getPushPrefs(),
         lang: currentLang(),
         tz: currentTz(),
