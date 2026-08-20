@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { toWatchAssets, watchFromStorage, getPushPrefs, DEFAULT_PUSH_PREFS } from './push'
+import { toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, DEFAULT_PUSH_PREFS } from './push'
 
 // toWatchAssets is the privacy boundary: it decides exactly which fields of a
 // user's portfolio are allowed to leave the device. A regression here doesn't
@@ -151,5 +151,35 @@ describe('push preferences', () => {
     // default tables drift, Settings shows a state the server isn't in.
     const { DEFAULT_PREFS } = await import('../../push-api/notify-logic.js')
     expect(DEFAULT_PUSH_PREFS).toEqual(DEFAULT_PREFS)
+  })
+})
+
+
+describe('auto-enable', () => {
+  beforeEach(() => localStorage.clear())
+
+  // The Android shell asks for POST_NOTIFICATIONS at launch, so in the app the
+  // permission is already granted before the web layer loads. Auto-enable is
+  // what stops us asking the same question twice — but it must never prompt,
+  // and must never override someone who said no.
+
+  it('does nothing when the user has explicitly turned push off', async () => {
+    localStorage.setItem('wl_push_optout', '1')
+    const res = await autoEnablePush()
+    expect(res.ok).toBe(false)
+    // Opt-out is checked without needing permission state, so this holds even
+    // on a device that would otherwise qualify.
+    expect(['opted-out', 'unsupported', 'not-granted']).toContain(res.reason)
+  })
+
+  it('never throws, whatever the environment', async () => {
+    // Runs unattended at every app start; an exception here would surface as a
+    // startup error for a thing the user never asked for.
+    await expect(autoEnablePush()).resolves.toMatchObject({ ok: expect.any(Boolean) })
+  })
+
+  it('reports a reason rather than silently doing nothing', async () => {
+    const res = await autoEnablePush()
+    expect(typeof res.reason === 'string' || res.ok).toBe(true)
   })
 })

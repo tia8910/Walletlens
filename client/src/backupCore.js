@@ -60,6 +60,12 @@ export const BACKUP_FIELDS = {
   // new device registers its own and sends these prefs up with it.
   np: 'wl_push_prefs',
 
+  // "I turned notifications off." Backed up for the same reason as the channel
+  // prefs, and load-bearing: without it, restoring on a new phone hands the
+  // auto-enable path a clean slate and switches push back on for someone who
+  // deliberately switched it off.
+  no: 'wl_push_optout',
+
   // ── Subscriptions the user opted into ────────────────────────────────────
   we: 'wl_weekly_email',
   bs: 'wl_backup_sub',
