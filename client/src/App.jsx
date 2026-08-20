@@ -437,6 +437,20 @@ export default function App() {
   // one manual backup, which is what gives this device the key to encrypt with.
   useEffect(() => startAutoBackup(), [])
 
+  // Tell the push server the app was opened. This is what stops the win-back
+  // ladder from nagging people who are already here: without a heartbeat the
+  // server cannot tell a daily user from someone who left a month ago. Also
+  // fires when the app returns to the foreground, which on Android is the only
+  // "open" event a TWA ever produces after the first launch. Throttled to once
+  // every six hours inside pingSeen(), and a no-op until push is enabled.
+  useEffect(() => {
+    const ping = () => import('./push').then(m => m.pingSeen?.()).catch(() => {})
+    const onVisible = () => { if (document.visibilityState === 'visible') ping() }
+    ping()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   // Any part of the app can open the Help guide by dispatching `wl:open-help`
   // (e.g. an on-screen tip's "how it works" link).
   useEffect(() => {
