@@ -53,11 +53,36 @@ const VAPID_PUBLIC  = Deno.env.get("VAPID_PUBLIC_KEY")  ?? ""
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY") ?? ""
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contact@walletlens.live"
 
+// A malformed key must not take the whole service down.
+//
+// setVapidDetails() validates and THROWS — and this runs at module top level,
+// so an env var with one stray character (a trailing "=", a "+" from non-URL-safe
+// base64, or the variable's own name pasted in front of the value) failed the
+// deploy at warm-up. Nothing served, including /health, which is the one
+// endpoint that could have said what was wrong.
+//
+// Now a bad key is reported and the service still starts: pushes fail, but
+// /health names the reason and the operator can see it without reading deploy
+// logs.
+let vapidError = ""
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
+  } catch (e) {
+    vapidError = (e as Error)?.message || "VAPID keys rejected"
+    console.error(
+      `VAPID keys rejected: ${vapidError}\n` +
+      "The value must be the key ALONE — 87 chars for the public key, " +
+      "URL-safe base64 ([A-Za-z0-9-_]), no '=' padding, no surrounding " +
+      "whitespace, and not prefixed with the variable name.",
+    )
+  }
 } else {
+  vapidError = "VAPID keys missing"
   console.warn("VAPID keys missing — set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY env secrets.")
 }
+/** True only when web-push actually accepted the keys, not merely when set. */
+const vapidReady = !vapidError
 
 const kv = await Deno.openKv()
 
@@ -562,7 +587,15 @@ Deno.serve(async (req, info) => {
   const path = new URL(req.url).pathname
 
   if (path === "/" || path === "/health") {
-    return json({ ok: true, service: "walletlens-push", vapid: !!VAPID_PUBLIC }, headers)
+    // `vapid` reports whether web-push ACCEPTED the keys. It used to report
+    // whether the env var was merely non-empty, so a malformed key read as
+    // healthy — exactly the case an operator needs it to catch.
+    return json({
+      ok: true,
+      service: "walletlens-push",
+      vapid: vapidReady,
+      ...(vapidError ? { vapidError } : {}),
+    }, headers)
   }
 
   if (req.method === "POST" && path === "/subscribe") {
