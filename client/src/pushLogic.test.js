@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
-  DEFAULT_PREFS, deliveryFor, dueRetentionStep, evaluateMove, fmtPct, fmtPrice,
-  inQuietHours, pushTopic,
+  DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
+  fmtPct, fmtPrice, inQuietHours, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
   sanitizeTz, sanitizeWatch, shortHash, termsFor, withinDailyBudget,
@@ -53,7 +53,7 @@ describe('notification copy', () => {
     const same = []
     for (const lang of LANGS.filter(l => l !== 'en')) {
       expect(COPY.moveTitle[lang]('BTC', '6.1', true)).not.toBe(COPY.moveTitle.en('BTC', '6.1', true))
-      if (COPY.retentionBody[lang](3) === COPY.retentionBody.en(3)) same.push(lang)
+      if (COPY.retentionMoverBody[lang]('BTC', '9', true) === COPY.retentionMoverBody.en('BTC', '9', true)) same.push(lang)
     }
     expect(same).toEqual([])
   })
@@ -62,12 +62,11 @@ describe('notification copy', () => {
     expect(COPY.moveTitle.en('BTC', '6.1', true)).toContain('BTC')
     expect(COPY.moveBody.en('BTC', '6.1', '$94,200', true)).toContain('$94,200')
     expect(COPY.digestBody.en('ETH', '3.4', false, 5)).toContain('5')
+    expect(COPY.retentionMoverBody.en('BTC', '9', true)).toContain('BTC')
     // Singular/plural: "your 1 tracked assets" is the kind of thing users
     // screenshot and post.
-    expect(COPY.digestQuietBody.en(1)).toContain('asset.')
-    expect(COPY.digestQuietBody.en(4)).toContain('assets')
-    // A user with nothing tracked must not be told about "your 0 tracked assets".
-    expect(COPY.retentionBody.en(0)).not.toMatch(/\b0\b/)
+    expect(COPY.digestBody.en('ETH', '3.4', false, 1)).toContain('1 tracked asset.')
+    expect(COPY.digestBody.en('ETH', '3.4', false, 4)).toContain('4 tracked assets.')
   })
 
   it('gives every retention step its own title', () => {
@@ -499,6 +498,97 @@ describe('payloads', () => {
 
   it('falls back to the root for an unknown channel', () => {
     expect(buildPayload({ channel: 'mystery', title: 't', body: 'b' }).url).toBe('/')
+  })
+})
+
+describe('every notification needs a reason', () => {
+  // The rule these enforce: a scheduled slot is permission to go looking for a
+  // reason, never a reason in itself. Notifications that fire on a timer with
+  // nothing to say train people to swipe without reading, which costs us the
+  // alerts that actually matter.
+
+  it('has no copy for "nothing happened"', () => {
+    // Both of these existed and both were routine by construction: a brief
+    // saying markets are calm, and a nudge saying your assets have new prices.
+    // Their absence is the feature — if the copy exists, something will send it.
+    expect(COPY.digestQuietBody).toBeUndefined()
+    expect(COPY.retentionBody).toBeUndefined()
+  })
+
+  it('every surviving body says something specific happened', () => {
+    // Each one names an asset and a number, because that is the reason.
+    expect(COPY.moveBody.en('BTC', '6.1', '$94,200', true)).toMatch(/BTC.*6\.1/)
+    expect(COPY.digestBody.en('ETH', '3.4', false, 5)).toMatch(/ETH.*3\.4/)
+    expect(COPY.retentionMoverBody.en('SOL', '9', true)).toMatch(/SOL.*9/)
+  })
+
+  it('picks the single most notable mover', () => {
+    const moves = [{ symbol: 'BTC', pct: 4 }, { symbol: 'ETH', pct: -11 }, { symbol: 'SOL', pct: 6 }]
+    expect(pickHeadline(moves, DIGEST_MIN_PCT)).toEqual({ symbol: 'ETH', pct: -11 })
+  })
+
+  it('says nothing when nothing cleared the bar', () => {
+    // The quiet-day case. Returning null is what makes the digest skip
+    // entirely rather than reach for filler.
+    expect(pickHeadline([{ symbol: 'BTC', pct: 0.4 }, { symbol: 'ETH', pct: -1.2 }], DIGEST_MIN_PCT))
+      .toBeNull()
+    expect(pickHeadline([], DIGEST_MIN_PCT)).toBeNull()
+    expect(pickHeadline(undefined, DIGEST_MIN_PCT)).toBeNull()
+  })
+
+  it('judges a fall as newsworthy as a rise', () => {
+    expect(pickHeadline([{ symbol: 'BTC', pct: -7 }], DIGEST_MIN_PCT).symbol).toBe('BTC')
+  })
+
+  it('holds a win-back to a higher bar than a morning brief', () => {
+    // Interrupting someone who left needs a stronger reason than informing
+    // someone who opted into a daily line.
+    expect(RETENTION_MIN_PCT).toBeGreaterThan(DIGEST_MIN_PCT)
+    const mild = [{ symbol: 'BTC', pct: 4 }]
+    expect(pickHeadline(mild, DIGEST_MIN_PCT)).not.toBeNull()
+    expect(pickHeadline(mild, RETENTION_MIN_PCT)).toBeNull()
+  })
+
+  it('ignores junk rather than treating it as a reason', () => {
+    expect(pickHeadline([{ symbol: 'X', pct: NaN }, { symbol: 'Y', pct: 'abc' }, null], DIGEST_MIN_PCT))
+      .toBeNull()
+  })
+})
+
+describe('the Android shell no longer notifies on a timer', () => {
+  // A second, uncoordinated notification source defeats quiet hours and the
+  // daily budget at once: a user cannot tell two systems apart, so the Quiet
+  // Hours switch in Settings would simply appear not to work.
+  const scheduler = readFileSync(
+    '../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/NotificationScheduler.java',
+    'utf8',
+  )
+
+  it('enqueues no periodic work', () => {
+    expect(scheduler).not.toContain('PeriodicWorkRequest')
+    expect(scheduler).not.toContain('enqueueUniquePeriodicWork')
+  })
+
+  it('does not fire a notification on app open', () => {
+    expect(scheduler).not.toContain('OneTimeWorkRequest')
+  })
+
+  it('still cancels the old work, or existing installs never stop', () => {
+    // WorkManager persists across app updates and the old registration used
+    // KEEP, so deleting the scheduling code alone would leave every installed
+    // device running the 30-minute worker forever. The cancel is the fix.
+    expect(scheduler).toContain('cancelUniqueWork')
+    expect(scheduler).toContain('walletlens_price_check')
+    expect(scheduler).toContain('walletlens_immediate_check')
+    // And it must run on upgrade, i.e. from the existing call sites.
+    expect(scheduler).toMatch(/static void schedule\([^)]*\)\s*\{\s*cancel\(context\);/)
+  })
+
+  it('keeps the entry points compiling', () => {
+    // WalletLensApp, LauncherActivity and BootReceiver all call these.
+    for (const m of ['schedule', 'scheduleImmediate', 'cancel']) {
+      expect(scheduler, `${m} must remain`).toContain(`static void ${m}(`)
+    }
   })
 })
 
