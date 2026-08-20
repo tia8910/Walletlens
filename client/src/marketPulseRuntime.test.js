@@ -219,3 +219,102 @@ describe('across app restarts', () => {
     expect(audio.played).toContain('rocket')
   })
 })
+
+describe('fireworks on a flying day', () => {
+  // The event that exists because the other three were unobservable. This is
+  // the one that has to work on a plain app open, with no prior session, no
+  // stored baseline and nothing to compare against.
+  it('fires on a first-ever open, with no history at all', () => {
+    setPulseSettings({ enabled: true })
+    const event = observeMarket({
+      samples: btc(4), totalValue: 50000, portfolioChangePct: 6.1, now: T0,
+    })
+    expect(event).toMatchObject({ type: 'fireworks' })
+    expect(audio.played).toContain('fireworks')
+  })
+
+  it('still seeds records on that first open, so no false all-time high follows', () => {
+    // The seed path is skipped for fireworks, which must not mean the records
+    // go unseeded — otherwise the next refresh announces an all-time high for
+    // a portfolio the user has held for a year.
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(4), totalValue: 120000, portfolioChangePct: 6.1, now: T0 })
+    audio.played = []
+
+    observeMarket({ samples: btc(4), totalValue: 120000, portfolioChangePct: 1, now: T0 + 60000 })
+    expect(audio.played).toEqual([])
+  })
+
+  it('stays quiet on an ordinary day', () => {
+    setPulseSettings({ enabled: true })
+    expect(observeMarket({
+      samples: btc(1), totalValue: 50000, portfolioChangePct: 0.8, now: T0,
+    })).toBeNull()
+    expect(audio.played).toEqual([])
+  })
+
+  it('celebrates once, not on every refresh of a rally', () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(4), totalValue: 50000, portfolioChangePct: 6, now: T0 })
+    expect(audio.played).toEqual(['fireworks'])
+
+    for (let i = 1; i <= 5; i++) {
+      observeMarket({
+        samples: btc(4 + i * 0.1), totalValue: 50000 + i * 500,
+        portfolioChangePct: 6 + i, now: T0 + i * 60000,
+      })
+    }
+    expect(audio.played.filter(x => x === 'fireworks')).toHaveLength(1)
+  })
+
+  it('survives a reload without firing again the same day', async () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(4), totalValue: 50000, portfolioChangePct: 6, now: T0 })
+    expect(audio.played).toEqual(['fireworks'])
+    audio.played = []
+
+    vi.resetModules()
+    const fresh = await import('./marketPulseRuntime')
+    fresh.observeMarket({ samples: btc(4), totalValue: 50000, portfolioChangePct: 7, now: T0 + 120000 })
+    expect(audio.played).toEqual([])
+  })
+})
+
+describe('sound and picture are separate switches', () => {
+  // These used to be one switch. With audio off by default, that meant nobody
+  // ever saw a visual either until they found a settings toggle they had no
+  // reason to look for — the honest answer to "why do I never see anything".
+  it('shows the event with sound off, because visuals are their own setting', () => {
+    setPulseSettings({ enabled: false, visuals: true })
+    const event = observeMarket({
+      samples: btc(4), totalValue: 50000, portfolioChangePct: 6, now: T0,
+    })
+    expect(event).toMatchObject({ type: 'fireworks' })
+    expect(audio.played).toEqual([])
+  })
+
+  it('still records it for the discovery card', () => {
+    setPulseSettings({ enabled: false, visuals: true })
+    observeMarket({ samples: btc(4), totalValue: 50000, portfolioChangePct: 6, now: T0 })
+    expect(pendingDiscovery()).toMatchObject({ type: 'fireworks' })
+  })
+
+  it('goes fully quiet only when both are off', () => {
+    setPulseSettings({ enabled: false, visuals: false })
+    expect(observeMarket({
+      samples: btc(4), totalValue: 50000, portfolioChangePct: 6, now: T0,
+    })).toBeNull()
+    expect(audio.played).toEqual([])
+  })
+
+  it('does not replay a silently-seen event when sound is switched on', () => {
+    // The cooldown has to advance on the silent path too, or enabling sound
+    // right after seeing one fires it again immediately.
+    setPulseSettings({ enabled: false, visuals: true })
+    observeMarket({ samples: btc(9), totalValue: 50000, portfolioChangePct: 6, now: T0 })
+
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(9.1), totalValue: 50000, portfolioChangePct: 7, now: T0 + 1000 })
+    expect(audio.played).toEqual([])
+  })
+})

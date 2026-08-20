@@ -6,6 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
+  PORTFOLIO_SURGE_PCT, PRIORITY,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
 
@@ -170,7 +171,7 @@ let cooldown = { lastAt: 0, lastMajorAt: 0 }
  * @param {object} o.samples     assetId → { changePct, cls, symbol, source?, fresh? }
  * @param {number} o.totalValue  portfolio value in the display currency
  */
-export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() } = {}) {
+export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct = 0, now = Date.now() } = {}) {
   try {
     let state = pruneState(pulseState(), now)
 
@@ -183,10 +184,15 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
       write(STATE_KEY, state)
       lastSamples = samples
       writeSamples(samples)
-      return null
+      // Deliberately does not return here for the fireworks case: seeding
+      // exists so a long-held portfolio is not congratulated on records it set
+      // before the feature existed. "Today is a good day" is not a record, and
+      // suppressing it on first run would mean the very first thing a new user
+      // could ever see is nothing.
+      if (!(portfolioChangePct >= PORTFOLIO_SURGE_PCT)) return null
     }
 
-    const events = detectEvents({ prev: lastSamples, next: samples, state, totalValue, now })
+    const events = detectEvents({ prev: lastSamples, next: samples, state, totalValue, portfolioChangePct, now })
     lastSamples = samples
     writeSamples(samples)
 
@@ -197,20 +203,20 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
 
     const settings = pulseSettings()
 
-    // Sound off: remember the best thing they missed, for the discovery card,
-    // and still record the event so it cannot fire retroactively the moment
-    // they turn sound on.
-    if (!settings.enabled) {
-      const best = selectOne(events, {}, now)
-      if (best) {
-        const missed = read(MISSED_KEY, { shows: 0, event: null, dismissed: false })
-        if (!missed.dismissed) {
-          write(MISSED_KEY, {
-            ...missed,
-            event: { type: best.type, symbol: best.symbol || '', changePct: best.changePct || 0, at: now },
-          })
-        }
-      }
+    // Sound and picture are separate switches.
+    //
+    // These used to be one: with `enabled` off this returned null before the
+    // overlay ever heard about the event, so a user who had not turned on
+    // *audio* also silently lost every *visual*. Since audio is off by
+    // default, that meant the honest answer to "why do I never see anything?"
+    // was that nobody sees anything until they find a settings toggle they
+    // have no reason to look for.
+    //
+    // A 3.6s pointer-events:none overlay, at most once a day, is not the same
+    // intrusion as unprompted noise, so it does not need the same permission.
+    const wantsSound = settings.enabled
+    const wantsVisual = settings.visuals !== false
+    if (!wantsSound && !wantsVisual) {
       let next = state
       for (const e of events) next = applyFired(next, e, totalValue)
       write(STATE_KEY, next)
@@ -228,11 +234,33 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
 
     if (!chosen) return null
 
+    // Sound off: remember this for the discovery card, which earns the opt-in
+    // by naming something that really happened rather than describing a
+    // capability in the abstract.
+    if (!wantsSound) {
+      const missed = read(MISSED_KEY, { shows: 0, event: null, dismissed: false })
+      if (!missed.dismissed) {
+        write(MISSED_KEY, {
+          ...missed,
+          event: { type: chosen.type, symbol: chosen.symbol || '', changePct: chosen.changePct || 0, at: now },
+        })
+      }
+      // The cooldown still advances, so turning sound on mid-session cannot
+      // immediately replay something that just went past silently.
+      cooldown = {
+        lastAt: now,
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      }
+      return wantsVisual ? chosen : null
+    }
+
     const played = play(chosen.type)
     if (played) {
       cooldown = {
         lastAt: now,
-        lastMajorAt: chosen.priority <= 1 ? now : cooldown.lastMajorAt,
+        // Was `<= 1`, a literal that silently meant something different the
+        // moment a fourth event type shifted the numbering.
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
       }
       if (settings.haptics) {
         try { navigator.vibrate?.(chosen.type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
@@ -250,7 +278,7 @@ export function observeMarket({ samples = {}, totalValue = 0, now = Date.now() }
 // ── Demo ───────────────────────────────────────────────────────────────────
 
 /** The three types a demo may ask for. Anything else is ignored. */
-const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone'])
+const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone', 'fireworks'])
 
 /**
  * Fire one event on demand, for checking the feature actually works.
@@ -281,7 +309,7 @@ export function demoPulse(type, { totalValue = 0 } = {}) {
   }
   return {
     type,
-    priority: type === 'milestone' ? 0 : type === 'ath' ? 1 : 2,
+    priority: PRIORITY[type] ?? 3,
     symbol: 'BTC',
     changePct: 12.4,
     value: totalValue > 0 ? totalValue : 100000,

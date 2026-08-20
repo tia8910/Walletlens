@@ -172,7 +172,7 @@ export function setVolume(v) {
  * cheaper than scaling twenty hand-written gain figures and re-deriving them
  * every time one layer changes.
  */
-const TRIM = { rocket: 1, ath: 2.25, milestone: 1.8 }
+const TRIM = { rocket: 1, ath: 2.25, milestone: 1.8, fireworks: 1.35 }
 let voiceTrim = 1
 
 /**
@@ -314,7 +314,7 @@ function sub(at, dur, { from = 60, to = 40, gain = 0.4, wet = 0.06 } = {}) {
  * loudest tell of a synthesised sound effect.
  */
 function air(at, dur, {
-  from = 800, to = 800, q = 1.2, gain = 0.08, type = 'bandpass', wet = 0.4, attack = 0.02,
+  from = 800, to = 800, q = 1.2, gain = 0.08, type = 'bandpass', wet = 0.4, attack = 0.02, pan = 0,
 } = {}) {
   const frames = Math.max(1, Math.floor((ctx.sampleRate || 44100) * dur))
   const buf = ctx.createBuffer(1, frames, ctx.sampleRate || 44100)
@@ -334,7 +334,7 @@ function air(at, dur, {
   decay(g, at, dur, gain, attack)
 
   src.connect(filter).connect(g)
-  route(g, wet)
+  route(g, wet, pan)
   src.start(at)
   src.stop(at + dur)
 }
@@ -437,10 +437,67 @@ function playMilestone(t) {
   })
 }
 
-const VOICES = { rocket: playRocket, ath: playAth, milestone: playMilestone }
+/**
+ * A single firework: whistle up, burst, crackling tail.
+ *
+ * The crackle is the part that decides whether this reads as a firework or as
+ * a noise gate opening. Real crackle is dozens of separate tiny reports, not a
+ * noise sweep, so it is built as scattered micro-bursts through a high
+ * bandpass with randomised timing — a regular grid sounds like a machine gun.
+ */
+function firework(t, { pan = 0, size = 1, whistle = true } = {}) {
+  if (whistle) {
+    // The rising whistle: a narrow resonant band, not an oscillator, because
+    // the real thing is air noise and a pure tone sounds like a cartoon slide.
+    air(t, 0.42, { from: 400, to: 2100, q: 14, gain: 0.05 * size, wet: 0.5, attack: 0.2 })
+  }
+
+  const burst = t + (whistle ? 0.44 : 0)
+
+  // The report. Sub for the chest, mid band for the crack.
+  sub(burst, 0.55 * size, { from: 90, to: 30, gain: 0.42 * size, wet: 0.18 })
+  air(burst, 0.20, { from: 2400, to: 300, q: 0.7, gain: 0.11 * size, wet: 0.8, attack: 0.002, pan: pan * 0.7 })
+  air(burst, 0.45, { from: 900, to: 180, q: 1.4, gain: 0.05 * size, wet: 0.7, attack: 0.01, pan: pan * 0.5 })
+
+  // Crackle. Scattered, not gridded.
+  const count = Math.round(18 * size)
+  for (let i = 0; i < count; i++) {
+    const at = burst + 0.06 + Math.pow(Math.random(), 0.7) * 1.05
+    air(at, 0.035, {
+      from: 3200 + Math.random() * 3800, to: 1400, q: 5,
+      gain: (0.020 + Math.random() * 0.020) * size, wet: 0.85, attack: 0.002,
+      // Scattered around the burst rather than on top of it, so the tail
+      // opens out the way a real shell does.
+      pan: Math.max(-1, Math.min(1, pan + (Math.random() - 0.5) * 0.8)),
+    })
+  }
+
+  // A little pitched sparkle riding the tail, panned with the burst.
+  bell(burst + 0.10, 0.5, {
+    freq: 1800 + Math.random() * 900, gain: 0.022 * size, index: 3, wet: 0.9, pan,
+  })
+}
+
+/**
+ * Fireworks — the whole portfolio having a good day.
+ *
+ * Three bursts rather than one, spread across the image and staggered
+ * unevenly. Evenly spaced bursts read as a machine; a real display never
+ * lands on the beat.
+ */
+function playFireworks(t) {
+  firework(t + 0.00, { pan: -0.35, size: 1.0 })
+  firework(t + 0.62, { pan: 0.40, size: 0.85 })
+  firework(t + 1.28, { pan: -0.10, size: 1.15 })
+  // A last one with no whistle, so the display ends on a report rather than
+  // on the anticipation of one.
+  firework(t + 2.30, { pan: 0.22, size: 0.7, whistle: false })
+}
+
+const VOICES = { rocket: playRocket, ath: playAth, milestone: playMilestone, fireworks: playFireworks }
 
 /** Roughly how long each sound runs, for syncing the visual layer. */
-export const DURATION_MS = { rocket: 2500, ath: 1600, milestone: 1950 }
+export const DURATION_MS = { rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600 }
 
 /**
  * Play one event's sound.

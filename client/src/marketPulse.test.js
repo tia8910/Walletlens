@@ -6,6 +6,7 @@ import {
   pulseClass, marketPeriodKey, comparable, detectEvents, selectOne,
   applyFired, pruneState, seedRecords, emptyState,
   SIGNATURE_PCT, MILESTONES, MAX_TICK_DELTA_PCT, COOLDOWN_MS, MAJOR_COOLDOWN_MS,
+  PORTFOLIO_SURGE_PCT, PRIORITY,
 } from './marketPulse'
 
 const T0 = new Date('2026-03-04T15:00:00Z').getTime()
@@ -205,9 +206,12 @@ describe('detectEvents — portfolio records', () => {
 })
 
 describe('selectOne', () => {
-  const rocket = { type: 'rocket', priority: 2, changePct: 9 }
-  const ath = { type: 'ath', priority: 1 }
-  const milestone = { type: 'milestone', priority: 0 }
+  // Priorities come from the table, never from a literal. Hardcoding them
+  // meant adding an event type silently reclassified these: rocket's 2 became
+  // ath's number, so the rocket started counting as a major event.
+  const rocket = { type: 'rocket', priority: PRIORITY.rocket, changePct: 9 }
+  const ath = { type: 'ath', priority: PRIORITY.ath }
+  const milestone = { type: 'milestone', priority: PRIORITY.milestone }
 
   it('plays the portfolio event over the asset event', () => {
     expect(selectOne([rocket, ath], {}, T0).type).toBe('ath')
@@ -302,5 +306,96 @@ describe('state', () => {
   it('has a sane milestone ladder', () => {
     expect(MILESTONES).toEqual([...MILESTONES].sort((a, b) => a - b))
     expect(MILESTONES[0]).toBe(10e3)
+  })
+})
+
+describe('the portfolio flying', () => {
+  // The event that exists because the other three are nearly unobservable.
+  // A rocket needs a crossing between two consecutive refreshes; this is a
+  // statement about today, so it is true from the first observation onward.
+  const day = (h = 15) => new Date(`2026-03-04T${String(h).padStart(2, '0')}:00:00Z`).getTime()
+
+  it('fires on the first observation of a good day, with no previous sample', () => {
+    const events = detectEvents({
+      prev: {}, next: {}, state: emptyState(), totalValue: 50000,
+      portfolioChangePct: 4.2, now: day(),
+    })
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: 'fireworks', changePct: 4.2 })
+  })
+
+  it('stays quiet below the threshold', () => {
+    const events = detectEvents({
+      state: emptyState(), totalValue: 50000,
+      portfolioChangePct: PORTFOLIO_SURGE_PCT - 0.01, now: day(),
+    })
+    expect(events).toEqual([])
+  })
+
+  it('fires exactly at the threshold', () => {
+    const events = detectEvents({
+      state: emptyState(), totalValue: 50000,
+      portfolioChangePct: PORTFOLIO_SURGE_PCT, now: day(),
+    })
+    expect(events.map(e => e.type)).toContain('fireworks')
+  })
+
+  it('fires once a day, not once a refresh', () => {
+    // The failure this prevents: a rally that holds above the threshold all
+    // afternoon, firing again on every price poll.
+    let state = emptyState()
+    const first = detectEvents({ state, totalValue: 50000, portfolioChangePct: 6, now: day(9) })
+    expect(first.map(e => e.type)).toContain('fireworks')
+
+    state = applyFired(state, first.find(e => e.type === 'fireworks'), 50000)
+
+    for (const h of [10, 12, 16, 21]) {
+      const again = detectEvents({ state, totalValue: 50000, portfolioChangePct: 7, now: day(h) })
+      expect(again.map(e => e.type)).not.toContain('fireworks')
+    }
+  })
+
+  it('is available again the next day', () => {
+    let state = emptyState()
+    const first = detectEvents({ state, totalValue: 50000, portfolioChangePct: 6, now: day() })
+    state = applyFired(state, first.find(e => e.type === 'fireworks'), 50000)
+
+    const tomorrow = new Date('2026-03-05T15:00:00Z').getTime()
+    const next = detectEvents({ state, totalValue: 50000, portfolioChangePct: 5, now: tomorrow })
+    expect(next.map(e => e.type)).toContain('fireworks')
+  })
+
+  it('needs a portfolio to celebrate', () => {
+    const events = detectEvents({
+      state: emptyState(), totalValue: 0, portfolioChangePct: 12, now: day(),
+    })
+    expect(events.map(e => e.type)).not.toContain('fireworks')
+  })
+
+  it('ignores a missing or unusable figure', () => {
+    for (const pct of [undefined, NaN, null, Infinity]) {
+      const events = detectEvents({
+        state: emptyState(), totalValue: 50000, portfolioChangePct: pct, now: day(),
+      })
+      expect(events.map(e => e.type)).not.toContain('fireworks')
+    }
+  })
+
+  it('loses to a milestone but beats an all-time high', () => {
+    // Crossing $100K on a flying day is the bigger story; a new high on a
+    // flying day is the same story told twice, and fireworks is the better
+    // telling of it.
+    const state = { ...emptyState(), ath: 90000, milestonesHit: [10e3, 25e3, 50e3] }
+    const events = detectEvents({
+      state, totalValue: 100000, portfolioChangePct: 8, now: day(),
+    })
+    const types = events.map(e => e.type)
+    expect(types).toContain('fireworks')
+    expect(types).toContain('milestone')
+
+    expect(selectOne(events, {}, day()).type).toBe('milestone')
+
+    const withoutMilestone = events.filter(e => e.type !== 'milestone')
+    expect(selectOne(withoutMilestone, {}, day()).type).toBe('fireworks')
   })
 })

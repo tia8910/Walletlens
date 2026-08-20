@@ -16276,9 +16276,100 @@ input, select, textarea, .dvx-input {
   100% { opacity: 0; transform: translateY(-8px); }
 }
 
+/* Fireworks — the whole portfolio having a good day.
+   Four shells, timed to the audio: bursts at 0.44s, 1.06s, 1.72s and 2.30s of
+   a 3.6s timeline. Each shell is one element whose ::before is the rising
+   trail and whose ::after is the flash; the sparks are box-shadows on a single
+   pseudo-element, expanded by scale, which keeps the whole display at four
+   nodes instead of a hundred. */
+.wl-pulse-shell {
+  position: absolute; width: 9px; height: 9px; border-radius: 50%;
+  opacity: 0;
+  /* Bloom. Without it the sparks read as dust on a phone rather than as
+     light — a firework is bright before it is big. */
+  filter: drop-shadow(0 0 7px var(--spark)) drop-shadow(0 0 18px var(--spark));
+  /* Sixteen sparks around a circle, at two radii so the shell has depth
+     instead of reading as a single ring. One element, one paint. */
+  box-shadow:
+      0    -78px 0 0 var(--spark),  55px -55px 0 0 var(--spark),
+     78px    0   0 0 var(--spark),  55px  55px 0 0 var(--spark),
+      0     78px 0 0 var(--spark), -55px  55px 0 0 var(--spark),
+    -78px    0   0 0 var(--spark), -55px -55px 0 0 var(--spark),
+     28px -74px 0 0 var(--spark),  74px  28px 0 0 var(--spark),
+    -28px  74px 0 0 var(--spark), -74px -28px 0 0 var(--spark),
+     30px -30px 0 -2px var(--spark), -30px  30px 0 -2px var(--spark),
+    -30px -30px 0 -2px var(--spark),  30px  30px 0 -2px var(--spark);
+}
+.wl-pulse-shell::before {
+  content: ''; position: absolute; left: 3px; bottom: 0;
+  width: 3px; height: 0; border-radius: 3px;
+  background: linear-gradient(to top, transparent, var(--spark));
+  opacity: 0;
+}
+.wl-pulse-shell::after {
+  content: ''; position: absolute; inset: -22px; border-radius: 50%;
+  background: radial-gradient(circle, var(--spark) 0%, transparent 70%);
+  opacity: 0;
+}
+
+.wl-pulse-shell-1 { left: 22%; top: 30%; --spark: #ffd24a; animation: wl-fw-burst 3.6s linear forwards; }
+.wl-pulse-shell-2 { left: 74%; top: 22%; --spark: #56ccff; animation: wl-fw-burst 3.6s linear forwards; animation-delay: .62s; }
+.wl-pulse-shell-3 { left: 48%; top: 44%; --spark: #4ade80; animation: wl-fw-burst 3.6s linear forwards; animation-delay: 1.28s; }
+.wl-pulse-shell-4 { left: 66%; top: 58%; --spark: #ff7a59; animation: wl-fw-burst 3.6s linear forwards; animation-delay: 2.30s; }
+
+.wl-pulse-shell-1::before, .wl-pulse-shell-2::before,
+.wl-pulse-shell-3::before { animation: wl-fw-trail 3.6s ease-out forwards; }
+.wl-pulse-shell-2::before { animation-delay: .62s; }
+.wl-pulse-shell-3::before { animation-delay: 1.28s; }
+/* Shell 4 has no trail — its sound has no whistle, so the display ends on a
+   report rather than on the anticipation of one. */
+
+.wl-pulse-shell-1::after { animation: wl-fw-flash 3.6s ease-out forwards; }
+.wl-pulse-shell-2::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: .62s; }
+.wl-pulse-shell-3::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: 1.28s; }
+.wl-pulse-shell-4::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: 2.30s; }
+
+/* 12.2% of 3.6s = 0.44s, the burst. Sparks fly out and fall: the scale keeps
+   growing while opacity dies, and the slight translateY is gravity. */
+@keyframes wl-fw-burst {
+  0%,   12.1% { opacity: 0; transform: scale(.08) translateY(0); }
+  12.2%       { opacity: 1; transform: scale(.16) translateY(0); }
+  17%         { opacity: 1; transform: scale(.72) translateY(0); }
+  24%         { opacity: 1; transform: scale(1.00) translateY(6px); }
+  34%         { opacity: .8; transform: scale(1.28) translateY(22px); }
+  46%         { opacity: 0; transform: scale(1.5) translateY(52px); }
+  100%        { opacity: 0; transform: scale(1.5) translateY(52px); }
+}
+/* The rise: 0 to 0.44s, matching the whistle. */
+@keyframes wl-fw-trail {
+  0%    { opacity: 0; height: 0; }
+  1%    { opacity: .9; height: 0; }
+  12.1% { opacity: .9; height: 150px; }
+  12.2% { opacity: 0; height: 150px; }
+  100%  { opacity: 0; height: 0; }
+}
+@keyframes wl-fw-flash {
+  0%,   12.1% { opacity: 0; transform: scale(.4); }
+  12.2%       { opacity: .9; transform: scale(1); }
+  18%         { opacity: 0; transform: scale(2.4); }
+  100%        { opacity: 0; }
+}
+
+.wl-pulse-fireworks .wl-pulse-glow    { animation: wl-fw-sky 3.6s ease-out forwards; }
+.wl-pulse-fireworks .wl-pulse-caption { animation: wl-pulse-rise 3.6s cubic-bezier(.2,.8,.2,1) forwards; }
+
+@keyframes wl-fw-sky {
+  0%   { opacity: 0; }
+  14%  { opacity: .20; }
+  38%  { opacity: .14; }
+  66%  { opacity: .18; }
+  100% { opacity: 0; }
+}
+
 /* Reduced motion: the caption still appears, because knowing what happened is
    the information. Nothing travels across the screen. */
-.wl-pulse.is-still .wl-pulse-glow { display: none; }
+.wl-pulse.is-still .wl-pulse-glow,
+.wl-pulse.is-still .wl-pulse-shell { display: none; }
 .wl-pulse.is-still .wl-pulse-caption {
   animation: wl-pulse-fade 1.4s ease-out forwards;
 }
