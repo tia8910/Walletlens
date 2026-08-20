@@ -120,12 +120,6 @@ export const COPY = {
     fr: (sym, pct, up, count) => `Plus fort mouvement : ${sym} ${up ? '+' : '−'}${pct} % sur 24 h, parmi vos ${count} actifs suivis.`,
     es: (sym, pct, up, count) => `Mayor movimiento: ${sym} ${up ? '+' : '−'}${pct} % en 24 h, entre tus ${count} activos seguidos.`,
   },
-  digestQuietBody: {
-    en: (count) => `Markets are calm across your ${count} tracked ${count === 1 ? 'asset' : 'assets'}. Tap for the full picture.`,
-    ar: (count) => `الأسواق هادئة عبر ${count} من أصولك المتابَعة. اضغط لرؤية الصورة الكاملة.`,
-    fr: (count) => `Les marchés sont calmes sur vos ${count} actifs suivis. Touchez pour voir le tableau complet.`,
-    es: (count) => `Los mercados están tranquilos en tus ${count} activos seguidos. Toca para ver el panorama.`,
-  },
 
   // — Win-back for users who stopped opening the app —
   retentionTitle: {
@@ -157,20 +151,40 @@ export const COPY = {
     fr: (sym, pct, up) => `${sym} est ${up ? 'en hausse' : 'en baisse'} de ${pct} % depuis votre dernière visite. Voyez l’effet sur votre portefeuille.`,
     es: (sym, pct, up) => `${sym} ${up ? 'sube' : 'baja'} un ${pct} % desde tu última visita. Mira el efecto en tu cartera.`,
   },
-  retentionBody: {
-    en: (count) => count
-      ? `Your ${count} tracked ${count === 1 ? 'asset has' : 'assets have'} new prices. Take 30 seconds to check in.`
-      : 'Your portfolio is waiting. Take 30 seconds to check in.',
-    ar: (count) => count
-      ? `أسعار جديدة لـ ${count} من أصولك المتابَعة. خصّص ٣٠ ثانية للاطلاع.`
-      : 'محفظتك في انتظارك. خصّص ٣٠ ثانية للاطلاع.',
-    fr: (count) => count
-      ? `Vos ${count} actifs suivis ont de nouveaux cours. Prenez 30 secondes pour jeter un œil.`
-      : 'Votre portefeuille vous attend. Prenez 30 secondes pour jeter un œil.',
-    es: (count) => count
-      ? `Tus ${count} activos seguidos tienen precios nuevos. Dedica 30 segundos a revisarlos.`
-      : 'Tu cartera te espera. Dedica 30 segundos a revisarla.',
-  },
+}
+
+// ── Significance: what earns an interruption ────────────────────────────────
+// Every notification has to be able to answer "why now?" with something that
+// happened, not with a timer having elapsed. A scheduled slot is permission to
+// *look* for a reason — never a reason in itself. If nothing cleared these
+// bars, the right output is silence.
+//
+// This is why there is no "markets are calm" digest and no "your assets have
+// new prices" nudge: both are notifications whose entire content is that
+// nothing happened, and they train people to swipe without reading — which
+// costs us the alerts that do matter.
+
+/** A holding that moved this much in 24h is worth a line in the brief. */
+export const DIGEST_MIN_PCT = 3
+
+/** A win-back has to lead with something worth coming back for. */
+export const RETENTION_MIN_PCT = 5
+
+/**
+ * The single most notable mover in a set, or null when nothing clears the bar.
+ * Null means: say nothing at all.
+ *
+ * @param {Array<{symbol:string, pct:number}>} moves
+ * @param {number} minPct
+ */
+export function pickHeadline(moves, minPct) {
+  let best = null
+  for (const m of moves || []) {
+    const pct = Number(m?.pct)
+    if (!Number.isFinite(pct) || Math.abs(pct) < minPct) continue
+    if (!best || Math.abs(pct) > Math.abs(best.pct)) best = { symbol: m.symbol, pct }
+  }
+  return best
 }
 
 /** Pick a copy function for a language, falling back to English. */

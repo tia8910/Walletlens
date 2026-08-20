@@ -41,10 +41,11 @@
 import webpush from "npm:web-push@3.6.7"
 import {
   asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, deliveryFor,
-  dueRetentionStep, evaluateMove, fmtPct, fmtPrice, inQuietHours, isBreaking,
-  localDayKey, localHour, matchArticle, MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS,
-  pruneSent, pushTopic, RETENTION_HOUR, sanitizeAlerts, sanitizePrefs,
-  sanitizeTz, sanitizeWatch, shortHash, withinDailyBudget,
+  DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, fmtPct, fmtPrice,
+  inQuietHours, isBreaking, localDayKey, localHour, matchArticle,
+  MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
+  RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeTz,
+  sanitizeWatch, shortHash, withinDailyBudget,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
 
@@ -450,27 +451,33 @@ async function checkDaily() {
     let changed = false
 
     // — Morning brief —
+    // The 09:00 slot is permission to go looking for a reason, not a reason.
+    // On a flat day this sends nothing: a notification whose content is
+    // "markets are calm" spends the user's attention to tell them nothing, and
+    // teaches them to swipe the next one away unread.
     const today = localDayKey(now, sub.tz)
     if (hour === DIGEST_HOUR && sub.prefs.digest && sub.digestDay !== today && sub.watch.length) {
-      let top: { sym: string; pct: number } | null = null
-      for (const a of sub.watch) {
-        const q = quoteFor(quotes, a)
-        if (!q) continue
-        if (!top || Math.abs(q.change24h) > Math.abs(top.pct)) top = { sym: a.symbol, pct: q.change24h }
-      }
-      const count = sub.watch.length
-      const body = top && Math.abs(top.pct) >= 1
-        ? copy("digestBody", sub.lang)(top.sym, fmtPct(top.pct), top.pct > 0, count)
-        : copy("digestQuietBody", sub.lang)(count)
+      const headline = pickHeadline(
+        sub.watch.flatMap(a => {
+          const q = quoteFor(quotes, a)
+          return q ? [{ symbol: a.symbol, pct: q.change24h }] : []
+        }),
+        DIGEST_MIN_PCT,
+      )
 
-      await deliver(sub, buildPayload({
-        channel: "digest",
-        title: copy("digestTitle", sub.lang)(),
-        body,
-        tag: "digest",
-      }), { now })
-      // Mark the day as served whether or not it went out — a brief delivered
-      // late in the day is no longer a morning brief.
+      if (headline) {
+        await deliver(sub, buildPayload({
+          channel: "digest",
+          title: copy("digestTitle", sub.lang)(),
+          body: copy("digestBody", sub.lang)(
+            headline.symbol, fmtPct(headline.pct), headline.pct > 0, sub.watch.length,
+          ),
+          tag: "digest",
+        }), { now })
+      }
+      // Either way the day has been evaluated — checking again at 10:00 would
+      // just be the same question with a staler answer, and a brief that
+      // arrives in the afternoon is not a morning brief.
       sub.digestDay = today
       changed = true
     }
@@ -479,20 +486,27 @@ async function checkDaily() {
     if (hour === RETENTION_HOUR && sub.prefs.retention) {
       const step = dueRetentionStep({ lastSeen: sub.lastSeen, now, sentSteps: sub.retention })
       if (step) {
-        // "BTC is up 9% since your last visit" beats "we miss you" by a mile,
-        // so use the real number whenever the snapshot makes it available.
-        let mover: { sym: string; pct: number } | null = null
-        for (const a of sub.watch) {
-          const q = quoteFor(quotes, a)
-          const base = sub.seenRef?.prices?.[assetKey(a)]
-          if (!q || !base || base <= 0) continue
-          const pct = ((q.price - base) / base) * 100
-          if (!mover || Math.abs(pct) > Math.abs(mover.pct)) mover = { sym: a.symbol, pct }
-        }
+        // Being away is not a reason to be interrupted — something having
+        // happened while away is. "BTC is up 9% since your last visit" earns
+        // the tap; "we miss you" is the app talking about itself.
+        //
+        // With no headline this sends nothing AND does not burn the step, so
+        // the nudge waits for a day worth nudging about rather than being
+        // spent on a quiet one. A portfolio that never moves never nags.
+        const mover = pickHeadline(
+          sub.watch.flatMap(a => {
+            const q = quoteFor(quotes, a)
+            const base = sub.seenRef?.prices?.[assetKey(a)]
+            if (!q || !base || base <= 0) return []
+            return [{ symbol: a.symbol, pct: ((q.price - base) / base) * 100 }]
+          }),
+          RETENTION_MIN_PCT,
+        )
+        if (!mover) { if (changed) await kv.set(key, sub); continue }
 
-        const body = mover && Math.abs(mover.pct) >= 2
-          ? copy("retentionMoverBody", sub.lang)(mover.sym, fmtPct(mover.pct), mover.pct > 0)
-          : copy("retentionBody", sub.lang)(sub.watch.length)
+        const body = copy("retentionMoverBody", sub.lang)(
+          mover.symbol, fmtPct(mover.pct), mover.pct > 0,
+        )
 
         const sent = await deliver(sub, buildPayload({
           channel: "retention",

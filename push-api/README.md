@@ -18,8 +18,37 @@ Each one is independently switchable in Settings → Notifications.
 | `target`    | a price the user explicitly asked to be told about  | 10 min   |
 | `move`      | a holding swings past their threshold (default 5%)  | 15 min   |
 | `news`      | a breaking story naming an asset they hold          | 20 min   |
-| `digest`    | one morning brief, 09:00 on the user's own clock    | hourly   |
-| `retention` | win-back ladder at 3, 7, 14, 30 and 60 days idle    | hourly   |
+| `digest`    | a holding moved ≥3% — checked 09:00 on their clock  | hourly   |
+| `retention` | idle 3/7/14/30/60 days **and** a holding moved ≥5%  | hourly   |
+
+## Every notification needs a reason
+
+**A scheduled slot is permission to go looking for a reason, never a reason in
+itself.** Nothing here sends because a timer elapsed.
+
+The two scheduled channels check for something worth saying and stay silent
+when there isn't:
+
+- The **morning brief** sends only if a holding moved at least
+  `DIGEST_MIN_PCT`. On a flat day it sends nothing. There is deliberately no
+  "markets are calm" copy — a notification whose entire content is that nothing
+  happened spends the user's attention to tell them nothing, and teaches them to
+  swipe the next one away unread.
+- The **win-back** leads with a real number (`RETENTION_MIN_PCT`, a higher bar).
+  Being away is not a reason to be interrupted; something having happened while
+  away is. With no headline it sends nothing *and does not burn the ladder
+  step*, so the nudge waits for a day worth nudging about. A portfolio that
+  never moves never nags.
+
+If you are tempted to add filler copy for the quiet case, that is the case
+where the right output is silence.
+
+The Android shell used to violate this badly: `PeriodicUpdateWorker` posted on
+a 30-minute timer, cycling canned price/hack/academy/feature content with no
+quiet hours and no cap, using a hard-coded list of twelve coins rather than the
+user's holdings. `NotificationScheduler` now cancels that work instead of
+enqueuing it — including on upgrade, since WorkManager persists it across app
+updates and would otherwise leave installed devices buzzing forever.
 
 Two guards apply to everything except `target`, which the user asked for by
 name and which therefore outranks both:
