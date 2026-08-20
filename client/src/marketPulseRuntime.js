@@ -31,14 +31,24 @@ const MAX_BASELINE_AGE_MS = 48 * 60 * 60 * 1000
 const MAX_DISCOVERY_SHOWS = 2
 
 const DEFAULTS = {
-  // Off, deliberately.
+  // On, by product decision.
   //
-  // The original spec proposed defaulting this on. For an app positioned as
-  // the serious, private tracker, unprompted audio on first open works against
-  // the brand — and someone opening their portfolio in a meeting will not
-  // forgive it twice. The discovery card below earns the opt-in instead, using
-  // an event that really happened.
-  enabled: false,
+  // This shipped off, on the argument that unprompted audio works against a
+  // serious private tracker and that someone opening their portfolio in a
+  // meeting will not forgive it twice. That risk is real and has not gone
+  // away — it is just outweighed by what off-by-default actually produced: a
+  // feature nobody ever encountered, because the toggle that switched it on
+  // was the one thing you had to already know about to find.
+  //
+  // Two things keep the meeting case survivable. Browsers refuse audio until
+  // the first tap of a session, so this can never fire on a cold open — the
+  // earliest possible sound is one the user's own tap unlocked. And the
+  // events are rare by construction: at most one a day for the portfolio
+  // surge, and the rest are genuinely uncommon.
+  //
+  // Anyone who turns it off stays off: this default only applies until the
+  // user writes a setting, and it is never written on their behalf.
+  enabled: true,
   volume: 0.6,
   haptics: true,
   visuals: true,
