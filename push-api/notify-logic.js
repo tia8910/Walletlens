@@ -121,9 +121,60 @@ export const COPY = {
     es: (sym, pct, up, count) => `Mayor movimiento: ${sym} ${up ? '+' : '−'}${pct} % en 24 h, entre tus ${count} activos seguidos.`,
   },
 
-
   // — Feature tips. One-off, each gated on the user's own state (FEATURE_TIPS) —
-featGuardianTitle: {
+  featCoinTargetsTitle: {
+    en: () => '\u{1F4C8} Decide your exit before you need it',
+    ar: () => '\u{1F4C8} قرّر نقطة خروجك قبل أن تحتاجها',
+    fr: () => '\u{1F4C8} D\u00e9cidez de votre sortie \u00e0 l\u2019avance',
+    es: () => '\u{1F4C8} Decide tu salida antes de necesitarla',
+  },
+  featCoinTargetsBody: {
+    en: () => 'Set take-profit and stop-loss levels per asset, and WalletLens tracks how close each one is \u2014 so the plan is made calmly, not mid-crash.',
+    ar: () => 'حدّد مستويات جني الأرباح ووقف الخسارة لكل أصل، ويتابع WalletLens قرب كل منها — لتضع الخطة بهدوء لا وسط الانهيار.',
+    fr: () => 'D\u00e9finissez des niveaux de prise de b\u00e9n\u00e9fice et de stop par actif : WalletLens suit leur proximit\u00e9, pour d\u00e9cider \u00e0 froid.',
+    es: () => 'Fija niveles de toma de beneficios y stop por activo; WalletLens sigue lo cerca que est\u00e1 cada uno, para decidir en fr\u00edo.',
+  },
+
+  featDriveTitle: {
+    en: () => '\u{1F510} Your portfolio lives in one browser',
+    ar: () => '\u{1F510} محفظتك موجودة في متصفح واحد فقط',
+    fr: () => '\u{1F510} Votre portefeuille n\u2019existe que dans un navigateur',
+    es: () => '\u{1F510} Tu cartera vive en un solo navegador',
+  },
+  featDriveBody: {
+    en: () => 'Clear your site data and it\u2019s gone. Turn on encrypted Google Drive backup \u2014 we can\u2019t read it, and it restores in one tap.',
+    ar: () => 'امسح بيانات الموقع وستختفي. فعّل النسخ الاحتياطي المشفّر إلى Google Drive — لا يمكننا قراءته، ويُستعاد بضغطة واحدة.',
+    fr: () => 'Videz les donn\u00e9es du site et tout dispara\u00eet. Activez la sauvegarde Google Drive chiffr\u00e9e \u2014 illisible pour nous, restaur\u00e9e en un geste.',
+    es: () => 'Si borras los datos del sitio, desaparece. Activa la copia cifrada en Google Drive: no podemos leerla y se restaura de un toque.',
+  },
+
+  featQrtransferTitle: {
+    en: () => '\u{1F4F1} Moving to a new phone?',
+    ar: () => '\u{1F4F1} هل تنتقل إلى هاتف جديد؟',
+    fr: () => '\u{1F4F1} Vous changez de t\u00e9l\u00e9phone ?',
+    es: () => '\u{1F4F1} \u00bfCambias de tel\u00e9fono?',
+  },
+  featQrtransferBody: {
+    en: () => 'Scan one QR code and your whole portfolio moves across \u2014 offline, no account, nothing sent anywhere.',
+    ar: () => 'امسح رمز QR واحداً لتنتقل محفظتك بالكامل — دون إنترنت ودون حساب ودون إرسال أي شيء.',
+    fr: () => 'Scannez un QR code et tout votre portefeuille suit \u2014 hors ligne, sans compte, rien n\u2019est envoy\u00e9.',
+    es: () => 'Escanea un c\u00f3digo QR y toda tu cartera se muda: sin conexi\u00f3n, sin cuenta y sin enviar nada.',
+  },
+
+  featSmartimportTitle: {
+    en: () => '\u{1F399}\uFE0F Stop typing your trades in',
+    ar: () => '\u{1F399}\uFE0F توقّف عن إدخال صفقاتك يدوياً',
+    fr: () => '\u{1F399}\uFE0F Arr\u00eatez de saisir vos trades',
+    es: () => '\u{1F399}\uFE0F Deja de teclear tus operaciones',
+  },
+  featSmartimportBody: {
+    en: () => 'Say \u201cI bought half a Bitcoin at 65K\u201d, or screenshot any exchange \u2014 WalletLens reads it and fills in the trade.',
+    ar: () => 'قل «اشتريت نصف بيتكوين بسعر ٦٥ ألفاً»، أو التقط صورة لأي منصة — يقرأها WalletLens ويملأ الصفقة.',
+    fr: () => 'Dites \u00ab j\u2019ai achet\u00e9 un demi-Bitcoin \u00e0 65K \u00bb, ou capturez n\u2019importe quelle plateforme : WalletLens lit et remplit la transaction.',
+    es: () => 'Di \u00abcompr\u00e9 medio Bitcoin a 65K\u00bb o haz una captura de cualquier exchange: WalletLens lo lee y rellena la operaci\u00f3n.',
+  },
+
+  featGuardianTitle: {
     en: () => '\u{1F6E1}\uFE0F Who reaches your portfolio if you can\u2019t?',
     ar: () => '\u{1F6E1}\uFE0F من يصل إلى محفظتك إن لم تستطع أنت؟',
     fr: () => '\u{1F6E1}\uFE0F Qui acc\u00e8de \u00e0 votre portefeuille si vous ne le pouvez plus ?',
@@ -283,6 +334,9 @@ featGuardianTitle: {
  */
 export const FEATURE_TIP_GAP_MS = 7 * 24 * 60 * 60 * 1000
 
+/** The most feature tips any one user will ever receive, however many exist. */
+export const MAX_FEATURE_TIPS = 6
+
 export const FEATURE_TIPS = [
   {
     // The dead man's switch is the feature nobody else has and nobody thinks
@@ -325,11 +379,53 @@ export const FEATURE_TIPS = [
     when: (st) => st.watchCount >= 3 && st.kinds.length === 1 && st.kinds[0] === 'crypto',
   },
   {
+    // Per-asset exit ladders — a different feature from the price alerts
+    // counted by alertCount, and the one that turns a tracker into a plan.
+    id: 'coinTargets',
+    url: '/dashboard?tab=targets',
+    when: (st) => st.watchCount > 0 && st.setup.coinTargets === false,
+  },
+  {
+    // No Drive file means nothing has ever been backed up there. A portfolio
+    // that exists only in one browser's localStorage is one cleared cache away
+    // from gone, which makes this the most consequential unset thing here.
+    id: 'drive',
+    url: '/settings',
+    when: (st) => st.watchCount > 0 && st.setup.backup === false,
+  },
+  {
     // Last, and only for someone who has stayed: a weekly summary is worth
     // offering once the portfolio is clearly real.
     id: 'weekly',
     url: '/settings',
     when: (st) => st.watchCount >= 2 && st.setup.weekly === false,
+  },
+  {
+    // Same signal as `drive` but a different job — moving to a new phone
+    // rather than guarding against losing this one. Sits after it, so someone
+    // who sets up Drive in the intervening week never sees this at all.
+    id: 'qrtransfer',
+    url: '/settings',
+    when: (st) => st.watchCount > 0 && st.setup.backup === false,
+  },
+  {
+    // The weakest precondition in the list, and deliberately last.
+    //
+    // Transactions do not record how they were added, so there is no way to
+    // tell someone who has never used voice or screenshot import from someone
+    // who uses it weekly. "Has a portfolio, so may want to add to it" is all
+    // the hook there is. It survives only because the caps make the worst case
+    // one notification, ever.
+    //
+    // The honest fix is to stamp an import source on new transactions; until
+    // that exists, do not add more tips gated this loosely.
+    id: 'smartimport',
+    url: '/dashboard',
+    // The `setup` check is not about smart import — nothing records whether it
+    // has been used. It is there so a subscription predating the snapshot
+    // stays silent like every other tip, instead of this one alone firing at
+    // users the server knows nothing about.
+    when: (st) => st.watchCount >= 2 && Object.keys(st.setup).length > 0,
   },
 ]
 
@@ -347,7 +443,7 @@ export const FEATURE_TIPS = [
 export function sanitizeSetup(raw) {
   const out = {}
   if (!raw || typeof raw !== 'object') return out
-  for (const k of ['guardian', 'vision', 'watchlist', 'weekly']) {
+  for (const k of ['guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup']) {
     if (typeof raw[k] === 'boolean') out[k] = raw[k]
   }
   return out
@@ -355,6 +451,12 @@ export function sanitizeSetup(raw) {
 
 export function pickFeatureTip(state, sentIds) {
   const sent = new Set(sentIds || [])
+  // A ceiling independent of how long the list gets. Every tip added otherwise
+  // raises the worst case for a user who has set nothing up, and the list only
+  // ever grows. Six spread a week apart is already a month and a half of
+  // occasional nudging; past that they are not going to turn the feature on
+  // because we asked a seventh time.
+  if (sent.size >= MAX_FEATURE_TIPS) return null
   // A subscription from before the setup snapshot existed knows nothing about
   // what is configured. Treating unknown as "already set up" keeps those tips
   // silent until the next sync fills it in — the alternative is telling someone

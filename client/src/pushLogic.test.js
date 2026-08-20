@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
-  FEATURE_TIPS, FEATURE_TIP_GAP_MS, pickFeatureTip, sanitizeSetup,
+  FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, inQuietHours, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
@@ -750,8 +750,13 @@ describe('feature tips', () => {
     expect(pick({ setup: { ...allSetUp, weekly: false } }).id).toBe('weekly')
   })
 
-  it('says nothing to someone already using all of it', () => {
-    expect(pick({})).toBeNull()
+  it('has nothing left to say to someone using all of it, bar one', () => {
+    // smartimport is the only tip no setup flag covers: transactions do not
+    // record how they were added, so there is no way to know whether voice or
+    // screenshot import has ever been used. A power user therefore gets that
+    // one tip and nothing else — acceptable because it fires once, ever.
+    expect(pick({}).id).toBe('smartimport')
+    expect(pick({}, ['smartimport'])).toBeNull()
   })
 
   it('suggests price targets only to someone with holdings and none set', () => {
@@ -768,7 +773,8 @@ describe('feature tips', () => {
 
   it('treats an unknown setup as already configured', () => {
     // Subscriptions predating the snapshot know nothing. Guessing "not set up"
-    // would tell long-time Guardian users to go and set up Guardian.
+    // would tell long-time Guardian users to go and set up Guardian — and
+    // smartimport, which reads no flag, must not slip through either.
     expect(pickFeatureTip({ watchCount: 3, alertCount: 2, kinds: ['crypto', 'stock'] }, []))
       .toBeNull()
   })
@@ -789,11 +795,21 @@ describe('feature tips', () => {
     expect(FEATURE_TIP_GAP_MS).toBeGreaterThanOrEqual(7 * 86_400_000)
   })
 
-  it('keeps the whole channel finite', () => {
-    // A rotation that never ends is the failure mode being avoided: the total
-    // a user can ever receive is FEATURE_TIPS.length, then silence forever.
-    expect(FEATURE_TIPS.length).toBeLessThanOrEqual(8)
+  it('keeps the whole channel finite however long the list gets', () => {
+    // A rotation that never ends is the failure mode being avoided. The list
+    // will keep growing, so the ceiling is MAX_FEATURE_TIPS rather than the
+    // list length — otherwise every tip added worsens the worst case.
     expect(new Set(FEATURE_TIPS.map(t => t.id)).size).toBe(FEATURE_TIPS.length)
+    expect(MAX_FEATURE_TIPS).toBeLessThanOrEqual(6)
+    const everything = { guardian: false, vision: false, watchlist: false, weekly: false, coinTargets: false, backup: false }
+    const sent = []
+    for (let i = 0; i < FEATURE_TIPS.length + 3; i++) {
+      const tip = pick({ alertCount: 0, setup: everything }, sent)
+      if (!tip) break
+      sent.push(tip.id)
+    }
+    expect(sent.length).toBe(MAX_FEATURE_TIPS)
+    expect(pick({ alertCount: 0, setup: everything }, sent)).toBeNull()
   })
 
   it('gives every tip a precondition, a destination and copy', () => {

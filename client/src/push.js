@@ -207,11 +207,19 @@ export function featureSetup() {
       vision: (read('vision_buckets', '[]') || []).length > 0,
       watchlist: (read('wl_watchlist', '[]') || []).length > 0,
       weekly: !!localStorage.getItem('wl_weekly_email'),
+      // Per-asset take-profit / stop-loss ladders, which are a different
+      // feature from the price alerts counted by alertCount.
+      coinTargets: Object.keys(read('crypto_tracker_coin_targets', '{}') || {}).length > 0,
+      // A Drive file id only exists once a backup has actually been written.
+      backup: !!localStorage.getItem('wl_drive_file_id'),
     }
   } catch {
     // An unreadable store must not claim things are unconfigured — that would
     // aim every tip at someone who may already be using all of it.
-    return { guardian: true, vision: true, watchlist: true, weekly: true }
+    return {
+      guardian: true, vision: true, watchlist: true, weekly: true,
+      coinTargets: true, backup: true,
+    }
   }
 }
 
