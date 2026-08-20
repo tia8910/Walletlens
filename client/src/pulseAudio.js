@@ -101,22 +101,49 @@ export function unlock() {
       ctx = new AC()
 
       master = ctx.createGain()
-      master.gain.value = 0.6
+      master.gain.value = 1
       master.connect(ctx.destination)
 
-      // Gentle, high-ratio-free glue. The point is not loudness — it is that a
-      // sub-bass drop and a high bell hit the ear at a comparable level
-      // without either one being mixed timidly.
+      // ── Gain staging ──────────────────────────────────────────────────
+      //
+      // The first version peaked around 0.5 and measured −16 dB short-term,
+      // which is quiet for a notification — they normally sit nearer −10 —
+      // and the volume setting then multiplied it by 0.6 on top. The result
+      // was audible and unimpressive.
+      //
+      // Simply turning it up clips: these sounds are peaky, a sub-bass drop
+      // against a bell transient. So the level comes from compression and
+      // makeup rather than from a bigger multiplier, with a brickwall after
+      // it to guarantee nothing ever reaches the converter above -1 dB.
+      //
+      //   voices → comp (glue) → makeup → limiter (safety) → master → out
+
+      const limiter = ctx.createDynamicsCompressor?.()
+      if (limiter) {
+        limiter.threshold.value = -3
+        limiter.knee.value = 0            // brickwall, not a curve
+        limiter.ratio.value = 20
+        limiter.attack.value = 0.001
+        limiter.release.value = 0.06
+        limiter.connect(master)
+      }
+
+      const makeup = ctx.createGain()
+      makeup.gain.value = 2.0
+      makeup.connect(limiter || master)
+
       bus = ctx.createDynamicsCompressor?.()
       if (bus) {
-        bus.threshold.value = -20
-        bus.knee.value = 26
-        bus.ratio.value = 3
-        bus.attack.value = 0.006
-        bus.release.value = 0.25
-        bus.connect(master)
+        // Harder than before on purpose: the compression is now doing the
+        // loudness work, so it has to actually engage rather than just glue.
+        bus.threshold.value = -26
+        bus.knee.value = 14
+        bus.ratio.value = 5
+        bus.attack.value = 0.004
+        bus.release.value = 0.18
+        bus.connect(makeup)
       } else {
-        bus = master
+        bus = makeup
       }
 
       dry = ctx.createGain()
@@ -172,7 +199,7 @@ export function setVolume(v) {
  * cheaper than scaling twenty hand-written gain figures and re-deriving them
  * every time one layer changes.
  */
-const TRIM = { rocket: 1, ath: 2.25, milestone: 1.8, fireworks: 1.35 }
+const TRIM = { rocket: 1, ath: 2.25, milestone: 1.8, fireworks: 1.6 }
 let voiceTrim = 1
 
 /**
