@@ -77,6 +77,29 @@ function urlBase64ToUint8Array(base64) {
   return out
 }
 
+/**
+ * Was this subscription created with the VAPID key we currently ship?
+ *
+ * Returns true when it cannot tell (older browsers don't expose
+ * `options.applicationServerKey`), because discarding a working subscription
+ * on a guess is worse than keeping a possibly-stale one.
+ *
+ * @param {PushSubscription} sub
+ * @param {string} vapidPublic base64url public key
+ */
+export function subscriptionMatchesKey(sub, vapidPublic) {
+  try {
+    const raw = sub?.options?.applicationServerKey
+    if (!raw || !vapidPublic) return true
+    const existing = new Uint8Array(raw)
+    const current = urlBase64ToUint8Array(vapidPublic)
+    if (existing.length !== current.length) return false
+    return existing.every((b, i) => b === current[i])
+  } catch {
+    return true
+  }
+}
+
 function readAlerts() {
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]') } catch { return [] } }
   // Merge both alert stores; prefix ids so the two sequences can't collide.
@@ -331,6 +354,15 @@ export async function enablePush() {
 
   const reg = await navigator.serviceWorker.ready
   let sub = await reg.pushManager.getSubscription()
+  // A subscription is cryptographically bound to the VAPID key it was created
+  // with. If that key is ever rotated, the push service rejects everything the
+  // server signs for this device — and because getSubscription() still returns
+  // the old object, re-enabling would happily reuse it and the device would
+  // stay permanently silent with no error anywhere. Drop it and start over.
+  if (sub && !subscriptionMatchesKey(sub, VAPID_PUBLIC)) {
+    try { await sub.unsubscribe() } catch { /* replaced below regardless */ }
+    sub = null
+  }
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
