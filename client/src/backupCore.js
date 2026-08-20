@@ -53,6 +53,12 @@ export const BACKUP_FIELDS = {
   it: 'wl_interests',
   iu: 'wl_interests_done',
   na: 'wl_native_assets',
+  // Which push channels the user wants and how big a move is worth a buzz.
+  // A considered choice, not device state: someone who turned the daily brief
+  // on and the come-back nudges off should not have to say so again on a new
+  // phone. The push subscription itself is device-bound and stays behind — the
+  // new device registers its own and sends these prefs up with it.
+  np: 'wl_push_prefs',
 
   // ── Subscriptions the user opted into ────────────────────────────────────
   we: 'wl_weekly_email',
@@ -112,6 +118,12 @@ export const DEVICE_ONLY_KEYS = [
   // Marks THIS install as running inside the Android app. Carrying it to a
   // browser would make the site think it was the app.
   'wl_native',
+  // Push bookkeeping tied to this device's own subscription: the cached ticker
+  // list last sent to the push server, and when it was last told the app was
+  // opened. Both are re-derived on the new device's first dashboard load, and
+  // carrying the heartbeat across would tell the server a device it has never
+  // heard from was recently active.
+  'wl_push_watch', 'wl_push_seen_ts',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────

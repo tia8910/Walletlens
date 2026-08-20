@@ -8,6 +8,7 @@ import { useTheme, THEMES as COLOR_THEMES } from '../ThemeContext'
 import { useLanguage, LANGUAGES } from '../LanguageContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
+import PushToggle from '../components/PushToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
@@ -226,6 +227,13 @@ export default function Settings() {
             <Icon name="edit" size={14} /> {t('setEdit')}
           </button>
         </div>
+      </div>
+
+      {/* ── Notifications ── The push section was written but never rendered,
+           so the whole server-push feature was unreachable from the UI. */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setNotifs')}</h3>
+        <PushToggle />
       </div>
 
       {/* ── Weekly Report ── */}

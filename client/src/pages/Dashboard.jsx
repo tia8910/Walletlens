@@ -3254,6 +3254,13 @@ export default function Dashboard() {
     }
     // An explicit deep-link (location.state.tab) always wins.
     if (location.state?.tab && DASH_TABS.has(location.state.tab)) return location.state.tab
+    // ?tab= is the same deep link in URL form, which is the only form a push
+    // notification can carry — router state doesn't survive a cold app launch
+    // from the lock screen.
+    try {
+      const q = new URLSearchParams(location.search).get('tab')
+      if (q && DASH_TABS.has(q)) return q
+    } catch { /* malformed query string */ }
     // Otherwise restore the last tab so a pull-to-refresh reload stays put.
     try {
       const saved = sessionStorage.getItem(ACTIVE_TAB_KEY)
@@ -3877,6 +3884,21 @@ export default function Dashboard() {
     if (loaded && totalValue > 0) setPortfolioBaseline(totalValue)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded])
+
+  // Tell the push server which assets to watch, so the movement and news
+  // channels are about *this* portfolio rather than generic market noise.
+  // Tickers only — no amounts, no values (see the privacy note in push.js).
+  // Keyed on the set of assets, not on price, so a poll every 30s doesn't
+  // become a request every 30s.
+  const watchKey = useMemo(
+    () => enriched.map(h => `${h.coin_id}:${h.coin_symbol}`).sort().join('|'),
+    [enriched],
+  )
+  useEffect(() => {
+    if (!loaded || isDemo) return
+    import('./../push').then(m => m.syncWatch?.(enriched)).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, isDemo, watchKey])
 
   // Milestone detection
   useEffect(() => {

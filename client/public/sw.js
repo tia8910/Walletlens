@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v220'
+const SW_VERSION = 'v221'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -287,19 +287,35 @@ self.addEventListener('fetch', e => {
 })
 
 // ── Web Push: show a notification even when the app is fully closed ──────────
-// The push-api Deno service sends a JSON payload { title, body, tag, url }.
+// The push-api Deno service sends { title, body, tag, url, channel, sym }.
+// `channel` is one of target | move | news | digest | retention | test and
+// decides how loud the notification is allowed to be.
+
+// Channels the user asked for by name earn a buzz; the ones we initiated on
+// their behalf (a daily brief, a come-back nudge) arrive silently. Same
+// notification tray, very different level of consent.
+const LOUD_CHANNELS = new Set(['target', 'move', 'test'])
+
 self.addEventListener('push', e => {
   let data = {}
   try { data = e.data ? e.data.json() : {} } catch { data = { body: e.data && e.data.text() } }
   const title = data.title || 'WalletLens'
+  const channel = data.channel || 'walletlens'
+  const loud = LOUD_CHANNELS.has(channel)
+
   e.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      tag: data.tag || 'walletlens',
+      tag: data.tag || channel,
+      // Same tag replaces an older notification rather than stacking; renotify
+      // makes the replacement still alert, so a second BTC move isn't silent.
       renotify: true,
-      data: { url: data.url || '/' },
+      silent: !loud,
+      vibrate: loud ? [80, 40, 80] : undefined,
+      timestamp: Date.now(),
+      data: { url: data.url || '/', channel, sym: data.sym || '' },
     })
   )
 })
@@ -318,10 +334,21 @@ self.addEventListener('push', e => {
 //    one, and only open a new one as a last resort.
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  const raw = (e.notification.data && e.notification.data.url) || '/'
+  const info = e.notification.data || {}
+  const raw = info.url || '/'
   let target
-  try { target = new URL(raw, self.location.origin).href }
-  catch { target = new URL('/', self.location.origin).href }
+  try { target = new URL(raw, self.location.origin) }
+  catch { target = new URL('/', self.location.origin) }
+
+  // Tag the landing URL so re-engagement is measurable. Without this a
+  // win-back push that works looks identical in analytics to one that doesn't,
+  // and there is no way to tell which channel is worth keeping.
+  if (info.channel) {
+    target.searchParams.set('utm_source', 'push')
+    target.searchParams.set('utm_medium', 'notification')
+    target.searchParams.set('utm_campaign', info.channel)
+  }
+  target = target.href
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {

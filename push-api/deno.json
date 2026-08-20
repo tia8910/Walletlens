@@ -4,6 +4,6 @@
   },
   "deploy": {
     "entrypoint": "main.ts",
-    "include": ["main.ts"]
+    "include": ["main.ts", "notify-logic.js", "markets.js"]
   }
 }

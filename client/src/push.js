@@ -1,29 +1,60 @@
 // Web Push client — subscribes the device to server-sent notifications so
-// price-target alerts arrive even when WalletLens is closed.
+// alerts arrive even when WalletLens is closed.
 //
 // The on-device Notification API (portfolioNotify.js, Watchlist) only fires
-// while the app is open. This module registers a Push subscription with the
-// push-api Deno service, which evaluates alert rules on a cron and pushes.
+// while the app is open, which makes it useless for the two things
+// notifications actually exist to do: tell someone their holding just moved,
+// and bring someone back who has stopped opening the app. This module
+// registers a Push subscription with the push-api Deno service, which runs
+// those checks on a cron and pushes.
 //
-// Privacy: the only thing leaving the device is the anonymous push endpoint
-// (a URL + keys, no identity) and the alert rules the user explicitly set.
+// Privacy: what leaves the device is the anonymous push endpoint (a URL +
+// keys, no identity), the alert rules the user set, and the *identifiers* of
+// the assets they track — never amounts, cost basis or portfolio value. The
+// server builds notification copy like "BTC moved +6.1% to $94,200", which
+// needs the ticker and nothing else.
+
+import { foldBalances } from './data/portfolio'
 
 const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
 
 // The server builds the notification text, so it has to be told which language
 // to build it in — otherwise a user reading the app in Arabic still gets an
 // English price alert on their lock screen. Read live rather than cached: the
-// language can change after the subscription was created, and syncAlerts()
-// re-sends it on every alert edit.
+// language can change after the subscription was created, and every sync
+// re-sends it.
 function currentLang() {
   try {
     const l = localStorage.getItem('wl_lang')
     return ['en', 'ar', 'fr', 'es'].includes(l) ? l : 'en'
   } catch { return 'en' }
 }
+
+// Minutes *east* of UTC, which is the sign convention the server reasons in.
+// getTimezoneOffset() is the opposite (minutes behind UTC), and getting this
+// backwards is how a quiet-hours window ends up buzzing people at 4am.
+function currentTz() {
+  try { return -new Date().getTimezoneOffset() } catch { return 0 }
+}
+
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
 const PA_ALERTS_KEY = 'walletlens_price_alerts'  // Dashboard 'Alerts' tab store
+const PREFS_KEY = 'wl_push_prefs'
+const WATCH_CACHE_KEY = 'wl_push_watch'
+const SEEN_PING_KEY = 'wl_push_seen_ts'
+
+// Mirrors DEFAULT_PREFS in push-api/notify-logic.js. The server sanitizes
+// whatever arrives, so a drift here is safe, but the toggles should show the
+// same defaults the server would apply.
+export const DEFAULT_PUSH_PREFS = {
+  moves: true,
+  news: true,
+  digest: false,
+  retention: true,
+  movePct: 5,
+  quiet: true,
+}
 
 export function isPushSupported() {
   return typeof navigator !== 'undefined' &&
@@ -50,6 +81,107 @@ function readAlerts() {
     ...read(PA_ALERTS_KEY).filter(a => !a.triggered).map(a => ({ ...a, id: `pa-${a.id}` })),
   ].filter(a => a.coin_id && a.targetPrice > 0)
 }
+
+// ── Channel preferences ─────────────────────────────────────────────────────
+
+export function getPushPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')
+    return { ...DEFAULT_PUSH_PREFS, ...saved }
+  } catch { return { ...DEFAULT_PUSH_PREFS } }
+}
+
+/** Persist a partial preference change and push the new set to the server. */
+export async function setPushPrefs(patch) {
+  const next = { ...getPushPrefs(), ...patch }
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(next)) } catch {}
+  await syncWatch()
+  return next
+}
+
+// ── Holdings → watch list ───────────────────────────────────────────────────
+
+/**
+ * Reduce portfolio holdings to the identifiers the server needs to watch them.
+ *
+ * Cash and real estate are dropped: neither has a market price worth
+ * interrupting someone about, and sending them would mean handing over rows
+ * that say nothing useful in return.
+ *
+ * @param {Array<{coin_id?:string, coin_symbol?:string}>} holdings
+ * @returns {Array<{id:string, symbol:string, kind:string}>}
+ */
+export function toWatchAssets(holdings) {
+  if (!Array.isArray(holdings)) return []
+  const out = []
+  const seen = new Set()
+
+  for (const h of holdings) {
+    const rawId = String(h?.coin_id || h?.id || '').trim().toLowerCase()
+    const symbol = String(h?.coin_symbol || h?.symbol || '').trim().toUpperCase()
+    if (!rawId && !symbol) continue
+
+    let kind = 'crypto'
+    let id = rawId
+
+    if (rawId.startsWith('metal:') || ['xau', 'xag', 'xpt', 'xpd'].includes(symbol.toLowerCase())) {
+      kind = 'metal'
+      id = rawId.replace(/^metal:/, '') || symbol.toLowerCase()
+    } else if (rawId.startsWith('stock:') || rawId.startsWith('xstock:')) {
+      kind = 'stock'
+      id = rawId.replace(/^x?stock:/, '') || symbol.toLowerCase()
+    } else if (rawId.startsWith('cash:') || rawId.startsWith('fiat:') || rawId.startsWith('real:')) {
+      continue
+    }
+
+    if (!id) id = symbol.toLowerCase()
+    if (!id || !symbol) continue
+    const key = `${kind}:${id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ id, symbol, kind })
+  }
+  return out
+}
+
+function readCachedWatch() {
+  try { return JSON.parse(localStorage.getItem(WATCH_CACHE_KEY) || '[]') } catch { return [] }
+}
+
+/**
+ * Derive the watch list straight from the stored transactions.
+ *
+ * The whole point of server push is that it works with the app closed, which
+ * means the server has to already know the holdings — so learning them can't
+ * depend on the user having rendered the dashboard first. Someone who adds
+ * holdings and then turns notifications on from Settings would otherwise be
+ * subscribed to nothing at all, and would keep getting silence until their
+ * next dashboard visit.
+ *
+ * Sold-out positions are dropped: a zero balance has nothing to notify about.
+ */
+export function watchFromStorage() {
+  try {
+    const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
+    const balances = foldBalances(txs)
+    return toWatchAssets(
+      Object.entries(balances)
+        .filter(([, b]) => (Number(b.amount) || 0) > 0)
+        .map(([coin_id, b]) => ({ coin_id, coin_symbol: b.symbol })),
+    )
+  } catch { return [] }
+}
+
+/** Best available view of what to watch, whatever the caller had to hand. */
+function resolveWatch(holdings) {
+  if (holdings !== undefined) return toWatchAssets(holdings)
+  const derived = watchFromStorage()
+  // The cache is the last resort: it can only be staler than the store it was
+  // built from, but it is better than telling the server to watch nothing.
+  return derived.length ? derived : readCachedWatch()
+}
+
+// ── Subscription lifecycle ──────────────────────────────────────────────────
 
 async function getSubscription() {
   const reg = await navigator.serviceWorker.ready
@@ -81,7 +213,17 @@ export async function enablePush() {
   const res = await fetch(`${PUSH_API}/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscription: sub.toJSON(), alerts: readAlerts(), lang: currentLang() }),
+    body: JSON.stringify({
+      subscription: sub.toJSON(),
+      alerts: readAlerts(),
+      // Read from the transactions store, not from whatever page happened to
+      // call this: turning push on from Settings must arm the movement and
+      // news channels immediately, not at the next dashboard visit.
+      watch: resolveWatch(),
+      prefs: getPushPrefs(),
+      lang: currentLang(),
+      tz: currentTz(),
+    }),
   })
   if (!res.ok) {
     // Roll back so isPushEnabled() doesn't report a half-registered state.
@@ -118,6 +260,64 @@ export async function syncAlerts() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint: sub.endpoint, alerts: readAlerts(), lang: currentLang() }),
     }).catch(() => {})
+  } catch { /* best-effort */ }
+}
+
+/**
+ * Tell the server which assets to watch and which channels are on.
+ *
+ * Call with holdings whenever the portfolio changes; call with nothing to
+ * re-send the cached list after a preferences change. Always caches the list
+ * locally first, so enabling push later can arm the channels straight away.
+ */
+export async function syncWatch(holdings) {
+  const watch = resolveWatch(holdings)
+  try { localStorage.setItem(WATCH_CACHE_KEY, JSON.stringify(watch)) } catch {}
+
+  try {
+    const sub = await getSubscription()
+    if (!sub) return
+    await fetch(`${PUSH_API}/watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        watch,
+        prefs: getPushPrefs(),
+        lang: currentLang(),
+        tz: currentTz(),
+      }),
+    }).catch(() => {})
+  } catch { /* best-effort */ }
+}
+
+// A heartbeat this cheap can afford to be throttled hard: the win-back ladder
+// works in days, so one ping every six hours is more than enough resolution,
+// and it keeps app opens from turning into a request per launch.
+const SEEN_THROTTLE_MS = 6 * 60 * 60 * 1000
+
+/**
+ * Tell the server the app was opened. This is the single fact the entire
+ * re-engagement ladder rests on — without it the server cannot distinguish a
+ * daily user from someone who left a month ago, and would nag both.
+ */
+export async function pingSeen({ force = false } = {}) {
+  try {
+    const last = parseInt(localStorage.getItem(SEEN_PING_KEY) || '0', 10)
+    if (!force && Date.now() - last < SEEN_THROTTLE_MS) return
+  } catch { /* fall through and ping */ }
+
+  try {
+    const sub = await getSubscription()
+    if (!sub) return
+    const res = await fetch(`${PUSH_API}/seen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang(), tz: currentTz() }),
+    }).catch(() => null)
+    // Only record the ping if it landed; a failed one should be retried on the
+    // next open rather than silently starting a six-hour blackout.
+    if (res?.ok) { try { localStorage.setItem(SEEN_PING_KEY, String(Date.now())) } catch {} }
   } catch { /* best-effort */ }
 }
 
