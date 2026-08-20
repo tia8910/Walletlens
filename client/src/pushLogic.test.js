@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
+  FEATURE_TIPS, FEATURE_TIP_GAP_MS, pickFeatureTip,
   fmtPct, fmtPrice, inQuietHours, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
@@ -100,6 +101,7 @@ describe('preferences', () => {
     expect(DEFAULT_PREFS.moves).toBe(true)
     expect(DEFAULT_PREFS.news).toBe(true)
     expect(DEFAULT_PREFS.retention).toBe(true)
+    expect(DEFAULT_PREFS.features).toBe(true)
     expect(DEFAULT_PREFS.quiet).toBe(true)
   })
 
@@ -726,5 +728,60 @@ describe('language codes', () => {
     expect(asLang('de')).toBeUndefined()
     expect(asLang(null)).toBeUndefined()
     expect(asLang(42)).toBeUndefined()
+  })
+})
+
+
+describe('feature tips', () => {
+  // The old Android worker cycled canned feature tips on a 30-minute timer and
+  // is exactly what these must not become. Every tip needs a reason drawn from
+  // the user's own setup, and it fires once, ever.
+
+  const state = (over = {}) => ({ watchCount: 3, alertCount: 2, kinds: ['crypto', 'stock'], ...over })
+
+  it('suggests price targets only to someone with holdings and none set', () => {
+    expect(pickFeatureTip(state({ alertCount: 0 }), []).id).toBe('targets')
+    // Already using the feature — nothing to say.
+    expect(pickFeatureTip(state({ alertCount: 1 }), [])?.id).not.toBe('targets')
+  })
+
+  it('says nothing at all to someone tracking nothing', () => {
+    // No holdings means no tip has a genuine hook; "add more assets" to an
+    // empty portfolio is an advert, not a tip.
+    expect(pickFeatureTip(state({ watchCount: 0, alertCount: 0 }), [])).toBeNull()
+  })
+
+  it('suggests multi-asset only to an all-crypto portfolio', () => {
+    expect(pickFeatureTip(state({ kinds: ['crypto'] }), []).id).toBe('multiasset')
+    expect(pickFeatureTip(state({ kinds: ['crypto', 'metal'] }), [])).toBeNull()
+  })
+
+  it('never repeats a tip that has already been sent', () => {
+    const st = state({ alertCount: 0 })
+    expect(pickFeatureTip(st, ['targets'])?.id).not.toBe('targets')
+    // With every tip spent, the channel goes quiet permanently.
+    expect(pickFeatureTip(st, FEATURE_TIPS.map(t => t.id))).toBeNull()
+  })
+
+  it('holds tips at least a week apart', () => {
+    expect(FEATURE_TIP_GAP_MS).toBeGreaterThanOrEqual(7 * 86_400_000)
+  })
+
+  it('keeps the whole channel finite', () => {
+    // A rotation that never ends is the failure mode being avoided; the total
+    // number of feature pushes a user can ever receive is FEATURE_TIPS.length.
+    expect(FEATURE_TIPS.length).toBeLessThanOrEqual(5)
+    expect(new Set(FEATURE_TIPS.map(t => t.id)).size).toBe(FEATURE_TIPS.length)
+  })
+
+  it('gives every tip a precondition and a real destination', () => {
+    for (const tip of FEATURE_TIPS) {
+      expect(typeof tip.when, tip.id).toBe('function')
+      expect(tip.url, tip.id).toMatch(/^\//)
+    }
+  })
+
+  it('survives a predicate that throws rather than failing the cron', () => {
+    expect(() => pickFeatureTip({}, [])).not.toThrow()
   })
 })

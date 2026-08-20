@@ -137,6 +137,14 @@ export default function PushToggle() {
 
           <div className="settings-divider" />
           <Row
+            label={t('npFeatures')}
+            hint={t('npFeaturesHint')}
+            on={prefs.features}
+            onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
+          />
+
+          <div className="settings-divider" />
+          <Row
             label={t('npQuiet')}
             hint={t('npQuietHint')}
             on={prefs.quiet}

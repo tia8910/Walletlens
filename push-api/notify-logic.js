@@ -121,6 +121,47 @@ export const COPY = {
     es: (sym, pct, up, count) => `Mayor movimiento: ${sym} ${up ? '+' : '−'}${pct} % en 24 h, entre tus ${count} activos seguidos.`,
   },
 
+
+  // — Feature tips. One-off, each gated on the user's own state (FEATURE_TIPS) —
+  featTargetsTitle: {
+    en: () => '🎯 Get told the moment your price is hit',
+    ar: () => '🎯 اعرف لحظة بلوغ سعرك',
+    fr: () => '🎯 Soyez pr\u00e9venu d\u00e8s que votre prix est atteint',
+    es: () => '🎯 Ent\u00e9rate en cuanto se alcance tu precio',
+  },
+  featTargetsBody: {
+    en: (sym) => `Set a target on ${sym} and WalletLens will alert you the moment it hits — no need to keep checking.`,
+    ar: (sym) => `حدّد هدفاً لـ ${sym} وسينبّهك WalletLens لحظة بلوغه — دون الحاجة إلى المتابعة المستمرة.`,
+    fr: (sym) => `D\u00e9finissez un objectif sur ${sym} et WalletLens vous alertera d\u00e8s qu\u2019il est atteint, sans v\u00e9rifier sans cesse.`,
+    es: (sym) => `Fija un objetivo en ${sym} y WalletLens te avisar\u00e1 en cuanto se alcance, sin tener que mirar a cada rato.`,
+  },
+
+  featDiversifyTitle: {
+    en: () => '📊 See your whole net worth',
+    ar: () => '📊 اطّلع على صافي ثروتك كاملاً',
+    fr: () => '📊 Voyez tout votre patrimoine',
+    es: () => '📊 Mira tu patrimonio completo',
+  },
+  featDiversifyBody: {
+    en: () => 'Add the rest of what you own — crypto, stocks, gold and cash — for one live view of your net worth.',
+    ar: () => 'أضف بقية ما تملك — العملات الرقمية والأسهم والذهب والنقد — للحصول على عرض حيّ واحد لصافي ثروتك.',
+    fr: () => 'Ajoutez le reste de ce que vous poss\u00e9dez \u2014 crypto, actions, or et liquidit\u00e9s \u2014 pour une vue unique et en direct.',
+    es: () => 'A\u00f1ade el resto de lo que tienes \u2014 cripto, acciones, oro y efectivo \u2014 para una \u00fanica vista en vivo.',
+  },
+
+  featMultiassetTitle: {
+    en: () => '🏦 WalletLens tracks more than crypto',
+    ar: () => '🏦 WalletLens يتتبّع أكثر من العملات الرقمية',
+    fr: () => '🏦 WalletLens ne suit pas que la crypto',
+    es: () => '🏦 WalletLens no solo rastrea cripto',
+  },
+  featMultiassetBody: {
+    en: () => 'Stocks, gold, silver, cash and real estate sit alongside your coins — one net-worth dashboard, still no account.',
+    ar: () => 'الأسهم والذهب والفضة والنقد والعقارات إلى جانب عملاتك — لوحة واحدة لصافي الثروة، وبلا حساب.',
+    fr: () => 'Actions, or, argent, liquidit\u00e9s et immobilier c\u00f4toient vos cryptos \u2014 un seul tableau de bord, toujours sans compte.',
+    es: () => 'Acciones, oro, plata, efectivo e inmuebles junto a tus monedas: un solo panel, y sin cuenta.',
+  },
+
   // — Win-back for users who stopped opening the app —
   retentionTitle: {
     en: (step) => step <= 3 ? 'Markets moved while you were away'
@@ -163,6 +204,63 @@ export const COPY = {
 // new prices" nudge: both are notifications whose entire content is that
 // nothing happened, and they train people to swipe without reading — which
 // costs us the alerts that do matter.
+
+// ── Feature tips ────────────────────────────────────────────────────────────
+// Telling someone about a feature is only worth an interruption when their own
+// state says they would benefit and are not already using it. That is the same
+// "reason" test the other channels apply — the trigger is a fact about this
+// user, never a slot in a rotation.
+//
+// This is deliberately NOT the old Android worker reborn. That cycled canned
+// tips on a 30-minute timer regardless of who was reading. Here each tip fires
+// at most ONCE EVER, at most one per week, only while its precondition holds,
+// and only from the narrow state the server legitimately knows: how many assets
+// are tracked, of what kind, and how many price targets are set. There is no
+// usage tracking behind these, and there must not be.
+//
+// If you want to add a tip and cannot express its trigger as a fact about the
+// user, it does not belong here.
+
+/** At most one tip a week, however many preconditions are true at once. */
+export const FEATURE_TIP_GAP_MS = 7 * 24 * 60 * 60 * 1000
+
+export const FEATURE_TIPS = [
+  {
+    // Holdings but no price targets: the single highest-value thing they are
+    // not using, and the channel most likely to bring them back on its own.
+    id: 'targets',
+    url: '/dashboard?tab=alerts',
+    when: (st) => st.watchCount > 0 && st.alertCount === 0,
+  },
+  {
+    // One asset is a tracker they have not finished setting up.
+    id: 'diversify',
+    url: '/dashboard',
+    when: (st) => st.watchCount === 1,
+  },
+  {
+    // Several assets, all crypto — most people in that position do not know
+    // this tracks stocks, metals and cash in the same net-worth view.
+    id: 'multiasset',
+    url: '/dashboard',
+    when: (st) => st.watchCount >= 3 && st.kinds.length === 1 && st.kinds[0] === 'crypto',
+  },
+]
+
+/**
+ * The next feature tip worth sending, or null.
+ *
+ * @param {{watchCount:number, alertCount:number, kinds:string[]}} state
+ * @param {string[]} sentIds  tips already sent to this subscription, ever
+ */
+export function pickFeatureTip(state, sentIds) {
+  const sent = new Set(sentIds || [])
+  for (const tip of FEATURE_TIPS) {
+    if (sent.has(tip.id)) continue
+    try { if (tip.when(state)) return tip } catch { /* a bad predicate sends nothing */ }
+  }
+  return null
+}
 
 /** A holding that moved this much in 24h is worth a line in the brief. */
 export const DIGEST_MIN_PCT = 3
@@ -209,6 +307,7 @@ export const DEFAULT_PREFS = {
   news: true,       // breaking news naming a holding
   digest: true,     // morning brief — only sends when something actually moved
   retention: true,  // win-back nudges while idle
+  features: true,   // one-off tips, each gated on the user's own state
   movePct: 5,       // swing threshold, percent
   quiet: true,      // hold non-urgent pushes overnight
 }
@@ -227,6 +326,7 @@ export function sanitizePrefs(raw) {
     news: bool(p.news, DEFAULT_PREFS.news),
     digest: bool(p.digest, DEFAULT_PREFS.digest),
     retention: bool(p.retention, DEFAULT_PREFS.retention),
+    features: bool(p.features, DEFAULT_PREFS.features),
     movePct: pct,
     quiet: bool(p.quiet, DEFAULT_PREFS.quiet),
   }
@@ -486,6 +586,7 @@ export const CHANNEL_URL = {
   news: '/dashboard',
   digest: '/dashboard',
   retention: '/dashboard',
+  feature: '/dashboard',
   test: '/settings',
 }
 
@@ -511,6 +612,7 @@ export const CHANNEL_DELIVERY = {
   news:      { urgency: 'normal', ttl: 2 * 60 * 60 },   // 2h — story goes stale
   digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
   retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition
+  feature:   { urgency: 'low',    ttl: 24 * 60 * 60 },  // useful whenever it lands
   test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
 }
 

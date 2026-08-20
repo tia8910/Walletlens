@@ -44,6 +44,7 @@ const PREFS_KEY = 'wl_push_prefs'
 const WATCH_CACHE_KEY = 'wl_push_watch'
 const SEEN_PING_KEY = 'wl_push_seen_ts'
 const OPTOUT_KEY = 'wl_push_optout'
+const ASK_KEY = 'wl_push_ask'
 
 // Mirrors DEFAULT_PREFS in push-api/notify-logic.js. The server sanitizes
 // whatever arrives, so a drift here is safe, but the toggles should show the
@@ -53,6 +54,7 @@ export const DEFAULT_PUSH_PREFS = {
   news: true,
   digest: true,
   retention: true,
+  features: true,
   movePct: 5,
   quiet: true,
 }
@@ -180,6 +182,51 @@ function resolveWatch(holdings) {
   // The cache is the last resort: it can only be staler than the store it was
   // built from, but it is better than telling the server to watch nothing.
   return derived.length ? derived : readCachedWatch()
+}
+
+// ── Asking for permission ───────────────────────────────────────────────────
+// A two-step ask: the app explains first, and only calls requestPermission()
+// if the user says yes.
+//
+// The browser dialog is one-shot and unforgiving — "Block" is permanent, the
+// prompt cannot be raised again, and the user is left with a Settings path they
+// will never walk. So the expensive question is only asked of people who have
+// already said yes to the cheap one. Declining our own card costs nothing and
+// can be asked again another day.
+
+/** Max times the in-app card is shown before we stop asking for good. */
+const MAX_ASKS = 3
+/** Gap between asks — long enough that a "not now" is genuinely respected. */
+const ASK_GAP_MS = 7 * 24 * 60 * 60 * 1000
+
+function readAsk() {
+  try { return JSON.parse(localStorage.getItem(ASK_KEY) || '{}') } catch { return {} }
+}
+
+/**
+ * Whether to show the in-app permission card right now.
+ *
+ * Never true once the browser has been asked: 'granted' means autoEnablePush()
+ * has it covered, and 'denied' means the decision is out of our hands and no
+ * amount of asking will change it.
+ */
+export function shouldAskPush() {
+  try {
+    if (!isPushSupported() || !VAPID_PUBLIC) return false
+    if (Notification.permission !== 'default') return false
+    if (localStorage.getItem(OPTOUT_KEY)) return false
+    const { n = 0, ts = 0 } = readAsk()
+    if (n >= MAX_ASKS) return false
+    return Date.now() - ts >= ASK_GAP_MS
+  } catch { return false }
+}
+
+/** Record that the card was shown and dismissed, so the next ask waits. */
+export function noteAskShown() {
+  try {
+    const { n = 0 } = readAsk()
+    localStorage.setItem(ASK_KEY, JSON.stringify({ n: n + 1, ts: Date.now() }))
+  } catch {}
 }
 
 // ── Subscription lifecycle ──────────────────────────────────────────────────

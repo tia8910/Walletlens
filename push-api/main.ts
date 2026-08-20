@@ -6,12 +6,13 @@
 // shut, so everything portfolioNotify.js knows about a user's portfolio only
 // ever reaches someone who was already looking at the app.
 //
-// Five channels, each independently switchable in Settings:
+// Six channels, each independently switchable in Settings:
 //   • target    — a price the user asked to be told about        (they set it)
 //   • move      — a holding swung past their threshold           (every 15 min)
 //   • news      — breaking story naming an asset they hold       (every 20 min)
 //   • digest    — one morning brief on their own clock           (hourly scan)
 //   • retention — win-back ladder while the app goes unopened    (hourly scan)
+//   • feature   — a one-off tip, gated on the user's own setup    (hourly scan)
 //
 // What it stores (Deno KV) — the privacy-minimal set required to push:
 //   • the anonymous Web Push subscription (an endpoint URL + crypto keys —
@@ -41,7 +42,8 @@
 import webpush from "npm:web-push@3.6.7"
 import {
   asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, deliveryFor,
-  DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, fmtPct, fmtPrice,
+  DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, FEATURE_TIP_GAP_MS, fmtPct,
+  fmtPrice, pickFeatureTip,
   inQuietHours, isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeTz,
@@ -91,7 +93,7 @@ type Lang = "en" | "ar" | "fr" | "es"
 interface WatchAsset { id: string; symbol: string; kind: "crypto" | "stock" | "metal" }
 interface Prefs {
   moves: boolean; news: boolean; digest: boolean; retention: boolean
-  movePct: number; quiet: boolean
+  features: boolean; movePct: number; quiet: boolean
 }
 interface PriceRef { price: number; ts: number }
 
@@ -122,6 +124,10 @@ interface StoredSub {
   digestDay: string
   /** Win-back ladder steps already used; cleared when the user returns. */
   retention: number[]
+  /** Feature tips already sent — each fires once ever, never repeats. */
+  featuresSent: string[]
+  /** When the last feature tip went out, so at most one lands per week. */
+  lastFeatureAt: number
   /** Shared daily budget across all automated channels. */
   quota: { day: string; n: number }
 }
@@ -151,6 +157,8 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     lastNewsAt: s.lastNewsAt ?? 0,
     digestDay: s.digestDay ?? "",
     retention: Array.isArray(s.retention) ? s.retention : [],
+    featuresSent: Array.isArray(s.featuresSent) ? s.featuresSent : [],
+    lastFeatureAt: s.lastFeatureAt ?? 0,
     quota: s.quota ?? { day: "", n: 0 },
   }
 }
@@ -543,6 +551,42 @@ async function checkDaily() {
         // a win-back nudge is not tied to a particular day — tomorrow is a
         // perfectly good time to try it again.
         if (sent) { sub.retention = [...sub.retention, step]; changed = true }
+      }
+    }
+
+    // — Feature tips —
+    // Same "reason" test as everything else: the trigger is a fact about this
+    // user's own setup, not a slot in a rotation. Each tip fires once ever,
+    // at most one a week, and only while its precondition still holds — so a
+    // user who sets a price target before the tip goes out simply never gets
+    // it. Runs in the retention hour to keep all the once-a-day work together.
+    if (hour === RETENTION_HOUR && sub.prefs.features && sub.watch.length) {
+      if (now - sub.lastFeatureAt >= FEATURE_TIP_GAP_MS) {
+        const tip = pickFeatureTip({
+          watchCount: sub.watch.length,
+          alertCount: sub.alerts.length,
+          kinds: [...new Set(sub.watch.map(a => a.kind))],
+        }, sub.featuresSent)
+
+        if (tip) {
+          const cap = (id: string) => id.charAt(0).toUpperCase() + id.slice(1)
+          const sent = await deliver(sub, buildPayload({
+            channel: "feature",
+            title: copy(`feat${cap(tip.id)}Title` as never, sub.lang)(),
+            // Only the targets tip names an asset; the others take no argument
+            // and ignore what they are handed.
+            body: copy(`feat${cap(tip.id)}Body` as never, sub.lang)(sub.watch[0]?.symbol),
+            tag: `feature-${tip.id}`,
+            url: tip.url,
+          }), { now })
+          // Mark it sent only on delivery — a tip suppressed by quiet hours or
+          // the budget should still get its turn another day.
+          if (sent) {
+            sub.featuresSent = [...sub.featuresSent, tip.id]
+            sub.lastFeatureAt = now
+            changed = true
+          }
+        }
       }
     }
 
