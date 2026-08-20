@@ -3766,7 +3766,14 @@ export default function Dashboard() {
         }),
       }
     }
-    const event = observeMarket({ samples, totalValue })
+    // The portfolio's own day, weighted by holding size — the same figure the
+    // milestone detector and the brand tint already use, rather than a second
+    // definition of "up today" that could disagree with what is on screen.
+    const dayPnL = enriched.reduce((sum, h) => sum + (h.value * (h.pct24h || 0) / 100), 0)
+    const dayBase = totalValue - dayPnL
+    const portfolioChangePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+
+    const event = observeMarket({ samples, totalValue, portfolioChangePct })
     // Set even when the audio was refused — someone on silent has not opted
     // out of seeing it, and the caption is the part that carries the fact.
     if (event) setPulseEvent(event)

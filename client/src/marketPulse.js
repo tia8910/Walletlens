@@ -33,6 +33,22 @@
 // how often the signature event should fire for a typical holder — the target
 // is roughly once a fortnight — and calibrate each class against real price
 // history. Treat any number here as a hypothesis until that is done.
+/**
+ * The whole portfolio having a good day.
+ *
+ * The three original events all turned out to be close to unobservable in
+ * practice: a rocket needs one asset to cross its class threshold between two
+ * consecutive refreshes, and an ATH or a milestone happens a handful of times
+ * in the life of an account. Someone can use the app for weeks, with the
+ * feature working perfectly, and never see it do anything — which is
+ * indistinguishable from it being broken.
+ *
+ * This is the event that fires on an ordinary good day: the portfolio as a
+ * whole up by this much since yesterday. Capped at once per calendar day, so
+ * a rally that keeps going is celebrated once rather than on every refresh.
+ */
+export const PORTFOLIO_SURGE_PCT = 3
+
 export const SIGNATURE_PCT = {
   'crypto-major': 8,   // BTC, ETH, SOL and other mega/large caps
   altcoin: 15,         // higher baseline volatility, so a higher bar
@@ -143,13 +159,13 @@ export function comparable(prev, next) {
 // Lower number wins. Portfolio events outrank asset events because they are
 // what the user actually came to look at, and a milestone outranks everything
 // because it happens a handful of times in a lifetime of using the app.
-export const PRIORITY = { milestone: 0, ath: 1, rocket: 2 }
+export const PRIORITY = { milestone: 0, fireworks: 1, ath: 2, rocket: 3 }
 
 /** Net-worth ladder, in the user's display currency. */
 export const MILESTONES = [10e3, 25e3, 50e3, 100e3, 250e3, 500e3, 1e6]
 
 export function emptyState() {
-  return { fired: {}, ath: 0, milestonesHit: [] }
+  return { fired: {}, ath: 0, milestonesHit: [], surgeDay: '' }
 }
 
 function firedKey(assetId, periodKey) {
@@ -167,7 +183,7 @@ function firedKey(assetId, periodKey) {
  * @param {number} [o.now]
  * @returns {Array} events, unsorted — selectOne picks the one that plays
  */
-export function detectEvents({ prev = {}, next = {}, state = emptyState(), totalValue = 0, now = Date.now() } = {}) {
+export function detectEvents({ prev = {}, next = {}, state = emptyState(), totalValue = 0, portfolioChangePct = 0, now = Date.now() } = {}) {
   const events = []
 
   for (const [assetId, sample] of Object.entries(next)) {
@@ -197,6 +213,31 @@ export function detectEvents({ prev = {}, next = {}, state = emptyState(), total
       threshold,
       changePct: sample.changePct,
       periodKey,
+      at: now,
+    })
+  }
+
+  // The portfolio flying. Unlike the three below it, this does not need a
+  // crossing between two samples — it is a statement about today, so it is
+  // true from the first observation of the session onward. That is the point:
+  // it fires when you open the app on a good day, which is when you actually
+  // want to be told.
+  //
+  // The once-per-day cap is what keeps it from being noise. Without it every
+  // price refresh during a rally would fire again.
+  const surgeDay = marketPeriodKey('crypto-major', now)
+  if (
+    Number.isFinite(portfolioChangePct) &&
+    portfolioChangePct >= PORTFOLIO_SURGE_PCT &&
+    totalValue > 0 &&
+    state.surgeDay !== surgeDay
+  ) {
+    events.push({
+      type: 'fireworks',
+      priority: PRIORITY.fireworks,
+      changePct: portfolioChangePct,
+      value: totalValue,
+      surgeDay,
       at: now,
     })
   }
@@ -276,12 +317,14 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
     fired: { ...state.fired },
     ath: state.ath,
     milestonesHit: [...state.milestonesHit],
+    surgeDay: state.surgeDay || '',
   }
 
   if (event && event.type === 'rocket') {
     const k = firedKey(event.assetId, event.periodKey)
     nextState.fired[k] = [...(state.fired[k] || []), event.threshold]
   }
+  if (event?.type === 'fireworks') nextState.surgeDay = event.surgeDay
   if (event?.type === 'ath') nextState.ath = Math.max(state.ath, event.value)
   if (event?.type === 'milestone' && !nextState.milestonesHit.includes(event.value)) {
     nextState.milestonesHit.push(event.value)

@@ -45,15 +45,27 @@ export default function PulseOverlay({ event, onDone }) {
 
   const pct = Math.abs(Number(event.changePct) || 0).toFixed(1)
   const caption =
-    event.type === 'rocket'    ? `${event.symbol} +${pct}%`
-    : event.type === 'ath'     ? t('pulseNewHigh')
-    : /* milestone */            t('pulseMilestone')(compactValue(event.value))
+    event.type === 'rocket'      ? `${event.symbol} +${pct}%`
+    : event.type === 'fireworks' ? t('pulseFlying')(pct)
+    : event.type === 'ath'       ? t('pulseNewHigh')
+    : /* milestone */              t('pulseMilestone')(compactValue(event.value))
 
   return (
     <div className={`wl-pulse wl-pulse-${event.type} ${reduced ? 'is-still' : ''}`} aria-hidden="true">
       <div className="wl-pulse-glow" />
       {event.type === 'rocket' && !reduced && (
         <span className="wl-pulse-craft">🚀</span>
+      )}
+      {event.type === 'fireworks' && !reduced && (
+        // Four shells, positioned and coloured entirely in CSS. Rendering them
+        // here rather than generating particles in JS keeps the whole display
+        // at four nodes and lets the compositor own every frame.
+        <>
+          <span className="wl-pulse-shell wl-pulse-shell-1" />
+          <span className="wl-pulse-shell wl-pulse-shell-2" />
+          <span className="wl-pulse-shell wl-pulse-shell-3" />
+          <span className="wl-pulse-shell wl-pulse-shell-4" />
+        </>
       )}
       <span className="wl-pulse-caption">{caption}</span>
     </div>
