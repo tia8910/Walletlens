@@ -28,9 +28,28 @@ beforeEach(() => {
 })
 
 describe('defaults', () => {
-  it('is off until the user says otherwise', () => {
-    // A finance app that makes noise nobody asked for gets uninstalled once.
+  it('is on until the user says otherwise', () => {
+    // Shipped off, on the argument that a finance app making noise nobody
+    // asked for gets uninstalled once. What off actually produced was a
+    // feature nobody ever encountered — the toggle that switched it on was
+    // the one thing you had to already know about to find.
+    expect(pulseSettings().enabled).toBe(true)
+    expect(pulseSettings().visuals).toBe(true)
+  })
+
+  it('never writes a setting on the user\'s behalf', () => {
+    // The default must stay a default. If merely reading it persisted a
+    // value, someone who turned sound off in a previous version would have
+    // their choice silently overwritten by the new default.
+    pulseSettings()
+    expect(localStorage.getItem('wl_pulse_settings')).toBeNull()
+  })
+
+  it('keeps sound off for anyone who turned it off', () => {
+    setPulseSettings({ enabled: false })
     expect(pulseSettings().enabled).toBe(false)
+    observeMarket({ samples: btc(4), totalValue: 50000, portfolioChangePct: 8, now: T0 })
+    expect(audio.played).toEqual([])
   })
 })
 
@@ -94,6 +113,11 @@ describe('with sound enabled', () => {
 })
 
 describe('with sound disabled', () => {
+  // Explicit now that the default is on. These cases are about what happens
+  // for someone who deliberately switched sound off, which is a different
+  // thing from what a fresh install does.
+  beforeEach(() => { setPulseSettings({ enabled: false }) })
+
   it('plays nothing but remembers what was missed', () => {
     observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
     observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
