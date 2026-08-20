@@ -123,6 +123,58 @@ export const COPY = {
 
 
   // — Feature tips. One-off, each gated on the user's own state (FEATURE_TIPS) —
+featGuardianTitle: {
+    en: () => '\u{1F6E1}\uFE0F Who reaches your portfolio if you can\u2019t?',
+    ar: () => '\u{1F6E1}\uFE0F من يصل إلى محفظتك إن لم تستطع أنت؟',
+    fr: () => '\u{1F6E1}\uFE0F Qui acc\u00e8de \u00e0 votre portefeuille si vous ne le pouvez plus ?',
+    es: () => '\u{1F6E1}\uFE0F \u00bfQui\u00e9n accede a tu cartera si t\u00fa no puedes?',
+  },
+  featGuardianBody: {
+    en: () => 'Portfolio Guardian quietly checks you\u2019re still around, and passes your holdings list to someone you trust if you stop answering.',
+    ar: () => 'يتحقق حارس المحفظة بهدوء من أنك ما زلت موجوداً، ويمرّر قائمة أصولك إلى شخص تثق به إذا توقفت عن الرد.',
+    fr: () => 'Portfolio Guardian v\u00e9rifie discr\u00e8tement que vous \u00eates l\u00e0, et transmet la liste de vos avoirs \u00e0 un proche si vous ne r\u00e9pondez plus.',
+    es: () => 'Portfolio Guardian comprueba en silencio que sigues ah\u00ed y entrega tu lista de activos a alguien de confianza si dejas de responder.',
+  },
+
+  featVisionTitle: {
+    en: () => '\u{1F3AF} Give your money a destination',
+    ar: () => '\u{1F3AF} امنح أموالك وجهة',
+    fr: () => '\u{1F3AF} Donnez une destination \u00e0 votre argent',
+    es: () => '\u{1F3AF} Dale un destino a tu dinero',
+  },
+  featVisionBody: {
+    en: () => 'Vision Goals splits your portfolio into buckets \u2014 emergency fund, house, retirement \u2014 and tracks each one filling up.',
+    ar: () => 'تقسّم «أهداف الرؤية» محفظتك إلى سلال — صندوق طوارئ، منزل، تقاعد — وتتابع امتلاء كل واحدة.',
+    fr: () => 'Vision Goals r\u00e9partit votre portefeuille en objectifs \u2014 \u00e9pargne de secours, logement, retraite \u2014 et suit leur progression.',
+    es: () => 'Vision Goals reparte tu cartera en metas \u2014 fondo de emergencia, casa, jubilaci\u00f3n \u2014 y sigue c\u00f3mo se llenan.',
+  },
+
+  featWatchlistTitle: {
+    en: () => '\u{1F440} Watch what you don\u2019t own yet',
+    ar: () => '\u{1F440} تابع ما لا تملكه بعد',
+    fr: () => '\u{1F440} Suivez ce que vous ne d\u00e9tenez pas encore',
+    es: () => '\u{1F440} Vigila lo que a\u00fan no tienes',
+  },
+  featWatchlistBody: {
+    en: () => 'Add coins and stocks you\u2019re considering to your watchlist, and we\u2019ll alert you when one reaches the price you want.',
+    ar: () => 'أضف العملات والأسهم التي تفكر بها إلى قائمة متابعتك، وسننبّهك عندما يبلغ أحدها السعر الذي تريده.',
+    fr: () => 'Ajoutez \u00e0 votre liste de suivi les actifs qui vous int\u00e9ressent : nous vous alerterons au prix voulu.',
+    es: () => 'A\u00f1ade a tu lista de seguimiento lo que est\u00e1s considerando y te avisaremos cuando llegue al precio que quieras.',
+  },
+
+  featWeeklyTitle: {
+    en: () => '\u{1F4EC} Your portfolio, summed up every week',
+    ar: () => '\u{1F4EC} محفظتك في ملخّص أسبوعي',
+    fr: () => '\u{1F4EC} Votre portefeuille r\u00e9sum\u00e9 chaque semaine',
+    es: () => '\u{1F4EC} Tu cartera resumida cada semana',
+  },
+  featWeeklyBody: {
+    en: () => 'A branded weekly report in your inbox \u2014 performance, allocation and P&L. Your transactions never leave the device.',
+    ar: () => 'تقرير أسبوعي في بريدك — الأداء والتوزيع والأرباح والخسائر. ومعاملاتك لا تغادر جهازك أبداً.',
+    fr: () => 'Un rapport hebdomadaire dans votre bo\u00eete mail \u2014 performance, r\u00e9partition et P&L. Vos transactions ne quittent jamais l\u2019appareil.',
+    es: () => 'Un informe semanal en tu correo \u2014 rendimiento, distribuci\u00f3n y P&L. Tus transacciones nunca salen del dispositivo.',
+  },
+
   featTargetsTitle: {
     en: () => '🎯 Get told the moment your price is hit',
     ar: () => '🎯 اعرف لحظة بلوغ سعرك',
@@ -221,16 +273,43 @@ export const COPY = {
 // If you want to add a tip and cannot express its trigger as a fact about the
 // user, it does not belong here.
 
-/** At most one tip a week, however many preconditions are true at once. */
+/**
+ * At most one tip a week, however many preconditions are true at once.
+ *
+ * With seven tips that is a worst case of seven notifications spread over
+ * roughly two months, for a user who has set up none of it — and then silence
+ * forever. Order matters: the list is walked top-down, so the most valuable
+ * unused feature goes first.
+ */
 export const FEATURE_TIP_GAP_MS = 7 * 24 * 60 * 60 * 1000
 
 export const FEATURE_TIPS = [
   {
-    // Holdings but no price targets: the single highest-value thing they are
-    // not using, and the channel most likely to bring them back on its own.
+    // The dead man's switch is the feature nobody else has and nobody thinks
+    // to look for. Unset is exactly when it is worth one sentence.
+    id: 'guardian',
+    url: '/guardian',
+    when: (st) => st.watchCount > 0 && st.setup.guardian === false,
+  },
+  {
+    // Holdings but no price targets: the highest-value thing they are not
+    // using, and the channel most likely to bring them back on its own.
     id: 'targets',
     url: '/dashboard?tab=alerts',
     when: (st) => st.watchCount > 0 && st.alertCount === 0,
+  },
+  {
+    id: 'vision',
+    url: '/vision',
+    when: (st) => st.watchCount > 0 && st.setup.vision === false,
+  },
+  {
+    id: 'watchlist',
+    // ?tab=, not /watchlist — the latter is not a route, and pointing a
+    // notification at it lands the user on the 404 page. The dashboard's tabs
+    // are addressed the same way the target alerts are.
+    url: '/dashboard?tab=watchlist',
+    when: (st) => st.watchCount > 0 && st.setup.watchlist === false,
   },
   {
     // One asset is a tracker they have not finished setting up.
@@ -245,6 +324,13 @@ export const FEATURE_TIPS = [
     url: '/dashboard',
     when: (st) => st.watchCount >= 3 && st.kinds.length === 1 && st.kinds[0] === 'crypto',
   },
+  {
+    // Last, and only for someone who has stayed: a weekly summary is worth
+    // offering once the portfolio is clearly real.
+    id: 'weekly',
+    url: '/settings',
+    when: (st) => st.watchCount >= 2 && st.setup.weekly === false,
+  },
 ]
 
 /**
@@ -253,11 +339,30 @@ export const FEATURE_TIPS = [
  * @param {{watchCount:number, alertCount:number, kinds:string[]}} state
  * @param {string[]} sentIds  tips already sent to this subscription, ever
  */
+/**
+ * Keep only the four booleans we understand, and only when they are booleans.
+ * Anything else stays absent, which pickFeatureTip reads as "already set up"
+ * and therefore stays quiet about.
+ */
+export function sanitizeSetup(raw) {
+  const out = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const k of ['guardian', 'vision', 'watchlist', 'weekly']) {
+    if (typeof raw[k] === 'boolean') out[k] = raw[k]
+  }
+  return out
+}
+
 export function pickFeatureTip(state, sentIds) {
   const sent = new Set(sentIds || [])
+  // A subscription from before the setup snapshot existed knows nothing about
+  // what is configured. Treating unknown as "already set up" keeps those tips
+  // silent until the next sync fills it in — the alternative is telling someone
+  // to set up Guardian when they have been using it for months.
+  const st = { setup: {}, kinds: [], ...state }
   for (const tip of FEATURE_TIPS) {
     if (sent.has(tip.id)) continue
-    try { if (tip.when(state)) return tip } catch { /* a bad predicate sends nothing */ }
+    try { if (tip.when(st)) return tip } catch { /* a bad predicate sends nothing */ }
   }
   return null
 }

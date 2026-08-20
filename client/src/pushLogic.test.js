@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
-  FEATURE_TIPS, FEATURE_TIP_GAP_MS, pickFeatureTip,
+  FEATURE_TIPS, FEATURE_TIP_GAP_MS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, inQuietHours, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
@@ -737,30 +737,52 @@ describe('feature tips', () => {
   // is exactly what these must not become. Every tip needs a reason drawn from
   // the user's own setup, and it fires once, ever.
 
-  const state = (over = {}) => ({ watchCount: 3, alertCount: 2, kinds: ['crypto', 'stock'], ...over })
+  const allSetUp = { guardian: true, vision: true, watchlist: true, weekly: true }
+  const state = (over = {}) => ({
+    watchCount: 3, alertCount: 2, kinds: ['crypto', 'stock'], setup: allSetUp, ...over,
+  })
+  const pick = (over, sent = []) => pickFeatureTip(state(over), sent)
+
+  it('offers each unique feature only when it is not set up', () => {
+    expect(pick({ setup: { ...allSetUp, guardian: false } }).id).toBe('guardian')
+    expect(pick({ setup: { ...allSetUp, vision: false } }).id).toBe('vision')
+    expect(pick({ setup: { ...allSetUp, watchlist: false } }).id).toBe('watchlist')
+    expect(pick({ setup: { ...allSetUp, weekly: false } }).id).toBe('weekly')
+  })
+
+  it('says nothing to someone already using all of it', () => {
+    expect(pick({})).toBeNull()
+  })
 
   it('suggests price targets only to someone with holdings and none set', () => {
-    expect(pickFeatureTip(state({ alertCount: 0 }), []).id).toBe('targets')
-    // Already using the feature — nothing to say.
-    expect(pickFeatureTip(state({ alertCount: 1 }), [])?.id).not.toBe('targets')
+    expect(pick({ alertCount: 0 }).id).toBe('targets')
+    expect(pick({ alertCount: 1 })?.id).not.toBe('targets')
   })
 
   it('says nothing at all to someone tracking nothing', () => {
-    // No holdings means no tip has a genuine hook; "add more assets" to an
+    // No holdings means no tip has a genuine hook; "set up Guardian" to an
     // empty portfolio is an advert, not a tip.
-    expect(pickFeatureTip(state({ watchCount: 0, alertCount: 0 }), [])).toBeNull()
+    const empty = { watchCount: 0, alertCount: 0, kinds: [], setup: {} }
+    expect(pickFeatureTip(empty, [])).toBeNull()
   })
 
-  it('suggests multi-asset only to an all-crypto portfolio', () => {
-    expect(pickFeatureTip(state({ kinds: ['crypto'] }), []).id).toBe('multiasset')
-    expect(pickFeatureTip(state({ kinds: ['crypto', 'metal'] }), [])).toBeNull()
+  it('treats an unknown setup as already configured', () => {
+    // Subscriptions predating the snapshot know nothing. Guessing "not set up"
+    // would tell long-time Guardian users to go and set up Guardian.
+    expect(pickFeatureTip({ watchCount: 3, alertCount: 2, kinds: ['crypto', 'stock'] }, []))
+      .toBeNull()
+  })
+
+  it('leads with the most valuable unused feature', () => {
+    // Everything unset at once: Guardian wins, because it is the one nobody
+    // discovers on their own.
+    const nothingSetUp = { guardian: false, vision: false, watchlist: false, weekly: false }
+    expect(pick({ alertCount: 0, setup: nothingSetUp }).id).toBe('guardian')
   })
 
   it('never repeats a tip that has already been sent', () => {
-    const st = state({ alertCount: 0 })
-    expect(pickFeatureTip(st, ['targets'])?.id).not.toBe('targets')
-    // With every tip spent, the channel goes quiet permanently.
-    expect(pickFeatureTip(st, FEATURE_TIPS.map(t => t.id))).toBeNull()
+    expect(pick({ alertCount: 0 }, ['targets'])?.id).not.toBe('targets')
+    expect(pick({ alertCount: 0 }, FEATURE_TIPS.map(t => t.id))).toBeNull()
   })
 
   it('holds tips at least a week apart', () => {
@@ -768,20 +790,47 @@ describe('feature tips', () => {
   })
 
   it('keeps the whole channel finite', () => {
-    // A rotation that never ends is the failure mode being avoided; the total
-    // number of feature pushes a user can ever receive is FEATURE_TIPS.length.
-    expect(FEATURE_TIPS.length).toBeLessThanOrEqual(5)
+    // A rotation that never ends is the failure mode being avoided: the total
+    // a user can ever receive is FEATURE_TIPS.length, then silence forever.
+    expect(FEATURE_TIPS.length).toBeLessThanOrEqual(8)
     expect(new Set(FEATURE_TIPS.map(t => t.id)).size).toBe(FEATURE_TIPS.length)
   })
 
-  it('gives every tip a precondition and a real destination', () => {
+  it('gives every tip a precondition, a destination and copy', () => {
+    const cap = id => id.charAt(0).toUpperCase() + id.slice(1)
+    const appRoutes = new Set(
+      [...readFileSync('src/App.jsx', 'utf8')
+        .matchAll(/path="(\/[a-z-]*)"/g)].map(m => m[1]),
+    )
     for (const tip of FEATURE_TIPS) {
       expect(typeof tip.when, tip.id).toBe('function')
       expect(tip.url, tip.id).toMatch(/^\//)
+      // Same guard the channel URLs get: /watchlist and /intel are not routes,
+      // and a tip pointing at one lands the user on the 404 page.
+      const path = tip.url.split('?')[0]
+      expect(appRoutes, `${tip.id} -> ${path}`).toContain(path)
+      // A tip with no copy would throw inside the cron rather than send.
+      expect(COPY[`feat${cap(tip.id)}Title`], tip.id).toBeTruthy()
+      expect(COPY[`feat${cap(tip.id)}Body`], tip.id).toBeTruthy()
     }
   })
 
   it('survives a predicate that throws rather than failing the cron', () => {
     expect(() => pickFeatureTip({}, [])).not.toThrow()
+  })
+})
+
+describe('setup snapshot', () => {
+  it('keeps only the four booleans it understands', () => {
+    expect(sanitizeSetup({ guardian: true, vision: false, nonsense: 1, weekly: 'yes' }))
+      .toEqual({ guardian: true, vision: false })
+  })
+
+  it('drops anything that is not a boolean, rather than coercing', () => {
+    // A truthy string must not become "configured" — that would silence a tip
+    // the user should have got.
+    expect(sanitizeSetup({ guardian: 'true', vision: 1, watchlist: null })).toEqual({})
+    expect(sanitizeSetup(null)).toEqual({})
+    expect(sanitizeSetup('guardian')).toEqual({})
   })
 })

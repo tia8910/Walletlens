@@ -32,9 +32,9 @@
 // Deploy + VAPID + TWA notes: see push-api/README.md
 //
 // Endpoints:
-//   POST   /subscribe    { subscription, alerts?, watch?, prefs?, lang?, tz? }
+//   POST   /subscribe    { subscription, alerts?, watch?, setup?, prefs?, lang?, tz? }
 //   POST   /alerts       { endpoint, alerts, lang? }   → price-target rules
-//   POST   /watch        { endpoint, watch, prefs?, tz?, lang? } → tracked assets
+//   POST   /watch        { endpoint, watch, setup?, prefs?, tz?, lang? } → tracked assets
 //   POST   /seen         { endpoint, tz? }             → "app opened" heartbeat
 //   POST   /test         { endpoint, lang? }           → send a test push
 //   DELETE /unsubscribe  { endpoint }                  → forget a sub
@@ -124,6 +124,8 @@ interface StoredSub {
   digestDay: string
   /** Win-back ladder steps already used; cleared when the user returns. */
   retention: number[]
+  /** Which features the user has configured — booleans only, see featureSetup(). */
+  setup: Record<string, boolean>
   /** Feature tips already sent — each fires once ever, never repeats. */
   featuresSent: string[]
   /** When the last feature tip went out, so at most one lands per week. */
@@ -157,6 +159,7 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     lastNewsAt: s.lastNewsAt ?? 0,
     digestDay: s.digestDay ?? "",
     retention: Array.isArray(s.retention) ? s.retention : [],
+    setup: s.setup ?? {},
     featuresSent: Array.isArray(s.featuresSent) ? s.featuresSent : [],
     lastFeatureAt: s.lastFeatureAt ?? 0,
     quota: s.quota ?? { day: "", n: 0 },
@@ -566,6 +569,7 @@ async function checkDaily() {
           watchCount: sub.watch.length,
           alertCount: sub.alerts.length,
           kinds: [...new Set(sub.watch.map(a => a.kind))],
+          setup: sub.setup,
         }, sub.featuresSent)
 
         if (tip) {
@@ -658,6 +662,7 @@ Deno.serve(async (req, info) => {
       subscription,
       alerts: body.alerts !== undefined ? sanitizeAlerts(body.alerts) : existing?.alerts,
       watch: body.watch !== undefined ? sanitizeWatch(body.watch) as WatchAsset[] : existing?.watch,
+      setup: { ...existing?.setup, ...sanitizeSetup(body.setup) },
       prefs: body.prefs !== undefined
         ? sanitizePrefs(body.prefs) as Prefs
         : existing?.prefs,
@@ -706,6 +711,9 @@ Deno.serve(async (req, info) => {
 
     const sub = found.sub
     if (body.watch !== undefined) sub.watch = sanitizeWatch(body.watch) as WatchAsset[]
+    // Merged, not replaced: a client that sends a partial snapshot must not
+    // blank out what an earlier sync established.
+    if (body.setup !== undefined) sub.setup = { ...sub.setup, ...sanitizeSetup(body.setup) }
     if (body.prefs !== undefined) sub.prefs = sanitizePrefs(body.prefs) as Prefs
     if (body.tz !== undefined) sub.tz = sanitizeTz(body.tz)
     sub.lang = asLang(body.lang) as Lang | undefined ?? sub.lang
