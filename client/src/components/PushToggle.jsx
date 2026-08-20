@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  isPushSupported, isPushEnabled, enablePush, disablePush, sendTestPush,
+  isPushSupported, isPushEnabled, enablePush, disablePush,
   getPushPrefs, setPushPrefs,
 } from '../push'
 import { track } from '../analytics'
@@ -38,7 +38,6 @@ export default function PushToggle() {
   const [prefs, setPrefs] = useState(getPushPrefs)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [tested, setTested] = useState(false)
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
 
@@ -68,12 +67,6 @@ export default function PushToggle() {
     setPrefs(p => ({ ...p, ...patch }))
     setPushPrefs(patch).catch(() => {})
     track(event, patch)
-  }
-
-  async function test() {
-    setError(''); setTested(false)
-    try { await sendTestPush(); setTested(true) }
-    catch (e) { setError(e?.message || 'Test failed.') }
   }
 
   if (!supported) {
@@ -149,16 +142,6 @@ export default function PushToggle() {
             on={prefs.quiet}
             onToggle={() => updatePref({ quiet: !prefs.quiet }, 'push_pref_quiet')}
           />
-
-          <button
-            onClick={test}
-            style={{
-              marginTop: '0.7rem', background: 'rgba(var(--g-rgb),0.08)', color: 'var(--g-ink)',
-              border: '1px solid rgba(var(--g-rgb),0.25)', borderRadius: '8px',
-              padding: '0.4rem 0.85rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
-            }}>
-            {tested ? t('npTested') : t('npTest')}
-          </button>
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>

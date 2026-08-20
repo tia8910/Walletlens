@@ -451,6 +451,15 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
+  // Switch push on for anyone who has already granted notification permission.
+  // In the Android app that is everyone: the shell asks for POST_NOTIFICATIONS
+  // at launch, so making them then find a toggle in Settings would be asking
+  // the same question twice. Never prompts by itself and never overrides an
+  // explicit opt-out — see autoEnablePush().
+  useEffect(() => {
+    import('./push').then(m => m.autoEnablePush?.()).catch(() => {})
+  }, [])
+
   // Any part of the app can open the Help guide by dispatching `wl:open-help`
   // (e.g. an on-screen tip's "how it works" link).
   useEffect(() => {

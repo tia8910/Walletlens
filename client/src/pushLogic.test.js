@@ -92,10 +92,11 @@ describe('formatting', () => {
 })
 
 describe('preferences', () => {
-  it('defaults the daily brief to off and the rest to on', () => {
-    // A scheduled daily buzz has to be asked for; the others follow from the
-    // user having just opted into push at all.
-    expect(DEFAULT_PREFS.digest).toBe(false)
+  it('starts every channel on', () => {
+    // The brief is included: it only fires when a holding actually moved, so
+    // defaulting it on promises "tell me when something happens", not a daily
+    // buzz. Quiet hours and the daily budget still bound all of them.
+    expect(DEFAULT_PREFS.digest).toBe(true)
     expect(DEFAULT_PREFS.moves).toBe(true)
     expect(DEFAULT_PREFS.news).toBe(true)
     expect(DEFAULT_PREFS.retention).toBe(true)

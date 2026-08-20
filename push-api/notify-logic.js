@@ -196,13 +196,18 @@ export function copy(key, lang) {
 }
 
 // ── Preferences ─────────────────────────────────────────────────────────────
-// Every channel is individually switchable. `digest` is off by default: a daily
-// scheduled buzz is the one people resent most, so it has to be asked for.
-// The rest are on because the user has just explicitly opted into push.
+// Every channel is individually switchable, and all of them start on.
+//
+// `digest` used to default off, on the reasoning that a daily scheduled buzz is
+// the one people resent most. That reasoning no longer applies to this channel:
+// the brief only sends when a holding has actually moved (DIGEST_MIN_PCT), so a
+// quiet week is a silent week. What it defaults to is "tell me when something
+// happens", which is what someone with a portfolio wants — and quiet hours and
+// the daily budget still bound it.
 export const DEFAULT_PREFS = {
   moves: true,      // a holding swings sharply
   news: true,       // breaking news naming a holding
-  digest: false,    // once-a-day brief
+  digest: true,     // morning brief — only sends when something actually moved
   retention: true,  // win-back nudges while idle
   movePct: 5,       // swing threshold, percent
   quiet: true,      // hold non-urgent pushes overnight

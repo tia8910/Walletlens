@@ -43,6 +43,7 @@ const PA_ALERTS_KEY = 'walletlens_price_alerts'  // Dashboard 'Alerts' tab store
 const PREFS_KEY = 'wl_push_prefs'
 const WATCH_CACHE_KEY = 'wl_push_watch'
 const SEEN_PING_KEY = 'wl_push_seen_ts'
+const OPTOUT_KEY = 'wl_push_optout'
 
 // Mirrors DEFAULT_PREFS in push-api/notify-logic.js. The server sanitizes
 // whatever arrives, so a drift here is safe, but the toggles should show the
@@ -50,7 +51,7 @@ const SEEN_PING_KEY = 'wl_push_seen_ts'
 export const DEFAULT_PUSH_PREFS = {
   moves: true,
   news: true,
-  digest: false,
+  digest: true,
   retention: true,
   movePct: 5,
   quiet: true,
@@ -230,10 +231,46 @@ export async function enablePush() {
     try { await sub.unsubscribe() } catch {}
     throw new Error('Couldn’t reach the notification server. Please try again.')
   }
+  try { localStorage.removeItem(OPTOUT_KEY) } catch {}
   return { ok: true }
 }
 
+/**
+ * Turn push on by itself, without prompting, when permission already exists.
+ *
+ * In the Android app this is the normal path: the shell asks for
+ * POST_NOTIFICATIONS at launch (NotificationPermissionActivity), so by the time
+ * the web layer loads, permission is already granted. Making someone find a
+ * toggle in Settings to switch on what they just approved at the system level
+ * is asking the same question twice.
+ *
+ * Deliberately never calls requestPermission(). An unprompted permission dialog
+ * on page load is the one move that can lose the capability permanently — a
+ * denial is sticky and there is no second chance to ask. Someone who has not
+ * been asked yet gets the toggle; someone who already said yes gets it on.
+ *
+ * Also never re-enables after an explicit opt-out: turning it off in Settings
+ * has to stay off, or the toggle is a lie.
+ */
+export async function autoEnablePush() {
+  try {
+    if (!isPushSupported() || !VAPID_PUBLIC) return { ok: false, reason: 'unsupported' }
+    if (Notification.permission !== 'granted') return { ok: false, reason: 'not-granted' }
+    if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
+    if (await getSubscription()) return { ok: false, reason: 'already-on' }
+    await enablePush()
+    return { ok: true }
+  } catch {
+    // Best-effort by definition — nobody asked for this to happen, so it must
+    // never surface an error or block startup.
+    return { ok: false, reason: 'failed' }
+  }
+}
+
 export async function disablePush() {
+  // Remember the choice before doing the work: autoEnablePush() would
+  // otherwise switch it straight back on at the next app open.
+  try { localStorage.setItem(OPTOUT_KEY, '1') } catch {}
   try {
     const sub = await getSubscription()
     if (sub) {
@@ -322,6 +359,11 @@ export async function pingSeen({ force = false } = {}) {
 }
 
 // Fire a one-off test push to confirm delivery works end-to-end.
+//
+// No longer wired to a button — a "send test" control in Settings is a
+// developer tool shown to every user forever, and once push is on the real
+// notifications are the proof it works. Kept as a diagnostic that can be
+// called from devtools while the /test endpoint exists.
 export async function sendTestPush() {
   const sub = await getSubscription()
   if (!sub) throw new Error('Enable notifications first.')
