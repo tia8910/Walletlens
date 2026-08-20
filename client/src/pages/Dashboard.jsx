@@ -9,7 +9,7 @@ import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { pulseClass } from '../marketPulse'
-import { observeMarket, armPulseAudio, demoPulse } from '../marketPulseRuntime'
+import { observeMarket, armPulseAudio, demoPulse, onPulseRelease } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
@@ -3778,6 +3778,15 @@ export default function Dashboard() {
     // out of seeing it, and the caption is the part that carries the fact.
     if (event) setPulseEvent(event)
   }, [loaded, enriched, prices, totalValue])
+
+  // An event that landed before audio could be unlocked is held by the
+  // runtime and released on the first tap. It has to reach the overlay by
+  // this path rather than by observeMarket's return value, because by then
+  // that call has long since returned.
+  useEffect(() => {
+    onPulseRelease(setPulseEvent)
+    return () => onPulseRelease(null)
+  }, [])
 
   // ?pulse=rocket — fire one event on demand, to check the feature works.
   //

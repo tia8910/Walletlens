@@ -41,9 +41,10 @@ const DEFAULTS = {
   // was the one thing you had to already know about to find.
   //
   // Two things keep the meeting case survivable. Browsers refuse audio until
-  // the first tap of a session, so this can never fire on a cold open — the
-  // earliest possible sound is one the user's own tap unlocked. And the
-  // events are rare by construction: at most one a day for the portfolio
+  // the first tap of a session, so this can never fire on a cold open — an
+  // event that lands before then is held and released on the first tap, so
+  // the earliest possible sound is one the user's own gesture unlocked. And
+  // the events are rare by construction: at most one a day for the portfolio
   // surge, and the rest are genuinely uncommon.
   //
   // Anyone who turns it off stays off: this default only applies until the
@@ -137,6 +138,54 @@ export function dismissDiscovery() {
   const missed = read(MISSED_KEY, { shows: 0, event: null, dismissed: false })
   write(MISSED_KEY, { ...missed, dismissed: true })
 }
+
+// ── Holding a celebration until it can be heard ────────────────────────────
+
+/**
+ * How long a held event waits for a tap before giving up on being heard.
+ *
+ * Past this it is shown silently rather than lost: knowing the portfolio is
+ * flying is the information, and the sound is the decoration.
+ */
+const HOLD_MS = 60000
+
+let held = null
+let heldTimer = null
+let releaseCb = null
+
+/** The overlay registers here, so a held event can still reach the screen. */
+export function onPulseRelease(cb) { releaseCb = cb }
+
+function releaseHeld(withSound) {
+  const event = held
+  held = null
+  if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
+  try { document.removeEventListener('click', onGesture) } catch { /* no DOM */ }
+  if (!event) return
+
+  if (withSound) {
+    unlock()
+    setVolume(pulseSettings().volume)
+    if (play(event.type) && pulseSettings().haptics) {
+      try { navigator.vibrate?.(event.type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+    }
+  }
+  releaseCb?.(event)
+}
+
+function onGesture() { releaseHeld(true) }
+
+function holdForGesture(event) {
+  // Only ever one in flight. A second event while one is held is not worth a
+  // queue — the user wants to know something happened, not watch a playlist.
+  if (held) return
+  held = event
+  document.addEventListener('click', onGesture, { once: true })
+  heldTimer = setTimeout(() => releaseHeld(false), HOLD_MS)
+}
+
+/** Test seam. */
+export function __heldEvent() { return held }
 
 // ── The observation loop ───────────────────────────────────────────────────
 
@@ -244,6 +293,20 @@ export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct
 
     if (!chosen) return null
 
+    // Nothing can be heard before the first gesture of the session, and an
+    // event that fires on app open — now the common case, since the portfolio
+    // surge is true from the very first observation — arrives before it.
+    //
+    // Playing here would hit `if (!ctx) return false` on play()'s first line
+    // and show a silent celebration, which is exactly what "I see fireworks
+    // but hear nothing" was. Holding the whole thing until the first tap makes
+    // it land complete instead. This is also why the old Settings test button
+    // worked when nothing else did: it *was* the gesture.
+    if (wantsSound && !isUnlocked() && typeof document !== 'undefined') {
+      holdForGesture(chosen)
+      return null
+    }
+
     // Sound off: remember this for the discovery card, which earns the opt-in
     // by naming something that really happened rather than describing a
     // capability in the abstract.
@@ -336,6 +399,10 @@ export function pulseDiagnostics() {
 /** Test seam — clears the in-memory baseline between cases. */
 export function __resetPulseRuntime() {
   lastSamples = {}
+  held = null
+  releaseCb = null
+  if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
+  try { document.removeEventListener('click', onGesture) } catch { /* no DOM */ }
   try { localStorage.removeItem(SAMPLES_KEY) } catch { /* ignore */ }
   cooldown = { lastAt: 0, lastMajorAt: 0 }
   armed = false

@@ -14,7 +14,7 @@ vi.mock('./pulseAudio', () => ({
 const {
   observeMarket, pulseSettings, setPulseSettings,
   pendingDiscovery, dismissDiscovery, noteDiscoveryShown,
-  __resetPulseRuntime,
+  onPulseRelease, __heldEvent, __resetPulseRuntime,
 } = await import('./marketPulseRuntime')
 
 const T0 = new Date('2026-03-04T15:00:00Z').getTime()
@@ -172,15 +172,59 @@ describe('robustness', () => {
     expect(() => observeMarket({ samples: { x: null }, totalValue: 1 })).not.toThrow()
   })
 
-  it('still reports the event when audio silently refuses', () => {
-    // Device on silent, or the context never unlocked. The visual layer should
-    // still react — the user has not opted out of seeing it.
+  it('holds the celebration until a tap, rather than showing it silently', () => {
+    // Nothing can be heard before the first gesture of a session, and an event
+    // that fires on app open arrives before it — play() bails on `if (!ctx)`
+    // and the user gets a mute celebration. That was the whole of "I see
+    // fireworks but hear nothing". Held events land complete instead.
     setPulseSettings({ enabled: true })
     observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
     observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+
     audio.unlocked = false
+    const released = []
+    onPulseRelease(e => released.push(e))
+
+    expect(observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })).toBeNull()
+    expect(__heldEvent()).toMatchObject({ type: 'rocket' })
+    expect(audio.played).toEqual([])
+
+    document.dispatchEvent(new MouseEvent('click'))
+    expect(audio.played).toEqual(['rocket'])
+    expect(released[0]).toMatchObject({ type: 'rocket' })
+    expect(__heldEvent()).toBeNull()
+  })
+
+  it('shows a held event anyway if the tap never comes', () => {
+    // Silently is better than never: knowing the portfolio is flying is the
+    // information, and the sound is the decoration.
+    vi.useFakeTimers()
+    try {
+      setPulseSettings({ enabled: true })
+      observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+      observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+      audio.unlocked = false
+      const released = []
+      onPulseRelease(e => released.push(e))
+      observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+
+      vi.advanceTimersByTime(61000)
+      expect(released[0]).toMatchObject({ type: 'rocket' })
+      expect(audio.played).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('plays straight away once audio is already unlocked', () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+    audio.unlocked = true
     const event = observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
     expect(event).toMatchObject({ type: 'rocket' })
+    expect(audio.played).toEqual(['rocket'])
+    expect(__heldEvent()).toBeNull()
   })
 })
 
