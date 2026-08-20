@@ -507,23 +507,43 @@ export const DURATION_MS = { rocket: 2500, ath: 1600, milestone: 1950, fireworks
  * the review card, and for the same reason: a feature that cannot report
  * whether it did anything is impossible to debug from a user's phone.
  */
+/** Schedule one voice now. Assumes the context is running. */
+function emit(voice, type) {
+  unlocked = true
+  voiceTrim = TRIM[type] || 1
+  try { voice(ctx.currentTime + 0.02) } finally { voiceTrim = 1 }
+}
+
 export function play(type) {
   try {
+    const voice = VOICES[type]
+    if (!voice) return false
     if (!ctx) return false
+
     // Trust the context, not the cached flag. `unlocked` is a hint that can
     // lag the real state in both directions — the resume promise may not have
     // settled yet, and a context can be suspended again by the platform when
     // the app is backgrounded. ctx.state is the only thing that actually
     // decides whether a scheduled node will be heard.
     if (ctx.state !== 'running') {
-      ctx.resume?.().catch(() => {})
-      return false
+      // And when it is not running, wait for it rather than dropping the note.
+      //
+      // This is the same asynchronous-resume trap as in unlock(), reintroduced
+      // one level up: resume() settles on a later tick, so any caller that
+      // unlocks and plays inside a single handler finds the context still
+      // 'suspended' and gets silence. That is not an edge case — it is the
+      // first tap of every session, and it is exactly what the ?pulse= demo
+      // does, which made the whole feature look mute.
+      //
+      // A few milliseconds late is imperceptible; not playing at all is the
+      // entire bug.
+      ctx.resume?.().then(() => {
+        if (ctx && ctx.state === 'running') emit(voice, type)
+      }).catch(() => {})
+      return true
     }
-    unlocked = true
-    const voice = VOICES[type]
-    if (!voice) return false
-    voiceTrim = TRIM[type] || 1
-    try { voice(ctx.currentTime + 0.02) } finally { voiceTrim = 1 }
+
+    emit(voice, type)
     return true
   } catch {
     return false

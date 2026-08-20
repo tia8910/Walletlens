@@ -109,9 +109,34 @@ describe('unlock', () => {
 })
 
 describe('play', () => {
-  it('refuses while the context is still suspended', () => {
+  it('waits for a suspended context instead of dropping the note', async () => {
+    // The bug this replaces: play() kicked off resume() and returned false,
+    // throwing the sound away. unlock() and play() run in the same click
+    // handler on the first tap of a session — and in the ?pulse= demo — so
+    // the context is still 'suspended' at that moment every single time. The
+    // whole feature was mute for exactly this reason.
     audio.unlock()
-    expect(audio.play('rocket')).toBe(false)
+    expect(audio.play('rocket')).toBe(true)
+    expect(log.sources).toBe(0)          // nothing yet: still waking up
+
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+    expect(log.sources).toBeGreaterThan(0)   // ...and then it plays
+  })
+
+  it('does not schedule anything if the context never wakes', async () => {
+    window.AudioContext = class {
+      constructor() { this.state = 'suspended'; this.sampleRate = 48000; this.currentTime = 0 }
+      resume() { return Promise.resolve() }   // resolves, but stays suspended
+      close() { return Promise.resolve() }
+      createGain() { return { gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect: (n) => n } }
+      createBuffer(c, l) { return { getChannelData: () => new Float32Array(l) } }
+    }
+    vi.resetModules()
+    const a = await import('./pulseAudio')
+    a.unlock()
+    a.play('rocket')
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+    expect(log.sources).toBe(0)
   })
 
   it('plays once the context is actually running', async () => {
