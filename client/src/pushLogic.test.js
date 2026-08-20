@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
-  DEFAULT_PREFS, dueRetentionStep, evaluateMove, fmtPct, fmtPrice, inQuietHours,
+  DEFAULT_PREFS, deliveryFor, dueRetentionStep, evaluateMove, fmtPct, fmtPrice,
+  inQuietHours, pushTopic,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
   sanitizeTz, sanitizeWatch, shortHash, termsFor, withinDailyBudget,
@@ -498,6 +499,79 @@ describe('payloads', () => {
 
   it('falls back to the root for an unknown channel', () => {
     expect(buildPayload({ channel: 'mystery', title: 't', body: 'b' }).url).toBe('/')
+  })
+})
+
+describe('delivery semantics', () => {
+  // This is what decides whether a closed, dozing phone hears anything useful.
+  // web-push's own defaults are normal urgency and a FOUR WEEK TTL, so leaving
+  // these unset means Chrome sits on a price alert until the device wakes, and
+  // a phone that was off for days gets told about a target crossed last week.
+
+  it('wakes the device for anything about a price', () => {
+    expect(deliveryFor('target').urgency).toBe('high')
+    expect(deliveryFor('move').urgency).toBe('high')
+  })
+
+  it('does not wake the device for things we initiated', () => {
+    expect(deliveryFor('digest').urgency).toBe('low')
+    expect(deliveryFor('retention').urgency).toBe('low')
+  })
+
+  it('expires price alerts long before web-push would', () => {
+    const FOUR_WEEKS = 2419200
+    for (const channel of ['target', 'move']) {
+      expect(deliveryFor(channel).ttl).toBeLessThanOrEqual(3600)
+      expect(deliveryFor(channel).ttl).toBeLessThan(FOUR_WEEKS)
+    }
+  })
+
+  it('gives every channel a TTL matched to how fast it goes stale', () => {
+    for (const channel of Object.keys(CHANNEL_URL)) {
+      const { ttl, urgency } = deliveryFor(channel)
+      expect(ttl, `${channel} ttl`).toBeGreaterThan(0)
+      expect(['very-low', 'low', 'normal', 'high'], `${channel} urgency`).toContain(urgency)
+    }
+    // Ordered by how quickly the content stops being true.
+    expect(deliveryFor('target').ttl).toBeLessThan(deliveryFor('news').ttl)
+    expect(deliveryFor('news').ttl).toBeLessThan(deliveryFor('retention').ttl)
+  })
+
+  it('falls back to something sane for an unknown channel', () => {
+    expect(deliveryFor('mystery')).toEqual({ urgency: 'normal', ttl: 3600 })
+    expect(deliveryFor(undefined).ttl).toBeGreaterThan(0)
+  })
+
+  it('scrubs tags into a legal Topic header', () => {
+    // web-push THROWS on anything outside URL-safe base64, so an unscrubbed
+    // tag like "move-crypto:bitcoin" would turn every move alert into an
+    // exception instead of a notification.
+    expect(pushTopic('move-crypto:bitcoin')).toBe('move-crypto-bitcoin')
+    expect(pushTopic('price-wl-12')).toBe('price-wl-12')
+    expect(pushTopic('news-a1b2c3')).toBe('news-a1b2c3')
+  })
+
+  it('never emits a topic that web-push would reject', () => {
+    const legal = /^[A-Za-z0-9_-]{1,32}$/
+    for (const tag of [
+      'move-crypto:bitcoin', 'move-stock:aapl', 'price-pa-9', 'winback-30',
+      'digest', 'wl-test', 'move-crypto:some-absurdly-long-coin-identifier-here',
+      'tag with spaces', 'emoji-🚀-tag', 'slash/and+plus=signs',
+    ]) {
+      expect(pushTopic(tag), tag).toMatch(legal)
+    }
+  })
+
+  it('returns undefined rather than an empty topic', () => {
+    // An empty string is falsy but still an invalid header value; the caller
+    // omits the option entirely on undefined.
+    expect(pushTopic('')).toBeUndefined()
+    expect(pushTopic('🚀')).toBeUndefined()
+    expect(pushTopic(null)).toBeUndefined()
+  })
+
+  it('keeps distinct assets on distinct topics so neither replaces the other', () => {
+    expect(pushTopic('move-crypto:bitcoin')).not.toBe(pushTopic('move-crypto:ethereum'))
   })
 })
 

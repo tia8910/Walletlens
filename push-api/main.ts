@@ -40,11 +40,11 @@
 
 import webpush from "npm:web-push@3.6.7"
 import {
-  asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, dueRetentionStep,
-  evaluateMove, fmtPct, fmtPrice, inQuietHours, isBreaking, localDayKey,
-  localHour, matchArticle, MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pruneSent,
-  RETENTION_HOUR, sanitizeAlerts, sanitizePrefs, sanitizeTz, sanitizeWatch,
-  shortHash, withinDailyBudget,
+  asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, deliveryFor,
+  dueRetentionStep, evaluateMove, fmtPct, fmtPrice, inQuietHours, isBreaking,
+  localDayKey, localHour, matchArticle, MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS,
+  pruneSent, pushTopic, RETENTION_HOUR, sanitizeAlerts, sanitizePrefs,
+  sanitizeTz, sanitizeWatch, shortHash, withinDailyBudget,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
 
@@ -197,10 +197,26 @@ async function allSubs(): Promise<Array<{ key: Deno.KvKey; sub: StoredSub }>> {
 
 // ── Sending ─────────────────────────────────────────────────────────────────
 
-/** Raw send; drops the subscription if the endpoint is gone (404/410). */
+/**
+ * Raw send; drops the subscription if the endpoint is gone (404/410).
+ *
+ * Urgency and TTL are per-channel and are what make a closed phone behave.
+ * Left at the library defaults, every message goes out at normal urgency with
+ * a four-week TTL: Chrome sits on it until the device leaves Doze, and a phone
+ * that was off for days is then told about a price target crossed last week.
+ * See CHANNEL_DELIVERY.
+ */
 async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promise<boolean> {
+  const { urgency, ttl } = deliveryFor(payload.channel as string)
+  const topic = pushTopic(payload.tag as string)
   try {
-    await webpush.sendNotification(sub.subscription as never, JSON.stringify(payload))
+    await webpush.sendNotification(sub.subscription as never, JSON.stringify(payload), {
+      urgency,
+      TTL: ttl,
+      // Coalesces queued messages for an offline device, so unlocking shows the
+      // current state of an asset rather than a scrollback of it.
+      ...(topic ? { topic } : {}),
+    })
     return true
   } catch (e) {
     const code = (e as { statusCode?: number })?.statusCode

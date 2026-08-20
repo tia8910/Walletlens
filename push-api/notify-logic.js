@@ -470,6 +470,58 @@ export const CHANNEL_URL = {
   test: '/settings',
 }
 
+// ── Delivery semantics ──────────────────────────────────────────────────────
+// How the push *service* is told to treat each message, which is a different
+// question from whether we decided to send it. This matters precisely because
+// the app is closed: on a locked, dozing Android phone, Chrome's FCM channel
+// holds normal-urgency messages until the next maintenance window, which can be
+// hours. A price alert that arrives late is worse than useless — the price has
+// moved on and the user acts on a number that no longer exists.
+//
+// TTL is the other half. web-push defaults to FOUR WEEKS, so a phone that is
+// off for a few days would come back and be told about a target crossed last
+// Tuesday. Time-sensitive channels expire fast; a win-back nudge can wait,
+// because it is not about a number.
+//
+//   urgency  high      wakes the device out of Doze
+//            normal    delivered on the next radio activity
+//            low       batched with whatever else is pending
+export const CHANNEL_DELIVERY = {
+  target:    { urgency: 'high',   ttl: 60 * 60 },       // 1h — about a price
+  move:      { urgency: 'high',   ttl: 60 * 60 },       // 1h — about a price
+  news:      { urgency: 'normal', ttl: 2 * 60 * 60 },   // 2h — story goes stale
+  digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
+  retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition
+  test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
+}
+
+const DEFAULT_DELIVERY = { urgency: 'normal', ttl: 60 * 60 }
+
+export function deliveryFor(channel) {
+  return CHANNEL_DELIVERY[channel] ?? DEFAULT_DELIVERY
+}
+
+/**
+ * A push-service Topic for a notification tag.
+ *
+ * Topic makes the push service keep only the newest undelivered message per
+ * topic per subscription. For a phone that has been offline, that is the
+ * difference between unlocking to one current "BTC -7%" and unlocking to five
+ * stale ones from the same afternoon.
+ *
+ * RFC 8030 restricts it to the URL-safe base64 alphabet, max 32 chars, and
+ * web-push *throws* on anything else — so tags like "move-crypto:bitcoin" have
+ * to be scrubbed before they go anywhere near a header.
+ */
+export function pushTopic(tag) {
+  const clean = String(tag ?? '').replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 32)
+  // A tag of nothing but separators ("🚀" scrubs to "--") is legal for the
+  // header but carries no identity, and two unrelated notifications sharing it
+  // would silently replace each other in an offline device's queue. No topic
+  // is better than a wrong one: without it, both are simply delivered.
+  return /[A-Za-z0-9]/.test(clean) ? clean : undefined
+}
+
 /**
  * Build the payload the service worker renders. `channel` travels with it so
  * the client can attribute opens, and `url` is resolved from the channel

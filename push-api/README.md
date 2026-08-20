@@ -32,6 +32,32 @@ name and which therefore outranks both:
 The win-back ladder escalates and then **stops**. Someone who has ignored five
 nudges over two months will not be won back by a sixth.
 
+## Delivery, and why the defaults are wrong
+
+Deciding to send is only half of reaching a closed phone. Each channel also
+sets its own `Urgency`, `TTL` and `Topic` (`CHANNEL_DELIVERY` in
+`notify-logic.js`) — **do not leave these to web-push**, whose defaults are
+normal urgency and a **four-week** TTL:
+
+- **Urgency.** On a locked, dozing Android device, Chrome's FCM channel holds
+  normal-urgency messages until the next maintenance window — potentially
+  hours. Anything about a price (`target`, `move`) goes out `high` so it wakes
+  the device; things we initiated (`digest`, `retention`) go `low`.
+- **TTL.** A four-week retention means a phone that was off for days comes back
+  online and is told about a target crossed last Tuesday, at a price that no
+  longer exists. Price channels expire in an hour; a win-back nudge can wait
+  twelve, because it is not about a number.
+- **Topic.** Makes the push service keep only the newest undelivered message
+  per topic, so a phone that has been offline unlocks to one current "BTC −7%"
+  rather than five stale ones from the same afternoon.
+
+`Topic` is restricted to the URL-safe base64 alphabet and 32 chars, and
+web-push **throws** on anything else — an unscrubbed tag like
+`move-crypto:bitcoin` would turn every move alert into an exception instead of
+a notification. `pushTopic()` scrubs it, and returns `undefined` rather than a
+topic with no alphanumerics left in it (no topic is better than one that
+silently coalesces unrelated alerts).
+
 ## What's stored
 
 Per subscription, in Deno KV:
