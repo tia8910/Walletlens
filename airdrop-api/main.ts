@@ -34,8 +34,8 @@ const cors = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } });
+const json = (body: unknown, status = 200, extraHeaders?: Record<string, string>) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors, ...extraHeaders } });
 
 async function hashIp(ip: string): Promise<string> {
   const data = new TextEncoder().encode(IP_SALT + ip);
@@ -62,17 +62,34 @@ async function onchainOk(address: string): Promise<boolean> {
   }
 }
 
+// /stats used to walk the entire ["reg"] prefix on every single request — an
+// O(n) KV scan that gets slower and costlier as registrations grow. It's a
+// public counter (polled by the airdrop page), not a value that needs to be
+// live-to-the-second, so cache the computed result for a short TTL and only
+// re-scan when it goes stale.
+const STATS_CACHE_TTL_MS = 30_000;
+let statsCache: { total: number; eligible: number; at: number } | null = null;
+
+async function computeStats(): Promise<{ total: number; eligible: number }> {
+  if (statsCache && Date.now() - statsCache.at < STATS_CACHE_TTL_MS) {
+    return { total: statsCache.total, eligible: statsCache.eligible };
+  }
+  let total = 0, eligible = 0;
+  for await (const e of kv.list({ prefix: ["reg"] })) {
+    total++; if ((e.value as any).eligible) eligible++;
+  }
+  statsCache = { total, eligible, at: Date.now() };
+  return { total, eligible };
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   // ── GET /stats ────────────────────────────────────────────────────────────
   if (req.method === "GET" && url.pathname === "/stats") {
-    let total = 0, eligible = 0;
-    for await (const e of kv.list({ prefix: ["reg"] })) {
-      total++; if ((e.value as any).eligible) eligible++;
-    }
-    return json({ total, eligible });
+    const stats = await computeStats();
+    return json(stats, 200, { "Cache-Control": "public, max-age=30" });
   }
 
   // ── GET /status ───────────────────────────────────────────────────────────
