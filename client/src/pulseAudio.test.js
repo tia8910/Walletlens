@@ -65,10 +65,15 @@ function fakeAudioContext(log) {
     createStereoPanner() { return node({ pan: param(0) }) }
     createDynamicsCompressor() {
       log.compressors++
-      return node({
+      const c = node({
         threshold: param(-24), knee: param(30), ratio: param(12),
         attack: param(0.003), release: param(0.25), reduction: 0,
       })
+      // Recorded so a test can assert the limiter is really configured as one.
+      log.compressorSettings.push(
+        new Proxy({}, { get: (_, k) => c[k]?.value }),
+      )
+      return c
     }
   }
 }
@@ -78,7 +83,7 @@ let log
 
 beforeEach(async () => {
   vi.resetModules()
-  log = { sources: 0, ramps: 0, convolvers: 0, compressors: 0 }
+  log = { sources: 0, ramps: 0, convolvers: 0, compressors: 0, compressorSettings: [] }
   window.AudioContext = fakeAudioContext(log)
   audio = await import('./pulseAudio')
 })
@@ -99,12 +104,27 @@ describe('unlock', () => {
     expect(audio.isUnlocked()).toBe(true)
   })
 
-  it('builds the reverb and compressor bus once', async () => {
+  it('builds the bus once, however many times it is called', async () => {
     await running()
     audio.unlock()
     audio.unlock()
     expect(log.convolvers).toBe(1)
-    expect(log.compressors).toBe(1)
+    // Two: the glue compressor that does the loudness work, and the brickwall
+    // limiter after the makeup gain that stops it clipping.
+    expect(log.compressors).toBe(2)
+  })
+
+  it('puts a brickwall limiter last, before the volume control', async () => {
+    // Makeup gain of 2.0 is what makes these audible on a phone, and it is
+    // enough to push peaks past full scale on its own — measured at 1.006 and
+    // clipping before the limiter was added. If this ever gets dropped the
+    // sounds distort rather than go quiet, which is harder to notice.
+    await running()
+    const limiter = log.compressorSettings.find(c => c.ratio >= 20)
+    expect(limiter, 'a high-ratio limiter must exist').toBeTruthy()
+    expect(limiter.knee).toBe(0)
+    expect(limiter.threshold).toBeLessThanOrEqual(-1)
+    expect(limiter.attack).toBeLessThanOrEqual(0.002)
   })
 })
 

@@ -50,7 +50,9 @@ const DEFAULTS = {
   // Anyone who turns it off stays off: this default only applies until the
   // user writes a setting, and it is never written on their behalf.
   enabled: true,
-  volume: 0.6,
+  // Full. The chain below it is level-managed and limited, so this is a
+  // trim for the user's taste rather than the thing that sets the level.
+  volume: 1,
   haptics: true,
   visuals: true,
 }
