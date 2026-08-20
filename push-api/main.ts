@@ -208,6 +208,40 @@ async function sendPush(stored: StoredSub, payload: Record<string, unknown>): Pr
 }
 
 // ── Cron: evaluate every subscription's rules, push on crossing ─────────────
+async function checkOneSub({ key, value }: { key: Deno.KvKey; value: StoredSub }, prices: Record<string, number>) {
+  const fired = value.fired ?? {}
+  let changed = false
+  for (const a of value.alerts ?? []) {
+    const p = prices[a.coin_id]
+    if (p == null) continue
+    const hit = a.condition === "above" ? p >= a.targetPrice : p <= a.targetPrice
+    const id = String(a.id)
+    if (hit && !fired[id]) {
+      const dir = a.condition === "above" ? "🚀" : "🔻"
+      await sendPush(value, {
+        title: copy("targetTitle", value.lang)(dir, a.coin_symbol),
+        body: copy("targetBody", value.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
+        tag: `price-${id}`,
+        url: "/watchlist",
+      })
+      fired[id] = Date.now()
+      changed = true
+    } else if (!hit && fired[id]) {
+      // Price moved back across the line — re-arm so it can fire again.
+      delete fired[id]
+      changed = true
+    }
+  }
+  if (changed) await kv.set(key, { ...value, fired })
+}
+
+// How many subscribers' pushes to send concurrently. Each sub can involve a
+// network round-trip to a push service, so processing them one at a time —
+// as this used to — meant the cron's runtime grew linearly with the
+// subscriber count. Bounded batches let independent subscribers' sends
+// overlap without unbounded fan-out against push services.
+const ALERT_CHECK_CONCURRENCY = 25
+
 async function checkAlerts() {
   const subs: Array<{ key: Deno.KvKey; value: StoredSub }> = []
   for await (const e of kv.list<StoredSub>({ prefix: ["sub"] })) subs.push({ key: e.key, value: e.value })
@@ -218,31 +252,8 @@ async function checkAlerts() {
   const prices = await fetchPrices([...ids])
   if (!Object.keys(prices).length) return
 
-  for (const { key, value } of subs) {
-    const fired = value.fired ?? {}
-    let changed = false
-    for (const a of value.alerts ?? []) {
-      const p = prices[a.coin_id]
-      if (p == null) continue
-      const hit = a.condition === "above" ? p >= a.targetPrice : p <= a.targetPrice
-      const id = String(a.id)
-      if (hit && !fired[id]) {
-        const dir = a.condition === "above" ? "🚀" : "🔻"
-        await sendPush(value, {
-          title: copy("targetTitle", value.lang)(dir, a.coin_symbol),
-          body: copy("targetBody", value.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
-          tag: `price-${id}`,
-          url: "/watchlist",
-        })
-        fired[id] = Date.now()
-        changed = true
-      } else if (!hit && fired[id]) {
-        // Price moved back across the line — re-arm so it can fire again.
-        delete fired[id]
-        changed = true
-      }
-    }
-    if (changed) await kv.set(key, { ...value, fired })
+  for (let i = 0; i < subs.length; i += ALERT_CHECK_CONCURRENCY) {
+    await Promise.all(subs.slice(i, i + ALERT_CHECK_CONCURRENCY).map((sub) => checkOneSub(sub, prices)))
   }
 }
 
