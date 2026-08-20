@@ -49,6 +49,8 @@
 // rather than worked around: the earliest a sound can play is the user's first
 // tap, not app open.
 
+const HIGHPASS_HZ = 45
+
 let ctx = null
 let master = null
 let bus = null      // compressor everything lands on
@@ -120,7 +122,7 @@ export function unlock() {
 
       const limiter = ctx.createDynamicsCompressor?.()
       if (limiter) {
-        limiter.threshold.value = -3
+        limiter.threshold.value = -4.5
         limiter.knee.value = 0            // brickwall, not a curve
         limiter.ratio.value = 20
         limiter.attack.value = 0.001
@@ -129,7 +131,13 @@ export function unlock() {
       }
 
       const makeup = ctx.createGain()
-      makeup.gain.value = 2.0
+      // Pushed until the loudest voice sat just under full scale, then backed
+      // off. The measured ceiling was makeup 3.2 at a -3 dB limiter, where the
+      // ATH peaked at 0.996 — clean on paper, but no margin at all for a
+      // device that rounds differently. Taking the limiter down to -4.5 buys
+      // that margin back and lets the makeup go higher, which nets more level
+      // than the tighter setting did.
+      makeup.gain.value = 3.6
       makeup.connect(limiter || master)
 
       bus = ctx.createDynamicsCompressor?.()
@@ -146,16 +154,32 @@ export function unlock() {
         bus = makeup
       }
 
+      // Rumble a phone cannot reproduce still costs headroom.
+      //
+      // A handset speaker rolls off hard below roughly 150 Hz, so the deepest
+      // part of the sub is inaudible there — but it is still the tallest part
+      // of the waveform, and it is what the limiter clamps down on, dragging
+      // the audible content with it. Trimming the bottom frees real level for
+      // everything you can actually hear.
+      //
+      // Set low enough to keep the chest-thump on headphones and a decent
+      // speaker, where the sub is the whole point of the ignition and boom.
+      const trimLow = ctx.createBiquadFilter()
+      trimLow.type = 'highpass'
+      trimLow.frequency.value = HIGHPASS_HZ
+      trimLow.Q.value = 0.7
+      trimLow.connect(bus)
+
       dry = ctx.createGain()
       dry.gain.value = 1
-      dry.connect(bus)
+      dry.connect(trimLow)
 
       const conv = ctx.createConvolver?.()
       if (conv) {
         conv.buffer = impulse(2.6, 2.6)
         const wet = ctx.createGain()
         wet.gain.value = 0.85
-        conv.connect(wet).connect(bus)
+        conv.connect(wet).connect(trimLow)
         verb = conv
       } else {
         verb = null
@@ -199,7 +223,7 @@ export function setVolume(v) {
  * cheaper than scaling twenty hand-written gain figures and re-deriving them
  * every time one layer changes.
  */
-const TRIM = { rocket: 1, ath: 2.25, milestone: 1.8, fireworks: 1.6 }
+const TRIM = { rocket: 1, ath: 1.9, milestone: 1.7, fireworks: 1.7 }
 let voiceTrim = 1
 
 /**
@@ -481,10 +505,19 @@ function firework(t, { pan = 0, size = 1, whistle = true } = {}) {
 
   const burst = t + (whistle ? 0.44 : 0)
 
-  // The report. Sub for the chest, mid band for the crack.
-  sub(burst, 0.55 * size, { from: 90, to: 30, gain: 0.42 * size, wet: 0.18 })
-  air(burst, 0.20, { from: 2400, to: 300, q: 0.7, gain: 0.11 * size, wet: 0.8, attack: 0.002, pan: pan * 0.7 })
-  air(burst, 0.45, { from: 900, to: 180, q: 1.4, gain: 0.05 * size, wet: 0.7, attack: 0.01, pan: pan * 0.5 })
+  // The report.
+  //
+  // Weighted towards the midrange rather than the sub, because a phone
+  // speaker rolls off below ~200 Hz and the sub is inaudible there. Measured
+  // in the band a handset actually radiates, an earlier version of this voice
+  // came in 5 dB under the other three — all its energy was in a bottom
+  // octave the speaker cannot move and a crackle too quiet to carry it. The
+  // sub is still here for headphones; it is just no longer doing the work
+  // alone.
+  sub(burst, 0.55 * size, { from: 90, to: 30, gain: 0.36 * size, wet: 0.18 })
+  air(burst, 0.20, { from: 2400, to: 300, q: 0.7, gain: 0.19 * size, wet: 0.8, attack: 0.002, pan: pan * 0.7 })
+  air(burst, 0.30, { from: 1100, to: 520, q: 1.1, gain: 0.15 * size, wet: 0.6, attack: 0.004, pan: pan * 0.6 })
+  air(burst, 0.45, { from: 900, to: 180, q: 1.4, gain: 0.08 * size, wet: 0.7, attack: 0.01, pan: pan * 0.5 })
 
   // Crackle. Scattered, not gridded.
   const count = Math.round(18 * size)
@@ -492,7 +525,7 @@ function firework(t, { pan = 0, size = 1, whistle = true } = {}) {
     const at = burst + 0.06 + Math.pow(Math.random(), 0.7) * 1.05
     air(at, 0.035, {
       from: 3200 + Math.random() * 3800, to: 1400, q: 5,
-      gain: (0.020 + Math.random() * 0.020) * size, wet: 0.85, attack: 0.002,
+      gain: (0.042 + Math.random() * 0.038) * size, wet: 0.85, attack: 0.002,
       // Scattered around the burst rather than on top of it, so the tail
       // opens out the way a real shell does.
       pan: Math.max(-1, Math.min(1, pan + (Math.random() - 0.5) * 0.8)),
@@ -501,7 +534,7 @@ function firework(t, { pan = 0, size = 1, whistle = true } = {}) {
 
   // A little pitched sparkle riding the tail, panned with the burst.
   bell(burst + 0.10, 0.5, {
-    freq: 1800 + Math.random() * 900, gain: 0.022 * size, index: 3, wet: 0.9, pan,
+    freq: 1200 + Math.random() * 700, gain: 0.055 * size, index: 3, wet: 0.9, pan,
   })
 }
 
