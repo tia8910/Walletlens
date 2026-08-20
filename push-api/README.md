@@ -159,10 +159,31 @@ update that constant. The `*.deno.net` origin is already allowed by the site CSP
 | `VAPID_PRIVATE_KEY` | the private key from step 1 (secret)     |
 | `VAPID_SUBJECT`     | `mailto:contact@walletlens.live` (opt.)  |
 
-Deno KV and Deno Cron are enabled automatically on Deno Deploy — no flags needed
-in production. (Local dev uses the flags in `deno.json`'s `start` task.)
+## 4. Attach a KV database (required — the app will not boot without it)
 
-## 4. The Android app (TWA)
+On Deno Deploy: the app's **Databases** tab → attach or create a KV database →
+redeploy.
+
+This is not optional and not automatic. `main.ts` calls `Deno.openKv()` at module
+top level, so with no database attached the deploy fails during warm-up with:
+
+```
+error: Uncaught (in promise) TypeError: Deno.openKv() failed: no KV database is
+attached to this app. Attach a KV database to your app in the Deno Deploy
+dashboard, then redeploy.
+```
+
+**Register crons** fails in the same deploy as a consequence — the module never
+finishes evaluating, so the `Deno.cron()` calls are never reached. Attaching KV
+fixes both; there is no separate cron step to configure.
+
+An app with KV attached shows a database icon beside its name in the apps list,
+which is the quickest way to tell the two states apart.
+
+Deno Cron itself needs no setup in production. (Local dev uses the `--unstable-kv`
+and `--unstable-cron` flags in `deno.json`'s `start` task.)
+
+## 5. The Android app (TWA)
 
 Web Push only reaches the **installed** Play Store app if the TWA is built with
 notification delegation. This is already on — `app/build.gradle` carries
