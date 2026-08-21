@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, DEFAULT_PUSH_PREFS } from './push'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, watchPermission, DEFAULT_PUSH_PREFS } from './push'
 
 // toWatchAssets is the privacy boundary: it decides exactly which fields of a
 // user's portfolio are allowed to leave the device. A regression here doesn't
@@ -181,5 +181,81 @@ describe('auto-enable', () => {
   it('reports a reason rather than silently doing nothing', async () => {
     const res = await autoEnablePush()
     expect(typeof res.reason === 'string' || res.ok).toBe(true)
+  })
+})
+
+
+describe('reacting to permission granted later', () => {
+  // The bug this covers, reported from a device: the user allowed
+  // notifications and the toggle stayed off. It was telling the truth —
+  // autoEnablePush() runs once at startup, so permission granted afterwards
+  // subscribed nothing until the next cold start.
+
+  // jsdom ships none of the push surface, so isPushSupported() is false and
+  // the watcher would correctly no-op. Stub the three things it checks.
+  let restore = []
+  beforeEach(() => {
+    localStorage.clear()
+    const set = (obj, key, value) => {
+      const had = key in obj
+      const prev = obj[key]
+      Object.defineProperty(obj, key, { value, configurable: true, writable: true })
+      restore.push(() => { if (had) obj[key] = prev; else delete obj[key] })
+    }
+    set(window, 'Notification', { permission: 'default' })
+    set(window, 'PushManager', function PushManager() {})
+    set(navigator, 'serviceWorker', {
+      ready: Promise.resolve({ pushManager: { getSubscription: async () => null } }),
+    })
+  })
+  afterEach(() => { restore.forEach(f => f()); restore = [] })
+
+  it('reports the state after a change, without being asked twice', async () => {
+    const seen = []
+    const stop = watchPermission(v => seen.push(v))
+
+    // Deny → granted is the transition that matters. jsdom exposes
+    // Notification.permission as a plain property, so it can be moved.
+    Object.defineProperty(Notification, 'permission', {
+      value: 'granted', configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await new Promise(r => setTimeout(r, 0))
+
+    // Whatever the environment can support, the watcher must have reported
+    // something rather than leaving the caller on its stale mount-time read.
+    expect(seen.length).toBeGreaterThan(0)
+    expect(typeof seen[seen.length - 1]).toBe('boolean')
+    stop()
+  })
+
+  it('reports off immediately when permission is revoked', async () => {
+    const seen = []
+    const stop = watchPermission(v => seen.push(v))
+    Object.defineProperty(Notification, 'permission', {
+      value: 'denied', configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await new Promise(r => setTimeout(r, 0))
+    expect(seen[seen.length - 1]).toBe(false)
+    stop()
+  })
+
+  it('stops listening when torn down', async () => {
+    const seen = []
+    const stop = watchPermission(v => seen.push(v))
+    stop()
+    Object.defineProperty(Notification, 'permission', {
+      value: 'granted', configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await new Promise(r => setTimeout(r, 0))
+    expect(seen).toEqual([])
+  })
+
+  it('returns a teardown even where push is unsupported', () => {
+    // Called from a useEffect return, so a non-function here is a crash on
+    // unmount for every user on an unsupported browser.
+    expect(typeof watchPermission(() => {})).toBe('function')
   })
 })

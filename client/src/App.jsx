@@ -457,8 +457,17 @@ export default function App() {
   // at launch, so making them then find a toggle in Settings would be asking
   // the same question twice. Never prompts by itself and never overrides an
   // explicit opt-out — see autoEnablePush().
+  //
+  // The watcher matters as much as the first call: permission granted after
+  // startup — in Android's app settings, say — would otherwise not subscribe
+  // anything until the next cold start.
   useEffect(() => {
-    import('./push').then(m => m.autoEnablePush?.()).catch(() => {})
+    let stop = () => {}
+    import('./push').then(m => {
+      m.autoEnablePush?.()
+      stop = m.watchPermission?.(() => {}) || stop
+    }).catch(() => {})
+    return () => stop()
   }, [])
 
   // Any part of the app can open the Help guide by dispatching `wl:open-help`

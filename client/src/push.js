@@ -359,6 +359,73 @@ export async function autoEnablePush() {
   }
 }
 
+/**
+ * Run `autoEnablePush()` again if notification permission is granted later.
+ *
+ * The startup call in App.jsx fires once, so permission granted at any point
+ * after that — in the browser prompt, in the primer card, or in Android's own
+ * app settings — left push unsubscribed until the next cold start. From the
+ * user's side that reads as the switch being broken: they allowed
+ * notifications, came back, and the toggle was still off. It was telling the
+ * truth; nothing had subscribed.
+ *
+ * Two triggers, because neither is reliable alone:
+ *
+ *   permissions change   the correct signal, but the Permissions API is
+ *                        missing in some WebViews and its change event is not
+ *                        dependable inside a TWA
+ *   returning to the tab the fallback, and the one that catches a change made
+ *                        in Android settings, which happens entirely outside
+ *                        the page
+ *
+ * @param {(enabled: boolean) => void} [onChange] called after each attempt
+ *   with the resulting subscription state, so a toggle can repaint itself
+ * @returns {() => void} teardown
+ */
+export function watchPermission(onChange) {
+  if (typeof window === 'undefined' || !isPushSupported()) return () => {}
+
+  let last = Notification.permission
+  let stopped = false
+
+  const settle = async () => {
+    if (stopped) return
+    await autoEnablePush()
+    if (stopped) return
+    try { onChange?.(await isPushEnabled()) } catch { /* nothing to repaint */ }
+  }
+
+  const check = () => {
+    const now = Notification.permission
+    // Only act on a transition into `granted`. Re-running on every visibility
+    // change would hit the network on every app switch for no reason.
+    if (now === last) return
+    last = now
+    if (now === 'granted') settle()
+    else onChange?.(false)
+  }
+
+  const onVisible = () => { if (document.visibilityState === 'visible') check() }
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('focus', check)
+
+  let status = null
+  try {
+    navigator.permissions?.query?.({ name: 'notifications' }).then(s => {
+      if (stopped) return
+      status = s
+      s.addEventListener('change', check)
+    }).catch(() => { /* unsupported: the visibility fallback covers it */ })
+  } catch { /* older browsers throw rather than reject */ }
+
+  return () => {
+    stopped = true
+    document.removeEventListener('visibilitychange', onVisible)
+    window.removeEventListener('focus', check)
+    try { status?.removeEventListener('change', check) } catch { /* already gone */ }
+  }
+}
+
 export async function disablePush() {
   // Remember the choice before doing the work: autoEnablePush() would
   // otherwise switch it straight back on at the next app open.
