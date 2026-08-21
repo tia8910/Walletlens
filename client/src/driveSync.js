@@ -11,7 +11,10 @@ import {
   encryptBackupEnvelope, encryptBackupWithWrap, wrapBlockOf,
   decryptBackupWithKey, unwrapDataKey,
 } from './backupEncryption'
-import { findBackup, uploadBackup, downloadBackup, getAccessToken, storedAccessToken, isDriveConfigured } from './googleDrive'
+import {
+  findBackup, uploadBackup, downloadBackup,
+  getAccessToken, storedAccessToken, signOut, isDriveConfigured,
+} from './googleDrive'
 
 const LAST_BACKUP_AT = 'wl_drive_backup_at'
 const FILE_ID = 'wl_drive_file_id'
@@ -55,6 +58,35 @@ export function storedDataKey() {
 export function canAutoBackup() {
   return Boolean(
     isDriveConfigured() && storedDataKey() && readKey(WRAP) && previouslyConnected())
+}
+
+/** Drop only what lets this device back up unattended; stay connected. */
+export function forgetAutoBackup() {
+  for (const k of [DATA_KEY, WRAP]) {
+    try { localStorage.removeItem(k) } catch { /* private mode */ }
+  }
+}
+
+/**
+ * Forget Drive entirely on this device.
+ *
+ * Revokes the token and clears every local trace, so the panel returns to Not
+ * connected. Deliberately does NOT delete the file in Drive: it is the user's
+ * own file in their own account, it is the thing protecting their portfolio,
+ * and an app removing it because someone tapped Disconnect would be the worst
+ * possible reading of that word. They can delete it themselves, and Restore
+ * still finds it if they reconnect.
+ */
+export function disconnectDrive() {
+  signOut()
+  for (const k of [DATA_KEY, WRAP, FILE_ID, LAST_HASH, LAST_BACKUP_AT, REMOTE_AT]) {
+    try { localStorage.removeItem(k) } catch { /* private mode */ }
+  }
+}
+
+/** Is this device set up to back up on its own? */
+export function autoBackupEnabled() {
+  return Boolean(storedDataKey() && readKey(WRAP))
 }
 
 /** Cheap content fingerprint, only ever compared against itself. */
@@ -174,7 +206,7 @@ export async function connect() {
  * key when there is one, so every device that has restored from this backup
  * stays able to read it.
  */
-export async function backupNow(passphrase) {
+export async function backupNow(passphrase, { automatic = true } = {}) {
   if (!passphrase) throw new Error('A passphrase is required')
   const { code, txCount } = await generateBackupCode()
   const key = storedDataKey() || newDataKey()
@@ -185,8 +217,19 @@ export async function backupNow(passphrase) {
   // Only after the upload succeeded. Storing the key for a backup that never
   // landed would leave the device claiming it can auto-back-up to a file that
   // does not exist.
-  writeKey(DATA_KEY, dataKeyToString(key))
-  writeKey(WRAP, wrapBlockOf(payload) || '')
+  //
+  // `automatic` is the user's choice, made at the first backup. What gets kept
+  // is the derived data key, NOT the passphrase — the passphrase is never
+  // written anywhere, and this key only opens the backup, so someone with the
+  // device gains nothing they did not already have by holding the portfolio
+  // itself. Declining means every backup asks again, and nothing is left on
+  // disk that could open the Drive file.
+  if (automatic) {
+    writeKey(DATA_KEY, dataKeyToString(key))
+    writeKey(WRAP, wrapBlockOf(payload) || '')
+  } else {
+    forgetAutoBackup()
+  }
   writeKey(LAST_HASH, await fingerprint(code))
   writeKey(FILE_ID, id)
   writeKey(LAST_BACKUP_AT, String(Date.now()))

@@ -5,6 +5,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import {
   connect, backupNow, restoreNow, driveState, previouslyConnected,
+  disconnectDrive, autoBackupEnabled, forgetAutoBackup,
   latestBackupAt, knownBackup, hasLocalPortfolio,
 } from '../driveSync'
 import { NEEDS_SIGNIN } from '../googleDrive'
@@ -69,6 +70,11 @@ export default function DriveBackup() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [empty] = useState(() => !hasLocalPortfolio())
+  // Default on: someone who just set up a backup almost always wants it to
+  // stay current. The point is that it is now a visible choice, not that it
+  // starts off.
+  const [auto, setAuto] = useState(true)
+  const [autoOn, setAutoOn] = useState(() => autoBackupEnabled())
 
   const resumed = useRef(false)
   useEffect(() => {
@@ -94,6 +100,30 @@ export default function DriveBackup() {
   function cancel() {
     setPrompt(null)
     setPass('')
+  }
+
+  async function onDisconnect() {
+    if (busy) return
+    // No confirm dialog: nothing is destroyed. The file stays in the user's
+    // Drive and Restore finds it again on reconnect, so the cost of a mistaken
+    // tap is one more tap.
+    setBusy(true)
+    try {
+      disconnectDrive()
+      track('drive_disconnect')
+      setConnected(false); setFound(null); setAction(null); setAutoOn(false)
+      cancel(); refresh()
+      say('ok', 'Disconnected. Your backup is still in your Drive — reconnect any time to restore it.')
+    } finally { setBusy(false) }
+  }
+
+  function onToggleAuto() {
+    // Only ever turns it off. Turning it back on needs the passphrase, which
+    // is the whole reason it can run unattended in the first place.
+    forgetAutoBackup()
+    setAutoOn(false)
+    track('drive_auto_off')
+    say('ok', 'Automatic backups off. Use Back up now when you want to save.')
   }
 
   async function onConnect() {
@@ -135,11 +165,13 @@ export default function DriveBackup() {
     const which = prompt
     try {
       if (which === 'backup') {
-        const { txCount } = await backupNow(pass)
-        track('drive_backup', { txCount })
-        refresh(); setConnected(true)
+        const { txCount } = await backupNow(pass, { automatic: auto })
+        track('drive_backup', { txCount, automatic: auto })
+        refresh(); setConnected(true); setAutoOn(autoBackupEnabled())
         setFound(f => f || { id: driveState().fileId })
-        say('ok', `Backed up ${txCount} transactions. This now updates itself automatically.`)
+        say('ok', auto
+          ? `Backed up ${txCount} transactions. This now updates itself automatically.`
+          : `Backed up ${txCount} transactions. You'll be asked for your passphrase each time.`)
         cancel()
       } else {
         const { restored } = await restoreNow(pass)
@@ -185,6 +217,10 @@ export default function DriveBackup() {
               : 'Sign in to keep an encrypted copy in your own Google Drive.'}
           </span>
         </div>
+        <button className="settings-chip" onClick={onDisconnect} disabled={busy}
+          style={{ display: connected ? 'inline-flex' : 'none', alignItems:'center', gap:'0.35rem' }}>
+          <Icon name="x" size={14} /> Disconnect
+        </button>
         <button className="settings-chip" onClick={onConnect} disabled={busy}
           style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
           <Icon name="link" size={14} /> {connected ? 'Reconnect' : 'Connect'}
@@ -222,6 +258,22 @@ export default function DriveBackup() {
 
       {/* The passphrase is asked for at the moment it is needed, for a named
           purpose, rather than sitting on screen waiting. */}
+      {connected && !prompt && (
+        <div className="settings-row" style={{ paddingTop:'0.2rem' }}>
+          <div className="settings-label">
+            <span>Automatic backups {autoOn ? <span style={{ color:'var(--g-ink)' }}>· on</span> : '· off'}</span>
+            <span className="settings-hint">
+              {autoOn
+                ? 'Saved changes are backed up in the background, without asking.'
+                : 'Use Back up now and enter your passphrase to save.'}
+            </span>
+          </div>
+          {autoOn
+            ? <button className="settings-chip" onClick={onToggleAuto} disabled={busy}>Turn off</button>
+            : <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>Turn on</button>}
+        </div>
+      )}
+
       {prompt && (
         <div className="settings-row" style={{ display:'block' }}>
           <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
@@ -243,6 +295,25 @@ export default function DriveBackup() {
             autoFocus
             style={{ width:'100%' }}
           />
+
+          {prompt === 'backup' && (
+            <label style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start', marginTop:'0.7rem', cursor:'pointer' }}>
+              <input
+                type="checkbox"
+                checked={auto}
+                onChange={e => setAuto(e.target.checked)}
+                style={{ marginTop:'0.2rem', width:18, height:18, accentColor:'var(--g)' }}
+              />
+              <span className="settings-label" style={{ gap:'0.15rem' }}>
+                <span>Keep this backup up to date automatically</span>
+                <span className="settings-hint">
+                  Saves the key that unlocks this backup on this device, so it can
+                  update itself without asking again. Your passphrase is still never
+                  stored. Leave it off to be asked every time.
+                </span>
+              </span>
+            </label>
+          )}
 
           {replaces && (
             <p className="settings-hint" style={{ margin:'0.5rem 0 0', color:'var(--r, #ef4444)' }}>

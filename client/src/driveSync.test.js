@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { autoBackup, canAutoBackup, decideAction, hasLocalPortfolio } from './driveSync'
+import {
+  autoBackup, autoBackupEnabled, canAutoBackup, decideAction, disconnectDrive,
+  forgetAutoBackup, hasLocalPortfolio,
+} from './driveSync'
 import { getAccessToken, storedAccessToken } from './googleDrive'
 import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncryption'
 
@@ -7,6 +10,7 @@ import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncrypt
 // destroy data, and that the encryption round trips.
 vi.mock('./googleDrive', () => ({
   isDriveConfigured: () => true,
+  signOut: vi.fn(),
   getAccessToken: vi.fn(),
   storedAccessToken: vi.fn(() => null),
   findBackup: vi.fn(),
@@ -259,5 +263,80 @@ describe('autoBackup never asks Google for anything', () => {
     storedAccessToken.mockReturnValue(null)
     for (let i = 0; i < 5; i++) await autoBackup()
     expect(getAccessToken).not.toHaveBeenCalled()
+  })
+})
+
+describe('choosing whether backups run unattended', () => {
+  const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='
+  const connected = () => {
+    localStorage.setItem('wl_drive_file_id', 'f1')
+    localStorage.setItem('wl_drive_backup_at', String(Date.now()))
+  }
+  const withAuto = () => {
+    connected()
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', 'salt.iv.wrapped')
+  }
+
+  beforeEach(() => localStorage.clear())
+
+  it('reports whether this device can back up on its own', () => {
+    connected()
+    expect(autoBackupEnabled()).toBe(false)
+    withAuto()
+    expect(autoBackupEnabled()).toBe(true)
+  })
+
+  it('turning it off leaves the device connected', () => {
+    // Declining unattended backups is not the same as disconnecting Drive —
+    // Back up now and Restore must both still work.
+    withAuto()
+    forgetAutoBackup()
+    expect(autoBackupEnabled()).toBe(false)
+    expect(canAutoBackup()).toBe(false)
+    expect(localStorage.getItem('wl_drive_file_id')).toBe('f1')
+  })
+
+  it('turning it off leaves nothing behind that could open the backup', () => {
+    withAuto()
+    forgetAutoBackup()
+    expect(localStorage.getItem('wl_drive_data_key')).toBeNull()
+    expect(localStorage.getItem('wl_drive_wrap')).toBeNull()
+  })
+})
+
+describe('disconnectDrive', () => {
+  const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='
+
+  beforeEach(() => {
+    localStorage.clear()
+    for (const [k, v] of Object.entries({
+      wl_drive_file_id: 'f1',
+      wl_drive_data_key: key,
+      wl_drive_wrap: 'salt.iv.wrapped',
+      wl_drive_last_hash: 'abc',
+      wl_drive_backup_at: '123',
+      wl_drive_remote_at: '456',
+    })) localStorage.setItem(k, v)
+  })
+
+  it('clears every local trace, so the panel reads Not connected', () => {
+    disconnectDrive()
+    for (const k of [
+      'wl_drive_file_id', 'wl_drive_data_key', 'wl_drive_wrap',
+      'wl_drive_last_hash', 'wl_drive_backup_at', 'wl_drive_remote_at',
+    ]) {
+      expect(localStorage.getItem(k), `${k} should be gone`).toBeNull()
+    }
+    expect(autoBackupEnabled()).toBe(false)
+    expect(canAutoBackup()).toBe(false)
+  })
+
+  it('leaves the portfolio alone', () => {
+    // Disconnecting a backup destination must never touch the thing being
+    // backed up. This is the mistake that would be unrecoverable.
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([{ coin_id: 'bitcoin' }]))
+    disconnectDrive()
+    expect(hasLocalPortfolio()).toBe(true)
   })
 })
