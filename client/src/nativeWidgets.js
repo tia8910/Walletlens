@@ -85,7 +85,7 @@ export function syncLanguage({ retryOnGesture = true } = {}) {
     payload.lang = currentLang()
     const json = JSON.stringify(payload)
     try { localStorage.setItem(PAYLOAD_KEY, json) } catch { /* quota; carry on */ }
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))) {
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
       // Activation is transient and the picker may close, re-render and settle
       // before this runs — and a language change that misses the window then
       // waits for the next dashboard sync to reach the notifications. Ride the
@@ -114,7 +114,7 @@ export function forceSyncWidgets() {
     // path runs from a button, so activation is normally present — but if the
     // tap has already expired by the time we get here, saying "fired" would be
     // a lie the Settings readout then repeats back to the user.
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw))) {
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw), { keepSession: true })) {
       return note('no-activation', { manual: true })
     }
     localStorage.setItem(SYNC_KEY, String(Date.now()))
@@ -229,7 +229,7 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
     // it performs would end the TWA session. Record the timestamp only when it
     // actually went — stamping a sync that never happened would start the
     // throttle against a widget that was never updated.
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json))) {
+    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
       return note('no-activation', { nw: payload.nw, tracked: payload.tracked })
     }
 

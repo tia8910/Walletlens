@@ -99,7 +99,7 @@ function record(url, how) {
  * @param {string} url  a walletlens:// URL
  * @returns {boolean}   whether the launch was issued or queued
  */
-export function fireNativeIntent(url) {
+export function fireNativeIntent(url, { keepSession = false } = {}) {
   try {
     if (typeof window === 'undefined') return false
     const target = toIntentUrl(url)
@@ -127,6 +127,38 @@ export function fireNativeIntent(url) {
       // already stored; Settings → Sync now can push it deliberately.
       record(target, 'skipped-no-activation')
       return false
+    }
+
+    // Two ways to hand the URL over, and the difference is what happens to the
+    // app afterwards.
+    //
+    // `window.location.href` navigates the TOP FRAME to intent://, which takes
+    // the Custom Tab off its own origin and ends the TWA session. Coming back
+    // then starts the app again — and with the widget sync firing every five
+    // minutes, that is a fresh task in the recents switcher every five minutes.
+    // Users see it as "the app opens eight tabs".
+    //
+    // A hidden iframe hands Android the same URL without moving the top frame,
+    // so the session survives and nothing is left behind. What it cannot do is
+    // report back, so it suits fire-and-forget senders only: the widget sync
+    // already keeps its payload in localStorage and retries on the next pass,
+    // so a silently dropped one costs nothing.
+    //
+    // The biometric unlock deliberately keeps the top-frame navigation. It
+    // needs the native side to relaunch the app to deliver its result anyway,
+    // so there is no session to preserve — and quietly failing there would
+    // leave someone staring at a lock screen.
+    if (keepSession && typeof document !== 'undefined' && document.body) {
+      record(target, 'iframe')
+      const frame = document.createElement('iframe')
+      frame.setAttribute('aria-hidden', 'true')
+      frame.style.display = 'none'
+      frame.src = target
+      document.body.appendChild(frame)
+      // Long enough for Android to pick the intent up, short enough that a
+      // five-minute cadence never accumulates these.
+      setTimeout(() => { try { frame.remove() } catch { /* already gone */ } }, 2000)
+      return true
     }
 
     record(target, 'immediate')

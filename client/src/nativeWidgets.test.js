@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // fireNativeIntent is the only thing that actually reaches Android, so counting
 // its calls is the honest measure of "did the widget get updated".
@@ -72,5 +75,21 @@ describe('widget sync throttle', () => {
     const { syncWidgets, widgetSyncDiagnostics } = await freshModule()
     syncWidgets({ enriched: [], totalValue: 0 })
     expect(widgetSyncDiagnostics().diag.result).toBe('no-holdings')
+  })
+})
+
+
+describe('the widget sync must not end the session', () => {
+  // Every widget-sync call has to pass keepSession. One that does not is a
+  // top-frame navigation to intent://, which ends the TWA session and leaves a
+  // new task in recents — every five minutes, on the sync cadence.
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'nativeWidgets.js'), 'utf8',
+  )
+
+  it('passes keepSession on every widget-sync intent', () => {
+    const calls = [...src.matchAll(/fireNativeIntent\(\s*'walletlens:\/\/widget-sync[\s\S]*?\)\)/g)]
+    expect(calls.length).toBeGreaterThanOrEqual(3)
+    for (const c of calls) expect(c[0], c[0].slice(0, 60)).toContain('keepSession: true')
   })
 })
