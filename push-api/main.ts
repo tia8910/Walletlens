@@ -674,7 +674,27 @@ async function loadByEndpoint(endpoint: string): Promise<{ k: string; sub: Store
   return existing ? { k, sub: normalize(existing) } : null
 }
 
+// An uncaught throw anywhere below returns the runtime's own 500 — which
+// carries no CORS headers. The browser then reports it as a network failure
+// rather than a status code, so `fetch` REJECTS and the client cannot tell a
+// server error from an unreachable host. That is how a failing /subscribe read
+// as "could not reach the notification server" while /status answered fine on
+// the same origin a second earlier.
+//
+// Everything the handler does is wrapped so a failure is always an answer, and
+// always an answer the app is allowed to read.
 Deno.serve(async (req, info) => {
+  const reqOrigin = req.headers.get("origin")
+  try {
+    return await handle(req, info)
+  } catch (e) {
+    const detail = (e as Error)?.message || String(e)
+    console.error("unhandled error:", req.method, new URL(req.url).pathname, detail)
+    return json({ error: "server_error", detail }, corsHeaders(reqOrigin), 500)
+  }
+})
+
+async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Response> {
   const origin = req.headers.get("origin")
   const headers = corsHeaders(origin)
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
@@ -878,4 +898,4 @@ Deno.serve(async (req, info) => {
   }
 
   return json({ error: "not_found" }, headers, 404)
-})
+}
