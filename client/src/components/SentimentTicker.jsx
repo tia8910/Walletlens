@@ -1,29 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import { marketMood } from '../sentiment'
 
-// ── Sentiment keyword scoring ─────────────────────────────────────────────
-const BULLISH_KW = ['bullish','surge','rally','adoption','institutional','etf','approval','milestone','record high','all-time','growth','rises','soars','breakout','recovery','outperform','upgrade','inflows','accumulate','moon']
-const BEARISH_KW = ['bearish','crash','drop','hack','ban','regulation','fear','sell-off','liquidation','decline','dump','plunge','correction','outflows','concern','warning','exploit','lawsuit','seizure','freeze']
-
-function scoreText(text) {
-  const t = (text || '').toLowerCase()
-  const b = BULLISH_KW.filter(w => t.includes(w)).length
-  const br = BEARISH_KW.filter(w => t.includes(w)).length
-  return b - br
-}
-
-async function fetchSentiment() {
-  try {
-    const res = await fetch('/news.json?t=' + Math.floor(Date.now() / 3600000))
-    if (res.ok) {
-      const { articles = [] } = await res.json()
-      let total = 0
-      articles.slice(0, 30).forEach(a => { total += scoreText(a.title + ' ' + (a.description || '')) })
-      return total
-    }
-  } catch {}
-  return null
+// Scoring and the market read live in ../sentiment, pure and tested. This file
+// only fetches and renders — the rule that decides what to call the market is
+// the part that was wrong, and it belongs somewhere it can be checked.
+async function fetchMood() {
+  const bust = Math.floor(Date.now() / 3600000)
+  const [articles, coins] = await Promise.all([
+    fetch(`/news.json?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.articles || []).catch(() => []),
+    // Prices decide the label, so this is the one that matters. Failing to
+    // load it falls back to headlines rather than showing nothing.
+    fetch(`/market.json?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.coins || []).catch(() => []),
+  ])
+  return marketMood({ articles, coins })
 }
 
 // ── Portfolio tips ────────────────────────────────────────────────────────
@@ -32,10 +23,10 @@ async function fetchSentiment() {
 const WISDOM_KEYS = ['stW1','stW2','stW3','stW4','stW5','stW6','stW7','stW8','stW9','stW10']
 
 
-function buildTips(holdings, totalValue, totalPnLPct, sentimentScore, t) {
+function buildTips(holdings, totalValue, totalPnLPct, mood, t) {
   const tips = []
-  const isBullish = sentimentScore > 1
-  const isBearish = sentimentScore < -1
+  const isBullish = mood === 'bullish'
+  const isBearish = mood === 'bearish'
 
   // Market sentiment
   if (isBullish) tips.push(t('stBullish'))
@@ -111,7 +102,7 @@ function buildTips(holdings, totalValue, totalPnLPct, sentimentScore, t) {
 // ── Component ─────────────────────────────────────────────────────────────
 export default function SentimentTicker({ holdings = [], totalValue = 0, totalPnLPct = null }) {
   const { t } = useLanguage()
-  const [sentimentScore, setSentimentScore] = useState(null)
+  const [mood, setMood] = useState(null)   // 'bullish' | 'bearish' | 'neutral'
   const [tips, setTips] = useState([])
   const trackRef = useRef(null)
   const animRef  = useRef(null)
@@ -120,17 +111,15 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
 
   // Fetch sentiment once on mount
   useEffect(() => {
-    fetchSentiment().then(score => {
-      setSentimentScore(score ?? 0)
-    })
+    fetchMood().then(m => setMood(m || 'neutral')).catch(() => setMood('neutral'))
   }, [])
 
   // Rebuild tips whenever holdings or sentiment changes
   useEffect(() => {
-    if (sentimentScore === null) return
-    setTips(buildTips(holdings, totalValue, totalPnLPct, sentimentScore, t))
+    if (mood === null) return
+    setTips(buildTips(holdings, totalValue, totalPnLPct, mood, t))
     // `t` is a dependency: the ticker rebuilds when the language changes.
-  }, [holdings, totalValue, totalPnLPct, sentimentScore, t])
+  }, [holdings, totalValue, totalPnLPct, mood, t])
 
   // Scroll animation
   useEffect(() => {
@@ -152,10 +141,10 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
     return () => cancelAnimationFrame(animRef.current)
   }, [tips])
 
-  if (sentimentScore === null || tips.length === 0) return null
+  if (mood === null || tips.length === 0) return null
 
-  const isBullish = sentimentScore > 1
-  const isBearish = sentimentScore < -1
+  const isBullish = mood === 'bullish'
+  const isBearish = mood === 'bearish'
   const label     = isBullish ? 'BULLISH' : isBearish ? 'BEARISH' : 'NEUTRAL'
   const accent    = isBullish ? '#10b981' : isBearish ? '#ef4444' : '#94a3b8'
   const bgColor   = isBullish ? 'rgba(16,185,129,0.08)' : isBearish ? 'rgba(239,68,68,0.08)' : 'rgba(148,163,184,0.06)'
