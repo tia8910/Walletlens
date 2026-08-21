@@ -11,6 +11,7 @@ import {
 } from '../../push-api/notify-logic.js'
 import { parseCoinGecko, parseNews, parseYahooChart, quoteFor, quoteKey } from '../../push-api/markets.js'
 import { LANGUAGES } from './LanguageContext'
+import { DEFAULT_PUSH_PREFS } from './push'
 
 // These rules run on a cron in Deno Deploy, where nothing else in this repo can
 // reach them. They decide whether to wake a few thousand phones, so the failure
@@ -96,13 +97,31 @@ describe('preferences', () => {
   it('starts every channel on', () => {
     // The brief is included: it only fires when a holding actually moved, so
     // defaulting it on promises "tell me when something happens", not a daily
-    // buzz. Quiet hours and the daily budget still bound all of them.
+    // buzz. The daily budget still bounds all of them.
     expect(DEFAULT_PREFS.digest).toBe(true)
     expect(DEFAULT_PREFS.moves).toBe(true)
     expect(DEFAULT_PREFS.news).toBe(true)
     expect(DEFAULT_PREFS.retention).toBe(true)
     expect(DEFAULT_PREFS.features).toBe(true)
-    expect(DEFAULT_PREFS.quiet).toBe(true)
+  })
+
+  it('starts quiet hours OFF', () => {
+    // The one default that suppresses rather than adds. 10pm-8am is a guess
+    // about someone's night, and holding a real alert for ten hours on a guess
+    // is a worse failure than buzzing at midnight — the user cannot see it
+    // happening, so they cannot tell it from the app being broken.
+    expect(DEFAULT_PREFS.quiet).toBe(false)
+  })
+
+  it('keeps the client and server defaults in step', () => {
+    // These live in two files that ship separately. The server is what holds a
+    // send, so a disagreement means the toggle shows one thing and delivery
+    // does another — invisible from either side alone.
+    expect(DEFAULT_PUSH_PREFS.quiet).toBe(DEFAULT_PREFS.quiet)
+    expect(DEFAULT_PUSH_PREFS.movePct).toBe(DEFAULT_PREFS.movePct)
+    for (const k of ['moves', 'news', 'digest', 'retention', 'features']) {
+      expect(DEFAULT_PUSH_PREFS[k], k).toBe(DEFAULT_PREFS[k])
+    }
   })
 
   it('fills in missing fields and rejects junk', () => {

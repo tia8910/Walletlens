@@ -507,8 +507,20 @@ export function copy(key, lang) {
 // the one people resent most. That reasoning no longer applies to this channel:
 // the brief only sends when a holding has actually moved (DIGEST_MIN_PCT), so a
 // quiet week is a silent week. What it defaults to is "tell me when something
-// happens", which is what someone with a portfolio wants — and quiet hours and
-// the daily budget still bound it.
+// happens", which is what someone with a portfolio wants — and the daily budget
+// still bounds it.
+//
+// `quiet` is the exception: it starts OFF. Every other default here adds
+// something the user asked for by installing a portfolio tracker, but quiet
+// hours SUPPRESSES alerts, on a schedule the app picked rather than one the
+// user set. A 10pm-8am window is a guess about someone's night, and it is
+// wrong for shift workers, for anyone in a timezone we inferred badly, and for
+// the person who wants to know at 2am precisely because the market does not
+// sleep. Holding a real alert for ten hours by default is a worse failure than
+// buzzing at midnight, because the user cannot see it happening.
+//
+// It stays one tap away for anyone who wants it, and price targets the user set
+// themselves were always exempt regardless.
 export const DEFAULT_PREFS = {
   moves: true,      // a holding swings sharply
   news: true,       // breaking news naming a holding
@@ -516,7 +528,7 @@ export const DEFAULT_PREFS = {
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
   movePct: 5,       // swing threshold, percent
-  quiet: true,      // hold non-urgent pushes overnight
+  quiet: false,     // off by default — see above
 }
 
 const MIN_MOVE_PCT = 1
