@@ -16479,9 +16479,92 @@ input, select, textarea, .dvx-input {
 
 .wl-pulse-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
+/* ── Champion: the day's winner, arriving and coming apart ─────────────────
+   One gesture in two halves, and the split is at 44% — the same instant the
+   sound's impact lands and the debris canvas starts. Those three numbers are
+   a set; moving one without the others is what makes an effect feel wrong
+   without anyone being able to say why.
+
+   Sized against the smaller viewport axis so it fills a phone in portrait and
+   a tablet in landscape without ever being cropped into an abstract shape. */
+.wl-pulse-champ {
+  position: absolute; top: 50%; left: 50%;
+  width: min(76vw, 76vh); height: min(76vw, 76vh);
+  margin: 0; translate: -50% -50%;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: wl-pulse-champ-zoom 2.6s cubic-bezier(.55,0,.85,.35) forwards;
+}
+.wl-pulse-champ-img,
+.wl-pulse-champ-badge {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  /* The icon is a small PNG blown up past any sane size, so it will be soft.
+     A rim and a drop shadow give the eye an edge to hold, which reads as
+     deliberate rather than as a stretched thumbnail. */
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #12b76a) 40%, transparent),
+              0 24px 80px rgba(0, 0, 0, .45);
+}
+.wl-pulse-champ-img { object-fit: cover; }
+.wl-pulse-champ-badge {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(140deg, var(--accent, #12b76a), #047857);
+  color: #fff; font-weight: 800; letter-spacing: .02em;
+  font-size: min(19vw, 19vh);
+}
+
+/* Scale stops are dense before the impact because the motion accelerates and
+   CSS interpolates each pair linearly — too few stops and the rush reads as a
+   series of steps. */
+@keyframes wl-pulse-champ-zoom {
+  0%   { opacity: 0; transform: scale(.10) rotate(-8deg); }
+  6%   { opacity: 1; transform: scale(.16) rotate(-6deg); }
+  18%  { opacity: 1; transform: scale(.30) rotate(-4deg); }
+  30%  { opacity: 1; transform: scale(.52) rotate(-2deg); }
+  38%  { opacity: 1; transform: scale(.76) rotate(-1deg); }
+  44%  { opacity: 1; transform: scale(1)   rotate(0deg); }
+  /* Impact: a hard kick outward, then gone. Fast, because debris that lingers
+     stops being an explosion and becomes a transition. */
+  48%  { opacity: .92; transform: scale(1.26); }
+  58%  { opacity: .45; transform: scale(1.72); }
+  70%  { opacity: 0;   transform: scale(2.1); }
+  100% { opacity: 0;   transform: scale(2.1); }
+}
+
+/* The white-out at the moment of impact. Covers the whole viewport for about
+   a tenth of a second — long enough to hide the logo's own exit, short enough
+   not to read as a flashbang. */
+.wl-pulse-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(60% 60% at 50% 50%, #fff 0%, color-mix(in srgb, var(--accent, #12b76a) 70%, #fff) 45%, transparent 78%);
+  opacity: 0;
+  animation: wl-pulse-champ-flash 2.6s linear forwards;
+}
+@keyframes wl-pulse-champ-flash {
+  0%, 42%   { opacity: 0; }
+  45%       { opacity: .82; }
+  52%       { opacity: .22; }
+  62%, 100% { opacity: 0; }
+}
+
+.wl-pulse-champion .wl-pulse-glow    { animation: wl-pulse-soft 2.6s ease-out forwards; }
+.wl-pulse-champion .wl-pulse-caption {
+  /* Held back until after the impact. The caption naming the winner is the
+     payoff, and showing it during the approach spends it early. */
+  animation: wl-pulse-champ-cap 2.6s ease-out forwards;
+}
+@keyframes wl-pulse-champ-cap {
+  0%, 44%   { opacity: 0; transform: translateY(10px); }
+  52%       { opacity: 1; transform: translateY(0); }
+  84%       { opacity: 1; transform: translateY(0); }
+  100%      { opacity: 0; transform: translateY(-6px); }
+}
+
 /* Reduced motion: the still caption only, same contract as the rocket. */
 @media (prefers-reduced-motion: reduce) {
-  .wl-pulse-ring, .wl-pulse-band, .wl-pulse-reticle, .wl-pulse-canvas { display: none; }
+  .wl-pulse-ring, .wl-pulse-band, .wl-pulse-reticle, .wl-pulse-canvas,
+  .wl-pulse-champ, .wl-pulse-flash { display: none; }
 }
 
 @keyframes wl-pulse-fade {

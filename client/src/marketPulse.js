@@ -59,6 +59,24 @@ export const PORTFOLIO_RAIN_PCT = 8
 export const PORTFOLIO_DIP_PCT = -5
 export const PORTFOLIO_STORM_PCT = -10
 
+// The day's standout holding. All three gates exist because there is a top
+// gainer every single day, and announcing one daily is the definition of
+// routine — the thing this whole feature is built not to be.
+//
+// So it fires only when there is a real winner: a big move, clear of the
+// field, in a portfolio large enough for "the best one" to mean anything.
+/** The leader has to have moved this far to be worth the whole screen. */
+export const CHAMPION_MIN_PCT = 12
+
+/** And be this many points clear of second place. */
+export const CHAMPION_LEAD_PCT = 5
+
+/**
+ * Below this many movers there is no field to lead. Best-of-two is a coin
+ * flip described as a victory.
+ */
+export const CHAMPION_MIN_ASSETS = 3
+
 /** Share of the holdings that has to be green before it counts as weather. */
 export const AURORA_BREADTH = 0.68
 
@@ -195,9 +213,11 @@ export function comparable(prev, next) {
 // Down events sit between the portfolio highs and the per-asset ones. A bad
 // day outranks one coin having a good one — telling someone a single holding
 // is up while the portfolio is down 8% reads as the app not paying attention.
+// champion outranks rocket because it is the better sentence about the same
+// kind of fact: "this crossed a line" versus "this beat everything you own".
 export const PRIORITY = {
   milestone: 0, fireworks: 1, rain: 1, ath: 2,
-  storm: 2, dip: 3, lock: 3, rocket: 4, aurora: 5, shockwave: 6,
+  storm: 2, dip: 3, lock: 3, champion: 4, rocket: 5, aurora: 6, shockwave: 7,
 }
 
 /** Net-worth ladder, in the user's display currency. */
@@ -207,6 +227,7 @@ export function emptyState() {
   return {
     fired: {}, ath: 0, milestonesHit: [], surgeDay: '',
     rainDay: '', dipDay: '', stormDay: '', auroraDay: '', locksHit: [],
+    championDay: '',
   }
 }
 
@@ -219,7 +240,7 @@ function firedKey(assetId, periodKey) {
  *
  * @param {object} o
  * @param {object} o.prev   assetId → { changePct, source?, fresh? }, last seen
- * @param {object} o.next   assetId → { changePct, source?, fresh?, cls, symbol? }
+ * @param {object} o.next   assetId → { changePct, source?, fresh?, cls, symbol?, image? }
  * @param {object} o.state  from emptyState(), carrying fired flags and records
  * @param {number} [o.totalValue]  portfolio value now, for ATH and milestones
  * @param {number} [o.now]
@@ -344,6 +365,34 @@ export function detectEvents({
     events.push({ type: 'aurora', priority: PRIORITY.aurora, breadth, day, at: now })
   }
 
+  // The day's champion — one holding clear of everything else the user owns.
+  // Gated hard (see the constants) because a top gainer exists every day and
+  // announcing one daily would be exactly the routine noise this avoids.
+  if (state.championDay !== day) {
+    const movers = Object.entries(next)
+      .filter(([, v]) => v?.cls && v.cls !== SILENT && Number.isFinite(v.changePct))
+      .sort((a, b) => b[1].changePct - a[1].changePct)
+
+    if (movers.length >= CHAMPION_MIN_ASSETS) {
+      const [leadId, lead] = movers[0]
+      const runnerUp = movers[1][1].changePct
+      // The lead is measured against second place, not against zero. On a day
+      // when everything is up 20% nothing is a champion — that is weather, and
+      // aurora already has it.
+      if (lead.changePct >= CHAMPION_MIN_PCT && lead.changePct - runnerUp >= CHAMPION_LEAD_PCT) {
+        events.push({
+          type: 'champion', priority: PRIORITY.champion,
+          assetId: leadId,
+          symbol: lead.symbol || leadId,
+          image: lead.image || '',
+          changePct: lead.changePct,
+          runnerUpPct: runnerUp,
+          day, at: now,
+        })
+      }
+    }
+  }
+
   // A price target the user set themselves. Keyed by target id, so each one
   // announces itself exactly once, ever.
   for (const t of (targetsHit || [])) {
@@ -416,6 +465,7 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
     dipDay: state.dipDay || '',
     stormDay: state.stormDay || '',
     auroraDay: state.auroraDay || '',
+    championDay: state.championDay || '',
     locksHit: [...(state.locksHit || [])],
   }
 
@@ -436,6 +486,7 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
   // dip open would let the milder one fire a few minutes later.
   if (event?.type === 'storm') { nextState.stormDay = event.day; nextState.dipDay = event.day }
   if (event?.type === 'aurora') nextState.auroraDay = event.day
+  if (event?.type === 'champion') nextState.championDay = event.day
   if (event?.type === 'lock' && !nextState.locksHit.includes(event.targetId)) {
     nextState.locksHit.push(event.targetId)
   }

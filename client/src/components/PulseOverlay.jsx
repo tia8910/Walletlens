@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
+import { getCachedCoinImage } from '../api'
 import { DURATION_MS } from '../pulseAudio'
 
 /** Which events draw particles, and which shape. */
@@ -17,7 +18,7 @@ import { pulseSettings } from '../marketPulseRuntime'
  * particles, because this plays on the phone someone is holding, over a live
  * dashboard, and a stutter is more memorable than the effect.
  */
-function PulseCanvas({ kind, duration }) {
+function PulseCanvas({ kind, duration, delay = 0, originY = 0.4 }) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -44,7 +45,7 @@ function PulseCanvas({ kind, duration }) {
       if (kind === 'burst') {
         const a = Math.random() * Math.PI * 2
         const s = 1.4 + Math.random() * 3.4
-        p.push({ x: W / 2, y: H * 0.4, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.4, r: 1.4 + Math.random() * 2.4 })
+        p.push({ x: W / 2, y: H * originY, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.4, r: 1.4 + Math.random() * 2.4 })
       } else {
         const slow = kind === 'storm' || kind === 'dip'
         p.push({
@@ -60,9 +61,15 @@ function PulseCanvas({ kind, duration }) {
     const total = duration
 
     const frame = (now) => {
-      const t = (now - start) / total
+      const raw = (now - start) / total
       ctx.clearRect(0, 0, W, H)
-      if (t >= 1) return                       // done; no further frames
+      if (raw >= 1) return                     // done; no further frames
+      // Nothing is drawn before the delay, but the frames keep coming — the
+      // champion's debris has to appear at the instant the logo blows apart,
+      // and starting the loop then instead would cost a frame of setup at the
+      // one moment in the whole set that has to land on time.
+      if (raw < delay) { raf = requestAnimationFrame(frame); return }
+      const t = (raw - delay) / (1 - delay)
       // Fade the field as one rather than per particle, so it ends together
       // instead of dribbling out a few stragglers.
       const fade = t < 0.66 ? 1 : Math.max(0, 1 - (t - 0.66) / 0.34)
@@ -87,9 +94,42 @@ function PulseCanvas({ kind, duration }) {
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [kind, duration])
+  }, [kind, duration, delay, originY])
 
   return <canvas ref={ref} className="wl-pulse-canvas" />
+}
+
+/**
+ * The champion's logo, filling the screen before it comes apart.
+ *
+ * The image is a remote coin icon, which is the one thing on screen that can
+ * simply fail — a cold cache, a blocked CDN, an asset that never had an icon.
+ * A blank centre would leave the whole effect looking broken, so a failure
+ * falls back to the symbol on a plain disc, which is the same thing the rest
+ * of the app does for a missing logo.
+ */
+function ChampionLogo({ image, symbol, assetId }) {
+  // Two sources before giving up. The event carries whatever the holdings row
+  // had, but that can be empty for an asset added before its icon resolved,
+  // and the app's own image cache often has one by now.
+  const sources = [image, assetId ? getCachedCoinImage(assetId) : null].filter(Boolean)
+  const [tried, setTried] = useState(0)
+  const label = (symbol || '?').toString().toUpperCase().slice(0, 4)
+  const src = sources[tried]
+
+  return (
+    <span className="wl-pulse-champ">
+      {src
+        ? <img
+            key={src}
+            src={src}
+            alt=""
+            className="wl-pulse-champ-img"
+            onError={() => setTried(n => n + 1)}
+          />
+        : <span className="wl-pulse-champ-badge">{label}</span>}
+    </span>
+  )
 }
 
 /**
@@ -141,6 +181,7 @@ export default function PulseOverlay({ event, onDone }) {
     : event.type === 'rain'      ? t('pulseRain')(pct)
     : event.type === 'aurora'    ? t('pulseAurora')
     : event.type === 'lock'      ? t('pulseTargetHit')(event.symbol)
+    : event.type === 'champion'  ? t('pulseChampion')(event.symbol, pct)
     // Down-day copy states the fact and stops. No apology, no encouragement —
     // both read as the app having an opinion about your portfolio.
     : event.type === 'dip'       ? t('pulseDip')(pct)
@@ -170,6 +211,19 @@ export default function PulseOverlay({ event, onDone }) {
         <span className="wl-pulse-reticle">
           <i /><i /><i /><i /><u />
         </span>
+      )}
+      {event.type === 'champion' && !reduced && (
+        <>
+          <ChampionLogo image={event.image} symbol={event.symbol} assetId={event.assetId} />
+          {/* The flash is a separate layer so it can cover the logo at the
+              moment of impact without animating the logo's own opacity, which
+              is already carrying the scale. */}
+          <span className="wl-pulse-flash" />
+          {/* originY matches the logo's own centre. The default sits higher,
+              for the milestone, and debris that starts above the thing that
+              exploded reads as two unrelated effects. */}
+          <PulseCanvas kind="burst" duration={DURATION_MS.champion || 2600} delay={0.44} originY={0.5} />
+        </>
       )}
       {CANVAS_KIND[event.type] && !reduced && (
         <PulseCanvas kind={CANVAS_KIND[event.type]} duration={DURATION_MS[event.type] || 2000} />

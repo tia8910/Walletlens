@@ -79,6 +79,22 @@ describe('seeding an existing portfolio', () => {
     expect(event?.type).toBe('dip')
   })
 
+  it('still crowns a champion on the very first run', () => {
+    setPulseSettings({ enabled: true })
+    // A champion is a statement about today, not a record, so seeding has no
+    // business suppressing it. This is the case the old first-run whitelist
+    // got wrong: it named the events allowed through, so every event added
+    // afterwards was silently excluded.
+    const next = {
+      sol: { changePct: 24, cls: 'altcoin', symbol: 'SOL', image: '' },
+      eth: { changePct: 2, cls: 'crypto-major', symbol: 'ETH', image: '' },
+      ada: { changePct: 1, cls: 'altcoin', symbol: 'ADA', image: '' },
+    }
+    const event = observeMarket({ samples: next, totalValue: 120000, now: T0 })
+    expect(event?.type).toBe('champion')
+    expect(event.symbol).toBe('SOL')
+  })
+
   it('does not replay targets that were met before it ever ran', () => {
     setPulseSettings({ enabled: true })
     const hit = [{ id: 't1', symbol: 'ETH', price: 4200 }]
@@ -446,6 +462,35 @@ describe('demo events', () => {
     // Object.prototype keys must not read as valid types.
     expect(demoPulse('toString')).toBeNull()
     expect(demoPulse('constructor')).toBeNull()
+  })
+
+  it('crowns an asset the user actually owns', () => {
+    setPulseSettings({ enabled: true })
+    // The champion demo showing a hardcoded coin with no logo verifies the
+    // animation and demonstrates nothing — it reads as two bugs, which is
+    // exactly how it was reported.
+    observeMarket({
+      samples: {
+        sol: { changePct: 3, cls: 'altcoin', symbol: 'SOL', image: 'sol.png' },
+        eth: { changePct: 19, cls: 'crypto-major', symbol: 'ETH', image: 'eth.png' },
+        usdt: { changePct: 44, cls: 'silent', symbol: 'USDT', image: 'usdt.png' },
+      },
+      totalValue: 50000, now: T0,
+    })
+    const event = demoPulse('champion', { totalValue: 50000 })
+    expect(event.symbol).toBe('ETH')
+    expect(event.image).toBe('eth.png')
+    expect(event.assetId).toBe('eth')
+  })
+
+  it('falls back to a labelled placeholder that still has a logo', () => {
+    setPulseSettings({ enabled: true })
+    // An empty portfolio is every fresh browser this gets tested in, so the
+    // fallback has to look like the real thing rather than like a failure:
+    // no coin the user does not own, and never an empty centre.
+    const event = demoPulse('champion', {})
+    expect(event.symbol).toBe('DEMO')
+    expect(event.image).toBe('/icon-512.png')
   })
 
   it('gives a down day a negative change, so the caption is not a lie', () => {

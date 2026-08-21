@@ -6,8 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
-  PORTFOLIO_DIP_PCT,
-  PORTFOLIO_SURGE_PCT, PRIORITY,
+  PRIORITY,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
 
@@ -263,22 +262,20 @@ export function observeMarket({
       write(STATE_KEY, state)
       lastSamples = samples
       writeSamples(samples)
-      // Deliberately does not return here for the fireworks case: seeding
-      // exists so a long-held portfolio is not congratulated on records it set
-      // before the feature existed. "Today is a good day" is not a record, and
-      // suppressing it on first run would mean the very first thing a new user
-      // could ever see is nothing.
-      // The down days have to survive this gate too: a user opening the app
-      // for the first time on a bad day should hear about it, because that is
-      // today's fact rather than a stale record.
+      // And then carry on into detection rather than returning.
       //
-      // Target hits deliberately do not. seedRecords has just retired every
-      // target that was already met, and it is right that it did — a target
-      // crossed before the app had ever run is a record in exactly the sense
-      // this gate exists to suppress.
-      const worthSaying = portfolioChangePct >= PORTFOLIO_SURGE_PCT
-        || portfolioChangePct <= PORTFOLIO_DIP_PCT
-      if (!worthSaying) return null
+      // There used to be a whitelist here of the events allowed to survive
+      // the first run. It was redundant and, worse, it silently excluded
+      // every event added after it was written — rain, aurora and champion
+      // could not fire on day one for no reason anyone had decided.
+      //
+      // The seeded state already does the whole job. Records cannot fire: ath
+      // now equals the current value, every milestone below it is marked, and
+      // every met target is retired. Crossings cannot fire either, because
+      // they need a previous sample and this run is the first. What is left is
+      // only ever a statement about today, which is exactly what should
+      // survive — suppressing those would mean the first thing a new user sees
+      // is nothing, on the one day the app had something true to say.
     }
 
     const events = detectEvents({
@@ -401,6 +398,46 @@ const DEMO_SHAPES = {
   storm:      { changePct: -11.8 },
   aurora:     { breadth: 0.82 },
   lock:       { targetId: 'demo', symbol: 'ETH', price: 4200 },
+  // Only reached with no holdings at all — see topMover(). It explodes the
+  // app's own icon under the label DEMO, rather than naming a coin the user
+  // does not own and drawing a letter badge where its logo should be. Both of
+  // those were reported as bugs, and fairly: on an empty profile, which is
+  // every fresh browser anyone tests this in, the fallback IS the demo.
+  //
+  // The icon ships with the app and is served from its own origin, so unlike
+  // any coin logo it cannot be missing, cold, or blocked.
+  champion:   { symbol: 'DEMO', changePct: 21.7, runnerUpPct: 4.1, image: '/icon-512.png' },
+}
+
+/**
+ * The best-performing asset the user actually owns, from the last snapshot
+ * observeMarket took.
+ *
+ * The champion demo needs this because the whole point of the effect is a
+ * logo you recognise arriving at the size of the screen. A hardcoded stand-in
+ * shows neither the asset nor the logo, so it verifies the animation while
+ * demonstrating nothing — which is how the demo first shipped, and it read as
+ * two bugs rather than as a placeholder.
+ *
+ * Reads the persisted snapshot, so it works on a cold load before the first
+ * price refresh has come back.
+ *
+ * @returns {object|null} the champion's fields, or null with no holdings
+ */
+function topMover() {
+  const movers = Object.entries(lastSamples || {})
+    .filter(([, v]) => v?.cls && v.cls !== 'silent' && Number.isFinite(v.changePct))
+    .sort((a, b) => b[1].changePct - a[1].changePct)
+  if (!movers.length) return null
+
+  const [assetId, lead] = movers[0]
+  return {
+    assetId,
+    symbol: lead.symbol || assetId,
+    image: lead.image || '',
+    changePct: lead.changePct,
+    runnerUpPct: movers[1] ? movers[1][1].changePct : 0,
+  }
 }
 
 /**
@@ -423,8 +460,10 @@ const DEMO_SHAPES = {
  * @returns {object|null} the event to hand the overlay, or null if unrecognised
  */
 export function demoPulse(type, { totalValue = 0 } = {}) {
-  const shape = Object.prototype.hasOwnProperty.call(DEMO_SHAPES, type) ? DEMO_SHAPES[type] : null
+  let shape = Object.prototype.hasOwnProperty.call(DEMO_SHAPES, type) ? DEMO_SHAPES[type] : null
   if (!shape) return null
+  // The champion is about a specific asset, so the demo uses a real one.
+  if (type === 'champion') shape = topMover() || shape
   unlock()
   setVolume(pulseSettings().volume)
   play(type)

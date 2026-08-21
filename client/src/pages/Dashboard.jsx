@@ -3809,6 +3809,9 @@ export default function Dashboard() {
       samples[h.coin_id] = {
         changePct: pct,
         symbol: (h.coin_symbol || '').toUpperCase(),
+        // Carried so the champion overlay has a logo to blow up. Empty is a
+        // valid value — the overlay falls back to the symbol on a disc.
+        image: h.coin_image || '',
         cls: pulseClass({
           category: categorizeAsset(h),
           isStable: isStablecoin(h.coin_id, h.coin_symbol),

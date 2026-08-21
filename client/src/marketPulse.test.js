@@ -8,6 +8,7 @@ import {
   PORTFOLIO_RAIN_PCT, PORTFOLIO_DIP_PCT, PORTFOLIO_STORM_PCT, AURORA_BREADTH,
   SIGNATURE_PCT, MILESTONES, MAX_TICK_DELTA_PCT, COOLDOWN_MS, MAJOR_COOLDOWN_MS,
   PORTFOLIO_SURGE_PCT, PRIORITY,
+  CHAMPION_MIN_PCT, CHAMPION_LEAD_PCT, CHAMPION_MIN_ASSETS,
 } from './marketPulse'
 
 const T0 = new Date('2026-03-04T15:00:00Z').getTime()
@@ -467,8 +468,8 @@ describe('down days', () => {
     // Telling someone one coin is up while the portfolio is down 10% reads as
     // the app not paying attention.
     const winner = selectOne([
-      { type: 'rocket', priority: 4, changePct: 12 },
-      { type: 'storm', priority: 2, changePct: -10 },
+      { type: 'rocket', priority: PRIORITY.rocket, changePct: 12 },
+      { type: 'storm', priority: PRIORITY.storm, changePct: -10 },
     ])
     expect(winner.type).toBe('storm')
   })
@@ -506,6 +507,56 @@ describe('the other added events', () => {
     // An unpriced asset drops out rather than counting as red, which would
     // otherwise let a failed price fetch quietly suppress the event.
     expect(breadthOf([2, 2, 2, undefined, null, NaN, 2, -1])).toBe(0.8)
+  })
+
+  // The champion reads the sample map rather than taking a leader from the
+  // caller, so these build one directly. `cls` has to be a real class or the
+  // asset is skipped as silent.
+  const field = (...pcts) => Object.fromEntries(
+    pcts.map((changePct, i) => [`a${i}`, { changePct, cls: 'altcoin', symbol: `A${i}`, image: '' }])
+  )
+
+  it('champion needs a big move, clear of the field', () => {
+    const lead = CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT
+    // Big enough and clear enough.
+    expect(types(detectEvents({ ...base, next: field(lead, 1, 0) }))).toContain('champion')
+    // Clear of the field, but not a big enough move to be worth the screen.
+    expect(types(detectEvents({ ...base, next: field(CHAMPION_MIN_PCT - 1, -8, -9) }))).not.toContain('champion')
+    // A big move that everything else matched. That is weather, and aurora
+    // already covers it — a "winner" here would be a rounding error crowned.
+    expect(types(detectEvents({ ...base, next: field(lead, lead - 1, lead - 2) }))).not.toContain('champion')
+  })
+
+  it('champion needs a field to lead', () => {
+    const lead = CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT
+    const short = Array(CHAMPION_MIN_ASSETS - 1).fill(0).map((_, i) => i === 0 ? lead : 0)
+    expect(types(detectEvents({ ...base, next: field(...short) }))).not.toContain('champion')
+  })
+
+  it('champion ignores stablecoins when picking the winner', () => {
+    // A stablecoin is `silent`, so it can neither win nor count as the runner
+    // up it has to be beaten by.
+    const next = {
+      ...field(CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT, 0.5, 0.2),
+      usdt: { changePct: 40, cls: 'silent', symbol: 'USDT' },
+    }
+    const champ = detectEvents({ ...base, next }).find(e => e.type === 'champion')
+    expect(champ.symbol).toBe('A0')
+  })
+
+  it('champion crowns one winner a day', () => {
+    const next = field(CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT, 1, 0)
+    const first = detectEvents({ ...base, next }).find(e => e.type === 'champion')
+    expect(first.image).toBe('')
+    const after = applyFired(base.state, first, base.totalValue)
+    expect(types(detectEvents({ ...base, state: after, next }))).not.toContain('champion')
+  })
+
+  it('champion outranks the rocket, and loses to a bad day', () => {
+    // The better sentence about the same fact wins; a portfolio-level event
+    // still beats both.
+    expect(PRIORITY.champion).toBeLessThan(PRIORITY.rocket)
+    expect(PRIORITY.champion).toBeGreaterThan(PRIORITY.storm)
   })
 
   it('a target announces itself exactly once, ever', () => {
