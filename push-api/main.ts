@@ -614,9 +614,30 @@ async function checkDaily() {
 }
 
 // Deno Deploy runs these on schedule even with no traffic.
-Deno.cron("wl-check-alerts", "*/10 * * * *", checkTargets)
-Deno.cron("wl-check-moves", "*/15 * * * *", checkMoves)
-Deno.cron("wl-check-news", "*/20 * * * *", checkNews)
+// Cadence is set per channel by what the pass actually costs upstream, not by
+// one blanket interval.
+//
+// Targets run every minute. This is the channel a user set by hand and is
+// waiting on — "BTC hit 150k" ten minutes late is not the same notification,
+// and it was the one complaint that mattered: alerts should land when the
+// price moves, the way an exchange does it. The pass costs exactly ONE batched
+// CoinGecko call however many subscribers or alerts exist (checkTargets
+// collects every coin id into one Set, then makes a single request), so a
+// per-minute cadence is one request a minute. It is also exempt from the daily
+// budget by design, because the user asked for that specific alert by name.
+Deno.cron("wl-check-alerts", "* * * * *", checkTargets)
+
+// Moves run every five minutes rather than every minute, and the reason is
+// stocks: fetchStockQuotes issues ONE REQUEST PER SYMBOL, capped at 40. A
+// per-minute moves pass would mean up to forty Yahoo requests a minute, which
+// is how you get rate-limited into returning nothing at all — a strictly worse
+// outcome than a few minutes' latency. Crypto in the same pass is batched and
+// would have been fine; the slowest ingredient sets the pace.
+Deno.cron("wl-check-moves", "*/5 * * * *", checkMoves)
+
+// News every ten. One feed fetch, but the upstream itself only refreshes on
+// the order of minutes, so polling harder mostly re-reads the same stories.
+Deno.cron("wl-check-news", "*/10 * * * *", checkNews)
 Deno.cron("wl-daily", "5 * * * *", checkDaily)
 
 // ── HTTP handler ────────────────────────────────────────────────────────────
