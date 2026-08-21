@@ -77,6 +77,29 @@ function urlBase64ToUint8Array(base64) {
   return out
 }
 
+/**
+ * Was this subscription created with the VAPID key we currently ship?
+ *
+ * Returns true when it cannot tell (older browsers don't expose
+ * `options.applicationServerKey`), because discarding a working subscription
+ * on a guess is worse than keeping a possibly-stale one.
+ *
+ * @param {PushSubscription} sub
+ * @param {string} vapidPublic base64url public key
+ */
+export function subscriptionMatchesKey(sub, vapidPublic) {
+  try {
+    const raw = sub?.options?.applicationServerKey
+    if (!raw || !vapidPublic) return true
+    const existing = new Uint8Array(raw)
+    const current = urlBase64ToUint8Array(vapidPublic)
+    if (existing.length !== current.length) return false
+    return existing.every((b, i) => b === current[i])
+  } catch {
+    return true
+  }
+}
+
 function readAlerts() {
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]') } catch { return [] } }
   // Merge both alert stores; prefix ids so the two sequences can't collide.
@@ -287,13 +310,37 @@ export function noteAskShown() {
 
 // ── Subscription lifecycle ──────────────────────────────────────────────────
 
+// Host of a push endpoint, for reporting a rejection the user can act on.
+function hostOf(endpoint) {
+  try { return new URL(endpoint).hostname } catch { return '' }
+}
+
 async function getSubscription() {
   const reg = await navigator.serviceWorker.ready
   return reg.pushManager.getSubscription()
 }
 
+/**
+ * Whether the switch in Settings should read On.
+ *
+ * The opt-out flag is part of the answer, not a separate concern. Reading only
+ * the browser subscription produced a state the user cannot get out of:
+ * disablePush() writes the opt-out and THEN unsubscribes, so if that
+ * unsubscribe fails — or anything re-creates the subscription afterwards — the
+ * switch reads On while every automatic path (autoEnablePush, ensureRegistered)
+ * correctly refuses to touch an opted-out device. On screen that is a switch
+ * that is on, channels that are on, and total silence, with nothing the user
+ * can press to change it.
+ *
+ * Answering false here puts the contradiction back where the user can resolve
+ * it: the switch reads Off, matching what they asked for, and turning it on
+ * runs enablePush(), which clears the flag and re-registers.
+ */
 export async function isPushEnabled() {
   if (!isPushSupported()) return false
+  try {
+    if (localStorage.getItem(OPTOUT_KEY)) return false
+  } catch { /* storage blocked — fall through to the subscription */ }
   try { return !!(await getSubscription()) } catch { return false }
 }
 
@@ -307,6 +354,15 @@ export async function enablePush() {
 
   const reg = await navigator.serviceWorker.ready
   let sub = await reg.pushManager.getSubscription()
+  // A subscription is cryptographically bound to the VAPID key it was created
+  // with. If that key is ever rotated, the push service rejects everything the
+  // server signs for this device — and because getSubscription() still returns
+  // the old object, re-enabling would happily reuse it and the device would
+  // stay permanently silent with no error anywhere. Drop it and start over.
+  if (sub && !subscriptionMatchesKey(sub, VAPID_PUBLIC)) {
+    try { await sub.unsubscribe() } catch { /* replaced below regardless */ }
+    sub = null
+  }
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -463,7 +519,7 @@ export async function disablePush() {
  * Re-register a device the server has forgotten.
  *
  * This is the failure mode that looks perfectly healthy from inside the app.
- * isPushEnabled() is true whenever the BROWSER holds a subscription, and
+ * The switch reads On whenever the BROWSER holds a subscription, and
  * autoEnablePush() returns early on `already-on` for exactly that reason — so
  * once the server loses its record (a KV reset, a rotated VAPID key, a
  * /subscribe that never landed), nothing ever re-registers. The switch reads
@@ -474,21 +530,54 @@ export async function disablePush() {
  * create a second subscription, and does nothing at all when the user has
  * explicitly opted out.
  *
- * @returns {Promise<boolean>} whether a repair was actually performed
+ * @returns {Promise<{ok: boolean, reason: string, httpStatus?: number,
+ *   code?: string, host?: string}>} `ok` when a repair was performed, and in
+ *   every case a `reason` — the point of this function is that the caller can
+ *   tell a repair that succeeded from one that was refused, from one that was
+ *   never attempted. It used to answer a bare boolean, which made "still
+ *   trying" and "gave up" the same value and left the status line reading
+ *   "reconnecting…" at something that had already failed.
  */
 export async function ensureRegistered() {
   try {
-    if (!isPushSupported() || !VAPID_PUBLIC) return false
-    if (Notification.permission !== 'granted') return false
-    if (localStorage.getItem(OPTOUT_KEY)) return false
+    if (!isPushSupported()) return { ok: false, reason: 'unsupported' }
+    if (!VAPID_PUBLIC) return { ok: false, reason: 'no-key' }
+    if (Notification.permission !== 'granted') return { ok: false, reason: 'not-granted' }
+    try {
+      if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
+    } catch { /* storage blocked; treat as not opted out */ }
 
     const sub = await getSubscription()
-    if (!sub) return false
+    if (!sub) return { ok: false, reason: 'no-subscription' }
 
-    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-    if (!res.ok) return false
-    const status = await res.json()
-    if (status.found) return false
+    // Re-posting a subscription bound to a retired VAPID key is the worst
+    // version of this bug, not a repair: /status then reports found:true, the
+    // readout says everything is healthy, and the push service still rejects
+    // every message the server signs. Replacing it means creating a new
+    // subscription, which this function deliberately does not do — that is
+    // enablePush()'s job, and it belongs behind a deliberate action rather
+    // than an unattended startup call. Report it and let the user act.
+    if (!subscriptionMatchesKey(sub, VAPID_PUBLIC)) {
+      return { ok: false, reason: 'key-rotated' }
+    }
+
+    let status
+    try {
+      const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
+      if (!res.ok) return { ok: false, reason: 'unreachable', httpStatus: res.status }
+      status = await res.json()
+    } catch {
+      return { ok: false, reason: 'unreachable' }
+    }
+    if (status.found) return { ok: false, reason: 'already-registered' }
+
+    // The server has told us up front that it will not accept this endpoint.
+    // Re-posting it every time the screen opens would just 400 forever, and
+    // the user would keep reading "reconnecting…" at a repair that cannot
+    // succeed. Say so instead.
+    if (status.endpointOk === false) {
+      return { ok: false, reason: 'endpoint-rejected', host: status.host || hostOf(sub.endpoint) }
+    }
 
     const post = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
@@ -503,10 +592,22 @@ export async function ensureRegistered() {
         tz: currentTz(),
       }),
     })
-    return post.ok
+    if (post.ok) return { ok: true, reason: 'repaired' }
+
+    // A failed repair has to be distinguishable from one still running, or the
+    // status line sits on "reconnecting…" forever at something that already
+    // gave up. Carry the server's own reason through.
+    let code = ''
+    let host = ''
+    try {
+      const body = await post.json()
+      code = String(body?.error || '')
+      host = String(body?.host || '')
+    } catch { /* no JSON body */ }
+    return { ok: false, reason: 'rejected', httpStatus: post.status, code, host }
   } catch {
     // Runs unattended; a network blip must never surface or throw.
-    return false
+    return { ok: false, reason: 'error' }
   }
 }
 

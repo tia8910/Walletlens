@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, watchPermission, DEFAULT_PUSH_PREFS } from './push'
+import { readFileSync } from 'node:fs'
+import {
+  toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, watchPermission,
+  DEFAULT_PUSH_PREFS, subscriptionMatchesKey,
+} from './push'
 
 // toWatchAssets is the privacy boundary: it decides exactly which fields of a
 // user's portfolio are allowed to leave the device. A regression here doesn't
@@ -124,6 +128,56 @@ describe('watch list from stored transactions', () => {
     expect(watchFromStorage()).toEqual([])
     localStorage.setItem('crypto_tracker_transactions', '{not json')
     expect(watchFromStorage()).toEqual([])
+  })
+})
+
+describe('VAPID key rotation', () => {
+  // A push subscription is bound to the key it was created with. Rotate the
+  // key and the push service rejects everything signed for that device — but
+  // getSubscription() keeps returning the old object, so without this check
+  // re-enabling reuses it and the device goes permanently silent with no error
+  // raised anywhere. This is the failure mode of changing VITE_VAPID_PUBLIC_KEY
+  // on an app that already has subscribers.
+  const KEY_A = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
+  const KEY_B = 'BAe1zYRQBLIhHDbNu3IuFVMzHTVKbfCkZ8-yLXWzYPB8xVCUqzOEQrFvJDHCLRnSTHFTQPZfsvwWFF-VJcTLzUw'
+
+  const subWith = (b64) => {
+    const pad = '='.repeat((4 - (b64.length % 4)) % 4)
+    const bin = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'))
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0))
+    return { options: { applicationServerKey: bytes.buffer } }
+  }
+
+  it('recognises a subscription made with the current key', () => {
+    expect(subscriptionMatchesKey(subWith(KEY_A), KEY_A)).toBe(true)
+  })
+
+  it('spots one made with a superseded key', () => {
+    expect(subscriptionMatchesKey(subWith(KEY_B), KEY_A)).toBe(false)
+  })
+
+  it('assumes a match when the browser will not say', () => {
+    // Older browsers omit options.applicationServerKey. Throwing away a
+    // working subscription on a guess is worse than keeping a stale one.
+    expect(subscriptionMatchesKey({ options: {} }, KEY_A)).toBe(true)
+    expect(subscriptionMatchesKey({}, KEY_A)).toBe(true)
+    expect(subscriptionMatchesKey(null, KEY_A)).toBe(true)
+  })
+
+  it('assumes a match when no key is configured', () => {
+    expect(subscriptionMatchesKey(subWith(KEY_A), '')).toBe(true)
+  })
+
+  it('survives a corrupt key rather than blocking sign-up', () => {
+    expect(subscriptionMatchesKey(subWith(KEY_A), '!!!not base64!!!')).toBe(true)
+  })
+
+  it('re-subscribes on mismatch instead of reusing a dead subscription', () => {
+    const src = readFileSync('src/push.js', 'utf8')
+    const body = src.split('export async function enablePush')[1].split('\nexport ')[0]
+    expect(body).toContain('subscriptionMatchesKey')
+    expect(body).toMatch(/unsubscribe\(\)/)
+    expect(body).toMatch(/sub = null/)
   })
 })
 

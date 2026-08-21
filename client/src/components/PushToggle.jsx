@@ -32,6 +32,53 @@ function Row({ label, hint, on, onToggle }) {
   )
 }
 
+const BAD = '#f87171'
+const WARN = '#f59e0b'
+
+// What to say when the device is not registered. `repair` is the outcome of
+// ensureRegistered(): null while it is still running, otherwise its result.
+//
+// These used to share one line reading "reconnecting…", which was correct for
+// about a second and a lie after that — a repair that had already been refused
+// looked exactly like one still in flight, so the honest answer ("this cannot
+// succeed, here is why") was never reachable from the screen.
+function repairMessage(repair) {
+  if (!repair) return { text: 'Not registered on the server yet — reconnecting…', tone: WARN }
+  switch (repair.reason) {
+    case 'opted-out':
+      return { text: 'Notifications are switched off for this device. Turn the switch above off and on again.', tone: BAD }
+    case 'not-granted':
+      return { text: 'Your browser has not allowed notifications for WalletLens. Allow them in site settings, then reopen this screen.', tone: BAD }
+    case 'no-subscription':
+      return { text: 'This device has no push subscription. Turn the switch above off and on again.', tone: BAD }
+    case 'key-rotated':
+      return { text: 'This device’s notification key is out of date. Turn the switch above off and on again to renew it.', tone: BAD }
+    case 'no-key':
+      return { text: 'Push is not configured in this build. It will work after the next update.', tone: BAD }
+    case 'unreachable':
+    case 'error':
+      return { text: 'Could not reach the notification server. It will try again next time you open this screen.', tone: WARN }
+    case 'endpoint-rejected':
+      return {
+        text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
+        tone: BAD,
+      }
+    case 'rejected':
+      if (repair.code === 'invalid_endpoint') {
+        return {
+          text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
+          tone: BAD,
+        }
+      }
+      return {
+        text: `The server refused to register this device${repair.httpStatus ? ` (${repair.httpStatus}${repair.code ? ` ${repair.code}` : ''})` : ''}. Turn the switch above off and on again.`,
+        tone: BAD,
+      }
+    default:
+      return { text: 'Not registered on the server yet — retrying.', tone: WARN }
+  }
+}
+
 /**
  * One line saying whether this device is actually wired up, and what would
  * stop a notification arriving right now.
@@ -40,16 +87,15 @@ function Row({ label, hint, on, onToggle }) {
  * purpose, and a test send proves the pipe works at one instant without
  * saying anything about why the real channels are quiet. This reports state.
  */
-function PushStatusLine({ status }) {
+function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f59e0b' }}>
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
       Can’t reach the notification server right now.
     </div>
   }
   if (status.found === false) {
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f87171' }}>
-      Not registered on the server yet — reconnecting…
-    </div>
+    const { text, tone } = repairMessage(repair)
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
   }
   if (!status.found) return null
 
@@ -65,13 +111,13 @@ function PushStatusLine({ status }) {
         {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
       </div>
       {noWatch && (
-        <div style={{ color: '#f87171' }}>
+        <div style={{ color: BAD }}>
           No assets are being watched, so move and news alerts can’t fire.
           Open the Dashboard once to sync your holdings.
         </div>
       )}
       {spent && (
-        <div style={{ color: '#f59e0b' }}>
+        <div style={{ color: WARN }}>
           Today’s notification budget is used up. Price targets you set still come through.
         </div>
       )}
@@ -87,6 +133,9 @@ export default function PushToggle() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [status, setStatus] = useState(null)
+  // null = the repair has not finished yet; otherwise ensureRegistered()'s
+  // verdict, which is what tells "still trying" apart from "gave up".
+  const [repair, setRepair] = useState(null)
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
 
@@ -100,8 +149,9 @@ export default function PushToggle() {
   // and it is the only way to tell "nothing has happened worth sending" from
   // "this device is not actually wired up".
   useEffect(() => {
-    if (!enabled) { setStatus(null); return }
+    if (!enabled) { setStatus(null); setRepair(null); return }
     let alive = true
+    setRepair(null)
     pushStatus().then(async s => {
       if (!alive) return
       setStatus(s)
@@ -110,8 +160,10 @@ export default function PushToggle() {
       // the browser has a subscription, and nothing will ever be sent to it.
       // Repair it rather than asking the user to toggle something.
       if (s?.found === false) {
-        const healed = await ensureRegistered()
-        if (alive && healed) setStatus(await pushStatus())
+        const result = await ensureRegistered()
+        if (!alive) return
+        setRepair(result)
+        if (result?.ok) setStatus(await pushStatus())
       }
     }).catch(() => {})
     return () => { alive = false }
@@ -219,13 +271,13 @@ export default function PushToggle() {
             onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
           />
 
-          {status && <PushStatusLine status={status} />}
+          {status && <PushStatusLine status={status} repair={repair} />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
       )}
 
-      {error && <div className="settings-hint" style={{ color: '#f87171', marginTop: '0.4rem' }}>{error}</div>}
+      {error && <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>{error}</div>}
     </div>
   )
 }
