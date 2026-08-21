@@ -13,26 +13,38 @@ import { shouldAskPush, noteAskShown, enablePush, watchFromStorage } from '../pu
  * already said yes to a reversible one. "Not now" costs nothing and we can ask
  * again in a week.
  *
- * Shown only to someone with holdings. "We'll tell you when your assets move"
- * is a promise about a portfolio; to an empty one it is noise, and asking there
- * spends the single browser prompt on the users least likely to accept it.
+ * Shown to everyone whose browser has not yet been asked, with or without
+ * holdings — the same treatment the Android shell gives, which asks at first
+ * launch and does not inspect the portfolio first.
+ *
+ * It used to require holdings, on the argument that "we'll tell you when your
+ * assets move" is a promise about a portfolio and noise to an empty one. That
+ * reasoning was sound about the COPY and wrong about the GATE: a browser user
+ * who had not added anything yet was never asked at all, so the web had no
+ * equivalent of the native prompt and the whole channel started off. The fix
+ * is to change what the card says when the portfolio is empty, not to stay
+ * silent.
  */
 export default function NotificationPrimer() {
   const { t } = useLanguage()
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  const [empty, setEmpty] = useState(false)
+
   useEffect(() => {
     if (!shouldAskPush()) return
-    // Nothing to promise without holdings.
-    if (watchFromStorage().length === 0) return
 
     // Let the app settle before interrupting: a card that animates in over a
     // half-drawn dashboard reads as an ad, not as a feature.
     const timer = setTimeout(() => {
       if (!shouldAskPush()) return
+      // Read at show time, not at mount: someone who adds their first holding
+      // during those four seconds should get the promise about it.
+      const noHoldings = watchFromStorage().length === 0
+      setEmpty(noHoldings)
       setShow(true)
-      track('push_primer_shown')
+      track('push_primer_shown', { empty: noHoldings })
     }, 4000)
     return () => clearTimeout(timer)
   }, [])
@@ -92,10 +104,10 @@ export default function NotificationPrimer() {
         </div>
 
         <h3 id="wl-np-title" style={{ margin: '0 0 0.4rem', fontSize: '1.1rem' }}>
-          {t('npAskTitle')}
+          {empty ? t('npAskTitleEmpty') : t('npAskTitle')}
         </h3>
         <p style={{ margin: '0 0 0.4rem', fontSize: '0.9rem', color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          {t('npAskBody')}
+          {empty ? t('npAskBodyEmpty') : t('npAskBody')}
         </p>
         <p style={{ margin: '0 0 1rem', fontSize: '0.78rem', color: 'var(--text-sub)', opacity: 0.8 }}>
           {t('npAskPrivacy')}
