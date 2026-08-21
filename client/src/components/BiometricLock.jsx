@@ -14,6 +14,14 @@ const HIDDEN_AT    = 'wl_biometric_hidden_at'  // timestamp the app was last bac
 // still locks. Matches how banking apps behave.
 const RELOCK_GRACE_MS = 60 * 1000
 
+/**
+ * How long the lock screen may sit there before it offers a way out.
+ *
+ * Long enough that it is not the first thing a user reaches for, short enough
+ * that being stuck is a nuisance rather than a lockout.
+ */
+const RECOVER_AFTER_MS = 12 * 1000
+
 // Module-level guard: true while a WebAuthn prompt is on screen. The system
 // biometric sheet briefly backgrounds the page (visibilitychange → hidden),
 // which would otherwise re-lock us mid-authentication and loop forever.
@@ -96,36 +104,34 @@ function b64urlToBuf(b64url) {
 }
 
 // Detect WebAuthn platform-authenticator support
-const supportsWebAuthn = () =>
-  typeof window !== 'undefined' &&
-  window.PublicKeyCredential !== undefined &&
-  typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function'
-
 export function useBiometricLock() {
   const [enabled, setEnabled] = useState(() => localStorage.getItem(ENABLED_KEY) === '1')
   const [locked, setLocked] = useState(false)
-  // `available` = WebAuthn API exists at all (synchronous, reliable).
-  // `supported` = platform authenticator confirmed present (async, can be a
-  // false negative inside some Android webviews / TWAs). We OFFER the lock
-  // whenever the API is available and let navigator.credentials.create() be
-  // the real source of truth — pre-hiding the option on the async check left
-  // capable devices stuck on "not available on this device".
-  const [available] = useState(() => isAndroidTWA || supportsWebAuthn())
+  // App Lock is a feature of the Android app, and only of the Android app.
+  //
+  // It used to be offered in any browser with WebAuthn. That produced a
+  // genuinely bad screen: the TWA and Chrome share one origin's localStorage
+  // on a device, so turning the lock on in the app also set the flag Chrome
+  // reads — and opening walletlens.live in a tab then showed "WalletLens is
+  // locked" with no credential to authenticate against, because the app's
+  // lock is a native prompt and stores nothing WebAuthn can use. The tab
+  // offered a recovery flow for a lock the user had never set there.
+  //
+  // Everything below is gated on the same flag, so outside the app the lock
+  // is not merely hidden — it never engages.
+  const [available] = useState(() => isAndroidTWA)
   const [supported, setSupported] = useState(false)
 
-  useEffect(() => {
-    if (isAndroidTWA) {
-      setSupported(true)
-      return
-    }
-    if (!supportsWebAuthn()) return
-    window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-      .then(avail => setSupported(avail))
-      .catch(() => {})
-  }, [])
+  // Nothing to probe any more: the only supported context is the app, where
+  // the native prompt is the authority. The old async
+  // isUserVerifyingPlatformAuthenticatorAvailable() check only ever mattered
+  // for the browser path this no longer has.
+  useEffect(() => { setSupported(isAndroidTWA) }, [])
 
   // Cold open / new tab: lock if there's no unlocked session token.
   useEffect(() => {
+    // The flag is shared with Chrome on the same device; only the app acts on it.
+    if (!isAndroidTWA) return
     if (localStorage.getItem(ENABLED_KEY) === '1' && !sessionStorage.getItem(SESSION_KEY)) {
       setLocked(true)
     }
@@ -139,6 +145,7 @@ export function useBiometricLock() {
   // immediately, without a reload.
   useEffect(() => {
     function onVisibility() {
+      if (!isAndroidTWA) return
       if (localStorage.getItem(ENABLED_KEY) !== '1') return
       if (authInProgress) return
       if (document.visibilityState === 'hidden') {
@@ -167,6 +174,9 @@ export function useBiometricLock() {
   // the web app with ?biometric_auth=success|cancel in the URL. We pick
   // this up, set the session token, and clear the URL parameter.
   useEffect(() => {
+    // Only the app produces this parameter. Acting on it in a browser would
+    // let a shared or pasted link set locked=true on a tab with no way out.
+    if (!isAndroidTWA) return
     const params = new URLSearchParams(window.location.search)
     const result = params.get('biometric_auth')
     if (!result) return
@@ -316,7 +326,17 @@ export function useBiometricLock() {
 }
 
 // Full-screen lock overlay. Auto-prompts on mount for a native app feel.
+//
+// Belt and braces: useBiometricLock never sets `locked` outside the app, so
+// this should already be unreachable there. It refuses anyway, because the
+// failure mode is a user staring at "WalletLens is locked" in a browser tab
+// with nothing that can unlock it.
 export function BiometricLockScreen({ onUnlock }) {
+  if (!isAndroidTWA) return null
+  return <BiometricLockScreenInner onUnlock={onUnlock} />
+}
+
+function BiometricLockScreenInner({ onUnlock }) {
   const { t } = useLanguage()
   const [trying, setTrying] = useState(false)
   const [error, setError] = useState('')
@@ -335,6 +355,13 @@ export function BiometricLockScreen({ onUnlock }) {
       // device or the user. Nothing is wrong; it just needs a tap.
       if (e?.name === 'NeedsGestureError') {
         setError(t('blTapToUnlock'))
+        // Deliberately does not count toward the retry ceiling — nothing has
+        // failed, it just needs a tap. The escape hatch is armed by the timer
+        // below instead, because this branch is exactly the one that leaves a
+        // user stuck: if taps are not registering at all (Android's own "screen
+        // touches may be delayed or not recognised" case), no amount of
+        // waiting produces a second failed attempt, and recovery keyed only on
+        // failures is unreachable.
         return
       }
       const noPasskeys =
@@ -355,6 +382,18 @@ export function BiometricLockScreen({ onUnlock }) {
       setTrying(false)
     }
   }
+
+  // Nobody stays locked out of their own portfolio.
+  //
+  // Every other route to the escape hatch depends on something happening: two
+  // failed attempts, or an authenticator error. A device that is not
+  // registering taps produces neither, and the data is local — there is no
+  // "log in on another device" to fall back on. So the hatch also appears on a
+  // timer, whatever else has or has not happened.
+  useEffect(() => {
+    const timer = setTimeout(() => setRecover(true), RECOVER_AFTER_MS)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Auto-trigger the biometric prompt once when the lock screen appears.
   useEffect(() => {
@@ -457,6 +496,14 @@ export function BiometricLockScreen({ onUnlock }) {
 // Inline CSS for the lock screen (scoped to .bl-* classes)
 // ── Biometric Toggle (used in Dashboard settings) ────────────────────────
 export function BiometricToggle() {
+  // Hidden rather than disabled. A greyed-out row invites "why can't I turn
+  // this on?", and the honest answer — install the Android app — is not
+  // something a Settings row should be arguing for.
+  if (!isAndroidTWA) return null
+  return <BiometricToggleInner />
+}
+
+function BiometricToggleInner() {
   const { enabled, supported, available, enable, disable } = useBiometricLock()
   const [busy, setBusy] = useState(false)
 

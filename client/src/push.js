@@ -16,6 +16,7 @@
 
 import { foldBalances } from './data/portfolio'
 import { usedFeature } from './featureUse'
+import { isAndroidTWA } from './nativeBridge'
 
 const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
 
@@ -220,7 +221,11 @@ export function featureSetup() {
       backup: !!localStorage.getItem('wl_drive_file_id'),
       // The app's own lock. A privacy-first tracker whose data sits unlocked
       // on the device is the gap most worth one sentence.
-      applock: localStorage.getItem('wl_biometric_enabled') === '1',
+      // `true` also when we are not in the Android app, because the tip is
+      // read as "already set up" and stays silent. App Lock exists only in
+      // the app, and a notification telling a browser user to switch on a
+      // Settings row that is not there is worse than no tip at all.
+      applock: !isAndroidTWA() || localStorage.getItem('wl_biometric_enabled') === '1',
       // Pages someone has opened at least once — see featureUse.js. Without
       // these, a tip about Technicals or Whales is a guess about whether they
       // have already found it.
