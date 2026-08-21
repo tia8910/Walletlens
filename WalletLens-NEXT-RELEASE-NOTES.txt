@@ -1,4 +1,5 @@
-WalletLens — Release Notes  (rename this file once the version is set)
+WalletLens — Release Notes for versionCode 73
+(rename to WalletLens-v<versionName>-RELEASE-NOTES.txt to match the others)
 ========================================================================
 
 WHY THIS AAB MATTERS
