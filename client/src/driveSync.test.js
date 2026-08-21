@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { canAutoBackup, decideAction, hasLocalPortfolio } from './driveSync'
+import { autoBackup, canAutoBackup, decideAction, hasLocalPortfolio } from './driveSync'
+import { getAccessToken, storedAccessToken } from './googleDrive'
 import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncryption'
 
 // Drive I/O is mocked away; what matters here is the one decision that can
@@ -7,6 +8,7 @@ import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncrypt
 vi.mock('./googleDrive', () => ({
   isDriveConfigured: () => true,
   getAccessToken: vi.fn(),
+  storedAccessToken: vi.fn(() => null),
   findBackup: vi.fn(),
   uploadBackup: vi.fn(),
   downloadBackup: vi.fn(),
@@ -208,5 +210,54 @@ describe('canAutoBackup', () => {
     localStorage.setItem('wl_drive_data_key', key)
     localStorage.setItem('wl_drive_wrap', '')
     expect(canAutoBackup()).toBe(false)
+  })
+})
+
+
+describe('autoBackup never asks Google for anything', () => {
+  // The loop this closes: getAccessToken({interactive:false}) is not silent in
+  // the Android app. GIS has no opener to answer, so it opened a visible
+  // accounts.google.com tab that span forever — and closing it fired
+  // visibilitychange, which started another backup, which opened it again.
+  // Roughly once a minute, backing up nothing.
+  const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    localStorage.setItem('wl_drive_file_id', 'f1')
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', 'salt.iv.wrapped')
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 1 },
+    ]))
+  })
+
+  it('gives up quietly when no token is already held', async () => {
+    storedAccessToken.mockReturnValue(null)
+    const res = await autoBackup()
+    expect(res).toEqual({ ok: false, reason: 'signed-out' })
+  })
+
+  it('does not call getAccessToken at all', async () => {
+    // The heart of it. Any call here can surface Google UI, and a backup
+    // nobody asked for must never do that — interactive or otherwise.
+    storedAccessToken.mockReturnValue(null)
+    await autoBackup()
+    expect(getAccessToken).not.toHaveBeenCalled()
+  })
+
+  it('still does not call it when a token IS held', async () => {
+    storedAccessToken.mockReturnValue('ya29.token')
+    await autoBackup().catch(() => {})
+    expect(getAccessToken).not.toHaveBeenCalled()
+  })
+
+  it('is safe to call repeatedly, as visibilitychange does', async () => {
+    // Every foreground event runs this. If any of them could open a tab, the
+    // tab closing would trigger the next one.
+    storedAccessToken.mockReturnValue(null)
+    for (let i = 0; i < 5; i++) await autoBackup()
+    expect(getAccessToken).not.toHaveBeenCalled()
   })
 })

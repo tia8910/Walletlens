@@ -145,6 +145,10 @@ export const DEVICE_ONLY_KEYS = [
   // already backed up.
   'wl_drive_data_key', 'wl_drive_wrap', 'wl_drive_file_id',
   'wl_drive_last_hash', 'wl_drive_backup_at', 'wl_drive_remote_at',
+  // A live OAuth bearer token. It belongs to this device and this hour, and
+  // putting it in a backup would hand Drive access to anyone who ever sees
+  // the code.
+  'wl_drive_token',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────
