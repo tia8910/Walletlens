@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, lazy, Suspense } from 'react'
+import { noteFeatureUse } from '../featureUse'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
@@ -31,6 +32,10 @@ function timeAgo(d, t) {
 }
 
 export default function Whales() {
+  // Records the discovery, so the feature tip for this page stops being
+  // offered to someone who has already found it.
+  useEffect(() => { noteFeatureUse('whales') }, [])
+
   const { t } = useLanguage()
   const [snapshot, setSnapshot] = useState([])
   const [trending, setTrending] = useState([])

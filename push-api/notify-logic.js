@@ -174,6 +174,78 @@ export const COPY = {
     es: () => 'Di \u00abcompr\u00e9 medio Bitcoin a 65K\u00bb o haz una captura de cualquier exchange: WalletLens lo lee y rellena la operaci\u00f3n.',
   },
 
+  featApplockTitle: {
+    en: () => '\u{1F512} Your portfolio is unlocked right now',
+    ar: () => '\u{1F512} محفظتك غير مقفلة الآن',
+    fr: () => '\u{1F512} Votre portefeuille est d\u00e9verrouill\u00e9',
+    es: () => '\u{1F512} Tu cartera est\u00e1 desbloqueada ahora',
+  },
+  featApplockBody: {
+    en: () => 'Anyone holding your phone can open WalletLens and read every number. App Lock puts your fingerprint in front of it.',
+    ar: () => 'أي شخص يمسك هاتفك يمكنه فتح WalletLens وقراءة كل رقم. قفل التطبيق يضع بصمتك أمامه.',
+    fr: () => 'Quiconque tient votre t\u00e9l\u00e9phone peut ouvrir WalletLens et lire chaque chiffre. Le verrou place votre empreinte devant.',
+    es: () => 'Cualquiera con tu tel\u00e9fono puede abrir WalletLens y leer cada cifra. El bloqueo pone tu huella delante.',
+  },
+  featTechnicalsTitle: {
+    en: () => '\u{1F4C9} RSI, MACD and moving averages on what you hold',
+    ar: () => '\u{1F4C9} مؤشرات RSI و MACD والمتوسطات لما تملكه',
+    fr: () => '\u{1F4C9} RSI, MACD et moyennes mobiles sur vos actifs',
+    es: () => '\u{1F4C9} RSI, MACD y medias m\u00f3viles de lo que tienes',
+  },
+  featTechnicalsBody: {
+    en: () => 'The Technicals page reads your own holdings, so you are not looking up tickers one at a time somewhere else.',
+    ar: () => 'صفحة التحليل الفني تقرأ ممتلكاتك، فلا تبحث عن كل رمز على حدة في مكان آخر.',
+    fr: () => 'La page Technique lit vos propres avoirs \u2014 plus besoin de chercher chaque ticker ailleurs.',
+    es: () => 'La p\u00e1gina T\u00e9cnica lee tus propias posiciones, sin buscar cada ticker por separado.',
+  },
+  featWhalesTitle: {
+    en: () => '\u{1F40B} Someone just moved a very large amount of BTC',
+    ar: () => '\u{1F40B} شخص ما حرّك للتو كمية ضخمة من البيتكوين',
+    fr: () => '\u{1F40B} Quelqu\u2019un vient de d\u00e9placer une tr\u00e8s grosse somme en BTC',
+    es: () => '\u{1F40B} Alguien acaba de mover una cantidad enorme de BTC',
+  },
+  featWhalesBody: {
+    en: () => 'WalletLens watches the Bitcoin chain for transactions over $1M. Worth a look when the market moves and nobody says why.',
+    ar: () => 'يراقب WalletLens شبكة البيتكوين بحثًا عن تحويلات تتجاوز مليون دولار. يستحق النظر عندما يتحرك السوق دون سبب معلن.',
+    fr: () => 'WalletLens surveille la cha\u00eene Bitcoin pour les transactions de plus d\u2019un million. Utile quand le march\u00e9 bouge sans raison annonc\u00e9e.',
+    es: () => 'WalletLens vigila la cadena de Bitcoin por transacciones de m\u00e1s de un mill\u00f3n. \u00datil cuando el mercado se mueve sin motivo aparente.',
+  },
+  featCoachTitle: {
+    en: () => '\u{1F9ED} A second opinion on how your portfolio is built',
+    ar: () => '\u{1F9ED} رأي ثانٍ في طريقة بناء محفظتك',
+    fr: () => '\u{1F9ED} Un second avis sur la construction de votre portefeuille',
+    es: () => '\u{1F9ED} Una segunda opini\u00f3n sobre c\u00f3mo est\u00e1 armada tu cartera',
+  },
+  featCoachBody: {
+    en: () => 'Coach looks at concentration, overlap and what you are actually exposed to \u2014 not at what it thinks you should buy.',
+    ar: () => 'يفحص المدرّب التركّز والتداخل وما أنت معرّض له فعليًا \u2014 لا ما يظن أنه عليك شراؤه.',
+    fr: () => 'Coach examine la concentration, les doublons et votre exposition r\u00e9elle \u2014 pas ce qu\u2019il pense que vous devriez acheter.',
+    es: () => 'Coach mira la concentraci\u00f3n, el solapamiento y tu exposici\u00f3n real \u2014 no lo que cree que deber\u00edas comprar.',
+  },
+  featRebalanceTitle: {
+    en: () => '\u2696\uFE0F Your mix has drifted from where you set it',
+    ar: () => '\u2696\uFE0F توزيع محفظتك انحرف عمّا حددته',
+    fr: () => '\u2696\uFE0F Votre r\u00e9partition a d\u00e9riv\u00e9',
+    es: () => '\u2696\uFE0F Tu distribuci\u00f3n se ha desviado',
+  },
+  featRebalanceBody: {
+    en: () => 'The rebalancing calculator shows the exact trades to get back to your target weights, using your real holdings.',
+    ar: () => 'حاسبة إعادة التوازن تعرض الصفقات الدقيقة للعودة إلى أوزانك المستهدفة، باستخدام ممتلكاتك الحقيقية.',
+    fr: () => 'Le calculateur de r\u00e9\u00e9quilibrage montre les op\u00e9rations exactes pour revenir \u00e0 vos pond\u00e9rations cibles.',
+    es: () => 'La calculadora de reequilibrio muestra las operaciones exactas para volver a tus pesos objetivo.',
+  },
+  featAcademyTitle: {
+    en: () => '\u{1F393} The part most trackers leave out',
+    ar: () => '\u{1F393} الجزء الذي تتجاهله معظم التطبيقات',
+    fr: () => '\u{1F393} Ce que la plupart des trackers omettent',
+    es: () => '\u{1F393} La parte que casi ning\u00fan tracker incluye',
+  },
+  featAcademyBody: {
+    en: () => 'Short, plain explanations of what you are holding and the mistakes that cost people the most. No jargon, no upsell.',
+    ar: () => 'شروح قصيرة وواضحة لما تملكه وللأخطاء الأكثر كلفة. بلا مصطلحات ولا عروض بيع.',
+    fr: () => 'Des explications courtes et claires sur ce que vous d\u00e9tenez et les erreurs les plus co\u00fbteuses. Sans jargon ni argumentaire.',
+    es: () => 'Explicaciones breves y claras de lo que tienes y de los errores que m\u00e1s cuestan. Sin jerga ni venta.',
+  },
   featGuardianTitle: {
     en: () => '\u{1F6E1}\uFE0F Who reaches your portfolio if you can\u2019t?',
     ar: () => '\u{1F6E1}\uFE0F من يصل إلى محفظتك إن لم تستطع أنت؟',
@@ -335,7 +407,7 @@ export const COPY = {
 export const FEATURE_TIP_GAP_MS = 7 * 24 * 60 * 60 * 1000
 
 /** The most feature tips any one user will ever receive, however many exist. */
-export const MAX_FEATURE_TIPS = 6
+export const MAX_FEATURE_TIPS = 8
 
 export const FEATURE_TIPS = [
   {
@@ -409,6 +481,47 @@ export const FEATURE_TIPS = [
     when: (st) => st.watchCount > 0 && st.setup.backup === false,
   },
   {
+    // The app's own lock, and the only security tip here. A privacy-first
+    // tracker whose numbers sit unlocked on a borrowed or stolen phone is the
+    // gap most worth one sentence — and it is one tap to close.
+    id: 'applock',
+    url: '/settings',
+    when: (st) => st.watchCount > 0 && st.setup.applock === false,
+  },
+  {
+    // Every tip below here is gated on whether the page has ever been opened,
+    // recorded by client/src/featureUse.js. That signal exists precisely so
+    // these are not the loose guess the comment on smartimport warns about.
+    id: 'technicals',
+    url: '/technicals',
+    when: (st) => st.watchCount > 0 && st.setup.technicals === false,
+  },
+  {
+    // Only for someone actually holding crypto: whale flow is a BTC-chain
+    // feature, and offering it to a stocks-and-metals portfolio is noise.
+    id: 'whales',
+    url: '/whales',
+    when: (st) => st.kinds.includes('crypto') && st.setup.whales === false,
+  },
+  {
+    id: 'coach',
+    url: '/coach',
+    when: (st) => st.watchCount >= 2 && st.setup.coach === false,
+  },
+  {
+    // Needs a portfolio with something to rebalance BETWEEN — several
+    // holdings across more than one asset class. Offered to a two-coin
+    // portfolio it is a calculator with nothing to calculate.
+    id: 'rebalance',
+    url: '/rebalancing-calculator',
+    when: (st) => st.watchCount >= 4 && st.kinds.length >= 2 && st.setup.rebalance === false,
+  },
+  {
+    id: 'academy',
+    url: '/academy',
+    when: (st) => st.watchCount > 0 && st.setup.academy === false,
+  },
+  {
     // The weakest precondition in the list, and deliberately last.
     //
     // Transactions do not record how they were added, so there is no way to
@@ -443,7 +556,10 @@ export const FEATURE_TIPS = [
 export function sanitizeSetup(raw) {
   const out = {}
   if (!raw || typeof raw !== 'object') return out
-  for (const k of ['guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup']) {
+  for (const k of [
+    'guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
+    'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance',
+  ]) {
     if (typeof raw[k] === 'boolean') out[k] = raw[k]
   }
   return out
@@ -453,9 +569,14 @@ export function pickFeatureTip(state, sentIds) {
   const sent = new Set(sentIds || [])
   // A ceiling independent of how long the list gets. Every tip added otherwise
   // raises the worst case for a user who has set nothing up, and the list only
-  // ever grows. Six spread a week apart is already a month and a half of
-  // occasional nudging; past that they are not going to turn the feature on
-  // because we asked a seventh time.
+  // ever grows. Eight spread a week apart is two months of occasional
+  // nudging; past that they are not going to turn the feature on because we
+  // asked a ninth time.
+  //
+  // Raised from six when the list grew to sixteen. The point of the extra two
+  // is reach, not volume: with seventeen tips and a cap of six, most users
+  // would never hear about whole features. Anything beyond eight is nagging,
+  // and the per-tip gates still mean a well-configured user gets none of it.
   if (sent.size >= MAX_FEATURE_TIPS) return null
   // A subscription from before the setup snapshot existed knows nothing about
   // what is configured. Treating unknown as "already set up" keeps those tips

@@ -15,6 +15,7 @@
 // needs the ticker and nothing else.
 
 import { foldBalances } from './data/portfolio'
+import { usedFeature } from './featureUse'
 
 const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
 
@@ -217,13 +218,25 @@ export function featureSetup() {
       coinTargets: Object.keys(read('crypto_tracker_coin_targets', '{}') || {}).length > 0,
       // A Drive file id only exists once a backup has actually been written.
       backup: !!localStorage.getItem('wl_drive_file_id'),
+      // The app's own lock. A privacy-first tracker whose data sits unlocked
+      // on the device is the gap most worth one sentence.
+      applock: localStorage.getItem('wl_biometric_enabled') === '1',
+      // Pages someone has opened at least once — see featureUse.js. Without
+      // these, a tip about Technicals or Whales is a guess about whether they
+      // have already found it.
+      technicals: usedFeature('technicals'),
+      whales: usedFeature('whales'),
+      academy: usedFeature('academy'),
+      coach: usedFeature('coach'),
+      rebalance: usedFeature('rebalance'),
     }
   } catch {
     // An unreadable store must not claim things are unconfigured — that would
     // aim every tip at someone who may already be using all of it.
     return {
       guardian: true, vision: true, watchlist: true, weekly: true,
-      coinTargets: true, backup: true,
+      coinTargets: true, backup: true, applock: true, technicals: true,
+      whales: true, academy: true, coach: true, rebalance: true,
     }
   }
 }
