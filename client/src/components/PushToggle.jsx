@@ -149,14 +149,6 @@ export default function PushToggle() {
             onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
           />
 
-          <div className="settings-divider" />
-          <Row
-            label={t('npQuiet')}
-            hint={t('npQuietHint')}
-            on={prefs.quiet}
-            onToggle={() => updatePref({ quiet: !prefs.quiet }, 'push_pref_quiet')}
-          />
-
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
       )}

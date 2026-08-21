@@ -24,7 +24,7 @@
 //   • a last-seen timestamp and UTC offset, which is what makes "you have been
 //     away 7 days" and "don't buzz me at 3am" possible at all.
 //
-// Decision rules (thresholds, quiet hours, the daily budget, the win-back
+// Decision rules (thresholds, the daily budget, the win-back
 // ladder, news matching) live in notify-logic.js so they can be unit-tested
 // from client/src/pushLogic.test.js — none of it is reachable from a browser,
 // and getting it wrong means spamming every user at once.
@@ -44,7 +44,7 @@ import {
   asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, deliveryFor,
   DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, FEATURE_TIP_GAP_MS, fmtPct,
   fmtPrice, pickFeatureTip,
-  inQuietHours, isBreaking, localDayKey, localHour, matchArticle,
+  isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeTz,
   sanitizeWatch, shortHash, withinDailyBudget,
@@ -93,7 +93,7 @@ type Lang = "en" | "ar" | "fr" | "es"
 interface WatchAsset { id: string; symbol: string; kind: "crypto" | "stock" | "metal" }
 interface Prefs {
   moves: boolean; news: boolean; digest: boolean; retention: boolean
-  features: boolean; movePct: number; quiet: boolean
+  features: boolean; movePct: number
 }
 interface PriceRef { price: number; ts: number }
 
@@ -267,14 +267,29 @@ async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promi
 }
 
 /**
- * The two guards that protect the notification permission itself: the user's
- * overnight quiet hours, and one shared daily budget across every automated
- * channel. Exposed separately so a cron can check *before* it starts marking
- * work as done — the news pass in particular must not tick a queue of stories
- * off as "sent" while it is silently unable to send any of them.
+ * The guard that protects the notification permission itself: one shared daily
+ * budget across every automated channel. Exposed separately so a cron can
+ * check *before* it starts marking work as done — the news pass in particular
+ * must not tick a queue of stories off as "sent" while it is silently unable
+ * to send any of them.
+ *
+ * Quiet hours used to sit here too, holding everything but price targets
+ * between 22:00 and 08:00 local. It is gone, by product decision: a market
+ * that does not sleep is exactly why someone installs this, and a move worth
+ * telling them about at noon is worth telling them about at 2am.
+ *
+ * Removed rather than defaulted off, because defaulting off could not reach
+ * anyone. sanitizePrefs only falls back to a default when a subscription has
+ * no stored value, and every subscription created while quiet hours defaulted
+ * ON carries `quiet: true` explicitly — so flipping the default silenced
+ * nothing for the people already affected. Deleting the gate reaches all of
+ * them on the next deploy, with no client sync and no app update.
+ *
+ * The daily budget is untouched and still does the real work: six a day
+ * across all automated channels, so a volatile night cannot become forty
+ * buzzes.
  */
 function canDeliver(sub: StoredSub, now: number): boolean {
-  if (sub.prefs.quiet && inQuietHours(now, sub.tz)) return false
   return withinDailyBudget(sub.quota, now, sub.tz)
 }
 
@@ -583,7 +598,7 @@ async function checkDaily() {
             tag: `feature-${tip.id}`,
             url: tip.url,
           }), { now })
-          // Mark it sent only on delivery — a tip suppressed by quiet hours or
+          // Mark it sent only on delivery — a tip suppressed by the budget or
           // the budget should still get its turn another day.
           if (sent) {
             sub.featuresSent = [...sub.featuresSent, tip.id]
