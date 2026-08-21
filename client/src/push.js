@@ -460,6 +460,57 @@ export async function disablePush() {
 // adds/edits/removes a watchlist alert so the cron stays in sync. No-op when
 // push isn't enabled.
 /**
+ * Re-register a device the server has forgotten.
+ *
+ * This is the failure mode that looks perfectly healthy from inside the app.
+ * isPushEnabled() is true whenever the BROWSER holds a subscription, and
+ * autoEnablePush() returns early on `already-on` for exactly that reason — so
+ * once the server loses its record (a KV reset, a rotated VAPID key, a
+ * /subscribe that never landed), nothing ever re-registers. The switch reads
+ * On, every channel reads on, and not one notification can be delivered,
+ * because there is nothing on the server to deliver to.
+ *
+ * Re-POSTs the subscription the browser already has. Does not prompt, does not
+ * create a second subscription, and does nothing at all when the user has
+ * explicitly opted out.
+ *
+ * @returns {Promise<boolean>} whether a repair was actually performed
+ */
+export async function ensureRegistered() {
+  try {
+    if (!isPushSupported() || !VAPID_PUBLIC) return false
+    if (Notification.permission !== 'granted') return false
+    if (localStorage.getItem(OPTOUT_KEY)) return false
+
+    const sub = await getSubscription()
+    if (!sub) return false
+
+    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
+    if (!res.ok) return false
+    const status = await res.json()
+    if (status.found) return false
+
+    const post = await fetch(`${PUSH_API}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: sub.toJSON(),
+        alerts: readAlerts(),
+        watch: resolveWatch(),
+        setup: featureSetup(),
+        prefs: getPushPrefs(),
+        lang: currentLang(),
+        tz: currentTz(),
+      }),
+    })
+    return post.ok
+  } catch {
+    // Runs unattended; a network blip must never surface or throw.
+    return false
+  }
+}
+
+/**
  * What the SERVER holds for this device, not what the client believes it sent.
  *
  * The two can differ, and every real cause of "notifications are on and
