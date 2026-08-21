@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { noteFeatureUse } from '../featureUse'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
@@ -187,6 +188,10 @@ function ScoreRing({ score }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Coach() {
+  // Records the discovery, so the feature tip for this page stops being
+  // offered to someone who has already found it.
+  useEffect(() => { noteFeatureUse('coach') }, [])
+
   const { t } = useLanguage()
   const navigate = useNavigate()
   const [portfolio, setPortfolio]     = useState([])

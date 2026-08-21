@@ -819,8 +819,18 @@ describe('feature tips', () => {
     // will keep growing, so the ceiling is MAX_FEATURE_TIPS rather than the
     // list length — otherwise every tip added worsens the worst case.
     expect(new Set(FEATURE_TIPS.map(t => t.id)).size).toBe(FEATURE_TIPS.length)
-    expect(MAX_FEATURE_TIPS).toBeLessThanOrEqual(6)
-    const everything = { guardian: false, vision: false, watchlist: false, weekly: false, coinTargets: false, backup: false }
+    // Deliberately a bound, not an equality: the cap is allowed to move with a
+    // product decision, but it must not drift upward one tip at a time as the
+    // list grows. It went 6 -> 8 when the list reached sixteen, for reach
+    // rather than volume.
+    expect(MAX_FEATURE_TIPS).toBeLessThanOrEqual(8)
+    // Every gate must read false, or the tip is skipped as already set up and
+    // the rotation stops short of the cap for the wrong reason.
+    const everything = Object.fromEntries(
+      ['guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
+       'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance']
+        .map(k => [k, false])
+    )
     const sent = []
     for (let i = 0; i < FEATURE_TIPS.length + 3; i++) {
       const tip = pick({ alertCount: 0, setup: everything }, sent)
@@ -856,9 +866,23 @@ describe('feature tips', () => {
 })
 
 describe('setup snapshot', () => {
-  it('keeps only the four booleans it understands', () => {
+  it('keeps only the booleans it understands', () => {
     expect(sanitizeSetup({ guardian: true, vision: false, nonsense: 1, weekly: 'yes' }))
       .toEqual({ guardian: true, vision: false })
+  })
+
+  it('understands every key a tip actually gates on', () => {
+    // A tip gating on `st.setup.whales === false` is dead code if sanitizeSetup
+    // drops `whales` on the way in — the value arrives as undefined, which
+    // pickFeatureTip reads as "already set up", so the tip never fires and
+    // nothing anywhere reports a problem.
+    const gated = new Set()
+    for (const tip of FEATURE_TIPS) {
+      for (const m of String(tip.when).matchAll(/setup\.([A-Za-z]+)/g)) gated.add(m[1])
+    }
+    expect(gated.size).toBeGreaterThan(6)
+    const kept = sanitizeSetup(Object.fromEntries([...gated].map(k => [k, false])))
+    expect(Object.keys(kept).sort()).toEqual([...gated].sort())
   })
 
   it('drops anything that is not a boolean, rather than coercing', () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { noteFeatureUse } from '../featureUse'
 import { noteMoment } from '../reviewPrompt'
 import { Link } from 'react-router-dom'
 import { track } from '../analytics'
@@ -662,6 +663,10 @@ function HackCard({ hack, color }) {
 
 // ─────────────────────────────────────────────────────────────────────────
 export default function Academy() {
+  // Records the discovery, so the feature tip for this page stops being
+  // offered to someone who has already found it.
+  useEffect(() => { noteFeatureUse('academy') }, [])
+
   const { t, lang } = useLanguage()
   const { mode: themeMode } = useTheme()
   const isLight = themeMode === 'light'

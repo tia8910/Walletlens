@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { noteFeatureUse } from '../featureUse'
 import Icon from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
@@ -7,6 +8,10 @@ import MagicAnalysisPanel from '../components/MagicAnalysisPanel'
 import { useLanguage } from '../LanguageContext'
 
 export default function Technicals() {
+  // Records the discovery, so the feature tip for this page stops being
+  // offered to someone who has already found it.
+  useEffect(() => { noteFeatureUse('technicals') }, [])
+
   const { t } = useLanguage()
   const navigate = useNavigate()
   const [portfolio, setPortfolio] = useState([])

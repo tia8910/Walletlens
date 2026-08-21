@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { noteFeatureUse } from '../featureUse'
 import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { track } from '../analytics'
@@ -134,6 +135,10 @@ function RebalanceWidget() {
 }
 
 export default function Rebalancing() {
+  // Records the discovery, so the feature tip for this page stops being
+  // offered to someone who has already found it.
+  useEffect(() => { noteFeatureUse('rebalance') }, [])
+
   const navigate = useNavigate()
 
   useEffect(() => {
