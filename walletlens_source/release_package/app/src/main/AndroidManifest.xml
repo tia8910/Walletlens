@@ -105,7 +105,18 @@
             </intent-filter>
         </activity>
 
+        <!-- singleTask, because this activity answers a VIEW intent filter.
+             Without it the launch mode is `standard`, which means a NEW
+             instance for every incoming intent: a push notification deep link,
+             a widget tap, the Drive OAuth callback, a walletlens.live link
+             opened anywhere on the device. Each one stacked up as its own card
+             in the recents switcher, so the app looked like it was opening
+             browser tabs it never closed.
+
+             With singleTask there is exactly one instance ever; a new intent is
+             delivered to it through onNewIntent instead of spawning a task. -->
         <activity android:name="LauncherActivity"
+            android:launchMode="singleTask"
             android:alwaysRetainTaskState="true"
             android:label="@string/launcherName"
             android:exported="true">
@@ -272,6 +283,8 @@
         <activity
             android:name=".DataExportActivity"
             android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
             android:theme="@style/Theme.WalletLens.Translucent">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
