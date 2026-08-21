@@ -60,3 +60,51 @@ describe('App Lock is native-only', () => {
     expect(src).toMatch(/export function BiometricToggle[\s\S]{0,400}?if \(!isAndroidTWA\) return null/)
   })
 })
+
+
+describe('one fingerprint must not open eight apps', () => {
+  // Reported from a Samsung S10: activating the fingerprint left eight cards
+  // in the recents switcher.
+  //
+  // The native unlock relaunches the app to deliver its result, so the page
+  // that fired the intent is replaced by a fresh load whose lock screen
+  // auto-prompts on mount. The tap's transient activation lasts a few seconds
+  // and SURVIVES the relaunch, so the automatic attempt was allowed to fire
+  // too — relaunch, auto-fire, relaunch, until activation expired, leaving a
+  // task behind on every pass.
+
+  it('has exactly one sender of the unlock intent', () => {
+    // Three existed: unlock(), the visibility re-lock, and the auto-attempt
+    // through unlock(). The re-lock fired directly, bypassing every guard.
+    const senders = [...src.matchAll(/sendNativeIntent\('unlock'/g)]
+    expect(senders).toHaveLength(1)
+  })
+
+  it('refuses to auto-fire while an unlock is already in flight', () => {
+    expect(src).toMatch(/if \(auto && unlockJustRequested\(\)\)/)
+    // A user tap must still get through — an explicit request is never the loop.
+    expect(src).toMatch(/async function unlock\(\{ auto = false \} = \{\}\)/)
+    expect(src).toMatch(/attempt\(\{ auto: true \}\)/)
+  })
+
+  it('keeps the in-flight stamp somewhere the relaunch cannot clear', () => {
+    // The relaunch is a cold start: module state and sessionStorage are both
+    // gone by the time the next auto-attempt runs, so a guard kept in either
+    // would never see the previous attempt.
+    expect(src).toMatch(/localStorage\.setItem\(UNLOCK_SENT_KEY/)
+    expect(src).not.toMatch(/sessionStorage\.setItem\(UNLOCK_SENT_KEY/)
+  })
+
+  it('marks auth in progress on the path that actually backgrounds the app', () => {
+    // authInProgress exists to stop the visibility handler re-locking mid-auth.
+    // The native prompt is the one path that backgrounds the app, and it was
+    // the one path that never set the flag.
+    expect(src).toMatch(/authInProgress = true\s*\n\s*noteUnlockRequested\(\)/)
+  })
+
+  it('releases the flight when the result comes back', () => {
+    // Whatever the outcome. A stamp left behind would block the next real
+    // unlock for the whole cooldown.
+    expect(src).toMatch(/authInProgress = false[\s\S]{0,160}?removeItem\(UNLOCK_SENT_KEY\)/)
+  })
+})

@@ -22,6 +22,28 @@ const RELOCK_GRACE_MS = 60 * 1000
  */
 const RECOVER_AFTER_MS = 12 * 1000
 
+/** Where the last unlock request is stamped; see unlock(). */
+const UNLOCK_SENT_KEY = 'wl_biometric_unlock_at'
+
+/**
+ * How long an unlock counts as still in flight.
+ *
+ * Comfortably longer than the transient user activation that let the loop run
+ * (a few seconds), and short enough that a genuine retry after a cancelled
+ * prompt is not held up for long — and a user tap overrides it regardless.
+ */
+const UNLOCK_IN_FLIGHT_MS = 15 * 1000
+
+function unlockJustRequested() {
+  try {
+    return Date.now() - Number(localStorage.getItem(UNLOCK_SENT_KEY) || 0) < UNLOCK_IN_FLIGHT_MS
+  } catch { return false }
+}
+
+function noteUnlockRequested() {
+  try { localStorage.setItem(UNLOCK_SENT_KEY, String(Date.now())) } catch { /* private mode */ }
+}
+
 // Module-level guard: true while a WebAuthn prompt is on screen. The system
 // biometric sheet briefly backgrounds the page (visibilitychange → hidden),
 // which would otherwise re-lock us mid-authentication and loop forever.
@@ -158,10 +180,16 @@ export function useBiometricLock() {
         sessionStorage.removeItem(SESSION_KEY)
         setLocked(true)
 
-        // In Android TWA, also send native intent to trigger BiometricPrompt
-        if (isAndroidTWA) {
-          sendNativeIntent('unlock', currentUrlForReturn())
-        }
+        // Show the lock and stop. This used to fire an unlock intent here too,
+        // which is a third automatic sender bypassing both guards in unlock()
+        // — and every one it fired left a task behind.
+        //
+        // It is also the wrong moment for one. The intent is a top-frame
+        // navigation, and firing it the instant the app becomes visible is
+        // firing it before the user has done anything: nativeBridge would
+        // refuse for want of activation anyway, or worse, catch a stale
+        // activation and detonate. The lock screen's own auto-attempt handles
+        // the prompt, once, under the guards.
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -184,6 +212,11 @@ export function useBiometricLock() {
     // Clean the URL parameter so it doesn't stick around on refresh
     const cleanUrl = window.location.pathname + window.location.hash
     window.history.replaceState({}, '', cleanUrl)
+
+    // The round trip is over however it went, so the next attempt — automatic
+    // or not — is free to fire.
+    authInProgress = false
+    try { localStorage.removeItem(UNLOCK_SENT_KEY) } catch { /* private mode */ }
 
     if (result === 'success') {
       sessionStorage.setItem(SESSION_KEY, '1')
@@ -263,14 +296,40 @@ export function useBiometricLock() {
   // On Android TWA, send a native intent to open the system BiometricPrompt
   // dialog. The result comes back via the biometric_auth URL parameter
   // listener above.
-  async function unlock() {
+  async function unlock({ auto = false } = {}) {
     if (isAndroidTWA) {
-      // No await: on success the native prompt takes over and the page
-      // reloads with biometric_auth in the URL. A false return means
-      // nativeBridge declined for want of a user gesture — surfaced as a
-      // distinct error so the lock screen can ask for a tap instead of
-      // sitting on a spinner that will never resolve.
+      // Refuse to fire a second unlock on our own initiative while one is
+      // still in flight. This is what turned one fingerprint into eight cards
+      // in the recents switcher.
+      //
+      // The native unlock relaunches the app to deliver its result, so the
+      // page that fired the intent is replaced by a fresh load — and the fresh
+      // lock screen auto-prompts on mount. The user's tap grants transient
+      // activation lasting a few seconds, which SURVIVES that relaunch, so the
+      // automatic attempt was allowed to fire too. Relaunch, auto-fire,
+      // relaunch, auto-fire, until the activation finally expired, leaving a
+      // task behind on every pass.
+      //
+      // The stamp is in localStorage on purpose: the relaunch is a cold start,
+      // so module state and sessionStorage are both gone by the time the next
+      // auto-attempt runs. Only a user tap may override it — an explicit
+      // request is never the loop.
+      if (auto && unlockJustRequested()) {
+        const err = new Error('unlock-in-flight')
+        err.name = 'NeedsGestureError'
+        throw err
+      }
+
+      // Set BEFORE firing, and only on this path in the original code — which
+      // was the bug's other half. authInProgress exists to stop the
+      // visibility handler re-locking while authentication is happening, and
+      // the native prompt is the one path that actually backgrounds the app.
+      // Without it, being covered by the system sheet counted as "away", and
+      // coming back fired an unlock intent of its own.
+      authInProgress = true
+      noteUnlockRequested()
       if (!sendNativeIntent('unlock', currentUrlForReturn())) {
+        authInProgress = false
         const err = new Error('needs-gesture')
         err.name = 'NeedsGestureError'
         throw err
@@ -344,11 +403,11 @@ function BiometricLockScreenInner({ onUnlock }) {
   const attemptCount = useRef(0)
   const autoRan = useRef(false)
 
-  async function attempt() {
+  async function attempt({ auto = false } = {}) {
     setTrying(true)
     setError('')
     try {
-      await onUnlock()
+      await onUnlock({ auto })
     } catch (e) {
       attemptCount.current += 1
       // The native prompt was declined for want of a gesture, not by the
@@ -407,7 +466,7 @@ function BiometricLockScreenInner({ onUnlock }) {
       setError(t('blNoPasskeyDevice'))
       return
     }
-    attempt()
+    attempt({ auto: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
