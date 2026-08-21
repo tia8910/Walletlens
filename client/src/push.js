@@ -58,12 +58,6 @@ export const DEFAULT_PUSH_PREFS = {
   retention: true,
   features: true,
   movePct: 5,
-  // Off, unlike every other default here. The others add alerts the user asked
-  // for by installing a tracker; this one suppresses them on a schedule the app
-  // guessed. Must match DEFAULT_PREFS in push-api/notify-logic.js — the server
-  // is what actually holds a send, so a disagreement means the UI shows one
-  // thing and delivery does another.
-  quiet: false,
 }
 
 export function isPushSupported() {

@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
   FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
-  fmtPct, fmtPrice, inQuietHours, pickHeadline, pushTopic, RETENTION_MIN_PCT,
+  fmtPct, fmtPrice, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
   MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
   sanitizeTz, sanitizeWatch, shortHash, termsFor, withinDailyBudget,
@@ -103,14 +105,6 @@ describe('preferences', () => {
     expect(DEFAULT_PREFS.news).toBe(true)
     expect(DEFAULT_PREFS.retention).toBe(true)
     expect(DEFAULT_PREFS.features).toBe(true)
-  })
-
-  it('starts quiet hours OFF', () => {
-    // The one default that suppresses rather than adds. 10pm-8am is a guess
-    // about someone's night, and holding a real alert for ten hours on a guess
-    // is a worse failure than buzzing at midnight — the user cannot see it
-    // happening, so they cannot tell it from the app being broken.
-    expect(DEFAULT_PREFS.quiet).toBe(false)
   })
 
   it('keeps the client and server defaults in step', () => {
@@ -224,22 +218,33 @@ describe('timezone handling', () => {
   })
 })
 
-describe('quiet hours', () => {
-  const at = (iso, tz) => inQuietHours(Date.parse(iso), tz)
+describe('there are no quiet hours', () => {
+  // Removed, not defaulted off. Defaulting off could not reach anyone already
+  // affected: sanitizePrefs only falls back to a default when a subscription
+  // has no stored value, and every subscription created while quiet hours
+  // defaulted ON carries `quiet: true` explicitly. Deleting the gate reaches
+  // all of them on the next deploy, with no client sync and no app update.
+  const server = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+  )
 
-  it('is silent overnight and awake through the day', () => {
-    expect(at('2026-08-20T23:00:00Z', 0)).toBe(true)
-    expect(at('2026-08-20T03:00:00Z', 0)).toBe(true)
-    expect(at('2026-08-20T07:59:00Z', 0)).toBe(true)
-    expect(at('2026-08-20T08:00:00Z', 0)).toBe(false)
-    expect(at('2026-08-20T21:59:00Z', 0)).toBe(false)
-    expect(at('2026-08-20T22:00:00Z', 0)).toBe(true)
+  it('does not gate delivery on the time of day', () => {
+    expect(server).not.toMatch(/inQuietHours\(/)
+    expect(server).not.toMatch(/prefs\.quiet/)
   })
 
-  it('follows the user rather than the server clock', () => {
-    // Midday in UTC is the middle of the night in UTC+13.
-    expect(at('2026-08-20T12:00:00Z', 0)).toBe(false)
-    expect(at('2026-08-20T12:00:00Z', 780)).toBe(true)
+  it('leaves no quiet preference to sync or store', () => {
+    expect(DEFAULT_PREFS.quiet).toBeUndefined()
+    expect(sanitizePrefs({ quiet: true }).quiet).toBeUndefined()
+    expect(DEFAULT_PUSH_PREFS.quiet).toBeUndefined()
+  })
+
+  it('keeps the daily budget, which is the guard that actually matters', () => {
+    // The point was never "never suppress anything" — a volatile night must
+    // not become forty buzzes. That job belongs to the budget, which does not
+    // care what hour it is.
+    expect(withinDailyBudget({ day: localDayKey(Date.now(), 0), n: DAILY_PUSH_BUDGET }, Date.now(), 0)).toBe(false)
+    expect(withinDailyBudget({ day: localDayKey(Date.now(), 0), n: 0 }, Date.now(), 0)).toBe(true)
   })
 })
 

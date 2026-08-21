@@ -631,17 +631,12 @@ export function copy(key, lang) {
 // happens", which is what someone with a portfolio wants — and the daily budget
 // still bounds it.
 //
-// `quiet` is the exception: it starts OFF. Every other default here adds
-// something the user asked for by installing a portfolio tracker, but quiet
-// hours SUPPRESSES alerts, on a schedule the app picked rather than one the
-// user set. A 10pm-8am window is a guess about someone's night, and it is
-// wrong for shift workers, for anyone in a timezone we inferred badly, and for
-// the person who wants to know at 2am precisely because the market does not
-// sleep. Holding a real alert for ten hours by default is a worse failure than
-// buzzing at midnight, because the user cannot see it happening.
-//
-// It stays one tap away for anyone who wants it, and price targets the user set
-// themselves were always exempt regardless.
+// There is no quiet-hours preference. It was here, it defaulted off, and then
+// it was removed entirely: a window that suppresses alerts is a guess about
+// someone's night, wrong for shift workers and for anyone whose timezone we
+// inferred badly — and wrong most of all for the person who wants to know at
+// 2am precisely because the market does not sleep. The daily budget below is
+// the guard that actually protects the notification permission.
 export const DEFAULT_PREFS = {
   moves: true,      // a holding swings sharply
   news: true,       // breaking news naming a holding
@@ -649,7 +644,6 @@ export const DEFAULT_PREFS = {
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
   movePct: 5,       // swing threshold, percent
-  quiet: false,     // off by default — see above
 }
 
 const MIN_MOVE_PCT = 1
@@ -668,7 +662,6 @@ export function sanitizePrefs(raw) {
     retention: bool(p.retention, DEFAULT_PREFS.retention),
     features: bool(p.features, DEFAULT_PREFS.features),
     movePct: pct,
-    quiet: bool(p.quiet, DEFAULT_PREFS.quiet),
   }
 }
 
@@ -713,7 +706,7 @@ export function sanitizeAlerts(raw) {
   })
 }
 
-// ── Timezone, quiet hours, daily budget ─────────────────────────────────────
+// ── Timezone and the daily budget ───────────────────────────────────────────
 // The device reports its UTC offset in minutes so the server can reason about
 // the user's clock. Anything outside a real-world offset range is a bug or an
 // attack, and defaulting such a device to UTC is better than pushing at 4am.
@@ -733,19 +726,11 @@ export function localHour(nowMs, tzOffsetMin) {
   return Math.floor(shifted / 3_600_000) % 24
 }
 
+
 /** Calendar day on the user's own clock, for once-a-day gates. */
 export function localDayKey(nowMs, tzOffsetMin) {
   const shifted = nowMs + sanitizeTz(tzOffsetMin) * 60_000
   return new Date(shifted).toISOString().slice(0, 10)
-}
-
-export const QUIET_START_HOUR = 22  // 22:00 local — stop
-export const QUIET_END_HOUR = 8     // 08:00 local — resume
-
-/** True while the user is probably asleep. Never applied to their own targets. */
-export function inQuietHours(nowMs, tzOffsetMin) {
-  const h = localHour(nowMs, tzOffsetMin)
-  return h >= QUIET_START_HOUR || h < QUIET_END_HOUR
 }
 
 /**
