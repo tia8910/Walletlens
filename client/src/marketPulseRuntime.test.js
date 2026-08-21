@@ -483,10 +483,14 @@ describe('demo events', () => {
     expect(event.assetId).toBe('eth')
   })
 
-  it('falls back to the placeholder when there are no holdings', () => {
+  it('falls back to a labelled placeholder that still has a logo', () => {
     setPulseSettings({ enabled: true })
-    // Someone opening the demo on an empty portfolio still gets to see it.
-    expect(demoPulse('champion', {}).symbol).toBe('SOL')
+    // An empty portfolio is every fresh browser this gets tested in, so the
+    // fallback has to look like the real thing rather than like a failure:
+    // no coin the user does not own, and never an empty centre.
+    const event = demoPulse('champion', {})
+    expect(event.symbol).toBe('DEMO')
+    expect(event.image).toBe('/icon-512.png')
   })
 
   it('gives a down day a negative change, so the caption is not a lie', () => {

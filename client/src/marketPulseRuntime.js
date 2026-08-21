@@ -398,8 +398,15 @@ const DEMO_SHAPES = {
   storm:      { changePct: -11.8 },
   aurora:     { breadth: 0.82 },
   lock:       { targetId: 'demo', symbol: 'ETH', price: 4200 },
-  // Only reached by someone with no holdings at all — see topMover().
-  champion:   { symbol: 'SOL', changePct: 21.7, runnerUpPct: 4.1, image: '' },
+  // Only reached with no holdings at all — see topMover(). It explodes the
+  // app's own icon under the label DEMO, rather than naming a coin the user
+  // does not own and drawing a letter badge where its logo should be. Both of
+  // those were reported as bugs, and fairly: on an empty profile, which is
+  // every fresh browser anyone tests this in, the fallback IS the demo.
+  //
+  // The icon ships with the app and is served from its own origin, so unlike
+  // any coin logo it cannot be missing, cold, or blocked.
+  champion:   { symbol: 'DEMO', changePct: 21.7, runnerUpPct: 4.1, image: '/icon-512.png' },
 }
 
 /**
