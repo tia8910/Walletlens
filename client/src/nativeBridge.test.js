@@ -157,3 +157,63 @@ describe('fireNativeIntent', () => {
     expect(window.location.href).toBe(before)
   })
 })
+
+
+describe('keeping the session alive', () => {
+  // "The app opens eight tabs." Firing an intent by assigning
+  // window.location.href navigates the TOP FRAME to intent://, which takes the
+  // Custom Tab off its own origin and ends the TWA session. The widget sync
+  // fires every five minutes, so coming back to the app produced a fresh task
+  // in the recents switcher on that cadence, and they accumulated.
+  beforeEach(() => {
+    setUA(CHROME_ANDROID)
+    setReferrer('android-app://live.walletlens.twa/')
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { isActive: true }, configurable: true,
+    })
+  })
+
+  it('hands the intent over without moving the top frame', async () => {
+    const { fireNativeIntent } = await load()
+    const before = window.location.href
+    expect(fireNativeIntent('walletlens://widget-sync?data=x', { keepSession: true })).toBe(true)
+
+    const frame = document.querySelector('iframe')
+    expect(frame, 'no iframe was created').toBeTruthy()
+    expect(frame.src).toContain('intent://')
+    expect(frame.src).toContain('scheme=walletlens')
+    // The top frame must be exactly where it was.
+    expect(window.location.href).toBe(before)
+  })
+
+  it('cleans the iframe up, so a five-minute cadence never piles them up', async () => {
+    vi.useFakeTimers()
+    try {
+      const { fireNativeIntent } = await load()
+      fireNativeIntent('walletlens://widget-sync?data=x', { keepSession: true })
+      expect(document.querySelectorAll('iframe')).toHaveLength(1)
+      vi.advanceTimersByTime(5000)
+      expect(document.querySelectorAll('iframe')).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('still refuses without user activation', async () => {
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { isActive: false }, configurable: true,
+    })
+    const { fireNativeIntent } = await load()
+    expect(fireNativeIntent('walletlens://widget-sync?data=x', { keepSession: true })).toBe(false)
+    expect(document.querySelector('iframe')).toBeNull()
+  })
+
+  it('leaves the default path alone for senders that need the relaunch', async () => {
+    // Biometric unlock needs the native side to relaunch the app to deliver
+    // its result, so there is no session to preserve — and an iframe cannot
+    // report back, which would leave someone staring at a lock screen.
+    const { fireNativeIntent } = await load()
+    expect(fireNativeIntent('walletlens://biometric-auth?action=unlock')).toBe(true)
+    expect(document.querySelector('iframe')).toBeNull()
+  })
+})
