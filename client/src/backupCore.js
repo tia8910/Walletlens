@@ -130,6 +130,21 @@ export const DEVICE_ONLY_KEYS = [
   // carrying the heartbeat across would tell the server a device it has never
   // heard from was recently active.
   'wl_push_watch', 'wl_push_seen_ts',
+  // Google Drive state, all of it device-scoped.
+  //
+  // wl_drive_data_key is the one that matters: it decrypts the Drive backup.
+  // A backup code carries the whole portfolio, so putting the key inside one
+  // would ship the lock next to the door — and the QR/text code is not always
+  // encrypted. A new device re-derives it from the passphrase on restore,
+  // which is the intended and only path.
+  //
+  // The rest is bookkeeping about this device's own uploads: the wrapped key
+  // block already lives inside the Drive file, the file id is re-found by
+  // findBackup(), and the hash and timestamps describe uploads this device
+  // made. Restoring them elsewhere would have a fresh device claiming it had
+  // already backed up.
+  'wl_drive_data_key', 'wl_drive_wrap', 'wl_drive_file_id',
+  'wl_drive_last_hash', 'wl_drive_backup_at', 'wl_drive_remote_at',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────

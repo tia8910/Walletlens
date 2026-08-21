@@ -109,7 +109,20 @@ export default function DriveBackup() {
         ask('restore')
         say('ok', 'Backup found. Enter your passphrase to load your portfolio.')
       }
-      else if (next === 'first-backup') say('ok', 'Connected. No backup in Drive yet.')
+      else if (next === 'first-backup') {
+        if (empty) {
+          say('ok', 'Connected. Add some holdings and they’ll be backed up here.')
+        } else {
+          // The same move as auto-restore above, for the same reason. Ending
+          // at "no backup yet" left people believing connecting was the whole
+          // setup — but automatic backups cannot start until one exists,
+          // because they reuse the data key and wrap block that only the first
+          // passphrase-protected backup creates. So go straight to the one
+          // thing missing rather than leaving it to be found.
+          ask('backup')
+          say('ok', 'Connected. Set a passphrase to make your first backup — after that it updates itself.')
+        }
+      }
       else if (next === 'ask') say('ok', 'Backup found, and this device already has a portfolio.')
       else say('ok', 'Connected. Your backup is up to date.')
     } catch (e) {
@@ -126,7 +139,7 @@ export default function DriveBackup() {
         track('drive_backup', { txCount })
         refresh(); setConnected(true)
         setFound(f => f || { id: driveState().fileId })
-        say('ok', `Backed up ${txCount} transactions to your Drive.`)
+        say('ok', `Backed up ${txCount} transactions. This now updates itself automatically.`)
         cancel()
       } else {
         const { restored } = await restoreNow(pass)

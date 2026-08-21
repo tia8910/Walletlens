@@ -67,6 +67,15 @@ describe('BACKUP_KEYS', () => {
     }
   })
 
+  it('never puts the Drive decryption key inside a backup', () => {
+    // A backup code carries the whole portfolio. wl_drive_data_key decrypts
+    // the Drive backup, and the code is not always encrypted — including it
+    // would ship the lock next to the door. The passphrase is the only
+    // intended way for another device to recover that key.
+    expect(BACKUP_KEYS).not.toContain('wl_drive_data_key')
+    expect(BACKUP_KEYS).not.toContain('wl_drive_wrap')
+  })
+
   it('classifies every key the app writes', () => {
     const known = new Set([...BACKUP_KEYS, ...DEVICE_ONLY_KEYS, ...NOT_STATICALLY_VISIBLE])
     const unclassified = [...writtenKeys()]

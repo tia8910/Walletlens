@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { decideAction, hasLocalPortfolio } from './driveSync'
+import { canAutoBackup, decideAction, hasLocalPortfolio } from './driveSync'
 import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncryption'
 
 // Drive I/O is mocked away; what matters here is the one decision that can
@@ -160,5 +160,53 @@ describe('previouslyConnected', () => {
     const { previouslyConnected } = await import('./driveSync')
     expect(previouslyConnected({ fileId: 'abc', lastBackupAt: 0 })).toBe(true)
     expect(previouslyConnected({ fileId: null, lastBackupAt: 1754000000000 })).toBe(true)
+  })
+})
+
+
+describe('canAutoBackup', () => {
+  // This gate is why "I connected Drive and nothing backs up" was true.
+  // Connecting alone satisfies none of it: the data key and wrap block are
+  // written by the first passphrase-protected backup, so until one happens
+  // every automatic run returns 'no-key' and does nothing, silently.
+  const connect = () => localStorage.setItem('wl_drive_file_id', 'f1')
+  const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='  // base64 of 32 raw bytes, as dataKeyToString writes it
+  const wrap = 'salt.iv.wrapped'
+
+  it('is false after merely connecting', () => {
+    connect()
+    expect(canAutoBackup()).toBe(false)
+  })
+
+  it('is false with a data key but no wrap block', () => {
+    // The wrap is what keeps the backup recoverable by passphrase on another
+    // device. Backing up without one would produce a file only this phone
+    // could ever read.
+    connect()
+    localStorage.setItem('wl_drive_data_key', key)
+    expect(canAutoBackup()).toBe(false)
+  })
+
+  it('is false with a key and wrap but no prior upload', () => {
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', wrap)
+    expect(canAutoBackup()).toBe(false)
+  })
+
+  it('is true once a first backup has completed', () => {
+    connect()
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', wrap)
+    expect(canAutoBackup()).toBe(true)
+  })
+
+  it('stays false if the wrap was stored empty', () => {
+    // backupNow writes `wrapBlockOf(payload) || ''`. An empty string is falsy,
+    // so a malformed envelope would disable automatic backups permanently and
+    // without a word — worth pinning, since nothing else would notice.
+    connect()
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', '')
+    expect(canAutoBackup()).toBe(false)
   })
 })
