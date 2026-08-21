@@ -973,3 +973,58 @@ describe('the status endpoint', () => {
     expect(server).toMatch(/missing_endpoint/)
   })
 })
+
+
+describe('a device the server has forgotten', () => {
+  // Reported from a phone, and the status line is what surfaced it: "Push
+  // notifications · On", every channel on, and the server holding no record of
+  // the device at all.
+  //
+  // isPushEnabled() is true whenever the BROWSER has a subscription, and
+  // autoEnablePush() returns early on `already-on` for that same reason — so
+  // once the server loses its record (KV reset, rotated VAPID key, a
+  // /subscribe that never landed) nothing ever re-registers. Everything reads
+  // healthy and nothing can be delivered.
+  const client = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'push.js'), 'utf8',
+  )
+  const app = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'App.jsx'), 'utf8',
+  )
+
+  it('re-registers instead of leaving the device stranded', () => {
+    expect(client).toMatch(/export async function ensureRegistered/)
+    // Checks the server first, and only re-posts when it is genuinely missing.
+    expect(client).toMatch(/if \(status\.found\) return false/)
+  })
+
+  it('runs at startup, where autoEnablePush gives up', () => {
+    expect(app).toMatch(/ensureRegistered\?\.\(\)/)
+  })
+
+  it('never prompts and never overrides an opt-out', () => {
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).not.toMatch(/requestPermission/)
+    expect(body).toMatch(/OPTOUT_KEY/)
+    expect(body).toMatch(/Notification\.permission !== 'granted'/)
+  })
+
+  it('reuses the existing subscription rather than making a second one', () => {
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).not.toMatch(/pushManager\.subscribe/)
+  })
+})
+
+describe('the status line renders as text, not escapes', () => {
+  // JSX text content does NOT process \uXXXX — only string literals do. The
+  // line shipped reading "This device isn\\u2019t registered", visibly.
+  const toggle = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
+  )
+
+  it('leaves no literal escape sequence in the readout', () => {
+    expect(toggle).not.toMatch(/\\u[0-9a-fA-F]{4}/)
+  })
+})

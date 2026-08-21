@@ -465,6 +465,10 @@ export default function App() {
     let stop = () => {}
     import('./push').then(m => {
       m.autoEnablePush?.()
+      // And repair a subscription the server has forgotten. autoEnablePush
+      // returns early whenever the browser holds one, so without this a device
+      // the server has lost stays silent forever while every switch reads On.
+      m.ensureRegistered?.()
       stop = m.watchPermission?.(() => {}) || stop
     }).catch(() => {})
     return () => stop()

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   isPushSupported, isPushEnabled, enablePush, disablePush, watchPermission, pushStatus,
+  ensureRegistered,
   getPushPrefs, setPushPrefs,
 } from '../push'
 import { track } from '../analytics'
@@ -42,12 +43,12 @@ function Row({ label, hint, on, onToggle }) {
 function PushStatusLine({ status }) {
   if (status.reachable === false) {
     return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f59e0b' }}>
-      Can\u2019t reach the notification server right now.
+      Can’t reach the notification server right now.
     </div>
   }
   if (status.found === false) {
     return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f87171' }}>
-      This device isn\u2019t registered on the server \u2014 switch push off and on again.
+      Not registered on the server yet — reconnecting…
     </div>
   }
   if (!status.found) return null
@@ -60,18 +61,18 @@ function PushStatusLine({ status }) {
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
       <div>
         Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
-        {status.alerts > 0 && <> \u00b7 <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
-        {' \u00b7 '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
+        {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
+        {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
       </div>
       {noWatch && (
         <div style={{ color: '#f87171' }}>
-          No assets are being watched, so move and news alerts can\u2019t fire.
+          No assets are being watched, so move and news alerts can’t fire.
           Open the Dashboard once to sync your holdings.
         </div>
       )}
       {spent && (
         <div style={{ color: '#f59e0b' }}>
-          Today\u2019s notification budget is used up. Price targets you set still come through.
+          Today’s notification budget is used up. Price targets you set still come through.
         </div>
       )}
     </div>
@@ -101,7 +102,18 @@ export default function PushToggle() {
   useEffect(() => {
     if (!enabled) { setStatus(null); return }
     let alive = true
-    pushStatus().then(s => { if (alive) setStatus(s) }).catch(() => {})
+    pushStatus().then(async s => {
+      if (!alive) return
+      setStatus(s)
+      // A local subscription the server has never heard of is the one failure
+      // that looks completely healthy from here: the switch reads On because
+      // the browser has a subscription, and nothing will ever be sent to it.
+      // Repair it rather than asking the user to toggle something.
+      if (s?.found === false) {
+        const healed = await ensureRegistered()
+        if (alive && healed) setStatus(await pushStatus())
+      }
+    }).catch(() => {})
     return () => { alive = false }
   }, [enabled])
 
