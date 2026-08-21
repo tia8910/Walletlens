@@ -1,0 +1,188 @@
+WalletLens — Release Notes for versionCode 73
+(rename to WalletLens-v<versionName>-RELEASE-NOTES.txt to match the others)
+========================================================================
+
+WHY THIS AAB MATTERS
+--------------------
+WalletLens is a TWA, so most of what shipped this cycle is already live —
+the web bundle updates itself and users have it now. Three things do NOT
+reach anyone without a new AAB:
+
+1. THE OLD NOTIFICATIONS STOP.
+   PeriodicUpdateWorker posted on every run of a 30-minute WorkManager job,
+   cycling price -> hack tip -> academy tip -> feature tip, with no quiet
+   hours and no daily cap, using a hard-coded list of twelve coins the user
+   may not even hold.
+   The job was enqueued with ExistingPeriodicWorkPolicy.KEEP, which means it
+   is PERSISTED ON DEVICE. Deleting the scheduling code is not enough — every
+   installed phone keeps running the old job forever. NotificationScheduler
+   now calls cancel() on every entry point, and that cancel only executes
+   once the user installs this build.
+   Until this AAB ships, installed users are still being interrupted on a
+   timer, and the Quiet Hours switch in Settings appears not to work — because
+   a second notification source knows nothing about it, and users cannot tell
+   two notification systems apart.
+
+2. WEB PUSH CAN REACH THE TRAY.
+   POST_NOTIFICATIONS and DelegationService in the manifest are what let a
+   push arrive while the app is closed. Without the native shell carrying
+   them, the whole push feature is web-tab-only.
+
+3. THE NATIVE REVIEW GATE.
+   Decided at launch in the shell rather than in the web layer.
+
+ALREADY LIVE — no AAB required, listed so nobody re-tests it as new:
+Market Pulse animations and sounds, the sentiment badge fix, the Drive
+auto-backup opt-in and Disconnect button, and all push client logic.
+
+NOT IN THIS BUILD — landed on main after 73 was uploaded, ships in 74:
+- LauncherActivity is now singleTask. Without it the activity ran as
+  `standard`, so every incoming VIEW intent — a notification deep link, a
+  widget tap, the Drive OAuth callback, any walletlens.live link — created
+  its own task and stacked up in the recents switcher. Testing 73 will
+  still show that; it is not a regression, it is the bug this build
+  predates.
+- DataExportActivity gained excludeFromRecents/noHistory, which removes
+  the blank card it left behind.
+- Quiet hours now defaults OFF. The client half ships with the web bundle,
+  but the server default in walletlens-push governs delivery and needs that
+  service redeployed.
+
+
+NEW
+---
+- Push notifications, for real reasons only. Holdings moves, news that
+  touches something owned, and price targets the user set. Every send has a
+  trigger; nothing fires because a schedule came round.
+- Delivered with the app closed, via the service worker and the native shell.
+- On by default, with the permission asked for in context rather than on
+  first paint.
+- Feature tips for things people were not discovering: Portfolio Guardian,
+  price targets, Drive backup, QR backup and transfer, Smart import.
+- Quiet hours and a daily budget, honoured by every sender.
+- Google Drive auto-backup: on first connect the app asks whether to save
+  the passphrase, so auto-backup is a choice rather than a surprise. Added a
+  Disconnect button.
+- Market Pulse — full-screen moments when something real happens:
+  a runaway winner's logo filling the screen and exploding, big up days,
+  down days, market-wide green, a target being met. All with sound, all
+  rate-limited, all respecting prefers-reduced-motion.
+
+FIXED
+-----
+- Market sentiment badge read BEARISH on days the market was clearly up.
+  The keyword matcher counted substrings, so "ban" matched "bank" six times
+  in a single feed, and every false positive landed on the bearish side.
+  Matching is now inflection-aware and word-bounded.
+- Drive auto-backup ran a visible Google sign-in roughly every minute and
+  never completed. Automatic runs now use only a token already held, so they
+  cannot trigger an interactive prompt.
+- Feature tips linked to /watchlist, which is not a route — a 404 in a
+  notification. Now uses the tab query the app actually serves.
+
+
+BEFORE YOU UPLOAD — two things to check
+---------------------------------------
+1. VERSION CODE. This release is versionCode 73, confirmed in the Play
+   Console at upload. Next release uses 74 or higher.
+
+   app/build.gradle read versionCode 41 — not merely stale but lower than
+   codes already in use, so a clean clone built an artifact Play rejects
+   outright. It now reads 73, matching production.
+
+   versionName is still "2" and is still wrong; the real string is not
+   recoverable from the repo, so it carries a TODO rather than a guess. Set
+   it from the Play Console entry for release 73.
+
+2. R8 IS OFF, DELIBERATELY.
+   The release buildType has minification and resource shrinking disabled.
+   This is a bisect step, not a preference: v2.7 (versionCode 48) was the
+   first artifact that installed on a phone and it crashed on launch, with
+   four untested changes between it and the release Play serves — R8
+   optimisation, resource shrinking, optimised resource shrinking, and the
+   AGP 9 migration.
+   A further problem is recorded in that same comment: an earlier commit
+   dropped the proguardFiles line while leaving minifyEnabled true, so R8
+   kept shrinking and obfuscating with NONE of the keep rules applied — and
+   because -keepattributes SourceFile,LineNumberTable lived in that unapplied
+   file, the crash stack traces came back with no line numbers.
+   Shipping with R8 off is safe. Turning it back on is a separate change that
+   needs the sideload test finished first.
+
+   EXPECTED WARNING AT UPLOAD. Play will say "There is no deobfuscation file
+   associated with this App Bundle". That is correct and harmless here: with
+   minifyEnabled false nothing is obfuscated, so no mapping file is produced
+   and none is needed. Traces will already have real names and line numbers,
+   which is the whole point of this build. It is a warning, not an error —
+   save and continue.
+
+   When R8 goes back on, that warning stops being noise: upload
+   app/build/outputs/mapping/release/mapping.txt with the bundle. Skipping it
+   is a large part of why the v2.7 crash was hard to place.
+
+
+PLAY CONSOLE — "What's new" copy
+--------------------------------
+Limit is 500 characters per language. All four are within it.
+
+[en-US]
+Notifications are here. WalletLens now tells you when something actually
+happens to what you hold — a big move, news that touches your assets, a
+price target you set — and reaches you with the app closed. Nothing on a
+timer: every alert has a reason behind it.
+
+Also new:
+• Market Pulse — the screen reacts when your portfolio has a big day, up or down
+• Google Drive auto-backup you can turn on when you connect
+• Fixed: the sentiment badge reading bearish on a green day
+
+[ar]
+وصلت الإشعارات. يخبرك WalletLens الآن عندما يحدث شيء فعلي لما تملكه —
+حركة كبيرة، أو خبر يخص أصولك، أو هدف سعري حددته — ويصلك والتطبيق مغلق.
+لا شيء بمؤقت: لكل تنبيه سبب.
+
+جديد أيضًا:
+• نبض السوق — تتفاعل الشاشة عندما تمر محفظتك بيوم كبير، صعودًا أو هبوطًا
+• نسخ احتياطي تلقائي على Google Drive يمكنك تفعيله عند الربط
+• إصلاح: مؤشر المشاعر كان يظهر هبوطيًا في يوم صاعد
+
+[fr-FR]
+Les notifications sont là. WalletLens vous prévient quand il se passe
+vraiment quelque chose sur vos actifs — un mouvement important, une actualité
+qui les touche, un objectif de prix que vous avez fixé — et vous joint même
+application fermée. Rien sur minuterie : chaque alerte a une raison.
+
+Également :
+• Market Pulse — l'écran réagit aux grandes journées, hausse comme baisse
+• Sauvegarde auto Google Drive, activable à la connexion
+• Corrigé : le sentiment affiché baissier un jour de hausse
+
+[es-ES]
+Ya están las notificaciones. WalletLens te avisa cuando pasa algo real con
+lo que tienes — un movimiento fuerte, una noticia que afecta a tus activos,
+un objetivo de precio que fijaste — y te llega con la app cerrada. Nada por
+temporizador: cada aviso tiene un motivo.
+
+También nuevo:
+• Market Pulse — la pantalla reacciona en los días grandes, al alza o a la baja
+• Copia automática en Google Drive que activas al conectar
+• Corregido: el indicador de sentimiento marcaba bajista en un día verde
+
+
+FILES
+-----
+- WalletLens-<version>.aab  -> Google Play Console (versionCode 73)
+- WalletLens-<version>.apk  -> sideload and test first
+
+TEST BEFORE PROMOTING TO PRODUCTION
+-----------------------------------
+- App launches. This is the open R8 bisect; the sideloaded APK settles it.
+- Grant the notification permission when asked, then close the app fully and
+  confirm a push still arrives.
+- Confirm the OLD timer notifications have stopped. Leave the phone for an
+  hour after installing and check nothing arrives on a 30-minute rhythm.
+- Toggle Quiet Hours and confirm it now actually silences everything.
+- Connect Google Drive, accept the passphrase prompt, then confirm no
+  repeating Google sign-in appears and that a backup completes.
+
+VERSION: versionCode 73
