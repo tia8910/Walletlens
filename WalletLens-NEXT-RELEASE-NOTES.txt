@@ -73,13 +73,13 @@ BEFORE YOU UPLOAD — two things to check
 1. VERSION CODE. This release is versionCode 73, confirmed in the Play
    Console at upload. Next release uses 74 or higher.
 
-   Note that app/build.gradle in this repo still reads:
-       versionCode 41
-       versionName "2"
-   That is not what gets built — 73 came from somewhere else in the build
-   path. It does mean a clean clone builds an artifact Play will reject,
-   since 41 is far below a code already accepted. Worth reconciling so the
-   checked-in value matches reality, but it does not block this upload.
+   app/build.gradle read versionCode 41 — not merely stale but lower than
+   codes already in use, so a clean clone built an artifact Play rejects
+   outright. It now reads 73, matching production.
+
+   versionName is still "2" and is still wrong; the real string is not
+   recoverable from the repo, so it carries a TODO rather than a guess. Set
+   it from the Play Console entry for release 73.
 
 2. R8 IS OFF, DELIBERATELY.
    The release buildType has minification and resource shrinking disabled.

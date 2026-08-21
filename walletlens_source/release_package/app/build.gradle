@@ -61,7 +61,23 @@ android {
         applicationId "live.walletlens.twa"
         minSdk 23
         targetSdk 36
-        versionCode 41
+        // versionCode 73 is the code Google Play accepted for the current
+        // production release, read from the Console at upload.
+        //
+        // It was 41 here, which was wrong in the way that costs a build: not
+        // merely stale but LOWER than codes already in use — the comments
+        // further down this file record v2.7 as 48 — so Play rejects any
+        // artifact built from a clean clone outright. Nothing else in the repo
+        // sets this; there is no bubblewrap twa-manifest.json, so whatever
+        // produced 73 did it outside version control.
+        //
+        // Bump to 74 or higher for the next release. Play never accepts a
+        // duplicate or lower code.
+        versionCode 73
+        // TODO(tarek): unverified. "2" cannot be right next to versionCode 73
+        // — this file's own comments track v2.7 and v2.8 — but the real string
+        // is not recoverable from the repo. Set it to the version shown for
+        // release 73 in the Play Console.
         versionName "2"
 
         // The name for the application
