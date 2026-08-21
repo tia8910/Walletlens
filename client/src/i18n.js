@@ -600,6 +600,7 @@ export const translations = {
     txChoseRemove: (sym) => `You chose Remove, so this just takes ${sym} out of your holdings — nothing will be credited back. If you got cash or another asset in return, pick it so it lands in your portfolio.`,
     txAdd: 'Add',
     txTapPlus: 'Tap + to add your first trade',
+    loadMoreTx: 'Load more',
 
     // ── Goals / Vision planner ──────────────────────────────────
     vsAllocated: 'Allocated',
@@ -2447,6 +2448,7 @@ export const translations = {
     txChoseRemove: (sym) => `اخترت «إزالة»، لذا ستُخرَج ${sym} من أصولك فقط — ولن يُضاف أي شيء في المقابل. وإذا حصلت على نقد أو أصل آخر مقابلها، فاخترها كي تُضاف إلى محفظتك.`,
     txAdd: 'إضافة',
     txTapPlus: 'اضغط + لإضافة صفقتك الأولى',
+    loadMoreTx: 'تحميل المزيد',
 
     // ── Goals / Vision planner ──────────────────────────────────
     vsAllocated: 'مُخصَّص',
@@ -4267,6 +4269,7 @@ export const translations = {
     txChoseRemove: (sym) => `Vous avez choisi Retirer : cette opération retire simplement ${sym} de vos avoirs — rien ne sera crédité en retour. Si vous avez reçu des liquidités ou un autre actif en échange, sélectionnez-le pour qu'il apparaisse dans votre portefeuille.`,
     txAdd: 'Ajouter',
     txTapPlus: 'Appuyez sur + pour ajouter votre première transaction',
+    loadMoreTx: 'Charger plus',
 
     // ── Goals / Vision planner ──────────────────────────────────
     vsAllocated: 'Alloué',
@@ -6087,6 +6090,7 @@ export const translations = {
     txChoseRemove: (sym) => `Has elegido Retirar, así que esto solo saca ${sym} de tus posiciones: no se abonará nada a cambio. Si recibiste efectivo u otro activo, selecciónalo para que entre en tu cartera.`,
     txAdd: 'Añadir',
     txTapPlus: 'Pulsa + para añadir tu primera operación',
+    loadMoreTx: 'Cargar más',
 
     // ── Goals / Vision planner ──────────────────────────────────
     vsAllocated: 'Asignado',
