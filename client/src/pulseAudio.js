@@ -231,6 +231,9 @@ const TRIM = {
   // need the most help because they have no transient to carry them. Worth a
   // pass on a real device with the others for reference.
   shockwave: 1.6, aurora: 2.1, lock: 1.8, rain: 1.5, dip: 2.0, storm: 1.7,
+  // Lowest trim in the table, and deliberately so: this voice carries the
+  // set's loudest impact already, so it needs the least help.
+  champion: 1.2,
 }
 let voiceTrim = 1
 
@@ -669,16 +672,54 @@ function playStorm(t) {
   bell(t + 1.45, 1.30, { freq: 261.63, gain: 0.048, index: 1.8, wet: 0.9 })
 }
 
+/**
+ * Champion — the day's runaway winner, filling the screen and blowing apart.
+ *
+ * Shaped as one gesture in two halves, because that is what the picture does:
+ * everything before the impact rises and tightens (the approach), everything
+ * after it falls away (the debris). The impact is a sub drop with a wideband
+ * crack over it — the same pairing as the rocket's boom, hit harder and with
+ * nothing following it but tail.
+ *
+ * The rise is a fifth, 146.83 → 220, so the explosion lands on a note that
+ * belongs with the rest of the set rather than on noise alone.
+ */
+function playChampion(t) {
+  // Approach — pitch, filter and noise all climbing together. The long attack
+  // keeps it from reading as a separate sound; it should feel like one thing
+  // getting closer.
+  swell(t + 0.00, 1.15, {
+    from: 146.83, to: 440, gain: 0.12,
+    cutFrom: 300, cutTo: 5200, spread: 12, wet: 0.35, attack: 0.55,
+  })
+  air(t + 0.10, 1.05, { from: 500, to: 4800, q: 2.8, gain: 0.06, wet: 0.45, attack: 0.6 })
+  sub(t + 0.55, 0.70, { from: 40, to: 58, gain: 0.20, wet: 0.05 })
+
+  // Impact. The loudest moment in the set, and the only one that has to be:
+  // the logo is the size of the screen when this lands.
+  sub(t + 1.15, 0.95, { from: 88, to: 24, gain: 0.60, wet: 0.15 })
+  air(t + 1.15, 0.26, { from: 2600, to: 260, q: 0.7, gain: 0.10, wet: 0.7, attack: 0.002 })
+  bell(t + 1.15, 0.70, { freq: 220.00, gain: 0.055, index: 5, wet: 0.6 })
+
+  // Debris — spread wide, falling away. Panned apart so the tail opens out
+  // instead of collapsing back to the middle.
+  bell(t + 1.34, 0.80, { freq: 1760.00, gain: 0.032, index: 4, wet: 0.9, pan: -0.4 })
+  bell(t + 1.46, 0.75, { freq: 1318.51, gain: 0.030, index: 4, wet: 0.9, pan: 0.45 })
+  bell(t + 1.62, 0.90, { freq: 880.00, gain: 0.026, index: 3, wet: 0.95, pan: -0.15 })
+  air(t + 1.40, 0.80, { from: 3200, to: 900, q: 1.6, gain: 0.030, wet: 0.85, attack: 0.05 })
+}
+
 const VOICES = {
   rocket: playRocket, ath: playAth, milestone: playMilestone, fireworks: playFireworks,
   shockwave: playShockwave, aurora: playAurora, lock: playLock,
-  rain: playRain, dip: playDip, storm: playStorm,
+  rain: playRain, dip: playDip, storm: playStorm, champion: playChampion,
 }
 
 /** Roughly how long each sound runs, for syncing the visual layer. */
 export const DURATION_MS = {
   rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600,
   shockwave: 700, aurora: 2600, lock: 1100, rain: 2200, dip: 1700, storm: 2900,
+  champion: 2600,
 }
 
 /**

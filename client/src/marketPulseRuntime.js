@@ -6,8 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
-  PORTFOLIO_DIP_PCT,
-  PORTFOLIO_SURGE_PCT, PRIORITY,
+  PRIORITY,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
 
@@ -263,22 +262,20 @@ export function observeMarket({
       write(STATE_KEY, state)
       lastSamples = samples
       writeSamples(samples)
-      // Deliberately does not return here for the fireworks case: seeding
-      // exists so a long-held portfolio is not congratulated on records it set
-      // before the feature existed. "Today is a good day" is not a record, and
-      // suppressing it on first run would mean the very first thing a new user
-      // could ever see is nothing.
-      // The down days have to survive this gate too: a user opening the app
-      // for the first time on a bad day should hear about it, because that is
-      // today's fact rather than a stale record.
+      // And then carry on into detection rather than returning.
       //
-      // Target hits deliberately do not. seedRecords has just retired every
-      // target that was already met, and it is right that it did — a target
-      // crossed before the app had ever run is a record in exactly the sense
-      // this gate exists to suppress.
-      const worthSaying = portfolioChangePct >= PORTFOLIO_SURGE_PCT
-        || portfolioChangePct <= PORTFOLIO_DIP_PCT
-      if (!worthSaying) return null
+      // There used to be a whitelist here of the events allowed to survive
+      // the first run. It was redundant and, worse, it silently excluded
+      // every event added after it was written — rain, aurora and champion
+      // could not fire on day one for no reason anyone had decided.
+      //
+      // The seeded state already does the whole job. Records cannot fire: ath
+      // now equals the current value, every milestone below it is marked, and
+      // every met target is retired. Crossings cannot fire either, because
+      // they need a previous sample and this run is the first. What is left is
+      // only ever a statement about today, which is exactly what should
+      // survive — suppressing those would mean the first thing a new user sees
+      // is nothing, on the one day the app had something true to say.
     }
 
     const events = detectEvents({
@@ -401,6 +398,9 @@ const DEMO_SHAPES = {
   storm:      { changePct: -11.8 },
   aurora:     { breadth: 0.82 },
   lock:       { targetId: 'demo', symbol: 'ETH', price: 4200 },
+  // No image: the demo deliberately exercises the fallback badge, which is
+  // the path a real event takes whenever the icon CDN is cold or blocked.
+  champion:   { symbol: 'SOL', changePct: 21.7, runnerUpPct: 4.1, image: '' },
 }
 
 /**

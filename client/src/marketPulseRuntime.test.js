@@ -79,6 +79,22 @@ describe('seeding an existing portfolio', () => {
     expect(event?.type).toBe('dip')
   })
 
+  it('still crowns a champion on the very first run', () => {
+    setPulseSettings({ enabled: true })
+    // A champion is a statement about today, not a record, so seeding has no
+    // business suppressing it. This is the case the old first-run whitelist
+    // got wrong: it named the events allowed through, so every event added
+    // afterwards was silently excluded.
+    const next = {
+      sol: { changePct: 24, cls: 'altcoin', symbol: 'SOL', image: '' },
+      eth: { changePct: 2, cls: 'crypto-major', symbol: 'ETH', image: '' },
+      ada: { changePct: 1, cls: 'altcoin', symbol: 'ADA', image: '' },
+    }
+    const event = observeMarket({ samples: next, totalValue: 120000, now: T0 })
+    expect(event?.type).toBe('champion')
+    expect(event.symbol).toBe('SOL')
+  })
+
   it('does not replay targets that were met before it ever ran', () => {
     setPulseSettings({ enabled: true })
     const hit = [{ id: 't1', symbol: 'ETH', price: 4200 }]
