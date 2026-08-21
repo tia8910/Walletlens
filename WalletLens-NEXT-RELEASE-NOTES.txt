@@ -35,6 +35,19 @@ ALREADY LIVE — no AAB required, listed so nobody re-tests it as new:
 Market Pulse animations and sounds, the sentiment badge fix, the Drive
 auto-backup opt-in and Disconnect button, and all push client logic.
 
+NOT IN THIS BUILD — landed on main after 73 was uploaded, ships in 74:
+- LauncherActivity is now singleTask. Without it the activity ran as
+  `standard`, so every incoming VIEW intent — a notification deep link, a
+  widget tap, the Drive OAuth callback, any walletlens.live link — created
+  its own task and stacked up in the recents switcher. Testing 73 will
+  still show that; it is not a regression, it is the bug this build
+  predates.
+- DataExportActivity gained excludeFromRecents/noHistory, which removes
+  the blank card it left behind.
+- Quiet hours now defaults OFF. The client half ships with the web bundle,
+  but the server default in walletlens-push governs delivery and needs that
+  service redeployed.
+
 
 NEW
 ---
