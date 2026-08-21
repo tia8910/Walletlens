@@ -51,6 +51,8 @@ function repairMessage(repair) {
       return { text: 'Your browser has not allowed notifications for WalletLens. Allow them in site settings, then reopen this screen.', tone: BAD }
     case 'no-subscription':
       return { text: 'This device has no push subscription. Turn the switch above off and on again.', tone: BAD }
+    case 'key-rotated':
+      return { text: 'This device’s notification key is out of date. Turn the switch above off and on again to renew it.', tone: BAD }
     case 'no-key':
       return { text: 'Push is not configured in this build. It will work after the next update.', tone: BAD }
     case 'unreachable':

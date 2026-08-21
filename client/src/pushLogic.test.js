@@ -1038,12 +1038,26 @@ describe('a device the server has forgotten', () => {
     for (const reason of [
       'unsupported', 'no-key', 'not-granted', 'opted-out', 'no-subscription',
       'unreachable', 'already-registered', 'endpoint-rejected', 'rejected', 'error',
+      'key-rotated',
     ]) {
       expect(body).toContain(`'${reason}'`)
     }
     // The server's own refusal is carried through rather than flattened.
     expect(body).toMatch(/httpStatus: post\.status/)
     expect(body).toMatch(/reason: 'repaired'/)
+  })
+
+  it('does not re-register a subscription bound to a retired VAPID key', () => {
+    // Re-posting it makes /status report found:true while the push service
+    // still rejects every message — the readout then says healthy, which is
+    // worse than saying nothing.
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    const guard = body.indexOf('subscriptionMatchesKey')
+    const post = body.indexOf('/subscribe')
+    expect(guard).toBeGreaterThan(-1)
+    expect(guard).toBeLessThan(post)
+    expect(body).toContain("reason: 'key-rotated'")
   })
 
   it('stops re-posting an endpoint the server has said it will not accept', () => {
@@ -1093,7 +1107,7 @@ describe('the status line renders as text, not escapes', () => {
     expect(body).toMatch(/if \(!repair\) return/)
     for (const reason of [
       'opted-out', 'not-granted', 'no-subscription', 'no-key',
-      'unreachable', 'endpoint-rejected', 'rejected',
+      'unreachable', 'endpoint-rejected', 'rejected', 'key-rotated',
     ]) {
       expect(body).toContain(`case '${reason}'`)
     }

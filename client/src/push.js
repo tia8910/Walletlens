@@ -550,6 +550,17 @@ export async function ensureRegistered() {
     const sub = await getSubscription()
     if (!sub) return { ok: false, reason: 'no-subscription' }
 
+    // Re-posting a subscription bound to a retired VAPID key is the worst
+    // version of this bug, not a repair: /status then reports found:true, the
+    // readout says everything is healthy, and the push service still rejects
+    // every message the server signs. Replacing it means creating a new
+    // subscription, which this function deliberately does not do — that is
+    // enablePush()'s job, and it belongs behind a deliberate action rather
+    // than an unattended startup call. Report it and let the user act.
+    if (!subscriptionMatchesKey(sub, VAPID_PUBLIC)) {
+      return { ok: false, reason: 'key-rotated' }
+    }
+
     let status
     try {
       const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
