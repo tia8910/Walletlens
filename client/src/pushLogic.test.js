@@ -218,6 +218,44 @@ describe('timezone handling', () => {
   })
 })
 
+describe('how promptly each channel runs', () => {
+  // "Notifications should send on time, like Binance." The cadence is per
+  // channel and set by what the pass costs upstream, so these assert the
+  // reasoning rather than the numbers alone — a future edit that speeds up
+  // moves to match targets would rate-limit the stock fetch into silence.
+  const server = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+  )
+  const cronFor = (name) => {
+    const m = new RegExp(`Deno\\.cron\\("${name}", "([^"]+)"`).exec(server)
+    return m && m[1]
+  }
+
+  it('checks the user\u2019s own price targets every minute', () => {
+    // One batched CoinGecko call per pass however many alerts exist, and
+    // exempt from the daily budget — nothing is saved by waiting.
+    expect(cronFor('wl-check-alerts')).toBe('* * * * *')
+  })
+
+  it('does not run the moves pass every minute', () => {
+    // fetchStockQuotes is one request PER SYMBOL, capped at 40. Per-minute
+    // would be up to forty Yahoo requests a minute and a rate-limit, which
+    // returns nothing at all — worse than a few minutes' latency.
+    const moves = cronFor('wl-check-moves')
+    expect(moves).not.toBe('* * * * *')
+    expect(moves).toMatch(/^\*\/([2-9]|1\d)/)
+  })
+
+  it('keeps every channel at least as fast as it used to be', () => {
+    // Guards against a revert landing quietly. Previous values were 10, 15
+    // and 20 minutes.
+    const minutes = (c) => Number((c || '').match(/^\*\/(\d+)/)?.[1] ?? (c === '* * * * *' ? 1 : 999))
+    expect(minutes(cronFor('wl-check-alerts'))).toBeLessThanOrEqual(10)
+    expect(minutes(cronFor('wl-check-moves'))).toBeLessThanOrEqual(15)
+    expect(minutes(cronFor('wl-check-news'))).toBeLessThanOrEqual(20)
+  })
+})
+
 describe('there are no quiet hours', () => {
   // Removed, not defaulted off. Defaulting off could not reach anyone already
   // affected: sanitizePrefs only falls back to a default when a subscription
