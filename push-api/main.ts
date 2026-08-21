@@ -169,18 +169,36 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
 // ── Abuse guards ────────────────────────────────────────────────────────────
 // Push endpoints must belong to a real browser push service — otherwise the
 // cron becomes a free HTTP cannon aimed at attacker-chosen URLs.
+//
+// That is the only thing this list is for. It is NOT a judgement about which
+// browsers deserve notifications, and treating it as one has a cost that is
+// invisible from the server: a host missing here is a device that can never
+// register. The browser holds a perfectly good subscription, /subscribe
+// answers 400, the switch in Settings reads On, every channel reads on, and
+// nothing is ever delivered. Samsung Internet was exactly that — the default
+// TWA provider on a good number of Samsung phones, issuing endpoints this
+// list did not name. Add a host when a real browser issues it.
 const PUSH_HOST_ALLOW = [
-  /(^|\.)fcm\.googleapis\.com$/,          // Chrome / Chromium
+  /(^|\.)fcm\.googleapis\.com$/,           // Chrome / Chromium
   /(^|\.)android\.googleapis\.com$/,
   /(^|\.)push\.services\.mozilla\.com$/,  // Firefox
-  /(^|\.)notify\.windows\.com$/,           // Edge legacy
+  /(^|\.)notify\.windows\.com$/,           // Edge legacy / WNS
   /(^|\.)push\.apple\.com$/,               // Safari
+  /(^|\.)samsungosp\.com$/,                // Samsung Internet (push.samsungosp.com)
+  /(^|\.)push-api\.cloud\.huawei\.com$/,  // Huawei Browser
 ]
 function isRealPushEndpoint(endpoint: string): boolean {
   try {
     const u = new URL(endpoint)
     return u.protocol === "https:" && PUSH_HOST_ALLOW.some(re => re.test(u.hostname))
   } catch { return false }
+}
+
+// Which host was turned away, so a rejection is answerable instead of a silent
+// 400 the client can only report as "something went wrong". Returns "" for an
+// endpoint that will not even parse.
+function endpointHost(endpoint: string): string {
+  try { return new URL(endpoint).hostname } catch { return "" }
 }
 
 // Best-effort per-IP rate limit (in-memory, per isolate — cheap first line).
@@ -697,10 +715,16 @@ Deno.serve(async (req, info) => {
     const endpoint = new URL(req.url).searchParams.get("endpoint") ?? ""
     if (!endpoint) return json({ error: "missing_endpoint" }, headers, 400)
 
+    // Whether /subscribe would even accept this endpoint. Without it, a device
+    // on an unlisted push host reports `found: false` forever and the client's
+    // repair silently 400s on every attempt — the two look identical from the
+    // app, and only one of them is fixable by retrying.
+    const endpointOk = isRealPushEndpoint(endpoint)
+
     const stored = (await kv.get<StoredSub>(["sub", await endpointKey(endpoint)])).value
     if (!stored) {
       // The decisive answer to "is it even registered?".
-      return json({ found: false }, headers)
+      return json({ found: false, endpointOk, host: endpointHost(endpoint) }, headers)
     }
 
     const sub = normalize(stored)
@@ -709,6 +733,7 @@ Deno.serve(async (req, info) => {
     const sentToday = sub.quota?.day === day ? (sub.quota.n ?? 0) : 0
     return json({
       found: true,
+      endpointOk,
       watch: sub.watch.length,
       alerts: sub.alerts.length,
       prefs: sub.prefs,
@@ -725,7 +750,13 @@ Deno.serve(async (req, info) => {
     const body = await readJson(req)
     const subscription = body.subscription as StoredSub["subscription"] | undefined
     if (!subscription?.endpoint) return json({ error: "missing_subscription" }, headers, 400)
-    if (!isRealPushEndpoint(subscription.endpoint)) return json({ error: "invalid_endpoint" }, headers, 400)
+    if (!isRealPushEndpoint(subscription.endpoint)) {
+      // Name the host. This rejection is invisible from the app otherwise, and
+      // it is indistinguishable from every other reason a device stays silent.
+      const host = endpointHost(subscription.endpoint)
+      console.warn("rejected push endpoint host:", host || "(unparseable)")
+      return json({ error: "invalid_endpoint", host }, headers, 400)
+    }
 
     const k = await endpointKey(subscription.endpoint)
     const prev = (await kv.get<StoredSub>(["sub", k])).value

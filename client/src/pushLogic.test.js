@@ -948,9 +948,38 @@ describe('the status endpoint', () => {
     join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
   )
 
+  it('accepts the push hosts real browsers actually issue', () => {
+    // The allowlist is SSRF protection, not a browser policy. A host missing
+    // from it is a device that can never register: the browser holds a valid
+    // subscription, /subscribe answers 400, and the switch reads On forever.
+    const block = server.slice(server.indexOf('const PUSH_HOST_ALLOW'))
+    const list = block.slice(0, block.indexOf(']'))
+    for (const host of [
+      'fcm\\.googleapis\\.com',
+      'push\\.services\\.mozilla\\.com',
+      'notify\\.windows\\.com',
+      'push\\.apple\\.com',
+      'samsungosp\\.com',        // Samsung Internet — the default TWA provider on many Samsung phones
+      'push-api\\.cloud\\.huawei\\.com',
+    ]) {
+      expect(list).toContain(host)
+    }
+  })
+
+  it('names the host it turned away instead of failing anonymously', () => {
+    expect(server).toMatch(/error: "invalid_endpoint", host/)
+  })
+
+  it('tells the client up front whether this endpoint is acceptable', () => {
+    // Without it, an unlisted push host and a lost KV record both read as
+    // `found: false`, and only one of them can be fixed by re-posting.
+    expect(server).toMatch(/const endpointOk = isRealPushEndpoint\(endpoint\)/)
+    expect(server).toMatch(/found: true,\n\s+endpointOk,/)
+  })
+
   it('answers whether the server has this device at all', () => {
     expect(server).toMatch(/path === "\/status"/)
-    expect(server).toMatch(/return json\(\{ found: false \}/)
+    expect(server).toMatch(/return json\(\{ found: false, endpointOk, host: endpointHost\(endpoint\) \}/)
   })
 
   it('reports the two states that cause silence while everything looks right', () => {
@@ -995,7 +1024,35 @@ describe('a device the server has forgotten', () => {
   it('re-registers instead of leaving the device stranded', () => {
     expect(client).toMatch(/export async function ensureRegistered/)
     // Checks the server first, and only re-posts when it is genuinely missing.
-    expect(client).toMatch(/if \(status\.found\) return false/)
+    expect(client).toMatch(/if \(status\.found\) return \{ ok: false, reason: 'already-registered' \}/)
+  })
+
+  it('reports why it gave up, so a failed repair is not shown as an ongoing one', () => {
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    // Every exit carries a reason. A bare boolean made "still trying" and
+    // "already refused" the same value, which is what left the status line
+    // reading "reconnecting…" forever at a repair that had failed.
+    expect(body).not.toMatch(/return false/)
+    expect(body).not.toMatch(/return true/)
+    for (const reason of [
+      'unsupported', 'no-key', 'not-granted', 'opted-out', 'no-subscription',
+      'unreachable', 'already-registered', 'endpoint-rejected', 'rejected', 'error',
+    ]) {
+      expect(body).toContain(`'${reason}'`)
+    }
+    // The server's own refusal is carried through rather than flattened.
+    expect(body).toMatch(/httpStatus: post\.status/)
+    expect(body).toMatch(/reason: 'repaired'/)
+  })
+
+  it('stops re-posting an endpoint the server has said it will not accept', () => {
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    const guard = body.indexOf('status.endpointOk === false')
+    const post = body.indexOf('/subscribe')
+    expect(guard).toBeGreaterThan(-1)
+    expect(guard).toBeLessThan(post)
   })
 
   it('runs at startup, where autoEnablePush gives up', () => {
@@ -1026,5 +1083,46 @@ describe('the status line renders as text, not escapes', () => {
 
   it('leaves no literal escape sequence in the readout', () => {
     expect(toggle).not.toMatch(/\\u[0-9a-fA-F]{4}/)
+  })
+
+  it('says something different once the repair has failed', () => {
+    // "reconnecting…" was shown whether the repair was in flight or had
+    // already been refused, so the screen never reached the honest answer.
+    const fn = toggle.slice(toggle.indexOf('function repairMessage'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toMatch(/if \(!repair\) return/)
+    for (const reason of [
+      'opted-out', 'not-granted', 'no-subscription', 'no-key',
+      'unreachable', 'endpoint-rejected', 'rejected',
+    ]) {
+      expect(body).toContain(`case '${reason}'`)
+    }
+    // Only the in-flight state may say "reconnecting".
+    expect(body.split('reconnecting').length - 1).toBe(1)
+  })
+
+  it('only repaints as healthy when the repair actually worked', () => {
+    // `if (healed)` on a bare boolean was fine; the risk in returning an
+    // object is that a falsy verdict becomes truthy and the line reads as
+    // fixed while nothing was.
+    expect(toggle).toMatch(/if \(result\?\.ok\) setStatus\(await pushStatus\(\)\)/)
+    expect(toggle).toMatch(/setRepair\(result\)/)
+  })
+})
+
+describe('the switch cannot read On for a device that has opted out', () => {
+  // disablePush() writes the opt-out and THEN unsubscribes. If that
+  // unsubscribe fails, the switch read On off the surviving subscription while
+  // every automatic path correctly refused to touch an opted-out device — a
+  // state with nothing on screen the user could press to escape it.
+  const client = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'push.js'), 'utf8',
+  )
+
+  it('checks the opt-out flag, not just the browser subscription', () => {
+    const fn = client.slice(client.indexOf('export async function isPushEnabled'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toMatch(/OPTOUT_KEY/)
+    expect(body).toMatch(/return false/)
   })
 })

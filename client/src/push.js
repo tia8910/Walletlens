@@ -287,13 +287,37 @@ export function noteAskShown() {
 
 // ── Subscription lifecycle ──────────────────────────────────────────────────
 
+// Host of a push endpoint, for reporting a rejection the user can act on.
+function hostOf(endpoint) {
+  try { return new URL(endpoint).hostname } catch { return '' }
+}
+
 async function getSubscription() {
   const reg = await navigator.serviceWorker.ready
   return reg.pushManager.getSubscription()
 }
 
+/**
+ * Whether the switch in Settings should read On.
+ *
+ * The opt-out flag is part of the answer, not a separate concern. Reading only
+ * the browser subscription produced a state the user cannot get out of:
+ * disablePush() writes the opt-out and THEN unsubscribes, so if that
+ * unsubscribe fails — or anything re-creates the subscription afterwards — the
+ * switch reads On while every automatic path (autoEnablePush, ensureRegistered)
+ * correctly refuses to touch an opted-out device. On screen that is a switch
+ * that is on, channels that are on, and total silence, with nothing the user
+ * can press to change it.
+ *
+ * Answering false here puts the contradiction back where the user can resolve
+ * it: the switch reads Off, matching what they asked for, and turning it on
+ * runs enablePush(), which clears the flag and re-registers.
+ */
 export async function isPushEnabled() {
   if (!isPushSupported()) return false
+  try {
+    if (localStorage.getItem(OPTOUT_KEY)) return false
+  } catch { /* storage blocked — fall through to the subscription */ }
   try { return !!(await getSubscription()) } catch { return false }
 }
 
@@ -463,7 +487,7 @@ export async function disablePush() {
  * Re-register a device the server has forgotten.
  *
  * This is the failure mode that looks perfectly healthy from inside the app.
- * isPushEnabled() is true whenever the BROWSER holds a subscription, and
+ * The switch reads On whenever the BROWSER holds a subscription, and
  * autoEnablePush() returns early on `already-on` for exactly that reason — so
  * once the server loses its record (a KV reset, a rotated VAPID key, a
  * /subscribe that never landed), nothing ever re-registers. The switch reads
@@ -474,21 +498,43 @@ export async function disablePush() {
  * create a second subscription, and does nothing at all when the user has
  * explicitly opted out.
  *
- * @returns {Promise<boolean>} whether a repair was actually performed
+ * @returns {Promise<{ok: boolean, reason: string, httpStatus?: number,
+ *   code?: string, host?: string}>} `ok` when a repair was performed, and in
+ *   every case a `reason` — the point of this function is that the caller can
+ *   tell a repair that succeeded from one that was refused, from one that was
+ *   never attempted. It used to answer a bare boolean, which made "still
+ *   trying" and "gave up" the same value and left the status line reading
+ *   "reconnecting…" at something that had already failed.
  */
 export async function ensureRegistered() {
   try {
-    if (!isPushSupported() || !VAPID_PUBLIC) return false
-    if (Notification.permission !== 'granted') return false
-    if (localStorage.getItem(OPTOUT_KEY)) return false
+    if (!isPushSupported()) return { ok: false, reason: 'unsupported' }
+    if (!VAPID_PUBLIC) return { ok: false, reason: 'no-key' }
+    if (Notification.permission !== 'granted') return { ok: false, reason: 'not-granted' }
+    try {
+      if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
+    } catch { /* storage blocked; treat as not opted out */ }
 
     const sub = await getSubscription()
-    if (!sub) return false
+    if (!sub) return { ok: false, reason: 'no-subscription' }
 
-    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-    if (!res.ok) return false
-    const status = await res.json()
-    if (status.found) return false
+    let status
+    try {
+      const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
+      if (!res.ok) return { ok: false, reason: 'unreachable', httpStatus: res.status }
+      status = await res.json()
+    } catch {
+      return { ok: false, reason: 'unreachable' }
+    }
+    if (status.found) return { ok: false, reason: 'already-registered' }
+
+    // The server has told us up front that it will not accept this endpoint.
+    // Re-posting it every time the screen opens would just 400 forever, and
+    // the user would keep reading "reconnecting…" at a repair that cannot
+    // succeed. Say so instead.
+    if (status.endpointOk === false) {
+      return { ok: false, reason: 'endpoint-rejected', host: status.host || hostOf(sub.endpoint) }
+    }
 
     const post = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
@@ -503,10 +549,22 @@ export async function ensureRegistered() {
         tz: currentTz(),
       }),
     })
-    return post.ok
+    if (post.ok) return { ok: true, reason: 'repaired' }
+
+    // A failed repair has to be distinguishable from one still running, or the
+    // status line sits on "reconnecting…" forever at something that already
+    // gave up. Carry the server's own reason through.
+    let code = ''
+    let host = ''
+    try {
+      const body = await post.json()
+      code = String(body?.error || '')
+      host = String(body?.host || '')
+    } catch { /* no JSON body */ }
+    return { ok: false, reason: 'rejected', httpStatus: post.status, code, host }
   } catch {
     // Runs unattended; a network blip must never surface or throw.
-    return false
+    return { ok: false, reason: 'error' }
   }
 }
 
