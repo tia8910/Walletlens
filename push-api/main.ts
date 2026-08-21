@@ -682,6 +682,45 @@ Deno.serve(async (req, info) => {
     }, headers)
   }
 
+  // What the server actually holds for one device.
+  //
+  // Added because "notifications are on and nothing arrives" was
+  // indistinguishable from "nothing has happened worth sending" from the
+  // user's side, and from the developer's side too — the client can only
+  // report what it BELIEVES it sent. Every real cause of silence lives here:
+  // no stored subscription, an empty watch list (checkMoves skips those
+  // entirely), a spent daily budget, or a channel switched off.
+  //
+  // Counts and timestamps only. The caller supplies its own endpoint and
+  // learns nothing it did not already send us, and no ticker is echoed back.
+  if (path === "/status") {
+    const endpoint = new URL(req.url).searchParams.get("endpoint") ?? ""
+    if (!endpoint) return json({ error: "missing_endpoint" }, headers, 400)
+
+    const stored = (await kv.get<StoredSub>(["sub", await endpointKey(endpoint)])).value
+    if (!stored) {
+      // The decisive answer to "is it even registered?".
+      return json({ found: false }, headers)
+    }
+
+    const sub = normalize(stored)
+    const now = Date.now()
+    const day = localDayKey(now, sub.tz)
+    const sentToday = sub.quota?.day === day ? (sub.quota.n ?? 0) : 0
+    return json({
+      found: true,
+      watch: sub.watch.length,
+      alerts: sub.alerts.length,
+      prefs: sub.prefs,
+      tz: sub.tz,
+      lastSeen: sub.lastSeen,
+      createdAt: sub.createdAt,
+      sentToday,
+      budget: DAILY_PUSH_BUDGET,
+      budgetLeft: Math.max(0, DAILY_PUSH_BUDGET - sentToday),
+    }, headers)
+  }
+
   if (req.method === "POST" && path === "/subscribe") {
     const body = await readJson(req)
     const subscription = body.subscription as StoredSub["subscription"] | undefined

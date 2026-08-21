@@ -459,6 +459,37 @@ export async function disablePush() {
 // Push the device's current alert rules to the server. Call after the user
 // adds/edits/removes a watchlist alert so the cron stays in sync. No-op when
 // push isn't enabled.
+/**
+ * What the SERVER holds for this device, not what the client believes it sent.
+ *
+ * The two can differ, and every real cause of "notifications are on and
+ * nothing arrives" lives in that gap: a subscription the server never stored,
+ * an empty watch list (the movement pass skips those outright), a spent daily
+ * budget, or a channel switched off on one side only. None of it is visible
+ * from the app, which is why silence and correct-but-quiet looked identical.
+ *
+ * @returns {Promise<object|null>} the server's view, or null if unreachable
+ */
+export async function pushStatus() {
+  try {
+    if (!isPushSupported()) return { supported: false }
+    const sub = await getSubscription()
+    if (!sub) return { supported: true, subscribed: false, permission: Notification.permission }
+    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
+    if (!res.ok) return { supported: true, subscribed: true, permission: Notification.permission, reachable: false }
+    const server = await res.json()
+    return {
+      supported: true,
+      subscribed: true,
+      permission: Notification.permission,
+      reachable: true,
+      ...server,
+    }
+  } catch {
+    return { supported: true, reachable: false }
+  }
+}
+
 export async function syncAlerts() {
   try {
     const sub = await getSubscription()

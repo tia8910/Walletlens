@@ -936,3 +936,40 @@ describe('setup snapshot', () => {
     expect(sanitizeSetup('guardian')).toEqual({})
   })
 })
+
+
+describe('the status endpoint', () => {
+  // Built because "notifications are on and nothing arrives" was
+  // indistinguishable from "nothing has happened worth sending" — from the
+  // user's side AND from the developer's, since the client can only report
+  // what it BELIEVES it sent. Several rounds of this session were spent unable
+  // to tell those apart.
+  const server = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+  )
+
+  it('answers whether the server has this device at all', () => {
+    expect(server).toMatch(/path === "\/status"/)
+    expect(server).toMatch(/return json\(\{ found: false \}/)
+  })
+
+  it('reports the two states that cause silence while everything looks right', () => {
+    // An empty watch list — checkMoves filters those subscriptions out
+    // entirely — and a spent daily budget.
+    expect(server).toMatch(/watch: sub\.watch\.length/)
+    expect(server).toMatch(/budgetLeft:/)
+  })
+
+  it('echoes no ticker back', () => {
+    // The caller supplies its own endpoint and must learn nothing it did not
+    // already send. Counts and timestamps only.
+    const block = server.slice(server.indexOf('path === "/status"'))
+    const body = block.slice(0, block.indexOf('if (req.method === "POST"'))
+    expect(body).not.toMatch(/watch: sub\.watch[^.]/)
+    expect(body).not.toMatch(/symbol/)
+  })
+
+  it('requires an endpoint rather than dumping everything', () => {
+    expect(server).toMatch(/missing_endpoint/)
+  })
+})
