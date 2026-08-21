@@ -69,15 +69,16 @@ FIXED
 
 BEFORE YOU UPLOAD — two things to check
 ---------------------------------------
-1. VERSION CODE. app/build.gradle currently reads:
+1. VERSION CODE. This release is versionCode 73, confirmed in the Play
+   Console at upload. Next release uses 74 or higher.
+
+   Note that app/build.gradle in this repo still reads:
        versionCode 41
        versionName "2"
-   That conflicts with the file's own comments, which record v2.7 as
-   versionCode 48 and a v2.8 after it. So the checked-in gradle is stale
-   relative to what has actually been built, and 41 is LOWER than a code
-   Play has already seen. Play rejects a duplicate or lower versionCode.
-   Set versionCode to (highest code in the Play Console) + 1 before building,
-   and set versionName to match the release you are announcing.
+   That is not what gets built — 73 came from somewhere else in the build
+   path. It does mean a clean clone builds an artifact Play will reject,
+   since 41 is far below a code already accepted. Worth reconciling so the
+   checked-in value matches reality, but it does not block this upload.
 
 2. R8 IS OFF, DELIBERATELY.
    The release buildType has minification and resource shrinking disabled.
@@ -93,6 +94,17 @@ BEFORE YOU UPLOAD — two things to check
    file, the crash stack traces came back with no line numbers.
    Shipping with R8 off is safe. Turning it back on is a separate change that
    needs the sideload test finished first.
+
+   EXPECTED WARNING AT UPLOAD. Play will say "There is no deobfuscation file
+   associated with this App Bundle". That is correct and harmless here: with
+   minifyEnabled false nothing is obfuscated, so no mapping file is produced
+   and none is needed. Traces will already have real names and line numbers,
+   which is the whole point of this build. It is a warning, not an error —
+   save and continue.
+
+   When R8 goes back on, that warning stops being noise: upload
+   app/build/outputs/mapping/release/mapping.txt with the bundle. Skipping it
+   is a large part of why the v2.7 crash was hard to place.
 
 
 PLAY CONSOLE — "What's new" copy
@@ -145,7 +157,7 @@ También nuevo:
 
 FILES
 -----
-- WalletLens-<version>.aab  -> Google Play Console
+- WalletLens-<version>.aab  -> Google Play Console (versionCode 73)
 - WalletLens-<version>.apk  -> sideload and test first
 
 TEST BEFORE PROMOTING TO PRODUCTION
@@ -159,4 +171,4 @@ TEST BEFORE PROMOTING TO PRODUCTION
 - Connect Google Drive, accept the passphrase prompt, then confirm no
   repeating Google sign-in appears and that a backup completes.
 
-VERSION: <set before building — see BEFORE YOU UPLOAD>
+VERSION: versionCode 73
