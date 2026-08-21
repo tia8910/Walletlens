@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  isPushSupported, isPushEnabled, enablePush, disablePush,
+  isPushSupported, isPushEnabled, enablePush, disablePush, watchPermission,
   getPushPrefs, setPushPrefs,
 } from '../push'
 import { track } from '../analytics'
@@ -40,6 +40,12 @@ export default function PushToggle() {
   const [error, setError] = useState('')
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
+
+  // Repaint when permission is granted somewhere other than this switch — the
+  // primer card, the browser prompt, or Android's app settings. Read once on
+  // mount, this sat at off after the user had already allowed notifications,
+  // which reads as the switch being broken.
+  useEffect(() => watchPermission(setEnabled), [])
 
   async function toggle() {
     if (busy) return
