@@ -1,4 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { translations } from './i18n'
 import { toWatchAssets, watchFromStorage, getPushPrefs, autoEnablePush, DEFAULT_PUSH_PREFS } from './push'
 
 // toWatchAssets is the privacy boundary: it decides exactly which fields of a
@@ -181,5 +185,34 @@ describe('auto-enable', () => {
   it('reports a reason rather than silently doing nothing', async () => {
     const res = await autoEnablePush()
     expect(typeof res.reason === 'string' || res.ok).toBe(true)
+  })
+})
+
+
+describe('the permission primer', () => {
+  // The web had no equivalent of the Android shell's launch prompt: the card
+  // returned early when the portfolio was empty, so a browser user who had not
+  // added a holding yet was never asked at all, and push simply stayed off.
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'components/NotificationPrimer.jsx'),
+    'utf8',
+  )
+
+  it('does not refuse to ask an empty portfolio', () => {
+    // The specific shape of the old gate: bail out before showing anything.
+    expect(src).not.toMatch(/if\s*\(\s*watchFromStorage\(\)\.length\s*===\s*0\s*\)\s*return/)
+  })
+
+  it('says something different to an empty portfolio', () => {
+    // Removing the gate without changing the copy would promise news about
+    // holdings to someone who has none, which is the reason the gate existed.
+    expect(src).toContain('npAskTitleEmpty')
+    expect(src).toContain('npAskBodyEmpty')
+    for (const lang of ['en', 'ar', 'fr', 'es']) {
+      const table = translations[lang]
+      expect(table.npAskTitleEmpty, lang).toBeTruthy()
+      expect(table.npAskBodyEmpty, lang).toBeTruthy()
+      expect(table.npAskBodyEmpty, lang).not.toBe(table.npAskBody)
+    }
   })
 })
