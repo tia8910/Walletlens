@@ -1,7 +1,96 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { DURATION_MS } from '../pulseAudio'
+
+/** Which events draw particles, and which shape. */
+const CANVAS_KIND = { rain: 'rain', dip: 'dip', storm: 'storm', milestone: 'burst' }
 import { pulseSettings } from '../marketPulseRuntime'
+
+/**
+ * The particle layer, for the three effects CSS cannot do cheaply.
+ *
+ * Canvas rather than DOM nodes for the same reason the fireworks use four CSS
+ * shells instead of generated particles: ninety animated elements would put
+ * ninety things through layout every frame. One canvas puts through one.
+ *
+ * Counts follow DynamicBackground's throttle — fewer cores means fewer
+ * particles, because this plays on the phone someone is holding, over a live
+ * dashboard, and a stutter is more memorable than the effect.
+ */
+function PulseCanvas({ kind, duration }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const c = ref.current
+    if (!c) return
+    const rect = c.getBoundingClientRect()
+    const W = rect.width, H = rect.height
+    if (!W || !H) return
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    c.width = W * dpr
+    c.height = H * dpr
+    const ctx = c.getContext('2d')
+    if (!ctx) return
+    ctx.scale(dpr, dpr)
+
+    const weak = (navigator.hardwareConcurrency || 8) < 4
+    const N = kind === 'burst' ? (weak ? 40 : 80) : (weak ? 34 : 66)
+    // Down days are slate, never red. Same palette moodEngine uses.
+    const rgb = (kind === 'dip' || kind === 'storm') ? '100,116,139' : '16,185,129'
+    const p = []
+
+    for (let i = 0; i < N; i++) {
+      if (kind === 'burst') {
+        const a = Math.random() * Math.PI * 2
+        const s = 1.4 + Math.random() * 3.4
+        p.push({ x: W / 2, y: H * 0.4, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.4, r: 1.4 + Math.random() * 2.4 })
+      } else {
+        const slow = kind === 'storm' || kind === 'dip'
+        p.push({
+          x: Math.random() * W, y: -Math.random() * H,
+          vy: (slow ? 1.0 : 2.2) + Math.random() * (slow ? 1.4 : 2.2),
+          len: slow ? 10 : 6, w: slow ? 1 : 1.6,
+        })
+      }
+    }
+
+    let raf = 0
+    const start = performance.now()
+    const total = duration
+
+    const frame = (now) => {
+      const t = (now - start) / total
+      ctx.clearRect(0, 0, W, H)
+      if (t >= 1) return                       // done; no further frames
+      // Fade the field as one rather than per particle, so it ends together
+      // instead of dribbling out a few stragglers.
+      const fade = t < 0.66 ? 1 : Math.max(0, 1 - (t - 0.66) / 0.34)
+
+      for (const q of p) {
+        if (kind === 'burst') {
+          q.x += q.vx; q.y += q.vy; q.vy += 0.07; q.vx *= 0.995
+          ctx.globalAlpha = fade * 0.9
+          ctx.fillStyle = `rgb(${rgb})`
+          ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, Math.PI * 2); ctx.fill()
+        } else {
+          q.y += q.vy
+          if (q.y > H + 20) { q.y = -20; q.x = Math.random() * W }
+          ctx.globalAlpha = fade * (kind === 'storm' || kind === 'dip' ? 0.4 : 0.72)
+          ctx.strokeStyle = `rgb(${rgb})`
+          ctx.lineWidth = q.w
+          ctx.lineCap = 'round'
+          ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x, q.y + q.len); ctx.stroke()
+        }
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(raf)
+  }, [kind, duration])
+
+  return <canvas ref={ref} className="wl-pulse-canvas" />
+}
 
 /**
  * The visible half of Market Pulse.
@@ -46,8 +135,16 @@ export default function PulseOverlay({ event, onDone }) {
   const pct = Math.abs(Number(event.changePct) || 0).toFixed(1)
   const caption =
     event.type === 'rocket'      ? `${event.symbol} +${pct}%`
+    : event.type === 'shockwave' ? `${event.symbol} +${pct}%`
     : event.type === 'fireworks' ? t('pulseFlying')(pct)
     : event.type === 'ath'       ? t('pulseNewHigh')
+    : event.type === 'rain'      ? t('pulseRain')(pct)
+    : event.type === 'aurora'    ? t('pulseAurora')
+    : event.type === 'lock'      ? t('pulseTargetHit')(event.symbol)
+    // Down-day copy states the fact and stops. No apology, no encouragement —
+    // both read as the app having an opinion about your portfolio.
+    : event.type === 'dip'       ? t('pulseDip')(pct)
+    : event.type === 'storm'     ? t('pulseStorm')(pct)
     : /* milestone */              t('pulseMilestone')(compactValue(event.value))
 
   return (
@@ -55,6 +152,27 @@ export default function PulseOverlay({ event, onDone }) {
       <div className="wl-pulse-glow" />
       {event.type === 'rocket' && !reduced && (
         <span className="wl-pulse-craft">🚀</span>
+      )}
+      {event.type === 'shockwave' && !reduced && (
+        <>
+          <span className="wl-pulse-ring" />
+          <span className="wl-pulse-ring wl-pulse-ring-2" />
+          <span className="wl-pulse-ring wl-pulse-ring-3" />
+        </>
+      )}
+      {event.type === 'aurora' && !reduced && (
+        <>
+          <span className="wl-pulse-band" />
+          <span className="wl-pulse-band wl-pulse-band-2" />
+        </>
+      )}
+      {event.type === 'lock' && !reduced && (
+        <span className="wl-pulse-reticle">
+          <i /><i /><i /><i /><u />
+        </span>
+      )}
+      {CANVAS_KIND[event.type] && !reduced && (
+        <PulseCanvas kind={CANVAS_KIND[event.type]} duration={DURATION_MS[event.type] || 2000} />
       )}
       {event.type === 'fireworks' && !reduced && (
         // Four shells, positioned and coloured entirely in CSS. Rendering them

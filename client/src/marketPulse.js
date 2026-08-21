@@ -49,6 +49,39 @@
  */
 export const PORTFOLIO_SURGE_PCT = 3
 
+/** A day good enough for more than fireworks. */
+export const PORTFOLIO_RAIN_PCT = 8
+
+// Down thresholds are deliberately WIDER than the matching up ones. Losses
+// feel larger than equivalent gains, so mirroring +3/+8 exactly would make the
+// app chime about bad news more readily than good — and the one thing worse
+// than a silent finance app is one that seems to enjoy your bad days.
+export const PORTFOLIO_DIP_PCT = -5
+export const PORTFOLIO_STORM_PCT = -10
+
+/** Share of the holdings that has to be green before it counts as weather. */
+export const AURORA_BREADTH = 0.68
+
+/**
+ * Below this many priced assets, "nearly everything is up" is one coin's
+ * opinion dressed up as a trend, so there is no breadth figure to report.
+ */
+export const AURORA_MIN_ASSETS = 5
+
+/**
+ * Share of a list of 24-hour changes that is positive.
+ *
+ * @param {Array<number|undefined>} changePcts one per asset; non-numbers drop
+ * @returns {number|null} 0..1, or null when the sample is too small to mean
+ *   anything. Null rather than 0 on purpose: no data must never be read as
+ *   "nothing is up".
+ */
+export function breadthOf(changePcts) {
+  const finite = (changePcts || []).filter(p => Number.isFinite(p))
+  if (finite.length < AURORA_MIN_ASSETS) return null
+  return finite.filter(p => p > 0).length / finite.length
+}
+
 export const SIGNATURE_PCT = {
   'crypto-major': 8,   // BTC, ETH, SOL and other mega/large caps
   altcoin: 15,         // higher baseline volatility, so a higher bar
@@ -159,13 +192,22 @@ export function comparable(prev, next) {
 // Lower number wins. Portfolio events outrank asset events because they are
 // what the user actually came to look at, and a milestone outranks everything
 // because it happens a handful of times in a lifetime of using the app.
-export const PRIORITY = { milestone: 0, fireworks: 1, ath: 2, rocket: 3 }
+// Down events sit between the portfolio highs and the per-asset ones. A bad
+// day outranks one coin having a good one — telling someone a single holding
+// is up while the portfolio is down 8% reads as the app not paying attention.
+export const PRIORITY = {
+  milestone: 0, fireworks: 1, rain: 1, ath: 2,
+  storm: 2, dip: 3, lock: 3, rocket: 4, aurora: 5, shockwave: 6,
+}
 
 /** Net-worth ladder, in the user's display currency. */
 export const MILESTONES = [10e3, 25e3, 50e3, 100e3, 250e3, 500e3, 1e6]
 
 export function emptyState() {
-  return { fired: {}, ath: 0, milestonesHit: [], surgeDay: '' }
+  return {
+    fired: {}, ath: 0, milestonesHit: [], surgeDay: '',
+    rainDay: '', dipDay: '', stormDay: '', auroraDay: '', locksHit: [],
+  }
 }
 
 function firedKey(assetId, periodKey) {
@@ -183,8 +225,12 @@ function firedKey(assetId, periodKey) {
  * @param {number} [o.now]
  * @returns {Array} events, unsorted — selectOne picks the one that plays
  */
-export function detectEvents({ prev = {}, next = {}, state = emptyState(), totalValue = 0, portfolioChangePct = 0, now = Date.now() } = {}) {
+export function detectEvents({
+  prev = {}, next = {}, state = emptyState(), totalValue = 0,
+  portfolioChangePct = 0, breadth = null, targetsHit = [], now = Date.now(),
+} = {}) {
   const events = []
+  let crossings = 0
 
   for (const [assetId, sample] of Object.entries(next)) {
     const cls = sample?.cls
@@ -204,9 +250,14 @@ export function detectEvents({ prev = {}, next = {}, state = emptyState(), total
     const already = state.fired[firedKey(assetId, periodKey)] || []
     if (already.includes(threshold)) continue
 
+    // First crossing of the pass gets the rocket; any others get the quieter
+    // shockwave. On a broad green day several assets cross at once, and firing
+    // four identical launches would turn the signature moment into noise —
+    // but silently dropping the rest pretends they did not happen.
+    const kind = crossings++ === 0 ? 'rocket' : 'shockwave'
     events.push({
-      type: 'rocket',
-      priority: PRIORITY.rocket,
+      type: kind,
+      priority: PRIORITY[kind],
       assetId,
       symbol: sample.symbol || assetId,
       cls,
@@ -259,6 +310,49 @@ export function detectEvents({ prev = {}, next = {}, state = emptyState(), total
     if (crossed.length && state.ath > 0) {
       events.push({ type: 'milestone', priority: PRIORITY.milestone, value: crossed[0], at: now })
     }
+  }
+
+  // ── The rest of the day's weather ────────────────────────────────────────
+  // All of these are statements about today rather than crossings between two
+  // samples, so each is capped to once per day by its own key. Without that,
+  // every price refresh during a move would fire again.
+  const day = marketPeriodKey('crypto-major', now)
+  const pct = Number.isFinite(portfolioChangePct) ? portfolioChangePct : null
+  const hasPortfolio = totalValue > 0
+
+  // A day well past fireworks territory.
+  if (pct !== null && hasPortfolio && pct >= PORTFOLIO_RAIN_PCT && state.rainDay !== day) {
+    events.push({ type: 'rain', priority: PRIORITY.rain, changePct: pct, value: totalValue, day, at: now })
+  }
+
+  // Down days. These exist because a portfolio app that only speaks when
+  // things go well is a cheerleader, not a tracker — and people notice.
+  // The copy and the visuals stay calm; see PulseOverlay.
+  if (pct !== null && hasPortfolio && pct <= PORTFOLIO_STORM_PCT && state.stormDay !== day) {
+    events.push({ type: 'storm', priority: PRIORITY.storm, changePct: pct, value: totalValue, day, at: now })
+  } else if (pct !== null && hasPortfolio && pct <= PORTFOLIO_DIP_PCT && state.dipDay !== day) {
+    // `else if`: a storm day is also a dip day, and firing both would mean
+    // acknowledging the same fact twice.
+    events.push({ type: 'dip', priority: PRIORITY.dip, changePct: pct, value: totalValue, day, at: now })
+  }
+
+  // Broad green. Not about what the portfolio is worth — it is the weather
+  // over it, and it reads as such: no numbers, no celebration. A portfolio can
+  // be almost entirely up on the day and still be down in money, if the one
+  // red holding is the large one; that is exactly the case this is for.
+  if (Number.isFinite(breadth) && breadth >= AURORA_BREADTH && state.auroraDay !== day) {
+    events.push({ type: 'aurora', priority: PRIORITY.aurora, breadth, day, at: now })
+  }
+
+  // A price target the user set themselves. Keyed by target id, so each one
+  // announces itself exactly once, ever.
+  for (const t of (targetsHit || [])) {
+    const id = String(t?.id ?? '')
+    if (!id || state.locksHit.includes(id)) continue
+    events.push({
+      type: 'lock', priority: PRIORITY.lock,
+      targetId: id, symbol: t.symbol || id, price: t.price, at: now,
+    })
   }
 
   return events
@@ -318,9 +412,16 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
     ath: state.ath,
     milestonesHit: [...state.milestonesHit],
     surgeDay: state.surgeDay || '',
+    rainDay: state.rainDay || '',
+    dipDay: state.dipDay || '',
+    stormDay: state.stormDay || '',
+    auroraDay: state.auroraDay || '',
+    locksHit: [...(state.locksHit || [])],
   }
 
-  if (event && event.type === 'rocket') {
+  // A shockwave is a crossing like any other and must be recorded the same
+  // way, or the asset that produced one keeps producing them all period.
+  if (event && (event.type === 'rocket' || event.type === 'shockwave')) {
     const k = firedKey(event.assetId, event.periodKey)
     nextState.fired[k] = [...(state.fired[k] || []), event.threshold]
   }
@@ -328,6 +429,15 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
   if (event?.type === 'ath') nextState.ath = Math.max(state.ath, event.value)
   if (event?.type === 'milestone' && !nextState.milestonesHit.includes(event.value)) {
     nextState.milestonesHit.push(event.value)
+  }
+  if (event?.type === 'rain') nextState.rainDay = event.day
+  if (event?.type === 'dip') nextState.dipDay = event.day
+  // A storm day closes the dip too. They describe the same day, and leaving
+  // dip open would let the milder one fire a few minutes later.
+  if (event?.type === 'storm') { nextState.stormDay = event.day; nextState.dipDay = event.day }
+  if (event?.type === 'aurora') nextState.auroraDay = event.day
+  if (event?.type === 'lock' && !nextState.locksHit.includes(event.targetId)) {
+    nextState.locksHit.push(event.targetId)
   }
 
   // The high-water mark tracks upward on every observation, not only when an
@@ -362,8 +472,13 @@ export function pruneState(state = emptyState(), now = Date.now()) {
  * it counts as already passed. Skipping this would greet someone with a
  * "new all-time high" and a $100K milestone the first time they enable a
  * sound setting, for a portfolio they have held for a year.
+ *
+ * Sell targets already met get the same treatment, for the same reason and
+ * with a sharper edge: a target crossed months ago is a record, not news, and
+ * because each target announces itself exactly once they would otherwise
+ * arrive one per price refresh until the backlog drained.
  */
-export function seedRecords(state = emptyState(), totalValue = 0) {
+export function seedRecords(state = emptyState(), totalValue = 0, targetsHit = []) {
   if (!(totalValue > 0)) return state
   return {
     ...state,
@@ -371,6 +486,10 @@ export function seedRecords(state = emptyState(), totalValue = 0) {
     milestonesHit: Array.from(new Set([
       ...state.milestonesHit,
       ...MILESTONES.filter(m => totalValue >= m),
+    ])),
+    locksHit: Array.from(new Set([
+      ...(state.locksHit || []),
+      ...(targetsHit || []).map(t => String(t?.id ?? '')).filter(Boolean),
     ])),
   }
 }

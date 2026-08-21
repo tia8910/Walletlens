@@ -8,7 +8,7 @@ import {
 import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
-import { pulseClass } from '../marketPulse'
+import { pulseClass, breadthOf } from '../marketPulse'
 import { observeMarket, armPulseAudio, demoPulse, onPulseRelease } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
@@ -3744,6 +3744,49 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
+  // ── Sell-targets analysis ────────────────────────────────────────────────
+  //
+  // Sits here rather than with the rest of the derived numbers because the
+  // Market Pulse effect just below reads it: a hook cannot depend on a const
+  // declared after it without tripping over the temporal dead zone when React
+  // evaluates the dependency array during render.
+  const targetsAnalysis = useMemo(() => {
+    const rows = []
+    let totalPotentialProceeds = 0
+    let totalReached = 0
+
+    for (const h of enriched) {
+      if (categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)) continue
+      const plan = coinTargets[h.coin_id]?.targets || []
+      if (!plan.length) {
+        rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
+        continue
+      }
+      const currentPrice = h.price
+      const holdingRows = plan.map(t => {
+        const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
+        const proceeds   = sellQty * t.price
+        const progress   = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
+        const reached    = currentPrice >= t.price && currentPrice > 0
+        const gainVsNow  = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
+        totalPotentialProceeds += proceeds
+        if (reached) totalReached++
+        return { ...t, sellQty, proceeds, progress, reached, gainVsNow, coinSymbol: h.coin_symbol, coinId: h.coin_id }
+      }).sort((a, b) => a.price - b.price)
+      rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice, amount: h.amount, targets: holdingRows })
+    }
+
+    const chartData = rows.flatMap(r =>
+      r.targets.map(t => ({
+        name: `${r.coinSymbol} $${t.price >= 1000 ? (t.price/1000).toFixed(0)+'k' : t.price.toFixed(0)}`,
+        proceeds: parseFloat(t.proceeds.toFixed(2)),
+        reached: t.reached,
+      }))
+    ).slice(0, 10)
+
+    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
+  }, [enriched, coinTargets])
+
   const [pulseEvent, setPulseEvent] = useState(null)
 
   // Market Pulse — react to meaningful market moves.
@@ -3780,11 +3823,30 @@ export default function Dashboard() {
     const dayBase = totalValue - dayPnL
     const portfolioChangePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
 
-    const event = observeMarket({ samples, totalValue, portfolioChangePct })
+    // How much of the portfolio is green, regardless of what it is worth.
+    // Cash and stablecoins are excluded: they never move, so counting them
+    // would drag every breadth figure toward the middle.
+    const breadth = breadthOf(
+      enriched
+        .filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol))
+        .map(h => prices[h.coin_id]?.usd_24h_change)
+    )
+
+    // Sell targets the user set that the price has now met. Read from the same
+    // analysis the Targets tab renders, so the overlay and the tab can never
+    // disagree about what "reached" means. Each one is announced once ever —
+    // the state keyed by target id lives in marketPulse.
+    const targetsHit = targetsAnalysis.rows.flatMap(r =>
+      r.targets
+        .filter(tg => tg.reached)
+        .map(tg => ({ id: String(tg.id), symbol: r.coinSymbol, price: tg.price }))
+    )
+
+    const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
     // Set even when the audio was refused — someone on silent has not opted
     // out of seeing it, and the caption is the part that carries the fact.
     if (event) setPulseEvent(event)
-  }, [loaded, enriched, prices, totalValue])
+  }, [loaded, enriched, prices, totalValue, targetsAnalysis])
 
   // An event that landed before audio could be unlocked is held by the
   // runtime and released on the first tap. It has to reach the overlay by
@@ -4156,44 +4218,6 @@ export default function Dashboard() {
       return new Date(m.updated_at).getTime() < cutoff
     })
   }, [enriched])
-
-  // ── Sell-targets analysis ────────────────────────────────────────────────
-  const targetsAnalysis = useMemo(() => {
-    const rows = []
-    let totalPotentialProceeds = 0
-    let totalReached = 0
-
-    for (const h of enriched) {
-      if (categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)) continue
-      const plan = coinTargets[h.coin_id]?.targets || []
-      if (!plan.length) {
-        rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
-        continue
-      }
-      const currentPrice = h.price
-      const holdingRows = plan.map(t => {
-        const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
-        const proceeds   = sellQty * t.price
-        const progress   = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
-        const reached    = currentPrice >= t.price && currentPrice > 0
-        const gainVsNow  = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
-        totalPotentialProceeds += proceeds
-        if (reached) totalReached++
-        return { ...t, sellQty, proceeds, progress, reached, gainVsNow, coinSymbol: h.coin_symbol, coinId: h.coin_id }
-      }).sort((a, b) => a.price - b.price)
-      rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice, amount: h.amount, targets: holdingRows })
-    }
-
-    const chartData = rows.flatMap(r =>
-      r.targets.map(t => ({
-        name: `${r.coinSymbol} $${t.price >= 1000 ? (t.price/1000).toFixed(0)+'k' : t.price.toFixed(0)}`,
-        proceeds: parseFloat(t.proceeds.toFixed(2)),
-        reached: t.reached,
-      }))
-    ).slice(0, 10)
-
-    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
-  }, [enriched, coinTargets])
 
   // Pre-sorted top-3 gainers/losers — memoized so the two sort+filter+slice
   // operations don't repeat on every Dashboard render.

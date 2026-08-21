@@ -4,7 +4,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   pulseClass, marketPeriodKey, comparable, detectEvents, selectOne,
-  applyFired, pruneState, seedRecords, emptyState,
+  applyFired, pruneState, seedRecords, emptyState, breadthOf, AURORA_MIN_ASSETS,
+  PORTFOLIO_RAIN_PCT, PORTFOLIO_DIP_PCT, PORTFOLIO_STORM_PCT, AURORA_BREADTH,
   SIGNATURE_PCT, MILESTONES, MAX_TICK_DELTA_PCT, COOLDOWN_MS, MAJOR_COOLDOWN_MS,
   PORTFOLIO_SURGE_PCT, PRIORITY,
 } from './marketPulse'
@@ -303,6 +304,20 @@ describe('state', () => {
     expect(seedRecords(emptyState(), 0)).toEqual(emptyState())
   })
 
+  it('retires targets that were already met before the first run', () => {
+    // Otherwise a returning user with a backlog of met targets gets them one
+    // per price refresh, because each fires once and only one fires at a time.
+    const hit = [{ id: 't1', symbol: 'ETH', price: 4200 }, { id: 't2', symbol: 'SOL', price: 300 }]
+    const seeded = seedRecords(emptyState(), 120000, hit)
+    expect(seeded.locksHit).toEqual(['t1', 't2'])
+    expect(detectEvents({ state: seeded, totalValue: 120000, targetsHit: hit, now: T0 })).toEqual([])
+
+    // A target crossed after that still lands.
+    const fresh = [...hit, { id: 't3', symbol: 'BTC', price: 150000 }]
+    const events = detectEvents({ state: seeded, totalValue: 120000, targetsHit: fresh, now: T0 })
+    expect(events.map(e => e.targetId)).toEqual(['t3'])
+  })
+
   it('has a sane milestone ladder', () => {
     expect(MILESTONES).toEqual([...MILESTONES].sort((a, b) => a - b))
     expect(MILESTONES[0]).toBe(10e3)
@@ -397,5 +412,118 @@ describe('the portfolio flying', () => {
 
     const withoutMilestone = events.filter(e => e.type !== 'milestone')
     expect(selectOne(withoutMilestone, {}, day()).type).toBe('fireworks')
+  })
+})
+
+
+describe('down days', () => {
+  // A portfolio app that only speaks when things go well is a cheerleader.
+  // These fire on bad days too — the restraint lives in the copy and the
+  // visuals, not in refusing to acknowledge them.
+  const base = { totalValue: 20000, state: emptyState(), now: Date.parse('2026-08-21T12:00:00Z') }
+  const types = (e) => e.map(x => x.type)
+
+  it('says nothing about an ordinary wobble', () => {
+    expect(types(detectEvents({ ...base, portfolioChangePct: -2 }))).not.toContain('dip')
+  })
+
+  it('acknowledges a real down day', () => {
+    expect(types(detectEvents({ ...base, portfolioChangePct: PORTFOLIO_DIP_PCT })))
+      .toContain('dip')
+  })
+
+  it('escalates to storm, and does not also fire dip', () => {
+    // Both describe the same day. Firing both would acknowledge one fact twice.
+    const e = types(detectEvents({ ...base, portfolioChangePct: PORTFOLIO_STORM_PCT }))
+    expect(e).toContain('storm')
+    expect(e).not.toContain('dip')
+  })
+
+  it('holds losses to a wider bar than gains', () => {
+    // Deliberate asymmetry: mirroring +3/+8 exactly would make the app chime
+    // about bad news more readily than good.
+    expect(Math.abs(PORTFOLIO_DIP_PCT)).toBeGreaterThan(3)
+    expect(Math.abs(PORTFOLIO_STORM_PCT)).toBeGreaterThan(PORTFOLIO_RAIN_PCT)
+  })
+
+  it('does not repeat on the next price refresh', () => {
+    // The whole reason this module exists.
+    const first = detectEvents({ ...base, portfolioChangePct: -6 })
+    const dip = first.find(e => e.type === 'dip')
+    const after = applyFired(base.state, dip, base.totalValue)
+    expect(types(detectEvents({ ...base, state: after, portfolioChangePct: -6 })))
+      .not.toContain('dip')
+  })
+
+  it('a storm closes out the milder dip for the day', () => {
+    const storm = detectEvents({ ...base, portfolioChangePct: -12 }).find(e => e.type === 'storm')
+    const after = applyFired(base.state, storm, base.totalValue)
+    // Recovering to -6 later the same day must not then trigger the dip.
+    expect(types(detectEvents({ ...base, state: after, portfolioChangePct: -6 })))
+      .not.toContain('dip')
+  })
+
+  it('outranks a single asset having a good day', () => {
+    // Telling someone one coin is up while the portfolio is down 10% reads as
+    // the app not paying attention.
+    const winner = selectOne([
+      { type: 'rocket', priority: 4, changePct: 12 },
+      { type: 'storm', priority: 2, changePct: -10 },
+    ])
+    expect(winner.type).toBe('storm')
+  })
+})
+
+describe('the other added events', () => {
+  const base = { totalValue: 20000, state: emptyState(), now: Date.parse('2026-08-21T12:00:00Z') }
+  const types = (e) => e.map(x => x.type)
+
+  it('rain needs a day well past fireworks', () => {
+    expect(types(detectEvents({ ...base, portfolioChangePct: 4 }))).not.toContain('rain')
+    expect(types(detectEvents({ ...base, portfolioChangePct: PORTFOLIO_RAIN_PCT }))).toContain('rain')
+  })
+
+  it('aurora reads how much is green, not what it is worth', () => {
+    expect(types(detectEvents({ ...base, breadth: 0.4 }))).not.toContain('aurora')
+    expect(types(detectEvents({ ...base, breadth: AURORA_BREADTH }))).toContain('aurora')
+    // No breadth data at all must not be read as a flat market.
+    expect(types(detectEvents({ ...base, breadth: null }))).not.toContain('aurora')
+  })
+
+  it('breadth needs enough assets to mean anything', () => {
+    const up = Array(AURORA_MIN_ASSETS).fill(1)
+    expect(breadthOf(up)).toBe(1)
+    expect(breadthOf(up.slice(1))).toBeNull()
+    // Null, not zero: no data must never be read as "nothing is up".
+    expect(breadthOf([])).toBeNull()
+    expect(breadthOf(undefined)).toBeNull()
+  })
+
+  it('breadth counts what is up, and ignores what has no number', () => {
+    expect(breadthOf([3, 1, -2, 0, 5])).toBe(0.6)
+    // Flat is not up — a stablecoin sitting at 0 must not count as green.
+    expect(breadthOf([0, 0, 0, 0, 0])).toBe(0)
+    // An unpriced asset drops out rather than counting as red, which would
+    // otherwise let a failed price fetch quietly suppress the event.
+    expect(breadthOf([2, 2, 2, undefined, null, NaN, 2, -1])).toBe(0.8)
+  })
+
+  it('a target announces itself exactly once, ever', () => {
+    const hit = [{ id: 't1', symbol: 'ETH', price: 4200 }]
+    const first = detectEvents({ ...base, targetsHit: hit })
+    expect(types(first)).toContain('lock')
+    const after = applyFired(base.state, first.find(e => e.type === 'lock'), base.totalValue)
+    expect(types(detectEvents({ ...base, state: after, targetsHit: hit }))).not.toContain('lock')
+  })
+
+  it('the second asset to cross gets the quieter shockwave', () => {
+    // Four identical launches would turn the signature moment into noise;
+    // dropping the rest would pretend they did not happen.
+    const mk = (pct) => ({ changePct: pct, cls: 'crypto-major', symbol: 'X', source: 'live', fresh: true })
+    const prev = { a: mk(1), b: mk(1), c: mk(1) }
+    const next = { a: mk(30), b: mk(30), c: mk(30) }
+    const e = detectEvents({ ...base, prev, next })
+    expect(e.filter(x => x.type === 'rocket')).toHaveLength(1)
+    expect(e.filter(x => x.type === 'shockwave').length).toBeGreaterThan(0)
   })
 })
