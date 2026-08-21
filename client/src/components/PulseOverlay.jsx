@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
+import { getCachedCoinImage } from '../api'
 import { DURATION_MS } from '../pulseAudio'
 
 /** Which events draw particles, and which shape. */
@@ -107,20 +108,26 @@ function PulseCanvas({ kind, duration, delay = 0, originY = 0.4 }) {
  * falls back to the symbol on a plain disc, which is the same thing the rest
  * of the app does for a missing logo.
  */
-function ChampionLogo({ image, symbol }) {
-  const [broken, setBroken] = useState(!image)
+function ChampionLogo({ image, symbol, assetId }) {
+  // Two sources before giving up. The event carries whatever the holdings row
+  // had, but that can be empty for an asset added before its icon resolved,
+  // and the app's own image cache often has one by now.
+  const sources = [image, assetId ? getCachedCoinImage(assetId) : null].filter(Boolean)
+  const [tried, setTried] = useState(0)
   const label = (symbol || '?').toString().toUpperCase().slice(0, 4)
+  const src = sources[tried]
 
   return (
     <span className="wl-pulse-champ">
-      {broken
-        ? <span className="wl-pulse-champ-badge">{label}</span>
-        : <img
-            src={image}
+      {src
+        ? <img
+            key={src}
+            src={src}
             alt=""
             className="wl-pulse-champ-img"
-            onError={() => setBroken(true)}
-          />}
+            onError={() => setTried(n => n + 1)}
+          />
+        : <span className="wl-pulse-champ-badge">{label}</span>}
     </span>
   )
 }
@@ -207,7 +214,7 @@ export default function PulseOverlay({ event, onDone }) {
       )}
       {event.type === 'champion' && !reduced && (
         <>
-          <ChampionLogo image={event.image} symbol={event.symbol} />
+          <ChampionLogo image={event.image} symbol={event.symbol} assetId={event.assetId} />
           {/* The flash is a separate layer so it can cover the logo at the
               moment of impact without animating the logo's own opacity, which
               is already carrying the scale. */}

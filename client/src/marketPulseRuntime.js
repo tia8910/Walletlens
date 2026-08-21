@@ -398,9 +398,39 @@ const DEMO_SHAPES = {
   storm:      { changePct: -11.8 },
   aurora:     { breadth: 0.82 },
   lock:       { targetId: 'demo', symbol: 'ETH', price: 4200 },
-  // No image: the demo deliberately exercises the fallback badge, which is
-  // the path a real event takes whenever the icon CDN is cold or blocked.
+  // Only reached by someone with no holdings at all — see topMover().
   champion:   { symbol: 'SOL', changePct: 21.7, runnerUpPct: 4.1, image: '' },
+}
+
+/**
+ * The best-performing asset the user actually owns, from the last snapshot
+ * observeMarket took.
+ *
+ * The champion demo needs this because the whole point of the effect is a
+ * logo you recognise arriving at the size of the screen. A hardcoded stand-in
+ * shows neither the asset nor the logo, so it verifies the animation while
+ * demonstrating nothing — which is how the demo first shipped, and it read as
+ * two bugs rather than as a placeholder.
+ *
+ * Reads the persisted snapshot, so it works on a cold load before the first
+ * price refresh has come back.
+ *
+ * @returns {object|null} the champion's fields, or null with no holdings
+ */
+function topMover() {
+  const movers = Object.entries(lastSamples || {})
+    .filter(([, v]) => v?.cls && v.cls !== 'silent' && Number.isFinite(v.changePct))
+    .sort((a, b) => b[1].changePct - a[1].changePct)
+  if (!movers.length) return null
+
+  const [assetId, lead] = movers[0]
+  return {
+    assetId,
+    symbol: lead.symbol || assetId,
+    image: lead.image || '',
+    changePct: lead.changePct,
+    runnerUpPct: movers[1] ? movers[1][1].changePct : 0,
+  }
 }
 
 /**
@@ -423,8 +453,10 @@ const DEMO_SHAPES = {
  * @returns {object|null} the event to hand the overlay, or null if unrecognised
  */
 export function demoPulse(type, { totalValue = 0 } = {}) {
-  const shape = Object.prototype.hasOwnProperty.call(DEMO_SHAPES, type) ? DEMO_SHAPES[type] : null
+  let shape = Object.prototype.hasOwnProperty.call(DEMO_SHAPES, type) ? DEMO_SHAPES[type] : null
   if (!shape) return null
+  // The champion is about a specific asset, so the demo uses a real one.
+  if (type === 'champion') shape = topMover() || shape
   unlock()
   setVolume(pulseSettings().volume)
   play(type)

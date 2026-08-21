@@ -464,6 +464,31 @@ describe('demo events', () => {
     expect(demoPulse('constructor')).toBeNull()
   })
 
+  it('crowns an asset the user actually owns', () => {
+    setPulseSettings({ enabled: true })
+    // The champion demo showing a hardcoded coin with no logo verifies the
+    // animation and demonstrates nothing — it reads as two bugs, which is
+    // exactly how it was reported.
+    observeMarket({
+      samples: {
+        sol: { changePct: 3, cls: 'altcoin', symbol: 'SOL', image: 'sol.png' },
+        eth: { changePct: 19, cls: 'crypto-major', symbol: 'ETH', image: 'eth.png' },
+        usdt: { changePct: 44, cls: 'silent', symbol: 'USDT', image: 'usdt.png' },
+      },
+      totalValue: 50000, now: T0,
+    })
+    const event = demoPulse('champion', { totalValue: 50000 })
+    expect(event.symbol).toBe('ETH')
+    expect(event.image).toBe('eth.png')
+    expect(event.assetId).toBe('eth')
+  })
+
+  it('falls back to the placeholder when there are no holdings', () => {
+    setPulseSettings({ enabled: true })
+    // Someone opening the demo on an empty portfolio still gets to see it.
+    expect(demoPulse('champion', {}).symbol).toBe('SOL')
+  })
+
   it('gives a down day a negative change, so the caption is not a lie', () => {
     setPulseSettings({ enabled: true })
     expect(demoPulse('dip', {}).changePct).toBeLessThan(0)
