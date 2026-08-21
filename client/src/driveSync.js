@@ -11,7 +11,10 @@ import {
   encryptBackupEnvelope, encryptBackupWithWrap, wrapBlockOf,
   decryptBackupWithKey, unwrapDataKey,
 } from './backupEncryption'
-import { findBackup, uploadBackup, downloadBackup, getAccessToken, signOut, isDriveConfigured } from './googleDrive'
+import {
+  findBackup, uploadBackup, downloadBackup,
+  getAccessToken, storedAccessToken, signOut, isDriveConfigured,
+} from './googleDrive'
 
 const LAST_BACKUP_AT = 'wl_drive_backup_at'
 const FILE_ID = 'wl_drive_file_id'
@@ -132,10 +135,10 @@ export function decideAction({ hasLocal, remote, lastBackupAt = 0 }) {
 /**
  * Has this device connected to Drive before?
  *
- * Distinct from "is there a valid access token right now". The token is
- * deliberately memory-only, so it is always absent after a reload — but the
- * file id and last-backup time persist, and they are what tell us the user has
- * already answered the Connect question. Treating a missing token as "never
+ * Distinct from "is there a valid access token right now". A token lasts about
+ * an hour and this question is about whether the user ever answered Connect,
+ * which they did once and for good. The file id and last-backup time persist
+ * and are the honest record of that. Treating a missing token as "never
  * connected" collapsed the panel on every refresh and asked again.
  */
 export function previouslyConnected(state = driveState()) {
@@ -260,14 +263,19 @@ export async function autoBackup() {
   const hash = await fingerprint(code)
   if (hash === readKey(LAST_HASH)) return { ok: false, reason: 'unchanged' }
 
-  try {
-    // Silent token only. An automatic run may never navigate the page to
-    // Google — the user did not ask for anything and would simply find
-    // themselves somewhere else.
-    await getAccessToken({ interactive: false })
-  } catch {
-    return { ok: false, reason: 'signed-out' }
-  }
+  // A token we already hold, or nothing. This never contacts Google.
+  //
+  // It used to call getAccessToken({interactive:false}), on the understanding
+  // that prompt:'none' is silent. In the Android app it is not — GIS has no
+  // opener to answer, so it surfaces a visible accounts.google.com tab that
+  // spins forever. Closing that tab fired visibilitychange, which started
+  // another backup, which opened it again: a loop about once a minute that
+  // never backed anything up and made the app unusable.
+  //
+  // An automatic backup is not allowed to ask for anything. If there is no
+  // usable token it gives up until the user next does something that
+  // legitimately involves Google — Connect, Back up now, Restore.
+  if (!storedAccessToken()) return { ok: false, reason: 'signed-out' }
 
   try {
     const payload = await encryptBackupWithWrap(code, key, readKey(WRAP))

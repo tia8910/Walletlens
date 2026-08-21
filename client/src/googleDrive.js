@@ -25,12 +25,61 @@ export function isDriveConfigured() {
   return typeof CLIENT_ID === 'string' && CLIENT_ID.endsWith('.apps.googleusercontent.com')
 }
 
-// Access token lives in memory only. Putting it in localStorage would leave a
-// Drive-capable credential sitting on disk long after the tab closed, for no
-// gain: Google hands out a fresh one silently while the session is alive.
+// The token is persisted, and that reversed an earlier decision. The old note
+// here said memory-only was free because "Google hands out a fresh one
+// silently while the session is alive" — true in a normal browser, false in
+// the Android app.
+//
+// Inside a TWA there is no opener for GIS to postMessage back to, so its
+// "silent" prompt:'none' call surfaces as a visible accounts.google.com tab
+// that spins and never completes. With the token discarded on every app start,
+// every automatic backup reached for a new one and opened that tab — and
+// closing it fired visibilitychange, which triggered another backup, which
+// opened it again. A loop, roughly once a minute, that never backed anything
+// up.
+//
+// So the token now survives a restart and is used until it expires. It is a
+// bearer credential on disk for up to an hour, scoped to drive.file — only
+// files this app created. The device already stores the key that decrypts the
+// backup itself, so this does not widen what a compromised device gives up,
+// and it is what makes an uninterrupted automatic backup possible at all.
+const TOKEN_KEY = 'wl_drive_token'
+
 let accessToken = null
 let tokenExpiry = 0
 let tokenClient = null
+
+try {
+  const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null')
+  if (saved?.token && saved.expiry > Date.now()) {
+    accessToken = saved.token
+    tokenExpiry = saved.expiry
+  }
+} catch { /* unreadable or private mode: carry on tokenless */ }
+
+function rememberToken(token, expiresInSec) {
+  accessToken = token
+  tokenExpiry = Date.now() + Number(expiresInSec || 3600) * 1000
+  try {
+    localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiry: tokenExpiry }))
+  } catch { /* private mode: it still works for this session */ }
+}
+
+function forgetToken() {
+  accessToken = null
+  tokenExpiry = 0
+  try { localStorage.removeItem(TOKEN_KEY) } catch { /* nothing to clear */ }
+}
+
+/**
+ * A token we already hold, or null. Never contacts Google.
+ *
+ * This is the only door an automatic background task may use. Everything else
+ * can show UI, and a backup nobody asked for must never do that.
+ */
+export function storedAccessToken() {
+  return haveValidToken() ? accessToken : null
+}
 
 let gisPromise = null
 function loadGis() {
@@ -119,8 +168,7 @@ export function completeRedirectSignIn(hash) {
   }
   const token = params.get('access_token')
   if (!token) throw new Error('Google did not return a token')
-  accessToken = token
-  tokenExpiry = Date.now() + Number(params.get('expires_in') || 3600) * 1000
+  rememberToken(token, params.get('expires_in'))
   return { returnTo }
 }
 
@@ -151,8 +199,7 @@ export async function getAccessToken({ interactive = true } = {}) {
       scope: SCOPE,
       callback: (res) => {
         if (res.error) return reject(new Error(res.error_description || res.error))
-        accessToken = res.access_token
-        tokenExpiry = Date.now() + (Number(res.expires_in || 3600) * 1000)
+        rememberToken(res.access_token, res.expires_in)
         resolve(accessToken)
       },
       error_callback: (err) => {
@@ -174,8 +221,7 @@ export async function getAccessToken({ interactive = true } = {}) {
 
 export function signOut() {
   const t = accessToken
-  accessToken = null
-  tokenExpiry = 0
+  forgetToken()
   try { if (t) window.google?.accounts?.oauth2?.revoke(t, () => {}) } catch { /* already gone */ }
 }
 
@@ -198,7 +244,8 @@ async function driveFetch(url, init = {}) {
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
   })
   if (res.status === 401) {
-    accessToken = null
+    // Rejected by Drive: the stored copy is no better than none.
+    forgetToken()
     throw new Error('Google sign-in expired, please connect again')
   }
   if (!res.ok) {

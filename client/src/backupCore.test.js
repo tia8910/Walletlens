@@ -74,6 +74,8 @@ describe('BACKUP_KEYS', () => {
     // intended way for another device to recover that key.
     expect(BACKUP_KEYS).not.toContain('wl_drive_data_key')
     expect(BACKUP_KEYS).not.toContain('wl_drive_wrap')
+    // Likewise the live OAuth token: it grants Drive access on its own.
+    expect(BACKUP_KEYS).not.toContain('wl_drive_token')
   })
 
   it('classifies every key the app writes', () => {
