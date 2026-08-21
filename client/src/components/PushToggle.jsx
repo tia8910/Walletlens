@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  isPushSupported, isPushEnabled, enablePush, disablePush, watchPermission,
+  isPushSupported, isPushEnabled, enablePush, disablePush, watchPermission, pushStatus,
   getPushPrefs, setPushPrefs,
 } from '../push'
 import { track } from '../analytics'
@@ -31,6 +31,53 @@ function Row({ label, hint, on, onToggle }) {
   )
 }
 
+/**
+ * One line saying whether this device is actually wired up, and what would
+ * stop a notification arriving right now.
+ *
+ * Deliberately not a "send test notification" button — that was removed on
+ * purpose, and a test send proves the pipe works at one instant without
+ * saying anything about why the real channels are quiet. This reports state.
+ */
+function PushStatusLine({ status }) {
+  if (status.reachable === false) {
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f59e0b' }}>
+      Can\u2019t reach the notification server right now.
+    </div>
+  }
+  if (status.found === false) {
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: '#f87171' }}>
+      This device isn\u2019t registered on the server \u2014 switch push off and on again.
+    </div>
+  }
+  if (!status.found) return null
+
+  // The two states that produce total silence while everything looks correct.
+  const noWatch = status.watch === 0
+  const spent = status.budgetLeft === 0
+
+  return (
+    <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
+      <div>
+        Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
+        {status.alerts > 0 && <> \u00b7 <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
+        {' \u00b7 '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
+      </div>
+      {noWatch && (
+        <div style={{ color: '#f87171' }}>
+          No assets are being watched, so move and news alerts can\u2019t fire.
+          Open the Dashboard once to sync your holdings.
+        </div>
+      )}
+      {spent && (
+        <div style={{ color: '#f59e0b' }}>
+          Today\u2019s notification budget is used up. Price targets you set still come through.
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PushToggle() {
   const { t } = useLanguage()
   const [supported] = useState(() => isPushSupported())
@@ -38,6 +85,7 @@ export default function PushToggle() {
   const [prefs, setPrefs] = useState(getPushPrefs)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState(null)
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
 
@@ -46,6 +94,16 @@ export default function PushToggle() {
   // mount, this sat at off after the user had already allowed notifications,
   // which reads as the switch being broken.
   useEffect(() => watchPermission(setEnabled), [])
+
+  // Ask the server what it holds, whenever the switch is on. Cheap, read-only,
+  // and it is the only way to tell "nothing has happened worth sending" from
+  // "this device is not actually wired up".
+  useEffect(() => {
+    if (!enabled) { setStatus(null); return }
+    let alive = true
+    pushStatus().then(s => { if (alive) setStatus(s) }).catch(() => {})
+    return () => { alive = false }
+  }, [enabled])
 
   async function toggle() {
     if (busy) return
@@ -148,6 +206,8 @@ export default function PushToggle() {
             on={prefs.features}
             onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
           />
+
+          {status && <PushStatusLine status={status} />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
