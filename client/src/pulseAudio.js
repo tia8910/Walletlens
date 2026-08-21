@@ -223,7 +223,15 @@ export function setVolume(v) {
  * cheaper than scaling twenty hand-written gain figures and re-deriving them
  * every time one layer changes.
  */
-const TRIM = { rocket: 1, ath: 1.9, milestone: 1.7, fireworks: 1.7 }
+const TRIM = {
+  rocket: 1, ath: 1.9, milestone: 1.7, fireworks: 1.7,
+  // The six below are first estimates, not measurements. They were set from
+  // the layer gains rather than by ear, which is the wrong way round for a
+  // table whose whole purpose is what you hear — the soft pads (aurora, dip)
+  // need the most help because they have no transient to carry them. Worth a
+  // pass on a real device with the others for reference.
+  shockwave: 1.6, aurora: 2.1, lock: 1.8, rain: 1.5, dip: 2.0, storm: 1.7,
+}
 let voiceTrim = 1
 
 /**
@@ -554,10 +562,124 @@ function playFireworks(t) {
   firework(t + 2.30, { pan: 0.22, size: 0.7, whistle: false })
 }
 
-const VOICES = { rocket: playRocket, ath: playAth, milestone: playMilestone, fireworks: playFireworks }
+
+/**
+ * Shockwave — a second asset crossing, after the rocket already went.
+ *
+ * The whole point is that it is *small*. One soft thump and a bell, under
+ * half a second, so three of them in a row still read as punctuation rather
+ * than as three events competing.
+ */
+function playShockwave(t) {
+  sub(t + 0.00, 0.28, { from: 72, to: 40, gain: 0.30, wet: 0.06 })
+  air(t + 0.00, 0.10, { from: 900, to: 300, q: 1.4, gain: 0.045, wet: 0.35, attack: 0.003 })
+  bell(t + 0.04, 0.42, { freq: 1318.51, gain: 0.045, index: 3, wet: 0.7 })
+}
+
+/**
+ * Aurora — the market broadly green. Weather, not an event.
+ *
+ * No transient anywhere: everything fades in. A sound with an attack would
+ * announce itself, and this is meant to be noticed a beat late, the way you
+ * notice light changing.
+ */
+function playAurora(t) {
+  swell(t + 0.00, 2.10, {
+    from: 196, to: 294, gain: 0.075, type: 'sine',
+    cutFrom: 500, cutTo: 2400, spread: 6, wet: 0.75, attack: 0.85,
+  })
+  swell(t + 0.35, 1.80, {
+    from: 293.66, to: 392, gain: 0.055, type: 'sine',
+    cutFrom: 700, cutTo: 3000, spread: 9, wet: 0.8, attack: 0.7,
+  })
+  air(t + 0.20, 1.90, { from: 1800, to: 4200, q: 0.8, gain: 0.028, wet: 0.85, attack: 0.9 })
+  bell(t + 1.30, 0.90, { freq: 1567.98, gain: 0.028, index: 2, wet: 0.95, pan: 0.3 })
+}
+
+/**
+ * Target lock — a price the user asked about, reached.
+ *
+ * Two clean tones a fifth apart, the second landing exactly on the beat of the
+ * first. Deliberately mechanical: this is a confirmation, not a celebration.
+ * Nobody wants applause for arithmetic they set up themselves.
+ */
+function playLock(t) {
+  air(t + 0.00, 0.07, { from: 2400, to: 1200, q: 2.0, gain: 0.05, wet: 0.25, attack: 0.002 })
+  bell(t + 0.00, 0.34, { freq: 880.00, gain: 0.085, index: 2, ratio: 2, wet: 0.35 })
+  bell(t + 0.22, 0.62, { freq: 1318.51, gain: 0.095, index: 2, ratio: 2, wet: 0.5 })
+  sub(t + 0.22, 0.40, { from: 110, to: 82, gain: 0.20, wet: 0.05 })
+}
+
+/**
+ * Green rain — a portfolio day well past fireworks.
+ *
+ * A rising pentatonic scatter, panned across the field so it sounds like many
+ * small things arriving rather than one big one. Pentatonic because no two
+ * notes in it can clash, however they land against each other.
+ */
+function playRain(t) {
+  const notes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51]
+  sub(t + 0.00, 0.70, { from: 90, to: 60, gain: 0.22, wet: 0.08 })
+  swell(t + 0.00, 1.60, {
+    from: 261.63, to: 523.25, gain: 0.07, type: 'triangle',
+    cutFrom: 600, cutTo: 3600, spread: 8, wet: 0.6, attack: 0.3,
+  })
+  notes.forEach((f, i) => {
+    bell(t + 0.06 + i * 0.115, 0.55, {
+      freq: f, gain: 0.055 - i * 0.003, index: 3, wet: 0.8,
+      pan: (i % 2 ? 1 : -1) * (0.15 + (i / notes.length) * 0.35),
+    })
+  })
+}
+
+/**
+ * Dip — the portfolio down enough to say so.
+ *
+ * A minor third falling, once, on soft bells. No dissonance and no low rumble:
+ * the sound has to acknowledge a bad day without editorialising about it, and
+ * anything darker turns a 5% move into a funeral.
+ */
+function playDip(t) {
+  swell(t + 0.00, 1.30, {
+    from: 174.61, to: 146.83, gain: 0.065, type: 'sine',
+    cutFrom: 800, cutTo: 500, spread: 5, wet: 0.6, attack: 0.35,
+  })
+  bell(t + 0.10, 0.80, { freq: 587.33, gain: 0.055, index: 2.5, wet: 0.7, pan: -0.2 })
+  bell(t + 0.42, 1.00, { freq: 493.88, gain: 0.050, index: 2.5, wet: 0.8, pan: 0.2 })
+  air(t + 0.00, 1.20, { from: 900, to: 380, q: 0.9, gain: 0.022, wet: 0.6, attack: 0.4 })
+}
+
+/**
+ * Storm — a hard day.
+ *
+ * Lower and slower than the dip, and that is the only difference. It resolves
+ * downward to a held root and stops, rather than hanging unresolved: the day
+ * was bad, it is over, the app is not going to sit in it with you.
+ */
+function playStorm(t) {
+  sub(t + 0.00, 1.60, { from: 55, to: 41, gain: 0.30, wet: 0.10 })
+  swell(t + 0.00, 2.00, {
+    from: 130.81, to: 110.00, gain: 0.085, type: 'sine',
+    cutFrom: 700, cutTo: 340, spread: 7, wet: 0.7, attack: 0.55,
+  })
+  air(t + 0.10, 1.90, { from: 700, to: 240, q: 0.7, gain: 0.030, wet: 0.7, attack: 0.6 })
+  bell(t + 0.30, 1.20, { freq: 440.00, gain: 0.045, index: 2, wet: 0.85, pan: -0.25 })
+  bell(t + 0.85, 1.40, { freq: 349.23, gain: 0.042, index: 2, wet: 0.9, pan: 0.25 })
+  // Lands on the root. The resolution is the point.
+  bell(t + 1.45, 1.30, { freq: 261.63, gain: 0.048, index: 1.8, wet: 0.9 })
+}
+
+const VOICES = {
+  rocket: playRocket, ath: playAth, milestone: playMilestone, fireworks: playFireworks,
+  shockwave: playShockwave, aurora: playAurora, lock: playLock,
+  rain: playRain, dip: playDip, storm: playStorm,
+}
 
 /** Roughly how long each sound runs, for syncing the visual layer. */
-export const DURATION_MS = { rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600 }
+export const DURATION_MS = {
+  rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600,
+  shockwave: 700, aurora: 2600, lock: 1100, rain: 2200, dip: 1700, storm: 2900,
+}
 
 /**
  * Play one event's sound.

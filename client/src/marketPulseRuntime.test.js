@@ -1,5 +1,8 @@
 // The runtime's job is the stuff the pure core deliberately refuses to know
 // about: settings, persistence, and not embarrassing the user.
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 const audio = vi.hoisted(() => ({ played: [], unlocked: true }))
@@ -12,7 +15,7 @@ vi.mock('./pulseAudio', () => ({
 }))
 
 const {
-  observeMarket, pulseSettings, setPulseSettings,
+  observeMarket, demoPulse, pulseSettings, setPulseSettings,
   pendingDiscovery, dismissDiscovery, noteDiscoveryShown,
   onPulseRelease, __heldEvent, __resetPulseRuntime,
 } = await import('./marketPulseRuntime')
@@ -64,6 +67,32 @@ describe('seeding an existing portfolio', () => {
     // And the next genuine record still lands.
     observeMarket({ samples: btc(2), totalValue: 130000, now: T0 + 60000 })
     expect(audio.played).toContain('ath')
+  })
+
+  it('still speaks up on a bad day', () => {
+    setPulseSettings({ enabled: true })
+    // Seeding suppresses stale records, not today's facts. A first run on a
+    // day the portfolio is down 7% has something true to say.
+    const event = observeMarket({
+      samples: btc(-7), totalValue: 120000, portfolioChangePct: -7, now: T0,
+    })
+    expect(event?.type).toBe('dip')
+  })
+
+  it('does not replay targets that were met before it ever ran', () => {
+    setPulseSettings({ enabled: true })
+    const hit = [{ id: 't1', symbol: 'ETH', price: 4200 }]
+    expect(observeMarket({
+      samples: btc(2), totalValue: 120000, targetsHit: hit, now: T0,
+    })).toBeNull()
+
+    // A target crossed after the app has been running still lands.
+    const event = observeMarket({
+      samples: btc(2), totalValue: 120000, now: T0 + 60000,
+      targetsHit: [...hit, { id: 't2', symbol: 'SOL', price: 300 }],
+    })
+    expect(event?.type).toBe('lock')
+    expect(event.targetId).toBe('t2')
   })
 })
 
@@ -384,5 +413,45 @@ describe('sound and picture are separate switches', () => {
     setPulseSettings({ enabled: true })
     observeMarket({ samples: btc(9.1), totalValue: 50000, portfolioChangePct: 7, now: T0 + 1000 })
     expect(audio.played).toEqual([])
+  })
+})
+
+describe('demo events', () => {
+  // ?pulse=<type> is the only way to see most of these on a real phone, so an
+  // event the overlay draws but the demo cannot fire is one nobody can check —
+  // and that is discovered on a device, months later, by not seeing anything.
+  //
+  // Read out of the overlay rather than listed here, so adding a branch there
+  // and forgetting the demo shape fails this test instead of shipping.
+  const RENDERED = [...new Set(
+    Array.from(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/PulseOverlay.jsx'), 'utf8')
+        .matchAll(/event\.type === '([a-z]+)'/g),
+      m => m[1],
+    ),
+  )]
+
+  it('can fire every event the overlay knows how to draw', () => {
+    setPulseSettings({ enabled: true })
+    // A regex that matched nothing would make the loop below vacuous.
+    expect(RENDERED.length).toBeGreaterThan(5)
+    for (const type of RENDERED) {
+      expect(demoPulse(type, { totalValue: 100000 })?.type, type).toBe(type)
+    }
+  })
+
+  it('ignores anything else', () => {
+    expect(demoPulse('nonsense')).toBeNull()
+    expect(demoPulse('')).toBeNull()
+    // Object.prototype keys must not read as valid types.
+    expect(demoPulse('toString')).toBeNull()
+    expect(demoPulse('constructor')).toBeNull()
+  })
+
+  it('gives a down day a negative change, so the caption is not a lie', () => {
+    setPulseSettings({ enabled: true })
+    expect(demoPulse('dip', {}).changePct).toBeLessThan(0)
+    expect(demoPulse('storm', {}).changePct).toBeLessThan(0)
+    expect(demoPulse('rain', {}).changePct).toBeGreaterThan(0)
   })
 })

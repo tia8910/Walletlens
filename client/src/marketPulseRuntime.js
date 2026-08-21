@@ -6,6 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
+  PORTFOLIO_DIP_PCT,
   PORTFOLIO_SURGE_PCT, PRIORITY,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
@@ -158,6 +159,20 @@ let releaseCb = null
 /** The overlay registers here, so a held event can still reach the screen. */
 export function onPulseRelease(cb) { releaseCb = cb }
 
+/**
+ * The buzz that goes with an event.
+ *
+ * A launch gets the three-beat pattern; a down day gets one short tap and
+ * nothing else. Vibrating a portfolio losing 10% the way it celebrates a
+ * rocket is the kind of detail that reads as the app not understanding what
+ * it just told you.
+ */
+function hapticFor(type) {
+  if (type === 'rocket' || type === 'shockwave') return [12, 40, 24]
+  if (type === 'dip' || type === 'storm') return [10]
+  return [18]
+}
+
 function releaseHeld(withSound) {
   const event = held
   held = null
@@ -169,7 +184,7 @@ function releaseHeld(withSound) {
     unlock()
     setVolume(pulseSettings().volume)
     if (play(event.type) && pulseSettings().haptics) {
-      try { navigator.vibrate?.(event.type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+      try { navigator.vibrate?.(hapticFor(event.type)) } catch { /* unsupported */ }
     }
   }
   releaseCb?.(event)
@@ -232,7 +247,10 @@ let cooldown = { lastAt: 0, lastMajorAt: 0 }
  * @param {object} o.samples     assetId → { changePct, cls, symbol, source?, fresh? }
  * @param {number} o.totalValue  portfolio value in the display currency
  */
-export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct = 0, now = Date.now() } = {}) {
+export function observeMarket({
+  samples = {}, totalValue = 0, portfolioChangePct = 0,
+  breadth = null, targetsHit = [], now = Date.now(),
+} = {}) {
   try {
     let state = pruneState(pulseState(), now)
 
@@ -241,7 +259,7 @@ export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct
     // this, a user who has held $120K for a year gets told they just hit an
     // all-time high and crossed $100K the first time they open the app.
     if (!state.ath && totalValue > 0) {
-      state = seedRecords(state, totalValue)
+      state = seedRecords(state, totalValue, targetsHit)
       write(STATE_KEY, state)
       lastSamples = samples
       writeSamples(samples)
@@ -250,10 +268,23 @@ export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct
       // before the feature existed. "Today is a good day" is not a record, and
       // suppressing it on first run would mean the very first thing a new user
       // could ever see is nothing.
-      if (!(portfolioChangePct >= PORTFOLIO_SURGE_PCT)) return null
+      // The down days have to survive this gate too: a user opening the app
+      // for the first time on a bad day should hear about it, because that is
+      // today's fact rather than a stale record.
+      //
+      // Target hits deliberately do not. seedRecords has just retired every
+      // target that was already met, and it is right that it did — a target
+      // crossed before the app had ever run is a record in exactly the sense
+      // this gate exists to suppress.
+      const worthSaying = portfolioChangePct >= PORTFOLIO_SURGE_PCT
+        || portfolioChangePct <= PORTFOLIO_DIP_PCT
+      if (!worthSaying) return null
     }
 
-    const events = detectEvents({ prev: lastSamples, next: samples, state, totalValue, portfolioChangePct, now })
+    const events = detectEvents({
+      prev: lastSamples, next: samples, state, totalValue, portfolioChangePct,
+      breadth, targetsHit, now,
+    })
     lastSamples = samples
     writeSamples(samples)
 
@@ -338,7 +369,7 @@ export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct
         lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
       }
       if (settings.haptics) {
-        try { navigator.vibrate?.(chosen.type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+        try { navigator.vibrate?.(hapticFor(chosen.type)) } catch { /* unsupported */ }
       }
     }
     // Returned whether or not audio managed to play, because the visual layer
@@ -352,8 +383,25 @@ export function observeMarket({ samples = {}, totalValue = 0, portfolioChangePct
 
 // ── Demo ───────────────────────────────────────────────────────────────────
 
-/** The three types a demo may ask for. Anything else is ignored. */
-const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone', 'fireworks'])
+// Every event a demo may ask for, with the fields its caption needs. Anything
+// not listed here is ignored, so a typo in the URL shows nothing rather than
+// an overlay with a blank caption.
+//
+// The down days matter most here: a storm needs the portfolio to fall 10% in a
+// day, which is not something anyone can arrange in order to check the effect
+// renders.
+const DEMO_SHAPES = {
+  rocket:     { symbol: 'BTC', changePct: 12.4 },
+  shockwave:  { symbol: 'BTC', changePct: 14.1 },
+  ath:        {},
+  milestone:  {},
+  fireworks:  { changePct: 4.2 },
+  rain:       { changePct: 9.6 },
+  dip:        { changePct: -6.3 },
+  storm:      { changePct: -11.8 },
+  aurora:     { breadth: 0.82 },
+  lock:       { targetId: 'demo', symbol: 'ETH', price: 4200 },
+}
 
 /**
  * Fire one event on demand, for checking the feature actually works.
@@ -375,18 +423,18 @@ const DEMO_TYPES = new Set(['rocket', 'ath', 'milestone', 'fireworks'])
  * @returns {object|null} the event to hand the overlay, or null if unrecognised
  */
 export function demoPulse(type, { totalValue = 0 } = {}) {
-  if (!DEMO_TYPES.has(type)) return null
+  const shape = Object.prototype.hasOwnProperty.call(DEMO_SHAPES, type) ? DEMO_SHAPES[type] : null
+  if (!shape) return null
   unlock()
   setVolume(pulseSettings().volume)
   play(type)
   if (pulseSettings().haptics) {
-    try { navigator.vibrate?.(type === 'rocket' ? [12, 40, 24] : [18]) } catch { /* unsupported */ }
+    try { navigator.vibrate?.(hapticFor(type)) } catch { /* unsupported */ }
   }
   return {
     type,
     priority: PRIORITY[type] ?? 3,
-    symbol: 'BTC',
-    changePct: 12.4,
+    ...shape,
     value: totalValue > 0 ? totalValue : 100000,
     at: Date.now(),
     demo: true,
