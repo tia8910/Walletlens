@@ -19,12 +19,36 @@ const {
   pendingDiscovery, dismissDiscovery, noteDiscoveryShown,
   onPulseRelease, __heldEvent, __resetPulseRuntime,
 } = await import('./marketPulseRuntime')
+const { marketPeriodKey } = await import('./marketPulse')
 
 const T0 = new Date('2026-03-04T15:00:00Z').getTime()
 const btc = (pct) => ({ btc: { changePct: pct, source: 'cg', cls: 'crypto-major', symbol: 'BTC' } })
 
+/**
+ * Mark today's champion as already shown.
+ *
+ * The champion is a once-a-day moment that fires on the first open for anyone
+ * holding something green — so with a cleared localStorage it lands in every
+ * test whose fixture is even slightly up, and drowns out the mechanism actually
+ * under test. Tests that are about the champion do not call this; every other
+ * test starts from "the user has already seen today's".
+ *
+ * `day` is per-class (see dayKeyFor), so this seeds the classes the fixtures
+ * use rather than a single date string.
+ */
+function championAlreadyShown(now = T0) {
+  localStorage.setItem('wl_pulse_state', JSON.stringify({
+    championDay: marketPeriodKey('crypto-major', now),
+  }))
+}
+
 beforeEach(() => {
   localStorage.clear()
+  // Seeded for every test by default. The champion is a daily moment now, so
+  // an un-seeded state fires it in any fixture that is even slightly green and
+  // masks whatever that test was actually checking. The champion's own tests
+  // clear this deliberately.
+  championAlreadyShown()
   audio.played = []
   audio.unlocked = true
   __resetPulseRuntime()
@@ -80,6 +104,8 @@ describe('seeding an existing portfolio', () => {
   })
 
   it('still crowns a champion on the very first run', () => {
+    localStorage.removeItem('wl_pulse_state')  // this one IS about the champion
+    __resetPulseRuntime()
     setPulseSettings({ enabled: true })
     // A champion is a statement about today, not a record, so seeding has no
     // business suppressing it. This is the case the old first-run whitelist
@@ -93,6 +119,38 @@ describe('seeding an existing portfolio', () => {
     const event = observeMarket({ samples: next, totalValue: 120000, now: T0 })
     expect(event?.type).toBe('champion')
     expect(event.symbol).toBe('SOL')
+  })
+
+  it('crowns the best holding on an ordinary day, not just a spectacular one', () => {
+    // The change this locks in: the champion used to need a 12% move five
+    // points clear of second place, which meant most mornings produced nothing
+    // and a whole portfolio rallying together produced nothing either. It is a
+    // daily moment now — first open, best holding, once.
+    localStorage.removeItem('wl_pulse_state')
+    __resetPulseRuntime()
+    setPulseSettings({ enabled: true })
+    const quietDay = {
+      btc: { changePct: 1.4, cls: 'crypto-major', symbol: 'BTC', image: '' },
+      eth: { changePct: 0.9, cls: 'crypto-major', symbol: 'ETH', image: '' },
+    }
+    const event = observeMarket({ samples: quietDay, totalValue: 120000, now: T0 })
+    expect(event?.type).toBe('champion')
+    expect(event.symbol).toBe('BTC')
+
+    // And only once — a later refresh the same day says nothing.
+    expect(observeMarket({ samples: quietDay, totalValue: 120000, now: T0 + 60_000 })).toBeNull()
+  })
+
+  it('crowns nobody when the whole portfolio is red', () => {
+    localStorage.removeItem('wl_pulse_state')
+    __resetPulseRuntime()
+    setPulseSettings({ enabled: true })
+    const redDay = {
+      btc: { changePct: -2, cls: 'crypto-major', symbol: 'BTC', image: '' },
+      eth: { changePct: -6, cls: 'crypto-major', symbol: 'ETH', image: '' },
+    }
+    const event = observeMarket({ samples: redDay, totalValue: 120000, now: T0 })
+    expect(event?.type).not.toBe('champion')
   })
 
   it('does not replay targets that were met before it ever ran', () => {

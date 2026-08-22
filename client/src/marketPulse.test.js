@@ -101,9 +101,16 @@ describe('comparable', () => {
 })
 
 describe('detectEvents — crossings', () => {
+  // The day's champion is a separate, once-a-day event that now co-occurs with
+  // almost anything green — it is a daily moment, not a rare one. These tests
+  // are about crossings, so they look at crossings. Only one event is ever
+  // shown to the user anyway: selectOne() runs a priority contest over
+  // whatever detectEvents returns.
+  const crossingsOnly = (events) => events.filter(e => e.type !== 'champion')
+
   it('fires when a threshold is newly crossed', () => {
     const { prev, next } = crossing(7.4, 8.2)
-    const events = detectEvents({ prev, next, now: T0 })
+    const events = crossingsOnly(detectEvents({ prev, next, now: T0 }))
     expect(events).toHaveLength(1)
     expect(events[0]).toMatchObject({ type: 'rocket', symbol: 'BTC', threshold: 8 })
   })
@@ -112,49 +119,49 @@ describe('detectEvents — crossings', () => {
     // The whole point of the module. A refresh at +8.2% after a previous
     // reading of +8.1% is not a crossing, it is the same fact twice.
     const { prev, next } = crossing(8.1, 8.2)
-    expect(detectEvents({ prev, next, now: T0 })).toEqual([])
+    expect(crossingsOnly(detectEvents({ prev, next, now: T0 }))).toEqual([])
   })
 
   it('does not fire twice for the same threshold in one period', () => {
     const { prev, next } = crossing(7.4, 8.2)
-    const first = detectEvents({ prev, next, now: T0 })
+    const first = crossingsOnly(detectEvents({ prev, next, now: T0 }))
     expect(first).toHaveLength(1)
 
     const state = applyFired(emptyState(), first[0])
 
     // Dip back under and cross again in the same day — still silent.
-    const again = detectEvents({
+    const again = crossingsOnly(detectEvents({
       prev: { btc: { changePct: 7.1, source: 'cg' } },
       next: next,
       state,
       now: T0,
-    })
+    }))
     expect(again).toEqual([])
   })
 
   it('fires again once the market period has rolled over', () => {
     const { prev, next } = crossing(7.4, 8.2)
-    const state = applyFired(emptyState(), detectEvents({ prev, next, now: T0 })[0])
+    const state = applyFired(emptyState(), crossingsOnly(detectEvents({ prev, next, now: T0 }))[0])
 
     const tomorrow = T0 + 24 * 60 * 60 * 1000
-    const events = detectEvents({ prev, next, state, now: tomorrow })
+    const events = crossingsOnly(detectEvents({ prev, next, state, now: tomorrow }))
     expect(events).toHaveLength(1)
   })
 
   it('uses the right ladder for each class', () => {
     // 6% is a rocket for a stock and nothing at all for an altcoin.
-    const stock = detectEvents({
+    const stock = crossingsOnly(detectEvents({
       prev: { aapl: { changePct: 4 } },
       next: { aapl: { changePct: 6, cls: 'equity', symbol: 'AAPL' } },
       now: T0,
-    })
+    }))
     expect(stock).toHaveLength(1)
 
-    const alt = detectEvents({
+    const alt = crossingsOnly(detectEvents({
       prev: { doge: { changePct: 4 } },
       next: { doge: { changePct: 6, cls: 'altcoin', symbol: 'DOGE' } },
       now: T0,
-    })
+    }))
     expect(alt).toEqual([])
     expect(SIGNATURE_PCT.altcoin).toBeGreaterThan(SIGNATURE_PCT.equity)
   })
@@ -516,28 +523,42 @@ describe('the other added events', () => {
     pcts.map((changePct, i) => [`a${i}`, { changePct, cls: 'altcoin', symbol: `A${i}`, image: '' }])
   )
 
-  it('champion needs a big move, clear of the field', () => {
-    const lead = CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT
-    // Big enough and clear enough.
-    expect(types(detectEvents({ ...base, next: field(lead, 1, 0) }))).toContain('champion')
-    // Clear of the field, but not a big enough move to be worth the screen.
-    expect(types(detectEvents({ ...base, next: field(CHAMPION_MIN_PCT - 1, -8, -9) }))).not.toContain('champion')
-    // A big move that everything else matched. That is weather, and aurora
-    // already covers it — a "winner" here would be a rounding error crowned.
-    expect(types(detectEvents({ ...base, next: field(lead, lead - 1, lead - 2) }))).not.toContain('champion')
+  it('crowns the day’s best holding, however ordinary the day', () => {
+    // A daily moment, not a rare one. The old rules wanted a 12% move five
+    // points clear of second place, which meant the single most exciting case —
+    // the whole portfolio running together — produced nothing at all.
+    expect(types(detectEvents({ ...base, next: field(3, 1, 0) }))).toContain('champion')
+    expect(types(detectEvents({ ...base, next: field(0.4, 0.2, 0.1) }))).toContain('champion')
+    // Three holdings up 25% together: no daylight over second place, and
+    // exactly the morning the feature exists for.
+    expect(types(detectEvents({ ...base, next: field(25, 24, 23) }))).toContain('champion')
   })
 
-  it('champion needs a field to lead', () => {
-    const lead = CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT
-    const short = Array(CHAMPION_MIN_ASSETS - 1).fill(0).map((_, i) => i === 0 ? lead : 0)
-    expect(types(detectEvents({ ...base, next: field(...short) }))).not.toContain('champion')
+  it('fires for a portfolio of one', () => {
+    // There is no field to lead, and it is still that holding's best day.
+    expect(types(detectEvents({ ...base, next: field(6) }))).toContain('champion')
+  })
+
+  it('crowns nobody when nothing is up', () => {
+    // "Top gainer" means a gain. A celebration over the least-bad holding on a
+    // red day reads as mockery — the storm and down-day effects own that
+    // morning.
+    expect(types(detectEvents({ ...base, next: field(-2, -5, -9) }))).not.toContain('champion')
+    // And a rounding artefact is not a winner.
+    expect(types(detectEvents({ ...base, next: field(0.01, 0, -0.01) }))).not.toContain('champion')
+  })
+
+  it('picks the best one, not merely a positive one', () => {
+    const champ = detectEvents({ ...base, next: field(2, 9, 4) }).find(e => e.type === 'champion')
+    expect(champ.symbol).toBe('A1')
+    expect(champ.changePct).toBe(9)
   })
 
   it('champion ignores stablecoins when picking the winner', () => {
     // A stablecoin is `silent`, so it can neither win nor count as the runner
     // up it has to be beaten by.
     const next = {
-      ...field(CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT, 0.5, 0.2),
+      ...field(9, 0.5, 0.2),
       usdt: { changePct: 40, cls: 'silent', symbol: 'USDT' },
     }
     const champ = detectEvents({ ...base, next }).find(e => e.type === 'champion')
@@ -545,7 +566,7 @@ describe('the other added events', () => {
   })
 
   it('champion crowns one winner a day', () => {
-    const next = field(CHAMPION_MIN_PCT + CHAMPION_LEAD_PCT, 1, 0)
+    const next = field(9, 1, 0)
     const first = detectEvents({ ...base, next }).find(e => e.type === 'champion')
     expect(first.image).toBe('')
     const after = applyFired(base.state, first, base.totalValue)
