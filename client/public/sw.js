@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v222'
+const SW_VERSION = 'v223'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -291,13 +291,22 @@ self.addEventListener('fetch', e => {
 
 // ── Web Push: show a notification even when the app is fully closed ──────────
 // The push-api Deno service sends { title, body, tag, url, channel, sym }.
-// `channel` is one of target | move | news | digest | retention | test and
-// decides how loud the notification is allowed to be.
+// `channel` is one of target | move | level | news | digest | retention |
+// feature | test and decides how loud the notification is allowed to be.
 
 // Channels the user asked for by name earn a buzz; the ones we initiated on
 // their behalf (a daily brief, a come-back nudge) arrive silently. Same
 // notification tray, very different level of consent.
-const LOUD_CHANNELS = new Set(['target', 'move', 'test'])
+//
+// The dividing line is the server's own: notify-logic.js marks exactly the
+// price channels `urgency: 'high'`, because a price that has already moved is
+// the only thing here that goes stale in minutes. This set must stay equal to
+// that one — `level` was missing from it, so the round-number alerts ("BTC
+// drops below $77,000") were pushed at high urgency and then rendered mute:
+// no sound, no buzz, nothing until the phone was picked up and unlocked. A
+// price alert nobody hears is not a price alert. notificationSound.test.js
+// now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
+const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'test'])
 
 self.addEventListener('push', e => {
   let data = {}
