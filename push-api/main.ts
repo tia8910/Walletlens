@@ -41,7 +41,8 @@
 
 import webpush from "npm:web-push@3.6.7"
 import {
-  asLang, buildPayload, bumpQuota, copy, DEFAULT_PREFS, deliveryFor,
+  asLang, buildPayload, bumpQuota, copy, DAILY_PUSH_BUDGET, DEFAULT_PREFS,
+  deliveryFor,
   DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, FEATURE_TIP_GAP_MS, fmtPct,
   fmtPrice, pickFeatureTip,
   isBreaking, localDayKey, localHour, matchArticle,
