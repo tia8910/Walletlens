@@ -854,8 +854,12 @@ describe('feature tips', () => {
     expect(pick({ alertCount: 0 }, FEATURE_TIPS.map(t => t.id))).toBeNull()
   })
 
-  it('holds tips at least a week apart', () => {
-    expect(FEATURE_TIP_GAP_MS).toBeGreaterThanOrEqual(7 * 86_400_000)
+  it('holds tips several days apart', () => {
+    // Was a week. Shortened to three days so a seventeen-tip list finishes in
+    // about seven weeks instead of four months — but still a floor, because
+    // the thing being prevented is a daily drip.
+    expect(FEATURE_TIP_GAP_MS).toBeGreaterThanOrEqual(3 * 86_400_000)
+    expect(FEATURE_TIP_GAP_MS).toBeLessThanOrEqual(14 * 86_400_000)
   })
 
   it('keeps the whole channel finite however long the list gets', () => {
@@ -863,11 +867,16 @@ describe('feature tips', () => {
     // will keep growing, so the ceiling is MAX_FEATURE_TIPS rather than the
     // list length — otherwise every tip added worsens the worst case.
     expect(new Set(FEATURE_TIPS.map(t => t.id)).size).toBe(FEATURE_TIPS.length)
-    // Deliberately a bound, not an equality: the cap is allowed to move with a
-    // product decision, but it must not drift upward one tip at a time as the
-    // list grows. It went 6 -> 8 when the list reached sixteen, for reach
-    // rather than volume.
-    expect(MAX_FEATURE_TIPS).toBeLessThanOrEqual(8)
+    // The cap must not sit below the list, or the tail is unreachable: with a
+    // cap of 8 against 17 tips, nine features could never be mentioned to
+    // anybody however long they used the app. This is the assertion that would
+    // have caught it — a relationship rather than a number, so adding an
+    // eighteenth tip without raising the cap fails here instead of silently
+    // making it dead code.
+    expect(MAX_FEATURE_TIPS).toBeGreaterThanOrEqual(FEATURE_TIPS.length)
+    // Still finite, and still bounded: the channel must not become a rotation
+    // that grows without limit as the list does.
+    expect(MAX_FEATURE_TIPS).toBeLessThanOrEqual(25)
     // Every gate must read false, or the tip is skipped as already set up and
     // the rotation stops short of the cap for the wrong reason.
     const everything = Object.fromEntries(
@@ -881,8 +890,18 @@ describe('feature tips', () => {
       if (!tip) break
       sent.push(tip.id)
     }
-    expect(sent.length).toBe(MAX_FEATURE_TIPS)
+    // Bounded by the cap, not equal to it. How many tips a given person can
+    // ever receive depends on the shape of their portfolio, and some tips are
+    // mutually exclusive by construction: `diversify` wants watchCount === 1
+    // and `rebalance` wants watchCount >= 4, so no single user qualifies for
+    // every entry in the list. This fixture (3 assets, two kinds) reaches 14 of
+    // 17. Asserting equality only ever passed because the old cap of 8 sat
+    // below that number.
+    expect(sent.length).toBeLessThanOrEqual(MAX_FEATURE_TIPS)
+    expect(sent.length).toBeGreaterThan(10)
+    // And it terminates: the same state offers nothing further.
     expect(pick({ alertCount: 0, setup: everything }, sent)).toBeNull()
+    expect(new Set(sent).size).toBe(sent.length)
   })
 
   it('gives every tip a precondition, a destination and copy', () => {

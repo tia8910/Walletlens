@@ -397,17 +397,40 @@ export const COPY = {
 // user, it does not belong here.
 
 /**
- * At most one tip a week, however many preconditions are true at once.
+ * At most one tip every few days, however many preconditions are true at once.
  *
- * With seven tips that is a worst case of seven notifications spread over
- * roughly two months, for a user who has set up none of it — and then silence
- * forever. Order matters: the list is walked top-down, so the most valuable
- * unused feature goes first.
+ * Order matters: the list is walked top-down, so the most valuable unused
+ * feature goes first.
+ *
+ * The gap was a week and the cap was eight, against a list that has grown to
+ * seventeen. Those two numbers together meant nine features could never be
+ * mentioned to anybody, no matter how long they used the app or how much of it
+ * they had left switched off — the cap ran out before the list did. A tip for a
+ * feature someone is not using is the one notification here that can teach them
+ * something, so a ceiling below the length of the list was throwing away the
+ * whole point of the channel.
+ *
+ * Three days and a cap of seventeen: every feature gets its turn. Nobody
+ * actually receives all seventeen — several tips are mutually exclusive by
+ * construction, `diversify` wanting a single holding where `rebalance` wants
+ * four — so the real worst case for somebody who has set up none of it is
+ * around fourteen notifications over roughly six weeks, then silence forever.
+ *
+ * The real brakes are elsewhere and unchanged: each tip fires ONCE EVER, only
+ * while its own precondition still holds, and it spends the daily budget like
+ * anything else. Somebody who has configured the app well still gets none of
+ * this.
  */
-export const FEATURE_TIP_GAP_MS = 7 * 24 * 60 * 60 * 1000
+export const FEATURE_TIP_GAP_MS = 3 * 24 * 60 * 60 * 1000
 
-/** The most feature tips any one user will ever receive, however many exist. */
-export const MAX_FEATURE_TIPS = 8
+/**
+ * The most feature tips any one user will ever receive.
+ *
+ * Keep this at or above FEATURE_TIPS.length, or the tail of the list becomes
+ * unreachable — which is exactly what happened when the list outgrew the cap.
+ * The guard test asserts the relationship rather than the number.
+ */
+export const MAX_FEATURE_TIPS = 17
 
 export const FEATURE_TIPS = [
   {
