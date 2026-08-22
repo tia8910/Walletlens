@@ -760,6 +760,35 @@ export function bumpQuota(quota, nowMs, tzOffsetMin) {
 export const MOVE_REF_MAX_AGE_MS = 24 * 60 * 60 * 1000
 export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
 
+/**
+ * Where an asset was 24h ago, for the first reference point of a new watcher.
+ *
+ * evaluateMove says nothing on first sighting and starts the window from the
+ * CURRENT price — correct for an asset that has just been added to a portfolio
+ * someone has been watching all along, and wrong for the case that actually
+ * happens: a device that registers while a move is already underway. A coin up
+ * 20% on the day reads as 0% from that moment and stays silent until it moves
+ * another whole threshold on top of the 20% the user never heard about.
+ *
+ * Seeding from the 24h-ago price instead makes the very first evaluation
+ * reflect the day that actually happened. Returns null when the change is
+ * unusable, and the caller falls back to the old behaviour.
+ *
+ * @param {{price:number, change24h:number, now:number}} q
+ * @returns {{price:number, ts:number}|null}
+ */
+export function seedRefFromChange({ price, change24h, now }) {
+  const p = Number(price)
+  const pct = Number(change24h)
+  if (!Number.isFinite(p) || p <= 0) return null
+  // A -100% change implies a price of zero 24h ago; anything at or past that
+  // is bad data, not a move.
+  if (!Number.isFinite(pct) || pct <= -100) return null
+  const dayAgo = p / (1 + pct / 100)
+  if (!Number.isFinite(dayAgo) || dayAgo <= 0) return null
+  return { price: dayAgo, ts: now - MOVE_REF_MAX_AGE_MS }
+}
+
 export function evaluateMove({ price, ref, thresholdPct, now, lastFired = 0, cooldownMs = MOVE_COOLDOWN_MS }) {
   const p = Number(price)
   if (!Number.isFinite(p) || p <= 0) return { fire: false, changePct: 0, nextRef: ref ?? null }

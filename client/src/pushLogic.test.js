@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
+  seedRefFromChange,
   FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
@@ -1264,5 +1265,106 @@ describe('the delivery step reports why it failed', () => {
 
   it('offers the test send only once the server has the device', () => {
     expect(toggle).toContain('{status?.found && <TestSend />}')
+  })
+})
+
+describe('a device that starts watching mid-move is not blind to it', () => {
+  // Reported from a real phone: AVAX up 20% on the day, no notification.
+  // evaluateMove says nothing on first sighting and starts the window from the
+  // CURRENT price, so the 20% that had already happened read as 0% and the
+  // asset stayed silent until it moved another whole threshold on top.
+  const now = Date.UTC(2026, 7, 22, 4, 0, 0)
+  const DAY = 24 * 60 * 60 * 1000
+
+  it('seeds the reference from where the asset was 24h ago', () => {
+    // 20% up on the day, now at 60 → 50 a day ago.
+    const ref = seedRefFromChange({ price: 60, change24h: 20, now })
+    expect(ref.price).toBeCloseTo(50, 6)
+    expect(ref.ts).toBe(now - DAY)
+  })
+
+  it('fires on the first check for a move already in progress', () => {
+    const ref = seedRefFromChange({ price: 60, change24h: 20, now })
+    const r = evaluateMove({ price: 60, ref, thresholdPct: 3, now })
+    expect(r.fire).toBe(true)
+    expect(r.changePct).toBeCloseTo(20, 6)
+  })
+
+  it('still says nothing when the day has been quiet', () => {
+    const ref = seedRefFromChange({ price: 60, change24h: 1, now })
+    expect(evaluateMove({ price: 60, ref, thresholdPct: 3, now }).fire).toBe(false)
+  })
+
+  it('handles a fall as well as a rise', () => {
+    const ref = seedRefFromChange({ price: 80, change24h: -20, now })
+    expect(ref.price).toBeCloseTo(100, 6)
+    const r = evaluateMove({ price: 80, ref, thresholdPct: 3, now })
+    expect(r.fire).toBe(true)
+    expect(r.changePct).toBeCloseTo(-20, 6)
+  })
+
+  it('refuses unusable data rather than inventing a reference', () => {
+    // -100% implies a price of zero a day ago; past that is bad data.
+    expect(seedRefFromChange({ price: 60, change24h: -100, now })).toBeNull()
+    expect(seedRefFromChange({ price: 60, change24h: -140, now })).toBeNull()
+    expect(seedRefFromChange({ price: 0, change24h: 20, now })).toBeNull()
+    expect(seedRefFromChange({ price: 60, change24h: NaN, now })).toBeNull()
+    // The caller then falls back to evaluateMove's own first-sighting rule.
+    expect(evaluateMove({ price: 60, ref: null, thresholdPct: 3, now }).fire).toBe(false)
+  })
+
+  it('is used before evaluateMove in the move pass, not after', () => {
+    const server = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+    )
+    const fn = server.slice(server.indexOf('async function checkMoves'))
+    expect(fn).toMatch(/const ref = sub\.ref\[k\] \?\? seedRefFromChange\(/)
+  })
+})
+
+describe('notifications go out when the thing happens, not on a rota', () => {
+  const server = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+  )
+
+  it('checks crypto moves every minute and stocks every five', () => {
+    // The old pass ran everything at five because fetchStockQuotes costs one
+    // request PER SYMBOL. Crypto is one batched call however many coins are
+    // held, so letting the slowest ingredient set the pace delayed the
+    // notification people most expect to be immediate.
+    expect(server).toMatch(
+      /Deno\.cron\("wl-moves-crypto", "\* \* \* \* \*", \(\) => checkMoves\(\{ kinds: \["crypto"\], refreshSeen: false \}\)\)/,
+    )
+    expect(server).toMatch(/Deno\.cron\("wl-check-moves", "\*\/5 \* \* \* \*"/)
+    // Price targets were already per-minute and must stay that way.
+    expect(server).toMatch(/Deno\.cron\("wl-check-alerts", "\* \* \* \* \*"/)
+  })
+
+  it('does not let a partial pass rewrite the last-visit snapshot', () => {
+    // seenRef feeds the win-back message. A crypto-only pass rewriting it
+    // would drop every stock price it never looked at.
+    const fn = server.slice(server.indexOf('async function checkMoves'))
+    const body = fn.slice(0, fn.indexOf('\n}\n'))
+    expect(body).toMatch(/if \(refreshSeen && \(!sub\.seenRef \|\| sub\.seenRef\.at < sub\.lastSeen\)\)/)
+    // And it must skip assets outside the pass rather than evaluating them
+    // against quotes it never fetched.
+    expect(body).toMatch(/if \(!inPass\(a\)\) continue/)
+  })
+
+  it('sends a due feature tip in the next pass, not at one fixed hour', () => {
+    // Gating on 10:00 gave a tip one chance a day to clear the weekly gap,
+    // the once-ever rule and its own precondition all at once.
+    expect(server).toMatch(/const featureDue = \(sub: StoredSub\) =>/)
+    expect(server).toMatch(/\|\| featureDue\(sub\)/)
+    const tips = server.slice(server.indexOf('// — Feature tips —'))
+    const block = tips.slice(0, tips.indexOf('\n    }\n'))
+    expect(block).not.toMatch(/hour === RETENTION_HOUR/)
+    // The gap and the cap still do the anti-spam work.
+    expect(server).toMatch(/now - sub\.lastFeatureAt >= FEATURE_TIP_GAP_MS/)
+  })
+
+  it('still reserves 09:00 and 10:00 for the brief and the win-back', () => {
+    expect(server).toMatch(/h === DIGEST_HOUR && sub\.prefs\.digest/)
+    expect(server).toMatch(/h === RETENTION_HOUR && sub\.prefs\.retention/)
   })
 })

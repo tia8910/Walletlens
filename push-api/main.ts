@@ -48,7 +48,7 @@ import {
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
-  sanitizeTz, sanitizeWatch, shortHash, withinDailyBudget,
+  sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash, withinDailyBudget,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
 
@@ -393,14 +393,25 @@ async function checkTargets() {
 // Also the cron that maintains `seenRef`, the price snapshot taken just after
 // the user's last visit — the retention copy needs it, and this is the only
 // job that already has fresh quotes for every watched asset in hand.
-async function checkMoves() {
+/**
+ * @param kinds  restrict the pass to these asset kinds, or null for all of them
+ * @param refreshSeen  whether this pass may rewrite the "last visit" snapshot.
+ *   A partial pass must not: it would replace every price in seenRef with only
+ *   the kinds it looked at, and the win-back message reads that snapshot to say
+ *   what moved while the user was away.
+ */
+async function checkMoves({ kinds = null, refreshSeen = true }: {
+  kinds?: string[] | null
+  refreshSeen?: boolean
+} = {}) {
   const subs = await allSubs()
-  const watching = subs.filter(s => s.sub.watch.length)
+  const inPass = (a: WatchAsset) => !kinds || kinds.includes(a.kind)
+  const watching = subs.filter(s => s.sub.watch.some(inPass))
   if (!watching.length) return
 
   const assets = new Map<string, WatchAsset>()
   for (const { sub } of watching) {
-    for (const a of sub.watch) assets.set(`${a.kind}:${a.id}:${a.symbol}`, a)
+    for (const a of sub.watch) if (inPass(a)) assets.set(`${a.kind}:${a.id}:${a.symbol}`, a)
   }
   const quotes = await fetchQuotes([...assets.values()])
   if (!Object.keys(quotes).length) return
@@ -413,7 +424,7 @@ async function checkMoves() {
     // Refresh the "last visit" price snapshot when the user has been back
     // since it was taken. Captured here rather than on /seen so the heartbeat
     // stays a fast write with no upstream call on the request path.
-    if (!sub.seenRef || sub.seenRef.at < sub.lastSeen) {
+    if (refreshSeen && (!sub.seenRef || sub.seenRef.at < sub.lastSeen)) {
       const prices: Record<string, number> = {}
       for (const a of sub.watch) {
         const q = quoteFor(quotes, a)
@@ -426,13 +437,21 @@ async function checkMoves() {
     }
 
     for (const a of sub.watch) {
+      if (!inPass(a)) continue
       const q = quoteFor(quotes, a)
       if (!q) continue
       const k = assetKey(a)
 
+      // First time we have seen this asset for this device, seed the window
+      // from where it was 24h ago rather than from right now. Otherwise a
+      // device that starts watching mid-move is blind to the move: it reads
+      // 0% from this instant and stays quiet until the asset moves another
+      // full threshold on top of what the user already missed.
+      const ref = sub.ref[k] ?? seedRefFromChange({ price: q.price, change24h: q.change24h, now })
+
       const { fire, changePct, nextRef } = evaluateMove({
         price: q.price,
-        ref: sub.ref[k],
+        ref,
         thresholdPct: sub.prefs.movePct,
         now,
         lastFired: sub.moveFired[k] ?? 0,
@@ -525,9 +544,21 @@ async function checkDaily() {
   if (!subs.length) return
 
   const now = Date.now()
+  // A feature tip is not tied to a time of day the way a morning brief is —
+  // it fires once ever, at most one a week, and only while its precondition
+  // holds. Gating it on 10:00 as well meant one chance per day to satisfy all
+  // of that, so someone who had just set up could wait most of a day to hear
+  // anything. The weekly gap and the eight-ever cap are what keep it from
+  // being noise; the hour added nothing but delay.
+  const featureDue = (sub: StoredSub) =>
+    sub.prefs.features && sub.watch.length > 0 &&
+    now - sub.lastFeatureAt >= FEATURE_TIP_GAP_MS
+
   const due = subs.filter(({ sub }) => {
     const h = localHour(now, sub.tz)
-    return (h === DIGEST_HOUR && sub.prefs.digest) || (h === RETENTION_HOUR && sub.prefs.retention)
+    return (h === DIGEST_HOUR && sub.prefs.digest)
+      || (h === RETENTION_HOUR && sub.prefs.retention)
+      || featureDue(sub)
   })
   if (!due.length) return
 
@@ -617,8 +648,8 @@ async function checkDaily() {
     // at most one a week, and only while its precondition still holds — so a
     // user who sets a price target before the tip goes out simply never gets
     // it. Runs in the retention hour to keep all the once-a-day work together.
-    if (hour === RETENTION_HOUR && sub.prefs.features && sub.watch.length) {
-      if (now - sub.lastFeatureAt >= FEATURE_TIP_GAP_MS) {
+    if (featureDue(sub)) {
+      {
         const tip = pickFeatureTip({
           watchCount: sub.watch.length,
           alertCount: sub.alerts.length,
@@ -666,17 +697,27 @@ async function checkDaily() {
 // budget by design, because the user asked for that specific alert by name.
 Deno.cron("wl-check-alerts", "* * * * *", checkTargets)
 
-// Moves run every five minutes rather than every minute, and the reason is
-// stocks: fetchStockQuotes issues ONE REQUEST PER SYMBOL, capped at 40. A
-// per-minute moves pass would mean up to forty Yahoo requests a minute, which
-// is how you get rate-limited into returning nothing at all — a strictly worse
-// outcome than a few minutes' latency. Crypto in the same pass is batched and
-// would have been fine; the slowest ingredient sets the pace.
-Deno.cron("wl-check-moves", "*/5 * * * *", checkMoves)
+// Moves used to run every five minutes for ALL kinds, and the reason was
+// stocks: fetchStockQuotes issues ONE REQUEST PER SYMBOL, capped at 40, so a
+// per-minute pass over everything would mean up to forty Yahoo requests a
+// minute — rate-limited into returning nothing, which is strictly worse than
+// latency. The mistake was letting the slowest ingredient set the pace for all
+// of them: crypto is ONE batched CoinGecko call however many coins are held,
+// and a coin that jumps 8% is exactly the notification people expect to be
+// immediate.
+//
+// So the pass is split by what it costs to ask. Crypto every minute, one
+// request. Everything else — stocks per symbol, metals — stays on five.
+//
+// The fast pass does NOT refresh seenRef: it sees only crypto, and rewriting
+// the snapshot with a subset would lose the stock prices the win-back message
+// reads to say what moved while the user was away.
+Deno.cron("wl-moves-crypto", "* * * * *", () => checkMoves({ kinds: ["crypto"], refreshSeen: false }))
+Deno.cron("wl-check-moves", "*/5 * * * *", () => checkMoves())
 
-// News every ten. One feed fetch, but the upstream itself only refreshes on
-// the order of minutes, so polling harder mostly re-reads the same stories.
-Deno.cron("wl-check-news", "*/10 * * * *", checkNews)
+// News every five. One feed fetch either way, and while the upstream refreshes
+// on the order of minutes, ten meant a story could sit unseen for nine of them.
+Deno.cron("wl-check-news", "*/5 * * * *", checkNews)
 Deno.cron("wl-daily", "5 * * * *", checkDaily)
 
 // ── HTTP handler ────────────────────────────────────────────────────────────
