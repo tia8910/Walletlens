@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v221'
+const SW_VERSION = 'v222'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -30,6 +30,9 @@ const PRECACHE_URLS = [
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  // Pushes arrive with the app closed, sometimes with no usable network. A
+  // badge that fails to load falls back to the platform's own glyph.
+  '/badge-96.png',
 ]
 
 // Price/market API origins we want to cache for offline fallback
@@ -307,7 +310,12 @@ self.addEventListener('push', e => {
     self.registration.showNotification(title, {
       body: data.body || '',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      // The badge is a MASK, not a picture: Android discards the colour and
+      // keeps only the alpha channel, then tints what survives. icon-192.png
+      // is 95% opaque — a rounded plate with the mark on top — so the mask was
+      // the plate, and the status bar showed a plain grey square. badge-96.png
+      // is the mark alone on transparency.
+      badge: '/badge-96.png',
       tag: data.tag || channel,
       // Same tag replaces an older notification rather than stacking; renotify
       // makes the replacement still alert, so a second BTC move isn't silent.
