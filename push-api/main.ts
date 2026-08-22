@@ -48,7 +48,7 @@ import {
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
-  sanitizeTz, sanitizeWatch, shortHash, withinDailyBudget,
+  sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash, withinDailyBudget,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
 
@@ -430,9 +430,16 @@ async function checkMoves() {
       if (!q) continue
       const k = assetKey(a)
 
+      // First time we have seen this asset for this device, seed the window
+      // from where it was 24h ago rather than from right now. Otherwise a
+      // device that starts watching mid-move is blind to the move: it reads
+      // 0% from this instant and stays quiet until the asset moves another
+      // full threshold on top of what the user already missed.
+      const ref = sub.ref[k] ?? seedRefFromChange({ price: q.price, change24h: q.change24h, now })
+
       const { fire, changePct, nextRef } = evaluateMove({
         price: q.price,
-        ref: sub.ref[k],
+        ref,
         thresholdPct: sub.prefs.movePct,
         now,
         lastFired: sub.moveFired[k] ?? 0,
