@@ -18,6 +18,29 @@ import { useLanguage } from '../LanguageContext'
 
 const MOVE_STEPS = [3, 5, 10, 20]
 
+/**
+ * Whether Settings shows the per-channel controls.
+ *
+ * Off: one switch, and the channels run on their defaults — moves at 3%, round
+ * levels, news, the morning brief, win-back nudges and feature tips all stay
+ * ON, they simply are not listed. Seven rows and a sensitivity picker is a lot
+ * of surface for a decision most people make once, as "yes, notify me", and the
+ * detail invited fiddling with switches whose consequences only show up days
+ * later.
+ *
+ * The rows are kept rather than deleted: they are built, translated into four
+ * languages and tested, and this is a presentation decision that may well be
+ * reversed. Flip this to true to get them back.
+ *
+ * Note what is NOT gated on this: the status line's WARNINGS. Those render
+ * either way, because they are the only thing that says a device is registered
+ * but undeliverable — the failure that looks completely healthy from the
+ * outside and took a long night to find. The healthy "Watching 5 assets"
+ * summary is hidden with everything else; a screen that is quiet when all is
+ * well and speaks up when it is not is the point.
+ */
+const SHOW_CHANNEL_DETAIL = false
+
 function Row({ label, hint, on, onToggle }) {
   return (
     <div className="settings-row settings-row-toggle">
@@ -94,7 +117,7 @@ function repairMessage(repair) {
  * purpose, and a test send proves the pipe works at one instant without
  * saying anything about why the real channels are quiet. This reports state.
  */
-function PushStatusLine({ status, repair }) {
+function PushStatusLine({ status, repair, detail }) {
   if (status.reachable === false) {
     return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
       Can’t reach the notification server right now.
@@ -120,13 +143,18 @@ function PushStatusLine({ status, repair }) {
   const spent = status.budgetLeft === 0
   const keyOk = vapidKeyMatches(status.vapidKey)
 
+  // Nothing to say: healthy, and the summary is not being shown.
+  if (!detail && !noWatch && !spent && status.vapid !== false && keyOk !== false) return null
+
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
-      <div>
-        Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
-        {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
-        {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
-      </div>
+      {detail && (
+        <div>
+          Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
+          {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
+          {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
+        </div>
+      )}
       {status.vapid === false && (
         <div style={{ color: BAD }}>
           The notification server has no signing key, so nothing can be delivered
@@ -292,72 +320,76 @@ export default function PushToggle() {
 
       {enabled && (
         <>
-          <div className="settings-divider" />
+          {SHOW_CHANNEL_DETAIL && (
+            <>
+            <div className="settings-divider" />
 
-          <Row
-            label={t('npMoves')}
-            hint={t('npMovesHint')(prefs.movePct)}
-            on={prefs.moves}
-            onToggle={() => updatePref({ moves: !prefs.moves }, 'push_pref_moves')}
-          />
+            <Row
+              label={t('npMoves')}
+              hint={t('npMovesHint')(prefs.movePct)}
+              on={prefs.moves}
+              onToggle={() => updatePref({ moves: !prefs.moves }, 'push_pref_moves')}
+            />
 
-          {prefs.moves && (
-            <div className="settings-row">
-              <div className="settings-label"><span>{t('npThreshold')}</span></div>
-              <div className="settings-chips">
-                {MOVE_STEPS.map(pct => (
-                  <button key={pct}
-                    className={`settings-chip ${prefs.movePct === pct ? 'active' : ''}`}
-                    onClick={() => updatePref({ movePct: pct }, 'push_pref_threshold')}>
-                    {pct}%
-                  </button>
-                ))}
+            {prefs.moves && (
+              <div className="settings-row">
+                <div className="settings-label"><span>{t('npThreshold')}</span></div>
+                <div className="settings-chips">
+                  {MOVE_STEPS.map(pct => (
+                    <button key={pct}
+                      className={`settings-chip ${prefs.movePct === pct ? 'active' : ''}`}
+                      onClick={() => updatePref({ movePct: pct }, 'push_pref_threshold')}>
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npLevels')}
+              hint={t('npLevelsHint')}
+              on={prefs.levels}
+              onToggle={() => updatePref({ levels: !prefs.levels }, 'push_pref_levels')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npNews')}
+              hint={t('npNewsHint')}
+              on={prefs.news}
+              onToggle={() => updatePref({ news: !prefs.news }, 'push_pref_news')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npDigest')}
+              hint={t('npDigestHint')}
+              on={prefs.digest}
+              onToggle={() => updatePref({ digest: !prefs.digest }, 'push_pref_digest')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npRetention')}
+              hint={t('npRetentionHint')}
+              on={prefs.retention}
+              onToggle={() => updatePref({ retention: !prefs.retention }, 'push_pref_retention')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npFeatures')}
+              hint={t('npFeaturesHint')}
+              on={prefs.features}
+              onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
+            />
+            </>
           )}
 
-          <div className="settings-divider" />
-          <Row
-            label={t('npLevels')}
-            hint={t('npLevelsHint')}
-            on={prefs.levels}
-            onToggle={() => updatePref({ levels: !prefs.levels }, 'push_pref_levels')}
-          />
-
-          <div className="settings-divider" />
-          <Row
-            label={t('npNews')}
-            hint={t('npNewsHint')}
-            on={prefs.news}
-            onToggle={() => updatePref({ news: !prefs.news }, 'push_pref_news')}
-          />
-
-          <div className="settings-divider" />
-          <Row
-            label={t('npDigest')}
-            hint={t('npDigestHint')}
-            on={prefs.digest}
-            onToggle={() => updatePref({ digest: !prefs.digest }, 'push_pref_digest')}
-          />
-
-          <div className="settings-divider" />
-          <Row
-            label={t('npRetention')}
-            hint={t('npRetentionHint')}
-            on={prefs.retention}
-            onToggle={() => updatePref({ retention: !prefs.retention }, 'push_pref_retention')}
-          />
-
-          <div className="settings-divider" />
-          <Row
-            label={t('npFeatures')}
-            hint={t('npFeaturesHint')}
-            on={prefs.features}
-            onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
-          />
-
-          {status && <PushStatusLine status={status} repair={repair} />}
-      {status?.found && <TestSend />}
+          {status && <PushStatusLine status={status} repair={repair} detail={SHOW_CHANNEL_DETAIL} />}
+          {SHOW_CHANNEL_DETAIL && status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
