@@ -1175,6 +1175,15 @@ describe('the push service can resolve everything it calls', () => {
   const main = readFileSync(join(dir, 'main.ts'), 'utf8')
   const logic = readFileSync(join(dir, 'notify-logic.js'), 'utf8')
 
+  // Prose mentions a name without referencing it — main.ts has a doc comment
+  // reading "See CHANNEL_DELIVERY." — so comments have to come out first or
+  // the scan reports imports that are not actually needed. Line comments are
+  // only stripped when they start the line, because `//` also appears inside
+  // every https:// URL in the file.
+  const code = main
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ')
+
   const imported = new Set(
     (main.match(/import \{([\s\S]*?)\} from "\.\/notify-logic\.js"/)?.[1] ?? '')
       .split(',').map(n => n.trim()).filter(Boolean),
@@ -1185,11 +1194,17 @@ describe('the push service can resolve everything it calls', () => {
   it('imports every notify-logic export it references', () => {
     const missing = exported.filter(name =>
       !imported.has(name) &&
-      // A bare call somewhere in main.ts: not part of a longer identifier and
-      // not a property access — but a spread (`...name(x)`) IS a real call,
-      // and excluding every leading dot missed exactly the case that broke
-      // this service, since both uses of sanitizeSetup are spread.
-      new RegExp(`(?:(?<=\\.\\.\\.)|(?<![\\w$.]))${name}\\s*[(\`]`).test(main),
+      // Any bare reference in main.ts: not part of a longer identifier and not
+      // a property access — but a spread (`...name(x)`) IS a real reference,
+      // and excluding every leading dot missed exactly the case that first
+      // broke this service, since both uses of sanitizeSetup are spread.
+      //
+      // Deliberately not limited to call sites. The first version of this test
+      // required `name(` or a template tag, so it passed while
+      // DAILY_PUSH_BUDGET — a constant, referenced without being called — was
+      // missing from the import list and threw on every /status of a
+      // registered device.
+      new RegExp(`(?:(?<=\\.\\.\\.)|(?<![\\w$.]))${name}(?![\\w$])`).test(code),
     )
     expect(missing).toEqual([])
   })
