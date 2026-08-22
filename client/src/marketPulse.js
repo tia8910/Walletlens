@@ -59,23 +59,33 @@ export const PORTFOLIO_RAIN_PCT = 8
 export const PORTFOLIO_DIP_PCT = -5
 export const PORTFOLIO_STORM_PCT = -10
 
-// The day's standout holding. All three gates exist because there is a top
-// gainer every single day, and announcing one daily is the definition of
-// routine — the thing this whole feature is built not to be.
+// The day's best holding, shown once on the first open of the day.
 //
-// So it fires only when there is a real winner: a big move, clear of the
-// field, in a portfolio large enough for "the best one" to mean anything.
-/** The leader has to have moved this far to be worth the whole screen. */
-export const CHAMPION_MIN_PCT = 12
-
-/** And be this many points clear of second place. */
-export const CHAMPION_LEAD_PCT = 5
+// This was gated hard at first — a 12% move, five points clear of second place,
+// in a field of at least three — on the reasoning that a top gainer exists
+// every day and crowning one daily is routine. That reasoning made the moment
+// almost unreachable: three holdings up 25% together clears the 12% floor and
+// still fails the lead test, so the feature sat silent through exactly the days
+// it was built for. Rarity was not making it feel earned, it was making it feel
+// broken.
+//
+// It is a daily moment now. One asset, once a day, on the first open.
+/**
+ * The leader still has to be UP. "Top gainer" means a gain, and a celebration
+ * over the least-bad holding on a red day reads as mockery — the storm and
+ * down-day effects own that morning. Just above zero rather than zero, so a
+ * rounding artefact is not crowned.
+ */
+export const CHAMPION_MIN_PCT = 0.1
 
 /**
- * Below this many movers there is no field to lead. Best-of-two is a coin
- * flip described as a victory.
+ * No lead requirement. Being ahead is the whole qualification, and demanding
+ * daylight over second place is what silenced the feature on broad rally days.
  */
-export const CHAMPION_MIN_ASSETS = 3
+export const CHAMPION_LEAD_PCT = 0
+
+/** One real mover is a top gainer. A one-asset portfolio still has a best day. */
+export const CHAMPION_MIN_ASSETS = 1
 
 /** Share of the holdings that has to be green before it counts as weather. */
 export const AURORA_BREADTH = 0.68
@@ -365,9 +375,9 @@ export function detectEvents({
     events.push({ type: 'aurora', priority: PRIORITY.aurora, breadth, day, at: now })
   }
 
-  // The day's champion — one holding clear of everything else the user owns.
-  // Gated hard (see the constants) because a top gainer exists every day and
-  // announcing one daily would be exactly the routine noise this avoids.
+  // The day's champion — the best holding, crowned once on the first open.
+  // `championDay` is what makes it once-a-day: the first pass that finds a
+  // gainer sets it, and every later pass that day is a no-op.
   if (state.championDay !== day) {
     const movers = Object.entries(next)
       .filter(([, v]) => v?.cls && v.cls !== SILENT && Number.isFinite(v.changePct))
@@ -375,10 +385,8 @@ export function detectEvents({
 
     if (movers.length >= CHAMPION_MIN_ASSETS) {
       const [leadId, lead] = movers[0]
-      const runnerUp = movers[1][1].changePct
-      // The lead is measured against second place, not against zero. On a day
-      // when everything is up 20% nothing is a champion — that is weather, and
-      // aurora already has it.
+      // Second place may not exist — a single holding is still that day's best.
+      const runnerUp = movers[1] ? movers[1][1].changePct : lead.changePct
       if (lead.changePct >= CHAMPION_MIN_PCT && lead.changePct - runnerUp >= CHAMPION_LEAD_PCT) {
         events.push({
           type: 'champion', priority: PRIORITY.champion,
