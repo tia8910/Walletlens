@@ -28,7 +28,6 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
-import { startAutoBackup } from './driveAutoBackup'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -436,7 +435,21 @@ export default function App() {
 
   // Keep the Drive backup current on its own. No-op until the user has done
   // one manual backup, which is what gives this device the key to encrypt with.
-  useEffect(() => startAutoBackup(), [])
+  //
+  // Imported dynamically, and that matters more than it looks. Statically this
+  // module reached qrcode and jsqr — driveAutoBackup → driveSync → backupCore →
+  // qrcode — which put the 156 KB qr-libs chunk in the ENTRY graph, so every
+  // visitor to every one of the ~230 prerendered marketing pages downloaded a QR
+  // encoder before first paint to run a background task that is a no-op until
+  // they have made a manual backup. manualChunks had split qr-libs out with a
+  // comment saying it loads "only when the user opens the backup/scan panel";
+  // splitting a chunk does not make a static import lazy, and the built
+  // index.html was modulepreloading it on the homepage.
+  useEffect(() => {
+    let stop = () => {}
+    import('./driveAutoBackup').then(m => { stop = m.startAutoBackup?.() || stop }).catch(() => {})
+    return () => stop()
+  }, [])
 
   // Tell the push server the app was opened. This is what stops the win-back
   // ladder from nagging people who are already here: without a heartbeat the
