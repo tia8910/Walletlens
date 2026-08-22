@@ -332,7 +332,28 @@ function fireAsk(source) {
   s.moment = 0
   s.momentKind = ''
   writeState(s)
-  return fireNativeIntent('walletlens://review?source=' + encodeURIComponent(source))
+  // keepSession, and it matters more here than anywhere else this is used.
+  //
+  // The default path navigates the top frame to intent://, which takes the
+  // Custom Tab off its own origin and ends the TWA session — the app closes and
+  // comes back as a fresh task. Doing that at the exact moment you ask somebody
+  // to rate you is the worst possible trade: they get a jarring relaunch, lose
+  // their scroll position, and are then shown a review card.
+  //
+  // ReviewActivity is already built for the opposite of that. It is translucent
+  // and excludeFromRecents, so it is meant to appear OVER a running app — which
+  // only works if the app is still running. The hidden-iframe path hands
+  // Android the same URL without moving the top frame, so the review card lands
+  // on top of the dashboard the user was already looking at.
+  //
+  // Nothing needs to come back: unlike the biometric unlock, which keeps the
+  // top-frame navigation because the relaunch IS how its result arrives, this
+  // is fire-and-forget by design — the state above is written before firing,
+  // and a dropped intent deliberately costs one ask rather than retrying.
+  return fireNativeIntent(
+    'walletlens://review?source=' + encodeURIComponent(source),
+    { keepSession: true },
+  )
 }
 
 function onClick(e) {
