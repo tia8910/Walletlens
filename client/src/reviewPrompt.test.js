@@ -7,10 +7,14 @@ import { fileURLToPath } from 'node:url'
 // an intent travels by iframe, top-frame navigation or anything else.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-const bridge = vi.hoisted(() => ({ fired: [], twa: true }))
+const bridge = vi.hoisted(() => ({ fired: [], opts: [], twa: true }))
 vi.mock('./nativeBridge', () => ({
   isAndroidTWA: () => bridge.twa,
-  fireNativeIntent: (url) => { bridge.fired.push(url); return true },
+  // Captures the OPTIONS too. It used to take only the url, which is why
+  // nothing caught the automatic ask navigating the top frame and ending the
+  // TWA session — the one argument that decided whether the app stayed open
+  // was the one the mock threw away.
+  fireNativeIntent: (url, opts) => { bridge.fired.push(url); bridge.opts.push(opts); return true },
 }))
 
 const DAY = 24 * 60 * 60 * 1000
@@ -49,6 +53,7 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   bridge.fired = []
+  bridge.opts = []
   bridge.twa = true
 })
 
@@ -502,5 +507,43 @@ describe('asking without a user gesture', () => {
     activation.isActive = true
     expect(requestReviewNow('settings')).toBe(true)
     expect(firedIntents()[0]).toContain('fallback=store')
+  })
+})
+
+describe('asking for a review does not close the app', () => {
+  // ReviewActivity is translucent and excludeFromRecents — it is built to
+  // appear OVER a running app, which only works if the app is still running.
+  //
+  // The automatic ask fired through fireNativeIntent's default path, which
+  // navigates the top frame to intent://. Inside a TWA that takes the Custom
+  // Tab off its own origin and ends the session: the app closes and comes back
+  // as a fresh task. Doing that at the exact moment you ask somebody to rate
+  // you is the worst possible trade — a jarring relaunch, a lost scroll
+  // position, and then a review card.
+  //
+  // Nothing caught it because the test mock took only the url and discarded
+  // the options, so the one argument that decided whether the app stayed open
+  // was the one nobody could see.
+
+  it('passes keepSession on the automatic ask', () => {
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'reviewPrompt.js'), 'utf8',
+    )
+    const fn = src.slice(src.indexOf('function fireAsk('))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toContain('walletlens://review?source=')
+    expect(body).toMatch(/\{ keepSession: true \}/)
+  })
+
+  it('keeps the deliberate Settings tap on the top frame', () => {
+    // Not an oversight, a different case. Someone who went looking for "Rate
+    // WalletLens" expects a visible outcome, and that path can fall back to
+    // opening the Play Store listing — which leaves the app anyway. The
+    // silent-drop tradeoff that suits the automatic ask does not suit a button
+    // the user pressed on purpose.
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'reviewPrompt.js'), 'utf8',
+    )
+    expect(src).toContain("'walletlens://review?fallback=store&source=' + encodeURIComponent(source)")
   })
 })
