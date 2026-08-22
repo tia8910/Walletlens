@@ -1283,7 +1283,37 @@ describe('the delivery step reports why it failed', () => {
   })
 
   it('offers the test send only once the server has the device', () => {
-    expect(toggle).toContain('{status?.found && <TestSend />}')
+    expect(toggle).toContain('status?.found && <TestSend />')
+  })
+
+  it('keeps the failure warnings visible when the detail rows are hidden', () => {
+    // Settings shows one switch now, not seven. The healthy "Watching 5 assets"
+    // summary goes with the rest — but the WARNINGS must not, because they are
+    // the only thing that reports a device that is registered and
+    // undeliverable, which is the failure that looks completely healthy from
+    // every other angle.
+    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = (true|false)/)
+    // The summary is behind `detail`; the warnings are not.
+    expect(toggle).toMatch(/\{detail && \(\s*\n\s*<div>\s*\n\s*Watching/)
+    for (const warning of [
+      'status.vapid === false',       // server has no signing key
+      'keyOk === false',              // client and server keys disagree
+      'noWatch &&',                   // nothing watched, so nothing can fire
+      'spent &&',                     // daily budget gone
+    ]) {
+      const at = toggle.indexOf(warning)
+      expect(at, `${warning} must still render`).toBeGreaterThan(-1)
+    }
+    // And a healthy device with the detail hidden renders nothing at all.
+    expect(toggle).toMatch(/if \(!detail && !noWatch && !spent && status\.vapid !== false && keyOk !== false\) return null/)
+  })
+
+  it('leaves every channel switched on while its row is hidden', () => {
+    // Hiding a control must not disable what it controlled. The prefs still
+    // ship to the server; they simply are not editable from this screen.
+    for (const k of ['moves', 'levels', 'news', 'digest', 'retention', 'features']) {
+      expect(DEFAULT_PREFS[k], `${k} must default on`).toBe(true)
+    }
   })
 })
 
