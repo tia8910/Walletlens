@@ -1214,3 +1214,55 @@ describe('the push service can resolve everything it calls', () => {
     expect([...imported].filter(n => !exportSet.has(n))).toEqual([])
   })
 })
+
+describe('the delivery step reports why it failed', () => {
+  // The last unlit stage. A device can be registered, watched, in budget and
+  // every switch on while the push service rejects everything the server
+  // signs — and sendPush returned a bare boolean, so nothing could say so.
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '../../push-api')
+  const server = readFileSync(join(dir, 'main.ts'), 'utf8')
+  const client = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'push.js'), 'utf8')
+  const toggle = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
+  )
+
+  it('carries the push service refusal out of sendPush', () => {
+    const fn = server.slice(server.indexOf('async function sendPush'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).not.toMatch(/return true/)
+    expect(body).not.toMatch(/return false/)
+    expect(body).toMatch(/gone: true/)
+    expect(body).toContain('detail')
+    // A missing server key is caught before the send, not reported as a
+    // rejection by a push service that was never contacted.
+    expect(body).toMatch(/if \(!vapidReady\)/)
+  })
+
+  it('answers /test with the reason, not a bare ok', () => {
+    const handler = server.slice(server.indexOf('path === "/test"'))
+    expect(handler.slice(0, handler.indexOf('\n  }'))).toMatch(/return json\(res, headers\)/)
+  })
+
+  it('publishes the server signing key so a mismatch is detectable', () => {
+    // Public by definition — it ships in every client bundle. Without it, a
+    // server key that no longer matches what the client subscribed with is
+    // invisible from both sides while every other signal reads healthy.
+    expect(server).toMatch(/vapidKey: VAPID_PUBLIC/)
+    expect(client).toMatch(/export function vapidKeyMatches/)
+    expect(toggle).toContain('vapidKeyMatches(status.vapidKey)')
+  })
+
+  it('reads the test result from the body, not the status code', () => {
+    const fn = client.slice(client.indexOf('export async function sendTestPush'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    // /test answers 200 with { ok: false } when the SEND failed, so trusting
+    // res.ok alone reported success for a notification never delivered.
+    expect(body).toMatch(/await res\.json\(\)/)
+    expect(body).toMatch(/body\?\.ok/)
+    expect(body).toMatch(/body\?\.gone/)
+  })
+
+  it('offers the test send only once the server has the device', () => {
+    expect(toggle).toContain('{status?.found && <TestSend />}')
+  })
+})

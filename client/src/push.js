@@ -747,14 +747,64 @@ export async function pingSeen({ force = false } = {}) {
 // developer tool shown to every user forever, and once push is on the real
 // notifications are the proof it works. Kept as a diagnostic that can be
 // called from devtools while the /test endpoint exists.
+/**
+ * Ask the server to send one notification to this device, now.
+ *
+ * The only thing that exercises delivery. Everything else — permission, the
+ * subscription, the server's record of it — can be correct while the push
+ * service still rejects what the server signs, and no channel firing on its
+ * own schedule can tell you that within an hour.
+ *
+ * Reads the body rather than the status code. /test answers 200 with
+ * `{ ok: false, detail }` when the send itself failed, so the old version
+ * reported success for a notification that was never delivered.
+ */
 export async function sendTestPush() {
   const sub = await getSubscription()
-  if (!sub) throw new Error('Enable notifications first.')
-  const res = await fetch(`${PUSH_API}/test`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang() }),
-  })
-  if (!res.ok) throw new Error('Test push failed.')
-  return { ok: true }
+  if (!sub) throw new Error('Turn notifications on first.')
+  let res
+  try {
+    res = await fetch(`${PUSH_API}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang() }),
+    })
+  } catch (e) {
+    throw new Error(`Couldn't reach the notification server. ${detailOf(e)}`)
+  }
+
+  let body = {}
+  try { body = await res.json() } catch { /* no JSON body */ }
+
+  if (!res.ok) {
+    if (body?.error === 'unknown_subscription') {
+      throw new Error('The server has no record of this device. Turn the switch off and on again.')
+    }
+    throw new Error(`The server refused the test (${res.status}${body?.error ? ` ${body.error}` : ''}).`)
+  }
+  if (body?.ok) return { ok: true }
+
+  // Delivered to us, refused by the push service. This is the case worth
+  // naming precisely — it is the only failure that leaves every other signal
+  // in the app reading healthy.
+  if (body?.gone) {
+    throw new Error('This device\u2019s subscription has expired. Turn the switch off and on again.')
+  }
+  const code = body?.code ? ` (${body.code})` : ''
+  throw new Error(`The push service rejected it${code}. ${body?.detail || ''}`.trim())
+}
+
+/**
+ * Does the server sign with the same VAPID key this build subscribes with?
+ *
+ * A mismatch is total, silent failure: the push service rejects every message
+ * the server signs, while the subscription, the server's record and every
+ * switch in Settings all read correct. The public half is public by
+ * definition — it ships in this bundle — so comparing it costs nothing.
+ *
+ * Returns null when it cannot tell, which must not be reported as a problem.
+ */
+export function vapidKeyMatches(serverKey) {
+  if (!serverKey || !VAPID_PUBLIC) return null
+  return serverKey === VAPID_PUBLIC
 }
