@@ -53,6 +53,7 @@ const ASK_KEY = 'wl_push_ask'
 // same defaults the server would apply.
 export const DEFAULT_PUSH_PREFS = {
   moves: true,
+  levels: true,
   news: true,
   digest: true,
   retention: true,

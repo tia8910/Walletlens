@@ -49,6 +49,7 @@ import {
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
   sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash, withinDailyBudget,
+  crossedLevel,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
 
@@ -116,6 +117,10 @@ interface StoredSub {
   ref: Record<string, PriceRef>
   /** Per-asset movement cooldown, keyed by assetKey(). */
   moveFired: Record<string, number>
+  /** Last observed price per asset — the other side of a level crossing. */
+  lastPrice: Record<string, number>
+  /** Last round level announced per asset, so oscillation does not re-alert. */
+  lastLevel: Record<string, number>
   /** Prices as of the user's last visit, for "since you were away" copy. */
   seenRef: { at: number; prices: Record<string, number> } | null
   /** Story hashes already pushed, pruned on every news run. */
@@ -155,6 +160,8 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     lastSeen: s.lastSeen ?? s.createdAt ?? Date.now(),
     ref: s.ref ?? {},
     moveFired: s.moveFired ?? {},
+    lastPrice: s.lastPrice ?? {},
+    lastLevel: s.lastLevel ?? {},
     seenRef: s.seenRef ?? null,
     newsSent: s.newsSent ?? {},
     lastNewsAt: s.lastNewsAt ?? 0,
@@ -464,6 +471,37 @@ async function checkMoves({ kinds = null, refreshSeen = true }: {
       // the user would never hear about it.
       const deliverable = !fire || (sub.prefs.moves && canDeliver(sub, now))
       if (deliverable && nextRef !== sub.ref[k]) { sub.ref[k] = nextRef as PriceRef; changed = true }
+
+      // — Round price levels —
+      // Checked BEFORE the move `continue` below, because a level crossing
+      // matters most precisely when no percentage threshold has been hit: a
+      // 0.4% slip past $77,000 is the alert an exchange sends, and the move
+      // channel is silent for it by design.
+      const prevPrice = sub.lastPrice[k]
+      const cross = prevPrice
+        ? crossedLevel({ price: q.price, prev: prevPrice, lastLevel: sub.lastLevel[k] ?? null })
+        : null
+      if (sub.lastPrice[k] !== q.price) { sub.lastPrice[k] = q.price; changed = true }
+
+      if (cross && sub.prefs.levels) {
+        const levelSent = await deliver(sub, buildPayload({
+          channel: "level",
+          title: copy("levelTitle", sub.lang)(a.symbol, fmtPrice(cross.level), cross.up),
+          body: copy("levelBody", sub.lang)(a.symbol, fmtPrice(q.price)),
+          tag: `level-${k}`,
+          sym: a.symbol,
+        }), { now })
+        if (levelSent) {
+          sub.lastLevel[k] = cross.level
+          // Start the movement cooldown too. The same slide can satisfy both
+          // channels, and "BTC drops below $77,000" followed a second later by
+          // "BTC down 5%" is two notifications about one fact.
+          sub.moveFired[k] = now
+          changed = true
+          continue
+        }
+      }
+
       if (!fire || !sub.prefs.moves) continue
 
       const up = changePct > 0
@@ -482,6 +520,8 @@ async function checkMoves({ kinds = null, refreshSeen = true }: {
     const live = new Set(sub.watch.map(assetKey))
     for (const k of Object.keys(sub.ref)) if (!live.has(k)) { delete sub.ref[k]; changed = true }
     for (const k of Object.keys(sub.moveFired)) if (!live.has(k)) { delete sub.moveFired[k]; changed = true }
+    for (const k of Object.keys(sub.lastPrice)) if (!live.has(k)) { delete sub.lastPrice[k]; changed = true }
+    for (const k of Object.keys(sub.lastLevel)) if (!live.has(k)) { delete sub.lastLevel[k]; changed = true }
 
     if (changed) await kv.set(key, sub)
   }
