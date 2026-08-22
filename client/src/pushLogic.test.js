@@ -1164,3 +1164,38 @@ describe('the switch cannot read On for a device that has opted out', () => {
     expect(body).toMatch(/return false/)
   })
 })
+
+describe('the push service can resolve everything it calls', () => {
+  // sanitizeSetup was exported from notify-logic.js and called twice in
+  // main.ts, but never added to the import list. Every /subscribe and /watch
+  // threw a ReferenceError, so no device could register — and because the
+  // handler had no top-level catch, that reached the browser as a bare network
+  // failure. Nothing in CI type-checks the Deno service, so this is the guard.
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '../../push-api')
+  const main = readFileSync(join(dir, 'main.ts'), 'utf8')
+  const logic = readFileSync(join(dir, 'notify-logic.js'), 'utf8')
+
+  const imported = new Set(
+    (main.match(/import \{([\s\S]*?)\} from "\.\/notify-logic\.js"/)?.[1] ?? '')
+      .split(',').map(n => n.trim()).filter(Boolean),
+  )
+  const exported = [...logic.matchAll(/^export (?:async )?(?:function|const|let) (\w+)/gm)]
+    .map(m => m[1])
+
+  it('imports every notify-logic export it references', () => {
+    const missing = exported.filter(name =>
+      !imported.has(name) &&
+      // A bare call somewhere in main.ts: not part of a longer identifier and
+      // not a property access — but a spread (`...name(x)`) IS a real call,
+      // and excluding every leading dot missed exactly the case that broke
+      // this service, since both uses of sanitizeSetup are spread.
+      new RegExp(`(?:(?<=\\.\\.\\.)|(?<![\\w$.]))${name}\\s*[(\`]`).test(main),
+    )
+    expect(missing).toEqual([])
+  })
+
+  it('imports nothing notify-logic does not export', () => {
+    const exportSet = new Set(exported)
+    expect([...imported].filter(n => !exportSet.has(n))).toEqual([])
+  })
+})
