@@ -1037,14 +1037,37 @@ describe('a device the server has forgotten', () => {
     expect(body).not.toMatch(/return true/)
     for (const reason of [
       'unsupported', 'no-key', 'not-granted', 'opted-out', 'no-subscription',
-      'unreachable', 'already-registered', 'endpoint-rejected', 'rejected', 'error',
-      'key-rotated',
+      'status-unreachable', 'status-http', 'subscribe-unreachable',
+      'already-registered', 'endpoint-rejected', 'rejected', 'error', 'key-rotated',
     ]) {
       expect(body).toContain(`'${reason}'`)
     }
     // The server's own refusal is carried through rather than flattened.
     expect(body).toMatch(/httpStatus: post\.status/)
     expect(body).toMatch(/reason: 'repaired'/)
+  })
+
+  it('cannot fail to register because an optional field threw', () => {
+    // Every field but the subscription is enrichment. Building them inline
+    // meant a throw from any one aborted the POST before it was sent, and
+    // surfaced as a network error because that is where the exception landed.
+    const fn = client.slice(client.indexOf('function registrationPayload'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    for (const call of ['readAlerts', 'resolveWatch()', 'featureSetup', 'getPushPrefs', 'currentLang', 'currentTz']) {
+      expect(body).toContain(call)
+    }
+    expect(body).toMatch(/const safe = \(fn, fallback\) => \{ try \{ return fn\(\) \} catch \{ return fallback \} \}/)
+    // And both senders go through it, not just the repair path.
+    expect(client.match(/JSON\.stringify\(registrationPayload\(sub\)\)/g)?.length).toBe(2)
+  })
+
+  it('tells a failing read apart from a failing write', () => {
+    const fn = client.slice(client.indexOf('export async function ensureRegistered'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toContain("reason: 'status-unreachable'")
+    expect(body).toContain("reason: 'subscribe-unreachable'")
+    // And carries the underlying message, not just a category.
+    expect(body).toMatch(/detail: detailOf\(e\)/)
   })
 
   it('does not re-register a subscription bound to a retired VAPID key', () => {
@@ -1107,7 +1130,8 @@ describe('the status line renders as text, not escapes', () => {
     expect(body).toMatch(/if \(!repair\) return/)
     for (const reason of [
       'opted-out', 'not-granted', 'no-subscription', 'no-key',
-      'unreachable', 'endpoint-rejected', 'rejected', 'key-rotated',
+      'status-unreachable', 'status-http', 'subscribe-unreachable',
+      'endpoint-rejected', 'rejected', 'key-rotated',
     ]) {
       expect(body).toContain(`case '${reason}'`)
     }

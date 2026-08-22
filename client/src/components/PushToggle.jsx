@@ -55,9 +55,16 @@ function repairMessage(repair) {
       return { text: 'This device’s notification key is out of date. Turn the switch above off and on again to renew it.', tone: BAD }
     case 'no-key':
       return { text: 'Push is not configured in this build. It will work after the next update.', tone: BAD }
-    case 'unreachable':
-    case 'error':
+    case 'status-unreachable':
       return { text: 'Could not reach the notification server. It will try again next time you open this screen.', tone: WARN }
+    case 'status-http':
+      return { text: `The notification server answered ${repair.httpStatus} when asked about this device. It will try again next time you open this screen.`, tone: WARN }
+    case 'subscribe-unreachable':
+      // The read worked and the write did not, which is the shape of a server
+      // error rather than a phone with no signal — worth saying differently.
+      return { text: 'The notification server could be read but not written to. This is a fault on our side, not on your phone.', tone: BAD }
+    case 'error':
+      return { text: 'Registering this device failed unexpectedly.', tone: BAD }
     case 'endpoint-rejected':
       return {
         text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
@@ -95,7 +102,16 @@ function PushStatusLine({ status, repair }) {
   }
   if (status.found === false) {
     const { text, tone } = repairMessage(repair)
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
+    return (
+      <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>
+        <div>{text}</div>
+        {repair?.detail && (
+          <div style={{ opacity: 0.75, fontSize: '0.85em', marginTop: '0.15rem', wordBreak: 'break-word' }}>
+            {repair.detail}
+          </div>
+        )}
+      </div>
+    )
   }
   if (!status.found) return null
 

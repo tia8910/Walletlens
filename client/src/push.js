@@ -310,6 +310,39 @@ export function noteAskShown() {
 
 // ── Subscription lifecycle ──────────────────────────────────────────────────
 
+// The text of whatever went wrong, short enough to sit in a settings hint.
+// A category alone ("could not reach the server") cannot distinguish a phone
+// with no signal from a server returning 500 without CORS headers, and those
+// need opposite responses.
+function detailOf(e) {
+  const msg = String(e?.message || e || '').trim()
+  return msg.slice(0, 120)
+}
+
+/**
+ * The body of a /subscribe call.
+ *
+ * Every field except the subscription itself is enrichment: which assets to
+ * watch, which features are already set up, the language. None of it is worth
+ * failing a registration over, but building it inline meant a throw from any
+ * one of them aborted the POST before it was made — and surfaced as a network
+ * error, because that is where the exception landed. A device could then be
+ * unable to register for a reason that had nothing to do with the network or
+ * the server.
+ */
+function registrationPayload(sub) {
+  const safe = (fn, fallback) => { try { return fn() } catch { return fallback } }
+  return {
+    subscription: sub.toJSON(),
+    alerts: safe(readAlerts, []),
+    watch: safe(() => resolveWatch(), []),
+    setup: safe(featureSetup, {}),
+    prefs: safe(getPushPrefs, DEFAULT_PUSH_PREFS),
+    lang: safe(currentLang, 'en'),
+    tz: safe(currentTz, 0),
+  }
+}
+
 // Host of a push endpoint, for reporting a rejection the user can act on.
 function hostOf(endpoint) {
   try { return new URL(endpoint).hostname } catch { return '' }
@@ -373,18 +406,11 @@ export async function enablePush() {
   const res = await fetch(`${PUSH_API}/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      subscription: sub.toJSON(),
-      alerts: readAlerts(),
-      // Read from the transactions store, not from whatever page happened to
-      // call this: turning push on from Settings must arm the movement and
-      // news channels immediately, not at the next dashboard visit.
-      watch: resolveWatch(),
-      setup: featureSetup(),
-      prefs: getPushPrefs(),
-      lang: currentLang(),
-      tz: currentTz(),
-    }),
+    // Reads from the transactions store, not from whatever page happened to
+    // call this: turning push on from Settings must arm the movement and news
+    // channels immediately, not at the next dashboard visit. Every field but
+    // the subscription is best-effort — see registrationPayload.
+    body: JSON.stringify(registrationPayload(sub)),
   })
   if (!res.ok) {
     // Roll back so isPushEnabled() doesn't report a half-registered state.
@@ -564,10 +590,10 @@ export async function ensureRegistered() {
     let status
     try {
       const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-      if (!res.ok) return { ok: false, reason: 'unreachable', httpStatus: res.status }
+      if (!res.ok) return { ok: false, reason: 'status-http', httpStatus: res.status }
       status = await res.json()
-    } catch {
-      return { ok: false, reason: 'unreachable' }
+    } catch (e) {
+      return { ok: false, reason: 'status-unreachable', detail: detailOf(e) }
     }
     if (status.found) return { ok: false, reason: 'already-registered' }
 
@@ -579,19 +605,19 @@ export async function ensureRegistered() {
       return { ok: false, reason: 'endpoint-rejected', host: status.host || hostOf(sub.endpoint) }
     }
 
-    const post = await fetch(`${PUSH_API}/subscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscription: sub.toJSON(),
-        alerts: readAlerts(),
-        watch: resolveWatch(),
-        setup: featureSetup(),
-        prefs: getPushPrefs(),
-        lang: currentLang(),
-        tz: currentTz(),
-      }),
-    })
+    let post
+    try {
+      post = await fetch(`${PUSH_API}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registrationPayload(sub)),
+      })
+    } catch (e) {
+      // Distinct from a failing /status on purpose. The two used to share one
+      // reason, so "the read worked and the write did not" — which is the
+      // shape of a server error, not of an unreachable host — was invisible.
+      return { ok: false, reason: 'subscribe-unreachable', detail: detailOf(e) }
+    }
     if (post.ok) return { ok: true, reason: 'repaired' }
 
     // A failed repair has to be distinguishable from one still running, or the
@@ -599,15 +625,17 @@ export async function ensureRegistered() {
     // gave up. Carry the server's own reason through.
     let code = ''
     let host = ''
+    let detail = ''
     try {
       const body = await post.json()
       code = String(body?.error || '')
       host = String(body?.host || '')
+      detail = String(body?.detail || '')
     } catch { /* no JSON body */ }
-    return { ok: false, reason: 'rejected', httpStatus: post.status, code, host }
-  } catch {
+    return { ok: false, reason: 'rejected', httpStatus: post.status, code, host, detail }
+  } catch (e) {
     // Runs unattended; a network blip must never surface or throw.
-    return { ok: false, reason: 'error' }
+    return { ok: false, reason: 'error', detail: detailOf(e) }
   }
 }
 
