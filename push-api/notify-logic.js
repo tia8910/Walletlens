@@ -93,6 +93,24 @@ export const COPY = {
     es: (sym, pct, price, up) => `${sym} se movió ${up ? '+' : '−'}${pct} % hasta ${price}. Toca para ver el efecto en tu cartera.`,
   },
 
+  // — A round price level crossed —
+  // Deliberately plainer than the move copy. The whole point is the number: an
+  // exchange sends "BTC drops below $77,000" and it lands because 77,000 is a
+  // level people are watching, not because the move was large. Dressing that up
+  // buries the one fact worth reading.
+  levelTitle: {
+    en: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'breaks above' : 'drops below'} ${level}`,
+    ar: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'يتجاوز' : 'ينزل تحت'} ${level}`,
+    fr: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'franchit' : 'passe sous'} ${level}`,
+    es: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'baja de'} ${level}`,
+  },
+  levelBody: {
+    en: (sym, price) => `${sym} is at ${price}. Tap to see the impact on your portfolio.`,
+    ar: (sym, price) => `${sym} الآن عند ${price}. اضغط لرؤية الأثر على محفظتك.`,
+    fr: (sym, price) => `${sym} est à ${price}. Touchez pour voir l’effet sur votre portefeuille.`,
+    es: (sym, price) => `${sym} está en ${price}. Toca para ver el efecto en tu cartera.`,
+  },
+
   // — Breaking news mentioning an asset the user holds —
   newsTitle: {
     en: (sym) => `📰 ${sym} in the news`,
@@ -662,6 +680,7 @@ export function copy(key, lang) {
 // the guard that actually protects the notification permission.
 export const DEFAULT_PREFS = {
   moves: true,      // a holding swings sharply
+  levels: true,     // a holding crosses a round price level
   news: true,       // breaking news naming a holding
   digest: true,     // morning brief — only sends when something actually moved
   retention: true,  // win-back nudges while idle
@@ -680,6 +699,7 @@ export function sanitizePrefs(raw) {
   pct = Math.min(MAX_MOVE_PCT, Math.max(MIN_MOVE_PCT, pct))
   return {
     moves: bool(p.moves, DEFAULT_PREFS.moves),
+    levels: bool(p.levels, DEFAULT_PREFS.levels),
     news: bool(p.news, DEFAULT_PREFS.news),
     digest: bool(p.digest, DEFAULT_PREFS.digest),
     retention: bool(p.retention, DEFAULT_PREFS.retention),
@@ -800,6 +820,67 @@ export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
  * @param {{price:number, change24h:number, now:number}} q
  * @returns {{price:number, ts:number}|null}
  */
+/**
+ * The round-number spacing that matters at a given price.
+ *
+ * A tenth of the leading magnitude, which is what people actually watch:
+ * $1,000 steps on a $77,000 bitcoin, $100 on a $2,500 ether, one cent on a
+ * 66-cent token. A fixed step cannot work across four orders of magnitude —
+ * $1,000 steps would be silent forever on a token under a dollar, and one-cent
+ * steps on bitcoin would fire hundreds of times an hour.
+ *
+ * @param {number} price
+ * @returns {number} step, or 0 when the price is unusable
+ */
+export function roundLevelStep(price) {
+  const p = Number(price)
+  if (!Number.isFinite(p) || p <= 0) return 0
+  return Math.pow(10, Math.floor(Math.log10(p)) - 1)
+}
+
+/**
+ * The round level a price has just crossed, if any.
+ *
+ * This is the alert an exchange sends and a percentage cannot express: "BTC
+ * drops below $77,000" lands because the number is round, not because the move
+ * was large. A 0.4% slip past a level people are watching is worth more than a
+ * 3% drift in the middle of a range.
+ *
+ * Crossing is judged between the previous observed price and the current one,
+ * so a level is reported once, on the pass that crosses it, in whichever
+ * direction. `lastLevel` suppresses the re-alert when a price oscillates
+ * around a level it has already announced.
+ *
+ * @param {{price:number, prev:number, lastLevel?:number|null}} args
+ * @returns {{level:number, up:boolean}|null}
+ */
+export function crossedLevel({ price, prev, lastLevel = null }) {
+  const p = Number(price)
+  const q = Number(prev)
+  if (!Number.isFinite(p) || !Number.isFinite(q) || p <= 0 || q <= 0) return null
+
+  // Step from the lower of the two, so a move spanning a magnitude boundary
+  // (999 -> 1001) is measured at the finer spacing rather than skipping levels.
+  const step = roundLevelStep(Math.min(p, q))
+  if (!step) return null
+
+  const up = p > q
+  // The level crossed nearest to where the price ended up. A pass that jumps
+  // several levels reports the furthest one reached, which is the one worth
+  // saying out loud.
+  const level = up ? Math.floor(p / step) * step : Math.ceil(p / step) * step
+  if (level <= 0) return null
+
+  // Did the price actually pass it, rather than merely sit on that side?
+  const crossed = up ? (q < level && p >= level) : (q > level && p <= level)
+  if (!crossed) return null
+
+  // Already announced, and the price has not moved on to a further level.
+  if (lastLevel !== null && Math.abs(level - lastLevel) < step / 2) return null
+
+  return { level, up }
+}
+
 export function seedRefFromChange({ price, change24h, now }) {
   const p = Number(price)
   const pct = Number(change24h)
@@ -986,6 +1067,7 @@ export const CHANNEL_URL = {
 export const CHANNEL_DELIVERY = {
   target:    { urgency: 'high',   ttl: 60 * 60 },       // 1h — about a price
   move:      { urgency: 'high',   ttl: 60 * 60 },       // 1h — about a price
+  level:     { urgency: 'high',   ttl: 60 * 60 },       // 1h — about a price
   news:      { urgency: 'normal', ttl: 2 * 60 * 60 },   // 2h — story goes stale
   digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
   retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition

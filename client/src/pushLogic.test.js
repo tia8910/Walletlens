@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import {
   asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
-  seedRefFromChange,
+  seedRefFromChange, crossedLevel, roundLevelStep,
   FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
@@ -1385,5 +1385,86 @@ describe('notifications go out when the thing happens, not on a rota', () => {
   it('still reserves 09:00 and 10:00 for the brief and the win-back', () => {
     expect(server).toMatch(/h === DIGEST_HOUR && sub\.prefs\.digest/)
     expect(server).toMatch(/h === RETENTION_HOUR && sub\.prefs\.retention/)
+  })
+})
+
+describe('round price levels', () => {
+  // The alert an exchange sends and a percentage cannot express. Bybit:
+  // "BTC drops below $77,000 📉". It lands because 77,000 is a number people
+  // watch, not because the move was large — a 0.4% slip past it is worth more
+  // than a 3% drift in the middle of a range, and the move channel is silent
+  // for it by design.
+
+  it('spaces levels by a tenth of the leading magnitude', () => {
+    // A fixed step cannot work across four orders of magnitude: $1,000 steps
+    // are silent forever on a token under a dollar, and cent steps on bitcoin
+    // would fire hundreds of times an hour.
+    expect(roundLevelStep(77_500)).toBe(1000)
+    expect(roundLevelStep(2515)).toBe(100)
+    expect(roundLevelStep(0.66)).toBeCloseTo(0.01, 10)
+    expect(roundLevelStep(0)).toBe(0)
+    expect(roundLevelStep(NaN)).toBe(0)
+  })
+
+  it('reports the Bybit case', () => {
+    expect(crossedLevel({ price: 76_900, prev: 77_100 })).toEqual({ level: 77_000, up: false })
+  })
+
+  it('reports a break upward as well as a drop', () => {
+    expect(crossedLevel({ price: 77_100, prev: 76_900 })).toEqual({ level: 77_000, up: true })
+    expect(crossedLevel({ price: 2515, prev: 2490 })).toEqual({ level: 2500, up: true })
+    const apt = crossedLevel({ price: 0.661, prev: 0.649 })
+    expect(apt.up).toBe(true)
+    expect(apt.level).toBeCloseTo(0.66, 10)
+  })
+
+  it('says nothing when no level lies between the two prices', () => {
+    expect(crossedLevel({ price: 77_400, prev: 77_100 })).toBeNull()
+    expect(crossedLevel({ price: 76_400, prev: 76_800 })).toBeNull()
+  })
+
+  it('does not re-alert while a price oscillates around a level it announced', () => {
+    // The failure this prevents: a price sitting on 77,000 and wobbling would
+    // otherwise fire on every single pass — once a minute, forever.
+    expect(crossedLevel({ price: 76_900, prev: 77_100, lastLevel: 77_000 })).toBeNull()
+    // But moving on to the NEXT level is a genuine new event.
+    expect(crossedLevel({ price: 75_900, prev: 76_100, lastLevel: 77_000 }))
+      .toEqual({ level: 76_000, up: false })
+  })
+
+  it('measures a magnitude boundary at the finer spacing', () => {
+    // 999 -> 1001 must not skip to $100 steps and miss the crossing of 1000.
+    expect(crossedLevel({ price: 1001, prev: 999 })).toEqual({ level: 1000, up: true })
+  })
+
+  it('refuses unusable input rather than inventing a level', () => {
+    expect(crossedLevel({ price: 0, prev: 100 })).toBeNull()
+    expect(crossedLevel({ price: 100, prev: 0 })).toBeNull()
+    expect(crossedLevel({ price: NaN, prev: 100 })).toBeNull()
+  })
+
+  it('is a channel of its own, switchable and urgent', () => {
+    // Same urgency as a move: it is about a price, and stale within the hour.
+    expect(deliveryFor('level').urgency).toBe('high')
+    expect(DEFAULT_PREFS.levels).toBe(true)
+    expect(sanitizePrefs({ levels: false }).levels).toBe(false)
+    expect(sanitizePrefs({}).levels).toBe(true)
+  })
+
+  it('is checked before the move channel bails out', () => {
+    // A level crossing matters most when NO percentage threshold has been hit,
+    // so the check must sit above `if (!fire || !sub.prefs.moves) continue` —
+    // below it, the channel would be dead for exactly its intended case.
+    const server = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+    )
+    const fn = server.slice(server.indexOf('async function checkMoves'))
+    const levelAt = fn.indexOf('crossedLevel({')
+    const moveBail = fn.indexOf('if (!fire || !sub.prefs.moves) continue')
+    expect(levelAt).toBeGreaterThan(-1)
+    expect(levelAt).toBeLessThan(moveBail)
+    // And a level send starts the move cooldown, so one slide is not announced
+    // twice a second apart by two channels.
+    expect(fn.slice(levelAt, moveBail)).toMatch(/sub\.moveFired\[k\] = now/)
   })
 })

@@ -318,6 +318,14 @@ export default function PushToggle() {
 
           <div className="settings-divider" />
           <Row
+            label={t('npLevels')}
+            hint={t('npLevelsHint')}
+            on={prefs.levels}
+            onToggle={() => updatePref({ levels: !prefs.levels }, 'push_pref_levels')}
+          />
+
+          <div className="settings-divider" />
+          <Row
             label={t('npNews')}
             hint={t('npNewsHint')}
             on={prefs.news}
