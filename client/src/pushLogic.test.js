@@ -1321,3 +1321,50 @@ describe('a device that starts watching mid-move is not blind to it', () => {
     expect(fn).toMatch(/const ref = sub\.ref\[k\] \?\? seedRefFromChange\(/)
   })
 })
+
+describe('notifications go out when the thing happens, not on a rota', () => {
+  const server = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
+  )
+
+  it('checks crypto moves every minute and stocks every five', () => {
+    // The old pass ran everything at five because fetchStockQuotes costs one
+    // request PER SYMBOL. Crypto is one batched call however many coins are
+    // held, so letting the slowest ingredient set the pace delayed the
+    // notification people most expect to be immediate.
+    expect(server).toMatch(
+      /Deno\.cron\("wl-moves-crypto", "\* \* \* \* \*", \(\) => checkMoves\(\{ kinds: \["crypto"\], refreshSeen: false \}\)\)/,
+    )
+    expect(server).toMatch(/Deno\.cron\("wl-check-moves", "\*\/5 \* \* \* \*"/)
+    // Price targets were already per-minute and must stay that way.
+    expect(server).toMatch(/Deno\.cron\("wl-check-alerts", "\* \* \* \* \*"/)
+  })
+
+  it('does not let a partial pass rewrite the last-visit snapshot', () => {
+    // seenRef feeds the win-back message. A crypto-only pass rewriting it
+    // would drop every stock price it never looked at.
+    const fn = server.slice(server.indexOf('async function checkMoves'))
+    const body = fn.slice(0, fn.indexOf('\n}\n'))
+    expect(body).toMatch(/if \(refreshSeen && \(!sub\.seenRef \|\| sub\.seenRef\.at < sub\.lastSeen\)\)/)
+    // And it must skip assets outside the pass rather than evaluating them
+    // against quotes it never fetched.
+    expect(body).toMatch(/if \(!inPass\(a\)\) continue/)
+  })
+
+  it('sends a due feature tip in the next pass, not at one fixed hour', () => {
+    // Gating on 10:00 gave a tip one chance a day to clear the weekly gap,
+    // the once-ever rule and its own precondition all at once.
+    expect(server).toMatch(/const featureDue = \(sub: StoredSub\) =>/)
+    expect(server).toMatch(/\|\| featureDue\(sub\)/)
+    const tips = server.slice(server.indexOf('// — Feature tips —'))
+    const block = tips.slice(0, tips.indexOf('\n    }\n'))
+    expect(block).not.toMatch(/hour === RETENTION_HOUR/)
+    // The gap and the cap still do the anti-spam work.
+    expect(server).toMatch(/now - sub\.lastFeatureAt >= FEATURE_TIP_GAP_MS/)
+  })
+
+  it('still reserves 09:00 and 10:00 for the brief and the win-back', () => {
+    expect(server).toMatch(/h === DIGEST_HOUR && sub\.prefs\.digest/)
+    expect(server).toMatch(/h === RETENTION_HOUR && sub\.prefs\.retention/)
+  })
+})
