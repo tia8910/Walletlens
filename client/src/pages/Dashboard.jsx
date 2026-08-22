@@ -4043,7 +4043,26 @@ export default function Dashboard() {
     return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
   }, [filteredHoldings, selectedAssets])
 
-  const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
+  // .slice() below would otherwise return a fresh array identity on every
+  // render even when filteredHoldings itself is unchanged, which defeated
+  // memoization of the category grouping derived from it.
+  const displayHoldings = useMemo(
+    () => (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6),
+    [filteredHoldings, showAllHoldings, isHoldingsFiltered]
+  )
+
+  // Category grouping used to render the holdings list — memoized so this
+  // O(n) pass over the portfolio doesn't repeat on every unrelated render
+  // (search input, tab switches, price-pulse timers, etc.).
+  const groupedHoldings = useMemo(() => {
+    const grouped = {}
+    displayHoldings.forEach(h => {
+      const cat = categorizeAsset(h)
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(h)
+    })
+    return grouped
+  }, [displayHoldings])
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
@@ -4096,6 +4115,20 @@ export default function Dashboard() {
 
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
+
+  // Stable array/callback for WalletEvalTab's props — rebuilding these inline
+  // on every render (as a fresh array + fresh arrow function) defeated both
+  // WalletEvalTab's memo() and its internal useMemo(computeWalletEval), so the
+  // full portfolio evaluation re-ran on every Dashboard render, not just when
+  // the portfolio or targets actually changed.
+  const walletEvalTargets = useMemo(
+    () => Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v })),
+    [coinTargets]
+  )
+  const handleWalletEvalAction = useCallback(
+    kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval'),
+    [openSheet]
+  )
 
   // Pre-sorted top-3 gainers/losers — memoized so the two sort+filter+slice
   // operations don't repeat on every Dashboard render.
@@ -4936,12 +4969,7 @@ export default function Dashboard() {
                   : <>
                     <div>
                       {(() => {
-                        const grouped = {}
-                        displayHoldings.forEach(h => {
-                          const cat = categorizeAsset(h)
-                          if (!grouped[cat]) grouped[cat] = []
-                          grouped[cat].push(h)
-                        })
+                        const grouped = groupedHoldings
                         return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
                           const ci = catBreakdown.find(c => c.cat === cat)
                           return (
@@ -5306,8 +5334,8 @@ export default function Dashboard() {
             <WalletEvalTab
               enriched={enriched}
               totalValue={totalValue}
-              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
-              onAction={kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval')}
+              targets={walletEvalTargets}
+              onAction={handleWalletEvalAction}
             />
           )}
 

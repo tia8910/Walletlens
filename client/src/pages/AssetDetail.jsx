@@ -58,9 +58,22 @@ export default function AssetDetail() {
   useEffect(() => { setNote(api.getCoinNote(coinId)) }, [coinId])
   const [noteEditing, setNoteEditing] = useState(false)
 
-  useEffect(() => { loadData() }, [coinId])
+  // Route changes reuse this component instance (useParams updates coinId
+  // without remounting), so a slower response for the previous coin can
+  // resolve after a newer load started and overwrite the now-displayed
+  // coin with stale data. Guard every setState with an alive flag scoped
+  // to this effect run, same pattern as Technicals.jsx.
+  useEffect(() => {
+    const alive = { current: true }
+    loadData(alive)
+    return () => { alive.current = false }
+  }, [coinId])
   useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
-  useEffect(() => { loadChart() }, [coinId, chartDays])
+  useEffect(() => {
+    const alive = { current: true }
+    loadChart(alive)
+    return () => { alive.current = false }
+  }, [coinId, chartDays])
   useEffect(() => {
     if (coinId) track('asset_detail_view', { coin_id: coinId, asset_category: categoryFor(coinId) })
   }, [coinId])
@@ -75,7 +88,7 @@ export default function AssetDetail() {
     api.getBulkTechnicals([coinId]).then(res => setTa(res?.[coinId] || null)).catch(() => {})
   }, [coinId])
 
-  async function loadData() {
+  async function loadData(alive = { current: true }) {
     // Render the shell immediately from sync localStorage data — never
     // block the page on a network call. Network results then fill in.
     const nonCrypto = isNonCryptoId(coinId)
@@ -85,6 +98,7 @@ export default function AssetDetail() {
     // Local-only sync data — instant
     let portfolio = []
     try { portfolio = (await api.getPortfolio()) || [] } catch {}
+    if (!alive.current) return
     const h = portfolio.find(p => p.coin_id === coinId)
     setHoldings(h || null)
     // Enrich the whole portfolio with best-effort USD values (from the price
@@ -104,8 +118,10 @@ export default function AssetDetail() {
     } catch { setAllHoldings(portfolio) }
     try {
       const allTargets = await api.getCoinTargets()
+      if (!alive.current) return
       setTargets(allTargets[coinId]?.targets || [])
     } catch {}
+    if (!alive.current) return
 
     // Initial coin shell from local + already-cached prices (priceCache
     // is hydrated synchronously from localStorage at module load)
@@ -124,6 +140,7 @@ export default function AssetDetail() {
     // Background — fetch prices + image + detail in parallel, fill in
     // as each resolves. Never throws to the caller; never blocks the UI.
     api.getPrices(coinId).then(prices => {
+      if (!alive.current) return
       const p = prices?.[coinId]
       if (!p) return
       setCoin(prev => ({
@@ -138,6 +155,7 @@ export default function AssetDetail() {
     if (!nonCrypto) {
       Promise.all([api.getCoinImages(coinId), api.getCoinDetail(coinId)])
         .then(([images, detail]) => {
+          if (!alive.current) return
           const image = images?.[coinId] || h?.coin_image || ''
           const md = detail?.market_data
           setCoin(prev => ({
@@ -159,9 +177,10 @@ export default function AssetDetail() {
     }
   }
 
-  async function loadChart() {
+  async function loadChart(alive = { current: true }) {
     try {
       const data = await api.getChartData(coinId, chartDays)
+      if (!alive.current) return
       setChartData(data)
     } catch (e) { console.error(e) }
   }

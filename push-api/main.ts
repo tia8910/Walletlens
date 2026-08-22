@@ -218,7 +218,12 @@ async function checkAlerts() {
   const prices = await fetchPrices([...ids])
   if (!Object.keys(prices).length) return
 
-  for (const { key, value } of subs) {
+  // Evaluate + push per subscriber in bounded-concurrency batches, so one
+  // slow push endpoint can't serialize the whole subscriber base — a fully
+  // sequential loop here grows linearly with subscriber count and risks
+  // later subscribers never being evaluated within the 10-minute cron window.
+  const BATCH = 20
+  async function processSub({ key, value }: { key: Deno.KvKey; value: StoredSub }) {
     const fired = value.fired ?? {}
     let changed = false
     for (const a of value.alerts ?? []) {
@@ -243,6 +248,10 @@ async function checkAlerts() {
       }
     }
     if (changed) await kv.set(key, { ...value, fired })
+  }
+
+  for (let i = 0; i < subs.length; i += BATCH) {
+    await Promise.all(subs.slice(i, i + BATCH).map(processSub))
   }
 }
 

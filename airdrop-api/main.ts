@@ -50,6 +50,7 @@ async function onchainOk(address: string): Promise<boolean> {
     const r = await fetch(RPC, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         jsonrpc: "2.0", id: 1, method: "suix_queryTransactionBlocks",
         params: [{ filter: { FromAddress: address }, options: {} }, null, Math.max(MIN_TX, 1), false],
@@ -62,17 +63,25 @@ async function onchainOk(address: string): Promise<boolean> {
   }
 }
 
+// /stats does a full KV scan; it's a public endpoint hit on every landing-page
+// view, so cache the result briefly instead of rescanning on every request.
+const STATS_TTL_MS = 30_000;
+let statsCache: { total: number; eligible: number; at: number } | null = null;
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   // ── GET /stats ────────────────────────────────────────────────────────────
   if (req.method === "GET" && url.pathname === "/stats") {
-    let total = 0, eligible = 0;
-    for await (const e of kv.list({ prefix: ["reg"] })) {
-      total++; if ((e.value as any).eligible) eligible++;
+    if (!statsCache || Date.now() - statsCache.at > STATS_TTL_MS) {
+      let total = 0, eligible = 0;
+      for await (const e of kv.list({ prefix: ["reg"] })) {
+        total++; if ((e.value as any).eligible) eligible++;
+      }
+      statsCache = { total, eligible, at: Date.now() };
     }
-    return json({ total, eligible });
+    return json({ total: statsCache.total, eligible: statsCache.eligible });
   }
 
   // ── GET /status ───────────────────────────────────────────────────────────
