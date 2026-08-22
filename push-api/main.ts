@@ -262,7 +262,26 @@ async function allSubs(): Promise<Array<{ key: Deno.KvKey; sub: StoredSub }>> {
  * that was off for days is then told about a price target crossed last week.
  * See CHANNEL_DELIVERY.
  */
-async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promise<boolean> {
+type SendResult = { ok: boolean; code?: number; detail?: string; gone?: boolean }
+
+/**
+ * Hand one payload to the push service.
+ *
+ * Returns WHY it failed, not just that it did. This is the last unlit step in
+ * the chain: a device can be correctly registered, every channel on, the
+ * status readout green, and still receive nothing because the push service
+ * rejects what we sign. The two ways that happens are invisible from here
+ * otherwise — VAPID keys missing on this service, or a VAPID public key that
+ * no longer matches the one the client subscribed with (the push service
+ * answers 403, and the subscription looks perfectly healthy on both sides).
+ *
+ * A 404/410 is different in kind: the subscription is genuinely gone, and
+ * deleting it is correct rather than an error to report.
+ */
+async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promise<SendResult> {
+  if (!vapidReady) {
+    return { ok: false, detail: vapidError || "VAPID keys not configured on the server" }
+  }
   const { urgency, ttl } = deliveryFor(payload.channel as string)
   const topic = pushTopic(payload.tag as string)
   try {
@@ -273,15 +292,16 @@ async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promi
       // current state of an asset rather than a scrollback of it.
       ...(topic ? { topic } : {}),
     })
-    return true
+    return { ok: true }
   } catch (e) {
     const code = (e as { statusCode?: number })?.statusCode
+    const detail = ((e as { body?: string })?.body || (e as Error)?.message || "").slice(0, 200)
     if (code === 404 || code === 410) {
       await kv.delete(["sub", await endpointKey(sub.subscription.endpoint)])
-    } else {
-      console.error("push send error:", code, e)
+      return { ok: false, code, gone: true, detail: "subscription expired" }
     }
-    return false
+    console.error("push send error:", code, detail)
+    return { ok: false, code, detail }
   }
 }
 
@@ -324,9 +344,9 @@ async function deliver(
   { urgent = false, now = Date.now() } = {},
 ): Promise<boolean> {
   if (!urgent && !canDeliver(sub, now)) return false
-  const ok = await sendPush(sub, payload)
-  if (ok && !urgent) sub.quota = bumpQuota(sub.quota, now, sub.tz)
-  return ok
+  const res = await sendPush(sub, payload)
+  if (res.ok && !urgent) sub.quota = bumpQuota(sub.quota, now, sub.tz)
+  return res.ok
 }
 
 // ── Channel: price targets the user set ─────────────────────────────────────
@@ -717,6 +737,11 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
       ok: true,
       service: "walletlens-push",
       vapid: vapidReady,
+      // The public half, deliberately. It ships inside every client bundle
+      // already, so this reveals nothing — and without it, a server key that
+      // no longer matches the key the client subscribes with is undetectable
+      // from either side while every other signal reads healthy.
+      vapidKey: VAPID_PUBLIC,
       ...(vapidError ? { vapidError } : {}),
     }, headers)
   }
@@ -755,6 +780,8 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
     return json({
       found: true,
       endpointOk,
+      vapid: vapidReady,
+      vapidKey: VAPID_PUBLIC,
       watch: sub.watch.length,
       alerts: sub.alerts.length,
       prefs: sub.prefs,
@@ -882,13 +909,15 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
     const lang = asLang(body.lang) as Lang | undefined ?? found.sub.lang
     if (lang !== found.sub.lang) await kv.set(["sub", found.k], { ...found.sub, lang })
     // A test the user just asked for must arrive even at midnight.
-    const ok = await sendPush(found.sub, buildPayload({
+    const res = await sendPush(found.sub, buildPayload({
       channel: "test",
       title: copy("testTitle", lang)(),
       body: copy("testBody", lang)(),
       tag: "wl-test",
     }))
-    return json({ ok }, headers)
+    // The reason travels with the result. A bare { ok: false } here is the
+    // same dead end as every other layer of this chain turned out to be.
+    return json(res, headers)
   }
 
   if (req.method === "DELETE" && path === "/unsubscribe") {

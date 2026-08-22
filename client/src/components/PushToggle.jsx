@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   isPushSupported, isPushEnabled, enablePush, disablePush, watchPermission, pushStatus,
-  ensureRegistered,
+  ensureRegistered, sendTestPush, vapidKeyMatches,
   getPushPrefs, setPushPrefs,
 } from '../push'
 import { track } from '../analytics'
@@ -115,9 +115,10 @@ function PushStatusLine({ status, repair }) {
   }
   if (!status.found) return null
 
-  // The two states that produce total silence while everything looks correct.
+  // The states that produce total silence while everything looks correct.
   const noWatch = status.watch === 0
   const spent = status.budgetLeft === 0
+  const keyOk = vapidKeyMatches(status.vapidKey)
 
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
@@ -126,6 +127,20 @@ function PushStatusLine({ status, repair }) {
         {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
         {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
       </div>
+      {status.vapid === false && (
+        <div style={{ color: BAD }}>
+          The notification server has no signing key, so nothing can be delivered
+          to any device. This is a server configuration problem, not a fault on
+          your phone.
+        </div>
+      )}
+      {keyOk === false && (
+        <div style={{ color: BAD }}>
+          This device subscribed with a different signing key than the server
+          uses, so every notification is rejected on arrival. Turn the switch
+          above off and on again to re-subscribe with the current key.
+        </div>
+      )}
       {noWatch && (
         <div style={{ color: BAD }}>
           No assets are being watched, so move and news alerts can’t fire.
@@ -135,6 +150,52 @@ function PushStatusLine({ status, repair }) {
       {spent && (
         <div style={{ color: WARN }}>
           Today’s notification budget is used up. Price targets you set still come through.
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Send one notification to this device, now.
+ *
+ * This was removed once before, on the reasoning that a test send proves the
+ * pipe works at one instant without explaining why the real channels are
+ * quiet. That reasoning held while it was the ONLY signal. Now that the line
+ * above reports what the server holds, the two answer different questions,
+ * and this one answers the question the status line cannot: a device can be
+ * registered, watched, in budget and every switch on, while the push service
+ * rejects everything the server signs. No channel firing on its own schedule
+ * reveals that inside an hour.
+ */
+function TestSend() {
+  const [state, setState] = useState({ status: 'idle' })
+
+  async function run() {
+    if (state.status === 'sending') return
+    setState({ status: 'sending' })
+    try {
+      await sendTestPush()
+      setState({ status: 'sent' })
+    } catch (e) {
+      setState({ status: 'failed', message: e?.message || 'It did not go through.' })
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.6rem' }}>
+      <button className="settings-chip" onClick={run} disabled={state.status === 'sending'}>
+        {state.status === 'sending' ? 'Sending…' : 'Send a test notification'}
+      </button>
+      {state.status === 'sent' && (
+        <div className="settings-hint" style={{ marginTop: '0.35rem' }}>
+          Sent. If it does not appear within a few seconds, notifications are
+          blocked for WalletLens in your phone’s system settings.
+        </div>
+      )}
+      {state.status === 'failed' && (
+        <div className="settings-hint" style={{ marginTop: '0.35rem', color: BAD, wordBreak: 'break-word' }}>
+          {state.message}
         </div>
       )}
     </div>
@@ -288,6 +349,7 @@ export default function PushToggle() {
           />
 
           {status && <PushStatusLine status={status} repair={repair} />}
+      {status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
