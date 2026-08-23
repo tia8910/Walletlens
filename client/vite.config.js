@@ -121,8 +121,31 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
-          // invalidates this chunk, not the whole app.
+          // i18n: each language table gets its OWN chunk. LanguageContext loads
+          // English eagerly (small, needed on every page) and lazy-loads the
+          // other three only when picked. Without these explicit per-language
+          // names, Rollup's default merge folds en/ar/fr/es back into one ~390 KB
+          // blob (via the combined src/i18n.js barrel that translator()/tests
+          // still import) and — because English is also needed eagerly — treats
+          // the WHOLE merged blob as an eager dependency, preloading all four
+          // languages on every page load. Naming each file's chunk explicitly
+          // keeps ar/fr/es out of that blob so only English ships up front.
+          if (id.includes('/src/i18n/en.')) {
+            return 'i18n-en'
+          }
+          if (id.includes('/src/i18n/ar.')) {
+            return 'i18n-ar'
+          }
+          if (id.includes('/src/i18n/fr.')) {
+            return 'i18n-fr'
+          }
+          if (id.includes('/src/i18n/es.')) {
+            return 'i18n-es'
+          }
+          // The combined barrel — only translator() (background notifications)
+          // and completeness tests need all four languages synchronously; it's
+          // reachable only through the async Dashboard → push → portfolioNotify
+          // chain, never from the eager entry.
           if (id.includes('/src/i18n.')) {
             return 'i18n'
           }

@@ -1,5 +1,20 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { translations } from './i18n'
+import en from './i18n/en'
+
+// English loads synchronously — it's the default for the large majority of
+// visitors and the fallback `t()` reaches for on any missing/unloaded key.
+// The other three tables (ar/fr/es) are ~35 KB gzip apiece; loading all four
+// up front on every route (including the SEO landing pages, where almost
+// nobody switches language) used to cost ~140 KB gzip of eagerly-fetched JS
+// before first paint on every single page load. Loading them only when a
+// visitor actually picks that language keeps that cost off everyone else's
+// critical path. Module-level cache so a language fetched once (in this tab)
+// never re-fetches on a later switch back to it.
+const cache = { en }
+function loadLanguage(code) {
+  if (cache[code]) return Promise.resolve(cache[code])
+  return import(`./i18n/${code}.js`).then(m => { cache[code] = m.default; return m.default })
+}
 
 /**
  * The languages the picker offers.
@@ -74,9 +89,23 @@ export function LanguageProvider({ children }) {
     import('./push').then(m => m.syncAlerts?.()).catch(() => {})
   }, [lang])
 
-  const t = useCallback((key) => {
-    return translations[lang]?.[key] ?? translations.en[key] ?? key
+  // Fetch the picked language's table the moment it's needed. Until it
+  // resolves, t() below reads whatever is cached (English, at minimum) so the
+  // UI never breaks — it just briefly shows English for a language that
+  // hasn't finished loading, then re-renders once `loaded` ticks.
+  const [loaded, setLoaded] = useState(0)
+  useEffect(() => {
+    if (cache[lang]) return
+    let cancelled = false
+    loadLanguage(lang).then(() => { if (!cancelled) setLoaded(n => n + 1) })
+    return () => { cancelled = true }
   }, [lang])
+
+  const t = useCallback((key) => {
+    const table = cache[lang] || cache.en
+    return table[key] ?? cache.en[key] ?? key
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, loaded])
 
   const value = useMemo(() => ({ lang, setLang, t, isRtl: RTL.has(lang) }), [lang, t])
 
