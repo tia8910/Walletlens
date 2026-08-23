@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Monochrome layer for the launcher icon (Android 13+ themed icons).
+
+    The platform throws away every colour here and tints the alpha, exactly as
+    it does with a notification badge — so this is the mark alone: the lens
+    ring, three bars, the pip and the handle. No plate, no gradient.
+
+    Geometry is badge-96.svg's, with its transform folded into the numbers, then
+    scaled 1.10 about (32,33) and centred at (54,54) in the 108dp viewport. That
+    scale is not arbitrary: the furthest point of the shape is the round cap on
+    the handle tip, which lands 35.4dp from centre — inside the 36dp radius of
+    the adaptive-icon safe zone, with the margin small enough that the icon
+    still fills its circle.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="32"
+        android:pivotY="33"
+        android:scaleX="1.1"
+        android:scaleY="1.1"
+        android:translateX="22"
+        android:translateY="21">
+        <path
+            android:pathData="M16.360,27.940 a17.480,17.480 0 1,0 34.960,0 a17.480,17.480 0 1,0 -34.960,0 Z"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5.06" />
+        <path android:pathData="M42.764,15.520 a3.496,3.496 0 1,0 6.992,0 a3.496,3.496 0 1,0 -6.992,0 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M23.444,29.320 H25.836 A1.104,1.104 0 0 1 26.940,30.424 V35.116 A1.104,1.104 0 0 1 25.836,36.220 H23.444 A1.104,1.104 0 0 1 22.340,35.116 V30.424 A1.104,1.104 0 0 1 23.444,29.320 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M29.884,24.260 H32.276 A1.104,1.104 0 0 1 33.380,25.364 V35.116 A1.104,1.104 0 0 1 32.276,36.220 H29.884 A1.104,1.104 0 0 1 28.780,35.116 V25.364 A1.104,1.104 0 0 1 29.884,24.260 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M36.324,19.200 H38.716 A1.104,1.104 0 0 1 39.820,20.304 V35.116 A1.104,1.104 0 0 1 38.716,36.220 H36.324 A1.104,1.104 0 0 1 35.220,35.116 V20.304 A1.104,1.104 0 0 1 36.324,19.200 Z" android:fillColor="#FFFFFFFF" />
+        <path
+            android:pathData="M21.420,40.820 L12.680,55.540"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5.06"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

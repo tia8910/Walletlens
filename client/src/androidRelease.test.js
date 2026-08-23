@@ -13,6 +13,12 @@ import { fileURLToPath } from 'node:url'
 // in production, Play never accepts a duplicate or lower code, and a release
 // build is worth more than the ten seconds this takes.
 
+const nativeRoot = join(dirname(fileURLToPath(import.meta.url)),
+  '../../walletlens_source/release_package/app/src/main')
+const manifest = readFileSync(join(nativeRoot, 'AndroidManifest.xml'), 'utf8')
+const adaptiveIcon = readFileSync(join(nativeRoot, 'res/mipmap-anydpi-v26/ic_launcher.xml'), 'utf8')
+const monochrome = readFileSync(join(nativeRoot, 'res/drawable/ic_launcher_monochrome.xml'), 'utf8')
+
 const gradle = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)),
        '../../walletlens_source/release_package/app/build.gradle'),
@@ -42,6 +48,42 @@ describe('the Android release is uploadable', () => {
     // in front of every user, which is worse than a TODO that stays visible.
     // Remove this test in the commit that sets the real string.
     expect(gradle).toMatch(/TODO\(tarek\)[\s\S]{0,300}?versionName/)
+  })
+
+  it('gives the launcher something to tint on Android 13+', () => {
+    // Without a <monochrome> layer the launcher has nothing to theme and falls
+    // back to the full-colour icon, so WalletLens was the one icon on a themed
+    // home screen that ignored the theme. The manifest and the icon XML are
+    // both PWABuilder output and get regenerated; this is what notices if the
+    // layer is dropped on the way through.
+    expect(adaptiveIcon).toMatch(/<monochrome android:drawable="@drawable\/ic_launcher_monochrome"/)
+    expect(monochrome).toMatch(/<vector[\s\S]*android:viewportWidth="108"/)
+    expect(monochrome).toMatch(/android:viewportHeight="108"/)
+  })
+
+  it('keeps the themed icon inside the adaptive-icon safe zone', () => {
+    // Content outside the 72dp centre circle can be clipped by whatever mask
+    // the launcher uses. The scale here was chosen so the furthest point —
+    // the round cap on the handle tip — lands at 35.4dp from centre against a
+    // 36dp limit, which is close enough that a nudge would push it out.
+    const scale = Number(monochrome.match(/android:scaleX="([\d.]+)"/)?.[1])
+    expect(scale).toBeGreaterThan(0)
+    expect(scale).toBeLessThanOrEqual(1.10)
+    // Centred: pivot (32,33) + translate (22,21) puts the mark at (54,54).
+    expect(Number(monochrome.match(/android:pivotX="([\d.]+)"/)[1])
+         + Number(monochrome.match(/android:translateX="([\d.]+)"/)[1])).toBe(54)
+    expect(Number(monochrome.match(/android:pivotY="([\d.]+)"/)[1])
+         + Number(monochrome.match(/android:translateY="([\d.]+)"/)[1])).toBe(54)
+  })
+
+  it('opts into predictive back without breaking the crash log', () => {
+    // enableOnBackInvokedCallback stops the framework dispatching
+    // onBackPressed(). CrashLogActivity still overrides it — back there means
+    // "return to the app", not "go home" — so it must opt out individually.
+    // Enabling app-wide without this exemption is a silent behaviour change.
+    expect(manifest).toMatch(/<application[\s\S]*?android:enableOnBackInvokedCallback="true"/)
+    const crashLog = manifest.slice(manifest.indexOf('android:name=".CrashLogActivity"'))
+    expect(crashLog.slice(0, 400)).toMatch(/android:enableOnBackInvokedCallback="false"/)
   })
 
   it('keeps notification delegation switched on', () => {
