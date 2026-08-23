@@ -777,22 +777,32 @@ export function localDayKey(nowMs, tzOffsetMin) {
 }
 
 /**
- * The single most important guard in this file. Automated channels share one
- * daily budget so that a volatile day can't turn into forty buzzes — the
- * fastest way to lose the notification permission for good.
+ * How many notifications this device has had today, on its own clock.
+ *
+ * This used to be a budget: six a day across every automated channel, and the
+ * seventh was dropped. It is a counter now, by product decision — nothing is
+ * ever withheld for being the seventh. A price that moved is worth saying so
+ * whether or not five other things happened first, and a tracker that goes
+ * quiet for the rest of the day the moment the market gets interesting is
+ * quiet exactly when it is most needed.
+ *
+ * The per-channel gates are what keep the volume sane, and they are untouched:
+ * MOVE_COOLDOWN_MS holds each asset for three hours after it fires (levels
+ * share that same timer), NEWS_COOLDOWN_MS four, the brief is once a day and
+ * only when something actually moved, retention steps are days apart and
+ * FEATURE_TIP_GAP_MS is three days. Those are per-reason and cannot stack into
+ * a stream from one event; a global cap could only ever silence a *different*
+ * reason, which is the one thing it should not do.
+ *
+ * The count is kept because /status reports it. "Notifications are on and
+ * nothing arrives" is indistinguishable from "nothing happened worth sending"
+ * without a number, and that ambiguity has already cost this service one
+ * multi-day debugging session.
  */
-export const DAILY_PUSH_BUDGET = 6
-
-export function withinDailyBudget(quota, nowMs, tzOffsetMin, budget = DAILY_PUSH_BUDGET) {
+export function bumpSent(sent, nowMs, tzOffsetMin) {
   const day = localDayKey(nowMs, tzOffsetMin)
-  if (!quota || quota.day !== day) return true
-  return (quota.n || 0) < budget
-}
-
-export function bumpQuota(quota, nowMs, tzOffsetMin) {
-  const day = localDayKey(nowMs, tzOffsetMin)
-  if (!quota || quota.day !== day) return { day, n: 1 }
-  return { day, n: (quota.n || 0) + 1 }
+  if (!sent || sent.day !== day) return { day, n: 1 }
+  return { day, n: (sent.n || 0) + 1 }
 }
 
 // ── Movement detection ──────────────────────────────────────────────────────

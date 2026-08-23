@@ -140,11 +140,10 @@ function PushStatusLine({ status, repair, detail }) {
 
   // The states that produce total silence while everything looks correct.
   const noWatch = status.watch === 0
-  const spent = status.budgetLeft === 0
   const keyOk = vapidKeyMatches(status.vapidKey)
 
   // Nothing to say: healthy, and the summary is not being shown.
-  if (!detail && !noWatch && !spent && status.vapid !== false && keyOk !== false) return null
+  if (!detail && !noWatch && status.vapid !== false && keyOk !== false) return null
 
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
@@ -152,7 +151,7 @@ function PushStatusLine({ status, repair, detail }) {
         <div>
           Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
           {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
-          {' · '}<strong>{status.budgetLeft}</strong> of {status.budget} left today
+          {' · '}<strong>{status.sentToday}</strong> sent today
         </div>
       )}
       {status.vapid === false && (
@@ -175,11 +174,6 @@ function PushStatusLine({ status, repair, detail }) {
           Open the Dashboard once to sync your holdings.
         </div>
       )}
-      {spent && (
-        <div style={{ color: WARN }}>
-          Today’s notification budget is used up. Price targets you set still come through.
-        </div>
-      )}
     </div>
   )
 }
@@ -192,7 +186,7 @@ function PushStatusLine({ status, repair, detail }) {
  * quiet. That reasoning held while it was the ONLY signal. Now that the line
  * above reports what the server holds, the two answer different questions,
  * and this one answers the question the status line cannot: a device can be
- * registered, watched, in budget and every switch on, while the push service
+ * registered, watched and every switch on, while the push service
  * rejects everything the server signs. No channel firing on its own schedule
  * reveals that inside an hour.
  */
