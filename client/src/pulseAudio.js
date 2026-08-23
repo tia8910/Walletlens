@@ -709,17 +709,45 @@ function playChampion(t) {
   air(t + 1.40, 0.80, { from: 3200, to: 900, q: 1.6, gain: 0.030, wet: 0.85, attack: 0.05 })
 }
 
+function playWelcome(t) {
+  // Arrival, not impact.
+  //
+  // Every other voice here peaks on a hit — champion detonates, milestone
+  // lands, shockwave cracks. This one peaks on a CHORD, because what it marks
+  // is not a market event at all: the dashboard has just been built and the
+  // number on it is the user's own. A curtain going up, not something
+  // exploding.
+  swell(t + 0.00, 0.90, {
+    from: 130.81, to: 261.63, gain: 0.10,
+    cutFrom: 320, cutTo: 4200, spread: 9, wet: 0.4, attack: 0.45,
+  })
+  air(t + 0.06, 0.85, { from: 700, to: 3600, q: 2.2, gain: 0.045, wet: 0.5, attack: 0.5 })
+  sub(t + 0.45, 0.80, { from: 44, to: 62, gain: 0.16, wet: 0.06 })
+
+  // C major, arriving in order. The most direct way to say "this is finished
+  // and it is good" without a lyric. Struck rather than sustained so it keeps
+  // the family resemblance to the rest of the set.
+  bell(t + 0.72, 0.90, { freq: 261.63, gain: 0.050, index: 4, wet: 0.55, pan: -0.25 })
+  bell(t + 0.86, 0.95, { freq: 329.63, gain: 0.046, index: 4, wet: 0.60, pan: 0.20 })
+  bell(t + 1.00, 1.15, { freq: 392.00, gain: 0.044, index: 3, wet: 0.65, pan: -0.10 })
+  bell(t + 1.16, 1.35, { freq: 523.25, gain: 0.040, index: 3, wet: 0.80, pan: 0.30 })
+
+  // Tail. It opens out and settles — no debris, because nothing broke.
+  air(t + 1.20, 0.90, { from: 2600, to: 800, q: 1.4, gain: 0.026, wet: 0.9, attack: 0.06 })
+}
+
 const VOICES = {
   rocket: playRocket, ath: playAth, milestone: playMilestone, fireworks: playFireworks,
   shockwave: playShockwave, aurora: playAurora, lock: playLock,
   rain: playRain, dip: playDip, storm: playStorm, champion: playChampion,
+  welcome: playWelcome,
 }
 
 /** Roughly how long each sound runs, for syncing the visual layer. */
 export const DURATION_MS = {
   rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600,
   shockwave: 700, aurora: 2600, lock: 1100, rain: 2200, dip: 1700, storm: 2900,
-  champion: 2600,
+  champion: 2600, welcome: 2200,
 }
 
 /**

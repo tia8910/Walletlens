@@ -5,6 +5,7 @@ import { useTheme, THEMES } from '../ThemeContext'
 import { useLanguage, LANGUAGES } from '../LanguageContext'
 import { useBiometricLock } from './BiometricLock'
 import sfx from '../sfx'
+import { primePulseAudio } from '../marketPulseRuntime'
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
@@ -150,6 +151,16 @@ export default function NativeOnboarding({ onDone }) {
   }
 
   function finish() {
+    // Unlock the Market Pulse AudioContext while we are still inside the tap.
+    //
+    // sfx.playTriumph() above unlocks a DIFFERENT context — sfx.js has its
+    // own — so without this the one guaranteed gesture of the whole first-run
+    // flow leaves the pulse context asleep, and the welcome moment the
+    // dashboard is about to fire arrives silent on a phone at full volume.
+    //
+    // Synchronous on purpose: armPulseAudio() listens for the NEXT gesture,
+    // and a click listener added during a click never fires for that click.
+    try { primePulseAudio() } catch {}
     try { localStorage.setItem(ONBOARD_KEY, '1') } catch {}
     try { localStorage.removeItem(ONBOARD_STEP_KEY) } catch {}
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}

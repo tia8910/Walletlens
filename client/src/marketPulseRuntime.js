@@ -392,6 +392,8 @@ const DEMO_SHAPES = {
   shockwave:  { symbol: 'BTC', changePct: 14.1 },
   ath:        {},
   milestone:  {},
+  // Value only, like the other two above it — demoPulse supplies the number.
+  welcome:    {},
   fireworks:  { changePct: 4.2 },
   rain:       { changePct: 9.6 },
   dip:        { changePct: -6.3 },
@@ -478,6 +480,60 @@ export function demoPulse(type, { totalValue = 0 } = {}) {
     at: Date.now(),
     demo: true,
   }
+}
+
+/**
+ * Unlock the pulse AudioContext from inside a user gesture.
+ *
+ * Onboarding has its own SFX module with its own context, so the one
+ * guaranteed tap in the whole first-run flow — "See my dashboard" — used to
+ * unlock *that* context and leave this one asleep. The first celebration a new
+ * user could get was therefore silent, however loud their phone was.
+ *
+ * Must be called synchronously inside the handler: armPulseAudio() adds a
+ * listener for the NEXT gesture, and a click listener added during a click
+ * does not fire for that same click.
+ */
+export function primePulseAudio() {
+  try { unlock() } catch { /* no audio here; the visual still stands */ }
+}
+
+/**
+ * The welcome moment: fired once ever, when a dashboard first has a value.
+ *
+ * Deliberately not a market event. Every other pulse makes a claim about
+ * prices, and the honest set of those on a brand-new portfolio is empty —
+ * seedRecords exists precisely so nobody is told they just hit an all-time
+ * high on the day they typed their holdings in. What IS true is that they
+ * built the thing and it is worth what it says. That is what this celebrates.
+ *
+ * Returns the event to show, or null when there is nothing honest to say:
+ * already welcomed, or a portfolio with no value to report.
+ */
+export function fireWelcome({ totalValue = 0, now = Date.now() } = {}) {
+  try {
+    if (!(totalValue > 0)) return null
+    const state = pulseState()
+    if (state.welcomed) return null
+    write(STATE_KEY, { ...state, welcomed: true })
+
+    const settings = pulseSettings()
+    if (settings.visuals === false && !settings.enabled) return null
+
+    if (settings.enabled) {
+      setVolume(settings.volume)
+      if (play('welcome') && settings.haptics) {
+        try { navigator.vibrate?.(hapticFor('welcome')) } catch { /* unsupported */ }
+      }
+    }
+    // The cooldown advances so a market event detected on the very same pass
+    // cannot land on top of this one.
+    cooldown = { lastAt: now, lastMajorAt: now }
+
+    return settings.visuals === false
+      ? null
+      : { type: 'welcome', priority: PRIORITY.welcome, value: totalValue, at: now }
+  } catch { return null }
 }
 
 /** For diagnostics and tests. */

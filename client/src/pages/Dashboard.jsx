@@ -9,7 +9,7 @@ import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { pulseClass, breadthOf } from '../marketPulse'
-import { observeMarket, armPulseAudio, demoPulse, onPulseRelease } from '../marketPulseRuntime'
+import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
@@ -3844,6 +3844,17 @@ export default function Dashboard() {
         .filter(tg => tg.reached)
         .map(tg => ({ id: String(tg.id), symbol: r.coinSymbol, price: tg.price }))
     )
+
+    // The welcome moment, before anything about the market.
+    //
+    // Fired here rather than in the onboarding handler because the caption
+    // states the portfolio's value, and that is not known until prices have
+    // landed — a number that appears and then corrects itself is worse than
+    // waiting a beat for the right one. The tap has already unlocked audio by
+    // now (primePulseAudio in NativeOnboarding.finish), so it lands with
+    // sound. Once ever; returns null every time after.
+    const welcome = fireWelcome({ totalValue })
+    if (welcome) { setPulseEvent(welcome); return }
 
     const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
     // Set even when the audio was refused — someone on silent has not opted

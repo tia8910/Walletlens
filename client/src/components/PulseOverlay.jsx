@@ -4,7 +4,7 @@ import { getCachedCoinImage } from '../api'
 import { DURATION_MS } from '../pulseAudio'
 
 /** Which events draw particles, and which shape. */
-const CANVAS_KIND = { rain: 'rain', dip: 'dip', storm: 'storm', milestone: 'burst' }
+const CANVAS_KIND = { rain: 'rain', dip: 'dip', storm: 'storm', milestone: 'burst', welcome: 'burst' }
 import { pulseSettings } from '../marketPulseRuntime'
 
 /**
@@ -186,6 +186,9 @@ export default function PulseOverlay({ event, onDone }) {
     // both read as the app having an opinion about your portfolio.
     : event.type === 'dip'       ? t('pulseDip')(pct)
     : event.type === 'storm'     ? t('pulseStorm')(pct)
+    // Not a claim about the market — the one thing that is certainly true the
+    // first time a dashboard exists is what it is worth.
+    : event.type === 'welcome'   ? t('pulseWelcome')(compactValue(event.value))
     : /* milestone */              t('pulseMilestone')(compactValue(event.value))
 
   return (
