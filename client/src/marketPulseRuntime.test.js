@@ -17,7 +17,7 @@ vi.mock('./pulseAudio', () => ({
 const {
   observeMarket, demoPulse, pulseSettings, setPulseSettings,
   pendingDiscovery, dismissDiscovery, noteDiscoveryShown,
-  onPulseRelease, __heldEvent, __resetPulseRuntime,
+  onPulseRelease, __heldEvent, __pendingSound, __resetPulseRuntime,
 } = await import('./marketPulseRuntime')
 const { marketPeriodKey } = await import('./marketPulse')
 
@@ -275,12 +275,64 @@ describe('robustness', () => {
     expect(() => observeMarket({ samples: { x: null }, totalValue: 1 })).not.toThrow()
   })
 
-  it('holds the celebration until a tap, rather than showing it silently', () => {
-    // Nothing can be heard before the first gesture of a session, and an event
-    // that fires on app open arrives before it — play() bails on `if (!ctx)`
-    // and the user gets a mute celebration. That was the whole of "I see
-    // fireworks but hear nothing". Held events land complete instead.
+  it('shows the celebration immediately, before any tap', () => {
+    // The reason this changed. Nothing can be heard before the first gesture
+    // of a session, so the whole event — picture included — used to wait for
+    // one, or for a full sixty seconds. That is fine for a mid-session event
+    // and wrong for the one it matters most to: the day's champion fires on
+    // the FIRST open of the day, by definition before any gesture, so
+    // "crowned on the first open" became "crowned a minute later".
     setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+
+    audio.unlocked = false
+    const event = observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+
+    expect(event).toMatchObject({ type: 'rocket' })   // ← on screen now
+    expect(__heldEvent()).toBeNull()                  // ← nothing withheld
+    expect(audio.played).toEqual([])                  // ← but still silent
+  })
+
+  it('lets the sound catch up if the tap lands during the animation', () => {
+    // The half of the old behaviour worth keeping: a tap while the overlay is
+    // still on screen should land both together.
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+    audio.unlocked = false
+    observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+
+    expect(__pendingSound()).toBe('rocket')
+    document.dispatchEvent(new MouseEvent('click'))
+    expect(audio.played).toEqual(['rocket'])
+    expect(__pendingSound()).toBeNull()
+  })
+
+  it('drops the sound once the animation is gone', () => {
+    // A sound arriving after the picture has left is not the same event any
+    // more — it is a noise with no cause, which is worse than silence.
+    vi.useFakeTimers()
+    try {
+      setPulseSettings({ enabled: true })
+      observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+      observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
+      audio.unlocked = false
+      observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+
+      vi.advanceTimersByTime(5000)
+      expect(__pendingSound()).toBeNull()
+      document.dispatchEvent(new MouseEvent('click'))
+      expect(audio.played).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('still waits for the tap when there is no picture to show', () => {
+    // Visuals off, sound on: nothing is on screen either way, so holding until
+    // the gesture is still right — the event lands whole or not at all.
+    setPulseSettings({ enabled: true, visuals: false })
     observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
     observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
 
@@ -290,33 +342,10 @@ describe('robustness', () => {
 
     expect(observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })).toBeNull()
     expect(__heldEvent()).toMatchObject({ type: 'rocket' })
-    expect(audio.played).toEqual([])
 
     document.dispatchEvent(new MouseEvent('click'))
     expect(audio.played).toEqual(['rocket'])
     expect(released[0]).toMatchObject({ type: 'rocket' })
-    expect(__heldEvent()).toBeNull()
-  })
-
-  it('shows a held event anyway if the tap never comes', () => {
-    // Silently is better than never: knowing the portfolio is flying is the
-    // information, and the sound is the decoration.
-    vi.useFakeTimers()
-    try {
-      setPulseSettings({ enabled: true })
-      observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
-      observeMarket({ samples: btc(7), totalValue: 50000, now: T0 + 1000 })
-      audio.unlocked = false
-      const released = []
-      onPulseRelease(e => released.push(e))
-      observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
-
-      vi.advanceTimersByTime(61000)
-      expect(released[0]).toMatchObject({ type: 'rocket' })
-      expect(audio.played).toEqual([])
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('plays straight away once audio is already unlocked', () => {
