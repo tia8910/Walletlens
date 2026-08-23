@@ -6,6 +6,7 @@ import Icon from './Icon'
 import { TOKEN_UNLOCKS } from '../data/assets'
 import { useLanguage } from '../LanguageContext'
 import { renderMaybe } from '../data/walletEvalTips'
+import { showLocalNotification } from '../localNotify'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
@@ -120,8 +121,7 @@ function reqPermission() {
   return Notification.requestPermission()
 }
 function fireNotif(title, body) {
-  if (Notification.permission !== 'granted') return
-  try { new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico' }) } catch {}
+  showLocalNotification(title, { body, icon: '/icon-192.png', badge: '/badge-96.png' })
 }
 function playAlarm() {
   try {

@@ -8,7 +8,7 @@ import {
   seedRefFromChange, crossedLevel, roundLevelStep,
   FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, pickHeadline, pushTopic, RETENTION_MIN_PCT,
-  isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
+  isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH, RETENTION_HOUR,
   MOVE_COOLDOWN_MS, MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
   sanitizeTz, sanitizeWatch, shortHash, termsFor,
 } from '../../push-api/notify-logic.js'
@@ -257,12 +257,13 @@ describe('how promptly each channel runs', () => {
   })
 })
 
-describe('there are no quiet hours', () => {
-  // Removed, not defaulted off. Defaulting off could not reach anyone already
-  // affected: sanitizePrefs only falls back to a default when a subscription
-  // has no stored value, and every subscription created while quiet hours
-  // defaulted ON carries `quiet: true` explicitly. Deleting the gate reaches
-  // all of them on the next deploy, with no client sync and no app update.
+describe('the price channels run around the clock', () => {
+  // Quiet hours were removed, not defaulted off. Defaulting off could not
+  // reach anyone already affected: sanitizePrefs only falls back to a default
+  // when a subscription has no stored value, and every subscription created
+  // while quiet hours defaulted ON carries `quiet: true` explicitly. Deleting
+  // the gate reaches all of them on the next deploy, with no client sync and
+  // no app update.
   const server = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), '../../push-api/main.ts'), 'utf8',
   )
@@ -278,7 +279,51 @@ describe('there are no quiet hours', () => {
     expect(DEFAULT_PUSH_PREFS.quiet).toBeUndefined()
   })
 
+  it('never asks what hour it is in a price or news pass', () => {
+    // The structural version of the rule above, and the one that survives a
+    // rename: checking for `inQuietHours(` by name only catches the gate that
+    // was actually deleted. A price that crossed a target at 03:00 is the same
+    // notification it would have been at 15:00, so the three passes that
+    // decide those have no business reading the clock at all.
+    //
+    // checkTargets, checkMoves and checkNews are contiguous in main.ts and
+    // checkDaily follows them, so this covers all three at once.
+    const passes = server.slice(
+      server.indexOf('async function checkTargets()'),
+      server.indexOf('async function checkDaily()'),
+    )
+    expect(passes.length).toBeGreaterThan(1000)
+    expect(passes).not.toMatch(/localHour/)
+  })
+
+  it('reads the hour only where a time of day is the point', () => {
+    // The exception, and the reason this is a placement rule rather than a
+    // ban: a morning brief at 02:00 is not a morning brief. checkDaily runs
+    // hourly and picks out the devices whose OWN clock just reached the send
+    // hour, which is how one cron serves every timezone.
+    const daily = server.slice(server.indexOf('async function checkDaily()'))
+    expect(daily).toMatch(/localHour\(now, sub\.tz\)/)
+    expect(DIGEST_HOUR_IN_SERVER(server)).toBe(9)
+    expect(RETENTION_HOUR).toBe(10)
+  })
+
+  it('schedules no cron that skips part of the day', () => {
+    // A gate can hide in the schedule as easily as in the code: "0 8-22 * * *"
+    // is quiet hours by another name, and nothing else in this file would
+    // notice. The hour field of every cron must be unrestricted.
+    const crons = [...server.matchAll(/Deno\.cron\("([^"]+)", "([^"]+)"/g)]
+    expect(crons.length).toBeGreaterThanOrEqual(5)
+    for (const [, name, expr] of crons) {
+      const hour = expr.split(' ')[1]
+      expect(hour, `${name} ("${expr}") must run every hour`).toBe('*')
+    }
+  })
 })
+
+/** DIGEST_HOUR lives in main.ts, not notify-logic.js, so read it from source. */
+function DIGEST_HOUR_IN_SERVER(server) {
+  return Number(server.match(/const DIGEST_HOUR = (\d+)/)?.[1])
+}
 
 describe('nothing is withheld for being the seventh today', () => {
   // The daily budget capped every automated channel at six a day and dropped

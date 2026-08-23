@@ -6,6 +6,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import { useLanguage } from '../LanguageContext'
+import { showLocalNotification } from '../localNotify'
 
 const WATCHLIST_KEY = 'wl_watchlist'
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
@@ -144,13 +145,11 @@ export default function Watchlist({ portfolioPrices = {} }) {
         changed = true
         if (canNotify) {
           const dir = a.condition === 'above' ? '↑' : '↓'
-          try {
-            new Notification(t('ntWatchlistTitle')(dir, a.coin_symbol), {
-              body: t('ntWatchlistBody')(a.coin_symbol, fmtPrice(a.targetPrice), fmtPrice(p)),
-              icon: '/icon-192.svg', badge: '/icon-192.svg',
-              tag: `wl-alert-${a.id}`,
-            })
-          } catch {}
+          showLocalNotification(t('ntWatchlistTitle')(dir, a.coin_symbol), {
+            body: t('ntWatchlistBody')(a.coin_symbol, fmtPrice(a.targetPrice), fmtPrice(p)),
+            icon: '/icon-192.png', badge: '/badge-96.png',
+            tag: `wl-alert-${a.id}`,
+          })
         }
       }
     }
